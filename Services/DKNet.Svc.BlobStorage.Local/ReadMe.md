@@ -19,7 +19,7 @@ There are 2 adapters provided by this service.
     },
     "AzureStorage": {
       "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...;EndpointSuffix=core.windows.net",
-      "ContainerName": "WX"
+      "ContainerName": "DKNet"
     }
   }
 }

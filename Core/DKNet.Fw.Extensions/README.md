@@ -2,7 +2,7 @@
 
 ## Overview
 
-**DKNet.Framework.Extensions** is a library designed to extend and enhance functionality within the WX Framework. It provides additional tools, utilities, and helpers to simplify development and improve productivity. By integrating this extension library, developers can leverage pre-built features and abstractions, reducing boilerplate code and accelerating project timelines.
+**DKNet.Framework.Extensions** is a library designed to extend and enhance functionality within the DKNet Framework. It provides additional tools, utilities, and helpers to simplify development and improve productivity. By integrating this extension library, developers can leverage pre-built features and abstractions, reducing boilerplate code and accelerating project timelines.
 
 ## Features
 
@@ -62,7 +62,7 @@
 
 ## Requirements
 
-- **Framework**: WX Framework vX.X or higher
+- **Framework**: DKNet Framework vX.X or higher
 - **Language**: .NET 9.0 or higher
 - **Dependencies**: Refer to `DKNet.Framework.Extensions.csproj` for detailed dependency information.
 

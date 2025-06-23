@@ -156,7 +156,7 @@ public class OrderCreatedEventHandler : Fluents.Notifications.IEventHandler<Orde
 
 ## Issues and Support
 
-If you encounter any issues or have feature requests, please open a ticket on the [project repository](https://thewixo@dev.azure.com/thewixo/WIXO/_git/WIXO.FW). Provide the following:
+If you encounter any issues or have feature requests, please open a ticket on the [project repository](https://github.com/baoduy/DKNet). Provide the following:
 - A description of the issue or request.
 - Steps to reproduce (if applicable).
 - Environment details (e.g., .NET version).

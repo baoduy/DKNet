@@ -2,19 +2,19 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
-        <Authors>WIXO</Authors>
-        <Company>WIXO</Company>
-        <Copyright>@2025 WIXO</Copyright>
+        <Authors>Steven Hoang</Authors>
+        <Authors>https://drunkcoding.net</Authors>
+        <Copyright>@2026 drunkcoding</Copyright>
         <PackageLicense>https://opensource.org/licenses/MIT</PackageLicense>
-        <PackageProjectUrl>https://thewixo@dev.azure.com/thewixo/WIXO/_git/WIXO.FW</PackageProjectUrl>
-        <RepositoryUrl>https://thewixo@dev.azure.com/thewixo/WIXO/_git/WIXO.FW</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>Extensions</PackageTags>
+        <PackageTags>Extensions,DDD,Api,EfCore</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageIcon>NugetLogo.jpeg</PackageIcon>
+        <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
@@ -22,7 +22,7 @@
     <ItemGroup>
     </ItemGroup>
     <ItemGroup>
-        <None Include="..\..\NugetLogo.jpeg" Pack="true" PackagePath="\" />
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
         <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
     <ItemGroup>

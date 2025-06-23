@@ -1,6 +1,6 @@
 # DKNet.EfCore.Relational.Helpers
 
-The `DKNet.EfCore.Relational.Helpers` project is part of the WX suite, providing additional utilities to simplify the usage of relational databases with Entity Framework Core.
+The `DKNet.EfCore.Relational.Helpers` project is part of the DKNet suite, providing additional utilities to simplify the usage of relational databases with Entity Framework Core.
 
 ## Overview
 
@@ -20,7 +20,7 @@ To use `DKNet.EfCore.Relational.Helpers`, add it as a reference to your .NET Cor
 
 ## Contributions
 
-We welcome contributors! Please make sure to familiarize yourself with the objectives and design of the WX before making changes. Submit a pull request if you'd like to propose changes, explaining your changes in the pull request comment.
+We welcome contributors! Please make sure to familiarize yourself with the objectives and design of the DKNet before making changes. Submit a pull request if you'd like to propose changes, explaining your changes in the pull request comment.
 
 ## License
 

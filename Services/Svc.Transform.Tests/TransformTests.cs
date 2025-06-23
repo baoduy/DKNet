@@ -14,9 +14,9 @@ public class TransformTests
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
         var t = new TransformerService(new TransformOptions { DisabledLocalCache = true });
-        var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "WX" });
+        var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
-        s.ShouldContain("Hoang"); // "Hoang", "Bao", "Duy", "WX"
+        s.ShouldContain("Hoang"); // "Hoang", "Bao", "Duy", "DKNet"
         s.ShouldNotContain("{");
         s.ShouldNotContain("[");
         s.ShouldNotContain("<");
@@ -44,7 +44,7 @@ public class TransformTests
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
         var t = new TransformerService(new TransformOptions());
-        var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "WX" });
+        var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Bao");
         s.ShouldNotContain("{");

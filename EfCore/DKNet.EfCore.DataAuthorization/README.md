@@ -1,11 +1,11 @@
 # DKNet.WfCore.DataAuthorization
 
 ## Introduction
-WX WfCore Data Authorization is a module designed to manage data access control within workflow applications, ensuring that users only interact with authorized data.
+DKNet WfCore Data Authorization is a module designed to manage data access control within workflow applications, ensuring that users only interact with authorized data.
 
 ## Features
 - **Role-Based Access Control (RBAC)**: Define roles and permissions to control data access.
-- **Integration with WX WfCore**: Seamless integration with the broader WX WfCore framework.
+- **Integration with DKNet WfCore**: Seamless integration with the broader DKNet WfCore framework.
 - **Fine-Grained Authorization**: Granular control over data operations.
 - **Auditing/Logging**: Track authorization events for compliance and debugging.
 - **Customizable Policies**: Define custom rules based on specific requirements.
@@ -85,7 +85,7 @@ public class CustomDataPolicy : IDataAuthorizationPolicy
 ---
 
 ## Troubleshooting
-Common issues include missing dependencies, misconfigured policies, and authorization failures. Visit our [FAQ](https://faq.wxwfcore.com) for solutions.
+Common issues include missing dependencies, misconfigured policies, and authorization failures. Visit our [FAQ](https://faq.DKNetwfcore.com) for solutions.
 
 ## Conclusion
 We welcome your feedback and contributions to improve DKNet.WfCore.DataAuthorization. Join our community on GitHub or Discord for support and updates.

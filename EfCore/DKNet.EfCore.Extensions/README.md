@@ -25,7 +25,7 @@ internal class DefaultEntityTypeConfiguration<T> : IEntityTypeConfiguration<T> w
 ```
 2. Your Base Entity
 ```csharp
-//Base entity should inherit IEntity from WX.EfCore.Abstractions where the magic happens.
+//Base entity should inherit IEntity from DKNet.EfCore.Abstractions where the magic happens.
 public abstract class BaseEntity : IEntity
 {
     /// The ID property will be shared across all child classes

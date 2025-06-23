@@ -27,7 +27,7 @@ namespace DKNet.Fw.Extensions.Encryption;
 /// </remarks>
 public static class Base65StringEncryption
 {
-    private static readonly char[] _allowedBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".ToCharArray();
+    private static readonly char[] _allowedBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVDKNetYZabcdefghijklmnopqrstuvDKNetyz0123456789+/=".ToCharArray();
 
     /// <summary>
     /// Determines whether the provided string is a valid Base64 encoded string.

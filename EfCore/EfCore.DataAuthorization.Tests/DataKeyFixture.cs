@@ -20,7 +20,7 @@ public sealed class DataKeyFixture : IDisposable
         Context.Database.EnsureCreated();
 
         Context.Set<Root>()
-            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("WX"));
+            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
 
         Context.SaveChangesAsync().GetAwaiter().GetResult();
     }

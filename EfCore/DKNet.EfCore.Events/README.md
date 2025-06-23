@@ -1,6 +1,6 @@
 # DKNet.EfCore.Events
 
-`DKNet.EfCore.Events` is part of the WX suite, designed to enhance Entity Framework Core (EF Core) applications by providing event-based functionality. This library enables developers to trigger events based on data changes (e.g., `onCreate`, `onUpdate`, or `onDelete`) and handle them using custom logic.
+`DKNet.EfCore.Events` is part of the DKNet suite, designed to enhance Entity Framework Core (EF Core) applications by providing event-based functionality. This library enables developers to trigger events based on data changes (e.g., `onCreate`, `onUpdate`, or `onDelete`) and handle them using custom logic.
 
 ## Overview
 
@@ -93,7 +93,7 @@ If you encounter issues:
 
 ## Contributions
 
-Contributions are welcome! Familiarize yourself with the WX design principles before making changes. Submit pull requests with detailed explanations of your changes.
+Contributions are welcome! Familiarize yourself with the DKNet design principles before making changes. Submit pull requests with detailed explanations of your changes.
 
 ## License
 

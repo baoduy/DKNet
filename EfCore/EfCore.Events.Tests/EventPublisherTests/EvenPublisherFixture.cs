@@ -20,7 +20,7 @@ public sealed class EvenPublisherFixture : IDisposable
 
 
         Context.Set<Root>()
-            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("WX"));
+            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
 
         //BeforeAddedEventTestHandler.ReturnFailureResult = false;
         Context.SaveChangesAsync().GetAwaiter().GetResult();
