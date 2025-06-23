@@ -67,6 +67,7 @@ public class AsyncEnumerableExtensionsTests
         CollectionAssert.AreEqual(items, result.ToArray());
     }
 
+#nullable enable
     [TestMethod]
     public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
     {
@@ -84,6 +85,7 @@ public class AsyncEnumerableExtensionsTests
         Assert.IsNull(result[1]);
         Assert.AreEqual("world", result[2]);
     }
+#nullable disable
 
     private static async IAsyncEnumerable<T> CreateAsyncEnumerable<T>(IEnumerable<T> items)
     {

@@ -84,4 +84,333 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     //     // Assert
     //     Assert.Equal(newVersion, entity.RowVersion);
     // }
+
+    [Fact]
+    public async Task FindAsyncWithExpressionReturnsCorrectEntity()
+    {
+        // Arrange
+        var entity = new User("findtest1") { FirstName = "FindMe", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(u => u.FirstName == "FindMe");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("FindMe", result.FirstName);
+        Assert.Equal("findtest1", result.UserName);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithExpressionReturnsNullWhenNotFound()
+    {
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(u => u.FirstName == "NonExistent");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithIdReturnsCorrectEntity()
+    {
+        // Arrange
+        var entity = new User("findtest2") { FirstName = "FindById", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(entity.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("FindById", result.FirstName);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithIdReturnsNullWhenNotFound()
+    {
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(Guid.NewGuid());
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetsReturnsNoTrackingQueryable()
+    {
+        // Act
+        var query = _fixture.ReadRepository.Gets();
+
+        // Assert
+        Assert.NotNull(query);
+        Assert.IsAssignableFrom<IQueryable<User>>(query);
+    }
+
+    [Fact]
+    public async Task AddRangeAddsMultipleEntities()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("bulk1") { FirstName = "Bulk1", LastName = "Test" },
+            new User("bulk2") { FirstName = "Bulk2", LastName = "Test" },
+            new User("bulk3") { FirstName = "Bulk3", LastName = "Test" }
+        };
+
+        // Act
+        _fixture.Repository.AddRange(entities);
+        await _fixture.Repository.SaveChangesAsync();
+
+        // Assert
+        var results = await _fixture.DbContext.Set<User>()
+            .Where(u => u.UserName.StartsWith("bulk"))
+            .ToListAsync();
+        Assert.Equal(3, results.Count);
+    }
+
+    [Fact]
+    public async Task BulkInsertAsyncAddsMultipleEntities()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("bulkins1") { FirstName = "BulkIns1", LastName = "Test" },
+            new User("bulkins2") { FirstName = "BulkIns2", LastName = "Test" }
+        };
+
+        // Act
+        var affectedRows = await _fixture.Repository.BulkInsertAsync(entities);
+
+        // Assert
+        Assert.Equal(2, affectedRows);
+        var results = await _fixture.DbContext.Set<User>()
+            .Where(u => u.UserName.StartsWith("bulkins"))
+            .ToListAsync();
+        Assert.Equal(2, results.Count);
+    }
+
+    [Fact]
+    public async Task BulkUpdateAsyncUpdatesMultipleEntities()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("bulkupd1") { FirstName = "BulkUpd1", LastName = "Original" },
+            new User("bulkupd2") { FirstName = "BulkUpd2", LastName = "Original" }
+        };
+        _fixture.DbContext.AddRange(entities);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var affectedRows = await _fixture.Repository.BulkUpdateAsync(
+            s => s.SetProperty(u => u.LastName, "Updated"));
+
+        // Assert
+        Assert.Equal(2, affectedRows);
+        var results = await _fixture.DbContext.Set<User>()
+            .Where(u => u.UserName.StartsWith("bulkupd"))
+            .ToListAsync();
+        Assert.All(results, u => Assert.Equal("Updated", u.LastName));
+    }
+
+    [Fact]
+    public void DeleteRemovesEntityFromContext()
+    {
+        // Arrange
+        var entity = new User("deltest") { FirstName = "ToDelete", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        _fixture.DbContext.SaveChanges();
+
+        // Act
+        _fixture.Repository.Delete(entity);
+
+        // Assert
+        var entry = _fixture.DbContext.Entry(entity);
+        Assert.Equal(EntityState.Deleted, entry.State);
+    }
+
+    [Fact]
+    public void DeleteRangeRemovesMultipleEntitiesFromContext()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
+            new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
+        };
+        _fixture.DbContext.AddRange(entities);
+        _fixture.DbContext.SaveChanges();
+
+        // Act
+        _fixture.Repository.DeleteRange(entities);
+
+        // Assert
+        foreach (var entity in entities)
+        {
+            var entry = _fixture.DbContext.Entry(entity);
+            Assert.Equal(EntityState.Deleted, entry.State);
+        }
+    }
+
+    [Fact]
+    public void UpdateMarksEntityAsModified()
+    {
+        // Arrange
+        var entity = new User("updtest") { FirstName = "Original", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        _fixture.DbContext.SaveChanges();
+
+        // Detach the entity to simulate it coming from another context
+        _fixture.DbContext.Entry(entity).State = EntityState.Detached;
+        entity.FirstName = "Modified";
+
+        // Act
+        _fixture.Repository.Update(entity);
+
+        // Assert
+        var entry = _fixture.DbContext.Entry(entity);
+        Assert.Equal(EntityState.Modified, entry.State);
+    }
+
+    [Fact]
+    public void UpdateRangeMarksMultipleEntitiesAsModified()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("updrange1") { FirstName = "UpdRange1", LastName = "Original" },
+            new User("updrange2") { FirstName = "UpdRange2", LastName = "Original" }
+        };
+        _fixture.DbContext.AddRange(entities);
+        _fixture.DbContext.SaveChanges();
+
+        // Detach entities to simulate them coming from another context
+        foreach (var entity in entities)
+        {
+            _fixture.DbContext.Entry(entity).State = EntityState.Detached;
+            entity.LastName = "Modified";
+        }
+
+        // Act
+        _fixture.Repository.UpdateRange(entities);
+
+        // Assert
+        foreach (var entity in entities)
+        {
+            var entry = _fixture.DbContext.Entry(entity);
+            Assert.Equal(EntityState.Modified, entry.State);
+        }
+    }
+
+    [Fact]
+    public async Task FindAsyncDetachesEntityFromContext()
+    {
+        // Arrange
+        var entity = new User("detachtest") { FirstName = "DetachTest", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(entity.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        var entry = _fixture.DbContext.Entry(result);
+        Assert.Equal(EntityState.Detached, entry.State);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithExpressionDetachesEntityFromContext()
+    {
+        // Arrange
+        var entity = new User("detachtest2") { FirstName = "DetachTest2", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _fixture.ReadRepository.FindAsync(u => u.FirstName == "DetachTest2");
+
+        // Assert
+        Assert.NotNull(result);
+        var entry = _fixture.DbContext.Entry(result);
+        Assert.Equal(EntityState.Detached, entry.State);
+    }
+
+    [Fact]
+    public void GetProjectionThrowsWhenMapperNotRegistered()
+    {
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepository.GetProjection<UserDto>());
+    }
+
+    [Fact]
+    public async Task FindAsyncWithCancellationTokenRespectsCancellation()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => _fixture.ReadRepository.FindAsync(u => u.FirstName == "Test", cts.Token));
+    }
+
+    [Fact]
+    public async Task BulkDeleteAsyncWithCancellationTokenRespectsCancellation()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => _fixture.Repository.BulkDeleteAsync(u => u.FirstName == "Test", cts.Token));
+    }
+
+    [Fact]
+    public async Task BulkInsertAsyncWithCancellationTokenRespectsCancellation()
+    {
+        // Arrange
+        var entities = new[] { new User("cancel") { FirstName = "Cancel", LastName = "Test" } };
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => _fixture.Repository.BulkInsertAsync(entities, cts.Token));
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncWithCancellationTokenRespectsCancellation()
+    {
+        // Arrange
+        var entity = new User("savecancel") { FirstName = "SaveCancel", LastName = "Test" };
+        _fixture.Repository.Add(entity);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => _fixture.Repository.SaveChangesAsync(cts.Token));
+    }
+
+    [Fact]
+    public async Task BeginTransactionAsyncWithCancellationTokenRespectsCancellation()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => _fixture.Repository.BeginTransactionAsync(cts.Token));
+    }
 }
+
+public class UserDto
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;

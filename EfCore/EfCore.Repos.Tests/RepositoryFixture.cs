@@ -11,6 +11,7 @@ public class RepositoryFixture : IAsyncLifetime
 {
     public MyDbContext DbContext { get; set; } = null!;
     public IRepository<User> Repository { get; set; } = null!;
+    public IReadRepository<User> ReadRepository { get; set; } = null!;;
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     private string? _dbConn;
@@ -56,7 +57,7 @@ public class RepositoryFixture : IAsyncLifetime
             .UseAutoConfigModel();
 
         DbContext = new MyDbContext(optionsBuilder.Options);
-        var readRepo = new ReadRepository<User>(DbContext);
+        ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
 
         await Task.Delay(TimeSpan.FromSeconds(30));
