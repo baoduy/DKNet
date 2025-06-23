@@ -11,7 +11,7 @@ jobs:
     uses: baoduy/ShareWorkflows/.github/workflows/dotnet-package-release.yml@main
     with:
       Project_Path: 'DKNet.FW.sln'
-      Enable_Release: ${{ github.ref == 'refs/heads/main' }}
+      Enable_Release: false
       Enable_Nuget_Release: ${{ github.ref  == 'refs/heads/main'}}
     secrets:
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
