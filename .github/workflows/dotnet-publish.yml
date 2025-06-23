@@ -13,6 +13,7 @@ jobs:
       Project_Path: 'DKNet.FW.sln'
       Enable_Release: false
       Enable_Nuget_Release: ${{ github.ref  == 'refs/heads/main'}}
+      Dotnet_Version: 9.x
     secrets:
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       NUGET_PACKAGE_TOKEN: ${{ secrets.NUGET_PACKAGE_TOKEN }}
