@@ -1,6 +1,9 @@
 #!/bin/bash
 
-NUGET_API_KEY="your-key" # Replace with your actual NuGet API key
+if [ -z "$NUGET_API_KEY" ]; then
+  echo "Error: NUGET_API_KEY environment variable is not set."
+  exit 1
+fi
 SOURCE="https://api.nuget.org/v3/index.json"
 SEARCH="HBDStack"
 
