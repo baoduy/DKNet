@@ -1,4 +1,4 @@
-name: Build, Test & Coverage
+name: Build, Test, Coverage & Check
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  test-and-coverage:
+  build-test-coverage:
     runs-on: ubuntu-latest
     
     strategy:
@@ -63,7 +63,7 @@ jobs:
           exit 1
         fi
       
-    - name: Upload Coverage Reports to Codecov
+    - name: Upload to CodeCov
       uses: codecov/codecov-action@v4
       with:
         files: ./coverage-report/Cobertura.xml
@@ -72,6 +72,21 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
         verbose: true
+        
+    - name: Check Coverage Threshold
+      run: |
+        # Parse coverage and check if it meets the 95% threshold
+        coverage_line=$(grep -o 'line-rate="[^"]*"' coverage-report/Cobertura.xml | head -1 | grep -o '[0-9.]*')
+        coverage_percent=$(echo "$coverage_line * 100" | bc -l | cut -d. -f1)
+        
+        echo "Overall Coverage: ${coverage_percent}%"
+        
+        if [ "$coverage_percent" -lt 95 ]; then
+          echo "❌ Coverage $coverage_percent% is below the required 95% threshold"
+          exit 1
+        else
+          echo "✅ Coverage $coverage_percent% meets the 95% threshold"
+        fi
         
     - name: Upload Coverage Report as Artifact
       uses: actions/upload-artifact@v4
