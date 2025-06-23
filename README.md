@@ -90,10 +90,10 @@ SlimMessageBus serves as the central nervous system, replacing MediatR with a mo
 
 ```csharp
 // Request/Response Pattern
-public record CreateProfileCommand(string Name, string Email) : IWitResponse<Result<ProfileDto>>;
+public record CreateProfileCommand(string Name, string Email) : Fluents.Requests.IWitResponse<Result<ProfileDto>>;
 
 // Query Pattern  
-public record GetProfileQuery(int Id) : IWitResponse<Result<ProfileDto>>;
+public record GetProfileQuery(int Id) : Fluents.Queries.IWitResponse<Result<ProfileDto>>;
 
 // Event Pattern
 public record ProfileCreatedEvent(int ProfileId, string Name) : IEventHandler;
@@ -122,11 +122,11 @@ services.AddSlimBusForEfCore(mbb =>
 
 **Commands** (Write Operations):
 ```csharp
-public record UpdateProfileCommand(int Id, string Name) : IWitResponse<Result>;
+public record UpdateProfileCommand(int Id, string Name) : Fluents.Requests.IWitResponse<Result>;
 
-public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result>
+public class UpdateProfileHandler : Fluents.Requests.IHandler<UpdateProfileCommand, Result>
 {
-    public async Task<Result> Handle(UpdateProfileCommand request)
+    public async Task<IResult<Result>> Handle(UpdateProfileCommand request)
     {
         // Business logic here
         return Result.Ok();
@@ -136,14 +136,14 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
 
 **Queries** (Read Operations):
 ```csharp
-public record GetProfilesQuery(int PageSize, int PageNumber) : IWitPageResponse<ProfileDto>;
+public record GetProfilesQuery(int PageSize, int PageNumber) : Fluents.Queries.IWitPageResponse<ProfileDto>;
 
-public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, PagedResult<ProfileDto>>
+public class GetProfilesHandler : Fluents.Queries.IPageHandler<GetProfilesQuery, ProfileDto>
 {
-    public async Task<PagedResult<ProfileDto>> Handle(GetProfilesQuery request)
+    public async Task<IPagedList<ProfileDto>> Handle(GetProfilesQuery request)
     {
         // Query logic here
-        return PagedResult.Success(profiles, totalCount);
+        return profiles.ToPagedList(request.PageNumber, request.PageSize);
     }
 }
 ```
