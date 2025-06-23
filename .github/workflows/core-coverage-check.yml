@@ -12,6 +12,11 @@ on:
       - 'Core/**'
       - 'EfCore/**'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   core-coverage-check:
     runs-on: ubuntu-latest
