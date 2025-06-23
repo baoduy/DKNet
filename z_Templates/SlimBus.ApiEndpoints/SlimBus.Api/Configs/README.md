@@ -4,22 +4,32 @@ This directory contains modular configuration components for a MediatR-based API
 
 ---
 
-## Table of Contents
+## Table of Contentss
 
-- [Overview](#overview)
-- [Configuration Modules](#configuration-modules)
-  - [AppConfig](#appconfigcs)
-  - [ServiceConfigs](#serviceconfigscs)
-  - [Authentication & Security](#authentication--security)
-  - [API Documentation](#api-documentation)
-  - [API Features](#api-features)
-  - [Error Handling](#error-handling)
-  - [Monitoring & Health](#monitoring--health)
-  - [Performance & Reliability](#performance--reliability)
-- [Implementation Examples](#implementation-examples)
-- [Best Practices](#best-practices)
-- [Directory Structure](#directory-structure)
-- [Middleware Order](#middleware-order)
+- [SlimBus.Api Configs](#slimbusapi-configs)
+  - [Table of Contentss](#table-of-contentss)
+  - [Overview](#overview)
+  - [Configuration Modules](#configuration-modules)
+    - [AppConfig.cs](#appconfigcs)
+    - [ServiceConfigs.cs](#serviceconfigscs)
+    - [Authentication \& Security](#authentication--security)
+      - [Antiforgery (`Antiforgery/`)](#antiforgery-antiforgery)
+      - [Auth (`Auth/`)](#auth-auth)
+    - [API Documentation](#api-documentation)
+      - [Swagger (`Swagger/`)](#swagger-swagger)
+    - [API Features](#api-features)
+      - [Versioning (`VersioningConfig.cs`)](#versioning-versioningconfigcs)
+      - [Endpoints (`Endpoints/`)](#endpoints-endpoints)
+      - [Idempotency (`Idempotency/`)](#idempotency-idempotency)
+    - [Error Handling (`GlobalExceptions/`)](#error-handling-globalexceptions)
+    - [Monitoring \& Health](#monitoring--health)
+      - [Healthz (`Healthz/`)](#healthz-healthz)
+    - [Performance \& Reliability](#performance--reliability)
+      - [CacheConfig.cs](#cacheconfigcs)
+  - [Implementation Examples](#implementation-examples)
+  - [Best Practices](#best-practices)
+  - [Directory Structure](#directory-structure)
+  - [Middleware Order](#middleware-order)
 
 ---
 
@@ -113,12 +123,14 @@ The configuration system is organized into focused modules, each handling a dist
 ## Implementation Examples
 
 **Antiforgery Setup**
+
 ```csharp
 services.AddAntiforgeryConfig(cookieName: "x-csrf-cookie", headerName: "x-csrf-header");
 app.UseAntiforgeryConfig();
 ```
 
 **Idempotency**
+
 ```csharp
 services.AddIdempotency(options => {
     options.IdempotencyHeaderKey = "X-Idempotency-Key";
@@ -128,6 +140,7 @@ app.MapPost("/api/resource", handler).AddIdempotencyFilter();
 ```
 
 **Global Exception Handling**
+
 ```csharp
 services.AddGlobalException();
 app.UseGlobalException();
@@ -140,6 +153,7 @@ services.AddProblemDetails(options => {
 ```
 
 **Endpoint Configuration**
+
 ```csharp
 public class UserEndpoints : IEndpointConfig
 {
@@ -154,6 +168,7 @@ public class UserEndpoints : IEndpointConfig
 ```
 
 **API Versioning**
+
 ```csharp
 services.AddAppVersioning();
 app.MapGroup($"/v{version}/users")

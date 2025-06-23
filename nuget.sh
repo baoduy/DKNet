@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 NUGET_API_KEY="your-key" # Replace with your actual NuGet API key
 SOURCE="https://api.nuget.org/v3/index.json"
