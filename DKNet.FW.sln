@@ -63,6 +63,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		Diagram.png = Diagram.png
 		.continuerules = .continuerules
 		NugetLogo.png = NugetLogo.png
+		nuget.sh = nuget.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.TestHelper", "EfCore\EFCore.TestHelper\EFCore.TestHelper.csproj", "{3CDC0098-982E-43FE-9786-05A8B2F687E3}"
