@@ -3,7 +3,7 @@
 ## Nuget Package
 
 ```cmd
-PM> Install-Package WX.EfCore.Extensions
+PM> Install-Package DKNet.EfCore.Extensions
 ```
 
 ## Overview

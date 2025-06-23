@@ -1,10 +1,10 @@
-# WX.EfCore.Events
+# DKNet.EfCore.Events
 
-`WX.EfCore.Events` is part of the WX suite, designed to enhance Entity Framework Core (EF Core) applications by providing event-based functionality. This library enables developers to trigger events based on data changes (e.g., `onCreate`, `onUpdate`, or `onDelete`) and handle them using custom logic.
+`DKNet.EfCore.Events` is part of the WX suite, designed to enhance Entity Framework Core (EF Core) applications by providing event-based functionality. This library enables developers to trigger events based on data changes (e.g., `onCreate`, `onUpdate`, or `onDelete`) and handle them using custom logic.
 
 ## Overview
 
-The goal of `WX.EfCore.Events` is to simplify the implementation of domain-driven design (DDD) principles in EF Core applications. It provides a centralized way to manage events and their handlers, allowing developers to implement business rules and validation logic without tightly coupling it with the data access layer.
+The goal of `DKNet.EfCore.Events` is to simplify the implementation of domain-driven design (DDD) principles in EF Core applications. It provides a centralized way to manage events and their handlers, allowing developers to implement business rules and validation logic without tightly coupling it with the data access layer.
 
 ## Key Concepts
 
@@ -36,10 +36,10 @@ The goal of `WX.EfCore.Events` is to simplify the implementation of domain-drive
 
 1. **Add the Package**
 
-   Include `WX.EfCore.Events` in your project by adding the following reference to your `.csproj` file:
+   Include `DKNet.EfCore.Events` in your project by adding the following reference to your `.csproj` file:
 
    ```xml
-   <PackageReference Include="WX.EfCore.Events" Version="x.y.z" />
+   <PackageReference Include="DKNet.EfCore.Events" Version="x.y.z" />
    ```
 
 2. **Implement IEventEntity**
@@ -97,7 +97,7 @@ Contributions are welcome! Familiarize yourself with the WX design principles be
 
 ## License
 
-`WX.EfCore.Events` is MIT licensed, allowing you to use, modify, and distribute it freely.
+`DKNet.EfCore.Events` is MIT licensed, allowing you to use, modify, and distribute it freely.
 
 ## References
 

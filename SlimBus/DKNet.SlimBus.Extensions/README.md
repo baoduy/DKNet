@@ -1,8 +1,8 @@
-# WX.SlimBus.Extensions
+# DKNet.SlimBus.Extensions
 
 ## Overview
 
-The **WX.SlimBus.Extensions** project is a .NET library designed to extend the functionality of SlimMessageBus with integrations for Entity Framework Core (EF Core). It simplifies message-based communication and automates database operations for applications using the SlimMessageBus framework.
+The **DKNet.SlimBus.Extensions** project is a .NET library designed to extend the functionality of SlimMessageBus with integrations for Entity Framework Core (EF Core). It simplifies message-based communication and automates database operations for applications using the SlimMessageBus framework.
 
 ---
 
@@ -40,7 +40,7 @@ The **WX.SlimBus.Extensions** project is a .NET library designed to extend the f
 
 1. **Add the NuGet Package**:
    ```bash
-   dotnet add package WX.SlimBus.Extensions
+   dotnet add package DKNet.SlimBus.Extensions
    ```
 
 2. **Configure Dependency Injection**:

@@ -1,7 +1,0 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-
-namespace WX.Framework.Extensions;
-
-[ExcludeFromCodeCoverage]
-public record PropertyAttributeInfo<TAttribute>(TAttribute Attribute,PropertyInfo PropertyInfo) where TAttribute : Attribute;

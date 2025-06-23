@@ -1,10 +1,10 @@
-# WX.EfCore.Hooks
+# DKNet.EfCore.Hooks
 
 A collection of hooks for Entity Framework Core to extend and customize database operations with ease.
 
 ## Overview
 
-WX.EfCore.Hooks provides a flexible way to add custom functionality before or after specific database operations in your Entity Framework Core applications. These hooks allow you to intercept key events during the data lifecycle, such as saving changes, querying, or updating entities, enabling you to execute custom logic seamlessly.
+DKNet.EfCore.Hooks provides a flexible way to add custom functionality before or after specific database operations in your Entity Framework Core applications. These hooks allow you to intercept key events during the data lifecycle, such as saving changes, querying, or updating entities, enabling you to execute custom logic seamlessly.
 
 ## Features
 
@@ -20,10 +20,10 @@ WX.EfCore.Hooks provides a flexible way to add custom functionality before or af
 
 ### Installation
 
-To integrate WX.EfCore.Hooks into your project, install the NuGet package:
+To integrate DKNet.EfCore.Hooks into your project, install the NuGet package:
 
 ```bash
-dotnet add package WX.EfCore.Hooks --version 1.0.0-alpha
+dotnet add package DKNet.EfCore.Hooks --version 1.0.0-alpha
 ```
 
 Replace `--version 1.0.0-alpha` with the appropriate version number when available.

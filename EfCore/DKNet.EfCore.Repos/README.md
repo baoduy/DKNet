@@ -1,10 +1,10 @@
-# WX.EfCore.Repos
+# DKNet.EfCore.Repos
 
 A collection of repository patterns built on Entity Framework Core (EF Core) designed to simplify data access and business logic separation.
 
 ## Overview
 
-WX.EfCore.Repos provides a set of reusable repository classes that encapsulate common data access operations. This allows developers to focus on business logic while maintaining consistent and efficient database interactions.
+DKNet.EfCore.Repos provides a set of reusable repository classes that encapsulate common data access operations. This allows developers to focus on business logic while maintaining consistent and efficient database interactions.
 
 ## Features
 
@@ -20,10 +20,10 @@ WX.EfCore.Repos provides a set of reusable repository classes that encapsulate c
 
 ### Installation
 
-To integrate WX.EfCore.Repos into your project, install the NuGet package:
+To integrate DKNet.EfCore.Repos into your project, install the NuGet package:
 
 ```bash
-dotnet add package WX.EfCore.Repos --version 1.0.0-alpha
+dotnet add package DKNet.EfCore.Repos --version 1.0.0-alpha
 ```
 
 Replace `--version 1.0.0-alpha` with the appropriate version number when available.

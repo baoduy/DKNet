@@ -1,8 +1,0 @@
-﻿using System;
-
-namespace WX.EfCore.Abstractions.Attributes;
-
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class IgnoreFromUpdateAttribute : Attribute
-{
-}

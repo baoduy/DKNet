@@ -2,7 +2,6 @@ using IMessageBus = SlimMessageBus.IMessageBus;
 
 namespace SlimBus.Extensions.Tests;
 
-
 public class EfAutoSaveTests(Fixture fixture) : IClassFixture<Fixture>
 {
     [Fact]

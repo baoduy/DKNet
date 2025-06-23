@@ -17,7 +17,7 @@ variables:
   - name: NugetPackages
     value: $(Pipeline.Workspace)/.nuget/packages
   - name: BuildParameters.RestoreBuildProjects
-    value: "**/WX.*.csproj"
+    value: "**/DKNet.*.csproj"
   - name: BuildParameters.TestProjects
     value: "**/*.Tests.csproj"
   - name: BuildConfiguration

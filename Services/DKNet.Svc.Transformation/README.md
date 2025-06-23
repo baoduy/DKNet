@@ -1,12 +1,12 @@
-# WX.Services.Transformation
+# DKNet.Services.Transformation
 ![.NET Core](https://img.shields.io/badge/.NET-6.0-blue)
-![NuGet Version](https://img.shields.io/nuget/v/WX.Services.Transformation)
+![NuGet Version](https://img.shields.io/nuget/v/DKNet.Services.Transformation)
 
 A .NET transformation engine for complex data processing scenarios.
 
 ## Project Overview
 
-The `WX.Services.Transformation` project provides a robust framework for:
+The `DKNet.Services.Transformation` project provides a robust framework for:
 - Data format conversion (currency, date-time, boolean)
 - Token extraction and resolution patterns
 - Dynamic template processing
@@ -21,7 +21,7 @@ Key features:
 ## Directory Structure
 
 ```
-Services/WX.Services.Transformation/
+Services/DKNet.Services.Transformation/
 ├── Converters/
 │   ├── ValueFormatter.cs          # Core conversion logic
 │   └── CurrencyConverter.cs       # Specific currency handling
@@ -97,7 +97,7 @@ var validationResult = validator.Validate(
 
 ### Installation
 ```bash
-dotnet add package WX.Services.Transformation
+dotnet add package DKNet.Services.Transformation
 ```
 
 Test categories:

@@ -1,4 +1,4 @@
-# WX.EfCore.Repos.Abstractions
+# DKNet.EfCore.Repos.Abstractions
 
 A library providing abstraction definitions for repository patterns tailored for Entity Framework Core (EF Core). This package includes interfaces and base classes that define the contract for repository implementations, enabling consistent and reusable data access logic across applications.
 
@@ -16,10 +16,10 @@ This project defines the core abstractions needed to implement repository patter
 
 ## Installation
 
-To use WX.EfCore.Repos.Abstractions in your project, install the NuGet package:
+To use DKNet.EfCore.Repos.Abstractions in your project, install the NuGet package:
 
 ```bash
-dotnet add package WX.EfCore.Repos.Abstractions --version 1.0.0-alpha
+dotnet add package DKNet.EfCore.Repos.Abstractions --version 1.0.0-alpha
 ```
 
 Replace `--version 1.0.0-alpha` with the appropriate version number when available.

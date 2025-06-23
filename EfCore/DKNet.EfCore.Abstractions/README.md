@@ -1,6 +1,6 @@
-# WX.EfCore.Abstraction README
+# DKNet.EfCore.Abstraction README
 
-Welcome to **WX.EfCore.Abstraction**! This project provides a convenient abstraction layer for EF Core, designed to streamline common tasks and enhance maintainability and testability in your applications.
+Welcome to **DKNet.EfCore.Abstraction**! This project provides a convenient abstraction layer for EF Core, designed to streamline common tasks and enhance maintainability and testability in your applications.
 
 ## Project Overview
 
@@ -21,7 +21,7 @@ Our goal is to make working with EF Core more efficient and less error-prone. Th
 
 - **.NET Version**: 3.0 or higher
 - **EF Core Version**: 7.x or later
-- **NuGet Package**: Install [WX.EfCore.Abstraction](https://www.nuget.org/packages/WX.EfCore.Abstraction)
+- **NuGet Package**: Install [DKNet.EfCore.Abstraction](https://www.nuget.org/packages/DKNet.EfCore.Abstraction)
 
 ## Installation
 
@@ -34,7 +34,7 @@ Our goal is to make working with EF Core more efficient and less error-prone. Th
 Integrate the abstraction layer into your application by using the provided repository classes. Here's an example snippet:
 
 ```csharp
-using WX.EfCore.Abstraction;
+using DKNet.EfCore.Abstraction;
 
 public class MyEntity : EntityBase<MyEntity>
 {
@@ -55,7 +55,7 @@ public class MyRepository<T> : Repository<T, MyContext>
 ## Example
 
 ```csharp
-using WX.EfCore.Abstraction;
+using DKNet.EfCore.Abstraction;
 
 // Initialize the context with your EF Core configuration
 var dbContext = new MyDbContext();

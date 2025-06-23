@@ -1,4 +1,4 @@
-# WX.WfCore.DataAuthorization
+# DKNet.WfCore.DataAuthorization
 
 ## Introduction
 WX WfCore Data Authorization is a module designed to manage data access control within workflow applications, ensuring that users only interact with authorized data.
@@ -19,11 +19,11 @@ WX WfCore Data Authorization is a module designed to manage data access control 
 ### Installation
 Install the package using NuGet Package Manager:
 ```bash
-Install-Package WX.WfCore.DataAuthorization -Version x.x.x
+Install-Package DKNet.WfCore.DataAuthorization -Version x.x.x
 ```
 Or via dotnet CLI:
 ```bash
-dotnet add package WX.WfCore.DataAuthorization --version x.x.x
+dotnet add package DKNet.WfCore.DataAuthorization --version x.x.x
 ```
 
 ---
@@ -88,4 +88,4 @@ public class CustomDataPolicy : IDataAuthorizationPolicy
 Common issues include missing dependencies, misconfigured policies, and authorization failures. Visit our [FAQ](https://faq.wxwfcore.com) for solutions.
 
 ## Conclusion
-We welcome your feedback and contributions to improve WX.WfCore.DataAuthorization. Join our community on GitHub or Discord for support and updates.
+We welcome your feedback and contributions to improve DKNet.WfCore.DataAuthorization. Join our community on GitHub or Discord for support and updates.

@@ -45,9 +45,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AwsS3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AzureStorage", "Services\DKNet.Svc.BlobStorage.AzureStorage\DKNet.Svc.BlobStorage.AzureStorage.csproj", "{75D71601-1ED7-4067-828B-67D21A324A68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.Transform.Tests", "Services\WX.Services.Transformation\Svc.Transform.Tests\Svc.Transform.Tests.csproj", "{30258DF6-BC04-44E3-BB06-1BD011012917}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.Transform.Tests", "Services\Svc.Transform.Tests\Svc.Transform.Tests.csproj", "{30258DF6-BC04-44E3-BB06-1BD011012917}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Transformation", "Services\WX.Services.Transformation\DKNet.Svc.Transformation\DKNet.Svc.Transformation.csproj", "{4FC95CCA-A8EC-44DB-8349-36F221F7250E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Transformation", "Services\DKNet.Svc.Transformation\DKNet.Svc.Transformation.csproj", "{4FC95CCA-A8EC-44DB-8349-36F221F7250E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203BB-C314-4216-8C48-BC98BFEE7F89}"
 	ProjectSection(SolutionItems) = preProject

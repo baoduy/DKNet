@@ -1,8 +1,8 @@
-# WX.Framework.Extensions
+# DKNet.Framework.Extensions
 
 ## Overview
 
-**WX.Framework.Extensions** is a library designed to extend and enhance functionality within the WX Framework. It provides additional tools, utilities, and helpers to simplify development and improve productivity. By integrating this extension library, developers can leverage pre-built features and abstractions, reducing boilerplate code and accelerating project timelines.
+**DKNet.Framework.Extensions** is a library designed to extend and enhance functionality within the WX Framework. It provides additional tools, utilities, and helpers to simplify development and improve productivity. By integrating this extension library, developers can leverage pre-built features and abstractions, reducing boilerplate code and accelerating project timelines.
 
 ## Features
 
@@ -64,20 +64,20 @@
 
 - **Framework**: WX Framework vX.X or higher
 - **Language**: .NET 9.0 or higher
-- **Dependencies**: Refer to `WX.Framework.Extensions.csproj` for detailed dependency information.
+- **Dependencies**: Refer to `DKNet.Framework.Extensions.csproj` for detailed dependency information.
 
 ## Installation
 
-To install the WX.Framework.Extensions package, use the NuGet Package Manager:
+To install the DKNet.Framework.Extensions package, use the NuGet Package Manager:
 
 ```bash
-Install-Package WX.Framework.Extensions
+Install-Package DKNet.Framework.Extensions
 ```
 
 Alternatively, add the package to your project file:
 
 ```xml
-<PackageReference Include="WX.Framework.Extensions" Version="X.X.X" />
+<PackageReference Include="DKNet.Framework.Extensions" Version="X.X.X" />
 ```
 
 Then, restore your dependencies:
@@ -88,7 +88,7 @@ dotnet restore
 
 ## Issues and Support
 
-For issues, please submit a bug report or feature request via the [GitHub Issues](https://github.com/YourRepo/WX.Framework.Extensions/issues) page. Make sure to include:
+For issues, please submit a bug report or feature request via the [GitHub Issues](https://github.com/YourRepo/DKNet.Framework.Extensions/issues) page. Make sure to include:
 
 - A clear description of the problem.
 - Steps to reproduce (if applicable).
@@ -100,4 +100,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Acknowledgments
 
-Special thanks to all contributors and maintainers of WX.Framework. This extension library builds upon their solid foundation.
+Special thanks to all contributors and maintainers of DKNet.Framework. This extension library builds upon their solid foundation.
