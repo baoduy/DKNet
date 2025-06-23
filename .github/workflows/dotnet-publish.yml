@@ -3,7 +3,7 @@ name: .NET
 on:
   push:
     branches:
-      - '**'
+      - 'main'
 
 jobs:
   ## Only build nuget package and release to Nuget.org when running on main branch
