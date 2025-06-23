@@ -8,7 +8,7 @@ on:
 jobs:
   ## Only build nuget package and release to Nuget.org when running on main branch
   dotnet_pack_release_job:
-    uses: baoduy/ShareWorkflows/.github/workflows/dotnet-package-release.yml@main
+    uses: baoduy/ShareWorkflows/.github/workflows/dotnet-nuget-release.yml@main
     with:
       Project_Path: 'DKNet.FW.sln'
       Enable_Release: false
