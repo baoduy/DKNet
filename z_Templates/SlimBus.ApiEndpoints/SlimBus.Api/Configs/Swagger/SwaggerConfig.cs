@@ -80,8 +80,8 @@ internal static class SwaggerConfig
             c.WithTitle($"{SharedConsts.ApiName} API")
                 .WithTheme(ScalarTheme.Default)
                 //.WithOpenApiRoutePattern("{documentName}.json")
-                .WithPreferredScheme("Bearer")
-                .WithHttpBearerAuthentication(b => b.Token = "bearer token")
+                .AddPreferredSecuritySchemes("Bearer")
+                .AddHttpAuthentication("Bearer",b => b.Token = "bearer token")
         );
 
         Console.WriteLine("Swagger enabled.");

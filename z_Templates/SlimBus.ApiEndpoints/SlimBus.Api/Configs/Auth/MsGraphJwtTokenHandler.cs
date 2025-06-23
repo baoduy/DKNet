@@ -14,7 +14,7 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
     /// </summary>
     /// <param name="token">The JWT token to validate.</param>
     /// <exception cref="SecurityTokenValidationException">Thrown if the token validation against Microsoft Graph fails.</exception>
-    private async Task ValidateTokenWithMsGraphEndPoint(string token)
+    private static async Task ValidateTokenWithMsGraphEndPoint(string token)
     {
         // Create an HTTP client for sending requests.
         using var httpClient = new HttpClient();
@@ -65,7 +65,7 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
             // Return the successful result if Microsoft Graph validation passes.
             return rs;
         }
-        catch (Exception ex)
+        catch (SecurityTokenValidationException ex)
         {
             // Return a failed result if there was an exception during Microsoft Graph validation.
             return new TokenValidationResult

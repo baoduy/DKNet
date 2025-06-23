@@ -29,7 +29,7 @@ public static class DistributedApplicationExtensions
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(WaitForResourcesAsync));
 
         targetStates ??=
-            [KnownResourceStates.Running, KnownResourceStates.Hidden, .. KnownResourceStates.TerminalStates];
+            [KnownResourceStates.Running, .. KnownResourceStates.TerminalStates];
         var applicationModel = app.Services.GetRequiredService<DistributedApplicationModel>();
         var resourceNotificationService = app.Services.GetRequiredService<ResourceNotificationService>();
 
