@@ -20,7 +20,16 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ matrix.dotnet-version }}
+        dotnet-version: |
+          8.0.x
+          9.0.x
+        include-prerelease: false
+        
+    - name: Verify .NET Installation
+      run: |
+        dotnet --version
+        dotnet --list-sdks
+        dotnet --list-runtimes
         
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
@@ -37,6 +46,18 @@ jobs:
     - name: Generate Coverage Report
       run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
       
+    - name: Verify Coverage Report
+      run: |
+        if [ -f "./coverage-report/Cobertura.xml" ]; then
+          echo "✅ Coverage report generated successfully"
+          ls -la coverage-report/
+        else
+          echo "❌ Coverage report not found"
+          echo "Looking for coverage files:"
+          find . -name "*.cobertura.xml" -o -name "coverage.*.xml" 2>/dev/null || echo "No coverage files found"
+          exit 1
+        fi
+      
     - name: Upload Coverage Reports to Codecov
       uses: codecov/codecov-action@v4
       with:
@@ -44,6 +65,8 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        verbose: true
         
     - name: Upload Coverage Report as Artifact
       uses: actions/upload-artifact@v4
