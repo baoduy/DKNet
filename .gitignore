@@ -12,4 +12,10 @@ TestResults/
 **/TestResults/
 coverage-report/
 core-coverage-report/
+new-core-coverage-report/
+final-core-coverage-report/
 *.cobertura.xml
+*.trx
+*.coverage
+*.coveragexml
+*.testlog
