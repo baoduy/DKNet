@@ -4,6 +4,10 @@ using DKNet.EfCore.Repos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using EfCore.TestDataLayer;
+using Aspire.Hosting;
+using Aspire.Hosting.SqlServer;
+using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Testing;
 
 namespace EfCore.Repos.Tests;
 
@@ -11,7 +15,7 @@ public class RepositoryFixture : IAsyncLifetime
 {
     public MyDbContext DbContext { get; set; } = null!;
     public IRepository<User> Repository { get; set; } = null!;
-    public IReadRepository<User> ReadRepository { get; set; } = null!;;
+    public IReadRepository<User> ReadRepository { get; set; } = null!;
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     private string? _dbConn;
@@ -60,7 +64,7 @@ public class RepositoryFixture : IAsyncLifetime
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
 
-        await Task.Delay(TimeSpan.FromSeconds(30));
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         await DbContext.Database.EnsureCreatedAsync();
     }

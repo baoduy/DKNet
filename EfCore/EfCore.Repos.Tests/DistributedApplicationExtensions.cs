@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 
 namespace EfCore.Repos.Tests;
 
