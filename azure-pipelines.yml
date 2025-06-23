@@ -1,0 +1,146 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+      - dev
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  - group: Artifacts
+  - name: NugetPackages
+    value: $(Pipeline.Workspace)/.nuget/packages
+  - name: BuildParameters.RestoreBuildProjects
+    value: "**/WX.*.csproj"
+  - name: BuildParameters.TestProjects
+    value: "**/*.Tests.csproj"
+  - name: BuildConfiguration
+    value: Release
+  - name: ArtifactFeed
+    value: thewixo
+  - name: isMain
+    value: $[eq(variables['Build.SourceBranchName'], 'main')]
+  - name: MajorVersion
+    ${{ if eq(variables['Build.SourceBranchName'], 'net_8') }}:
+      value: 8
+    ${{ else }}:
+      value: 9
+
+name: $(date:yyyyMMdd)$(rev:.r)
+
+jobs:
+  - job: build_publish
+    displayName: Build & Publish
+    #    cancelTimeoutInMinutes: 1
+    #    services:
+    #      sqlserver:
+    #        image: mcr.microsoft.com/mssql/server:2019-latest
+    #        options: --env ACCEPT_EULA=Y --env SA_PASSWORD=a1ckZmGjwV8VqNdBUexV
+    #        ports:
+    #          - 1433:1433
+    steps:
+      - checkout: self
+        fetchDepth: 0
+        persistCredentials: true
+
+      - task: gitversion/setup@3
+        condition: and(succeeded(),eq(variables['isMain'], 'true'))
+        inputs:
+          versionSpec: "5.x"
+          preferLatestVersion: true
+
+      - task: gitversion/execute@3
+        displayName: Git execute
+        condition: and(succeeded(),eq(variables['isMain'], 'true'))
+
+      - bash: |
+          echo "##vso[task.setvariable variable=Package.Version;]$(MajorVersion).$(GitVersion.Minor).$(GitVersion.Patch).$(GitVersion.BuildMetaData)"
+          echo "New Package Version: $(Package.Version)"
+        condition: and(succeeded(),eq(variables['isMain'], 'true'))
+        displayName: "Setup Package.Version"
+
+      #      - task: printAllVariables@1
+      #        displayName: Print variables
+
+      - task: UseDotNet@2
+        displayName: Install dotnet
+        inputs:
+          packageType: "sdk"
+          version: "$(MajorVersion).x"
+          includePreviewVersions: false
+
+      # - task: Bash@3
+      #   displayName: Install aspire
+      #   inputs:
+      #     targetType: "inline"
+      #     script: "dotnet workload install aspire --version $(MajorVersion).0.100"
+
+      - script: |
+          # Path to your XML file
+          xmlFile='nuget.config'
+
+          # Escape forward slashes and ampersands in the password
+          esc_password=$(printf '%s\n' "$PAT" | sed -e 's/[\/&]/\\&/g')
+
+          # Use sed to replace the ClearTextPassword value
+          sed -i "s|\(<add key=\"ClearTextPassword\" value=\"\)[^\"]*\(\"\)|\1$esc_password\2|" "$xmlFile"
+        displayName: "Replace ClearTextPassword in nuget.config"
+        workingDirectory: $(Build.SourcesDirectory)
+        env:
+          PAT: $(PAT)
+
+      - task: DotNetCoreCLI@2
+        displayName: Restore
+        condition: and(succeeded(),eq(variables['isMain'], 'false'))
+        inputs:
+          command: "restore"
+          projects: "$(BuildParameters.RestoreBuildProjects)"
+          restoreArguments: "--interactive"
+          feedsToUse: "config"
+          nugetConfigPath: "nuget.config"
+
+      - task: DotNetCoreCLI@2
+        displayName: Build
+        condition: and(succeeded(),eq(variables['isMain'], 'false'))
+        inputs:
+          projects: $(BuildParameters.RestoreBuildProjects)
+          arguments: -c $(BuildConfiguration) --no-restore
+
+      - task: DotNetCoreCLI@2
+        displayName: Test
+        condition: and(succeeded(),eq(variables['isMain'], 'false'))
+        continueOnError: true
+        inputs:
+          command: "test"
+          projects: "$(BuildParameters.TestProjects)"
+          arguments: '--configuration $(BuildConfiguration) --settings coverage.runsettings --collect "XPlat Code Coverage"'
+
+      - task: PublishCodeCoverageResults@2
+        displayName: Publish Code Coverage
+        condition: and(succeeded(),eq(variables['isMain'], 'false'))
+        inputs:
+          summaryFileLocation: "$(Agent.TempDirectory)/**/coverage.cobertura.xml"
+
+      - task: DotNetCoreCLI@2
+        displayName: Pack nuget
+        condition: and(succeeded(),eq(variables['isMain'], 'true'))
+        inputs:
+          command: "pack"
+          packagesToPack: "**/*.csproj;!**/*Tests.csproj;!**/z_Templates"
+          versioningScheme: "byEnvVar"
+          versionEnvVar: "Package.Version"
+
+      #      - task: PublishBuildArtifacts@1
+      #        displayName: "Publish Artifact: drop"
+
+      - task: CmdLine@2
+        displayName: Push nuget
+        condition: and(succeeded(),eq(variables['isMain'], 'true'))
+        inputs:
+          script: "dotnet nuget push $(Build.ArtifactStagingDirectory)/*$(Package.Version).nupkg --source $(ArtifactFeed) --api-key AZ --skip-duplicate"

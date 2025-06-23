@@ -1,0 +1,204 @@
+using DKNet.Svc.BlobStorage.AwsS3;
+using System.Text;
+using Testcontainers.Minio;
+
+namespace Svc.BlobStorage.Tests;
+
+[TestFixture]
+public class S3BlobServiceTest
+{
+    private IBlobService _service;
+
+    [OneTimeSetUp]
+    public void Setup()
+    {
+        var minioContainer = new MinioBuilder()
+            //.WithExposedPort(80)
+            .Build();
+        minioContainer.StartAsync().GetAwaiter().GetResult();
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+                (StringComparer.OrdinalIgnoreCase)
+                {
+                    { "BlobService:S3:ConnectionString", "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com" },
+                    { "BlobService:S3:AccessKey", "c5240e9de9fb8f2b24d67315eed90737" },
+                    { "BlobService:S3:Secret", "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b" },
+                    { "BlobService:S3:BucketName", "dev" },
+                    { "BlobService:S3:DisablePayloadSigning", "true" },
+
+                    // { "BlobService:S3:ConnectionString", minioContainer.GetConnectionString() },
+                    // { "BlobService:S3:AccessKey",minioContainer.GetAccessKey() },
+                    // { "BlobService:S3:Secret", minioContainer.GetSecretKey() },
+                    // { "BlobService:S3:BucketName", "test" },
+                    // { "BlobService:S3:ForcePathStyle", "true" },
+                })
+            .Build();
+
+        var service =
+            new ServiceCollection()
+                .AddLogging()
+                .AddS3BlobService(config)
+                .BuildServiceProvider();
+
+        _service = service.GetRequiredService<IBlobService>();
+    }
+
+    [Test]
+    public async Task SavesFileAndList()
+    {
+        var fileName = $"new-file-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        {
+            Overwrite = false,
+            Type = BlobTypes.File
+        };
+        var name = await _service.SaveAsync(blob);
+        name.ShouldBe(fileName);
+
+        var items = await _service.ListItemsAsync(new BlobRequest("")).ToListAsync();
+        items.Count.ShouldBeGreaterThanOrEqualTo(1);
+    }
+
+    [Test]
+    public async Task SaveAsyncSavesFileAndOverwrites()
+    {
+        var fileName = $"test-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        {
+            Overwrite = false,
+            Type = BlobTypes.File
+        };
+        var name = await _service.SaveAsync(blob);
+        name.ShouldBe(fileName);
+
+        var newBlob = blob with { Overwrite = true, Data = new BinaryData("hello"u8.ToArray()) };
+        await _service.SaveAsync(newBlob);
+        var getResult = await _service.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        getResult.ShouldNotBeNull();
+        var content = Encoding.UTF8.GetString(getResult.Data.ToArray());
+        content.ShouldBe("hello");
+    }
+
+    [Test]
+    public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
+    {
+        var fileName = $"exists-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("data"u8.ToArray()))
+        {
+            Overwrite = false,
+            Type = BlobTypes.File
+        };
+
+        await _service.SaveAsync(blob);
+        var action = () => _service.SaveAsync(blob);
+        await action.ShouldThrowAsync<InvalidOperationException>();
+    }
+
+    [Test]
+    public async Task GetAsyncReturnsBlobDataResult()
+    {
+        var fileName = $"get-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("abc"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+        var result = await _service.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        result.ShouldNotBeNull();
+        result.Name.ShouldBe(fileName);
+        Encoding.UTF8.GetString(result.Data.ToArray()).ShouldBe("abc");
+        result.Type.ShouldBe(BlobTypes.File);
+        result.Details.ShouldNotBeNull();
+        result.Details.ContentLength.ShouldBe(3);
+    }
+
+    [Test]
+    public async Task GetAsyncReturnsNullIfNotFound()
+    {
+        var result =
+            await _service.GetAsync(new BlobRequest($"notfound-{Guid.NewGuid()}.txt") { Type = BlobTypes.File });
+        result.ShouldBeNull();
+    }
+
+    [Test]
+    public async Task ListItemsAsyncListsFiles()
+    {
+        var dir = $"dir-{Guid.NewGuid()}";
+        var fileName = $"{dir}/file.txt";
+        var blob = new BlobData(fileName, new BinaryData("data"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+        var items = new List<BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+        {
+            items.Add(item);
+        }
+
+        items.ShouldContain(i => i.Name.Contains(fileName));
+    }
+
+    [Test]
+    public async Task DeleteAsyncDeletesFile()
+    {
+        var fileName = $"delete-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("bye"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+        var deleted = await _service.DeleteAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        deleted.ShouldBeTrue();
+        var result = await _service.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        result.ShouldBeNull();
+    }
+
+    [Test]
+    public async Task DeleteAsyncDeletesDirectory()
+    {
+        var dir = $"delete-dir-{Guid.NewGuid()}";
+        var fileName = $"{dir}/file.txt";
+        var blob = new BlobData(fileName, new BinaryData("bye"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+        var deleted = await _service.DeleteAsync(new BlobRequest(dir) { Type = BlobTypes.Directory });
+        deleted.ShouldBeTrue();
+        var items = new List<BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+        {
+            items.Add(item);
+        }
+
+        items.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task CheckExistsAsyncReturnsTrueIfExists()
+    {
+        var fileName = $"exists-check-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("exists"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+
+        var exists = await _service.CheckExistsAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        exists.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task CheckExistsAsyncReturnsFalseIfNotExists()
+    {
+        var fileName = $"not-exists-{Guid.NewGuid()}.txt";
+        var exists = await _service.CheckExistsAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
+        exists.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task GetPublicAccessUrlReturnsUrl()
+    {
+        var fileName = $"public-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("public"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File };
+        await _service.SaveAsync(blob);
+        var url = await _service.GetPublicAccessUrl(new BlobRequest(fileName) { Type = BlobTypes.File },
+            TimeSpan.FromMinutes(5));
+        url.ShouldNotBeNull();
+        url.ShouldBeOfType<Uri>();
+        url.ToString().ShouldContain(fileName);
+    }
+}

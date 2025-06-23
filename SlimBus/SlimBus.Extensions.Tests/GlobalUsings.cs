@@ -1,0 +1,10 @@
+global using System.ComponentModel.DataAnnotations;
+global using System.ComponentModel.DataAnnotations.Schema;
+global using MapsterMapper;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.DependencyInjection;
+global using SlimMessageBus;
+global using SlimBus.Extensions.Tests.Data;
+global using Shouldly;
+global using SlimBus.Extensions.Tests.Fixtures;
+global using Xunit;

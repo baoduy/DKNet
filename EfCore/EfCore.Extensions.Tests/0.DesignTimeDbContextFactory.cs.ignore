@@ -1,0 +1,24 @@
+﻿using EfCore.TestDataLayer;
+using EfCore.TestDataLayer.Mappers;
+using WX.EfCore.Extensions.Configurations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace EfCore.Extensions.Tests;
+
+internal class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<MyDbContext>
+{
+    #region Public Methods
+
+    public MyDbContext CreateDbContext(string[] args)
+    {
+        return new MyDbContext(new DbContextOptionsBuilder()
+            .UseSqlServer(WithSqlDbTests.ConnectionString)
+            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
+                .WithDefaultMappersType(typeof(AuditEntityMapper<>), typeof(BaseEntityMapper<>),
+                    typeof(DefaultEntityTypeConfiguration<>)))
+            .Options);
+    }
+
+    #endregion Public Methods
+}

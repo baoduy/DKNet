@@ -1,0 +1,87 @@
+﻿using System.Threading.Tasks;
+using EfCore.TestDataLayer;
+using EFCore.TestHelper;
+using FluentAssertions;
+using WX.EfCore.Abstractions.QueryBuilders;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace EfCore.Extensions.Tests;
+
+[TestClass]
+public class OrderBuilderTests
+{
+    #region Methods
+
+    [TestMethod]
+    public async Task TestOrderBuilderUserByProps()
+    {
+        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
+
+        var orderBuilder = OrderBuilder.CreateBuilder<User>()
+            .OrderBy(u => u.CreatedBy)
+            .ThenBy(u => u.FirstName);
+
+        var list = await orderBuilder.Build(UnitTestSetup.Db.Set<User>()).ToListAsync().ConfigureAwait(false);
+
+        list.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task TestOrderBuilderUserByPropsDesc()
+    {
+        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
+
+        var orderBuilder = OrderBuilder.CreateBuilder<User>()
+            .OrderByDescending(u => u.CreatedBy)
+            .ThenByDescending(u => u.FirstName);
+
+        var list = await orderBuilder.Build(UnitTestSetup.Db.Set<User>()).ToListAsync().ConfigureAwait(false);
+
+        list.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task TestOrderBuilderUserByPropsString()
+    {
+        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
+
+        var orderBuilder = OrderBuilder.CreateBuilder<User>()
+            .OrderBy(nameof(User.CreatedBy))
+            .ThenBy(nameof(User.FirstName));
+
+        var list = await orderBuilder.Build(UnitTestSetup.Db.Set<User>()).ToListAsync().ConfigureAwait(false);
+
+        list.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task TestOrderBuilderUserByPropsStringDesc()
+    {
+        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
+
+        var orderBuilder = OrderBuilder.CreateBuilder<User>()
+            .OrderByDescending(nameof(User.CreatedBy))
+            .ThenByDescending(nameof(User.FirstName));
+
+        var list = await orderBuilder.Build(UnitTestSetup.Db.Set<User>()).ToListAsync().ConfigureAwait(false);
+
+        list.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task TestOrderBuilderUserOrderWith()
+    {
+        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
+
+        var orderBuilder = OrderBuilder.CreateBuilder<User>()
+            .OrderByDescending(u => u.LastName)
+            .ThenByDescending(nameof(User.FirstName));
+
+        var list = await UnitTestSetup.Db.Set<User>().OrderWith(orderBuilder).ToListAsync().ConfigureAwait(false);
+
+        list.Should().NotBeEmpty();
+    }
+
+    #endregion Methods
+}

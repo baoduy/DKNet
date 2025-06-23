@@ -1,0 +1,17 @@
+{
+  "cSpell.words": [
+    "Antiforgery",
+    "Backplane",
+    "Cros",
+    "Customizer",
+    "Decryptor",
+    "Encryptor",
+    "Fluents",
+    "Healthz",
+    "Interception",
+    "Mediat"
+  ],
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "file": "copilot-instructions/class-format-instruction.md" }
+  ]
+}

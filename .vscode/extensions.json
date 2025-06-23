@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "streetsidesoftware.code-spell-checker",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "continue.continue",
+        "ms-dotnettools.vscodeintellicode-csharp",
+        "chadalen.vscode-jetbrains-icon-theme",
+        "yzhang.markdown-all-in-one",
+        "shd101wyy.markdown-preview-enhanced",
+        "rooveterinaryinc.roo-cline"
+    ]
+}

@@ -1,0 +1,8 @@
+**/.idea
+**/obj
+**/bin
+**/.DS_Store
+*.zip
+
+.fake
+*.bkp

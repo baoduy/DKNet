@@ -1,0 +1,11 @@
+global using System;
+global using System.Linq;
+global using System.Threading.Tasks;
+global using EfCore.DDD4Tests;
+global using EfCore.DDD4Tests.Domains;
+global using EfCore.DDD4Tests.Events;
+global using Microsoft.EntityFrameworkCore;
+global using DKNet.EfCore.Hooks;
+global using Microsoft.Extensions.DependencyInjection;
+global using Shouldly;
+global using Xunit;

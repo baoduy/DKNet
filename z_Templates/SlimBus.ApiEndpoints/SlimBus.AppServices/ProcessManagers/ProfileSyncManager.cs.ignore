@@ -1,0 +1,12 @@
+﻿using SlimBus.AppServices.ProcessManagers.States;
+
+namespace SlimBus.AppServices.ProcessManagers;
+
+internal sealed class ProfileSyncManager(IPersistentStateManager<ProfileSyncManager> stateManager) : IProfileSyncManager
+{
+    public async Task RunAsync()
+    {
+        await using var state = await stateManager.UseState<ProfileState>();
+        state.Value.LastProcessed = DateTime.Now;
+    }
+}

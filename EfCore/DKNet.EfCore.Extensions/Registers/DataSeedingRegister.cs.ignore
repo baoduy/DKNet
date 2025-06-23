@@ -1,0 +1,56 @@
+﻿using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using WX.EfCore.Extensions.Configurations;
+using WX.Framework.Extensions.TypeExtractors;
+
+namespace WX.EfCore.Extensions.Registers;
+
+/// <summary>
+/// Represents the data seeding register.
+/// NOTE: This data seeding is not working fine with .NET 9 and We have migrated to the new UseDataSeeding extension method.
+/// </summary>
+internal static class DataSeedingRegister
+{
+    private static readonly MethodInfo Method = typeof(DataSeedingRegister)
+        .GetMethod(nameof(RegisterData), BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    /// <summary>
+    /// Registers data seeding configurations from the provided registration infos.
+    /// </summary>
+    /// <param name="modelBuilder">The model builder.</param>
+    /// <param name="registrations">The registration infos.</param>
+    internal static void RegisterDataSeedingFrom(this ModelBuilder modelBuilder,
+        IEnumerable<AutoEntityRegistrationInfo> registrations)
+    {
+        foreach (var type in registrations.SelectMany(GetDataSeedingTypes))
+            modelBuilder.HasData(type);
+    }
+
+    private static Type[] GetDataSeedingTypes(this AutoEntityRegistrationInfo @this) =>
+        GetDataSeedingTypes(@this.EntityAssemblies);
+
+    private static Type[] GetDataSeedingTypes(this ICollection<Assembly> assemblies) =>
+        [.. assemblies.ToArray().Extract().Classes().NotAbstract().NotGeneric().NotInterface().IsInstanceOf(typeof(IDataSeedingConfiguration<>))];
+
+    private static void HasData(this ModelBuilder modelBuilder, Type mapperType)
+    {
+        ArgumentNullException.ThrowIfNull(mapperType);
+
+        var eType = EfCoreExtensions.GetEntityType(mapperType);
+
+        if (Method == null || eType == null)
+            throw new InvalidOperationException($"The {nameof(RegisterData)} or EntityType are not found");
+
+        var md = Method.MakeGenericMethod(eType, mapperType);
+        md.Invoke(null, [modelBuilder]);
+    }
+
+    private static ModelBuilder RegisterData<TEntity, TMapping>(this ModelBuilder builder)
+        where TMapping : IDataSeedingConfiguration<TEntity>
+        where TEntity : class
+    {
+        var dataSeeding = Activator.CreateInstance<TMapping>();
+        builder.Entity<TEntity>().HasData([.. dataSeeding.Data]);
+        return builder;
+    }
+}

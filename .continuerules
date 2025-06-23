@@ -1,0 +1,99 @@
+# .NET 9 Project Coding Standards and Best Practices
+
+## Naming Conventions
+- **PascalCase** for:
+  - Class names
+  - Method names
+- **camelCase** for:
+  - Local variables
+  - Method parameters
+- Prefix interfaces with an **'I'** (e.g., `IExampleInterface`).
+
+## Asynchronous Programming
+- Utilize **asynchronous programming patterns** with `async` and `await` for I/O-bound or long-running operations.
+
+## Exception Handling
+- Implement robust **exception handling**:
+  - Avoid empty `catch` blocks.
+  - Catch specific exception types instead of general ones.
+
+## LINQ Usage
+- Leverage **Language Integrated Query (LINQ)** methods for:
+  - Collection and array manipulations
+  - Enhancing code readability and maintainability
+
+## SOLID Principles
+- Adhere to the **SOLID** principles:
+  - **Single Responsibility Principle**: A class should have only one reason to change.
+  - **Open/Closed Principle**: Software entities should be open for extension but closed for modification.
+  - **Liskov Substitution Principle**: Derived classes must be substitutable for their base classes.
+  - **Interface Segregation Principle**: Clients should not be forced to depend on interfaces they do not use.
+  - **Dependency Inversion Principle**: Depend on abstractions, not on concretions.
+
+## XML Documentation
+- Provide **XML documentation comments** for all public members to:
+  - Facilitate better code understanding
+  - Enhance maintainability
+
+## Using Statements
+- Place `using` statements at the **top of the file**.
+- Remove any **unnecessary namespaces** to maintain code cleanliness.
+
+## Unit Testing
+- For every new feature or module:
+  - Write corresponding **unit tests** using frameworks like MSTest, NUnit, or xUnit.
+  - Ensure code reliability and facilitate future refactoring.
+
+## Dependency Injection
+- Implement **dependency injection** to:
+  - Manage class dependencies
+  - Enhance code modularity and testability
+
+## Thread Safety
+- In multi-threaded applications:
+  - Ensure that shared resources are accessed in a **thread-safe** manner.
+  - Prevent race conditions and ensure data integrity.
+
+## Domain-Driven Design (DDD) with MediatR
+- **Aggregate Roots**:
+  - Ensure that all business logic and invariants are enforced within aggregate roots.
+  - Aggregate roots should be the only entry point for modifying related entities.
+
+- **Domain Events**:
+  - Use **domain events** to capture significant occurrences within the domain.
+  - Implement domain events by creating event classes that implement `INotification` from MediatR.
+  - Publish domain events through MediatR to notify other parts of the system about state changes.
+
+- **Command and Query Separation**:
+  - Apply the **Command Query Responsibility Segregation (CQRS)** pattern:
+    - **Commands**: Encapsulate operations that change state.
+    - **Queries**: Encapsulate operations that retrieve data without changing state.
+  - Use MediatR to handle commands and queries, promoting a clean separation of concerns.
+
+- **Validation**:
+  - Perform **request validation** using MediatR pipelines or decorators.
+  - Implement **business rule validation** within the domain model to ensure consistency and integrity.
+
+- **Repositories**:
+  - Use repositories to abstract data access, ensuring that the domain model remains persistence-ignorant.
+  - Repositories should return aggregate roots and handle the persistence of aggregates.
+
+- **Modularity**:
+  - Organize code into modules that align with bounded contexts.
+  - Each module should encapsulate related aggregates, entities, value objects, and domain services.
+
+- **Eventual Consistency**:
+  - Where immediate consistency is not feasible, design for eventual consistency using domain events and asynchronous processing.
+
+- **MediatR Integration**:
+  - Use MediatR to decouple the application layers:
+    - **Application Layer**: Handles commands and queries.
+    - **Domain Layer**: Contains the business logic and domain entities.
+  - Avoid direct dependencies between the application and domain layers; instead, communicate through MediatR.
+
+- **Best Practices**:
+  - Keep the domain model free from external dependencies to maintain purity.
+  - Use MediatR's pipeline behaviors for cross-cutting concerns like logging, validation, and transaction management.
+  - Ensure that each command and query has a single responsibility and is handled by a dedicated handler.
+
+By following these guidelines, your .NET 9 projects will be well-structured, maintainable, and aligned with modern best practices, effectively integrating DDD principles with MediatR.

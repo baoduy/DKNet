@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "TEMP.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "docs/v1",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:5000"
+    }
+  }
+}

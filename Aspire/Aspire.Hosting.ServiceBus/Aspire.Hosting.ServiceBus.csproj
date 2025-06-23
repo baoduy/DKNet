@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    
+    <PropertyGroup>
+        <LangVersion>default</LangVersion>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsAspireSharedProject>true</IsAspireSharedProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Aspire.Hosting" Version="9.3.2" />
+      <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.3.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
+      <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>

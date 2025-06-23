@@ -1,0 +1,24 @@
+[*.cs]
+
+# CA2007: Do not directly await a Task - https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2007
+#dotnet_diagnostic.CA2007.severity = warning;
+
+# Package version 2.9.0 and later
+dotnet_code_quality.CA2007.exclude_async_void_methods = true;
+# Package version 2.6.3 and earlier
+dotnet_code_quality.CA2007.skip_async_void_methods = true;
+
+# CA1304: Specify CultureInfo
+dotnet_diagnostic.CA1304.severity = silent
+
+# CA1303: Do not pass literals as localized parameters
+dotnet_diagnostic.CA1303.severity = silent
+dotnet_diagnostic.CA2014.severity=error
+dotnet_diagnostic.CA2016.severity=error
+
+dotnet_diagnostic.CA2000.severity=warning
+dotnet_diagnostic.CA2009.severity=warning
+dotnet_diagnostic.CA2011.severity=warning
+dotnet_diagnostic.CA2012.severity=warning
+dotnet_diagnostic.CA2013.severity=error
+dotnet_diagnostic.CS1591.severity=silent

@@ -1,0 +1,209 @@
+
+using WX.Services.BlobStorage.Abstractions;
+using WX.Services.BlobStorage.Local;
+
+namespace Services.BlobStorage.Tests;
+
+public class BlobServiceTests
+{
+    private IBlobService _service;
+
+    [OneTimeSetUp]
+    public void Setup()
+    {
+        //Delete folder
+        if (Directory.Exists("BlobStorage"))
+            Directory.Delete("BlobStorage", true);
+
+        var config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        var service =
+            new ServiceCollection()
+                .AddLogging()
+                .AddLocalDirectoryBlobService(config)
+                .BuildServiceProvider();
+
+        _service = service.GetRequiredService<IBlobService>();
+    }
+
+    [Test]
+    [Order(0)]
+    public async Task SaveNewFile()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var info = new BlobData(nameof(BlobService), "log.txt", file);
+
+        var rs = await _service.SaveAsync(info);
+
+        rs.ShouldBe($"{nameof(BlobService)}/log.txt");
+        (await _service.GetAsync(rs))?.ToString().ShouldBe(file.ToString());
+    }
+
+    [Test]
+    [Order(0)]
+    public async Task SaveNewFileWithoutOwnerId()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var rs = () => new BlobData(null, "log.txt", file);
+
+        rs.ShouldThrow<ArgumentNullException>();
+    }
+
+    [Test]
+    [Order(0)]
+    public async Task SaveNewFileWithoutFileName()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var rs = () => new BlobData(nameof(BlobService), null, file);
+
+        rs.ShouldThrow<ArgumentNullException>();
+    }
+
+    [Test]
+    [Order(0)]
+    public async Task SaveNewFileWithoutData()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var rs = () => new BlobData(nameof(BlobService), "log.txt", null);
+
+        rs.ShouldThrow<ArgumentNullException>();
+    }
+
+    [Test]
+    [Order(1)]
+    public async Task SaveExistedFile()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var info = new BlobData(nameof(BlobService), "log.txt", file);
+
+        var action = () => _service.SaveAsync(info);
+
+        await action.ShouldThrowAsync<Exception>();
+    }
+
+
+    [Test]
+    [Order(1)]
+    public async Task SaveExistedWithOverWriteFile()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var info = new BlobData(nameof(BlobService), "log.txt", file) { Overwrite = true };
+
+        var action = () => _service.SaveAsync(info);
+
+        await action.ShouldNotThrowAsync();
+    }
+
+    [Test]
+    [Order(2)]
+    public async Task GetFile()
+    {
+        var info = new BlobArgs(nameof(BlobService), "log.txt");
+        (await _service.GetAsync(info)).ShouldNotBeNull();
+    }
+
+    [Test]
+    [Order(2)]
+    public async Task CheckFileExisted()
+    {
+        (await _service.CheckExistsAsync($"{nameof(BlobService)}/log.txt")).ShouldBeTrue();
+    }
+
+    [Test]
+    [Order(2)]
+    public async Task ListFile()
+    {
+        (await _service.ListItemsAsync("/").ToListAsync()).Count.ShouldBeGreaterThanOrEqualTo(1);
+
+        var info = new BlobArgs(nameof(BlobService), "log.txt");
+        (await _service.GetItemAsync(info)).ShouldNotBeNull();
+    }
+
+    [Test]
+    [Order(2)]
+    public async Task GetNotExistedFile()
+    {
+        var info = new BlobArgs(nameof(BlobService), "hello.txt");
+        (await _service.GetAsync(info)).ShouldBeNull();
+    }
+
+    [Test]
+    [Order(3)]
+    public async Task DeleteFile()
+    {
+        var info = new BlobArgs(nameof(BlobService), "log.txt");
+
+        (await _service.DeleteAsync(info)).ShouldBeTrue();
+        (await _service.GetAsync(info)).ShouldBeNull();
+    }
+
+    [Test]
+    [Order(3)]
+    public async Task DeleteFolder()
+    {
+        var fileContent = BinaryData.FromBytes(await File.ReadAllBytesAsync($"TestData/log.txt"));
+
+        var file = new BlobData(nameof(BlobService), "/Delete/log1.txt", fileContent)
+        {
+            Overwrite = true,
+        };
+        var path = await _service.SaveAsync(file);
+        path.ShouldNotBeNull();
+
+        file = new BlobData(nameof(BlobService), "/Delete/log2.txt", fileContent)
+        {
+            Overwrite = true,
+        };
+        path = await _service.SaveAsync(file);
+        path.ShouldNotBeNull();
+
+        file = new BlobData(nameof(BlobService), "/Delete/a/log3.txt", fileContent)
+        {
+            Overwrite = true,
+        };
+        path = await _service.SaveAsync(file);
+        path.ShouldNotBeNull();
+
+        var result = await _service.DeleteFolderAsync($"/{nameof(BlobService)}/Delete");
+        result.ShouldBeTrue();
+    }
+
+    [Test]
+    [Order(4)]
+    public async Task FileNameInvalid()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var info = new BlobData(nameof(BlobService), "log-1234567890-1234567890-1234567890-1234567890.txt", file)
+            { Overwrite = true };
+
+        var action = () => _service.SaveAsync(info);
+
+        await action.ShouldThrowAsync<FileLoadException>();
+    }
+
+    [Test]
+    [Order(4)]
+    public async Task FileExtensionInvalid()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        var info = new BlobData(nameof(BlobService), "log.csv", file) { Overwrite = true };
+
+        var action = () => _service.SaveAsync(info);
+
+        await action.ShouldThrowAsync<FileLoadException>();
+    }
+
+    [Test]
+    [Order(4)]
+    public async Task FileDataInvalid()
+    {
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/big_log.txt"));
+        var info = new BlobData(nameof(BlobService), "log-123.txt", file) { Overwrite = true };
+
+        var action = () => _service.SaveAsync(info);
+
+        await action.ShouldThrowAsync<FileLoadException>();
+    }
+}

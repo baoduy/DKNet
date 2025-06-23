@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Authors>WIXO</Authors>
+        <Company>WIXO</Company>
+        <Copyright>@2025 WIXO</Copyright>
+        <PackageLicense>https://opensource.org/licenses/MIT</PackageLicense>
+        <PackageProjectUrl>https://thewixo@dev.azure.com/thewixo/WIXO/_git/WIXO.FW</PackageProjectUrl>
+        <RepositoryUrl>https://thewixo@dev.azure.com/thewixo/WIXO/_git/WIXO.FW</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>Extensions</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <LangVersion>default</LangVersion>
+        <NeutralLanguage>en</NeutralLanguage>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageIcon>NugetLogo.jpeg</PackageIcon>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>true</ImplicitUsings>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="..\..\NugetLogo.jpeg" Pack="true" PackagePath="\" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="EfCore.Extensions.Tests" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+      <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>

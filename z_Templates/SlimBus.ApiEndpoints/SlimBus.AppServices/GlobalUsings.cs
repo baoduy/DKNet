@@ -1,0 +1,12 @@
+global using DKNet.SlimBus.Extensions;
+global using System.ComponentModel.DataAnnotations;
+global using FluentResults;
+global using SlimBus.AppServices.Profiles.V1.Events;
+global using SlimBus.AppServices.Profiles.V1.Queries;
+global using SlimBus.Domains.Features.Profiles.Repos;
+global using SlimBus.Domains.Services;
+global using Microsoft.Extensions.DependencyInjection;
+global using SlimBus.Domains.Share;
+global using FluentValidation;
+global using MapsterMapper;
+global using SlimBus.AppServices.Share;
