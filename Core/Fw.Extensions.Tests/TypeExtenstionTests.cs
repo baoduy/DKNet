@@ -234,4 +234,86 @@ public class TypeExtensionsTests
         // Assert
         Assert.IsTrue(result);
     }
+
+    [TestMethod]
+    public void IsImplementOfGenericMethodReturnsCorrectResult()
+    {
+        // Arrange
+        var type = typeof(List<int>);
+
+        // Act
+        var result = type.IsImplementOf<IEnumerable<int>>();
+
+        // Assert
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public void IsImplementOfNonGenericBaseClassReturnsTrue()
+    {
+        // Arrange
+        var type = typeof(ArgumentException);
+        var baseType = typeof(Exception);
+
+        // Act
+        var result = type.IsImplementOf(baseType);
+
+        // Assert
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public void IsImplementOfGenericBaseClassReturnsTrue()
+    {
+        // Arrange
+        var type = typeof(List<int>);
+        var baseType = typeof(ICollection<>);
+
+        // Act
+        var result = type.IsImplementOf(baseType);
+
+        // Assert
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public void IsNumericTypeAllNumericTypesReturnTrue()
+    {
+        // Arrange & Act & Assert
+        Assert.IsTrue(typeof(byte).IsNumericType());
+        Assert.IsTrue(typeof(sbyte).IsNumericType());
+        Assert.IsTrue(typeof(ushort).IsNumericType());
+        Assert.IsTrue(typeof(short).IsNumericType());
+        Assert.IsTrue(typeof(uint).IsNumericType());
+        Assert.IsTrue(typeof(int).IsNumericType());
+        Assert.IsTrue(typeof(ulong).IsNumericType());
+        Assert.IsTrue(typeof(long).IsNumericType());
+        Assert.IsTrue(typeof(float).IsNumericType());
+        Assert.IsTrue(typeof(double).IsNumericType());
+        Assert.IsTrue(typeof(decimal).IsNumericType());
+    }
+
+    [TestMethod]
+    public void IsNumericTypeAllNonNumericTypesReturnFalse()
+    {
+        // Arrange & Act & Assert
+        Assert.IsFalse(typeof(string).IsNumericType());
+        Assert.IsFalse(typeof(bool).IsNumericType());
+        Assert.IsFalse(typeof(char).IsNumericType());
+        Assert.IsFalse(typeof(DateTime).IsNumericType());
+        Assert.IsFalse(typeof(object).IsNumericType());
+        Assert.IsFalse(typeof(DBNull).IsNumericType());
+    }
+
+    [TestMethod]
+    public void IsNotNumericTypeReturnsOppositeOfIsNumericType()
+    {
+        // Arrange
+        object numericObj = 42;
+        object nonNumericObj = "test";
+
+        // Act & Assert
+        Assert.IsFalse(numericObj.IsNotNumericType());
+        Assert.IsTrue(nonNumericObj.IsNotNumericType());
+    }
 }

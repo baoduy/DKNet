@@ -6,3 +6,10 @@
 
 .fake
 *.bkp
+
+# Test Results and Coverage Reports
+TestResults/
+**/TestResults/
+coverage-report/
+core-coverage-report/
+*.cobertura.xml

@@ -188,4 +188,15 @@ public class TestTypeExtractorExtensions
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
+
+    [TestMethod]
+    public void TestExtractFromCollectionOfAssemblies()
+    {
+        // Arrange
+        var assemblies = new List<Assembly> { typeof(ITypeExtractor).Assembly, typeof(TestEnumObject).Assembly };
+        var types = assemblies.Extract().IsInstanceOf<ITypeExtractor>().ToList();
+
+        // Act & Assert
+        types.Count.ShouldBeGreaterThanOrEqualTo(1);
+    }
 }

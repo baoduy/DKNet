@@ -299,4 +299,119 @@ public class PropertyExtensionsTests
 
         item.GetPropertyValue(propertyName).ShouldBeNull();
     }
+
+    [TestMethod]
+    public void GetPropertyValueShouldReturnNullForNonExistentNestedProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+
+        // Act
+        var value = item.GetPropertyValue("NonExistent.Property");
+
+        // Assert
+        Assert.IsNull(value);
+    }
+
+    [TestMethod]
+    public void GetPropertyValueShouldHandleNullIntermediateNestedProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        item.SetPropertyValue("Name", null); // Set Name to null
+
+        // Act
+        var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
+
+        // Assert
+        Assert.IsNull(value);
+    }
+
+    [TestMethod]
+    public void GetPropertyWithTypeObjectShouldReturnProperty()
+    {
+        // Arrange
+        var type = typeof(TestItem3);
+
+        // Act
+        var property = type.GetProperty("Name");
+
+        // Assert
+        Assert.IsNotNull(property);
+        Assert.AreEqual("Name", property.Name);
+    }
+
+    [TestMethod]
+    public void SetPropertyValueWithPropertyInfoShouldThrowForNullObject()
+    {
+        // Arrange
+        var property = typeof(TestItem3).GetProperty("Name");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).SetPropertyValue(property, value));
+    }
+
+    [TestMethod]
+    public void SetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.SetPropertyValue((PropertyInfo)null, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullObject()
+    {
+        // Arrange
+        var property = typeof(TestItem3).GetProperty("Name");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).TrySetPropertyValue(property, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue((PropertyInfo)null, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithStringNameShouldThrowForNullObject()
+    {
+        // Arrange
+        var propertyName = "Name";
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).TrySetPropertyValue(propertyName, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithStringNameShouldThrowForNullPropertyName()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue((string)null, value));
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue("", value));
+    }
 }

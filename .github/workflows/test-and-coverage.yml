@@ -1,0 +1,91 @@
+name: Build, Test & Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        dotnet-version: ['9.0.x']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+        
+    - name: Restore dependencies
+      run: dotnet restore DKNet.FW.sln
+      
+    - name: Build
+      run: dotnet build DKNet.FW.sln --no-restore --configuration Release
+      
+    - name: Test
+      run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage" --settings coverage.runsettings --verbosity minimal
+      
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+      
+    - name: Generate Coverage Report
+      run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
+      
+    - name: Upload Coverage Reports to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage-report/Cobertura.xml
+        flags: unittests
+        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
+        
+    - name: Upload Coverage Report as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage-report/
+        
+    - name: Comment PR with Coverage
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          try {
+            const summaryPath = path.join('coverage-report', 'Summary.json');
+            if (fs.existsSync(summaryPath)) {
+              const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+              const coverage = summary.summary;
+              
+              const comment = `## 📊 Code Coverage Report
+              
+              | Metric | Coverage |
+              |--------|----------|
+              | **Line Coverage** | ${coverage.linecoverage}% |
+              | **Branch Coverage** | ${coverage.branchcoverage}% |
+              | **Method Coverage** | ${coverage.methodcoverage}% |
+              
+              **Lines:** ${coverage.coveredlines}/${coverage.lines} covered
+              **Branches:** ${coverage.coveredbranches}/${coverage.branches} covered
+              
+              📈 [View Full Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+          } catch (error) {
+            console.log('Could not generate coverage comment:', error.message);
+          }
