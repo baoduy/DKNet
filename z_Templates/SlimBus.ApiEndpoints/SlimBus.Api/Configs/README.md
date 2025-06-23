@@ -4,10 +4,10 @@ This directory contains modular configuration components for a MediatR-based API
 
 ---
 
-## Table of Contentss
+## Table of Contents
 
 - [SlimBus.Api Configs](#slimbusapi-configs)
-  - [Table of Contentss](#table-of-contentss)
+  - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Configuration Modules](#configuration-modules)
     - [AppConfig.cs](#appconfigcs)
