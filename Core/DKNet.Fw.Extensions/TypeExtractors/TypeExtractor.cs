@@ -1,6 +1,4 @@
 ﻿using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -26,7 +24,6 @@ namespace DKNet.Fw.Extensions.TypeExtractors;
 /// - Use the appropriate filtering methods based on the criteria you want to use.
 /// - Ensure that the assemblies are loaded before attempting to extract types from them.
 /// </remarks>
-[SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]
 internal class TypeExtractor : ITypeExtractor
 {
     private readonly Assembly[] _assemblies;
@@ -42,7 +39,7 @@ internal class TypeExtractor : ITypeExtractor
         if (assemblies == null || assemblies.Length == 0)
             throw new ArgumentException("Assemblies collection cannot be null or empty.", nameof(assemblies));
 
-        _assemblies = assemblies;
+        _assemblies = [.. assemblies.Distinct()];
     }
 
     /// <inheritdoc />
@@ -57,15 +54,13 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     public ITypeExtractor Generic() => FilterBy(t => t.IsGenericType);
 
-    private static readonly ConcurrentDictionary<Type, bool> AttributeCache = new();
-
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute
-        => FilterBy(t => AttributeCache.GetOrAdd(t, t => t.GetCustomAttributes<TAttribute>(false).Any()));
+        => FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute(Type attributeType)
-        => FilterBy(t => AttributeCache.GetOrAdd(t, t => t.GetCustomAttributes(attributeType, false).Length != 0));
+        => FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
 
     /// <inheritdoc />
     public ITypeExtractor Interfaces() => FilterBy(t => t.IsInterface);
@@ -131,7 +126,7 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    private ITypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
+    private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
     {
         if (predicate != null)
             _predicates.Add(predicate);

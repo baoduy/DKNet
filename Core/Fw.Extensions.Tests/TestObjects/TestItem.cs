@@ -58,6 +58,14 @@ public class TestItem3 : ITem, IDisposable
 
     public TestEnumObject Type { get; set; } = TestEnumObject.Enum1;
 
+    public int IntValue { get; set; }
+    
+    public bool BoolValue { get; set; }
+    
+    public decimal DecimalValue { get; set; }
+    
+    public int? NullableIntValue { get; set; }
+
     protected object ProtectedObj { get; set; } = new();
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0051:Remove unused private members", Justification = "<Pending>")]

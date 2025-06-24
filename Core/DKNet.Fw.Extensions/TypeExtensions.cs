@@ -66,20 +66,18 @@ public static class TypeExtensions
     /// <see cref="ulong"/>, <see cref="short"/>, <see cref="int"/>, <see cref="long"/>, <see cref="decimal"/>,
     /// <see cref="double"/>, and <see cref="float"/>.
     /// </remarks>
-    public static bool IsNumericType(this Type? @this) =>
-        @this != null && Type.GetTypeCode(@this) switch
+    public static bool IsNumericType(this Type @this)
+    {
+        ArgumentNullException.ThrowIfNull(@this);
+        
+        var t = @this.IsNullableType() ? Nullable.GetUnderlyingType(@this)! : @this;
+        return Type.GetTypeCode(@t) switch
         {
             TypeCode.Byte or TypeCode.SByte or TypeCode.UInt16 or TypeCode.UInt32 or TypeCode.UInt64 or TypeCode.Int16
                 or TypeCode.Int32 or TypeCode.Int64 or TypeCode.Decimal or TypeCode.Double or TypeCode.Single => true,
-            TypeCode.Empty => false,
-            TypeCode.Object => false,
-            TypeCode.DBNull => false,
-            TypeCode.Boolean => false,
-            TypeCode.Char => false,
-            TypeCode.DateTime => false,
-            TypeCode.String => false,
             _ => false,
         };
+    }
 
     /// <summary>
     /// Determines whether the specified object is of a numeric type.
