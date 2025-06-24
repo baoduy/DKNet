@@ -1,4 +1,5 @@
-﻿using Fw.Extensions.Tests.TestObjects;
+﻿using System.ComponentModel;
+using Fw.Extensions.Tests.TestObjects;
 using DKNet.Fw.Extensions;
 
 namespace Fw.Extensions.Tests;
@@ -246,14 +247,14 @@ public class TestTypeExtractorExtensions
         types.All(t => !t.IsGenericType).ShouldBeTrue();
     }
 
-    // [TestMethod]
-    // public void TestExtractWithoutAttribute()
-    // {
-    //     // Arrange
-    //     var types = typeof(TestItem).Assembly.Extract().HasAttribute<ObsoleteAttribute>().ToList();
-    //     // Act & Assert - Should have no items (since we don't have obsolete attributes)
-    //     types.Count.ShouldBe(0);
-    // }
+    [TestMethod]
+    public void TestExtractWithoutAttribute()
+    {
+        // Arrange
+        var types = typeof(TestItem).Assembly.Extract().HasAttribute<BrowsableAttribute>().ToList();
+        // Act & Assert - Should have no items (since we don't have obsolete attributes)
+        types.Count.ShouldBe(0);
+    }
 
     [TestMethod]
     public void TestChainedFiltering()

@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -55,15 +54,13 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     public ITypeExtractor Generic() => FilterBy(t => t.IsGenericType);
 
-    private static readonly ConcurrentDictionary<Type, bool> AttributeCache = new();
-
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute
-        => FilterBy(t => AttributeCache.GetOrAdd(t, type => type.GetCustomAttributes<TAttribute>(false).Any()));
+        => FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute(Type attributeType)
-        => FilterBy(t => AttributeCache.GetOrAdd(t, type => type.GetCustomAttributes(attributeType, false).Length != 0));
+        => FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
 
     /// <inheritdoc />
     public ITypeExtractor Interfaces() => FilterBy(t => t.IsInterface);
