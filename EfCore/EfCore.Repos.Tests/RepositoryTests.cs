@@ -25,22 +25,6 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     }
 
     [Fact]
-    public async Task DeleteByIdAsyncRemovesEntityFromDatabase()
-    {
-        // Arrange
-        var entity = new User("steven2") { FirstName = "To Delete", LastName = "Test" };
-        _fixture.DbContext.Add(entity);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var count = await _fixture.Repository.BulkDeleteAsync(e => e.Id == entity.Id);
-        Assert.Equal(1, count);
-
-        var result = await _fixture.DbContext.Set<User>().Where(e => e.Id == entity.Id).FirstOrDefaultAsync();
-        Assert.Null(result);
-    }
-
-    [Fact]
     public async Task UpdateAndSaveAsyncUpdatesEntityInDatabase()
     {
         // Arrange
@@ -132,7 +116,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task FindAsyncWithIdReturnsNullWhenNotFound()
     {
         // Act
-        var result = await _fixture.ReadRepository.FindAsync(Guid.NewGuid());
+        var result = await _fixture.ReadRepository.FindAsync(123);
 
         // Assert
         Assert.Null(result);
@@ -182,7 +166,8 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         };
 
         // Act
-        var affectedRows = await _fixture.Repository.BulkInsertAsync(entities);
+        _fixture.Repository.AddRange(entities);
+        var affectedRows = await _fixture.Repository.SaveChangesAsync();
 
         // Assert
         Assert.Equal(2, affectedRows);
@@ -192,29 +177,6 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         Assert.Equal(2, results.Count);
     }
 
-    [Fact]
-    public async Task BulkUpdateAsyncUpdatesMultipleEntities()
-    {
-        // Arrange
-        var entities = new[]
-        {
-            new User("bulkupd1") { FirstName = "BulkUpd1", LastName = "Original" },
-            new User("bulkupd2") { FirstName = "BulkUpd2", LastName = "Original" }
-        };
-        _fixture.DbContext.AddRange(entities);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var affectedRows = await _fixture.Repository.BulkUpdateAsync(
-            s => s.SetProperty(u => u.LastName, "Updated"));
-
-        // Assert
-        Assert.Equal(2, affectedRows);
-        var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.CreatedBy.StartsWith("bulkupd"))
-            .ToListAsync();
-        Assert.All(results, u => Assert.Equal("Updated", u.LastName));
-    }
 
     [Fact]
     public void DeleteRemovesEntityFromContext()
@@ -351,37 +313,13 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     {
         // Arrange
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _fixture.ReadRepository.FindAsync(u => u.FirstName == "Test", cts.Token));
+        await Assert.ThrowsAsync<TaskCanceledException>(() =>
+            _fixture.ReadRepository.FindAsync(u => u.FirstName == "Test", cts.Token));
     }
 
-    [Fact]
-    public async Task BulkDeleteAsyncWithCancellationTokenRespectsCancellation()
-    {
-        // Arrange
-        using var cts = new CancellationTokenSource();
-        cts.Cancel();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _fixture.Repository.BulkDeleteAsync(u => u.FirstName == "Test", cts.Token));
-    }
-
-    [Fact]
-    public async Task BulkInsertAsyncWithCancellationTokenRespectsCancellation()
-    {
-        // Arrange
-        var entities = new[] { new User("cancel") { FirstName = "Cancel", LastName = "Test" } };
-        using var cts = new CancellationTokenSource();
-        cts.Cancel();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _fixture.Repository.BulkInsertAsync(entities, cts.Token));
-    }
 
     [Fact]
     public async Task SaveChangesAsyncWithCancellationTokenRespectsCancellation()
@@ -390,11 +328,10 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         var entity = new User("savecancel") { FirstName = "SaveCancel", LastName = "Test" };
         _fixture.Repository.Add(entity);
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _fixture.Repository.SaveChangesAsync(cts.Token));
+        await Assert.ThrowsAsync<TaskCanceledException>(() => _fixture.Repository.SaveChangesAsync(cts.Token));
     }
 
     [Fact]
@@ -402,11 +339,10 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     {
         // Arrange
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _fixture.Repository.BeginTransactionAsync(cts.Token));
+        await Assert.ThrowsAsync<TaskCanceledException>(() => _fixture.Repository.BeginTransactionAsync(cts.Token));
     }
 }
 

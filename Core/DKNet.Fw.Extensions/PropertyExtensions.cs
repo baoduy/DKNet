@@ -7,9 +7,14 @@ namespace DKNet.Fw.Extensions;
 /// <summary>
 /// The extensions methods to work with object properties.
 /// </summary>
-
 public static class PropertyExtensions
 {
+    public static bool IsNullableType(this Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        // Check if the type is a generic type and is Nullable<>
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+    }
     /// <summary>
     /// Gets a property by name, considering all access levels and ignoring case.
     /// </summary>
@@ -70,7 +75,11 @@ public static class PropertyExtensions
 
         if (value == null)
         {
-            property.SetValue(obj,value: null);
+            property.SetValue(obj, value: null);
+        }
+        else if (property.PropertyType.IsNullableType())
+        {
+            property.SetValue(obj,  Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType)!, CultureInfo.CurrentCulture));
         }
         else
         {
@@ -106,10 +115,12 @@ public static class PropertyExtensions
             // Attempt to set the property value using the SetPropertyValue method
             obj.SetPropertyValue(property, value);
         }
-        catch ( ArgumentNullException ex)
+        catch (ArgumentNullException ex)
         {
-            // Log the exception for debugging purposes
-            // Example: Logger.LogError($"Failed to set property {property.Name}: {ex.Message}");
+            Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
+        }
+        catch (FormatException ex)
+        {
             Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
         }
     }
@@ -161,7 +172,8 @@ public static class PropertyExtensions
         catch (ArgumentNullException ex)
         {
             Debug.WriteLine($"Failed to set property {propertyName}: {ex.Message}");
-        } catch (ArgumentException ex)
+        }
+        catch (ArgumentException ex)
         {
             Debug.WriteLine($"Failed to set property {propertyName}: {ex.Message}");
         }

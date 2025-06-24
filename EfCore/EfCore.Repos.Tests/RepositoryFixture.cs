@@ -1,8 +1,6 @@
 using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Repos;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using EfCore.TestDataLayer;
 
 namespace EfCore.Repos.Tests;
@@ -15,7 +13,6 @@ public class RepositoryFixture : IAsyncLifetime
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     private string? _dbConn;
-    private IHost? _host;
 
     public RepositoryFixture()
     {
@@ -28,7 +25,9 @@ public class RepositoryFixture : IAsyncLifetime
         var builder = DistributedApplication.CreateBuilder(options);
 
         _db = builder.AddSqlServer("sqlServer")
-            .AddDatabase("TEMPDb");
+            .PublishAsConnectionString()
+            .WithLifetime(ContainerLifetime.Persistent)
+            .AddDatabase("RepoTestDb");
 
         _app = builder.Build();
     }
@@ -38,42 +37,26 @@ public class RepositoryFixture : IAsyncLifetime
         await _app.StartAsync();
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
-
-        var hostBuilder = new HostBuilder();
-        hostBuilder.ConfigureHostConfiguration(config =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-                (StringComparer.OrdinalIgnoreCase)
-                {
-                    { "ConnectionStrings:TEMPDb", _dbConn },
-                });
-        });
-
-        _host = hostBuilder.Build();
+        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
 
         var optionsBuilder = new DbContextOptionsBuilder<MyDbContext>()
             .UseSqlServer(_dbConn)
             .UseAutoConfigModel();
 
         DbContext = new MyDbContext(optionsBuilder.Options);
+        DbContext.Database.SetConnectionString(_dbConn);
+
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
-
+        await Task.Delay(TimeSpan.FromSeconds(15));
         await DbContext.Database.EnsureCreatedAsync();
     }
 
     public async Task DisposeAsync()
     {
-        if (DbContext is not null)
-        {
-            //await DbContext.Database.EnsureDeletedAsync();
-            await DbContext.DisposeAsync();
-        }
-
-        _host?.Dispose();
+        //await DbContext.Database.EnsureDeletedAsync();
+        await DbContext.DisposeAsync();
 
         await _app.StopAsync();
         await _app.DisposeAsync();

@@ -42,7 +42,7 @@ internal class TypeExtractor : ITypeExtractor
         if (assemblies == null || assemblies.Length == 0)
             throw new ArgumentException("Assemblies collection cannot be null or empty.", nameof(assemblies));
 
-        _assemblies = assemblies;
+        _assemblies = [.. assemblies.Distinct()];
     }
 
     /// <inheritdoc />
@@ -61,11 +61,11 @@ internal class TypeExtractor : ITypeExtractor
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute
-        => FilterBy(t => AttributeCache.GetOrAdd(t, t => t.GetCustomAttributes<TAttribute>(false).Any()));
+        => FilterBy(t => AttributeCache.GetOrAdd(t, type => type.GetCustomAttributes<TAttribute>(false).Any()));
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute(Type attributeType)
-        => FilterBy(t => AttributeCache.GetOrAdd(t, t => t.GetCustomAttributes(attributeType, false).Length != 0));
+        => FilterBy(t => AttributeCache.GetOrAdd(t, type => type.GetCustomAttributes(attributeType, false).Length != 0));
 
     /// <inheritdoc />
     public ITypeExtractor Interfaces() => FilterBy(t => t.IsInterface);

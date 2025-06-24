@@ -34,7 +34,11 @@ internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) :
             }
 
             foreach (var item in page)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
                 yield return item;
+            }
         } while (_hasMorePages);
     }
 }

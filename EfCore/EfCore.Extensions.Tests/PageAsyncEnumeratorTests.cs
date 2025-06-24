@@ -125,7 +125,7 @@ public class PageAsyncEnumeratorTests
         
         try
         {
-            // Get first few items
+            // Get the first few items
             for (int i = 0; i < 5; i++)
             {
                 Assert.IsTrue(await enumerator.MoveNextAsync());
@@ -133,7 +133,7 @@ public class PageAsyncEnumeratorTests
             }
 
             // Cancel and try to get more
-            cts.Cancel();
+            await cts.CancelAsync();
             
             // The next MoveNextAsync should respect cancellation
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(

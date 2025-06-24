@@ -156,16 +156,14 @@ public class TypeExtensionsTests
     }
 
     [TestMethod]
+    [ExpectedException(typeof(ArgumentNullException))]
     public void IsNumericTypeNullTypeReturnsFalse()
     {
         // Arrange
         Type type = null;
 
         // Act
-        var result = type.IsNumericType();
-
-        // Assert
-        Assert.IsFalse(result);
+        type.IsNumericType();
     }
 
     [TestMethod]
