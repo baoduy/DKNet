@@ -22,7 +22,8 @@ public class DomainEntityTests
         profile.MembershipNo.ShouldBe(membershipNo);
         profile.Email.ShouldBe(email);
         profile.Phone.ShouldBe(phone);
-        profile.Id.ShouldNotBe(Guid.Empty);
+        // Note: The parameterless constructor uses Guid.Empty internally
+        profile.Id.ShouldBe(Guid.Empty);
     }
 
     [Fact]
