@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class CrosConfig
 {
     private static bool _configAdded;

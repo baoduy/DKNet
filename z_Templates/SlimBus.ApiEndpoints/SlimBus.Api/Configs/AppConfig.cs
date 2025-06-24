@@ -2,9 +2,11 @@
 using SlimBus.Api.Configs.GlobalExceptions;
 using SlimBus.Api.Configs.Idempotency;
 using SlimBus.Api.Configs.Swagger;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class AppConfig
 {
     public static IServiceCollection AddAppConfig(this IServiceCollection services, FeatureOptions features,

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 #pragma warning disable CS8981,CA1861,IDE0300,MA0051
@@ -6,6 +7,7 @@
 namespace SlimBus.Infra.Migrations
 {
     /// <inheritdoc />
+    [ExcludeFromCodeCoverage]
     public partial class initdb : Migration
     {
         /// <inheritdoc />

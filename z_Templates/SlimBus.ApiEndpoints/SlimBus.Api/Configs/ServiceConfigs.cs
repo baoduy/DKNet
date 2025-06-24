@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class ServiceConfigs
 {
     public static IServiceCollection AddOptions(this IServiceCollection services, IConfiguration configuration)

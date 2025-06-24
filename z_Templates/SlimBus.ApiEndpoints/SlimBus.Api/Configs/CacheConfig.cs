@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class CacheConfigs
 {
     public static IServiceCollection CacheConfig(this IServiceCollection services, IConfiguration configuration)
