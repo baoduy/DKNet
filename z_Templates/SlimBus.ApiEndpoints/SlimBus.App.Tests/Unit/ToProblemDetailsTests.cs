@@ -1,4 +1,4 @@
-namespace SlimBus.App.Tests;
+namespace SlimBus.App.Tests.Unit;
 
 public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
 {

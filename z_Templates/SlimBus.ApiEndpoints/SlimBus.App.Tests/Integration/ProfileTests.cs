@@ -5,7 +5,7 @@ using SlimBus.AppServices.Profiles.V1.Events;
 using SlimBus.AppServices.Profiles.V1.Queries;
 using SlimBus.Infra.ExternalEvents;
 
-namespace SlimBus.App.Tests;
+namespace SlimBus.App.Tests.Integration;
 
 public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
 {

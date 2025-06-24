@@ -1,6 +1,6 @@
 using Mapster;
 
-namespace SlimBus.App.Tests.LazyMapper;
+namespace SlimBus.App.Tests.Unit.LazyMapper;
 
 public sealed class LazyMapFixture : IDisposable, IAsyncDisposable
 {

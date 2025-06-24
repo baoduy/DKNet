@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace SlimBus.App.Tests.ArchitectureTests;
+namespace SlimBus.App.Tests.Architecture;
 
 public class ApiTests
 {

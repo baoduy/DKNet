@@ -1,9 +1,11 @@
-﻿using Azure.Messaging.ServiceBus;
+﻿using System.Diagnostics.CodeAnalysis;
+using Azure.Messaging.ServiceBus;
 using SlimBus.AppServices.Profiles.V1.Events;
 using SlimBus.Infra.ExternalEvents;
 
 namespace SlimBus.Infra.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static class ServiceBusSetup
 {
     public static IServiceCollection AddServiceBus(this IServiceCollection service, IConfiguration configuration,
@@ -32,7 +34,7 @@ public static class ServiceBusSetup
                         .WithProviderServiceBus(st =>
                     {
                         st.ConnectionString = busConnectionString;
-                        st.ClientFactory = (provider, settings) =>
+                        st.ClientFactory = (_, settings) =>
                             new ServiceBusClient(settings.ConnectionString, new ServiceBusClientOptions
                         {
                             TransportType = ServiceBusTransportType.AmqpTcp,
@@ -40,25 +42,20 @@ public static class ServiceBusSetup
 
                         st.TopologyProvisioning = new ServiceBusTopologySettings
                         {
-                            Enabled = false,
+                            Enabled = true,
+                            CanProducerCreateTopic = true,
+                            CanProducerCreateQueue = true,
+                            CanConsumerCreateSubscription = true,
+                            CanConsumerCreateQueue = true,
+                            CreateSubscriptionOptions = op =>
+                            {
+                                op.EnableBatchedOperations = true;
+                                op.MaxDeliveryCount = 10;
+                                op.AutoDeleteOnIdle = TimeSpan.FromDays(60);
+                                op.DeadLetteringOnMessageExpiration = true;
+                                op.DefaultMessageTimeToLive = TimeSpan.FromDays(7);
+                            },
                         };
-                        // st.TopologyProvisioning = new ServiceBusTopologySettings
-                        // {
-                        //     Enabled = true,
-                        //     // CanConsumerCreateQueue = false,
-                        //     // CanConsumerCreateTopic = false,
-                        //     // CanProducerCreateTopic = false,
-                        //     // CanProducerCreateQueue = false,
-                        //     CanConsumerCreateSubscription = true,
-                        //     CreateSubscriptionOptions = op =>
-                        //     {
-                        //         op.EnableBatchedOperations = true;
-                        //         op.MaxDeliveryCount = 10;
-                        //         op.AutoDeleteOnIdle = TimeSpan.FromDays(60);
-                        //         op.DeadLetteringOnMessageExpiration = true;
-                        //         op.DefaultMessageTimeToLive = TimeSpan.FromDays(15);
-                        //     },
-                        // };
                     });
 
                     azb.Produce<ProfileCreatedEvent>(o => o.DefaultTopic("profile-tp"));

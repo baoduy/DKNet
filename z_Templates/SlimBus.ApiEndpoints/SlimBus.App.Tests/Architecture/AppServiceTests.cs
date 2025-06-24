@@ -2,7 +2,7 @@ using FluentValidation;
 using SlimBus.AppServices;
 using SlimMessageBus;
 
-namespace SlimBus.App.Tests.ArchitectureTests;
+namespace SlimBus.App.Tests.Architecture;
 
 public class AppServiceTests
 {

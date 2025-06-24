@@ -1,7 +1,7 @@
 using SlimBus.App.Tests.Data;
 using SlimBus.AppServices.Extensions.LazyMapper;
 
-namespace SlimBus.App.Tests.LazyMapper;
+namespace SlimBus.App.Tests.Unit.LazyMapper;
 
 public class LazyResultTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixture>
 {

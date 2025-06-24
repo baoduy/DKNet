@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SlimBus.Infra.Extensions;
 using SlimMessageBus;
 
-namespace SlimBus.App.Tests.ArchitectureTests;
+namespace SlimBus.App.Tests.Architecture;
 
 public class InfraTests
 {
