@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -29,10 +30,24 @@ internal static class RateLimitConfig
 
         services.AddRateLimiter(rateLimiterOptions =>
         {
-            var serviceProvider = services.BuildServiceProvider();
-            var policyProvider = serviceProvider.GetRequiredService<RateLimitPolicyProvider>();
-            
-            rateLimiterOptions.AddPolicy(DefaultPolicyName, policyProvider.CreatePolicy());
+            rateLimiterOptions.AddPolicy(DefaultPolicyName, httpContext =>
+            {
+                var policyProvider = httpContext.RequestServices.GetRequiredService<RateLimitPolicyProvider>();
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: policyProvider.GetPartitionKey(httpContext),
+                    factory: _ => 
+                    {
+                        var rateLimitOptions = httpContext.RequestServices.GetRequiredService<IOptions<RateLimitOptions>>().Value;
+                        return new FixedWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            PermitLimit = rateLimitOptions.DefaultRequestLimit,
+                            Window = TimeSpan.FromSeconds(rateLimitOptions.TimeWindowInSeconds),
+                            QueueLimit = rateLimitOptions.QueueLimit,
+                            QueueProcessingOrder = (QueueProcessingOrder)rateLimitOptions.QueueProcessingOrder
+                        };
+                    });
+            });
             
             // Global settings
             rateLimiterOptions.GlobalLimiter = null; // We use partitioned limiter instead

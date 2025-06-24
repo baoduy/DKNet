@@ -41,28 +41,6 @@ internal class RateLimitPolicyProvider
     }
 
     /// <summary>
-    /// Creates a rate limiting policy
-    /// </summary>
-    public RateLimitPolicy CreatePolicy()
-    {
-        return new RateLimitPolicy
-        {
-            PartitionedRateLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
-                context => RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: GetPartitionKey(context),
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        AutoReplenishment = true,
-                        PermitLimit = _options.DefaultRequestLimit,
-                        Window = TimeSpan.FromSeconds(_options.TimeWindowInSeconds),
-                        QueueLimit = _options.QueueLimit,
-                        QueueProcessingOrder = (QueueProcessingOrder)_options.QueueProcessingOrder
-                    })),
-            OnRejected = OnRateLimitRejected
-        };
-    }
-
-    /// <summary>
     /// Extracts user identity from JWT token in authorization header
     /// </summary>
     private string? GetUserIdentityFromJwt(HttpContext context)
@@ -130,14 +108,5 @@ internal class RateLimitPolicyProvider
 
         // Fall back to connection remote IP address
         return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    }
-
-    /// <summary>
-    /// Handles rate limit rejection
-    /// </summary>
-    private static ValueTask OnRateLimitRejected(OnRejectedContext context, CancellationToken cancellationToken)
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        return ValueTask.CompletedTask;
     }
 }
