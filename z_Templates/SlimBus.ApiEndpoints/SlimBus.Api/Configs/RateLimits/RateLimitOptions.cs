@@ -3,7 +3,7 @@ namespace SlimBus.Api.Configs.RateLimits;
 /// <summary>
 /// Configuration options for rate limiting
 /// </summary>
-public class RateLimitOptions
+internal sealed class RateLimitOptions
 {
     /// <summary>
     /// Default number of requests allowed per time window
@@ -18,7 +18,7 @@ public class RateLimitOptions
     /// <summary>
     /// Maximum number of queued requests when rate limit is reached
     /// </summary>
-    public int QueueLimit { get; set; } = 0;
+    public int QueueLimit { get; set; }
 
     /// <summary>
     /// Queue processing order
@@ -29,7 +29,7 @@ public class RateLimitOptions
 /// <summary>
 /// Defines the order in which queued requests are processed
 /// </summary>
-public enum RateLimitQueueProcessingOrder
+internal enum RateLimitQueueProcessingOrder
 {
     OldestFirst,
     NewestFirst

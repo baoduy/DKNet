@@ -1,5 +1,4 @@
 ﻿using DKNet.Fw.Extensions;
-using Fw.Extensions.Tests.TestObjects;
 
 namespace Fw.Extensions.Tests;
 
@@ -89,7 +88,7 @@ public class EnumExtensionsTests
         var list = EnumExtensions.GetEumInfos<HBDEnum>().ToList();
 
         // Assert
-        var enumInfo = list.FirstOrDefault(x => x.Key == "Enum");
+        var enumInfo = list.FirstOrDefault(x => string.Equals(x.Key, "Enum", StringComparison.OrdinalIgnoreCase));
         enumInfo.ShouldNotBeNull();
         enumInfo.Name.ShouldBe("Enum");
         enumInfo.Description.ShouldBeNull();

@@ -6,7 +6,7 @@ namespace SlimBus.App.Tests.Unit;
 public class ProfileModelsTests
 {
     [Fact]
-    public void ProfileResult_Properties_ShouldSetCorrectly()
+    public void ProfileResultPropertiesShouldSetCorrectly()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -31,7 +31,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void ProfileResult_PhoneCanBeNull()
+    public void ProfileResultPhoneCanBeNull()
     {
         // Arrange & Act
         var result = new ProfileResult
@@ -47,7 +47,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void CreateProfileCommand_Properties_ShouldSetCorrectly()
+    public void CreateProfileCommandPropertiesShouldSetCorrectly()
     {
         // Arrange
         var command = new CreateProfileCommand();
@@ -67,7 +67,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void UpdateProfileCommand_Properties_ShouldSetCorrectly()
+    public void UpdateProfileCommandPropertiesShouldSetCorrectly()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -92,7 +92,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void UpdateProfileCommand_OptionalProperties_CanBeNull()
+    public void UpdateProfileCommandOptionalPropertiesCanBeNull()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -114,7 +114,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void DeleteProfileCommand_Properties_ShouldSetCorrectly()
+    public void DeleteProfileCommandPropertiesShouldSetCorrectly()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -132,7 +132,7 @@ public class ProfileModelsTests
     [Theory]
     [InlineData("test@example.com", "+1234567890", "Test User")]
     [InlineData("another@example.com", "+0987654321", "Another User")]
-    public void CreateProfileCommand_WithDifferentValues_ShouldWork(string email, string phone, string name)
+    public void CreateProfileCommandWithDifferentValuesShouldWork(string email, string phone, string name)
     {
         // Act
         var command = new CreateProfileCommand
@@ -151,7 +151,7 @@ public class ProfileModelsTests
     [Theory]
     [InlineData("updated1@example.com", "+1111111111", "Updated User 1")]
     [InlineData("updated2@example.com", "+2222222222", "Updated User 2")]
-    public void UpdateProfileCommand_WithDifferentValues_ShouldWork(string email, string phone, string name)
+    public void UpdateProfileCommandWithDifferentValuesShouldWork(string email, string phone, string name)
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -173,7 +173,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void DeleteProfileCommand_WithGuidEmpty_ShouldWork()
+    public void DeleteProfileCommandWithGuidEmptyShouldWork()
     {
         // Act
         var command = new DeleteProfileCommand
@@ -186,7 +186,7 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void DeleteProfileCommand_WithValidGuid_ShouldWork()
+    public void DeleteProfileCommandWithValidGuidShouldWork()
     {
         // Arrange
         var id = Guid.NewGuid();

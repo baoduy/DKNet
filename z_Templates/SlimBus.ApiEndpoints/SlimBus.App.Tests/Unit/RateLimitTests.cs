@@ -1,6 +1,5 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using SlimBus.Api.Configs.RateLimits;
 
 namespace SlimBus.App.Tests.Unit;
@@ -8,7 +7,7 @@ namespace SlimBus.App.Tests.Unit;
 public class RateLimitTests
 {
     [Fact]
-    public void RateLimitOptions_DefaultValues_ShouldBeCorrect()
+    public void RateLimitOptionsDefaultValuesShouldBeCorrect()
     {
         // Act
         var options = new RateLimitOptions();
@@ -21,15 +20,24 @@ public class RateLimitTests
     }
 
     [Fact]
-    public void RateLimitPolicyProvider_GetPartitionKey_WithoutAuthHeader_ShouldUseClientIp()
+    public void RateLimitPolicyProviderGetPartitionKeyWithoutAuthHeaderShouldUseClientIp()
     {
         // Arrange
+        using var sv = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<RateLimitPolicyProvider>()
+            .BuildServiceProvider();
+        // Arrange
         var options = Options.Create(new RateLimitOptions());
-        var logger = Substitute.For<ILogger<RateLimitPolicyProvider>>();
-        var provider = new RateLimitPolicyProvider(options, logger);
-        
-        var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.1");
+        var provider = sv.GetRequiredService<RateLimitPolicyProvider>();
+
+        var context = new DefaultHttpContext
+        {
+            Connection =
+            {
+                RemoteIpAddress = IPAddress.Parse("192.168.1.1")
+            }
+        };
 
         // Act
         var partitionKey = provider.GetPartitionKey(context);
@@ -40,15 +48,24 @@ public class RateLimitTests
     }
 
     [Fact]
-    public void RateLimitPolicyProvider_GetPartitionKey_WithInvalidJwtToken_ShouldFallbackToIp()
+    public void RateLimitPolicyProviderGetPartitionKeyWithInvalidJwtTokenShouldFallbackToIp()
     {
         // Arrange
+        using var sv = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<RateLimitPolicyProvider>()
+            .BuildServiceProvider();
+        // Arrange
         var options = Options.Create(new RateLimitOptions());
-        var logger = Substitute.For<ILogger<RateLimitPolicyProvider>>();
-        var provider = new RateLimitPolicyProvider(options, logger);
+        var provider = sv.GetRequiredService<RateLimitPolicyProvider>();
 
-        var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.1");
+        var context = new DefaultHttpContext
+        {
+            Connection =
+            {
+                RemoteIpAddress = IPAddress.Parse("192.168.1.1")
+            }
+        };
         context.Request.Headers.Authorization = "Bearer invalid-token";
 
         // Act
@@ -63,15 +80,24 @@ public class RateLimitTests
     [InlineData("192.168.1.1", "ip:192.168.1.1")]
     [InlineData("127.0.0.1", "ip:127.0.0.1")]
     [InlineData("10.0.0.1", "ip:10.0.0.1")]
-    public void RateLimitPolicyProvider_GetPartitionKey_WithDifferentIps_ShouldReturnCorrectKey(string ipAddress, string expectedKey)
+    public void RateLimitPolicyProviderGetPartitionKeyWithDifferentIpsShouldReturnCorrectKey(string ipAddress,
+        string expectedKey)
     {
+        using var sv = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<RateLimitPolicyProvider>()
+            .BuildServiceProvider();
         // Arrange
         var options = Options.Create(new RateLimitOptions());
-        var logger = Substitute.For<ILogger<RateLimitPolicyProvider>>();
-        var provider = new RateLimitPolicyProvider(options, logger);
+        var provider = sv.GetRequiredService<RateLimitPolicyProvider>();
 
-        var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse(ipAddress);
+        var context = new DefaultHttpContext
+        {
+            Connection =
+            {
+                RemoteIpAddress = IPAddress.Parse(ipAddress)
+            }
+        };
 
         // Act
         var partitionKey = provider.GetPartitionKey(context);
@@ -81,15 +107,24 @@ public class RateLimitTests
     }
 
     [Fact]
-    public void RateLimitPolicyProvider_GetPartitionKey_WithForwardedFor_ShouldUseForwardedIp()
+    public void RateLimitPolicyProviderGetPartitionKeyWithForwardedForShouldUseForwardedIp()
     {
         // Arrange
+        using var sv = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<RateLimitPolicyProvider>()
+            .BuildServiceProvider();
+        // Arrange
         var options = Options.Create(new RateLimitOptions());
-        var logger = Substitute.For<ILogger<RateLimitPolicyProvider>>();
-        var provider = new RateLimitPolicyProvider(options, logger);
+        var provider = sv.GetRequiredService<RateLimitPolicyProvider>();
 
-        var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.1");
+        var context = new DefaultHttpContext
+        {
+            Connection =
+            {
+                RemoteIpAddress = IPAddress.Parse("192.168.1.1")
+            }
+        };
         context.Request.Headers["X-Forwarded-For"] = "203.0.113.1, 192.168.1.1";
 
         // Act
@@ -100,12 +135,16 @@ public class RateLimitTests
     }
 
     [Fact]
-    public void RateLimitPolicyProvider_GetPartitionKey_WithNoRemoteIp_ShouldReturnUnknown()
+    public void RateLimitPolicyProviderGetPartitionKeyWithNoRemoteIpShouldReturnUnknown()
     {
         // Arrange
+        using var sv = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<RateLimitPolicyProvider>()
+            .BuildServiceProvider();
+        // Arrange
         var options = Options.Create(new RateLimitOptions());
-        var logger = Substitute.For<ILogger<RateLimitPolicyProvider>>();
-        var provider = new RateLimitPolicyProvider(options, logger);
+        var provider = sv.GetRequiredService<RateLimitPolicyProvider>();
 
         var context = new DefaultHttpContext();
         // No remote IP set

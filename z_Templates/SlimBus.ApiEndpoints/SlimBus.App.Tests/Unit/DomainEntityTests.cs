@@ -5,7 +5,7 @@ namespace SlimBus.App.Tests.Unit;
 public class DomainEntityTests
 {
     [Fact]
-    public void CustomerProfile_Constructor_ShouldSetPropertiesCorrectly()
+    public void CustomerProfileConstructorShouldSetPropertiesCorrectly()
     {
         // Arrange
         var name = "John Doe";
@@ -27,7 +27,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_ConstructorWithId_ShouldSetIdCorrectly()
+    public void CustomerProfileConstructorWithIdShouldSetIdCorrectly()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -49,7 +49,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_ShouldUpdatePropertiesCorrectly()
+    public void CustomerProfileUpdateShouldUpdatePropertiesCorrectly()
     {
         // Arrange
         var profile = new CustomerProfile("Original Name", "MEM123", "orig@example.com", "+1111111111", "user1");
@@ -70,7 +70,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithNullOrEmptyName_ShouldNotUpdateName()
+    public void CustomerProfileUpdateWithNullOrEmptyNameShouldNotUpdateName()
     {
         // Arrange
         var originalName = "Original Name";
@@ -85,7 +85,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithNullOrEmptyPhone_ShouldNotUpdatePhone()
+    public void CustomerProfileUpdateWithNullOrEmptyPhoneShouldNotUpdatePhone()
     {
         // Arrange
         var originalPhone = "+1111111111";
@@ -100,7 +100,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void Address_Constructor_ShouldSetPropertiesCorrectly()
+    public void AddressConstructorShouldSetPropertiesCorrectly()
     {
         // Arrange
         var line = "123 Main St";
@@ -124,7 +124,7 @@ public class DomainEntityTests
     [InlineData("123 Main St", "CA", "Los Angeles", "USA", "90210")]
     [InlineData("456 Oak Ave", "NY", "New York", "USA", "10001")]
     [InlineData("789 Pine Rd", "TX", "Houston", "USA", "77001")]
-    public void Address_Constructor_WithDifferentValues_ShouldWork(string line, string state, string city, string country, string postal)
+    public void AddressConstructorWithDifferentValuesShouldWork(string line, string state, string city, string country, string postal)
     {
         // Act
         var address = new Address(line, state, city, country, postal);
@@ -138,7 +138,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void Company_Constructor_ShouldSetPropertiesCorrectly()
+    public void CompanyConstructorShouldSetPropertiesCorrectly()
     {
         // Arrange
         var name = "Acme Corp";
@@ -161,7 +161,7 @@ public class DomainEntityTests
     [Theory]
     [InlineData("Tech Solutions Inc", "UEN987654321", "ABN987654321", "ARBN987654321", "CAN987654321")]
     [InlineData("Global Services Ltd", "UEN111222333", "ABN111222333", "ARBN111222333", "CAN111222333")]
-    public void Company_Constructor_WithDifferentValues_ShouldWork(string name, string uen, string abn, string arbn, string can)
+    public void CompanyConstructorWithDifferentValuesShouldWork(string name, string uen, string abn, string arbn, string can)
     {
         // Act
         var company = new Company(name, uen, abn, arbn, can);
@@ -175,7 +175,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void Employee_Constructor_ShouldSetPropertiesCorrectly()
+    public void EmployeeConstructorShouldSetPropertiesCorrectly()
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -196,7 +196,7 @@ public class DomainEntityTests
     [InlineData(EmployeeType.Secretary)]
     [InlineData(EmployeeType.Other)]
     [InlineData(EmployeeType.None)]
-    public void Employee_Constructor_WithDifferentTypes_ShouldWork(EmployeeType type)
+    public void EmployeeConstructorWithDifferentTypesShouldWork(EmployeeType type)
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -211,7 +211,7 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void Employee_PromoteTo_ShouldUpdateType()
+    public void EmployeePromoteToShouldUpdateType()
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -230,7 +230,7 @@ public class DomainEntityTests
     [InlineData(EmployeeType.Secretary, EmployeeType.Director)]
     [InlineData(EmployeeType.Other, EmployeeType.Secretary)]
     [InlineData(EmployeeType.Director, EmployeeType.Other)]
-    public void Employee_PromoteTo_WithDifferentTypes_ShouldWork(EmployeeType initialType, EmployeeType newType)
+    public void EmployeePromoteToWithDifferentTypesShouldWork(EmployeeType initialType, EmployeeType newType)
     {
         // Arrange
         var profileId = Guid.NewGuid();

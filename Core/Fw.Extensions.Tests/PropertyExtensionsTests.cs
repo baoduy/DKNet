@@ -1,5 +1,4 @@
 ﻿using DKNet.Fw.Extensions;
-using Fw.Extensions.Tests.TestObjects;
 
 namespace Fw.Extensions.Tests;
 

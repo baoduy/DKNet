@@ -5,7 +5,7 @@ namespace SlimBus.App.Tests.Unit;
 public class SharedComponentTests
 {
     [Fact]
-    public void PageableQuery_DefaultValues_ShouldBeCorrect()
+    public void PageableQueryDefaultValuesShouldBeCorrect()
     {
         // Act
         var query = new PageableQuery();
@@ -19,7 +19,7 @@ public class SharedComponentTests
     [InlineData(0, 50)]
     [InlineData(1, 100)]
     [InlineData(10, 200)]
-    public void PageableQuery_SetProperties_ShouldWork(int pageIndex, int pageSize)
+    public void PageableQuerySetPropertiesShouldWork(int pageIndex, int pageSize)
     {
         // Act
         var query = new PageableQuery
@@ -34,7 +34,7 @@ public class SharedComponentTests
     }
 
     [Fact]
-    public void BaseCommand_UserId_ShouldReturnValue()
+    public void BaseCommandUserIdShouldReturnValue()
     {
         // Arrange
         var command = new TestCommand();
@@ -51,7 +51,7 @@ public class SharedComponentTests
     }
 
     [Fact]
-    public void BaseCommand_UserId_ShouldBeSettable()
+    public void BaseCommandUserIdShouldBeSettable()
     {
         // Arrange
         var command = new TestCommand();

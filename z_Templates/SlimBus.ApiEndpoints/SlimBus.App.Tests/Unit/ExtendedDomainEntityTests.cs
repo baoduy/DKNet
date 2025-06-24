@@ -5,7 +5,7 @@ namespace SlimBus.App.Tests.Unit;
 public class ExtendedDomainEntityTests
 {
     [Fact]
-    public void CustomerProfile_ConstructorWithFullParameters_ShouldSetAllProperties()
+    public void CustomerProfileConstructorWithFullParametersShouldSetAllProperties()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -27,7 +27,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithAllParameters_ShouldUpdateAllFields()
+    public void CustomerProfileUpdateWithAllParametersShouldUpdateAllFields()
     {
         // Arrange
         var profile = new CustomerProfile("Original Name", "MEM123", "original@example.com", "+1111111111", "user1");
@@ -48,7 +48,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithNullValues_ShouldHandleNullsCorrectly()
+    public void CustomerProfileUpdateWithNullValuesShouldHandleNullsCorrectly()
     {
         // Arrange
         var originalName = "Original Name";
@@ -66,7 +66,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithEmptyStrings_ShouldNotUpdateNameAndPhone()
+    public void CustomerProfileUpdateWithEmptyStringsShouldNotUpdateNameAndPhone()
     {
         // Arrange
         var originalName = "Original Name";
@@ -84,7 +84,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfile_Update_WithWhitespaceStrings_ShouldUpdateNameAndPhone()
+    public void CustomerProfileUpdateWithWhitespaceStringsShouldUpdateNameAndPhone()
     {
         // Arrange
         var originalName = "Original Name";
@@ -104,7 +104,7 @@ public class ExtendedDomainEntityTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void CustomerProfile_Update_WithVariousEmptyStrings_ShouldNotUpdateName(string emptyString)
+    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdateName(string emptyString)
     {
         // Arrange
         var originalName = "Original Name";
@@ -121,7 +121,7 @@ public class ExtendedDomainEntityTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void CustomerProfile_Update_WithVariousEmptyStrings_ShouldNotUpdatePhone(string emptyString)
+    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdatePhone(string emptyString)
     {
         // Arrange
         var originalPhone = "+1111111111";
@@ -139,7 +139,7 @@ public class ExtendedDomainEntityTests
     [InlineData("   ")]
     [InlineData("\t")]
     [InlineData("\n")]
-    public void CustomerProfile_Update_WithWhitespaceStrings_ShouldUpdateBothFields(string whitespaceString)
+    public void CustomerProfileUpdateWithWhitespaceStringsShouldUpdateBothFields(string whitespaceString)
     {
         // Arrange - string.IsNullOrEmpty returns false for whitespace, so these will actually update
         var originalName = "Original Name";
@@ -155,7 +155,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void Address_AllPropertiesRequired_ShouldSetCorrectly()
+    public void AddressAllPropertiesRequiredShouldSetCorrectly()
     {
         // Arrange
         var line = "123 Main Street";
@@ -176,7 +176,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void Company_AllPropertiesSet_ShouldSetCorrectly()
+    public void CompanyAllPropertiesSetShouldSetCorrectly()
     {
         // Arrange
         var name = "Tech Solutions Inc";
@@ -197,7 +197,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void Employee_PromoteTo_ShouldChangeTypeCorrectly()
+    public void EmployeePromoteToShouldChangeTypeCorrectly()
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -214,7 +214,7 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void Employee_MultiplePomotions_ShouldWorkCorrectly()
+    public void EmployeeMultiplePomotionsShouldWorkCorrectly()
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -236,7 +236,7 @@ public class ExtendedDomainEntityTests
     [InlineData(EmployeeType.Director)]
     [InlineData(EmployeeType.Secretary)]
     [InlineData(EmployeeType.Other)]
-    public void Employee_CanBePromotedToAnyType(EmployeeType targetType)
+    public void EmployeeCanBePromotedToAnyType(EmployeeType targetType)
     {
         // Arrange
         var profileId = Guid.NewGuid();

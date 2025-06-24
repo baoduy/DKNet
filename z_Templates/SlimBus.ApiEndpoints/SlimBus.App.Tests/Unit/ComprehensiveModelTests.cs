@@ -7,7 +7,7 @@ namespace SlimBus.App.Tests.Unit;
 public class ComprehensiveModelTests
 {
     [Fact]
-    public void ProfileResult_RequiredProperties_MustBeProvided()
+    public void ProfileResultRequiredPropertiesMustBeProvided()
     {
         // Arrange & Act - Records with required properties will allow creation with required values
         var result = new ProfileResult
@@ -23,7 +23,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void ProfileResult_AllPropertiesSet_ShouldWork()
+    public void ProfileResultAllPropertiesSetShouldWork()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -48,7 +48,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void CreateProfileCommand_DefaultConstructor_ShouldInitializeProperties()
+    public void CreateProfileCommandDefaultConstructorShouldInitializeProperties()
     {
         // Act
         var command = new CreateProfileCommand();
@@ -59,7 +59,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void CreateProfileCommand_SetAllProperties_ShouldWork()
+    public void CreateProfileCommandSetAllPropertiesShouldWork()
     {
         // Arrange
         var email = "create@example.com";
@@ -84,7 +84,7 @@ public class ComprehensiveModelTests
     [InlineData("test1@example.com")]
     [InlineData("test.user@domain.co.uk")]
     [InlineData("user+tag@example.org")]
-    public void CreateProfileCommand_WithVariousEmails_ShouldWork(string email)
+    public void CreateProfileCommandWithVariousEmailsShouldWork(string email)
     {
         // Act
         var command = new CreateProfileCommand
@@ -102,7 +102,7 @@ public class ComprehensiveModelTests
     [InlineData("+1234567890")]
     [InlineData("+44 20 1234 5678")]
     [InlineData("+65 9123 4567")]
-    public void CreateProfileCommand_WithVariousPhones_ShouldWork(string phone)
+    public void CreateProfileCommandWithVariousPhonesShouldWork(string phone)
     {
         // Act
         var command = new CreateProfileCommand
@@ -117,7 +117,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void UpdateProfileCommand_AllOptionalProperties_CanBeNull()
+    public void UpdateProfileCommandAllOptionalPropertiesCanBeNull()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -139,7 +139,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void UpdateProfileCommand_PartialUpdate_ShouldWork()
+    public void UpdateProfileCommandPartialUpdateShouldWork()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -161,7 +161,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void DeleteProfileCommand_WithValidId_ShouldWork()
+    public void DeleteProfileCommandWithValidIdShouldWork()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -174,7 +174,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void DeleteProfileCommand_WithEmptyGuid_ShouldStillWork()
+    public void DeleteProfileCommandWithEmptyGuidShouldStillWork()
     {
         // Act
         var command = new DeleteProfileCommand { Id = Guid.Empty };
@@ -188,7 +188,7 @@ public class ComprehensiveModelTests
     [InlineData(1, 10)]
     [InlineData(10, 100)]
     [InlineData(50, 1000)]
-    public void PageableQuery_WithValidValues_ShouldWork(int pageIndex, int pageSize)
+    public void PageableQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
     {
         // Act
         var query = new PageableQuery
@@ -203,7 +203,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void PageableQuery_SetToNegativeValues_ShouldStillSet()
+    public void PageableQuerySetToNegativeValuesShouldStillSet()
     {
         // Act
         var query = new PageableQuery
@@ -218,7 +218,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void PageableQuery_SetToLargeValues_ShouldWork()
+    public void PageableQuerySetToLargeValuesShouldWork()
     {
         // Act
         var query = new PageableQuery
@@ -233,7 +233,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void ProfileQuery_WithValidId_ShouldWork()
+    public void ProfileQueryWithValidIdShouldWork()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -246,7 +246,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void ProfileQuery_WithEmptyGuid_ShouldWork()
+    public void ProfileQueryWithEmptyGuidShouldWork()
     {
         // Act
         var query = new ProfileQuery { Id = Guid.Empty };
@@ -256,7 +256,7 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
-    public void PageProfilePageQuery_DefaultValues_ShouldBeCorrect()
+    public void PageProfilePageQueryDefaultValuesShouldBeCorrect()
     {
         // Act
         var query = new PageProfilePageQuery();
@@ -271,7 +271,7 @@ public class ComprehensiveModelTests
     [InlineData(5, 50)]
     [InlineData(10, 200)]
     [InlineData(1000, 1000)]
-    public void PageProfilePageQuery_WithValidValues_ShouldWork(int pageIndex, int pageSize)
+    public void PageProfilePageQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
     {
         // Act
         var query = new PageProfilePageQuery

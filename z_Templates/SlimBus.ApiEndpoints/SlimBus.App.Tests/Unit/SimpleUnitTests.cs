@@ -5,7 +5,7 @@ namespace SlimBus.App.Tests.Unit;
 public class SimpleUnitTests
 {
     [Fact]
-    public void PageableQuery_DefaultValues_ShouldBeCorrect()
+    public void PageableQueryDefaultValuesShouldBeCorrect()
     {
         // Act
         var query = new PageableQuery();
@@ -16,7 +16,7 @@ public class SimpleUnitTests
     }
 
     [Fact]
-    public void PageableQuery_SetProperties_ShouldWork()
+    public void PageableQuerySetPropertiesShouldWork()
     {
         // Act
         var query = new PageableQuery

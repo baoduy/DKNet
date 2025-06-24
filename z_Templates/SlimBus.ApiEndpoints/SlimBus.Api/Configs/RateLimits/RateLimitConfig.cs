@@ -1,7 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
 
 namespace SlimBus.Api.Configs.RateLimits;
 
@@ -11,7 +8,7 @@ namespace SlimBus.Api.Configs.RateLimits;
 [ExcludeFromCodeCoverage]
 internal static class RateLimitConfig
 {
-    private static bool _configAdded;
+    public static bool ConfigAdded;
     private const string DefaultPolicyName = "DefaultRateLimit";
 
     /// <summary>
@@ -54,7 +51,7 @@ internal static class RateLimitConfig
             rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });
 
-        _configAdded = true;
+        ConfigAdded = true;
         Console.WriteLine("Rate Limiting enabled.");
         
         return services;
@@ -67,7 +64,7 @@ internal static class RateLimitConfig
     /// <returns>The web application with rate limiting applied</returns>
     public static WebApplication UseRateLimitConfig(this WebApplication app)
     {
-        if (!_configAdded) return app;
+        if (!ConfigAdded) return app;
 
         app.UseRateLimiter();
         
@@ -82,7 +79,7 @@ internal static class RateLimitConfig
     /// <returns>The route handler builder with rate limiting applied</returns>
     public static RouteHandlerBuilder RequireRateLimit(this RouteHandlerBuilder builder)
     {
-        if (_configAdded)
+        if (ConfigAdded)
         {
             builder.RequireRateLimiting(DefaultPolicyName);
         }
@@ -96,7 +93,7 @@ internal static class RateLimitConfig
     /// <returns>The route group builder with rate limiting applied</returns>
     public static RouteGroupBuilder RequireRateLimit(this RouteGroupBuilder group)
     {
-        if (_configAdded)
+        if (ConfigAdded)
         {
             group.RequireRateLimiting(DefaultPolicyName);
         }

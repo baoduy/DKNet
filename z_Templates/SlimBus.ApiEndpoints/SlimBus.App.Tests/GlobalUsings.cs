@@ -1,5 +1,4 @@
 global using System.Net.Http.Json;
-global using System.Security.Claims;
 global using Shouldly;
 global using System.Text.Json;
 global using FluentResults;
