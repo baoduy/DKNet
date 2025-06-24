@@ -1,6 +1,7 @@
 ﻿using SlimBus.Api.Configs.Auth;
 using SlimBus.Api.Configs.GlobalExceptions;
 using SlimBus.Api.Configs.Idempotency;
+using SlimBus.Api.Configs.RateLimits;
 using SlimBus.Api.Configs.Swagger;
 
 namespace SlimBus.Api.Configs;
@@ -23,6 +24,9 @@ internal static class AppConfig
         if (features.EnableHttps)
             services.AddHttpsConfig();
 
+        if (features.EnableRateLimit)
+            services.AddRateLimitConfig();
+
         services.AddHttpContextAccessor()
             .AddFeatureManagement();
 
@@ -41,6 +45,7 @@ internal static class AppConfig
     {
         app.UseAntiforgeryConfig()
             .UseCrosConfig()
+            .UseRateLimitConfig()
             .UseHttpsConfig()
             .UseHealthzConfig();
 
