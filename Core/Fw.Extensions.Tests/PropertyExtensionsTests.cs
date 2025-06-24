@@ -299,4 +299,227 @@ public class PropertyExtensionsTests
 
         item.GetPropertyValue(propertyName).ShouldBeNull();
     }
+
+    [TestMethod]
+    public void GetPropertyValueShouldReturnNullForNonExistentNestedProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+
+        // Act
+        var value = item.GetPropertyValue("NonExistent.Property");
+
+        // Assert
+        Assert.IsNull(value);
+    }
+
+    [TestMethod]
+    public void GetPropertyValueShouldHandleNullIntermediateNestedProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        item.SetPropertyValue("Name", null); // Set Name to null
+
+        // Act
+        var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
+
+        // Assert
+        Assert.IsNull(value);
+    }
+
+    [TestMethod]
+    public void GetPropertyWithTypeObjectShouldReturnProperty()
+    {
+        // Arrange
+        var type = typeof(TestItem3);
+
+        // Act
+        var property = type.GetProperty("Name");
+
+        // Assert
+        Assert.IsNotNull(property);
+        Assert.AreEqual("Name", property.Name);
+    }
+
+    [TestMethod]
+    public void SetPropertyValueWithPropertyInfoShouldThrowForNullObject()
+    {
+        // Arrange
+        var property = typeof(TestItem3).GetProperty("Name");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).SetPropertyValue(property, value));
+    }
+
+    [TestMethod]
+    public void SetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.SetPropertyValue((PropertyInfo)null, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullObject()
+    {
+        // Arrange
+        var property = typeof(TestItem3).GetProperty("Name");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).TrySetPropertyValue(property, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue((PropertyInfo)null, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithStringNameShouldThrowForNullObject()
+    {
+        // Arrange
+        var propertyName = "Name";
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            ((TestItem3)null).TrySetPropertyValue(propertyName, value));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueWithStringNameShouldThrowForNullPropertyName()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var value = "Test";
+
+        // Act & Assert
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue((string)null, value));
+        Assert.ThrowsException<ArgumentNullException>(() =>
+            item.TrySetPropertyValue("", value));
+    }
+
+    [TestMethod]
+    public void SetPropertyValueShouldHandleValueTypeConversion()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var stringValue = "42";
+
+        // Act & Test integer conversion
+        item.SetPropertyValue("IntValue", stringValue);
+        Assert.AreEqual(42, item.GetPropertyValue("IntValue"));
+
+        // Act & Test boolean conversion  
+        item.SetPropertyValue("BoolValue", "true");
+        Assert.AreEqual(true, item.GetPropertyValue("BoolValue"));
+
+        // Act & Test decimal conversion
+        item.SetPropertyValue("DecimalValue", "123.45");
+        Assert.AreEqual(123.45m, item.GetPropertyValue("DecimalValue"));
+    }
+
+    [TestMethod]
+    public void TrySetPropertyValueShouldCatchAndLogArgumentExceptions()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        var property = typeof(TestItem3).GetProperty("IntValue");
+        
+        // Act - This should not throw, but should catch internal ArgumentNullException
+        item.TrySetPropertyValue(property, "invalid_conversion_value_that_cannot_be_converted_to_int");
+        
+        // Assert - Value should remain unchanged
+        Assert.AreEqual(0, item.GetPropertyValue("IntValue"));
+    }
+
+    [TestMethod]
+    public void GetPropertyValueShouldHandleComplexNestedProperties()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        
+        // Act & Assert for valid nested property
+        var lengthValue = item.GetPropertyValue("Name.Length");
+        Assert.AreEqual(3, lengthValue); // "Duy".Length = 3
+    }
+
+    [TestMethod]
+    public void SetPropertyValueShouldHandleNullableTypes()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        
+        // Act & Assert for nullable int
+        item.SetPropertyValue("NullableIntValue", 123);
+        Assert.AreEqual(123, item.GetPropertyValue("NullableIntValue"));
+        
+        // Set to null
+        item.SetPropertyValue("NullableIntValue", null);
+        Assert.IsNull(item.GetPropertyValue("NullableIntValue"));
+    }
+
+    [TestMethod] 
+    public void GetPropertyShouldHandleCaseInsensitiveSearch()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        
+        // Act
+        var property1 = item.GetProperty("name"); // lowercase
+        var property2 = item.GetProperty("NAME"); // uppercase
+        var property3 = item.GetProperty("NaMe"); // mixed case
+        
+        // Assert
+        Assert.IsNotNull(property1);
+        Assert.IsNotNull(property2);
+        Assert.IsNotNull(property3);
+        Assert.AreEqual("Name", property1.Name);
+        Assert.AreEqual("Name", property2.Name);
+        Assert.AreEqual("Name", property3.Name);
+    }
+
+    [TestMethod]
+    public void SetPropertyValueShouldHandleEnumStringConversion()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        
+        // Act - Set enum value from string
+        item.SetPropertyValue("Type", "Enum1");
+        
+        // Assert
+        Assert.AreEqual(TestEnumObject.Enum1, item.Type);
+    }
+
+    [TestMethod]
+    public void GetPropertyValueShouldReturnNullForInvalidNestedPropertyPath()
+    {
+        // Arrange
+        using var item = new TestItem3("Duy");
+        
+        // Act & Assert for non-existent nested property
+        var result = item.GetPropertyValue("Name.InvalidProperty");
+        Assert.IsNull(result);
+        
+        // Act & Assert for property that doesn't exist on the object
+        var result2 = item.GetPropertyValue("NonExistentProperty.SubProperty");
+        Assert.IsNull(result2);
+    }
 }

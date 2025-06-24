@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DKNet.EfCore.Repos.Abstractions;
@@ -57,7 +55,7 @@ public interface IWriteRepository<TEntity> where TEntity : class
     /// <param name="entities"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<int> BulkInsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    //Task<int> BulkInsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Bulk Update Entities
@@ -65,7 +63,7 @@ public interface IWriteRepository<TEntity> where TEntity : class
     /// <param name="setPropertyCalls"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<int> BulkUpdateAsync(Expression<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>> setPropertyCalls, CancellationToken cancellationToken = default);
+    //Task<int> BulkUpdateAsync(Expression<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>> setPropertyCalls, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Bulk Delete Entities
@@ -73,5 +71,5 @@ public interface IWriteRepository<TEntity> where TEntity : class
     /// <param name="predicate"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<int> BulkDeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    //Task<int> BulkDeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 }

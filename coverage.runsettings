@@ -6,11 +6,24 @@
                 <Configuration>
                     <Include>
                         [DKNet*]*
+                        [SlimBus*]*
                     </Include>
                     <Exclude>
+                        [*.Tests]*
+                        [*Tests]*
+                        [*.TestObjects]*
+                        [*TestDataLayer]*
                     </Exclude>
-            </Configuration>
-        </DataCollector>
-    </DataCollectors>
-</DataCollectionRunSettings>
+                    <ExcludeByFile>
+                        **/bin/**
+                        **/obj/**
+                        **/*Tests.cs
+                        **/*Test.cs
+                        **/TestObjects/**
+                        **/GlobalUsings.cs
+                    </ExcludeByFile>
+                </Configuration>
+            </DataCollector>
+        </DataCollectors>
+    </DataCollectionRunSettings>
 </RunSettings>
