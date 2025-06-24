@@ -99,7 +99,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Assert
         Assert.NotNull(result);
         Assert.Equal("FindMe", result.FirstName);
-        Assert.Equal("findtest1", result.UserName);
+        Assert.Equal("findtest1", result.CreatedBy);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
 
         // Assert
         var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.UserName.StartsWith("bulk"))
+            .Where(u => u.CreatedBy.StartsWith("bulk"))
             .ToListAsync();
         Assert.Equal(3, results.Count);
     }
@@ -187,7 +187,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Assert
         Assert.Equal(2, affectedRows);
         var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.UserName.StartsWith("bulkins"))
+            .Where(u => u.CreatedBy.StartsWith("bulkins"))
             .ToListAsync();
         Assert.Equal(2, results.Count);
     }
@@ -211,7 +211,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Assert
         Assert.Equal(2, affectedRows);
         var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.UserName.StartsWith("bulkupd"))
+            .Where(u => u.CreatedBy.StartsWith("bulkupd"))
             .ToListAsync();
         Assert.All(results, u => Assert.Equal("Updated", u.LastName));
     }

@@ -4,10 +4,6 @@ using DKNet.EfCore.Repos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using EfCore.TestDataLayer;
-using Aspire.Hosting;
-using Aspire.Hosting.SqlServer;
-using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Testing;
 
 namespace EfCore.Repos.Tests;
 
