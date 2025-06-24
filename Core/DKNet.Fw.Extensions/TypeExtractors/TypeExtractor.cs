@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -26,7 +25,6 @@ namespace DKNet.Fw.Extensions.TypeExtractors;
 /// - Use the appropriate filtering methods based on the criteria you want to use.
 /// - Ensure that the assemblies are loaded before attempting to extract types from them.
 /// </remarks>
-[SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]
 internal class TypeExtractor : ITypeExtractor
 {
     private readonly Assembly[] _assemblies;
@@ -131,7 +129,7 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    private ITypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
+    private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
     {
         if (predicate != null)
             _predicates.Add(predicate);
