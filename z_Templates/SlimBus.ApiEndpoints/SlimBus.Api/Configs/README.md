@@ -118,6 +118,14 @@ The configuration system is organized into focused modules, each handling a dist
 - Distributed and memory cache setup.
 - Cache profile management.
 
+#### Rate Limiting (`RateLimits/`)
+
+- Client IP and JWT-based rate limiting.
+- Configurable request limits and time windows.
+- Support for forwarded headers (X-Forwarded-For, X-Real-IP).
+- Automatic user identity extraction from JWT tokens.
+- Feature flag controlled via `FeatureOptions.EnableRateLimit`.
+
 ---
 
 ## Implementation Examples
@@ -127,6 +135,25 @@ The configuration system is organized into focused modules, each handling a dist
 ```csharp
 services.AddAntiforgeryConfig(cookieName: "x-csrf-cookie", headerName: "x-csrf-header");
 app.UseAntiforgeryConfig();
+```
+
+**Rate Limiting**
+
+```csharp
+// Enable in FeatureOptions
+services.Configure<FeatureOptions>(options => options.EnableRateLimit = true);
+
+// Custom configuration (optional)
+services.AddRateLimitConfig(options => {
+    options.DefaultRequestLimit = 5;
+    options.TimeWindowInSeconds = 1;
+});
+
+// Apply to specific endpoints
+app.MapPost("/api/resource", handler).RequireRateLimit();
+
+// Apply to route groups
+var apiGroup = app.MapGroup("/api").RequireRateLimit();
 ```
 
 **Idempotency**

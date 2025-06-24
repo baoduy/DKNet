@@ -19,4 +19,9 @@ public class FeatureOptions
     public bool EnableMsGraphJwtTokenValidation { get; set; }
 
     public bool EnableOpenTelemetry{ get; set; }
+
+    /// <summary>
+    /// Enable Rate Limiting
+    /// </summary>
+    public bool EnableRateLimit { get; set; }
 }
