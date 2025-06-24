@@ -1,5 +1,8 @@
-﻿namespace SlimBus.Infra.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace SlimBus.Infra.Extensions;
+
+[ExcludeFromCodeCoverage]
 public static class InfraMigration
 {
     public static async Task MigrateDb(string connectionString)

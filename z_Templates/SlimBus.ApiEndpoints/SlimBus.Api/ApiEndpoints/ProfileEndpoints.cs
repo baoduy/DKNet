@@ -4,7 +4,7 @@ using SlimBus.AppServices.Profiles.V1.Queries;
 
 namespace SlimBus.Api.ApiEndpoints;
 
-internal sealed class ProfileV1Mapper : IEndpointConfig
+internal sealed class ProfileV1Endpoint : IEndpointConfig
 {
     public string GroupEndpoint => "/profiles";
     public int Version => 1;
@@ -26,7 +26,7 @@ internal sealed class ProfileV1Mapper : IEndpointConfig
     }
 }
 
-internal class ProfileV2Mapper : IEndpointConfig
+internal sealed class ProfileV2Endpoint : IEndpointConfig
 {
     public string GroupEndpoint => "/profiles";
     public int Version => 2;

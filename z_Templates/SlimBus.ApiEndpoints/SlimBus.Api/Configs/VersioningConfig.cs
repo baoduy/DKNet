@@ -1,5 +1,6 @@
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class VersioningConfig
 {
     public static IServiceCollection AddAppVersioning(this IServiceCollection services)

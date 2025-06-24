@@ -1,3 +1,4 @@
+global using System.Diagnostics.CodeAnalysis;
 global using System.Net;
 global using FluentResults;
 global using Microsoft.AspNetCore.Mvc.ModelBinding;

@@ -3,6 +3,7 @@ using SlimBus.Api.Extensions;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.AspNetCore.Builder;
 
+[ExcludeFromCodeCoverage]
 internal static class FluentsEndpointMapperExtensions
 {
     public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder)

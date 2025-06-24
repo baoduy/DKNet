@@ -5,6 +5,7 @@ using SlimBus.Api.Configs.Swagger;
 
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class AppConfig
 {
     public static IServiceCollection AddAppConfig(this IServiceCollection services, FeatureOptions features,

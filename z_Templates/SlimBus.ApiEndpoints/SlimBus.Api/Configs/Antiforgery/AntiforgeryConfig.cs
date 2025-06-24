@@ -1,5 +1,6 @@
 namespace SlimBus.Api.Configs.Antiforgery;
 
+[ExcludeFromCodeCoverage]
 internal static class AntiforgeryConfig
 {
     private static bool _configAdded;

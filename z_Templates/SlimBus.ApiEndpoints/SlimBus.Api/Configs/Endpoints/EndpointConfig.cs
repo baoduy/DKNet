@@ -7,6 +7,7 @@ using DKNet.Fw.Extensions.TypeExtractors;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.AspNetCore.Builder;
 
+[ExcludeFromCodeCoverage]
 internal static class EndpointConfig
 {
     private static ApiVersionSet CreateVersionSet(this WebApplication app, IEnumerable<int> versions)

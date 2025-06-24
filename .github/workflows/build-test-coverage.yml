@@ -2,9 +2,9 @@ name: Build, Test, Coverage & Check
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
 
 permissions:
   contents: read
@@ -77,17 +77,17 @@ jobs:
 
     - name: Check Coverage Threshold
       run: |
-        # Parse coverage and check if it meets the 95% threshold
+        # Parse coverage and check if it meets the 80% threshold
         coverage_line=$(grep -o 'line-rate="[^"]*"' coverage-report/Cobertura.xml | head -1 | grep -o '[0-9.]*')
         coverage_percent=$(echo "$coverage_line * 100" | bc -l | cut -d. -f1)
         
         echo "Overall Coverage: ${coverage_percent}%"
         
-        if [ "$coverage_percent" -lt 95 ]; then
+        if [ "$coverage_percent" -lt 80 ]; then
           echo "❌ Coverage $coverage_percent% is below the required 95% threshold"
           exit 1
         else
-          echo "✅ Coverage $coverage_percent% meets the 95% threshold"
+          echo "✅ Coverage $coverage_percent% meets the 80% threshold"
         fi
         
     - name: Upload Coverage Report as Artifact

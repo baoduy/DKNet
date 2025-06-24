@@ -2,7 +2,7 @@ using SlimBus.Domains.Features.Profiles.Entities;
 
 namespace SlimBus.Infra.Features.Profiles.StaticData;
 
-internal class ProfileData : IDataSeedingConfiguration<CustomerProfile>
+internal sealed class ProfileData : IDataSeedingConfiguration<CustomerProfile>
 {
     public ICollection<CustomerProfile> Data =>
     [

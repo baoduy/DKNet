@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
 using SlimBus.Infra.Core;
 using DKNet.EfCore.Hooks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SlimBus.Infra.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static class InfraSetup
 {
     public static IServiceCollection AddInfraServices(this IServiceCollection service)

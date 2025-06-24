@@ -13,7 +13,7 @@ public class PageProfilePageQuery : Fluents.Queries.IWitPageResponse<ProfileResu
 }
 
 [SuppressMessage("ReSharper", "UnusedType.Global")]
-internal class ProfilePageableQueryValidator : AbstractValidator<PageProfilePageQuery>
+internal sealed class ProfilePageableQueryValidator : AbstractValidator<PageProfilePageQuery>
 {
     public ProfilePageableQueryValidator()
     {
@@ -22,7 +22,7 @@ internal class ProfilePageableQueryValidator : AbstractValidator<PageProfilePage
     }
 }
 
-internal class PageProfilesQueryHandler(
+internal sealed class PageProfilesQueryHandler(
     IReadRepository<Domains.Features.Profiles.Entities.CustomerProfile> repo,
     IMapper mapper) : Fluents.Queries.IPageHandler<PageProfilePageQuery, ProfileResult>
 {

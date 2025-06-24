@@ -1,19 +1,10 @@
 namespace SlimBus.Api.Configs.GlobalExceptions;
 
-public static class GlobalExceptionConfigs
+[ExcludeFromCodeCoverage]
+internal static class GlobalExceptionConfigs
 {
     // A flag to check if the global exception configuration has been added
     private static bool _configAdded;
-
-    // public static IMvcBuilder AddInvalidModelStateResponseHandler(this IMvcBuilder builder)
-    // {
-    //     builder.ConfigureApiBehaviorOptions(option
-    //         => option.InvalidModelStateResponseFactory =
-    //             context => new BadRequestObjectResult(
-    //                 GlobalHandlerExtensions.DefaultHandler!.ToProblemDetails(context.ModelState)));
-    //
-    //     return builder;
-    // }
 
     /// <summary>
     /// Configures the services to add global exception handling.

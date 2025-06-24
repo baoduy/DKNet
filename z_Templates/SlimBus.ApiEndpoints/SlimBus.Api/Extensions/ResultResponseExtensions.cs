@@ -1,6 +1,6 @@
 ﻿namespace SlimBus.Api.Extensions;
 
-public static class ResultResponseExtensions
+internal static class ResultResponseExtensions
 {
     public static IResult Response<TObject>(this IResult<TObject> result, bool isCreated = false)
     {

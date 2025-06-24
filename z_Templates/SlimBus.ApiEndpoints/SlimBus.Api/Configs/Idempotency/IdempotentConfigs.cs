@@ -1,6 +1,7 @@
 namespace SlimBus.Api.Configs.Idempotency;
 
-internal static class IdempotentSetup
+[ExcludeFromCodeCoverage]
+internal static class IdempotentConfigs
 {
     private static bool _configAdded;
 

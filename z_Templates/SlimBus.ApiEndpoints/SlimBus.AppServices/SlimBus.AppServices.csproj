@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="SlimBus.Api.Tests" />
+    <InternalsVisibleTo Include="SlimBus.App.Tests" />
   </ItemGroup>
 
   <ItemGroup>

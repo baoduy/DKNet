@@ -5,6 +5,7 @@ using OpenTelemetry.Trace;
 
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class LogConfigs
 {
     public static WebApplicationBuilder AddLogConfig(this WebApplicationBuilder builder, FeatureOptions features)

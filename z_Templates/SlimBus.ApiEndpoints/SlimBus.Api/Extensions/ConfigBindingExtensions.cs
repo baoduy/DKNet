@@ -1,7 +1,7 @@
 
 namespace SlimBus.Api.Extensions;
 
-public static class ConfigBindingExtensions
+internal static class ConfigBindingExtensions
 {
     public static TConfig Bind<TConfig>(this IConfiguration configuration, string name) where TConfig : class,new()
     {

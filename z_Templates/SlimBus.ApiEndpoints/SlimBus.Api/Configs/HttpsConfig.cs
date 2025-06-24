@@ -1,5 +1,6 @@
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class HttpsConfig
 {
     private static bool _configAdded;

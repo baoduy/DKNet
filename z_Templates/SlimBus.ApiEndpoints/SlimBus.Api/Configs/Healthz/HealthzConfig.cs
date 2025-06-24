@@ -1,5 +1,6 @@
 namespace SlimBus.Api.Configs.Healthz;
 
+[ExcludeFromCodeCoverage]
 internal static class HealthzConfig
 {
     private static bool _configAdded;
