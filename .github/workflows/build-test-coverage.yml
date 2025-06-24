@@ -2,9 +2,9 @@ name: Build, Test, Coverage & Check
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
 
 permissions:
   contents: read
