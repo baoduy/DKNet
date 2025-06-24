@@ -3,6 +3,7 @@ namespace SlimBus.Api.Configs.Auth;
 /// <summary>
 /// Provides extension methods for configuring authentication and authorization in an ASP.NET Core application.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class AuthConfig
 {
     /// <summary>

@@ -2,7 +2,6 @@ using Azure.Monitor.OpenTelemetry.AspNetCore;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using System.Diagnostics.CodeAnalysis;
 
 namespace SlimBus.Api.Configs;
 

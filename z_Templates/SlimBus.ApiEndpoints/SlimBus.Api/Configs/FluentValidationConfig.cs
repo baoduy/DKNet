@@ -3,6 +3,7 @@ using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace SlimBus.Api.Configs;
 
+[ExcludeFromCodeCoverage]
 internal static class FluentValidationConfig
 {
     public static bool ConfigAdded { get; private set; }

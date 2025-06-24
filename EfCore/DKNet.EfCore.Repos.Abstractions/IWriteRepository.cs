@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DKNet.EfCore.Repos.Abstractions;
 
-public interface IWriteRepository<TEntity> where TEntity : class
+public interface IWriteRepository<in TEntity> where TEntity : class
 {
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 

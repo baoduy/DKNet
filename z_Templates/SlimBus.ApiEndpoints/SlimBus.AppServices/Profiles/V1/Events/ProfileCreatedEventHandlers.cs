@@ -1,9 +1,11 @@
 namespace SlimBus.AppServices.Profiles.V1.Events;
 
+public sealed record ProfileCreatedEvent(Guid Id, string Name) : DomainEvent;
+
 /// <summary>
 /// TODO remove this as just for testing purposed only
 /// </summary>
-public sealed class ProfileCreatedEventFromMemoryHandler : Fluents.Events.IHandler<ProfileCreatedEvent>
+internal sealed class ProfileCreatedEventFromMemoryHandler : Fluents.Events.IHandler<ProfileCreatedEvent>
 {
     public static bool Called { get; set; }
 

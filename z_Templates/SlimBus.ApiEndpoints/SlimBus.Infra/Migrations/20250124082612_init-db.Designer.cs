@@ -15,7 +15,6 @@ namespace SlimBus.Infra.Migrations
 {
     [DbContext(typeof(CoreDbContext))]
     [Migration("20250124082612_init-db")]
-    [ExcludeFromCodeCoverage]
     partial class initdb
     {
         /// <inheritdoc />

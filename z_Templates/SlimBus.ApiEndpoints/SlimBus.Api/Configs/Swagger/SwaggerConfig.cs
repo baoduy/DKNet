@@ -1,9 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.OpenApi.Models;
 
 namespace SlimBus.Api.Configs.Swagger;
 
 [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters")]
+[ExcludeFromCodeCoverage]
 internal static class SwaggerConfig
 {
     private static bool _configAdded;

@@ -1,3 +1,4 @@
+using Aspire.Hosting.ServiceBus;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +13,7 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<RedisResource> _cache;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
-    //private readonly IResourceBuilder<ServiceBusResource> _bus;
+    private readonly IResourceBuilder<ServiceBusResource> _bus;
 
     public ApiFixture()
     {
@@ -23,21 +24,21 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
             AllowUnsecuredTransport = true,
         });
 
-        _cache = builder.AddRedis("Redis");
-        var sqlServer = builder.AddSqlServer("sqlServer");
+        _cache = builder.AddRedis("Redis")
+            .WithLifetime(ContainerLifetime.Persistent);
+        var sqlServer = builder.AddSqlServer("sqlServer")
+            .WithLifetime(ContainerLifetime.Persistent);
         _db = sqlServer.AddDatabase("TestDb");
 
-        //_bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json");
+        _bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json")
+            .WithLifetime(ContainerLifetime.Persistent);
         _app = builder.Build();
     }
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment(Environments.Production);
-
-        Environment.SetEnvironmentVariable("Aspire:Store:Path", "~/AspireStorage");
-        //Environment.SetEnvironmentVariable("FeatureManagement:EnableServiceBus", "true");
-
+        Environment.SetEnvironmentVariable("FeatureManagement:EnableServiceBus", "true");
         return base.CreateHost(builder);
     }
 
@@ -63,12 +64,12 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
 
         var cacheConn = await _cache.Resource.GetConnectionStringAsync();
         var dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
-        //var busConn = await _bus.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
-        //busConn = busConn?.Replace("localhost", "127.0.0.1", StringComparison.CurrentCultureIgnoreCase);
+        var busConn = await _bus.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
+        busConn = busConn?.Replace("localhost", "127.0.0.1", StringComparison.CurrentCultureIgnoreCase);
 
         Environment.SetEnvironmentVariable($"ConnectionStrings:{SharedConsts.RedisConnectionString}", cacheConn);
         Environment.SetEnvironmentVariable($"ConnectionStrings:{SharedConsts.DbConnectionString}", dbConn);
-        //Environment.SetEnvironmentVariable($"ConnectionStrings:{SettingKeys.AzureBusConnectionString}", busConn);
+        Environment.SetEnvironmentVariable($"ConnectionStrings:{SharedConsts.AzureBusConnectionString}", busConn);
 
         await Task.Delay(TimeSpan.FromSeconds(15));
 

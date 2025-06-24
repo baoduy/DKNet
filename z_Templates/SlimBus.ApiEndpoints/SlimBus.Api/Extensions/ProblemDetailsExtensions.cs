@@ -1,6 +1,7 @@
 namespace SlimBus.Api.Extensions;
 
-public static class ProblemDetailsExtensions
+[ExcludeFromCodeCoverage]
+internal static class ProblemDetailsExtensions
 {
     public static ProblemDetails? ToProblemDetails(this IResultBase result, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
     {

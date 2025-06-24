@@ -2,7 +2,6 @@
 using SlimBus.Api.Configs.GlobalExceptions;
 using SlimBus.Api.Configs.Idempotency;
 using SlimBus.Api.Configs.Swagger;
-using System.Diagnostics.CodeAnalysis;
 
 namespace SlimBus.Api.Configs;
 
