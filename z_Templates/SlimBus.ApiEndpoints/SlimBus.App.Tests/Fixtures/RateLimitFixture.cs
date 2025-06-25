@@ -1,6 +1,6 @@
 namespace SlimBus.App.Tests.Fixtures;
 
-[Collection(nameof(ShareInfraCollection))]
+[Collection(nameof(ShareInfraCollectionFixture))]
 public sealed class RateLimitFixture(ShareInfraFixture infra) : ApiFixtureBase(infra)
 {
     protected override void SetEnvironmentVariables()

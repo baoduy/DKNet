@@ -89,7 +89,9 @@ public static class StringEncryption
         ArgumentException.ThrowIfNullOrWhiteSpace(plainText);
 
         using var aesAlg = CreateAes(keyString);
+#pragma warning disable CA5401 // Do not use CreateEncryptor with non-default IV - IV is intentionally provided via keyString parameter
         var encryptor = aesAlg.CreateEncryptor();
+#pragma warning restore CA5401
 
         using var msEncrypt = new MemoryStream();
         using var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);

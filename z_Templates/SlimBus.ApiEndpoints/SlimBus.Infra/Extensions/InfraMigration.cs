@@ -15,6 +15,6 @@ public static class InfraMigration
 
         await db.Database.MigrateAsync();
 
-        //TODO: Add other data seeding here. The problems with IDataSeedingConfiguration is not support owned type property.
+        // Data seeding can be added here when needed (IDataSeedingConfiguration has limitations with owned types)
     }
 }

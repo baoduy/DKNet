@@ -5,7 +5,7 @@ internal static class ServiceConfigs
 {
     public static IServiceCollection AddOptions(this IServiceCollection services, IConfiguration configuration)
     {
-        //TODO Add all other options here
+        // Configure core options for the application
         services.Configure<FeatureOptions>(configuration.GetSection(FeatureOptions.Name));
 
         services.ConfigureHttpJsonOptions(op =>

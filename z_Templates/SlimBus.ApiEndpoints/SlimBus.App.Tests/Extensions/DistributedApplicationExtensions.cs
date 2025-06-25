@@ -22,6 +22,7 @@ public static class DistributedApplicationExtensions
     /// <remarks>
     /// If <paramref name="targetStates"/> is null, the default states are <see cref="KnownResourceStates.Running"/> and <see cref="KnownResourceStates.Hidden"/>.
     /// </remarks>
+#pragma warning disable MA0051 // Method is too long - suppressed for test utility method
     public static async Task WaitForResourcesAsync(this DistributedApplication app,
         string[]? targetStates = null, CancellationToken cancellationToken = default)
     {
@@ -90,4 +91,5 @@ public static class DistributedApplicationExtensions
             return (resourceName, state);
         }
     }
+#pragma warning restore MA0051
 }

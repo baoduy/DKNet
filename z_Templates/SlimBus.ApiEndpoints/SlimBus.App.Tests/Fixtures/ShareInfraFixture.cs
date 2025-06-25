@@ -45,8 +45,8 @@ public sealed class ShareInfraFixture : IAsyncLifetime
     }
 }
 
-[CollectionDefinition(nameof(ShareInfraCollection))]
-public sealed class ShareInfraCollection : ICollectionFixture<ShareInfraFixture>
+[CollectionDefinition(nameof(ShareInfraCollectionFixture))]
+public sealed class ShareInfraCollectionFixture : ICollectionFixture<ShareInfraFixture>
 {
     // This class has no code, and is never created. Its purpose is simply
     // to be the place to apply [CollectionDefinition] and all the

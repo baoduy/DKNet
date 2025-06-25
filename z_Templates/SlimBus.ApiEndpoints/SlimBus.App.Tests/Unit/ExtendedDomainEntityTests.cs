@@ -104,7 +104,7 @@ public class ExtendedDomainEntityTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdateName(string emptyString)
+    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdateName(string? emptyString)
     {
         // Arrange
         var originalName = "Original Name";
@@ -121,7 +121,7 @@ public class ExtendedDomainEntityTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdatePhone(string emptyString)
+    public void CustomerProfileUpdateWithVariousEmptyStringsShouldNotUpdatePhone(string? emptyString)
     {
         // Arrange
         var originalPhone = "+1111111111";
