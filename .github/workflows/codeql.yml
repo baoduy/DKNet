@@ -19,8 +19,6 @@ on:
   schedule:
     - cron: '44 4 * * 1'
 
-
-
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -80,6 +78,16 @@ jobs:
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
+    - name: Install SonarCloud Tools
+      run: dotnet tool install --global dotnet-sonarscanner
+
+    - name: Prepare SonarCloud Scan
+      run: dotnet sonarscanner begin \
+        /o:"baoduy2412" \
+        /k:"baoduy_DKNet" \
+        /d:sonar.host.url="https://sonarcloud.io" \
+        /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -94,6 +102,9 @@ jobs:
     - name: Build
       run: dotnet build DKNet.FW.sln --no-restore
 
+    - name: Commit SonarCloud Results
+      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
