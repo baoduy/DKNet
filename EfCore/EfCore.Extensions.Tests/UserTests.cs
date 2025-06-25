@@ -1,8 +1,25 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class UserTests
+public class UserTests : SqlServerTestBase
 {
+    private static MsSqlContainer _sql;
+    private static MyDbContext _db;
+
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        _sql = await StartSqlContainerAsync();
+        _db = CreateDbContext(_sql.GetConnectionString());
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [ClassCleanup]
+    public static async Task ClassCleanup()
+    {
+        _db?.Dispose();
+        await CleanupContainerAsync(_sql);
+    }
 
     [TestMethod]
     public void AddUserAndAddress()
@@ -32,20 +49,20 @@ public class UserTests
             },
         };
 
-        UnitTestSetup.Db.Add(user);
-        UnitTestSetup.Db.SaveChanges();
+        _db.Add(user);
+        _db.SaveChanges();
 
-        var u = UnitTestSetup.Db.Set<User>().Include(i => i.Addresses).First();
+        var u = _db.Set<User>().Include(i => i.Addresses).First();
         u.ShouldNotBeNull();
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
 
         u.Addresses.Remove(u.Addresses.First());
-        UnitTestSetup.Db.SaveChanges();
+        _db.SaveChanges();
 
-        u = UnitTestSetup.Db.Set<User>().First();
+        u = _db.Set<User>().First();
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
 
-        UnitTestSetup.Db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
+        _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
     }
 
     [TestMethod]

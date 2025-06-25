@@ -6,14 +6,31 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class RegisterTests
+public class RegisterTests : SqlServerTestBase
 {
+    private static MsSqlContainer _sql;
+    private static MyDbContext _db;
+
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        _sql = await StartSqlContainerAsync();
+        _db = CreateDbContext(_sql.GetConnectionString());
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [ClassCleanup]
+    public static async Task ClassCleanup()
+    {
+        _db?.Dispose();
+        await CleanupContainerAsync(_sql);
+    }
 
     [TestMethod]
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
-        await UnitTestSetup.Db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy")
         {
             FirstName = "Duy",
             LastName = "Hoang",
@@ -26,10 +43,10 @@ public class RegisterTests
             },
         });
 
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync().ConfigureAwait(false);
 
-        Assert.IsTrue(await UnitTestSetup.Db.Set<User>().CountAsync().ConfigureAwait(false) >= 1);
-        Assert.IsTrue(await UnitTestSetup.Db.Set<Address>().CountAsync().ConfigureAwait(false) >= 1);
+        Assert.IsTrue(await _db.Set<User>().CountAsync().ConfigureAwait(false) >= 1);
+        Assert.IsTrue(await _db.Set<Address>().CountAsync().ConfigureAwait(false) >= 1);
     }
 
     // [TestMethod]
@@ -48,12 +65,8 @@ public class RegisterTests
     [TestMethod]
     public async Task TestCreateDb()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
-                .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-
+        using var sql = await StartSqlContainerAsync();
+        await using var db = CreateDbContext(sql.GetConnectionString());
         await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
 
         //Create User with Address
@@ -77,16 +90,17 @@ public class RegisterTests
 
         Assert.IsTrue(users.Count == 1);
         Assert.IsTrue(adds.Count == 1);
+
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
-
     //[ExpectedException(typeof(DbUpdateException))]
     public async Task TestCreateDbCustomMapper()
     {
+        using var sql = await StartSqlContainerAsync();
         await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
+            .UseSqlServer(sql.GetConnectionString())
             //No Assembly provided it will scan the MyDbContext assembly.
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
                 .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
@@ -107,37 +121,41 @@ public class RegisterTests
         await db.SaveChangesAsync().ConfigureAwait(false);
 
         (await db.Set<Address>().AnyAsync().ConfigureAwait(false)).ShouldBeTrue();
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
-    public void TestCreateDbNoAssembly()
+    public async Task TestCreateDbNoAssembly()
     {
+        using var sql = await StartSqlContainerAsync();
         using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
+            .UseSqlServer(sql.GetConnectionString())
             //No Assembly provided it will scan the MyDbContext assembly.
             .UseAutoConfigModel(op => op.ScanFrom()
                 .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
             .Options);
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
-    public void TestCreateDbWithAssembly()
+    public async Task TestCreateDbWithAssembly()
     {
+        using var sql = await StartSqlContainerAsync();
         using var db = new MyDbContext(new DbContextOptionsBuilder<MyDbContext>()
             //No Assembly provided it will scan the MyDbContext assembly.
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .UseSqliteMemory()
+            .UseSqlServer(sql.GetConnectionString())
             .Options);
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
-
     //[ExpectedException(typeof(DbUpdateException))]
     public async Task TestCreateDbValidate()
     {
+        using var sql = await StartSqlContainerAsync();
         await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
+            .UseSqlServer(sql.GetConnectionString())
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
                 .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
             .Options);
@@ -155,27 +173,29 @@ public class RegisterTests
         });
 
         await db.SaveChangesAsync().ConfigureAwait(false);
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
     public async Task TestEnumStatus1DataSeeding()
     {
+        using var sql = await StartSqlContainerAsync();
         await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
+            .UseSqlServer(sql.GetConnectionString())
             //No Assembly provided it will scan the MyDbContext assembly.
             .UseAutoConfigModel()
             .Options);
         await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
         (await db.Set<EnumTables<EnumStatus1>>().CountAsync().ConfigureAwait(false)).ShouldBe(3);
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
     public async Task TestEnumStatusDataSeeding()
     {
+        using var sql = await StartSqlContainerAsync();
         await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
+            .UseSqlServer(sql.GetConnectionString())
             //No Assembly provided it will scan the MyDbContext assembly.
             .UseAutoConfigModel()
             .Options);
@@ -184,14 +204,16 @@ public class RegisterTests
 
         var first = await db.Set<EnumTables<EnumStatus>>().FirstAsync().ConfigureAwait(false);
         first.Id.ShouldBeGreaterThanOrEqualTo(0);
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
     [ExpectedException(typeof(InvalidOperationException))]
     public async Task TestIgnoredEntityAsync()
     {
+        using var sql = await StartSqlContainerAsync();
         await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
+            .UseSqlServer(sql.GetConnectionString())
             .UseAutoConfigModel(op =>
                 op.ScanFrom(typeof(MyDbContext).Assembly)
                     .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
@@ -200,32 +222,36 @@ public class RegisterTests
         await db.Database.EnsureCreatedAsync();
 
         var list = await db.Set<IgnoredAutoMapperEntity>().ToListAsync();
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
-
     //[Ignore]
     [ExpectedException(typeof(InvalidOperationException))]
-    public void TestWithCustomEntityMapperBad()
+    public async Task TestWithCustomEntityMapperBad()
     {
+        using var sql = await StartSqlContainerAsync();
         using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
+            .UseSqlServer(sql.GetConnectionString())
             .UseAutoConfigModel(op =>
                 op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
             .Options);
 
         db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
+        await CleanupContainerAsync(sql);
     }
 
     [TestMethod]
     [ExpectedException(typeof(ArgumentNullException))]
-    public void TestWithCustomEntityMapperNullFilterBad()
+    public async Task TestWithCustomEntityMapperNullFilterBad()
     {
+        using var sql = await StartSqlContainerAsync();
         using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
+            .UseSqlServer(sql.GetConnectionString())
             .UseAutoConfigModel(op =>
                 op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null))
             .Options);
+        await CleanupContainerAsync(sql);
     }
 }

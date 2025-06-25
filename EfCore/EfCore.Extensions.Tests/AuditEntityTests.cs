@@ -1,8 +1,25 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class AuditEntityTests
+public class AuditEntityTests : SqlServerTestBase
 {
+    private static MsSqlContainer _sql;
+    private static MyDbContext _db;
+
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        _sql = await StartSqlContainerAsync();
+        _db = CreateDbContext(_sql.GetConnectionString());
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [ClassCleanup]
+    public static async Task ClassCleanup()
+    {
+        _db?.Dispose();
+        await CleanupContainerAsync(_sql);
+    }
 
     [TestMethod]
     public void TestCreatingEntity()
@@ -20,10 +37,10 @@ public class AuditEntityTests
     [TestMethod]
     public async Task TestUpdatingEntityAsync()
     {
-        await UnitTestSetup.Db.SeedData().ConfigureAwait(false);
-        UnitTestSetup.Db.ChangeTracker.Clear();
+        await _db.SeedData().ConfigureAwait(false);
+        _db.ChangeTracker.Clear();
 
-        var user = await UnitTestSetup.Db.Set<User>().FirstAsync();
+        var user = await _db.Set<User>().FirstAsync();
         user.ShouldNotBeNull();
 
         user.UpdatedByUser("Hoang");

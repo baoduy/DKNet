@@ -1,19 +1,34 @@
 ﻿
-
 namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class GuidEntityTests
+public class GuidEntityTests : SqlServerTestBase
 {
+    private static MsSqlContainer _sql;
+    private static MyDbContext _db;
 
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        _sql = await StartSqlContainerAsync();
+        _db = CreateDbContext(_sql.GetConnectionString());
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [ClassCleanup]
+    public static async Task ClassCleanup()
+    {
+        _db?.Dispose();
+        await CleanupContainerAsync(_sql);
+    }
 
     [TestMethod]
     public async Task TestCreateAsync()
     {
         var entity = new GuidEntity {Name = "Duy"};
 
-        UnitTestSetup.Db.Add(entity);
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        _db.Add(entity);
+        await _db.SaveChangesAsync().ConfigureAwait(false);
 
         entity.Id.ShouldNotBe(Guid.Empty);
     }
@@ -23,8 +38,8 @@ public class GuidEntityTests
     {
         var entity = new GuidAuditEntity {Name = "Duy"};
 
-        UnitTestSetup.Db.Add(entity);
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        _db.Add(entity);
+        await _db.SaveChangesAsync().ConfigureAwait(false);
 
         entity.Id.ShouldNotBe(Guid.Empty);
     }
@@ -37,7 +52,7 @@ public class GuidEntityTests
 
         entity.Name = "Hoang";
 
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync().ConfigureAwait(false);
 
         entity.Id.ToString().ShouldBe(oldId);
     }
@@ -50,7 +65,7 @@ public class GuidEntityTests
 
         entity.Name = "Hoang";
 
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync().ConfigureAwait(false);
 
         entity.Id.ToString().ShouldBe(oldId);
     }
