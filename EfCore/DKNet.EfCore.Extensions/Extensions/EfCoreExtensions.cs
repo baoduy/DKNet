@@ -6,8 +6,38 @@ using DKNet.EfCore.Extensions.Registers;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// Provides extension methods for Entity Framework Core operations.
+/// </summary>
+/// <remarks>
+/// Purpose: To extend Entity Framework Core functionality with utility methods for common operations.
+/// Rationale: Simplifies complex EF Core operations and provides reusable patterns for entity management.
+/// 
+/// Functionality:
+/// - Table name resolution for entities
+/// - Primary key property and value extraction
+/// - Database sequence value generation with formatting support
+/// - Type resolution utilities for entity mapping
+/// 
+/// Integration:
+/// - Extends DbContext with additional utility methods
+/// - Works with DKNet.EfCore.Abstractions attributes
+/// - Supports SQL Server-specific features like sequences
+/// 
+/// Best Practices:
+/// - Use sequence methods only with SQL Server provider
+/// - Ensure sequence attributes are properly configured
+/// - Handle null returns appropriately from utility methods
+/// </remarks>
 public static class EfCoreExtensions
 {
+    /// <summary>
+    /// Gets the qualified table name for the specified entity type.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="entityType">The entity type to get the table name for.</param>
+    /// <returns>The schema-qualified table name.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
     internal static string GetTableName(this DbContext context, Type entityType)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -15,6 +45,13 @@ public static class EfCoreExtensions
         return entity.GetSchemaQualifiedTableName()!;
     }
 
+    /// <summary>
+    /// Gets the primary key property names for the specified entity type.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="entityType">The entity type to get primary key properties for.</param>
+    /// <returns>An enumerable of primary key property names.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
     private static IEnumerable<string> GetPrimaryKeyProperties(this DbContext context, Type entityType)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -59,7 +96,7 @@ public static class EfCoreExtensions
         (TValue?)await dbContext.NextSeqValue(name).ConfigureAwait(false);
 
     /// <summary>
-    ///     Get the Next Sequence value
+    /// Gets the Next Sequence value
     /// </summary>
     /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
     /// <param name="dbContext">The database context.</param>
@@ -85,7 +122,7 @@ public static class EfCoreExtensions
             rs = await result.GetFieldValueAsync<object>(0);
 
         await dbContext.Database.CloseConnectionAsync();
-        return rs ?? throw new InvalidOperationException(type.ToString());
+        return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
     }
 
     /// <summary>

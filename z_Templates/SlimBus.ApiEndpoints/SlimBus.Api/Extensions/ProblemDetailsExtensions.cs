@@ -10,19 +10,7 @@ internal static class ProblemDetailsExtensions
         var errors = result.Errors.Select(e => e.Message).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var firstMessage = errors.FirstOrDefault() ?? statusCode.ToString();
 
-        var problem = new ProblemDetails
-        {
-            Status = (int)statusCode,
-            Type = statusCode.ToString(),
-            Title = "Error",
-            Detail = firstMessage,
-            Extensions =
-            {
-                ["errors"] = errors
-            },
-        };
-
-        return problem;
+        return CreateProblemDetails(statusCode, firstMessage, errors);
     }
 
     public static ProblemDetails? ToProblemDetails(this ModelStateDictionary status)
@@ -35,18 +23,22 @@ internal static class ProblemDetailsExtensions
             errors.Add(err.ErrorMessage);
 
         var firstMessage = errors.FirstOrDefault() ?? nameof(HttpStatusCode.BadRequest);
-        var problem = new ProblemDetails
+        
+        return CreateProblemDetails(HttpStatusCode.BadRequest, firstMessage, errors);
+    }
+
+    private static ProblemDetails CreateProblemDetails(HttpStatusCode statusCode, string detail, IEnumerable<string> errors)
+    {
+        return new ProblemDetails
         {
-            Status = (int)HttpStatusCode.BadRequest,
+            Status = (int)statusCode,
+            Type = statusCode.ToString(),
             Title = "Error",
-            Detail = firstMessage,
-            Type = nameof(HttpStatusCode.BadRequest),
+            Detail = detail,
             Extensions =
             {
                 ["errors"] = errors
             },
         };
-
-        return problem;
     }
 }
