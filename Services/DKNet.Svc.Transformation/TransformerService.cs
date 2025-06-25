@@ -56,7 +56,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     private object TryGetAndCacheValue(IToken token, object[] additionalData) =>
         options.DisabledLocalCache
             ? TryGetValue(token, additionalData)
-            : _cacheService.GetOrAdd(token.Token.ToUpper(System.Globalization.CultureInfo.CurrentCulture),
+            : _cacheService.GetOrAdd(token.Token.ToUpperInvariant(),
                 _ => TryGetValue(token, additionalData));
 
     /// <summary>
@@ -72,7 +72,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         var val = await dataProvider(token).ConfigureAwait(false);
         return options.DisabledLocalCache
             ? val
-            : _cacheService.GetOrAdd(token.Token.ToUpper(System.Globalization.CultureInfo.CurrentCulture), _ => val);
+            : _cacheService.GetOrAdd(token.Token.ToUpperInvariant(), _ => val);
     }
 
     /// <summary>
