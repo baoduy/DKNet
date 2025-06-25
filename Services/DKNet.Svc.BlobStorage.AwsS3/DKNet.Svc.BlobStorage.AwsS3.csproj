@@ -21,8 +21,8 @@
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="AWSSDK.Core" Version="4.0.0.12" />
-      <PackageReference Include="AWSSDK.S3" Version="4.0.2" />
+      <PackageReference Include="AWSSDK.Core" Version="4.0.0.13" />
+      <PackageReference Include="AWSSDK.S3" Version="4.0.2.1" />
       <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
