@@ -19,6 +19,10 @@ on:
   schedule:
     - cron: '44 4 * * 1'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -90,11 +94,7 @@ jobs:
       run: dotnet tool install --global dotnet-sonarscanner
 
     - name: Prepare SonarCloud Scan
-      run: dotnet sonarscanner begin \
-        /o:"baoduy2412" \
-        /k:"baoduy_DKNet" \
-        /d:sonar.host.url="https://sonarcloud.io" \
-        /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
