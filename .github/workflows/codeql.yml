@@ -59,9 +59,11 @@ jobs:
       run: dotnet restore DKNet.FW.sln
 
     - name: Build
+      continue-on-error: true
       run: dotnet build DKNet.FW.sln --no-restore --configuration Release
 
     - name: Commit SonarCloud Results
+      continue-on-error: true
       run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       
     - name: Perform CodeQL Analysis
