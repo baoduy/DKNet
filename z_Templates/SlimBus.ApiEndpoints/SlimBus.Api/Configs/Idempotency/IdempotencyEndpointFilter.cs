@@ -18,6 +18,7 @@ internal sealed class IdempotencyEndpointFilter(IIdempotencyKeyRepository cacher
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var idempotencyKey = context.HttpContext.Request.Headers[_options.IdempotencyHeaderKey].FirstOrDefault();
+        idempotencyKey = idempotencyKey?.Replace("\n", "").Replace("\r", ""); // Sanitize user input
         logger.LogDebug("Checking idempotency header key: {Key}", _options.IdempotencyHeaderKey);
 
         var endpoint = context.HttpContext.GetEndpoint();

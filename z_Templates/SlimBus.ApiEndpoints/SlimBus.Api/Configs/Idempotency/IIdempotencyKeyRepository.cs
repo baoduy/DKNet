@@ -29,6 +29,7 @@ internal class IdempotencyKeyRepository(IDistributedCache cache, IOptions<Idempo
 
     public async ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string idempotencyKey)
     {
+        idempotencyKey = idempotencyKey.Replace("\n", "").Replace("\r", ""); // Sanitize user input
         var cacheKey = $"{_options.CachePrefix}{idempotencyKey}";
         logger.LogDebug("Trying to get existing result for cache key: {CacheKey}", cacheKey);
 
@@ -40,6 +41,7 @@ internal class IdempotencyKeyRepository(IDistributedCache cache, IOptions<Idempo
 
     public async ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, string? result)
     {
+        idempotencyKey = idempotencyKey.Replace("\n", "").Replace("\r", ""); // Sanitize user input
         var cacheKey = $"{_options.CachePrefix}{idempotencyKey}";
         logger.LogDebug("Setting cache result for cache key: {CacheKey}", cacheKey);
 
