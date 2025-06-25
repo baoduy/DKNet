@@ -16,10 +16,13 @@ internal static class RateLimitConfig
     /// <param name="services">The service collection to configure</param>
     /// <param name="configuration">configuration action for rate limit options</param>
     /// <returns>The service collection with rate limiting configured</returns>
-    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration, FeatureOptions feature)
     {
+        _configAdded = false;
+        if (!feature.EnableRateLimit) return services;
+
         services.Configure<RateLimitOptions>(configuration.GetSection(RateLimitOptions.Name));
-        services.AddSingleton<IRateLimitKeyProvider,RateLimitKeyProvider>();
+        services.AddSingleton<IRateLimitKeyProvider, RateLimitKeyProvider>();
 
         // You will implement ISubscriptionRateLimitResolver and register it
         services.AddScoped<ISubscriptionRateLimitProvider, SubscriptionRateLimitProvider>();

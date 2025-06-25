@@ -6,6 +6,7 @@ using SlimBus.Infra.ExternalEvents;
 
 namespace SlimBus.App.Tests.Integration;
 
+[Collection(nameof(ShareInfraCollection))]
 public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
 {
     [Theory]

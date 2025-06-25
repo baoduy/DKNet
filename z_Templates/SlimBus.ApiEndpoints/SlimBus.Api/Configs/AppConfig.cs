@@ -24,10 +24,9 @@ internal static class AppConfig
         if (features.EnableHttps)
             services.AddHttpsConfig();
 
-        if (features.EnableRateLimit)
-            services.AddRateLimitConfig(configuration);
 
-        services.AddHttpContextAccessor()
+        services.AddRateLimitConfig(configuration, features)
+            .AddHttpContextAccessor()
             .AddFeatureManagement();
 
         services.CacheConfig(configuration)
