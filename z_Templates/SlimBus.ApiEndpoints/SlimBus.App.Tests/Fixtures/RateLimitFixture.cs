@@ -69,7 +69,7 @@ public sealed class RateLimitFixture : WebApplicationFactory<Api.Program>, IAsyn
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
         var cacheConn = await _cache.Resource.GetConnectionStringAsync();
-        var dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
+        var dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";Connection Timeout=60;TrustServerCertificate=true";
         //var busConn = await _bus.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
         //busConn = busConn?.Replace("localhost", "127.0.0.1", StringComparison.CurrentCultureIgnoreCase);
 
