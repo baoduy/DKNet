@@ -67,6 +67,8 @@ All projects in this framework serve as reference implementations and template f
 
 The framework implements a full DDD approach with:
 
+![Diagram](Diagram.png)
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   API Layer     │    │  Application    │    │   Domain        │
