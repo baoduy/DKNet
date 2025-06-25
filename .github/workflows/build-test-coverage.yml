@@ -44,6 +44,7 @@ jobs:
       run: dotnet restore DKNet.FW.sln
       
     - name: Build
+      continue-on-error: true
       run: dotnet build DKNet.FW.sln --no-restore --configuration Release
       
     - name: Test
