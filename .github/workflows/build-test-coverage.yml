@@ -38,7 +38,7 @@ jobs:
       run: dotnet tool install --global dotnet-sonarscanner
 
     - name: Prepare SonarCloud Scan
-      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.vscoveragexml.reportsPaths="**/coverage.cobertura.xml" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
