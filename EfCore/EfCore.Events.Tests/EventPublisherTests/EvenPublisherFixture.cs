@@ -5,14 +5,18 @@ namespace EfCore.Events.Tests.EventPublisherTests;
 
 public sealed class EvenPublisherFixture : IDisposable
 {
+    private readonly MsSqlContainer _sqlContainer;
+
     public EvenPublisherFixture()
     {
+        _sqlContainer = SqlServerTestHelper.StartSqlContainerAsync().GetAwaiter().GetResult();
+        
         Provider = new ServiceCollection()
             .AddLogging()
             .AddEventPublisher<DddContext, TestEventPublisher>()
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
-            .AddDbContextWithHook<DddContext>(builder => builder.UseSqliteMemory().UseAutoConfigModel())
+            .AddDbContextWithHook<DddContext>(builder => builder.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
             .BuildServiceProvider();
 
         Context = Provider.GetRequiredService<DddContext>();
@@ -33,5 +37,6 @@ public sealed class EvenPublisherFixture : IDisposable
     {
         Provider?.Dispose();
         Context?.Dispose();
+        SqlServerTestHelper.CleanupContainerAsync(_sqlContainer).GetAwaiter().GetResult();
     }
 }

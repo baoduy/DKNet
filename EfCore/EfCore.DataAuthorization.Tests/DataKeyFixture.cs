@@ -6,13 +6,17 @@ namespace EfCore.DataAuthorization.Tests;
 
 public sealed class DataKeyFixture : IDisposable
 {
+    private readonly MsSqlContainer _sqlContainer;
+
     public DataKeyFixture()
     {
+        _sqlContainer = SqlServerTestHelper.StartSqlContainerAsync().GetAwaiter().GetResult();
+        
         Provider = new ServiceCollection()
             .AddLogging()
             .AddAutoDataKeyProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqliteMemory()
+                builder.UseSqlServer(_sqlContainer.GetConnectionString())
                     .UseAutoConfigModel())
             .BuildServiceProvider();
 
@@ -32,5 +36,6 @@ public sealed class DataKeyFixture : IDisposable
     {
         Provider?.Dispose();
         Context?.Dispose();
+        SqlServerTestHelper.CleanupContainerAsync(_sqlContainer).GetAwaiter().GetResult();
     }
 }

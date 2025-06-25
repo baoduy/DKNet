@@ -2,11 +2,15 @@ namespace EfCore.HookTests.Hooks;
 
 public sealed class HookFixture : IDisposable
 {
+    private readonly MsSqlContainer _sqlContainer;
+
     public HookFixture()
     {
+        _sqlContainer = SqlServerTestHelper.StartSqlContainerAsync().GetAwaiter().GetResult();
+        
         Provider = new ServiceCollection()
             .AddLogging()
-            .AddDbContextWithHook<HookContext>(o => o.UseSqliteMemory().UseAutoConfigModel())
+            .AddDbContextWithHook<HookContext>(o => o.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
             .AddHook<HookContext, Hook>()
             .BuildServiceProvider();
 
@@ -17,5 +21,9 @@ public sealed class HookFixture : IDisposable
 
     public ServiceProvider Provider { get; }
 
-    public void Dispose() => Provider?.Dispose();
+    public void Dispose()
+    {
+        Provider?.Dispose();
+        SqlServerTestHelper.CleanupContainerAsync(_sqlContainer).GetAwaiter().GetResult();
+    }
 }
