@@ -59,7 +59,7 @@ jobs:
       run: dotnet restore DKNet.FW.sln
 
     - name: Build
-      run: dotnet build DKNet.FW.sln --no-restore
+      run: dotnet build DKNet.FW.sln --no-restore --configuration Release
 
     - name: Commit SonarCloud Results
       run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
