@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -57,10 +56,7 @@ public static class StringHashing
         var inputBytes = Encoding.UTF8.GetBytes(value);
         var hashBytes = SHA256.HashData(inputBytes);
 
-        // Convert the byte array to a hexadecimal string
-        var sb = new StringBuilder();
-        foreach (var b in hashBytes)
-            sb.Append(b.ToString("x2", CultureInfo.CurrentCulture));
-        return sb.ToString();
+        // Use built-in .NET framework method for hex conversion
+        return Convert.ToHexStringLower(hashBytes);
     }
 }

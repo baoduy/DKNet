@@ -8,6 +8,30 @@ using DKNet.Svc.BlobStorage.Abstractions;
 
 namespace DKNet.Svc.BlobStorage.Local;
 
+/// <summary>
+/// Provides local file system-based blob storage implementation.
+/// </summary>
+/// <remarks>
+/// Purpose: To provide blob storage capabilities using the local file system.
+/// Rationale: Enables blob storage functionality for development, testing, or scenarios where cloud storage is not required.
+/// 
+/// Functionality:
+/// - Stores blobs as files in a local directory structure
+/// - Supports directory-based organization
+/// - Provides file metadata through BlobDetails
+/// - Implements all IBlobService operations except public URL generation
+/// 
+/// Integration:
+/// - Implements IBlobService for compatibility with other blob storage providers
+/// - Uses LocalDirectoryOptions for configuration
+/// - Leverages standard .NET file I/O operations
+/// 
+/// Best Practices:
+/// - Ensure the root folder has appropriate read/write permissions
+/// - Consider file system limitations when storing large numbers of files
+/// - Use cloud storage for production scenarios requiring public access
+/// - Monitor disk space usage in production environments
+/// </remarks>
 public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<LocalBlobService> logger)
     : BlobService(options.Value)
 {
@@ -19,6 +43,17 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         if (name.StartsWith('/')) name = name[1..];
         return Path.GetFullPath(Path.Combine(_rootFolder, name));
     }
+
+    private BlobDetails CreateBlobDetails(FileInfo file) => new()
+    {
+        ContentType = file.FullName.GetContentTypeByExtension(),
+        ContentLength = file.Length,
+        CreatedOn = file.CreationTime,
+        LastModified = file.LastWriteTime
+    };
+
+    private string GetRelativePath(string fullPath) => 
+        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
 
     public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
     {
@@ -40,21 +75,16 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     {
         var finalFile = GetFinalPath(blob);
         if (!File.Exists(finalFile)) throw new FileNotFoundException("File not found", blob.Name);
+        
         var file = new FileInfo(finalFile);
         var data = await BinaryData.FromStreamAsync(file.OpenRead(), cancellationToken: cancellationToken);
+        var relativePath = GetRelativePath(file.FullName);
 
-        return new BlobDataResult(file.FullName.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase),
-            data)
+        return new BlobDataResult(relativePath, data)
         {
-            Name = file.FullName.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase),
+            Name = relativePath,
             Type = BlobTypes.File,
-            Details = new BlobDetails
-            {
-                ContentType = file.FullName.GetContentTypeByExtension(),
-                ContentLength = file.Length,
-                CreatedOn = file.CreationTime,
-                LastModified = file.LastWriteTime
-            }
+            Details = CreateBlobDetails(file)
         };
     }
 
@@ -71,42 +101,27 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                yield return new BlobResult(file.FullName.Replace(_rootFolder, string.Empty,
-                    StringComparison.OrdinalIgnoreCase))
+                yield return new BlobResult(GetRelativePath(file.FullName))
                 {
                     Type = BlobTypes.File,
-                    Details = new BlobDetails
-                    {
-                        ContentType = file.FullName.GetContentTypeByExtension(),
-                        ContentLength = file.Length,
-                        CreatedOn = file.CreationTime,
-                        LastModified = file.LastWriteTime
-                    }
+                    Details = CreateBlobDetails(file)
                 };
             }
 
             foreach (var folder in directory.EnumerateDirectories("*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                yield return new BlobResult(folder.FullName.Replace(_rootFolder, string.Empty,
-                    StringComparison.OrdinalIgnoreCase));
+                yield return new BlobResult(GetRelativePath(folder.FullName));
             }
         }
         else
         {
             var file = new FileInfo(internalLocation);
             if (file.Exists)
-                yield return new BlobResult(file.FullName.Replace(_rootFolder, string.Empty,
-                    StringComparison.OrdinalIgnoreCase))
+                yield return new BlobResult(GetRelativePath(file.FullName))
                 {
                     Type = BlobTypes.File,
-                    Details = new BlobDetails
-                    {
-                        ContentType = file.FullName.GetContentTypeByExtension(),
-                        ContentLength = file.Length,
-                        CreatedOn = file.CreationTime,
-                        LastModified = file.LastWriteTime
-                    }
+                    Details = CreateBlobDetails(file)
                 };
         }
     }
