@@ -17,7 +17,7 @@ internal sealed class SubscriptionRateLimitProvider(HybridCache cache, IOptions<
         cache.GetOrCreateAsync(key, _ =>
         {
             var option = new FixedWindowRateLimiterOptions();
-            //TODO: Load subscription rate limit options from a database and fallback to the default options
+            // Configure rate limit options from defaults (database loading can be implemented here)
             option.PermitLimit = _option.DefaultRequestLimit;
             option.QueueLimit = _option.QueueLimit;
             option.QueueProcessingOrder = _option.QueueProcessingOrder;

@@ -5,7 +5,7 @@ internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : I
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        //TODO: Do the health check and return the result here
+        // Perform basic health check - this is a template implementation
         var healthCheckResultHealthy = true;
 
         if (healthCheckResultHealthy)

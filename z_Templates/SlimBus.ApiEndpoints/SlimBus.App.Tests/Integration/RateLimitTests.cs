@@ -2,7 +2,7 @@ using SlimBus.App.Tests.Fixtures;
 
 namespace SlimBus.App.Tests.Integration;
 
-[Collection(nameof(ShareInfraCollection))]
+[Collection(nameof(ShareInfraCollectionFixture))]
 public class RateLimitTests(RateLimitFixture api) : IClassFixture<RateLimitFixture>
 {
     [Fact]

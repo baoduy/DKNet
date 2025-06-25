@@ -43,7 +43,7 @@ public static class InfraSetup
     internal static DbContextOptionsBuilder UseSqlWithMigration(this DbContextOptionsBuilder builder,
         string connectionString)
     {
-        //TODO: Workaround solution to ignored the error due to this bug https://github.com/dotnet/efcore/issues/35110;
+        // Suppress warnings for known EF Core issues (see https://github.com/dotnet/efcore/issues/35110)
         builder.ConfigureWarnings(x => x.Ignore(RelationalEventId.PendingModelChangesWarning));
         builder.ConfigureWarnings(x => x.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
