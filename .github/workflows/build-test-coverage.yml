@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   issues: write
@@ -29,7 +33,13 @@ jobs:
           8.0.x
           9.0.x
         include-prerelease: false
-        
+
+    - name: Install SonarCloud Tools
+      run: dotnet tool install --global dotnet-sonarscanner
+
+    - name: Prepare SonarCloud Scan
+      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
       
@@ -56,6 +66,10 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
         verbose: true
+
+    - name: Commit SonarCloud Results
+      continue-on-error: true
+      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
     - name: Verify Coverage Report
       run: |
