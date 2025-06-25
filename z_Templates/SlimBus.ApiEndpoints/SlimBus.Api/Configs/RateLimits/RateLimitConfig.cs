@@ -15,6 +15,7 @@ internal static class RateLimitConfig
     /// </summary>
     /// <param name="services">The service collection to configure</param>
     /// <param name="configuration">configuration action for rate limit options</param>
+    /// <param name="feature">Feature options to determine if rate limiting is enabled</param>
     /// <returns>The service collection with rate limiting configured</returns>
     public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration, FeatureOptions feature)
     {
