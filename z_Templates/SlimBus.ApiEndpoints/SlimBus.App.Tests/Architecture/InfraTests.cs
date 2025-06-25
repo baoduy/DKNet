@@ -1,7 +1,6 @@
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Repos.Abstractions;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 using SlimBus.Infra.Extensions;
 using SlimMessageBus;
 

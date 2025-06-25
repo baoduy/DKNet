@@ -1,11 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using SlimBus.App.Tests.Extensions;
-using SlimBus.Infra;
-using SlimBus.Share;
-using SlimBus.Share.Options;
-
 namespace SlimBus.App.Tests.Fixtures;
 
 public sealed class RateLimitFixture : WebApplicationFactory<Api.Program>, IAsyncLifetime
@@ -24,10 +16,8 @@ public sealed class RateLimitFixture : WebApplicationFactory<Api.Program>, IAsyn
             AllowUnsecuredTransport = true,
         });
 
-        _cache = builder.AddRedis("Redis")
-            .WithLifetime(ContainerLifetime.Persistent);
-        var sqlServer = builder.AddSqlServer("sqlServer")
-            .WithLifetime(ContainerLifetime.Persistent);
+        _cache = builder.AddRedis("Redis");
+        var sqlServer = builder.AddSqlServer("sqlServer");
         _db = sqlServer.AddDatabase("TestDb");
 
         // _bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json")
@@ -37,12 +27,12 @@ public sealed class RateLimitFixture : WebApplicationFactory<Api.Program>, IAsyn
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        builder.UseEnvironment(Environments.Production);
+        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableRateLimit)}", "true");
         Environment.SetEnvironmentVariable("RateLimit:DefaultRequestLimit", "1");
         Environment.SetEnvironmentVariable("FeatureManagement:TimeWindowInSeconds", "1");
         Environment.SetEnvironmentVariable("FeatureManagement:QueueLimit", "1");
 
-        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableRateLimit)}", "true");
+
         Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableServiceBus)}", "false");
         Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.RequireAuthorization)}", "false");
         return base.CreateHost(builder);

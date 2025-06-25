@@ -1,10 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using SlimBus.App.Tests.Extensions;
-using SlimBus.Infra;
-using SlimBus.Share;
-
 namespace SlimBus.App.Tests.Fixtures;
 
 public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifetime
@@ -23,10 +16,8 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
             AllowUnsecuredTransport = true,
         });
 
-        _cache = builder.AddRedis("Redis")
-            .WithLifetime(ContainerLifetime.Persistent);
-        var sqlServer = builder.AddSqlServer("sqlServer")
-            .WithLifetime(ContainerLifetime.Persistent);
+        _cache = builder.AddRedis("Redis");
+        var sqlServer = builder.AddSqlServer("sqlServer");
         _db = sqlServer.AddDatabase("TestDb");
 
         // _bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json")
@@ -36,7 +27,7 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        builder.UseEnvironment(Environments.Production);
+        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableRateLimit)}", "false");
         Environment.SetEnvironmentVariable("FeatureManagement:EnableServiceBus", "false");
         return base.CreateHost(builder);
     }

@@ -1,4 +1,3 @@
-using SlimBus.App.Tests.Extensions;
 using SlimBus.App.Tests.Fixtures;
 using SlimBus.AppServices.Profiles.V1.Actions;
 using SlimBus.AppServices.Profiles.V1.Events;
