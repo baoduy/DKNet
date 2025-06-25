@@ -30,12 +30,6 @@ jobs:
           9.0.x
         include-prerelease: false
         
-    - name: Verify .NET Installation
-      run: |
-        dotnet --version
-        dotnet --list-sdks
-        dotnet --list-runtimes
-        
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
       
