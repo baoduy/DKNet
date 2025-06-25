@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+
 namespace SlimBus.Api.Configs.RateLimits;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace SlimBus.Api.Configs.RateLimits;
 /// </summary>
 internal sealed class RateLimitOptions
 {
+    public static string Name => "RateLimit";
+
     /// <summary>
     /// Default number of requests allowed per time window
     /// </summary>
@@ -16,21 +20,12 @@ internal sealed class RateLimitOptions
     public int TimeWindowInSeconds { get; set; } = 1;
 
     /// <summary>
-    /// Maximum number of queued requests when rate limit is reached
+    /// Maximum number of queued requests when the rate limit is reached
     /// </summary>
     public int QueueLimit { get; set; }
 
     /// <summary>
     /// Queue processing order
     /// </summary>
-    public RateLimitQueueProcessingOrder QueueProcessingOrder { get; set; } = RateLimitQueueProcessingOrder.OldestFirst;
-}
-
-/// <summary>
-/// Defines the order in which queued requests are processed
-/// </summary>
-internal enum RateLimitQueueProcessingOrder
-{
-    OldestFirst,
-    NewestFirst
+    public  QueueProcessingOrder QueueProcessingOrder { get; set; } =  QueueProcessingOrder.OldestFirst;
 }

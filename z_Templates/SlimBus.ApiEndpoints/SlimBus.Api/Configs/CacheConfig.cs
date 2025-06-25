@@ -7,9 +7,6 @@ internal static class CacheConfigs
     {
         var conn = configuration.GetConnectionString("Redis");
 
-        // services.AddMemoryCache()
-        //     .AddHybridCache();
-
         if (!string.IsNullOrWhiteSpace(conn))
         {
             services.AddStackExchangeRedisCache(s =>
@@ -18,7 +15,8 @@ internal static class CacheConfigs
                 s.InstanceName = SharedConsts.ApiName;
             });
         }
-        else services.AddDistributedMemoryCache();
+
+        services.AddHybridCache();
 
         return services;
     }

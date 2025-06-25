@@ -3,7 +3,6 @@ using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 using SlimBus.Api.Configs;
 using SlimBus.Api.Configs.Auth;
 using DKNet.Fw.Extensions.TypeExtractors;
-using SlimBus.Api.Configs.RateLimits;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.AspNetCore.Builder;
@@ -40,8 +39,8 @@ internal static class EndpointConfig
         if (AuthConfig.IsAuthConfigAdded)
             group.RequireAuthorization();
 
-        if (RateLimitConfig.ConfigAdded)
-            group.RequireRateLimit();
+        // if (RateLimitConfig.ConfigAdded)
+        //     group.RequireRateLimiting(RateLimitConfig.DefaultRateLimitName);
 
         return group;
     }

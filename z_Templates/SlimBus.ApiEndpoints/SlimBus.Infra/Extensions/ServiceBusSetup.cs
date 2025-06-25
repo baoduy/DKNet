@@ -42,7 +42,7 @@ public static class ServiceBusSetup
 
                         st.TopologyProvisioning = new ServiceBusTopologySettings
                         {
-                            Enabled = true,
+                            Enabled = false,
                             CanProducerCreateTopic = true,
                             CanProducerCreateQueue = true,
                             CanConsumerCreateSubscription = true,

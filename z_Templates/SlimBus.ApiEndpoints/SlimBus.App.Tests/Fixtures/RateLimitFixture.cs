@@ -4,17 +4,18 @@ using Microsoft.Extensions.Hosting;
 using SlimBus.App.Tests.Extensions;
 using SlimBus.Infra;
 using SlimBus.Share;
+using SlimBus.Share.Options;
 
 namespace SlimBus.App.Tests.Fixtures;
 
-public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifetime
+public sealed class RateLimitFixture : WebApplicationFactory<Api.Program>, IAsyncLifetime
 {
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<RedisResource> _cache;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     //private readonly IResourceBuilder<ServiceBusResource> _bus;
 
-    public ApiFixture()
+    public RateLimitFixture()
     {
         var builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
@@ -37,7 +38,13 @@ public sealed class ApiFixture : WebApplicationFactory<Api.Program>, IAsyncLifet
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment(Environments.Production);
-        Environment.SetEnvironmentVariable("FeatureManagement:EnableServiceBus", "false");
+        Environment.SetEnvironmentVariable("RateLimit:DefaultRequestLimit", "1");
+        Environment.SetEnvironmentVariable("FeatureManagement:TimeWindowInSeconds", "1");
+        Environment.SetEnvironmentVariable("FeatureManagement:QueueLimit", "1");
+
+        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableRateLimit)}", "true");
+        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.EnableServiceBus)}", "false");
+        Environment.SetEnvironmentVariable($"FeatureManagement:{nameof(FeatureOptions.RequireAuthorization)}", "false");
         return base.CreateHost(builder);
     }
 

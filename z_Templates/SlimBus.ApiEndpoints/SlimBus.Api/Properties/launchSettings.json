@@ -2,7 +2,7 @@
   "profiles": {
     "TEMP.Api": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "docs/v1",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

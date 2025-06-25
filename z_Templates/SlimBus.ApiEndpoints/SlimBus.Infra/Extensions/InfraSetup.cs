@@ -45,11 +45,10 @@ public static class InfraSetup
     {
         //TODO: Workaround solution to ignored the error due to this bug https://github.com/dotnet/efcore/issues/35110;
         builder.ConfigureWarnings(x => x.Ignore(RelationalEventId.PendingModelChangesWarning));
+        builder.ConfigureWarnings(x => x.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
 #if DEBUG
         builder.EnableDetailedErrors().EnableSensitiveDataLogging();
-#else
-
 #endif
 
         return builder.UseSqlServer(connectionString,

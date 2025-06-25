@@ -8,52 +8,39 @@ namespace SlimBus.Api.Configs.RateLimits;
 [ExcludeFromCodeCoverage]
 internal static class RateLimitConfig
 {
-    public static bool ConfigAdded;
-    private const string DefaultPolicyName = "DefaultRateLimit";
+    private static bool _configAdded;
 
     /// <summary>
     /// Adds rate limiting services to the service collection
     /// </summary>
     /// <param name="services">The service collection to configure</param>
-    /// <param name="configAction">Optional configuration action for rate limit options</param>
+    /// <param name="configuration">configuration action for rate limit options</param>
     /// <returns>The service collection with rate limiting configured</returns>
-    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, Action<RateLimitOptions>? configAction = null)
+    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        var options = new RateLimitOptions();
-        configAction?.Invoke(options);
+        services.Configure<RateLimitOptions>(configuration.GetSection(RateLimitOptions.Name));
+        services.AddSingleton<IRateLimitKeyProvider,RateLimitKeyProvider>();
 
-        services.AddSingleton(Options.Create(options));
-        services.AddSingleton<RateLimitPolicyProvider>();
+        // You will implement ISubscriptionRateLimitResolver and register it
+        services.AddScoped<ISubscriptionRateLimitProvider, SubscriptionRateLimitProvider>();
 
-        services.AddRateLimiter(rateLimiterOptions =>
+        services.AddRateLimiter(options =>
         {
-            rateLimiterOptions.AddPolicy(DefaultPolicyName, httpContext =>
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
-                var policyProvider = httpContext.RequestServices.GetRequiredService<RateLimitPolicyProvider>();
-                return RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: policyProvider.GetPartitionKey(httpContext),
-                    factory: _ => 
-                    {
-                        var rateLimitOptions = httpContext.RequestServices.GetRequiredService<IOptions<RateLimitOptions>>().Value;
-                        return new FixedWindowRateLimiterOptions
-                        {
-                            AutoReplenishment = true,
-                            PermitLimit = rateLimitOptions.DefaultRequestLimit,
-                            Window = TimeSpan.FromSeconds(rateLimitOptions.TimeWindowInSeconds),
-                            QueueLimit = rateLimitOptions.QueueLimit,
-                            QueueProcessingOrder = (QueueProcessingOrder)rateLimitOptions.QueueProcessingOrder
-                        };
-                    });
+                var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
+                var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
+                var key = keyProvider.GetPartitionKey(httpContext);
+                var rateOptions = resolver.GetRateLimiterOptionsAsync(key).Preserve().GetAwaiter().GetResult();
+
+                return RateLimitPartition.GetFixedWindowLimiter(key, _ => rateOptions);
             });
-            
-            // Global settings
-            rateLimiterOptions.GlobalLimiter = null; // We use partitioned limiter instead
-            rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });
 
-        ConfigAdded = true;
+        _configAdded = true;
         Console.WriteLine("Rate Limiting enabled.");
-        
         return services;
     }
 
@@ -64,39 +51,8 @@ internal static class RateLimitConfig
     /// <returns>The web application with rate limiting applied</returns>
     public static WebApplication UseRateLimitConfig(this WebApplication app)
     {
-        if (!ConfigAdded) return app;
-
+        if (!_configAdded) return app;
         app.UseRateLimiter();
-        
-        Console.WriteLine("Rate Limiting middleware enabled.");
         return app;
-    }
-
-    /// <summary>
-    /// Applies rate limiting to a route handler
-    /// </summary>
-    /// <param name="builder">The route handler builder</param>
-    /// <returns>The route handler builder with rate limiting applied</returns>
-    public static RouteHandlerBuilder RequireRateLimit(this RouteHandlerBuilder builder)
-    {
-        if (ConfigAdded)
-        {
-            builder.RequireRateLimiting(DefaultPolicyName);
-        }
-        return builder;
-    }
-
-    /// <summary>
-    /// Applies rate limiting to a route group
-    /// </summary>
-    /// <param name="group">The route group builder</param>
-    /// <returns>The route group builder with rate limiting applied</returns>
-    public static RouteGroupBuilder RequireRateLimit(this RouteGroupBuilder group)
-    {
-        if (ConfigAdded)
-        {
-            group.RequireRateLimiting(DefaultPolicyName);
-        }
-        return group;
     }
 }

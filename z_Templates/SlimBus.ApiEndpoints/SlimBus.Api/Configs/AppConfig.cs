@@ -25,7 +25,7 @@ internal static class AppConfig
             services.AddHttpsConfig();
 
         if (features.EnableRateLimit)
-            services.AddRateLimitConfig();
+            services.AddRateLimitConfig(configuration);
 
         services.AddHttpContextAccessor()
             .AddFeatureManagement();
@@ -45,13 +45,14 @@ internal static class AppConfig
     {
         app.UseAntiforgeryConfig()
             .UseCrosConfig()
-            .UseRateLimitConfig()
             .UseHttpsConfig()
             .UseHealthzConfig();
 
         app.UseRouting();
+        app.UseRateLimitConfig();
         //This must be after UseRouting
         app.UseAuthConfig();
+        //This is UseEndpoints
         extra?.Invoke(app);
 
         //These have to be after UseEndpoints.
