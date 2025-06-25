@@ -78,6 +78,14 @@ jobs:
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          8.0.x
+          9.0.x
+        include-prerelease: false
+        
     - name: Install SonarCloud Tools
       run: dotnet tool install --global dotnet-sonarscanner
 
@@ -88,14 +96,6 @@ jobs:
         /d:sonar.host.url="https://sonarcloud.io" \
         /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: |
-          8.0.x
-          9.0.x
-        include-prerelease: false
-
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
 
