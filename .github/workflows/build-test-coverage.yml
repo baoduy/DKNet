@@ -37,7 +37,7 @@ jobs:
       run: dotnet tool install --global dotnet-sonarscanner
 
     - name: Prepare SonarCloud Scan
-      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.dotcover.reportsPaths="**/coverage-report/*.*" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
@@ -48,7 +48,7 @@ jobs:
       
     - name: Test
       continue-on-error: true
-      run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage" --settings coverage.runsettings --verbosity minimal
+      run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
       
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
