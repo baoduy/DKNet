@@ -6,6 +6,9 @@
         <Nullable>enable</Nullable>
 
         <IsPackable>false</IsPackable>
+        
+        <!-- Disable some strict warnings for test project -->
+        <NoWarn>$(NoWarn);CA1707;CA1849;CA1307;MA0002</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
