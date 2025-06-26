@@ -1,9 +1,8 @@
-﻿using DKNet.EfCore.Extensions.Configurations;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.TestDataLayer.Mappers;
 
+[ExcludeFromCodeCoverage]
 internal class AuditEntityMapper<T> : DefaultEntityTypeConfiguration<T> where T : BaseEntity
 {
     public static bool Called { get; private set; }

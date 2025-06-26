@@ -21,7 +21,7 @@ public class GuidEntityTests : SqlServerTestBase
         var entity = new GuidEntity {Name = "Duy"};
 
         _db.Add(entity);
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
@@ -31,7 +31,7 @@ public class GuidEntityTests : SqlServerTestBase
         var entity = new GuidAuditEntity {Name = "Duy"};
 
         _db.Add(entity);
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
         entity.Id.ShouldNotBe(Guid.Empty);
     }
@@ -44,7 +44,7 @@ public class GuidEntityTests : SqlServerTestBase
 
         entity.Name = "Hoang";
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
         entity.Id.ToString().ShouldBe(oldId);
     }
@@ -57,7 +57,7 @@ public class GuidEntityTests : SqlServerTestBase
 
         entity.Name = "Hoang";
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
         entity.Id.ToString().ShouldBe(oldId);
     }

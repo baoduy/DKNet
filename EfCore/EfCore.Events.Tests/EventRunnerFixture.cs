@@ -11,7 +11,7 @@ public sealed class EventRunnerFixture : IAsyncLifetime
     {
         _sqlContainer = new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithReuse(true)
+            //.WithReuse(true)
             .Build();
 
         await _sqlContainer.StartAsync();

@@ -71,10 +71,10 @@ public class WithSqlDbTests : SqlServerTestBase
             },
         });
 
-        var count = await _db.SaveChangesAsync().ConfigureAwait(false);
+        var count = await _db.SaveChangesAsync();
         Assert.IsTrue(count >= 1);
 
-        var users = await _db.Set<User>().ToListAsync().ConfigureAwait(false);
+        var users = await _db.Set<User>().ToListAsync();
 
         Assert.IsTrue(users.Count >= 1);
         Assert.IsTrue(users.All(u => u.RowVersion != null));
@@ -83,16 +83,16 @@ public class WithSqlDbTests : SqlServerTestBase
     [TestMethod]
     public async Task TestDeleteWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync().ConfigureAwait(false);
+        await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync().ConfigureAwait(false);
+        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id).ConfigureAwait(false);
+        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
         Assert.IsTrue(count == 0);
     }
@@ -100,16 +100,16 @@ public class WithSqlDbTests : SqlServerTestBase
     [TestMethod]
     public async Task TestUpdateWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync().ConfigureAwait(false);
+        await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync().ConfigureAwait(false);
+        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        user = await _db.Set<User>().FirstAsync().ConfigureAwait(false);
+        user = await _db.Set<User>().FirstAsync();
 
         Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
 
@@ -126,7 +126,7 @@ public class WithSqlDbTests : SqlServerTestBase
             LastName = "User",
         };
         _db.Set<User>().Add(user);
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
         // Create new contexts with same configuration
 #pragma warning disable EF1001 // Internal EF Core API usage.
@@ -135,16 +135,16 @@ public class WithSqlDbTests : SqlServerTestBase
         await using var db1 = new MyDbContext(dbOptions);
         await using var db2 = new MyDbContext(dbOptions);
 
-        var user1 = await db1.Set<User>().FindAsync(user.Id).ConfigureAwait(false);
-        var user2 = await db2.Set<User>().FindAsync(user.Id).ConfigureAwait(false);
+        var user1 = await db1.Set<User>().FindAsync(user.Id);
+        var user2 = await db2.Set<User>().FindAsync(user.Id);
 
         // Act - First update
         user1!.FirstName = "Updated1";
-        await db1.SaveChangesAsync().ConfigureAwait(false);
+        await db1.SaveChangesAsync();
 
         // Second update should conflict
         user2!.FirstName = "Updated2";
-        Func<Task> act = async () => await db2.SaveChangesAsync().ConfigureAwait(false);
+        Func<Task> act = async () => await db2.SaveChangesAsync();
 
         // Assert
         await act.ShouldThrowAsync<DbUpdateConcurrencyException>();

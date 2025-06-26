@@ -12,7 +12,7 @@ public static class DbContextHelpers
     {
         var conn = dbContext.Database.GetDbConnection();
         if (conn.State == ConnectionState.Closed) 
-            await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await conn.OpenAsync(cancellationToken);
         return conn;
     }
 
@@ -37,7 +37,7 @@ public static class DbContextHelpers
     {
         try
         {
-            await dbContext.Set<TEntity>().AnyAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+            await dbContext.Set<TEntity>().AnyAsync(cancellationToken: cancellationToken);
             return true;
         }
         catch (DbException)
@@ -55,13 +55,10 @@ public static class DbContextHelpers
     public static async Task CreateTableAsync<TEntity>(this DbContext dbContext, CancellationToken cancellationToken = default) where TEntity : class
     {
         var databaseCreator = (RelationalDatabaseCreator)dbContext.Database.GetService<IDatabaseCreator>();
-        if (!await databaseCreator.ExistsAsync(cancellationToken).ConfigureAwait(false))
-        {
-            await databaseCreator.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
-            return;
-        }
+        if (!await databaseCreator.ExistsAsync(cancellationToken))
+            await databaseCreator.EnsureCreatedAsync(cancellationToken);
 
-        if (await dbContext.TableExistsAsync<TEntity>(cancellationToken).ConfigureAwait(false)) return;
-        await databaseCreator.CreateTablesAsync(cancellationToken).ConfigureAwait(false);
+        if (await dbContext.TableExistsAsync<TEntity>(cancellationToken)) return;
+        await databaseCreator.CreateTablesAsync(cancellationToken);
     }
 }

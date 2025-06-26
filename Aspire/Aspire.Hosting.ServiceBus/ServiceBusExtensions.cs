@@ -13,7 +13,7 @@ public static class ServiceBusExtensions
 
         builder.Eventing.Subscribe<ConnectionStringAvailableEvent>(bus, async (_, ct) =>
         {
-            connectionString = await bus.GetConnectionStringAsync(ct).ConfigureAwait(false);
+            connectionString = await bus.GetConnectionStringAsync(ct);
 
             if (connectionString == null)
                 throw new DistributedApplicationException(

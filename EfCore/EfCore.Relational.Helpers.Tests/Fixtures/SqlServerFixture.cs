@@ -11,7 +11,7 @@ public class SqlServerFixture : IAsyncLifetime
     {
         _container = new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithReuse(true)
+            //.WithReuse(true)
             .Build();
 
         await _container.StartAsync();
@@ -19,7 +19,7 @@ public class SqlServerFixture : IAsyncLifetime
         await Task.Delay(TimeSpan.FromSeconds(20));
     }
 
-    public string GetConnectionString() => _container?.GetConnectionString() ??
+    public string GetConnectionString() => _container?.GetConnectionString().Replace("Database=master", "Database=TestDb", StringComparison.OrdinalIgnoreCase) ??
                                            throw new InvalidOperationException(
                                                "SQL Server container is not initialized.");
 

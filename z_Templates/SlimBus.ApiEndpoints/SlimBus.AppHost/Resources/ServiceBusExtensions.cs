@@ -11,7 +11,7 @@ internal static class ServiceBusExtensions
 
         builder.Eventing.Subscribe<ConnectionStringAvailableEvent>(bus, async (eventObj, ct) =>
         {
-            connectionString = await bus.GetConnectionStringAsync(ct).ConfigureAwait(false);
+            connectionString = await bus.GetConnectionStringAsync(ct);
 
             if (connectionString == null)
                 throw new DistributedApplicationException($"ConnectionStringAvailableEvent was published for the '{bus.Name}' resource but the connection string was null.");

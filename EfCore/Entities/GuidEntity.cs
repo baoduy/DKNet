@@ -1,5 +1,4 @@
 ﻿using System;
-using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.TestDataLayer;
 
