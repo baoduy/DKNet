@@ -26,7 +26,6 @@ public class RepositoryFixture : IAsyncLifetime
 
         _db = builder.AddSqlServer("sqlServer")
             .PublishAsConnectionString()
-            .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("RepoTestDb");
 
         _app = builder.Build();
