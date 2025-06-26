@@ -1,5 +1,6 @@
 using Mapster;
 using MapsterMapper;
+using Testcontainers.MsSql;
 
 namespace EfCore.Events.Tests.EventPublisherTests;
 

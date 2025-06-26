@@ -20,7 +20,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithDefaultPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 150); // More than default page size (100)
 
         // Act
@@ -39,7 +39,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithCustomPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 25);
         const int pageSize = 10;
 
@@ -58,7 +58,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithEmptyQuery_ShouldReturnNoItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         // No data seeded
 
         // Act
@@ -76,7 +76,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithSinglePage_ShouldReturnAllItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 5);
         const int pageSize = 10; // Larger than data set
 
@@ -95,7 +95,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithExactPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 20);
         const int pageSize = 10; // Exactly 2 pages
 
@@ -114,7 +114,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithCancellation_ShouldRespectCancellationToken()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 100);
         using var cts = new CancellationTokenSource();
 
@@ -148,7 +148,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithOrderedQuery_ShouldMaintainOrder()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 25);
         const int pageSize = 10;
 
@@ -169,7 +169,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithFilteredQuery_ShouldReturnFilteredItems()
     {
         // Arrange
-        using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(_options);
         await SeedDataAsync(context, 50);
         const int pageSize = 10;
 

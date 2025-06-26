@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Extensions.Tests;

@@ -7,7 +7,6 @@ namespace EfCore.TestDataLayer;
 public class User : BaseEntity
 {
 
-
     public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 
     public User(string userName) : this(0, userName)
@@ -36,6 +35,7 @@ public class User : BaseEntity
     public string FullName => $"{FirstName} {LastName}";
 
     [Required][MaxLength(256)] public required string LastName { get; set; }
+
     public ICollection<Payment> Payments { get; } = new HashSet<Payment>();
 
     // ReSharper disable once UnusedAutoPropertyAccessor.Local

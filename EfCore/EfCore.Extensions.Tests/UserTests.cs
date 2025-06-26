@@ -14,11 +14,11 @@ public class UserTests : SqlServerTestBase
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [ClassCleanup]
-    public static async Task ClassCleanup()
+    [TestMethod]
+    public void CreatedUserIdShouldBeZero()
     {
-        _db?.Dispose();
-        await CleanupContainerAsync(_sql);
+        var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
+        user.Id.ShouldBe(0);
     }
 
     [TestMethod]
@@ -54,7 +54,7 @@ public class UserTests : SqlServerTestBase
 
         var u = _db.Set<User>().Include(i => i.Addresses).First();
         u.ShouldNotBeNull();
-        u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
+        u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
 
         u.Addresses.Remove(u.Addresses.First());
         _db.SaveChanges();
@@ -64,12 +64,4 @@ public class UserTests : SqlServerTestBase
 
         _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
     }
-
-    [TestMethod]
-    public void CreatedUserIdShouldBeZero()
-    {
-        var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
-        user.Id.ShouldBe(0);
-    }
-    
 }

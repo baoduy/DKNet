@@ -1,23 +1,13 @@
 namespace EfCore.Extensions.Tests;
 
 /// <summary>
-/// Concurrent update need to be tested with real SQL Server.
+/// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
 [TestClass]
 public class ConcurrentUpdateWithSqlTests
 {
     private static MsSqlContainer _sql;
     private static MyDbContext _db;
-    private static MyDbContext _db1;
-
-    [ClassCleanup]
-    public static void CleanUp()
-    {
-        _db.Dispose();
-        _db1.Dispose();
-        _sql.StopAsync().GetAwaiter().GetResult();
-        _sql.DisposeAsync().GetAwaiter().GetResult();
-    }
 
     [ClassInitialize]
     public static void Setup(TestContext _)
@@ -36,7 +26,6 @@ public class ConcurrentUpdateWithSqlTests
             .Options;
 
         _db = new MyDbContext(options);
-        _db1 = new MyDbContext(options);
         _db.Database.EnsureCreated();
     }
 

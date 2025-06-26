@@ -1,3 +1,5 @@
+using Testcontainers.MsSql;
+
 namespace EfCore.Events.Tests;
 
 public sealed class EventRunnerFixture : IDisposable

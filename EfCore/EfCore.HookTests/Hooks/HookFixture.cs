@@ -1,3 +1,5 @@
+using Testcontainers.MsSql;
+
 namespace EfCore.HookTests.Hooks;
 
 public sealed class HookFixture : IDisposable

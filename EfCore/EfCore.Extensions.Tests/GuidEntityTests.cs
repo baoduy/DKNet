@@ -15,13 +15,6 @@ public class GuidEntityTests : SqlServerTestBase
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [ClassCleanup]
-    public static async Task ClassCleanup()
-    {
-        _db?.Dispose();
-        await CleanupContainerAsync(_sql);
-    }
-
     [TestMethod]
     public async Task TestCreateAsync()
     {
@@ -29,7 +22,6 @@ public class GuidEntityTests : SqlServerTestBase
 
         _db.Add(entity);
         await _db.SaveChangesAsync().ConfigureAwait(false);
-
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 

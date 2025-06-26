@@ -7,14 +7,6 @@ public class WithSqlDbTests
     private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
-    [ClassCleanup]
-    public static void CleanUp()
-    {
-        _sql.StopAsync().GetAwaiter().GetResult();
-        _sql.DisposeAsync().GetAwaiter().GetResult();
-        _db?.Dispose();
-    }
-
     [ClassInitialize]
     public static void Setup(TestContext _)
     {
@@ -134,8 +126,8 @@ public class WithSqlDbTests
 #pragma warning disable EF1001 // Internal EF Core API usage.
         var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
 
-        using var db1 = new MyDbContext(dbOptions);
-        using var db2 = new MyDbContext(dbOptions);
+        await using var db1 = new MyDbContext(dbOptions);
+        await using var db2 = new MyDbContext(dbOptions);
 
         var user1 = await db1.Set<User>().FindAsync(user.Id).ConfigureAwait(false);
         var user2 = await db2.Set<User>().FindAsync(user.Id).ConfigureAwait(false);

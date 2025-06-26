@@ -38,5 +38,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj" />
+    <ProjectReference Include="..\Entities\EfCore.TestDataLayer.csproj" />
   </ItemGroup>
 </Project>

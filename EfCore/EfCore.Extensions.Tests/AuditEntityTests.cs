@@ -17,8 +17,8 @@ public class AuditEntityTests : SqlServerTestBase
     [ClassCleanup]
     public static async Task ClassCleanup()
     {
-        _db?.Dispose();
-        await CleanupContainerAsync(_sql);
+        if (_db is not null)
+            await _db.DisposeAsync();
     }
 
     [TestMethod]
@@ -37,12 +37,21 @@ public class AuditEntityTests : SqlServerTestBase
     [TestMethod]
     public async Task TestUpdatingEntityAsync()
     {
-        await _db.SeedData().ConfigureAwait(false);
+        _db.Set<User>().AddRange(new User("StevenHoang")
+        {
+            FirstName = "Steven",
+            LastName = "Hoang"
+        }, new User("DuyHoang")
+        {
+            FirstName = "Duy",
+            LastName = "Hoang"
+        });
+        await _db.SaveChangesAsync();
+
         _db.ChangeTracker.Clear();
 
         var user = await _db.Set<User>().FirstAsync();
         user.ShouldNotBeNull();
-
         user.UpdatedByUser("Hoang");
 
         user.UpdatedBy.ShouldBe("Hoang");

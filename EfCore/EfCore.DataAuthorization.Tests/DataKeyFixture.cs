@@ -1,17 +1,28 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Hooks;
+using Testcontainers.MsSql;
 
 namespace EfCore.DataAuthorization.Tests;
 
-public sealed class DataKeyFixture : IDisposable
+public sealed class DataKeyFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _sqlContainer;
+    private MsSqlContainer? _sqlContainer;
 
-    public DataKeyFixture()
+    public ServiceProvider Provider { get; private set; }
+    public DddContext Context { get; private set; }
+
+    public async Task InitializeAsync()
     {
-        _sqlContainer = SqlServerTestHelper.StartSqlContainerAsync().GetAwaiter().GetResult();
-        
+        _sqlContainer = new MsSqlBuilder()
+            .WithPassword("a1ckZmGjwV8VqNdBUexV")
+            .WithAutoRemove(true)
+            .Build();
+
+        await _sqlContainer!.StartAsync();
+        // Wait for SQL Server to be ready
+        await Task.Delay(TimeSpan.FromSeconds(20));
+
         Provider = new ServiceCollection()
             .AddLogging()
             .AddAutoDataKeyProvider<DddContext, TestDataKeyProvider>()
@@ -21,21 +32,17 @@ public sealed class DataKeyFixture : IDisposable
             .BuildServiceProvider();
 
         Context = Provider.GetRequiredService<DddContext>();
-        Context.Database.EnsureCreated();
-
-        Context.Set<Root>()
-            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
-
-        Context.SaveChangesAsync().GetAwaiter().GetResult();
+        await Context.Database.EnsureCreatedAsync();
     }
 
-    public ServiceProvider Provider { get; }
-    public DddContext Context { get; }
-
-    public void Dispose()
+    public async Task DisposeAsync()
     {
-        Provider?.Dispose();
-        Context?.Dispose();
-        SqlServerTestHelper.CleanupContainerAsync(_sqlContainer).GetAwaiter().GetResult();
+        if (Context is not null)
+            await Context.DisposeAsync();
+        if (Provider is not null)
+            await Provider.DisposeAsync();
+        if (_sqlContainer is not null)
+            await _sqlContainer.DisposeAsync();
+
     }
 }

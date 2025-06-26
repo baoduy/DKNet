@@ -4,40 +4,37 @@ namespace EfCore.Extensions.Tests;
 /// Base class for tests that need SQL Server TestContainer setup.
 /// Follow this pattern for isolated test methods that need fresh database instances.
 /// </summary>
-public abstract class SqlServerTestBase
+public abstract class SqlServerTestBase : IAsyncDisposable
 {
-    protected static MsSqlContainer CreateSqlContainer()
-    {
-        return new MsSqlBuilder()
+    private static MsSqlContainer _container;
+
+    private static MsSqlContainer CreateSqlContainer() =>
+        new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithAutoRemove(true)
+            .WithReuse(true)
             .Build();
-    }
 
     protected static async Task<MsSqlContainer> StartSqlContainerAsync()
     {
-        var container = CreateSqlContainer();
-        await container.StartAsync();
+        _container = CreateSqlContainer();
+        await _container.StartAsync();
         // Wait for SQL Server to be ready
-        await Task.Delay(TimeSpan.FromSeconds(20));
-        return container;
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        return _container;
     }
 
-    protected static MyDbContext CreateDbContext(string connectionString)
-    {
-        return new MyDbContext(new DbContextOptionsBuilder()
+    protected static MyDbContext CreateDbContext(string connectionString) =>
+        new(new DbContextOptionsBuilder()
             .UseSqlServer(connectionString)
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding()
             .Options);
-    }
 
-    protected static async Task CleanupContainerAsync(MsSqlContainer container)
+    public async ValueTask DisposeAsync()
     {
-        if (container != null)
-        {
-            await container.StopAsync();
-            await container.DisposeAsync();
-        }
+        if (_container is null) return;
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        await _container.StopAsync();
+        await _container.DisposeAsync();
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
 namespace EfCore.Events.Tests;

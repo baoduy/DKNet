@@ -1,7 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿namespace DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.Abstractions.Entities;
+/// <summary>
+/// Defines the base contract for all entities in the system.
+/// </summary>
+/// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
+/// <remarks>
+/// This interface establishes the fundamental structure for entities,
+/// ensuring they have a unique identifier of a specified type.
+/// </remarks>
+public interface IEntity<out TKey>
+{
+    /// <summary>
+    /// Gets the unique identifier for the entity.
+    /// </summary>
+    /// <value>The entity's primary key value.</value>
+    TKey Id { get; }
+}
 
 /// <summary>
 /// Provides a base implementation for entities with a specified key type.
@@ -18,8 +32,6 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
 {
-    #region Constructors
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Entity{TKey}"/> class.
     /// </summary>
@@ -39,19 +51,12 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
         Id = id;
     }
 
-    #endregion
-
-    #region Properties
-
     /// <summary>
     /// Gets the unique identifier for this entity.
     /// </summary>
     /// <value>
     /// The entity's unique identifier of type <typeparamref name="TKey"/>.
     /// </value>
-    [Key]
-    [Column(Order = 0)]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public virtual TKey Id { get; private set; } = default!;
 
     /// <summary>
@@ -60,13 +65,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
     /// <value>
     /// A byte array representing the current version of the entity row.
     /// </value>
-    [Column(Order = 1000)]
-    [Timestamp, ConcurrencyCheck]
     public virtual byte[]? RowVersion { get; private set; }
-
-    #endregion
-
-    #region Public Methods
 
     /// <summary>
     /// Sets the row version for concurrency control.
@@ -79,8 +78,6 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
     /// </summary>
     /// <returns>A string in the format "EntityTypeName 'Id'".</returns>
     public override string ToString() => $"{GetType().Name} '{Id}'";
-
-    #endregion
 }
 
 /// <summary>

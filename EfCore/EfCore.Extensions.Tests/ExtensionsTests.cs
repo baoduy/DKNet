@@ -14,13 +14,6 @@ public class ExtensionsTests : SqlServerTestBase
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [ClassCleanup]
-    public static async Task ClassCleanup()
-    {
-        _db?.Dispose();
-        await CleanupContainerAsync(_sql);
-    }
-
     [TestMethod]
     public void TestGetKeys()
     {
