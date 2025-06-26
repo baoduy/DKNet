@@ -3,22 +3,21 @@
 [TestClass]
 public class AuditEntityTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
-    private static MyDbContext _db;
+    private MsSqlContainer _sql;
+    private MyDbContext _db;
 
     [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    public async Task ClassSetup(TestContext _)
     {
         _sql = await StartSqlContainerAsync();
         _db = CreateDbContext(_sql.GetConnectionString());
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [ClassCleanup]
-    public static async Task ClassCleanup()
+    [TestInitialize]
+    public async Task TestInitialize()
     {
-        if (_db is not null)
-            await _db.DisposeAsync();
+        await EnsureSqlStartedAsync();
     }
 
     [TestMethod]

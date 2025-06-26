@@ -4,25 +4,33 @@ using Testcontainers.MsSql;
 
 namespace EfCore.Events.Tests.EventPublisherTests;
 
-public sealed class EvenPublisherFixture : IDisposable
+public sealed class EvenPublisherFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _sqlContainer;
+    private MsSqlContainer _sqlContainer;
 
-    public EvenPublisherFixture()
+
+    public async Task InitializeAsync()
     {
-        _sqlContainer = SqlServerTestHelper.StartSqlContainerAsync().GetAwaiter().GetResult();
-        
+        _sqlContainer = new MsSqlBuilder()
+            .WithPassword("a1ckZmGjwV8VqNdBUexV")
+            .WithReuse(true)
+            .Build();
+
+        await _sqlContainer.StartAsync();
+        // Wait for SQL Server to be ready
+        await Task.Delay(TimeSpan.FromSeconds(20));
+
         Provider = new ServiceCollection()
             .AddLogging()
             .AddEventPublisher<DddContext, TestEventPublisher>()
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
-            .AddDbContextWithHook<DddContext>(builder => builder.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
+            .AddDbContextWithHook<DddContext>(builder =>
+                builder.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
             .BuildServiceProvider();
 
         Context = Provider.GetRequiredService<DddContext>();
-        Context.Database.EnsureCreated();
-
+        await Context.Database.EnsureCreatedAsync();
 
         Context.Set<Root>()
             .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
@@ -31,13 +39,13 @@ public sealed class EvenPublisherFixture : IDisposable
         Context.SaveChangesAsync().GetAwaiter().GetResult();
     }
 
-    public ServiceProvider Provider { get; }
-    public DddContext Context { get; }
-
-    public void Dispose()
+    public async Task DisposeAsync()
     {
-        Provider?.Dispose();
-        Context?.Dispose();
-        SqlServerTestHelper.CleanupContainerAsync(_sqlContainer).GetAwaiter().GetResult();
+        if (_sqlContainer is null) return;
+        await _sqlContainer.StopAsync();
+        await _sqlContainer.DisposeAsync();
     }
+
+    public ServiceProvider Provider { get; private set; }
+    public DddContext Context { get; private set; }
 }

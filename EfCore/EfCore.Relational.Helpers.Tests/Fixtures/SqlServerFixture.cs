@@ -1,3 +1,4 @@
+using DotNet.Testcontainers.Containers;
 using Testcontainers.MsSql;
 
 namespace EfCore.Relational.Helpers.Tests.Fixtures;
@@ -22,10 +23,18 @@ public class SqlServerFixture : IAsyncLifetime
                                            throw new InvalidOperationException(
                                                "SQL Server container is not initialized.");
 
-    public async Task DisposeAsync()
+    public async Task EnsureSqlReadyAsync()
     {
         if (_container is null) return;
-        await _container.StopAsync();
-        await _container.DisposeAsync();
+        if(_container.State == TestcontainersStates.Running)return;
+        await _container.StartAsync();
+    }
+
+    public Task DisposeAsync()
+    {
+        // if (_container is null) return;
+        // await _container.StopAsync();
+        // await _container.DisposeAsync();
+        return Task.CompletedTask;
     }
 }

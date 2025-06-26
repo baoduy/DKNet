@@ -7,6 +7,8 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task GetTableName()
     {
+        await fixture.EnsureSqlReadyAsync();
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
@@ -17,6 +19,8 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task GetTableNameNotMapped()
     {
+        await fixture.EnsureSqlReadyAsync();
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
@@ -27,6 +31,8 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task CheckTableExistsFailed()
     {
+        await fixture.EnsureSqlReadyAsync();
+
         var action = async () =>
         {
             await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
@@ -40,6 +46,8 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task CreateTable()
     {
+        await fixture.EnsureSqlReadyAsync();
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.CreateTableAsync<TestEntity>();

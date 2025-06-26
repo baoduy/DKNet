@@ -2,17 +2,17 @@
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
 [TestClass]
-public class WithSqlDbTests
+public class WithSqlDbTests : SqlServerTestBase
 {
     private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
-    public static void Setup(TestContext _)
+    public async Task Setup(TestContext _)
     {
-        _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").WithAutoRemove(true).Build();
-        _sql.StartAsync().GetAwaiter().GetResult();
-        Task.Delay(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
+        _sql = await StartSqlContainerAsync();
+        await _sql.StartAsync();
+        await Task.Delay(TimeSpan.FromSeconds(20));
 
         _db = new MyDbContext(new DbContextOptionsBuilder()
             .UseSqlServer(_sql.GetConnectionString())
@@ -20,7 +20,13 @@ public class WithSqlDbTests
             .UseAutoDataSeeding()
             .Options);
 
-        _db.Database.EnsureCreated();
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [TestInitialize]
+    public Task TestSetup()
+    {
+        return EnsureSqlStartedAsync();
     }
 
     [TestMethod]

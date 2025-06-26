@@ -11,7 +11,7 @@ public class RegisterTests : SqlServerTestBase
     private static MyDbContext _db;
 
     [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    public async Task ClassSetup(TestContext _)
     {
         _sql = await StartSqlContainerAsync();
         Trace.TraceInformation($"Sql Connection String: {_sql.GetConnectionString()}");
@@ -19,6 +19,12 @@ public class RegisterTests : SqlServerTestBase
 
         _db = CreateDbContext(_sql.GetConnectionString());
         await _db.Database.EnsureCreatedAsync();
+    }
+
+    [TestInitialize]
+    public async Task TestInitialize()
+    {
+        await EnsureSqlStartedAsync();
     }
 
     [TestMethod]

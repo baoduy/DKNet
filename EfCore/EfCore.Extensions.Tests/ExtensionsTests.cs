@@ -7,7 +7,7 @@ public class ExtensionsTests : SqlServerTestBase
     private static MyDbContext _db;
 
     [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    public async Task ClassSetup(TestContext _)
     {
         _sql = await StartSqlContainerAsync();
         _db = CreateDbContext(_sql.GetConnectionString());

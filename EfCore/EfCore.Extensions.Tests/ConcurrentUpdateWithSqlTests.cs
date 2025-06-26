@@ -12,7 +12,7 @@ public class ConcurrentUpdateWithSqlTests
     [ClassInitialize]
     public static void Setup(TestContext _)
     {
-        _sql = new MsSqlBuilder().WithAutoRemove(true).WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
+        _sql = new MsSqlBuilder().WithReuse(true).WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
         _sql.StartAsync().GetAwaiter().GetResult();
         Task.Delay(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
 

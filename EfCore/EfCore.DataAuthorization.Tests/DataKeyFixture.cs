@@ -16,7 +16,7 @@ public sealed class DataKeyFixture : IAsyncLifetime
     {
         _sqlContainer = new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithAutoRemove(true)
+            .WithReuse(true)
             .Build();
 
         await _sqlContainer!.StartAsync();

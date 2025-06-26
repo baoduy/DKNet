@@ -1,3 +1,5 @@
+using DotNet.Testcontainers.Containers;
+
 namespace EfCore.Extensions.Tests;
 
 /// <summary>
@@ -6,21 +8,28 @@ namespace EfCore.Extensions.Tests;
 /// </summary>
 public abstract class SqlServerTestBase : IAsyncDisposable
 {
-    private static MsSqlContainer _container;
+    private MsSqlContainer _container;
 
-    private static MsSqlContainer CreateSqlContainer() =>
+    private MsSqlContainer CreateSqlContainer() =>
         new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
             .WithReuse(true)
             .Build();
 
-    protected static async Task<MsSqlContainer> StartSqlContainerAsync()
+    protected async Task<MsSqlContainer> StartSqlContainerAsync()
     {
         _container = CreateSqlContainer();
         await _container.StartAsync();
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(10));
         return _container;
+    }
+
+    public Task EnsureSqlStartedAsync()
+    {
+        if (_container.State != TestcontainersStates.Running)
+            return _container.StartAsync();
+        return Task.CompletedTask;
     }
 
     protected static MyDbContext CreateDbContext(string connectionString) =>
@@ -30,11 +39,11 @@ public abstract class SqlServerTestBase : IAsyncDisposable
             .UseAutoDataSeeding()
             .Options);
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (_container is null) return;
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        await _container.StopAsync();
-        await _container.DisposeAsync();
+        // if (_container is null) return;
+        // await _container.StopAsync();
+        // await _container.DisposeAsync();
+        return ValueTask.CompletedTask;
     }
 }
