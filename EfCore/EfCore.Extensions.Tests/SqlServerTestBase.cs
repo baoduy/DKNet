@@ -13,7 +13,7 @@ public abstract class SqlServerTestBase : IAsyncDisposable
     private MsSqlContainer CreateSqlContainer() =>
         new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithReuse(true)
+            //.WithReuse(true)
             .Build();
 
     protected async Task<MsSqlContainer> StartSqlContainerAsync()
@@ -25,7 +25,7 @@ public abstract class SqlServerTestBase : IAsyncDisposable
         return _container;
     }
 
-    public Task EnsureSqlStartedAsync()
+    protected Task EnsureSqlStartedAsync()
     {
         if (_container.State != TestcontainersStates.Running)
             return _container.StartAsync();
