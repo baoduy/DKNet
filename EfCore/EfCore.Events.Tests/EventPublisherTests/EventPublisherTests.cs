@@ -6,6 +6,7 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
     public async Task AfterSaveTestAsync()
     {
         TestEventPublisher.Events.Clear();
+        await provider.EnsureSqlReadyAsync();
 
         var db = provider.Provider.GetRequiredService<DddContext>();
 
@@ -23,6 +24,7 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
     public async Task AfterSaveEventTypeTestAsync()
     {
         TestEventPublisher.Events.Clear();
+        await provider.EnsureSqlReadyAsync();
 
         var db = provider.Provider.GetRequiredService<DddContext>();
 

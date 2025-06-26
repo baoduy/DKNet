@@ -8,15 +8,19 @@ namespace EfCore.DataAuthorization.Tests;
 public sealed class DataKeyFixture : IAsyncLifetime
 {
     private MsSqlContainer? _sqlContainer;
-
     public ServiceProvider Provider { get; private set; }
-    public DddContext Context { get; private set; }
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=DataKeyDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
         _sqlContainer = new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithReuse(true)
+            //.WithReuse(true)
             .Build();
 
         await _sqlContainer!.StartAsync();
@@ -27,22 +31,13 @@ public sealed class DataKeyFixture : IAsyncLifetime
             .AddLogging()
             .AddAutoDataKeyProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqlServer(_sqlContainer.GetConnectionString())
+                builder.UseSqlServer(GetConnectionString())
                     .UseAutoConfigModel())
             .BuildServiceProvider();
 
-        Context = Provider.GetRequiredService<DddContext>();
-        await Context.Database.EnsureCreatedAsync();
+        var db = Provider.GetRequiredService<DddContext>();
+        await db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (Context is not null)
-            await Context.DisposeAsync();
-        if (Provider is not null)
-            await Provider.DisposeAsync();
-        if (_sqlContainer is not null)
-            await _sqlContainer.DisposeAsync();
-
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 }

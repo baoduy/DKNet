@@ -18,10 +18,8 @@ public sealed class ShareInfraFixture : IAsyncLifetime
             AllowUnsecuredTransport = true,
         });
 
-        _cache = builder.AddRedis("Redis")
-            .WithLifetime(ContainerLifetime.Persistent);
-        var sqlServer = builder.AddSqlServer("sqlServer")
-            .WithLifetime(ContainerLifetime.Persistent);
+        _cache = builder.AddRedis("Redis");
+        var sqlServer = builder.AddSqlServer("sqlServer");
         _db = sqlServer.AddDatabase("TestDb");
 
         // _bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json")
