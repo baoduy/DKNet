@@ -29,6 +29,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+        - language: actions
+          build-mode: none
         - language: csharp
           build-mode: manual
     steps:
@@ -43,6 +45,7 @@ jobs:
         build-mode: ${{ matrix.build-mode }}
 
     - name: Setup .NET
+      if: ${{matrix.language == 'csharp'}}
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
@@ -50,9 +53,11 @@ jobs:
           9.0.x
 
     - name: Restore dependencies
+      if: ${{matrix.language == 'csharp'}}
       run: dotnet restore DKNet.FW.sln
 
     - name: Build
+      if: ${{matrix.language == 'csharp'}}
       continue-on-error: true
       run: dotnet build DKNet.FW.sln --no-restore --configuration Release
 
