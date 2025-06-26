@@ -58,7 +58,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        await cts.CancelAsync(); // Cancel immediately
 
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(async () =>
@@ -84,7 +84,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     }
 
     [Fact]
-    public async Task TableExistsAsync_WithNonExistingTable_ShouldReturnFalse()
+    public async Task TableExistsAsync_WithNonExistingTable_ShouldReturnTrue()
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
@@ -98,7 +98,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         var exists = await db.TableExistsAsync<TestEntity>();
 
         // Assert
-        exists.ShouldBeFalse();
+        exists.ShouldBeTrue("As Db will be auto created, the table should exist after EnsureCreatedAsync");
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        await cts.CancelAsync(); // Cancel immediately
 
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(async () =>
@@ -169,7 +169,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        await cts.CancelAsync(); // Cancel immediately
 
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(async () =>

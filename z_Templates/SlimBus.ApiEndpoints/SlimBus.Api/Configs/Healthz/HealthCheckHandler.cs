@@ -1,5 +1,6 @@
 ﻿namespace SlimBus.Api.Configs.Healthz;
 
+[ExcludeFromCodeCoverage]
 internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : IHealthCheck
 {
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,

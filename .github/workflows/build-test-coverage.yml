@@ -38,7 +38,7 @@ jobs:
       run: dotnet tool install --global dotnet-sonarscanner
 
     - name: Prepare SonarCloud Scan
-      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.dotcover.reportsPaths="**/coverage-report/*.*" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
     - name: Restore dependencies
       run: dotnet restore DKNet.FW.sln
@@ -86,17 +86,18 @@ jobs:
 
     - name: Check Coverage Threshold
       run: |
-        # Parse coverage and check if it meets the 80% threshold
+        THRESHOLD=80
+        # Parse coverage and check if it meets the $THRESHOLD% threshold
         coverage_line=$(grep -o 'line-rate="[^"]*"' coverage-report/Cobertura.xml | head -1 | grep -o '[0-9.]*')
         coverage_percent=$(echo "$coverage_line * 100" | bc -l | cut -d. -f1)
         
         echo "Overall Coverage: ${coverage_percent}%"
         
-        if [ "$coverage_percent" -lt 80 ]; then
-          echo "❌ Coverage $coverage_percent% is below the required 95% threshold"
+        if [ "$coverage_percent" -lt $THRESHOLD ]; then
+          echo "❌ Coverage $coverage_percent% is below the required $THRESHOLD% threshold"
           exit 1
         else
-          echo "✅ Coverage $coverage_percent% meets the 80% threshold"
+          echo "✅ Coverage $coverage_percent% meets the $THRESHOLD% threshold"
         fi
         
     - name: Upload Coverage Report as Artifact

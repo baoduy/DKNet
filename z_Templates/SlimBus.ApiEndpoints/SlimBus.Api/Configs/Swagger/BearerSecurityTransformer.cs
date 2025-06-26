@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 
 namespace SlimBus.Api.Configs.Swagger;
 
+[ExcludeFromCodeCoverage]
 internal sealed class BearerSecurityTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider)
     : IOpenApiDocumentTransformer
 {

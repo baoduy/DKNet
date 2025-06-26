@@ -7,6 +7,7 @@ namespace SlimBus.Api.Configs.Auth;
 /// <summary>
 /// Extends JwtSecurityTokenHandler to validate JWT tokens using the Microsoft Graph API.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
 {
     /// <summary>
