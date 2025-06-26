@@ -144,7 +144,7 @@ public static class EfCoreDataSeedingExtensions
         if (assemblies.Count == 0)
         {
             var op = @this.GetOrCreateExtension();
-            assemblies = op.Registrations.SelectMany(r => r.EntityAssemblies).ToList();
+            assemblies = [.. op.Registrations.SelectMany(r => r.EntityAssemblies)];
         }
 
         //Get Alls Seeding Types

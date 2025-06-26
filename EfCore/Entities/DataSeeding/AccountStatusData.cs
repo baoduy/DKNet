@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using DKNet.EfCore.Extensions.Configurations;
+﻿namespace EfCore.TestDataLayer.DataSeeding;
 
-namespace EfCore.TestDataLayer.DataSeeding;
-
+[ExcludeFromCodeCoverage]
 public class AccountStatusData : IDataSeedingConfiguration<AccountStatus>
 {
     #region Properties

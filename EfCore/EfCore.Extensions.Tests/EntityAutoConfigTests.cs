@@ -1,5 +1,5 @@
-﻿using EfCore.TestDataLayer.Mappers;
-using DKNet.EfCore.Extensions.Registers;
+﻿using DKNet.EfCore.Extensions.Registers;
+using EfCore.TestDataLayer.Mappers;
 
 namespace EfCore.Extensions.Tests;
 
@@ -11,7 +11,7 @@ public class EntityAutoConfigTests
     {
         var info =
             new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
-        var entities = info.GetAllEntityTypes();
+        var entities = info.GetAllEntityTypes().ToList();
 
         entities.ShouldNotBeEmpty();
         entities.Count().ShouldBeGreaterThanOrEqualTo(11);
@@ -22,7 +22,7 @@ public class EntityAutoConfigTests
     {
         var info =
             new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
-        var configs = info.GetDefinedMappers();
+        var configs = info.GetDefinedMappers().ToList();
 
         configs.ShouldNotBeEmpty();
         configs.Any(c => c == typeof(NotInheritIEntityConfig)).ShouldBeTrue();
@@ -33,9 +33,9 @@ public class EntityAutoConfigTests
     {
         var info =
             new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
-        var configs = info.GetGenericMappers();
+        var configs = info.GetGenericMappers().ToList();
 
         configs.ShouldNotBeEmpty();
-        configs.Count().ShouldBe(2);
+        configs.Count.ShouldBe(2);
     }
 }

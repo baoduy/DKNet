@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace EfCore.TestDataLayer.Mappers;
+﻿namespace EfCore.TestDataLayer.Mappers;
 
 internal class UserEntityMapper : AuditEntityMapper<User>
 {

@@ -1,19 +1,30 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class ExtensionsTests
+public class ExtensionsTests : SqlServerTestBase
 {
+    private static MsSqlContainer _sql;
+    private static MyDbContext _db;
+
+    [ClassInitialize]
+    public async Task ClassSetup(TestContext _)
+    {
+        _sql = await StartSqlContainerAsync();
+        _db = CreateDbContext(_sql.GetConnectionString());
+        await _db.Database.EnsureCreatedAsync();
+    }
+
     [TestMethod]
     public void TestGetKeys()
     {
-        UnitTestSetup.Db.GetPrimaryKeyProperties<User>().Single()
+        _db.GetPrimaryKeyProperties<User>().Single()
             .ShouldBe("Id");
     }
 
     // [TestMethod]
     // public void Test_GetKeys_NotEntity()
     // {
-    //     UnitTestSetup.Db.GetKeys<UserAccountStartWithDSpec>().Any()
+    //     _db.GetKeys<UserAccountStartWithDSpec>().Any()
     //         .ShouldBeFalse();
     // }
 
@@ -21,7 +32,7 @@ public class ExtensionsTests
     public void TestGetKeyValue()
     {
         var user = new User(1, "Duy") { FirstName = "Steven", LastName = "Smith" };
-        UnitTestSetup.Db.GetPrimaryKeyValues(user).Single()
+        _db.GetPrimaryKeyValues(user).Single()
             .ShouldBe(1);
     }
 
@@ -29,7 +40,7 @@ public class ExtensionsTests
     public void TestGetKeyValueNotEntity()
     {
         var user = new { Id = 1, Name = "Duy" };
-        UnitTestSetup.Db.GetPrimaryKeyValues(user).Any()
+        _db.GetPrimaryKeyValues(user).Any()
             .ShouldBeFalse();
     }
 }

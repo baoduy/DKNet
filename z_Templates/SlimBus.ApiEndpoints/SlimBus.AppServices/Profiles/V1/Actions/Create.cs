@@ -33,7 +33,7 @@ internal sealed class CreateProfileCommandHandler(
     public async Task<IResult<ProfileResult>> OnHandle(CreateProfileCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MembershipNo))
-            request.MembershipNo = await membershipProvider.NextValueAsync().ConfigureAwait(false);
+            request.MembershipNo = await membershipProvider.NextValueAsync();
 
         //Check duplicate
         if (await repository.IsEmailExistAsync(request.Email))

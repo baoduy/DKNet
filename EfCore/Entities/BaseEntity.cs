@@ -1,6 +1,4 @@
-﻿using DKNet.EfCore.Abstractions.Entities;
-
-namespace EfCore.TestDataLayer;
+﻿namespace EfCore.TestDataLayer;
 
 public abstract class BaseEntity : AuditedEntity<int>
 {

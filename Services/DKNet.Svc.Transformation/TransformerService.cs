@@ -12,17 +12,17 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     public async Task<string> TransformAsync(string templateString, params object[] parameters)
     {
         var tokens = await Task.WhenAll(options.TokenExtractors.Select(t => t.ExtractAsync(templateString)))
-            .ConfigureAwait(false);
+            ;
         return await InternalTransformAsync(templateString, tokens.SelectMany(i => i), parameters)
-            .ConfigureAwait(false);
+            ;
     }
 
     public async Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> parameters)
     {
         var tokens = await Task.WhenAll(options.TokenExtractors.Select(t => t.ExtractAsync(templateString)))
-            .ConfigureAwait(false);
+            ;
         return await InternalTransformAsync(templateString, tokens.SelectMany(i => i), [], parameters)
-            .ConfigureAwait(false);
+            ;
     }
 
 
@@ -69,7 +69,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         Func<IToken, Task<object>>? dataProvider)
     {
         if (dataProvider == null) return null;
-        var val = await dataProvider(token).ConfigureAwait(false);
+        var val = await dataProvider(token);
         return options.DisabledLocalCache
             ? val
             : _cacheService.GetOrAdd(token.Token.ToUpperInvariant(), _ => val);

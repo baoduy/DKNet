@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using DKNet.EfCore.Abstractions.Entities;
-
-namespace EfCore.TestDataLayer;
+﻿namespace EfCore.TestDataLayer;
 
 public class Account : AuditedEntity<int>
 {

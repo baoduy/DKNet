@@ -93,7 +93,7 @@ public static class EfCoreExtensions
     public static async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(this DbContext dbContext, TEnum name)
         where TEnum : struct
         where TValue : struct =>
-        (TValue?)await dbContext.NextSeqValue(name).ConfigureAwait(false);
+        (TValue?)await dbContext.NextSeqValue(name);
 
     /// <summary>
     /// Gets the Next Sequence value
@@ -114,11 +114,11 @@ public static class EfCoreExtensions
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceRegister.GetSequenceName(name)}";
 
-        await dbContext.Database.OpenConnectionAsync().ConfigureAwait(false);
-        await using var result = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        await dbContext.Database.OpenConnectionAsync();
+        await using var result = await command.ExecuteReaderAsync();
 
         object? rs = null;
-        if (await result.ReadAsync().ConfigureAwait(false))
+        if (await result.ReadAsync())
             rs = await result.GetFieldValueAsync<object>(0);
 
         await dbContext.Database.CloseConnectionAsync();
@@ -136,7 +136,7 @@ public static class EfCoreExtensions
         where TEnum : struct
     {
         var att = SequenceRegister.GetFieldAttributeOrDefault(typeof(TEnum), name);
-        var value = await dbContext.NextSeqValue(name).ConfigureAwait(false);
+        var value = await dbContext.NextSeqValue(name);
 
         if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
 

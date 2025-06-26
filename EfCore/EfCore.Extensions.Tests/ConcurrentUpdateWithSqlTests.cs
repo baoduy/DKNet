@@ -1,30 +1,20 @@
 namespace EfCore.Extensions.Tests;
 
 /// <summary>
-/// Concurrent update need to be tested with real SQL Server.
+/// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
 [TestClass]
 public class ConcurrentUpdateWithSqlTests
 {
     private static MsSqlContainer _sql;
     private static MyDbContext _db;
-    private static MyDbContext _db1;
-
-    [ClassCleanup]
-    public static void CleanUp()
-    {
-        _db.Dispose();
-        _db1.Dispose();
-        _sql.StopAsync().GetAwaiter().GetResult();
-        _sql.DisposeAsync().GetAwaiter().GetResult();
-    }
 
     [ClassInitialize]
-    public static void Setup(TestContext _)
+    public async Task Setup(TestContext _)
     {
-        _sql = new MsSqlBuilder().WithAutoRemove(true).WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
-        _sql.StartAsync().GetAwaiter().GetResult();
-        Task.Delay(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
+        _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
+        await _sql.StartAsync();
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var options = new DbContextOptionsBuilder()
             .LogTo(Console.WriteLine, (eventId, logLevel) => logLevel >= LogLevel.Information
@@ -36,8 +26,7 @@ public class ConcurrentUpdateWithSqlTests
             .Options;
 
         _db = new MyDbContext(options);
-        _db1 = new MyDbContext(options);
-        _db.Database.EnsureCreated();
+        await _db.Database.EnsureCreatedAsync();
     }
 
     [TestMethod]
@@ -73,7 +62,7 @@ public class ConcurrentUpdateWithSqlTests
         await _db.SaveChangesAsync();
 
         user = await _db.Set<User>().FirstAsync(u => u.Id == user.Id);
-        var createdVersion = (byte[])user.RowVersion.Clone();
+        var createdVersion = (byte[])user.RowVersion!.Clone();
 
         //2. Update user with created version. It should allow to update.
         // Change the person's name in the database to simulate a concurrency conflict.

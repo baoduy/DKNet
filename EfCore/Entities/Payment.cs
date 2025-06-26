@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
-using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.TestDataLayer;
 

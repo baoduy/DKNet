@@ -12,7 +12,7 @@ public interface IEventEntity
     /// <summary>
     /// Adds a domain event object to the event queue for later processing.
     /// </summary>
-    /// <param name="eventObj">The event object to be queued.</param>
+    /// <param name="eventObj">The event objects to be queued.</param>
     /// <exception cref="ArgumentNullException">Thrown when eventObj is null.</exception>
     void AddEvent(object eventObj);
 

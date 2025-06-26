@@ -1,21 +1,40 @@
+using Testcontainers.MsSql;
+
 namespace EfCore.HookTests.Hooks;
 
-public sealed class HookFixture : IDisposable
+public sealed class HookFixture : IAsyncLifetime
 {
-    public HookFixture()
+    private MsSqlContainer _sqlContainer;
+    public ServiceProvider Provider { get; private set; }
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
+
+    public async Task InitializeAsync()
     {
+        _sqlContainer = new MsSqlBuilder()
+            .WithPassword("a1ckZmGjwV8VqNdBUexV")
+            //.WithReuse(true)
+            .Build();
+
+        await _sqlContainer.StartAsync();
+        // Wait for SQL Server to be ready
+        await Task.Delay(TimeSpan.FromSeconds(20));
+
         Provider = new ServiceCollection()
             .AddLogging()
-            .AddDbContextWithHook<HookContext>(o => o.UseSqliteMemory().UseAutoConfigModel())
+            .AddDbContextWithHook<HookContext>(o =>
+                o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
             .AddHook<HookContext, Hook>()
             .BuildServiceProvider();
 
         //Ensure Db Created
         var db = Provider.GetRequiredService<HookContext>();
-        db.Database.EnsureCreated();
+        await db.Database.EnsureCreatedAsync();
     }
 
-    public ServiceProvider Provider { get; }
-
-    public void Dispose() => Provider?.Dispose();
+    public Task DisposeAsync() => Task.CompletedTask;
 }

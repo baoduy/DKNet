@@ -92,13 +92,13 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             //foreach (var h in _beforeSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
             foreach (var h in _beforeSaveHooks)
-                await h.RunBeforeSaveAsync(_snapshotContext, cancellationToken).ConfigureAwait(false);
+                await h.RunBeforeSaveAsync(_snapshotContext, cancellationToken);
         }
         else
         {
             //foreach (var h in _afterSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
             foreach (var h in _afterSaveHooks)
-                await h.RunAfterSaveAsync(_snapshotContext, cancellationToken).ConfigureAwait(false);
+                await h.RunAfterSaveAsync(_snapshotContext, cancellationToken);
         }
     }
 
@@ -116,7 +116,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         InitHook(eventData);
 
         //Run Before Save
-        await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken).ConfigureAwait(false);
+        await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken);
         return result;
     }
 
@@ -127,7 +127,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             //Run After Events and ignore the result even failed.
             _callersQueue.TryDequeue(out _);
-            await RunHooksAsync(RunningTypes.AfterSave, cancellationToken).ConfigureAwait(false);
+            await RunHooksAsync(RunningTypes.AfterSave, cancellationToken);
         }
         finally
         {

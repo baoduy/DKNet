@@ -1,36 +1,43 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Hooks;
+using Testcontainers.MsSql;
 
 namespace EfCore.DataAuthorization.Tests;
 
-public sealed class DataKeyFixture : IDisposable
+public sealed class DataKeyFixture : IAsyncLifetime
 {
-    public DataKeyFixture()
+    private MsSqlContainer? _sqlContainer;
+    public ServiceProvider Provider { get; private set; }
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=DataKeyDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
+
+    public async Task InitializeAsync()
     {
+        _sqlContainer = new MsSqlBuilder()
+            .WithPassword("a1ckZmGjwV8VqNdBUexV")
+            //.WithReuse(true)
+            .Build();
+
+        await _sqlContainer!.StartAsync();
+        // Wait for SQL Server to be ready
+        await Task.Delay(TimeSpan.FromSeconds(20));
+
         Provider = new ServiceCollection()
             .AddLogging()
             .AddAutoDataKeyProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqliteMemory()
+                builder.UseSqlServer(GetConnectionString())
                     .UseAutoConfigModel())
             .BuildServiceProvider();
 
-        Context = Provider.GetRequiredService<DddContext>();
-        Context.Database.EnsureCreated();
-
-        Context.Set<Root>()
-            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
-
-        Context.SaveChangesAsync().GetAwaiter().GetResult();
+        var db = Provider.GetRequiredService<DddContext>();
+        await db.Database.EnsureCreatedAsync();
     }
 
-    public ServiceProvider Provider { get; }
-    public DddContext Context { get; }
-
-    public void Dispose()
-    {
-        Provider?.Dispose();
-        Context?.Dispose();
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 }

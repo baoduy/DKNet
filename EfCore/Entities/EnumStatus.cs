@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using DKNet.EfCore.Abstractions.Attributes;
+﻿using DKNet.EfCore.Abstractions.Attributes;
 
 namespace EfCore.TestDataLayer;
 
