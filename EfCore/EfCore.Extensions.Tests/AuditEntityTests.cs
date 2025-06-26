@@ -25,11 +25,6 @@ public class AuditEntityTests : SqlServerTestBase
     {
         var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
         user.UpdatedByUser("Hoang");
-
-        //TODO allow updatedBy the same with createdBy
-        //user.UpdatedBy.ShouldBeNullOrEmpty();
-        //user.UpdatedOn.ShouldBeNull();
-
         user.Id.ShouldBe(0);
     }
 

@@ -5,7 +5,7 @@ namespace EfCore.Extensions.Tests;
 
 // Test enum for sequence testing
 [SqlSequence("test_seq")]
-public enum TestSequenceEnum
+public enum TestSequenceTypes
 {
     [Sequence(typeof(int), StartAt = 100, IncrementsBy = 5, FormatString = "TEST-{1:000}")]
     TestSequence1,
@@ -15,7 +15,7 @@ public enum TestSequenceEnum
 }
 
 [SqlSequence] // Uses default schema "seq"
-public enum DefaultSchemaSequenceEnum
+public enum DefaultSchemaSequenceTypes
 {
     [Sequence]
     DefaultSequence
@@ -28,7 +28,7 @@ public class SequenceRegisterTests : SqlServerTestBase
     public void GetAttribute_WithValidEnum_ShouldReturnAttribute()
     {
         // Act
-        var attribute = SequenceRegister.GetAttribute(typeof(TestSequenceEnum));
+        var attribute = SequenceRegister.GetAttribute(typeof(TestSequenceTypes));
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -39,7 +39,7 @@ public class SequenceRegisterTests : SqlServerTestBase
     public void GetAttribute_WithDefaultSchema_ShouldReturnDefaultSchema()
     {
         // Act
-        var attribute = SequenceRegister.GetAttribute(typeof(DefaultSchemaSequenceEnum));
+        var attribute = SequenceRegister.GetAttribute(typeof(DefaultSchemaSequenceTypes));
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -60,7 +60,7 @@ public class SequenceRegisterTests : SqlServerTestBase
     public void GetFieldAttributeOrDefault_WithFieldAttribute_ShouldReturnAttribute()
     {
         // Act
-        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(TestSequenceEnum), TestSequenceEnum.TestSequence1);
+        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(TestSequenceTypes), TestSequenceTypes.TestSequence1);
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -74,7 +74,7 @@ public class SequenceRegisterTests : SqlServerTestBase
     public void GetFieldAttributeOrDefault_WithoutFieldAttribute_ShouldReturnDefault()
     {
         // Act
-        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(DefaultSchemaSequenceEnum), DefaultSchemaSequenceEnum.DefaultSequence);
+        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(DefaultSchemaSequenceTypes), DefaultSchemaSequenceTypes.DefaultSequence);
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -87,7 +87,7 @@ public class SequenceRegisterTests : SqlServerTestBase
     public void GetSequenceName_ShouldReturnFormattedName()
     {
         // Act
-        var name = SequenceRegister.GetSequenceName(TestSequenceEnum.TestSequence1);
+        var name = SequenceRegister.GetSequenceName(TestSequenceTypes.TestSequence1);
 
         // Assert
         name.ShouldBe("Sequence_TestSequence1");
@@ -102,14 +102,14 @@ public class SequenceRegisterTests : SqlServerTestBase
         
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(connectionString)
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceEnum).Assembly))
+            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 
         await using var context = new DbContext(options);
         await context.Database.EnsureCreatedAsync();
 
         // Act
-        var value = await context.NextSeqValue(TestSequenceEnum.TestSequence1);
+        var value = await context.NextSeqValue(TestSequenceTypes.TestSequence1);
 
         // Assert
         value.ShouldNotBeNull();
@@ -126,14 +126,14 @@ public class SequenceRegisterTests : SqlServerTestBase
         
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(connectionString)
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceEnum).Assembly))
+            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 
         await using var context = new DbContext(options);
         await context.Database.EnsureCreatedAsync();
 
         // Act
-        var formattedValue = await context.NextSeqValueWithFormat(TestSequenceEnum.TestSequence1);
+        var formattedValue = await context.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
 
         // Assert
         formattedValue.ShouldNotBeNullOrEmpty();

@@ -70,7 +70,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     {
         // Act & Assert
         await Should.ThrowAsync<ArgumentNullException>(async () => 
-            await ((DbContext)null!).NextSeqValue(TestSequenceEnum.TestSequence1));
+            await ((DbContext)null!).NextSeqValue(TestSequenceTypes.TestSequence1));
     }
 
     [TestMethod]
@@ -96,14 +96,14 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(connectionString)
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceEnum).Assembly))
+            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 
         await using var context = new DbContext(options);
         await context.Database.EnsureCreatedAsync();
 
         // This test verifies the format processing logic
-        var result = await context.NextSeqValueWithFormat(TestSequenceEnum.TestSequence1);
+        var result = await context.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
         result.ShouldNotBeNullOrEmpty();
     }
 
