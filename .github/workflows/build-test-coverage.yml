@@ -54,7 +54,7 @@ jobs:
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
       
     - name: Generate Coverage Report
-      run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
+      run: reportgenerator -reports:"**/coverage.*.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
 
     - name: Upload to CodeCov
       continue-on-error: true
