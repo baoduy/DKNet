@@ -16,12 +16,12 @@ Foundation utilities and extensions that support all other components.
 Comprehensive EF Core enhancements that implement repository patterns, domain events, and data access abstractions.
 
 - [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) - Core abstractions and interfaces
-- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) - Data authorization and access control
-- [DKNet.EfCore.Events](./EfCore/DKNet.EfCore.Events.md) - Domain event handling and dispatching
-- [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) - EF Core functionality enhancements
-- [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) - Lifecycle hooks for EF Core operations
-- [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) - Relational database utilities
-- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) - Repository pattern implementations
+- [DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization/README.md) - Data authorization and access control
+- [DKNet.EfCore.Events](../EfCore/DKNet.EfCore.Events/README.md) - Domain event handling and dispatching
+- [DKNet.EfCore.Extensions](../EfCore/DKNet.EfCore.Extensions/README.md) - EF Core functionality enhancements
+- [DKNet.EfCore.Hooks](../EfCore/DKNet.EfCore.Hooks/README.md) - Lifecycle hooks for EF Core operations
+- [DKNet.EfCore.Relational.Helpers](../EfCore/DKNet.EfCore.Relational.Helpers/README.md) - Relational database utilities
+- [DKNet.EfCore.Repos](../EfCore/DKNet.EfCore.Repos/README.md) - Repository pattern implementations
 - [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) - Repository abstractions
 
 ### 📨 [Messaging & CQRS](./Messaging/README.md)
@@ -33,10 +33,10 @@ SlimMessageBus integration for implementing CQRS patterns and event-driven archi
 Application services including blob storage abstractions and data transformation utilities.
 
 - [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) - File storage service abstractions
-- [DKNet.Svc.BlobStorage.AwsS3](./Services/DKNet.Svc.BlobStorage.AwsS3.md) - AWS S3 storage adapter
-- [DKNet.Svc.BlobStorage.AzureStorage](./Services/DKNet.Svc.BlobStorage.AzureStorage.md) - Azure Blob storage adapter
-- [DKNet.Svc.BlobStorage.Local](./Services/DKNet.Svc.BlobStorage.Local.md) - Local file system storage
-- [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) - Data transformation services
+- [DKNet.Svc.BlobStorage.AwsS3](../Services/DKNet.Svc.BlobStorage.AwsS3/README.md) - AWS S3 storage adapter
+- [DKNet.Svc.BlobStorage.AzureStorage](../Services/DKNet.Svc.BlobStorage.AzureStorage/README.md) - Azure Blob storage adapter
+- [DKNet.Svc.BlobStorage.Local](../Services/DKNet.Svc.BlobStorage.Local/README.md) - Local file system storage
+- [DKNet.Svc.Transformation](../Services/DKNet.Svc.Transformation/README.md) - Data transformation services
 
 ## 🏗️ Architecture Overview
 
