@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Hooks;
@@ -8,7 +9,7 @@ namespace EfCore.DataAuthorization.Tests;
 public sealed class DataKeyFixture : IAsyncLifetime
 {
     private MsSqlContainer? _sqlContainer;
-    public ServiceProvider Provider { get; private set; }
+    public ServiceProvider? Provider { get; private set; }
 
     public string GetConnectionString() =>
         _sqlContainer?.GetConnectionString()

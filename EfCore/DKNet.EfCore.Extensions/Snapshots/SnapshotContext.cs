@@ -26,7 +26,7 @@ public sealed class SnapshotContext : IDisposable
     {
         get
         {
-            // TODO: Fix circling events in domain event handlers
+            // NOTE: Potential circular event handling in domain event handlers needs review
             if (_snapshotEntities != null) return _snapshotEntities;
 
             _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];

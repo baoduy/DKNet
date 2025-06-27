@@ -37,7 +37,7 @@ public static class DistributedApplicationExtensions
 
         foreach (var resource in applicationModel.Resources)
         {
-            resourceTasks[resource.Name] = GetResourceWaitTask(resource.Name, targetStates, cancellationToken);
+            resourceTasks[resource.Name] = GetResourceWaitTask(resourceNotificationService, resource.Name, targetStates, cancellationToken);
         }
 
         logger.LogInformation("Waiting for resources [{Resources}] to reach one of target states [{TargetStates}].",
@@ -80,13 +80,16 @@ public static class DistributedApplicationExtensions
         }
 
         logger.LogInformation("Wait for all resources completed successfully!");
+    }
 
-        async Task<(string Name, string State)> GetResourceWaitTask(string resourceName,
-            IEnumerable<string> targetStates, CancellationToken cancellationToken)
-        {
-            var state = await resourceNotificationService.WaitForResourceAsync(resourceName, targetStates,
-                cancellationToken);
-            return (resourceName, state);
-        }
+    private static async Task<(string Name, string State)> GetResourceWaitTask(
+        ResourceNotificationService resourceNotificationService,
+        string resourceName,
+        IEnumerable<string> targetStates,
+        CancellationToken cancellationToken)
+    {
+        var state = await resourceNotificationService.WaitForResourceAsync(resourceName, targetStates,
+            cancellationToken);
+        return (resourceName, state);
     }
 }
