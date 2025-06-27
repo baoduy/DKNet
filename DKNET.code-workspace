@@ -5,6 +5,8 @@
     }
   ],
   "settings": {
-    "cSpell.words": ["Pageable"]
+    "cSpell.words": ["Pageable"],
+    "github.copilot.chat.codesearch.enabled": true,
+    "github.copilot.chat.agent.thinkingTool": true
   }
 }
