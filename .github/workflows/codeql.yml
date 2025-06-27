@@ -70,13 +70,11 @@ jobs:
           category: "/language:${{matrix.language}}"
 
       - name: Filter SARIF results
-        uses: github/codeql-action/filter-sarif@v3
+        uses: advanced-security/filter-sarif@v1.0.1
         with:
           input: ${{ steps.analyze.outputs.sarif }}
           output: filtered-results.sarif
-          filters: |
-            - exclude:
-                file: '**/*.Tests/**'
+          patterns: '**/*.Tests/**'
 
       - name: Upload filtered SARIF
         uses: github/codeql-action/upload-sarif@v3
