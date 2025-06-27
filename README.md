@@ -9,65 +9,38 @@
 
 ![codeCove](https://codecov.io/gh/baoduy/DKNet/graphs/sunburst.svg?token=xtNN7AtB1O)
 
-## Overview
+## DKNet Project Overview
 
-**DKNet Framework** is a comprehensive collection of .NET libraries designed to enhance and simplify enterprise application development using **SlimMessageBus as a MediatR alternative** with **Domain-Driven Design (DDD)** principles. The framework provides robust foundations for building secure, scalable, and maintainable APIs while promoting clean architecture patterns and separation of concerns.
+Here’s a summary of all DKNET-prefixed projects in this repository, with links to their source code and documentation:
 
-All projects in this framework serve as reference implementations and template foundations to help developers understand how to design their APIs securely and implement modern architectural patterns effectively.
+| Project Name                        | Description                                             | Source Code                                            | Documentation                                      |
+|-------------------------------------|---------------------------------------------------------|-------------------------------------------------------|----------------------------------------------------|
+| DKNet.Fw.Extensions                 | Framework-level extensions and utilities                | [Core/DKNet.Fw.Extensions](Core/DKNet.Fw.Extensions)  | [docs/Core/DKNet.Fw.Extensions.md](docs/Core/DKNet.Fw.Extensions.md)     |
+| DKNet.EfCore.Abstractions           | Core abstractions and interfaces for EF Core            | [EfCore/DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions) | [docs/EfCore/DKNet.EfCore.Abstractions.md](docs/EfCore/DKNet.EfCore.Abstractions.md) |
+| DKNet.EfCore.DataAuthorization      | Data authorization and access control                   | [EfCore/DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization) | [docs/EfCore/DKNet.EfCore.DataAuthorization.md](docs/EfCore/DKNet.EfCore.DataAuthorization.md) |
+| DKNet.EfCore.Events                 | Domain event handling and dispatching                   | [EfCore/DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events) | [docs/EfCore/DKNet.EfCore.Events.md](docs/EfCore/DKNet.EfCore.Events.md) |
+| DKNet.EfCore.Extensions             | EF Core functionality enhancements                      | [EfCore/DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions) | [docs/EfCore/DKNet.EfCore.Extensions.md](docs/EfCore/DKNet.EfCore.Extensions.md) |
+| DKNet.EfCore.Hooks                  | Lifecycle hooks for EF Core operations                  | [EfCore/DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks) | [docs/EfCore/DKNet.EfCore.Hooks.md](docs/EfCore/DKNet.EfCore.Hooks.md) |
+| DKNet.EfCore.Relational.Helpers     | Relational database utilities                           | [EfCore/DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers) | [docs/EfCore/DKNet.EfCore.Relational.Helpers.md](docs/EfCore/DKNet.EfCore.Relational.Helpers.md) |
+| DKNet.EfCore.Repos                  | Repository pattern implementations                      | [EfCore/DKNet.EfCore.Repos](EfCore/DKNet.EfCore.Repos) | [docs/EfCore/DKNet.EfCore.Repos.md](docs/EfCore/DKNet.EfCore.Repos.md) |
+| DKNet.EfCore.Repos.Abstractions     | Repository abstractions                                 | [EfCore/DKNet.EfCore.Repos.Abstractions](EfCore/DKNet.EfCore.Repos.Abstractions) | [docs/EfCore/DKNet.EfCore.Repos.Abstractions.md](docs/EfCore/DKNet.EfCore.Repos.Abstractions.md) |
+| DKNet.SlimBus.Extensions            | SlimMessageBus extensions for EF Core                   | [SlimBus/DKNet.SlimBus.Extensions](SlimBus/DKNet.SlimBus.Extensions) | [docs/SlimBus/DKNet.SlimBus.Extensions.md](docs/SlimBus/DKNet.SlimBus.Extensions.md) |
+| DKNet.Svc.BlobStorage.Abstractions  | File storage service abstractions                       | [Services/DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions) | [docs/Services/DKNet.Svc.BlobStorage.Abstractions.md](docs/Services/DKNet.Svc.BlobStorage.Abstractions.md) |
+| DKNet.Svc.BlobStorage.AwsS3         | AWS S3 storage adapter                                 | [Services/DKNet.Svc.BlobStorage.AwsS3](Services/DKNet.Svc.BlobStorage.AwsS3) | [docs/Services/DKNet.Svc.BlobStorage.AwsS3.md](docs/Services/DKNet.Svc.BlobStorage.AwsS3.md) |
+| DKNet.Svc.BlobStorage.AzureStorage  | Azure Blob storage adapter                              | [Services/DKNet.Svc.BlobStorage.AzureStorage](Services/DKNet.Svc.BlobStorage.AzureStorage) | [docs/Services/DKNet.Svc.BlobStorage.AzureStorage.md](docs/Services/DKNet.Svc.BlobStorage.AzureStorage.md) |
+| DKNet.Svc.BlobStorage.Local         | Local file system storage                               | [Services/DKNet.Svc.BlobStorage.Local](Services/DKNet.Svc.BlobStorage.Local) | [docs/Services/DKNet.Svc.BlobStorage.Local.md](docs/Services/DKNet.Svc.BlobStorage.Local.md) |
+| DKNet.Svc.Transformation            | Data transformation services                            | [Services/DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation) | [docs/Services/DKNet.Svc.Transformation.md](docs/Services/DKNet.Svc.Transformation.md) |
+| Aspire.Hosting.ServiceBus           | .NET Aspire Service Bus hosting extensions              | [Aspire/Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus) | [docs/Aspire/Aspire.Hosting.ServiceBus.md](docs/Aspire/Aspire.Hosting.ServiceBus.md) |
+| SlimBus.ApiEndpoints (Template)     | Complete API template using SlimMessageBus              | [z_Templates/SlimBus.ApiEndpoints](z_Templates/SlimBus.ApiEndpoints) | [docs/z_Templates/SlimBus.ApiEndpoints.md](docs/z_Templates/SlimBus.ApiEndpoints.md) |
+
+> For a complete and up-to-date list, see the [docs folder](docs/README.md) or browse the source tree.
 
 ---
 
-## 🚀 Key Features
-
-- **SlimMessageBus Integration**: Lightweight alternative to MediatR for CQRS and messaging patterns
-- **Domain-Driven Design**: Full DDD implementation with aggregates, entities, and domain events
-- **Clean Architecture**: Layered architecture with strict separation of concerns
-- **EF Core Extensions**: Comprehensive Entity Framework Core enhancements and patterns
-- **Security-First**: Built-in security patterns and data authorization mechanisms
-- **Template Projects**: Ready-to-use project templates for rapid development
-- **Aspire Integration**: .NET Aspire hosting extensions for cloud-native applications
-- **Architectural Governance**: Automated enforcement of architectural rules using ArchUnitNET
-
----
-
-## 📁 Project Structure
-
-### Core Framework
-
-- **[DKNet.Fw.Extensions](Core/DKNet.Fw.Extensions)** - Framework-level extensions and utilities
-
-### Entity Framework Core Extensions
-
-- **[DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions)** - Core abstractions and interfaces
-- **[DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization)** - Data authorization and access control
-- **[DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events)** - Domain event handling and dispatching
-- **[DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions)** - EF Core functionality enhancements
-- **[DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks)** - Lifecycle hooks for EF Core operations
-- **[DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers)** - Relational database utilities
-- **[DKNet.EfCore.Repos](EfCore/DKNet.EfCore.Repos)** - Repository pattern implementations
-- **[DKNet.EfCore.Repos.Abstractions](EfCore/DKNet.EfCore.Repos.Abstractions)** - Repository abstractions
-
-### Messaging & CQRS
-
-- **[DKNet.SlimBus.Extensions](SlimBus/DKNet.SlimBus.Extensions)** - SlimMessageBus extensions for EF Core
-- **DKNet.EfCore.SlimBus.Events** - SlimMessageBus event integration for EF Core
-
-### Service Layer
-
-- **[DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions)** - File storage service abstractions
-- **[DKNet.Svc.BlobStorage.AwsS3](Services/DKNet.Svc.BlobStorage.AwsS3)** - AWS S3 storage adapter
-- **[DKNet.Svc.BlobStorage.AzureStorage](Services/DKNet.Svc.BlobStorage.AzureStorage)** - Azure Blob storage adapter
-- **[DKNet.Svc.BlobStorage.Local](Services/DKNet.Svc.BlobStorage.Local)** - Local file system storage
-- **[DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation)** - Data transformation services
-
-### Cloud-Native & Hosting
-
-- **[Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus)** - .NET Aspire Service Bus hosting extensions
-
-### Templates
-
-- **[SlimBus.ApiEndpoints](z_Templates/SlimBus.ApiEndpoints)** - Complete API template using SlimMessageBus
-
+**Note:**
+- Ensure all links point to the correct files in your repository.
+- Keep this table updated as you add or remove DKNET projects.
+- Consider moving template/sample projects (like `z_Templates/SlimBus.ApiEndpoints`) into a dedicated `/templates` or `/samples` directory for better organization.
 ---
 
 ## 🏗️ Architecture Overview
@@ -96,10 +69,6 @@ The framework implements a full DDD approach with:
 │ • File Storage  │    │ • CQRS Pipeline │    │ • Interceptors  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
-
-### Documentation
-
-Refer our wiki for [details here](https://baoduy.github.io/DKNet/)
 
 ---
 
