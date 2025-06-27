@@ -77,9 +77,10 @@ public static class EfCoreExtensions
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        var keys = context.GetPrimaryKeyProperties(entity.GetType());
+        var type = entity.GetType();
+        var keys = context.GetPrimaryKeyProperties(type);
         foreach (var key in keys)
-            yield return entity.GetType().GetProperty(key)?.GetValue(entity);
+            yield return type.GetProperty(key)?.GetValue(entity);
     }
 
     /// <summary>

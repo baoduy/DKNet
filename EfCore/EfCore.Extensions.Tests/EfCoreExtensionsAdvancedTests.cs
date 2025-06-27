@@ -17,8 +17,9 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     [TestMethod]
     public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
     {
+        var action =()=> _db.GetPrimaryKeyValues(null!).ToList();
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => _db.GetPrimaryKeyValues(null!));
+        action.ShouldThrow<ArgumentNullException>();
     }
 
     [TestMethod]
@@ -61,7 +62,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     public void GetTableName_WithNullContext_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => 
+        Should.Throw<ArgumentNullException>(() =>
             ((DbContext)null!).GetTableName(typeof(User)));
     }
 
@@ -69,7 +70,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     public async Task NextSeqValue_WithNullContext_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        await Should.ThrowAsync<ArgumentNullException>(async () => 
+        await Should.ThrowAsync<ArgumentNullException>(async () =>
             await ((DbContext)null!).NextSeqValue(TestSequenceTypes.TestSequence1));
     }
 
@@ -93,7 +94,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         // For now, we'll test the case where format string processing works
         var container = await StartSqlContainerAsync();
         var connectionString = container.GetConnectionString();
-        
+
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(connectionString)
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
