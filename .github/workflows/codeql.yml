@@ -48,7 +48,7 @@ jobs:
               - '**/*.Tests'
 
       - name: Autobuild
-        if: ${{ matrix.language == "csharp" }}
+        if: ${{matrix.language == 'csharp'}}
         uses: github/codeql-action/autobuild@v1
 
       - name: Perform CodeQL Analysis
