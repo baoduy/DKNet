@@ -31,7 +31,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "Build Warnings"
-          content-file: "warnings.log"
+          content-filepath: warnings.log
           labels: |
             build
             warnings
