@@ -40,12 +40,3 @@ Here’s a summary of all DKNET-prefixed projects in this repository, with links
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 🙏 Acknowledgments
-
-- **SlimMessageBus Team**: For providing an excellent messaging framework
-- **Entity Framework Team**: For the robust ORM foundation
-- **Domain-Driven Design Community**: For architectural guidance and patterns
-- **Contributors**: All developers who have contributed to this framework
