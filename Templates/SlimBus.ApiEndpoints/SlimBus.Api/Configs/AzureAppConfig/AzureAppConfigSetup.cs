@@ -22,11 +22,11 @@ internal static class AzureAppConfigSetup
 
         var options = builder.Configuration.Bind<AzureAppConfigOptions>(AzureAppConfigOptions.Name);
         var conn = builder.Configuration.GetConnectionString(options.ConnectionStringName);
-        if (string.IsNullOrWhiteSpace(conn) || string.IsNullOrEmpty(options.Endpoint)) return builder;
+        if (string.IsNullOrWhiteSpace(conn)) return builder;
 
         builder.Configuration.AddAzureAppConfiguration(op =>
         {
-            op.Connect(new Uri(options.Endpoint), new DefaultAzureCredential())
+            op.Connect(new Uri(conn), new DefaultAzureCredential())
                 .UseFeatureFlags()
                 .ConfigureRefresh(rs =>
                     rs.RegisterAll()

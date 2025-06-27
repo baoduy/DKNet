@@ -173,6 +173,6 @@ public class RegisterTests : SqlServerTestBase
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);
         };
-        await action.ShouldThrowAsync<InvalidOperationException>();
+        await action.ShouldThrowAsync<ArgumentNullException>();
     }
 }

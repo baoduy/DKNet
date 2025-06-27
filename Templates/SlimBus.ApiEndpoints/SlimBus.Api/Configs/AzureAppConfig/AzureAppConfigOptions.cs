@@ -4,7 +4,7 @@ namespace SlimBus.Api.Configs.AzureAppConfig;
 /// Configuration options for Azure App Configuration integration
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class AzureAppConfigOptions
+internal sealed class AzureAppConfigOptions
 {
     /// <summary>
     /// Configuration section name
@@ -15,8 +15,6 @@ public class AzureAppConfigOptions
     /// Connection string for Azure App Configuration
     /// </summary>
     public string ConnectionStringName { get; set; } = Name;
-
-    public string Endpoint { get; set; } = Name;
 
     /// <summary>
     /// Label to filter configuration values (optional)
