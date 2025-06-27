@@ -47,36 +47,10 @@ jobs:
             paths-ignore:
               - '**/*.Tests'
 
-      - name: Setup .NET
-        if: ${{matrix.language == 'csharp'}}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
-            9.0.x
-
-      - name: Restore dependencies
-        if: ${{matrix.language == 'csharp'}}
-        run: dotnet restore DKNet.FW.sln
-
-      - name: Build
-        if: ${{matrix.language == 'csharp'}}
-        continue-on-error: true
-        run: dotnet build DKNet.FW.sln --no-restore --configuration Release
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
-
-      - name: Filter SARIF results
-        uses: advanced-security/filter-sarif@v1.0.1
-        with:
-          input: ${{ steps.analyze.outputs.sarif }}
-          output: filtered-results.sarif
-          patterns: '**/*.Tests/**'
-
-      - name: Upload filtered SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: filtered-results.sarif
