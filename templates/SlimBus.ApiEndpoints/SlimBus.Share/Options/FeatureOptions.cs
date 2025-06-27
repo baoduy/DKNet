@@ -24,4 +24,9 @@ public class FeatureOptions
     /// Enable Rate Limiting
     /// </summary>
     public bool EnableRateLimit { get; set; }
+
+    /// <summary>
+    /// Enable Azure App Configuration for remote configuration and feature management
+    /// </summary>
+    public bool EnableAzureAppConfiguration { get; set; }
 }
