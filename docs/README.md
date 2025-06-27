@@ -92,13 +92,12 @@ To get started with the DKNet Framework:
 1. **Choose Your Components**: Review the documentation for each component to understand which ones fit your needs
 2. **Review Architecture Patterns**: Understand how each component fits into the DDD/Onion architecture
 3. **Follow Implementation Guides**: Each component includes detailed usage examples and best practices
-4. **Explore Templates**: Check out the [SlimBus.ApiEndpoints template](../z_Templates/SlimBus.ApiEndpoints) for a complete reference implementation
+4. **Explore Templates**: Check out the [SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet/tree/dev/z_Templates/SlimBus.ApiEndpoints) for a complete reference implementation
 
 ## 📖 Additional Resources
 
 - [Main README](../README.md) - Overview of the entire framework
 - [Architecture Diagrams](../Diagram.png) - Visual representation of the system architecture
-- [Contributing Guide](../CONTRIBUTING.md) - How to contribute to the framework
 - [Testing Strategy](../TESTING_STRATEGY.md) - Testing approaches and best practices
 
 ## 🤝 Contributing to Documentation
