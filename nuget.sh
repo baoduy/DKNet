@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+NUGET_API_KEY=""
+
 if [ -z "$NUGET_API_KEY" ]; then
   echo "Error: NUGET_API_KEY environment variable is not set."
   exit 1
@@ -23,5 +25,5 @@ while :; do
         exit 1
     fi
   done
-  sleep 20
+  sleep 10
 done

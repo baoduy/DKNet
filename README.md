@@ -33,19 +33,16 @@ Here’s a summary of all DKNET-prefixed projects in this repository, with links
 | Aspire.Hosting.ServiceBus          | .NET Aspire Service Bus hosting extensions   | [Aspire/Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus)                       | [docs/Aspire/Aspire.Hosting.ServiceBus.md](docs/Aspire/Aspire.Hosting.ServiceBus.md)                       |
 | SlimBus.ApiEndpoints (Template)    | Complete API template using SlimMessageBus   | [z_Templates/SlimBus.ApiEndpoints](z_Templates/SlimBus.ApiEndpoints)                       | [docs/z_Templates/SlimBus.ApiEndpoints.md](docs/z_Templates/SlimBus.ApiEndpoints.md)                       |
 
-> For a complete and up-to-date list, see the [docs folder](docs/README.md) or browse the source tree.
+---
+
+### Documentation
+
+📖 **[Complete Framework Documentation](docs/README.md)** - Comprehensive documentation organized by functional areas
+
+For detailed information about architecture, implementation patterns, and usage examples, visit our [complete documentation](docs/README.md) or refer to our [GitHub Pages](https://baoduy.github.io/DKNet/)
 
 ---
 
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 🙏 Acknowledgments
-
-- **SlimMessageBus Team**: For providing an excellent messaging framework
-- **Entity Framework Team**: For the robust ORM foundation
-- **Domain-Driven Design Community**: For architectural guidance and patterns
-- **Contributors**: All developers who have contributed to this framework
