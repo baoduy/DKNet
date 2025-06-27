@@ -1,5 +1,4 @@
 ﻿using SlimBus.Api.Configs.Auth;
-using SlimBus.Api.Configs.AzureAppConfig;
 using SlimBus.Api.Configs.GlobalExceptions;
 using SlimBus.Api.Configs.Idempotency;
 using SlimBus.Api.Configs.RateLimits;
@@ -25,13 +24,9 @@ internal static class AppConfig
         if (features.EnableHttps)
             services.AddHttpsConfig();
 
-
         services.AddRateLimitConfig(configuration, features)
             .AddHttpContextAccessor()
             .AddFeatureManagement();
-
-        if (features.EnableAzureAppConfig)
-            services.AddAzureAppConfigServices(configuration);
 
         services.CacheConfig(configuration)
             .AddIdempotency();

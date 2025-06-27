@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace EfCore.Extensions.Tests;
 
 public static class SqlServerTestHelper

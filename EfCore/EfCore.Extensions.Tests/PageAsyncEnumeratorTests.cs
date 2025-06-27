@@ -1,5 +1,4 @@
 using DKNet.EfCore.Extensions.Extensions;
-using System.Collections.Generic;
 
 namespace EfCore.Extensions.Tests;
 

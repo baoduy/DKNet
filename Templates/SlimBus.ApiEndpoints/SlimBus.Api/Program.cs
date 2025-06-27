@@ -3,28 +3,11 @@ using SlimBus.Api.Configs.AzureAppConfig;
 using SlimBus.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Check if Azure App Configuration should be enabled from initial configuration
-var initialFeature = builder.Configuration.Bind<FeatureOptions>(FeatureOptions.Name);
-if (initialFeature.EnableAzureAppConfig)
-{
-    var connectionString = builder.Configuration.GetConnectionString("AzureAppConfiguration");
-    if (!string.IsNullOrWhiteSpace(connectionString))
-    {
-        // Configure Azure App Configuration options from appsettings
-        var azureAppConfigOptions = new AzureAppConfigOptions();
-        builder.Configuration.GetSection(AzureAppConfigOptions.Name).Bind(azureAppConfigOptions);
-        azureAppConfigOptions.ConnectionString = connectionString;
-
-        // Add Azure App Configuration to configuration sources
-        builder.Configuration.AddAzureAppConfig(connectionString, azureAppConfigOptions);
-    }
-}
-
 // Rebind features after potentially loading from Azure App Configuration
 var feature = builder.Configuration.Bind<FeatureOptions>(FeatureOptions.Name);
 
 builder.AddLogConfig(feature)
+    .AddAzureAppConfig(feature)
     .AddFluentValidationConfig();
 
 //Run migration and exit the app if needed.

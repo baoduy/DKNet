@@ -9,27 +9,24 @@ public class AzureAppConfigOptions
     /// <summary>
     /// Configuration section name
     /// </summary>
-    public static string Name => "AzureAppConfiguration";
+    public static string Name => "AzureAppConfig";
 
     /// <summary>
     /// Connection string for Azure App Configuration
     /// </summary>
-    public string ConnectionString { get; set; } = string.Empty;
+    public string ConnectionStringName { get; set; } = Name;
 
-    /// <summary>
-    /// Key prefix to filter configuration values (optional)
-    /// </summary>
-    public string KeyPrefix { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = Name;
 
     /// <summary>
     /// Label to filter configuration values (optional)
     /// </summary>
-    public string Label { get; set; } = string.Empty;
+    public string? Label { get; set; }
 
     /// <summary>
-    /// Cache expiration time for configuration values in seconds
+    /// Cache expiration time for configuration values in Minutes
     /// </summary>
-    public int CacheExpirationInSeconds { get; set; } = 300; // 5 minutes default
+    public int RefreshIntervalInMinutes { get; set; } = 300;
 
     /// <summary>
     /// Whether to load feature flags from Azure App Configuration

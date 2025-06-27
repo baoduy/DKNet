@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace EfCore.Extensions.Tests;
+﻿namespace EfCore.Extensions.Tests;
 
 [TestClass]
 public class EntityEqualsTests
