@@ -2,9 +2,15 @@
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <IsPackable>false</IsPackable>
+        <RunAnalyzers>false</RunAnalyzers>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <LangVersion>default</LangVersion>
+        <Nullable>enable</Nullable>
         <TargetFramework>net9.0</TargetFramework>
-        <Nullable>disable</Nullable>
+        <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
@@ -15,12 +21,6 @@
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.Events.Tests" />
         <InternalsVisibleTo Include="EfCore.Infra.Tests" />
-    </ItemGroup>
-    <ItemGroup>
-      <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
     </ItemGroup>
 
 </Project>
