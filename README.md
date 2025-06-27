@@ -32,41 +32,32 @@ All projects in this framework serve as reference implementations and template f
 
 ## 📁 Project Structure
 
-### Core Framework
+### 📋 Complete Project Overview
 
-- **[DKNet.Fw.Extensions](Core/DKNet.Fw.Extensions)** - Framework-level extensions and utilities
+| Project | Category | Description | Code | Documentation |
+|---------|----------|-------------|------|---------------|
+| **DKNet.Fw.Extensions** | Core Framework | Framework-level extensions and utilities | [📁 Code](Core/DKNet.Fw.Extensions) | [📖 Docs](Core/DKNet.Fw.Extensions/README.md) |
+| **DKNet.EfCore.Abstractions** | EF Core Extensions | Core abstractions and interfaces | [📁 Code](EfCore/DKNet.EfCore.Abstractions) | [📖 Docs](EfCore/DKNet.EfCore.Abstractions/README.md) |
+| **DKNet.EfCore.DataAuthorization** | EF Core Extensions | Data authorization and access control | [📁 Code](EfCore/DKNet.EfCore.DataAuthorization) | [📖 Docs](EfCore/DKNet.EfCore.DataAuthorization/README.md) |
+| **DKNet.EfCore.Events** | EF Core Extensions | Domain event handling and dispatching | [📁 Code](EfCore/DKNet.EfCore.Events) | [📖 Docs](EfCore/DKNet.EfCore.Events/README.md) |
+| **DKNet.EfCore.Extensions** | EF Core Extensions | EF Core functionality enhancements | [📁 Code](EfCore/DKNet.EfCore.Extensions) | [📖 Docs](EfCore/DKNet.EfCore.Extensions/README.md) |
+| **DKNet.EfCore.Hooks** | EF Core Extensions | Lifecycle hooks for EF Core operations | [📁 Code](EfCore/DKNet.EfCore.Hooks) | [📖 Docs](EfCore/DKNet.EfCore.Hooks/README.md) |
+| **DKNet.EfCore.Relational.Helpers** | EF Core Extensions | Relational database utilities | [📁 Code](EfCore/DKNet.EfCore.Relational.Helpers) | [📖 Docs](EfCore/DKNet.EfCore.Relational.Helpers/README.md) |
+| **DKNet.EfCore.Repos** | EF Core Extensions | Repository pattern implementations | [📁 Code](EfCore/DKNet.EfCore.Repos) | [📖 Docs](EfCore/DKNet.EfCore.Repos/README.md) |
+| **DKNet.EfCore.Repos.Abstractions** | EF Core Extensions | Repository abstractions | [📁 Code](EfCore/DKNet.EfCore.Repos.Abstractions) | [📖 Docs](EfCore/DKNet.EfCore.Repos.Abstractions/README.md) |
+| **DKNet.SlimBus.Extensions** | Messaging & CQRS | SlimMessageBus extensions for EF Core | [📁 Code](SlimBus/DKNet.SlimBus.Extensions) | [📖 Docs](SlimBus/DKNet.SlimBus.Extensions/README.md) |
+| **DKNet.Svc.BlobStorage.Abstractions** | Service Layer | File storage service abstractions | [📁 Code](Services/DKNet.Svc.BlobStorage.Abstractions) | [📖 Docs](Services/DKNet.Svc.BlobStorage.Abstractions/README.md) |
+| **DKNet.Svc.BlobStorage.AwsS3** | Service Layer | AWS S3 storage adapter | [📁 Code](Services/DKNet.Svc.BlobStorage.AwsS3) | [📖 Docs](Services/DKNet.Svc.BlobStorage.AwsS3/README.md) |
+| **DKNet.Svc.BlobStorage.AzureStorage** | Service Layer | Azure Blob storage adapter | [📁 Code](Services/DKNet.Svc.BlobStorage.AzureStorage) | [📖 Docs](Services/DKNet.Svc.BlobStorage.AzureStorage/README.md) |
+| **DKNet.Svc.BlobStorage.Local** | Service Layer | Local file system storage | [📁 Code](Services/DKNet.Svc.BlobStorage.Local) | [📖 Docs](Services/DKNet.Svc.BlobStorage.Local/README.md) |
+| **DKNet.Svc.Transformation** | Service Layer | Data transformation services | [📁 Code](Services/DKNet.Svc.Transformation) | [📖 Docs](Services/DKNet.Svc.Transformation/README.md) |
+| **Aspire.Hosting.ServiceBus** | Cloud-Native & Hosting | .NET Aspire Service Bus hosting extensions | [📁 Code](Aspire/Aspire.Hosting.ServiceBus) | [📖 Docs](Aspire/Aspire.Hosting.ServiceBus/README.md) |
 
-### Entity Framework Core Extensions
+### 🚀 Templates & Examples
 
-- **[DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions)** - Core abstractions and interfaces
-- **[DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization)** - Data authorization and access control
-- **[DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events)** - Domain event handling and dispatching
-- **[DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions)** - EF Core functionality enhancements
-- **[DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks)** - Lifecycle hooks for EF Core operations
-- **[DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers)** - Relational database utilities
-- **[DKNet.EfCore.Repos](EfCore/DKNet.EfCore.Repos)** - Repository pattern implementations
-- **[DKNet.EfCore.Repos.Abstractions](EfCore/DKNet.EfCore.Repos.Abstractions)** - Repository abstractions
-
-### Messaging & CQRS
-
-- **[DKNet.SlimBus.Extensions](SlimBus/DKNet.SlimBus.Extensions)** - SlimMessageBus extensions for EF Core
-- **DKNet.EfCore.SlimBus.Events** - SlimMessageBus event integration for EF Core
-
-### Service Layer
-
-- **[DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions)** - File storage service abstractions
-- **[DKNet.Svc.BlobStorage.AwsS3](Services/DKNet.Svc.BlobStorage.AwsS3)** - AWS S3 storage adapter
-- **[DKNet.Svc.BlobStorage.AzureStorage](Services/DKNet.Svc.BlobStorage.AzureStorage)** - Azure Blob storage adapter
-- **[DKNet.Svc.BlobStorage.Local](Services/DKNet.Svc.BlobStorage.Local)** - Local file system storage
-- **[DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation)** - Data transformation services
-
-### Cloud-Native & Hosting
-
-- **[Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus)** - .NET Aspire Service Bus hosting extensions
-
-### Templates
-
-- **[SlimBus.ApiEndpoints](z_Templates/SlimBus.ApiEndpoints)** - Complete API template using SlimMessageBus
+| Template | Description | Code | Documentation |
+|----------|-------------|------|---------------|
+| **SlimBus.ApiEndpoints** | Complete API template using SlimMessageBus | [📁 Code](templates/SlimBus.ApiEndpoints) | [📖 Docs](templates/SlimBus.ApiEndpoints/README.md) |
 
 ---
 
