@@ -43,6 +43,9 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
+        config: |
+          paths-ignore:
+            - '**/*.Tests'
 
     - name: Setup .NET
       if: ${{matrix.language == 'csharp'}}
