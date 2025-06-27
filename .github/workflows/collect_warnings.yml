@@ -30,7 +30,7 @@ jobs:
         uses: peter-evans/create-issue-from-file@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Build Warnings"
+          title: "The Build Warnings should be fixed as much as possible."
           content-filepath: warnings.log
           labels: |
             build
