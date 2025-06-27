@@ -12,6 +12,8 @@ This directory contains modular configuration components for a MediatR-based API
   - [Configuration Modules](#configuration-modules)
     - [AppConfig.cs](#appconfigcs)
     - [ServiceConfigs.cs](#serviceconfigscs)
+    - [Azure App Configuration](#azure-app-configuration)
+      - [AzureAppConfiguration (`AzureAppConfiguration/`)](#azureappconfiguration-azureappconfiguration)
     - [Authentication \& Security](#authentication--security)
       - [Antiforgery (`Antiforgery/`)](#antiforgery-antiforgery)
       - [Auth (`Auth/`)](#auth-auth)
@@ -53,6 +55,51 @@ The configuration system is organized into focused modules, each handling a dist
 - Registers core services (HTTP context, principal provider).
 - Configures options and database connections.
 - Registers infrastructure, application, and service bus integrations.
+
+### Azure App Configuration
+
+#### AzureAppConfiguration (`AzureAppConfiguration/`)
+
+- **Remote Configuration Management**: Centralizes application configuration in Azure App Configuration.
+- **Feature Flag Support**: Loads and manages feature flags from Azure App Configuration.
+- **Dynamic Configuration Refresh**: Automatically refreshes configuration values at runtime.
+- **Environment-Specific Configuration**: Supports labels for different environments (dev, staging, prod).
+- **Secure Connection Handling**: Uses connection strings stored in local configuration for secure access.
+- **Graceful Fallback**: Falls back to local configuration if Azure App Configuration is unavailable.
+- **Feature Toggle Control**: Can be enabled/disabled via `FeatureOptions.EnableAzureAppConfiguration`.
+
+**Configuration Options:**
+- `ConnectionString`: Azure App Configuration connection string (stored in `ConnectionStrings` section)
+- `KeyPrefix`: Optional prefix to filter configuration keys
+- `Label`: Optional label to filter configuration values by environment
+- `CacheExpirationInSeconds`: Refresh interval for configuration values (default: 300 seconds)
+- `LoadFeatureFlags`: Whether to load feature flags (default: true)
+- `FeatureFlagPrefix`: Optional prefix to filter feature flags
+
+**Usage Example:**
+```json
+{
+  "ConnectionStrings": {
+    "AzureAppConfiguration": "Endpoint=https://your-app-config.azconfig.io;Id=your-id;Secret=your-secret"
+  },
+  "FeatureManagement": {
+    "EnableAzureAppConfiguration": true
+  },
+  "AzureAppConfiguration": {
+    "KeyPrefix": "SlimBus:",
+    "Label": "Development",
+    "CacheExpirationInSeconds": 300,
+    "LoadFeatureFlags": true,
+    "FeatureFlagPrefix": "SlimBus"
+  }
+}
+```
+
+**Setup Process:**
+1. Configuration is loaded early in `Program.cs` before service registration
+2. Azure App Configuration values override local `appsettings.json` values
+3. Feature flags are automatically integrated with .NET Feature Management
+4. Configuration refresh is handled automatically in the background
 
 ### Authentication & Security
 
@@ -222,6 +269,9 @@ Configs/
 ├── AppConfig.cs
 ├── ServiceConfigs.cs
 ├── VersioningConfig.cs
+├── AzureAppConfiguration/
+│   ├── AzureAppConfigurationOptions.cs
+│   └── AzureAppConfigurationSetup.cs
 ├── Antiforgery/
 ├── Auth/
 ├── Endpoints/
