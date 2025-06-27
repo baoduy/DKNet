@@ -43,6 +43,8 @@ Application services including blob storage abstractions and data transformation
 
 The DKNet Framework is built around **Domain-Driven Design (DDD)** principles and implements the **Onion Architecture** pattern. Each component is designed to support specific layers of this architecture:
 
+![Diagram](../Diagram.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        🌐 Presentation Layer                    │

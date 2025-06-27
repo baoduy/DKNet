@@ -37,41 +37,6 @@ Here’s a summary of all DKNET-prefixed projects in this repository, with links
 
 ---
 
-**Note:**
-- Ensure all links point to the correct files in your repository.
-- Keep this table updated as you add or remove DKNET projects.
-- Consider moving template/sample projects (like `z_Templates/SlimBus.ApiEndpoints`) into a dedicated `/templates` or `/samples` directory for better organization.
----
-
-## 🏗️ Architecture Overview
-
-### Domain-Driven Design Implementation
-
-The framework implements a full DDD approach with:
-
-![Diagram](Diagram.png)
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   API Layer     │    │  Application    │    │   Domain        │
-│                 │    │   Services      │    │                 │
-│ • Controllers   │◄──►│ • Commands      │◄──►│ • Entities      │
-│ • Endpoints     │    │ • Queries       │    │ • Aggregates    │
-│ • Validation    │    │ • Events        │    │ • Value Objects │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Infrastructure  │    │   SlimBus       │    │   EF Core       │
-│                 │    │                 │    │                 │
-│ • Repositories  │    │ • Message Bus   │    │ • DbContext     │
-│ • External APIs │    │ • Event Handlers│    │ • Change Tracking│
-│ • File Storage  │    │ • CQRS Pipeline │    │ • Interceptors  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
----
-
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
