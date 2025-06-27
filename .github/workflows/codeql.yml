@@ -68,17 +68,4 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
-
-      - name: Filter SARIF results
-        uses: github/codeql-action/filter-sarif@v3
-        with:
-          input: ${{ steps.analyze.outputs.sarif }}
-          output: filtered-results.sarif
-          filters: |
-            - exclude:
-                file: '**/*.Tests/**'
-
-      - name: Upload filtered SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: filtered-results.sarif
+          
