@@ -1,10 +1,10 @@
-namespace SlimBus.Api.Configs.AzureAppConfiguration;
+namespace SlimBus.Api.Configs.AzureAppConfig;
 
 /// <summary>
 /// Configuration options for Azure App Configuration integration
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class AzureAppConfigurationOptions
+public class AzureAppConfigOptions
 {
     /// <summary>
     /// Configuration section name

@@ -1,10 +1,10 @@
-namespace SlimBus.Api.Configs.AzureAppConfiguration;
+namespace SlimBus.Api.Configs.AzureAppConfig;
 
 /// <summary>
 /// Extension methods for configuring Azure App Configuration integration
 /// </summary>
 [ExcludeFromCodeCoverage]
-internal static class AzureAppConfigurationSetup
+internal static class AzureAppConfigSetup
 {
     /// <summary>
     /// Adds Azure App Configuration as a configuration source
@@ -13,10 +13,10 @@ internal static class AzureAppConfigurationSetup
     /// <param name="connectionString">The Azure App Configuration connection string</param>
     /// <param name="options">Configuration options</param>
     /// <returns>The configuration builder</returns>
-    public static IConfigurationBuilder AddSlimBusAzureAppConfiguration(
+    public static IConfigurationBuilder AddAzureAppConfig(
         this IConfigurationBuilder builder,
         string connectionString,
-        AzureAppConfigurationOptions? options = null)
+        AzureAppConfigOptions? options = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -24,12 +24,12 @@ internal static class AzureAppConfigurationSetup
             return builder;
         }
 
-        options ??= new AzureAppConfigurationOptions();
+        options ??= new AzureAppConfigOptions();
 
         try
         {
             builder.AddAzureAppConfiguration(config =>
-                ConfigureAzureAppConfiguration(config, connectionString, options));
+                ConfigureAzureAppConfig(config, connectionString, options));
 
             Console.WriteLine("Azure App Configuration integration enabled successfully.");
         }
@@ -53,10 +53,10 @@ internal static class AzureAppConfigurationSetup
     /// <param name="config">The configuration builder</param>
     /// <param name="connectionString">Connection string</param>
     /// <param name="options">Configuration options</param>
-    private static void ConfigureAzureAppConfiguration(
+    private static void ConfigureAzureAppConfig(
         Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config,
         string connectionString,
-        AzureAppConfigurationOptions options)
+        AzureAppConfigOptions options)
     {
         config.Connect(connectionString);
 
@@ -76,7 +76,7 @@ internal static class AzureAppConfigurationSetup
     /// <summary>
     /// Configures key-value retrieval from Azure App Configuration
     /// </summary>
-    private static void ConfigureKeyValueRetrieval(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigurationOptions options)
+    private static void ConfigureKeyValueRetrieval(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigOptions options)
     {
         if (!string.IsNullOrWhiteSpace(options.KeyPrefix))
         {
@@ -91,7 +91,7 @@ internal static class AzureAppConfigurationSetup
     /// <summary>
     /// Configures refresh settings for Azure App Configuration
     /// </summary>
-    private static void ConfigureRefresh(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigurationOptions options)
+    private static void ConfigureRefresh(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigOptions options)
     {
         config.ConfigureRefresh(refresh =>
         {
@@ -102,7 +102,7 @@ internal static class AzureAppConfigurationSetup
     /// <summary>
     /// Configures feature flags for Azure App Configuration
     /// </summary>
-    private static void ConfigureFeatureFlags(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigurationOptions options)
+    private static void ConfigureFeatureFlags(Microsoft.Extensions.Configuration.AzureAppConfiguration.AzureAppConfigurationOptions config, AzureAppConfigOptions options)
     {
         if (!string.IsNullOrWhiteSpace(options.FeatureFlagPrefix))
         {
@@ -123,13 +123,13 @@ internal static class AzureAppConfigurationSetup
     /// <param name="services">The service collection</param>
     /// <param name="configuration">The configuration</param>
     /// <returns>The service collection</returns>
-    public static IServiceCollection AddAzureAppConfigurationServices(
+    public static IServiceCollection AddAzureAppConfigServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         // Configure Azure App Configuration options
-        services.Configure<AzureAppConfigurationOptions>(
-            configuration.GetSection(AzureAppConfigurationOptions.Name));
+        services.Configure<AzureAppConfigOptions>(
+            configuration.GetSection(AzureAppConfigOptions.Name));
 
         // Add Azure App Configuration services for refresh and feature management
         services.AddAzureAppConfiguration();

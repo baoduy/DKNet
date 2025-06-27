@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{2498442D-F5D2-4A8B-9D86-83AD0C6857F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fw.Extensions.Tests", "Core\Fw.Extensions.Tests\Fw.Extensions.Tests.csproj", "{7D2D5D88-DBC8-445C-ABF4-0D5BD1B8F2E0}"
@@ -71,22 +71,22 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.TestDataLayer", "EfC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DDD4Tests", "EfCore\EfCore.DDD4Tests\EfCore.DDD4Tests.csproj", "{33CCB446-1B42-4D17-918A-190792036735}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "templates", "templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus.ApiEndpoints", "SlimBus.ApiEndpoints", "{212CE5D7-6FAF-466C-86A6-AA4810ED4F39}"
 	ProjectSection(SolutionItems) = preProject
-		templates\SlimBus.ApiEndpoints\README.md = templates\SlimBus.ApiEndpoints\README.md
+		Templates\SlimBus.ApiEndpoints\README.md = Templates\SlimBus.ApiEndpoints\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "Templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "Templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "Templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "Templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "Templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus", "SlimBus", "{C2686F33-39EF-4995-AA5B-E256F5130F9B}"
 EndProject
@@ -96,15 +96,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Extensions.Tests", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{740E24A2-315E-4C88-B8FF-C01FCEB9D5E8}"
 	ProjectSection(SolutionItems) = preProject
-		templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
-		templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
+		Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
+		Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore.Events", "EfCore.Events", "{0602506B-76E6-4909-9BD8-98B405967DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "Templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Repos.Tests", "EfCore\EfCore.Repos.Tests\EfCore.Repos.Tests.csproj", "{BA96DA0C-2AA1-4379-ADDC-E68A580FA871}"
 EndProject
@@ -116,8 +116,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Abstr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{83994FE1-4B2A-4EFE-A83F-39C39E2CA643}"
 	ProjectSection(SolutionItems) = preProject
-		templates\SlimBus.ApiEndpoints\build-docker.sh = templates\SlimBus.ApiEndpoints\build-docker.sh
-		templates\SlimBus.ApiEndpoints\Dockerfile = templates\SlimBus.ApiEndpoints\Dockerfile
+		Templates\SlimBus.ApiEndpoints\build-docker.sh = Templates\SlimBus.ApiEndpoints\build-docker.sh
+		Templates\SlimBus.ApiEndpoints\Dockerfile = Templates\SlimBus.ApiEndpoints\Dockerfile
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"

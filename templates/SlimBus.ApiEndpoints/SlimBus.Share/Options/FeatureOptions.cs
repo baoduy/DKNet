@@ -28,5 +28,5 @@ public class FeatureOptions
     /// <summary>
     /// Enable Azure App Configuration for remote configuration and feature management
     /// </summary>
-    public bool EnableAzureAppConfiguration { get; set; }
+    public bool EnableAzureAppConfig { get; set; }
 }

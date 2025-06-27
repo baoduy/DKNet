@@ -1,8 +1,10 @@
+
+using SlimBus.Api.Configs.AzureAppConfig;
 #pragma warning disable IDE0005
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using SlimBus.Api.Configs.AzureAppConfiguration;
+
 #pragma warning restore IDE0005
 
 namespace SlimBus.App.Tests.Unit;
@@ -13,7 +15,7 @@ public class AzureAppConfigurationTests
     public void AzureAppConfigurationOptions_DefaultValues_ShouldBeCorrect()
     {
         // Arrange & Act
-        var options = new AzureAppConfigurationOptions();
+        var options = new AzureAppConfigOptions();
 
         // Assert
         options.ConnectionString.ShouldBe(string.Empty);
@@ -28,7 +30,7 @@ public class AzureAppConfigurationTests
     public void AzureAppConfigurationOptions_Name_ShouldReturnCorrectValue()
     {
         // Act
-        var name = AzureAppConfigurationOptions.Name;
+        var name = AzureAppConfigOptions.Name;
 
         // Assert
         name.ShouldBe("AzureAppConfiguration");
@@ -46,7 +48,7 @@ public class AzureAppConfigurationTests
         var initialSourceCount = builder.Sources.Count;
 
         // Act
-        var result = builder.AddSlimBusAzureAppConfiguration("", new AzureAppConfigurationOptions());
+        var result = builder.AddAzureAppConfig("", new AzureAppConfigOptions());
 
         // Assert
         result.ShouldBe(builder);
@@ -61,7 +63,7 @@ public class AzureAppConfigurationTests
         var initialSourceCount = builder.Sources.Count;
 
         // Act
-        var result = builder.AddSlimBusAzureAppConfiguration(null!, new AzureAppConfigurationOptions());
+        var result = builder.AddAzureAppConfig(null!, new AzureAppConfigOptions());
 
         // Assert
         result.ShouldBe(builder);
@@ -76,7 +78,7 @@ public class AzureAppConfigurationTests
         var initialSourceCount = builder.Sources.Count;
 
         // Act
-        var result = builder.AddSlimBusAzureAppConfiguration("   ", new AzureAppConfigurationOptions());
+        var result = builder.AddAzureAppConfig("   ", new AzureAppConfigOptions());
 
         // Assert
         result.ShouldBe(builder);
@@ -100,14 +102,14 @@ public class AzureAppConfigurationTests
             .Build();
 
         // Act
-        var result = services.AddAzureAppConfigurationServices(configuration);
+        var result = services.AddAzureAppConfigServices(configuration);
 
         // Assert
         result.ShouldBe(services);
         
         // Verify that services are registered
         var serviceProvider = services.BuildServiceProvider();
-        var options = serviceProvider.GetService<IOptions<AzureAppConfigurationOptions>>();
+        var options = serviceProvider.GetService<IOptions<AzureAppConfigOptions>>();
         options.ShouldNotBeNull();
         
         var optionsValue = options.Value;
@@ -122,7 +124,7 @@ public class AzureAppConfigurationTests
     public void AzureAppConfigurationOptions_SetProperties_ShouldWork()
     {
         // Arrange & Act
-        var options = new AzureAppConfigurationOptions
+        var options = new AzureAppConfigOptions
         {
             ConnectionString = "test-connection-string",
             KeyPrefix = "TestApp:",

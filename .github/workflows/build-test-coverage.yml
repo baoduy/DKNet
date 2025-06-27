@@ -2,9 +2,9 @@ name: Build, Test, Coverage & Check
 
 on:
   push:
-    branches: [ dev ]
+    branches: [dev]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,128 +18,130 @@ permissions:
 jobs:
   build-test-coverage:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
-        dotnet-version: ['9.0.x']
+        dotnet-version: ["9.0.x"]
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: |
-          8.0.x
-          9.0.x
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
 
-    - name: Install SonarCloud Tools
-      run: dotnet tool install --global dotnet-sonarscanner
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
-    - name: Prepare SonarCloud Scan
-      run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: Install SonarCloud Tools
+        run: dotnet tool install --global dotnet-sonarscanner
 
-    - name: Restore dependencies
-      run: dotnet restore DKNet.FW.sln
-      
-    - name: Build
-      continue-on-error: true
-      run: dotnet build DKNet.FW.sln --no-restore --configuration Release
-      
-    - name: Test
-      continue-on-error: true
-      run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
-      
-    - name: Install ReportGenerator
-      run: dotnet tool install --global dotnet-reportgenerator-globaltool
-      
-    - name: Generate Coverage Report
-      run: reportgenerator -reports:"**/coverage.*.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
+      - name: Prepare SonarCloud Scan
+        run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-    - name: Upload to CodeCov
-      continue-on-error: true
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage-report/Cobertura.xml
-        flags: unittests
-        name: codecov-umbrella
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
-        verbose: true
+      - name: Restore dependencies
+        run: dotnet restore DKNet.FW.sln
 
-    - name: Commit SonarCloud Results
-      continue-on-error: true
-      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: Build
+        continue-on-error: true
+        run: dotnet build DKNet.FW.sln --no-restore --configuration Release
 
-    - name: Verify Coverage Report
-      run: |
-        if [ -f "./coverage-report/Cobertura.xml" ]; then
-          echo "✅ Coverage report generated successfully"
-          ls -la coverage-report/
-        else
-          echo "❌ Coverage report not found"
-          echo "Looking for coverage files:"
-          find . -name "*.cobertura.xml" -o -name "coverage.*.xml" 2>/dev/null || echo "No coverage files found"
-          exit 1
-        fi
+      - name: Test
+        continue-on-error: true
+        run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
 
-    - name: Check Coverage Threshold
-      run: |
-        THRESHOLD=80
-        # Parse coverage and check if it meets the $THRESHOLD% threshold
-        coverage_line=$(grep -o 'line-rate="[^"]*"' coverage-report/Cobertura.xml | head -1 | grep -o '[0-9.]*')
-        coverage_percent=$(echo "$coverage_line * 100" | bc -l | cut -d. -f1)
-        
-        echo "Overall Coverage: ${coverage_percent}%"
-        
-        if [ "$coverage_percent" -lt $THRESHOLD ]; then
-          echo "❌ Coverage $coverage_percent% is below the required $THRESHOLD% threshold"
-          exit 1
-        else
-          echo "✅ Coverage $coverage_percent% meets the $THRESHOLD% threshold"
-        fi
-        
-    - name: Upload Coverage Report as Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: coverage-report/
-        
-    - name: Comment PR with Coverage
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          try {
-            const summaryPath = path.join('coverage-report', 'Summary.json');
-            if (fs.existsSync(summaryPath)) {
-              const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
-              const coverage = summary.summary;
-              
-              const comment = `## 📊 Code Coverage Report
-              
-              | Metric | Coverage |
-              |--------|----------|
-              | **Line Coverage** | ${coverage.linecoverage}% |
-              | **Branch Coverage** | ${coverage.branchcoverage}% |
-              | **Method Coverage** | ${coverage.methodcoverage}% |
-              
-              **Lines:** ${coverage.coveredlines}/${coverage.lines} covered
-              **Branches:** ${coverage.coveredbranches}/${coverage.branches} covered
-              
-              📈 [View Full Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-              `;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: reportgenerator -reports:"**/coverage.*.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
+
+      - name: Upload to CodeCov
+        continue-on-error: true
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage-report/Cobertura.xml
+          flags: unittests
+          name: codecov-umbrella
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Commit SonarCloud Results
+        continue-on-error: true
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Verify Coverage Report
+        run: |
+          if [ -f "./coverage-report/Cobertura.xml" ]; then
+            echo "✅ Coverage report generated successfully"
+            ls -la coverage-report/
+          else
+            echo "❌ Coverage report not found"
+            echo "Looking for coverage files:"
+            find . -name "*.cobertura.xml" -o -name "coverage.*.xml" 2>/dev/null || echo "No coverage files found"
+            exit 1
+          fi
+
+      - name: Check Coverage Threshold
+        run: |
+          THRESHOLD=80
+          # Parse coverage and check if it meets the $THRESHOLD% threshold
+          coverage_line=$(grep -o 'line-rate="[^"]*"' coverage-report/Cobertura.xml | head -1 | grep -o '[0-9.]*')
+          coverage_percent=$(echo "$coverage_line * 100" | bc -l | cut -d. -f1)
+
+          echo "Overall Coverage: ${coverage_percent}%"
+
+          if [ "$coverage_percent" -lt $THRESHOLD ]; then
+            echo "❌ Coverage $coverage_percent% is below the required $THRESHOLD% threshold"
+            exit 1
+          else
+            echo "✅ Coverage $coverage_percent% meets the $THRESHOLD% threshold"
+          fi
+
+      - name: Upload Coverage Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report/
+
+      - name: Comment PR with Coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            try {
+              const summaryPath = path.join('coverage-report', 'Summary.json');
+              if (fs.existsSync(summaryPath)) {
+                const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+                const coverage = summary.summary;
+                
+                const comment = `## 📊 Code Coverage Report
+                
+                | Metric | Coverage |
+                |--------|----------|
+                | **Line Coverage** | ${coverage.linecoverage}% |
+                | **Branch Coverage** | ${coverage.branchcoverage}% |
+                | **Method Coverage** | ${coverage.methodcoverage}% |
+                
+                **Lines:** ${coverage.coveredlines}/${coverage.lines} covered
+                **Branches:** ${coverage.coveredbranches}/${coverage.branches} covered
+                
+                📈 [View Full Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                `;
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (error) {
+              console.log('Could not generate coverage comment:', error.message);
             }
-          } catch (error) {
-            console.log('Could not generate coverage comment:', error.message);
-          }
