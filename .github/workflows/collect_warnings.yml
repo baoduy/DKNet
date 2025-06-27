@@ -1,8 +1,8 @@
 name: Build and Collect Warnings
 
 on:
-  push:
-    branches: ["dev"]
+  schedule:
+    - cron: "0 0 1 * *"
 
 permissions:
   contents: read
