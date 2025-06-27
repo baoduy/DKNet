@@ -8,15 +8,15 @@ namespace EfCore.Extensions.Tests;
 /// </summary>
 public abstract class SqlServerTestBase : IAsyncDisposable
 {
-    private MsSqlContainer _container;
+    private static MsSqlContainer _container;
 
-    private MsSqlContainer CreateSqlContainer() =>
+    private static MsSqlContainer CreateSqlContainer() =>
         new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
             //.WithReuse(true)
             .Build();
 
-    protected async Task<MsSqlContainer> StartSqlContainerAsync()
+    protected static async Task<MsSqlContainer> StartSqlContainerAsync()
     {
         _container = CreateSqlContainer();
         await _container.StartAsync();
@@ -39,11 +39,5 @@ public abstract class SqlServerTestBase : IAsyncDisposable
             .UseAutoDataSeeding()
             .Options);
 
-    public ValueTask DisposeAsync()
-    {
-        // if (_container is null) return;
-        // await _container.StopAsync();
-        // await _container.DisposeAsync();
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

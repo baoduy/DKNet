@@ -11,7 +11,7 @@ public class RegisterTests : SqlServerTestBase
     private static MyDbContext _db;
 
     [ClassInitialize]
-    public async Task ClassSetup(TestContext _)
+    public static async Task ClassSetup(TestContext _)
     {
         _sql = await StartSqlContainerAsync();
         Trace.TraceInformation($"Sql Connection String: {_sql.GetConnectionString()}");
