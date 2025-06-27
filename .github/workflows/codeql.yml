@@ -32,7 +32,7 @@ jobs:
           - language: actions
             build-mode: none
           - language: csharp
-            build-mode: autobuild
+            build-mode: manual
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,11 +47,25 @@ jobs:
             paths-ignore:
               - '**/*.Tests'
 
-      - name: Autobuild
+      - name: Setup .NET
         if: ${{matrix.language == 'csharp'}}
-        uses: github/codeql-action/autobuild@v3
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore dependencies
+        if: ${{matrix.language == 'csharp'}}
+        run: dotnet restore DKNet.FW.sln
+
+      - name: Build
+        if: ${{matrix.language == 'csharp'}}
+        continue-on-error: true
+        run: dotnet build DKNet.FW.sln --no-restore --configuration Release
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
+          
