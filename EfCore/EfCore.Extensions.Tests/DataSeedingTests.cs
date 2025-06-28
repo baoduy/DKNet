@@ -7,8 +7,8 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
 {
     public ICollection<User> Data => new List<User>
     {
-        new(1, "seeded1") { FirstName = "Seeded", LastName = "User1" },
-        new(2, "seeded2") { FirstName = "Seeded", LastName = "User2" }
+        new(1, "seeded1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Seeded", LastName = "User1" },
+        new(2, "seeded2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Seeded", LastName = "User2" }
     };
 }
 

@@ -33,26 +33,18 @@ public class ConcurrentUpdateWithSqlTests
     public async Task ConcurrencyWithDbContextTest()
     {
         //1. Create a new User.
-        var user = new User("A")
+        var user = new User("A", new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
                     Street = "123"
                 },
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
                     Street = "124"
                 }
             },
@@ -94,26 +86,20 @@ public class ConcurrentUpdateWithSqlTests
         var writeRepo = new WriteRepository<User>(_db);
         var readRepo = new ReadRepository<User>(_db);
         //1. Create a new User.
-        var user = new User("A")
+        var user = new User("A",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
+
                     Street = "123"
                 },
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
+
                     Street = "124"
                 }
             },
@@ -122,7 +108,7 @@ public class ConcurrentUpdateWithSqlTests
         writeRepo.Add(user);
         await writeRepo.SaveChangesAsync();
 
-        var createdVersion = (byte[])user.RowVersion.Clone();
+        var createdVersion = (byte[])user.RowVersion!.Clone();
 
         //2. Update user with created version. It should allow to update.
         // Change the person's name in the database to simulate a concurrency conflict.

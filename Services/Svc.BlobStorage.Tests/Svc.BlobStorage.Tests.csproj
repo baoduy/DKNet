@@ -7,7 +7,7 @@
         <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <LangVersion>default</LangVersion>
-        <Nullable>enable</Nullable>
+        <Nullable>annotations</Nullable>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>

@@ -12,7 +12,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task AddAsyncAddsEntityToDatabase()
     {
         // Arrange
-        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
+        var entity = new User("steven1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Test User", LastName = "Test" };
 
         // Act
         _fixture.Repository.Add(entity);
@@ -28,7 +28,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task UpdateAndSaveAsyncUpdatesEntityInDatabase()
     {
         // Arrange
-        var entity = new User("steven3") { FirstName = "Original", LastName = "Test" };
+        var entity = new User("steven3", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Original", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
 
@@ -73,7 +73,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task FindAsyncWithExpressionReturnsCorrectEntity()
     {
         // Arrange
-        var entity = new User("findtest1") { FirstName = "FindMe", LastName = "Test" };
+        var entity = new User("findtest1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "FindMe", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
 
@@ -100,7 +100,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task FindAsyncWithIdReturnsCorrectEntity()
     {
         // Arrange
-        var entity = new User("findtest2") { FirstName = "FindById", LastName = "Test" };
+        var entity = new User("findtest2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "FindById", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
 
@@ -139,9 +139,9 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Arrange
         var entities = new[]
         {
-            new User("bulk1") { FirstName = "Bulk1", LastName = "Test" },
-            new User("bulk2") { FirstName = "Bulk2", LastName = "Test" },
-            new User("bulk3") { FirstName = "Bulk3", LastName = "Test" }
+            new User("bulk1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Bulk1", LastName = "Test" },
+            new User("bulk2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Bulk2", LastName = "Test" },
+            new User("bulk3", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Bulk3", LastName = "Test" }
         };
 
         // Act
@@ -161,8 +161,8 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Arrange
         var entities = new[]
         {
-            new User("bulkins1") { FirstName = "BulkIns1", LastName = "Test" },
-            new User("bulkins2") { FirstName = "BulkIns2", LastName = "Test" }
+            new User("bulkins1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "BulkIns1", LastName = "Test" },
+            new User("bulkins2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "BulkIns2", LastName = "Test" }
         };
 
         // Act
@@ -182,7 +182,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public void DeleteRemovesEntityFromContext()
     {
         // Arrange
-        var entity = new User("deltest") { FirstName = "ToDelete", LastName = "Test" };
+        var entity = new User("deltest", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "ToDelete", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         _fixture.DbContext.SaveChanges();
 
@@ -200,8 +200,8 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Arrange
         var entities = new[]
         {
-            new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
-            new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
+            new User("delrange1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "DelRange1", LastName = "Test" },
+            new User("delrange2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "DelRange2", LastName = "Test" }
         };
         _fixture.DbContext.AddRange(entities);
         _fixture.DbContext.SaveChanges();
@@ -221,7 +221,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public void UpdateMarksEntityAsModified()
     {
         // Arrange
-        var entity = new User("updtest") { FirstName = "Original", LastName = "Test" };
+        var entity = new User("updtest", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Original", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         _fixture.DbContext.SaveChanges();
 
@@ -243,8 +243,8 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Arrange
         var entities = new[]
         {
-            new User("updrange1") { FirstName = "UpdRange1", LastName = "Original" },
-            new User("updrange2") { FirstName = "UpdRange2", LastName = "Original" }
+            new User("updrange1", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "UpdRange1", LastName = "Original" },
+            new User("updrange2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "UpdRange2", LastName = "Original" }
         };
         _fixture.DbContext.AddRange(entities);
         _fixture.DbContext.SaveChanges();
@@ -271,7 +271,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task FindAsyncDetachesEntityFromContext()
     {
         // Arrange
-        var entity = new User("detachtest") { FirstName = "DetachTest", LastName = "Test" };
+        var entity = new User("detachtest", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "DetachTest", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
 
@@ -288,7 +288,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task FindAsyncWithExpressionDetachesEntityFromContext()
     {
         // Arrange
-        var entity = new User("detachtest2") { FirstName = "DetachTest2", LastName = "Test" };
+        var entity = new User("detachtest2", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "DetachTest2", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
 
@@ -325,7 +325,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     public async Task SaveChangesAsyncWithCancellationTokenRespectsCancellation()
     {
         // Arrange
-        var entity = new User("savecancel") { FirstName = "SaveCancel", LastName = "Test" };
+        var entity = new User("savecancel", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "SaveCancel", LastName = "Test" };
         _fixture.Repository.Add(entity);
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();

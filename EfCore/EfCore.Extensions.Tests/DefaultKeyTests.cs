@@ -8,7 +8,7 @@ public class DefaultKeyTests
     [TestMethod]
     public void DefaultKey()
     {
-        new User("Duy") { FirstName = "Steven", LastName = "Smith" }.Id.ShouldBe(0);
-        new Address().Id.ShouldBe(0);
+        new User("Duy", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Steven", LastName = "Smith" }.Id.ShouldBe(0);
+        new Address(new OwnedEntity("123","123","Steven","AAA","qqq")).Id.ShouldBe(0);
     }
 }

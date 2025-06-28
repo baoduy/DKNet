@@ -58,13 +58,13 @@ public class WithSqlDbTests : SqlServerTestBase
     {
         _db.ChangeTracker.Clear();
         //Create User with Address
-        _db.Set<User>().Add(new User("Duy")
+        _db.Set<User>().Add(new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
                     Street = "12"
                 }
@@ -120,7 +120,7 @@ public class WithSqlDbTests : SqlServerTestBase
     public async Task TestConcurrentUpdateThrowsExceptionAsync()
     {
         // Arrange
-        var user = new User("ConcurrencyTest")
+        var user = new User("ConcurrencyTest",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Test",
             LastName = "User",

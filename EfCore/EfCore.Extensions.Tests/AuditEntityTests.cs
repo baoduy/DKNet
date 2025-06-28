@@ -23,7 +23,7 @@ public class AuditEntityTests : SqlServerTestBase
     [TestMethod]
     public void TestCreatingEntity()
     {
-        var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
+        var user = new User("Duy", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Steven", LastName = "Smith" };
         user.UpdatedByUser("Hoang");
         user.Id.ShouldBe(0);
     }
@@ -31,11 +31,11 @@ public class AuditEntityTests : SqlServerTestBase
     [TestMethod]
     public async Task TestUpdatingEntityAsync()
     {
-        _db.Set<User>().AddRange(new User("StevenHoang")
+        _db.Set<User>().AddRange(new User("StevenHoang", new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Steven",
             LastName = "Hoang"
-        }, new User("DuyHoang")
+        }, new User("DuyHoang", new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang"

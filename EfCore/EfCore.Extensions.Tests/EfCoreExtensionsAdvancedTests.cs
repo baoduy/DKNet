@@ -26,7 +26,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     public void GetPrimaryKeyValues_WithEntityHavingMultipleKeys_ShouldReturnAllKeys()
     {
         // Arrange - Assuming we have an entity with composite keys (may need to create one)
-        var user = new User(1, "Test User") { FirstName = "Test", LastName = "User" };
+        var user = new User(1, "Test User", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Test", LastName = "User" };
 
         // Act
         var keyValues = _db.GetPrimaryKeyValues(user).ToList();

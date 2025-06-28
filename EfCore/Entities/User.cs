@@ -7,17 +7,15 @@ public class User : BaseEntity
 
     public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 
-    public User(string userName) : this(0, userName)
+    public User(string userName, Account account) : this(0, userName, account)
     {
     }
 
-    public User(int id, string userName) : base(id, userName)
+    public User(int id, string userName, Account account) : base(id, userName)
     {
+        Account = account;
     }
 
-    public User()
-    {
-    }
 
 
     public Account Account { get; set; }

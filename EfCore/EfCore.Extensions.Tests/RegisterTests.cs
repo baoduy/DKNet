@@ -31,13 +31,13 @@ public class RegisterTests : SqlServerTestBase
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
                     Street = "12"
                 }
@@ -67,13 +67,13 @@ public class RegisterTests : SqlServerTestBase
     public async Task TestCreateDb()
     {
         //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
                 {
                     Street = "12"
                 }
@@ -93,13 +93,13 @@ public class RegisterTests : SqlServerTestBase
     public async Task TestCreateDbCustomMapper()
     {
         //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address { Street = "123" }
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq")) { Street = "123" }
             },
         });
 
@@ -113,13 +113,13 @@ public class RegisterTests : SqlServerTestBase
     public async Task TestCreateDbValidate()
     {
         //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"})
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address { Street = "123" }
+                new Address(new OwnedEntity("123","123","Steven","AAA","qqq")) { Street = "123" }
             },
         });
 

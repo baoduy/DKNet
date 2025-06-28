@@ -6,51 +6,24 @@ namespace EfCore.TestDataLayer;
 
 [Owned]
 [Table("OwnedEntities")]
-public class OwnedEntity
+public class OwnedEntity(string internalProp, string privateField, string name, string notReadOnly, string readOnly)
 {
-    #region Fields
-
-    private readonly string privateField;
-
-    #endregion Fields
-
-    #region Methods
-
     public string GetPrivate()
     {
         return privateField;
     }
 
-    #endregion Methods
-
-    #region Constructors
-
-    public OwnedEntity(string internalProp, string privateField)
-    {
-        this.privateField = privateField;
-        InternalProp = internalProp;
-    }
-
-    internal OwnedEntity()
-    {
-    }
-
-    #endregion Constructors
-
-    #region Properties
 
     public string FullName => $"{nameof(OwnedEntity)} {Name}";
 
     [Key] public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = name;
 
-    [ReadOnly(false)] public string NotReadOnly { get; set; }
+    [ReadOnly(false)] public string NotReadOnly { get; set; } = notReadOnly;
 
-    [ReadOnly(true)] public string ReadOnly { get; set; }
+    [ReadOnly(true)] public string ReadOnly { get; set; } = readOnly;
 
     // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
-    internal string InternalProp { get; private set; }
-
-    #endregion Properties
+    internal string InternalProp { get; private set; } = internalProp;
 }
