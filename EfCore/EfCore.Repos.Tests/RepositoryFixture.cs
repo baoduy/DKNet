@@ -1,13 +1,13 @@
 using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Repos;
-using EfCore.TestDataLayer;
+using EfCore.Repos.Tests.TestEntities;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryFixture : IAsyncLifetime
 {
-    public MyDbContext DbContext { get; set; } = null!;
+    public TestDbContext DbContext { get; set; } = null!;
     public IRepository<User> Repository { get; set; } = null!;
     public IReadRepository<User> ReadRepository { get; set; } = null!;
     private readonly DistributedApplication _app;
@@ -38,11 +38,10 @@ public class RepositoryFixture : IAsyncLifetime
 
         _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
 
-        var optionsBuilder = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(_dbConn)
-            .UseAutoConfigModel();
+        var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(_dbConn);
 
-        DbContext = new MyDbContext(optionsBuilder.Options);
+        DbContext = new TestDbContext(optionsBuilder.Options);
         DbContext.Database.SetConnectionString(_dbConn);
 
         ReadRepository = new ReadRepository<User>(DbContext);

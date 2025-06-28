@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using EfCore.TestDataLayer;
+using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
