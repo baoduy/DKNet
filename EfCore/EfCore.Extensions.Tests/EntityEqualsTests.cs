@@ -20,8 +20,16 @@ public class EntityEqualsTests
     [TestMethod]
     public void TestReferenceEquals()
     {
-        var user1 = new User(1, "Hello") { FirstName = "Steven", LastName = "Smith" };
-        var user2 = new User(0, "BBB") { FirstName = "Steven", LastName = "Smith" };
+        var user1 = new User(1, "Hello")
+        {
+            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Steven",
+            LastName = "Smith"
+        };
+        var user2 = new User(0, "BBB")
+        {
+            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Steven",
+            LastName = "Smith"
+        };
 
         user1.Equals(user2).ShouldBeFalse();
         user1.Equals(user1).ShouldBeTrue();
@@ -63,8 +71,10 @@ public class EntityEqualsTests
     {
         var set = new HashSet<User>
         {
-            new(1, "Hoang"){ FirstName = "Steven", LastName = "Smith" },
-            new(2, "Duy"){ FirstName = "Steven", LastName = "Smith" },
+            new(1, "Hoang")
+                { FirstName = "Steven", LastName = "Smith" },
+            new(2, "Duy")
+                { FirstName = "Steven", LastName = "Smith" },
         };
 
         set.RemoveWhere(u => u.Id == 1);
@@ -77,8 +87,10 @@ public class EntityEqualsTests
     {
         var set = new HashSet<User>
         {
-            new(1, "Hoang"){ FirstName = "Steven", LastName = "Smith" },
-            new(2, "Duy"){ FirstName = "Steven", LastName = "Smith" },
+            new(1, "Hoang")
+                { FirstName = "Steven", LastName = "Smith" },
+            new(2, "Duy")
+                { FirstName = "Steven", LastName = "Smith" },
         };
 
         set.Remove(set.First());

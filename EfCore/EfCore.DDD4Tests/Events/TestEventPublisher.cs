@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using DKNet.EfCore.Events.Handlers;
 
 namespace EfCore.DDD4Tests.Events;

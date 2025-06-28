@@ -1,5 +1,3 @@
-using System;
-
 namespace EfCore.DDD4Tests.Events;
 
 public record EntityAddedEvent 

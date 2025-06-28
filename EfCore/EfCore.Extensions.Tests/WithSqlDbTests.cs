@@ -66,6 +66,7 @@ public class WithSqlDbTests : SqlServerTestBase
             {
                 new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "12"
                 }
             },

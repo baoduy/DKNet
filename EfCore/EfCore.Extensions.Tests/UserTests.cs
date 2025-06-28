@@ -17,7 +17,8 @@ public class UserTests : SqlServerTestBase
     [TestMethod]
     public void CreatedUserIdShouldBeZero()
     {
-        var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
+        var user = new User("Duy")
+            { FirstName = "Steven", LastName = "Smith" };
         user.Id.ShouldBe(0);
     }
 
@@ -32,18 +33,12 @@ public class UserTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },

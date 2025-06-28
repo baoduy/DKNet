@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.Abstractions.Attributes;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using DKNet.EfCore.Extensions.Registers;
@@ -103,6 +104,8 @@ public static class EfCoreExtensions
     /// <param name="dbContext">The database context.</param>
     /// <param name="name">The name of the sequence.</param>
     /// <returns>The next value of the sequence.</returns>
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", 
+        Justification = "SQL is constructed from internal metadata, not user input")]
     public static async ValueTask<object?> NextSeqValue<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
     {

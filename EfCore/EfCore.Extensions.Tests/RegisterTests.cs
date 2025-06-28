@@ -39,6 +39,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "12"
                 }
             },
@@ -75,6 +76,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "12"
                 }
             },
@@ -99,31 +101,17 @@ public class RegisterTests : SqlServerTestBase
             LastName = "Hoang",
             Addresses =
             {
-                new Address { Street = "123" }
+                new Address
+                {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    Street = "123"
+                }
             },
         });
 
         await _db.SaveChangesAsync();
 
         (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
-    }
-
-
-    [TestMethod]
-    public async Task TestCreateDbValidate()
-    {
-        //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang",
-            Addresses =
-            {
-                new Address { Street = "123" }
-            },
-        });
-
-        await _db.SaveChangesAsync();
     }
 
     [TestMethod]
@@ -143,7 +131,7 @@ public class RegisterTests : SqlServerTestBase
     [TestMethod]
     public async Task TestIgnoredEntityAsync()
     {
-        var action =()=>  _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
+        var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 

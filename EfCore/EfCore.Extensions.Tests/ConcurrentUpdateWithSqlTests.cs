@@ -41,18 +41,12 @@ public class ConcurrentUpdateWithSqlTests
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },
@@ -102,18 +96,12 @@ public class ConcurrentUpdateWithSqlTests
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },
@@ -122,7 +110,7 @@ public class ConcurrentUpdateWithSqlTests
         writeRepo.Add(user);
         await writeRepo.SaveChangesAsync();
 
-        var createdVersion = (byte[])user.RowVersion.Clone();
+        var createdVersion = (byte[])user.RowVersion!.Clone();
 
         //2. Update user with created version. It should allow to update.
         // Change the person's name in the database to simulate a concurrency conflict.

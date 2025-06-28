@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.DataAuthorization;
 
@@ -13,14 +10,10 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
     [NotMapped] private readonly ICollection<Type> _eventTypes = [];
 
     /// <inheritdoc />
-    protected EntityBase(TKey id, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy,
+    protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy,
         createdOn)
     {
-    }
-
-    /// <inheritdoc />
-    protected EntityBase()
-    {
+        OwnedBy = ownedBy;
     }
 
     public void AddEvent(object eventObj) => _events.Add(eventObj);

@@ -1,5 +1,3 @@
-using System;
-
 namespace EfCore.DDD4Tests.Dtos;
 
 public class RootDto
