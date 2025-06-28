@@ -11,6 +11,8 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
         var db = provider.Provider.GetRequiredService<DddContext>();
 
         var p = new Root("P1");
+        p.SetOwnedBy("Steven");
+
         p.AddEntity("A1");
 
         db.Add(p);
@@ -29,6 +31,8 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
         var db = provider.Provider.GetRequiredService<DddContext>();
 
         var p = new Root("P1");
+        p.SetOwnedBy("Steven");
+
         p.AddEvent<TypeEvent>();
 
         db.Add(p);

@@ -31,7 +31,7 @@ public class ExtensionsTests : SqlServerTestBase
     [TestMethod]
     public void TestGetKeyValue()
     {
-        var user = new User(1, "Duy", new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Steven", LastName = "Smith" };
+        var user = new User(1, "Duy") { FirstName = "Steven", LastName = "Smith" };
         _db.GetPrimaryKeyValues(user).Single()
             .ShouldBe(1);
     }

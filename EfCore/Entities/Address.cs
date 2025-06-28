@@ -4,17 +4,17 @@ namespace EfCore.TestDataLayer;
 
 public sealed class Address : Entity<int>
 {
-    public Address(OwnedEntity ownedEntity)
+    public Address()
     {
-        OwnedEntity = ownedEntity;
+
     }
 
-    private Address(int id, OwnedEntity ownedEntity) : base(id)
+    private Address(int id) : base(id)
     {
-        OwnedEntity = ownedEntity;
+
     }
 
-    public OwnedEntity OwnedEntity { get; set; }
+    public OwnedEntity? OwnedEntity { get; set; }
     [Required] [MaxLength(256)] public string Street { get; set; } = null!;
 
     public User User { get; set; } = null!;

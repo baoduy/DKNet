@@ -33,18 +33,20 @@ public class ConcurrentUpdateWithSqlTests
     public async Task ConcurrencyWithDbContextTest()
     {
         //1. Create a new User.
-        var user = new User("A", new Account{UserName = "Steven",Password = "Pass@word1"})
+        var user = new User("A")
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },
@@ -86,20 +88,20 @@ public class ConcurrentUpdateWithSqlTests
         var writeRepo = new WriteRepository<User>(_db);
         var readRepo = new ReadRepository<User>(_db);
         //1. Create a new User.
-        var user = new User("A",new Account{UserName = "Steven",Password = "Pass@word1"})
+        var user = new User("A")
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
-
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
-
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },

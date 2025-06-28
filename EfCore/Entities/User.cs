@@ -7,18 +7,17 @@ public class User : BaseEntity
 
     public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 
-    public User(string userName, Account account) : this(0, userName, account)
+    public User(string createdBy) : this(0, createdBy)
     {
     }
 
-    public User(int id, string userName, Account account) : base(id, userName)
+    public User(int id, string createdBy) : base(id, createdBy)
     {
-        Account = account;
     }
 
 
 
-    public Account Account { get; set; }
+    public Account? Account { get; set; }
 
     /// <summary>
     ///     Private Set for Data Seeding purpose.

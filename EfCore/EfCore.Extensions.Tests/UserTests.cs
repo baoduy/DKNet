@@ -17,26 +17,28 @@ public class UserTests : SqlServerTestBase
     [TestMethod]
     public void CreatedUserIdShouldBeZero()
     {
-        var user = new User("Duy",new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Steven", LastName = "Smith" };
+        var user = new User("Duy")
+            { FirstName = "Steven", LastName = "Smith" };
         user.Id.ShouldBe(0);
     }
 
     [TestMethod]
     public void AddUserAndAddress()
     {
-        var user = new User("A",new Account{UserName = "Steven",Password = "Pass@word1"})
+        var user = new User("A")
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
-
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "123"
                 },
-                new Address(new OwnedEntity("123","123","Steven","AAA","qqq"))
+                new Address
                 {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
                     Street = "124"
                 }
             },

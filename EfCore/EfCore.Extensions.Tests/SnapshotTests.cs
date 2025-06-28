@@ -42,7 +42,7 @@ public class SnapshotTests : SqlServerTestBase
     public void SnapshotEntities_ShouldCaptureChangedEntities()
     {
         // Arrange
-        var user = new User("Test Creator",new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Test", LastName = "User" };
+        var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
 
         // Act
@@ -72,7 +72,7 @@ public class SnapshotTests : SqlServerTestBase
     public void SnapshotEntityEntry_ShouldCaptureEntityState()
     {
         // Arrange
-        var user = new User("Test Creator",new Account{UserName = "Steven",Password = "Pass@word1"}) { FirstName = "Test", LastName = "User" };
+        var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
         
         var snapshot = _db.Snapshot();
