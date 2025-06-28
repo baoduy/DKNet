@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using DKNet.EfCore.DataAuthorization;
 
 namespace EfCore.DDD4Tests;

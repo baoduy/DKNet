@@ -39,7 +39,8 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
 
         db.Set<Root>()
-            .AddRange(new Root("Duy"), new Root("Steven"), new Root("Hoang"), new Root("DKNet"));
+            .AddRange(new Root("Duy", "Steven"), new Root("Steven", "Steven"),
+                new Root("Hoang", "Steven"), new Root("DKNet", "Steven"));
         await db.SaveChangesAsync();
     }
 

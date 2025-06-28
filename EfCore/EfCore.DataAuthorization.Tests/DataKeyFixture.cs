@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Hooks;
 using Testcontainers.MsSql;

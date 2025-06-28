@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace EfCore.TestDataLayer;
+﻿namespace EfCore.TestDataLayer;
 
 public class GuidEntity : Entity
 {

@@ -1,4 +1,3 @@
-using System.Threading;
 using DKNet.EfCore.Extensions.Snapshots;
 
 namespace EfCore.HookTests.Data;
