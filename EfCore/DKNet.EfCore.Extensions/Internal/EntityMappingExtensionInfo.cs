@@ -10,7 +10,8 @@ internal sealed class EntityMappingExtensionInfo(EntityAutoMappingRegister exten
 
     public override string LogFragment => $"using {nameof(EntityAutoMappingRegister)}";
 
-    public override int GetServiceProviderHashCode() => (nameof(EntityAutoMappingRegister).GetHashCode(StringComparison.CurrentCulture) * 3) ^ GetHashCode();
+    public override int GetServiceProviderHashCode() => 
+        nameof(EntityAutoMappingRegister).GetHashCode(StringComparison.Ordinal);
     public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other) => true;
 
     public override void PopulateDebugInfo(IDictionary<string, string>? debugInfo)

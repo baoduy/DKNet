@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using DKNet.EfCore.Hooks.Internals;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks;
@@ -9,17 +8,15 @@ namespace DKNet.EfCore.Hooks;
 public static class SetupEfCoreHook
 {
     /// <summary>
-    /// Add HookOptionsExtension to DbContext options.
+    /// Add HookRunner from ServiceProvider to DbContext Interceptors.
     /// </summary>
     /// <param name="options"></param>
-    /// <param name="serviceProvider"></param>
+    /// <param name="provider"></param>
     /// <returns></returns>
-    public static DbContextOptionsBuilder AddHookExtension(this DbContextOptionsBuilder options, IServiceProvider serviceProvider)
-    {
-        var extension = new HookOptionsExtension(serviceProvider);
-        ((IDbContextOptionsBuilderInfrastructure)options).AddOrUpdateExtension(extension);
-        return options;
-    }
+    public static DbContextOptionsBuilder AddHookInterceptor<TDbContext>(
+        this DbContextOptionsBuilder options,
+        IServiceProvider provider) where TDbContext : DbContext =>
+        options.AddInterceptors(provider.GetRequiredKeyedService<HookRunner>(typeof(TDbContext).FullName));
 
     /// <summary>
     ///     Add Implementation of <see /> or <see cref="IHookAsync" /> to <see cref="IServiceCollection" />
@@ -67,6 +64,7 @@ public static class SetupEfCoreHook
         }
 
         return services
+            .AddScoped<HookFactory>()
             .AddKeyedScoped<HookRunner>(fullName);
     }
 
@@ -90,7 +88,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(provider, options);
-                options.AddHookExtension(provider);
+                options.AddHookInterceptor<TDbContext>(provider);
             }, contextLifetime, optionLifetime);
 
         return services;
@@ -116,7 +114,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(options);
-                options.AddHookExtension(provider);
+                options.AddHookInterceptor<TDbContext>(provider);
             }, contextLifetime, optionLifetime);
 
         return services;

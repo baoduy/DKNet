@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using DKNet.EfCore.Extensions.Snapshots;
 
 namespace DKNet.EfCore.Hooks.Internals;
@@ -24,8 +25,9 @@ public enum RunningTypes
 /// <summary>
 /// Runs hooks before and after save operations.
 /// </summary>
-/// <param name="applicationServiceProvider">The application's service provider for resolving hooks</param>
-internal sealed class HookRunner(IServiceProvider applicationServiceProvider) : ISaveChangesInterceptor
+/// <param name="hookLoader"></param>
+/// <param name="logger"></param>
+internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger) : ISaveChangesInterceptor
 {
     private bool _initialized;
     private readonly ConcurrentQueue<string> _callersQueue = new();
@@ -42,9 +44,7 @@ internal sealed class HookRunner(IServiceProvider applicationServiceProvider) : 
         => throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
 
     public void SaveChangesFailed(DbContextErrorEventData eventData)
-    {
-        // Hook save changes failed - no logging needed for now
-    }
+        => logger.LogError("SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
 
     public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -69,7 +69,7 @@ internal sealed class HookRunner(IServiceProvider applicationServiceProvider) : 
 
         if (!_initialized)
         {
-            var (beforeSaveHooks, afterSaveHooks) = HookFactory.LoadHooks(eventData.Context, applicationServiceProvider);
+            var (beforeSaveHooks, afterSaveHooks) = hookLoader.LoadHooks(eventData.Context);
             _afterSaveHooks = afterSaveHooks;
             _beforeSaveHooks = beforeSaveHooks;
             //mark initialized flag

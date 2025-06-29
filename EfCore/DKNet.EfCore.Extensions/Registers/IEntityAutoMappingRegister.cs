@@ -33,8 +33,8 @@ internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IE
         //Add custom services
         _extraServiceProvider?.Invoke(services);
 
-        //Add EntityMappingService, it should be
-        services.AddSingleton(new EntityMappingRegisterService(this));
+        //Add EntityMappingService using a factory to avoid instance-specific registrations
+        services.AddSingleton<EntityMappingRegisterService>(provider => new EntityMappingRegisterService(this));
 
         //Replace the IModelCustomizer with ExtraModelCustomizer. This only available for Relational Db.
         var originalDescriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IModelCustomizer));
