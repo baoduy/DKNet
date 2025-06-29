@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EfCore.DDD4Tests\EfCore.DDD4Tests.csproj" />
     <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj" />
+    <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
   </ItemGroup>
 </Project>

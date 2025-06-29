@@ -29,8 +29,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\EfCore.DDD4Tests\EfCore.DDD4Tests.csproj" />
       <ProjectReference Include="..\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj" />
+      <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
+      <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj" />
     </ItemGroup>
 
 </Project>
