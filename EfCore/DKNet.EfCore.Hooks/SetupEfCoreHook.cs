@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using DKNet.EfCore.Hooks.Internals;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks;
@@ -8,15 +9,16 @@ namespace DKNet.EfCore.Hooks;
 public static class SetupEfCoreHook
 {
     /// <summary>
-    /// Add HookInterceptor to DbContext Interceptors.
+    /// Add HookOptionsExtension to DbContext options.
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    public static DbContextOptionsBuilder AddHookInterceptor(this DbContextOptionsBuilder options, IServiceProvider serviceProvider)
+    public static DbContextOptionsBuilder AddHookExtension(this DbContextOptionsBuilder options, IServiceProvider serviceProvider)
     {
-        var interceptor = serviceProvider.GetRequiredService<HookInterceptor>();
-        return options.AddInterceptors(interceptor);
+        var extension = new HookOptionsExtension(serviceProvider);
+        ((IDbContextOptionsBuilderInfrastructure)options).AddOrUpdateExtension(extension);
+        return options;
     }
 
     /// <summary>
@@ -65,7 +67,6 @@ public static class SetupEfCoreHook
         }
 
         return services
-            .AddScoped<HookInterceptor>()
             .AddKeyedScoped<HookRunner>(fullName);
     }
 
@@ -89,7 +90,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(provider, options);
-                options.AddHookInterceptor(provider);
+                options.AddHookExtension(provider);
             }, contextLifetime, optionLifetime);
 
         return services;
@@ -115,7 +116,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(options);
-                options.AddHookInterceptor(provider);
+                options.AddHookExtension(provider);
             }, contextLifetime, optionLifetime);
 
         return services;

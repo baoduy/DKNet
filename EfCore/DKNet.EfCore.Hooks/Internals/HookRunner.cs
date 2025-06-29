@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Logging;
 using DKNet.EfCore.Extensions.Snapshots;
 
 namespace DKNet.EfCore.Hooks.Internals;
@@ -25,9 +24,8 @@ public enum RunningTypes
 /// <summary>
 /// Runs hooks before and after save operations.
 /// </summary>
-/// <param name="serviceProvider"></param>
-/// <param name="logger"></param>
-internal sealed class HookRunner(IServiceProvider serviceProvider, ILogger<HookRunner> logger) : ISaveChangesInterceptor
+/// <param name="applicationServiceProvider">The application's service provider for resolving hooks</param>
+internal sealed class HookRunner(IServiceProvider applicationServiceProvider) : ISaveChangesInterceptor
 {
     private bool _initialized;
     private readonly ConcurrentQueue<string> _callersQueue = new();
@@ -44,7 +42,9 @@ internal sealed class HookRunner(IServiceProvider serviceProvider, ILogger<HookR
         => throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
 
     public void SaveChangesFailed(DbContextErrorEventData eventData)
-        => logger.LogError("SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
+    {
+        // Hook save changes failed - no logging needed for now
+    }
 
     public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -69,7 +69,7 @@ internal sealed class HookRunner(IServiceProvider serviceProvider, ILogger<HookR
 
         if (!_initialized)
         {
-            var (beforeSaveHooks, afterSaveHooks) = HookFactory.LoadHooks(eventData.Context, serviceProvider);
+            var (beforeSaveHooks, afterSaveHooks) = HookFactory.LoadHooks(eventData.Context, applicationServiceProvider);
             _afterSaveHooks = afterSaveHooks;
             _beforeSaveHooks = beforeSaveHooks;
             //mark initialized flag
