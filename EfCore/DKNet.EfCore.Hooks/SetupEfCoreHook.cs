@@ -8,15 +8,16 @@ namespace DKNet.EfCore.Hooks;
 public static class SetupEfCoreHook
 {
     /// <summary>
-    /// Add HookRunner from ServiceProvider to DbContext Interceptors.
+    /// Add HookInterceptor to DbContext Interceptors.
     /// </summary>
     /// <param name="options"></param>
-    /// <param name="provider"></param>
+    /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    public static DbContextOptionsBuilder AddHookInterceptor<TDbContext>(
-        this DbContextOptionsBuilder options,
-        IServiceProvider provider) where TDbContext : DbContext =>
-        options.AddInterceptors(provider.GetRequiredKeyedService<HookRunner>(typeof(TDbContext).FullName));
+    public static DbContextOptionsBuilder AddHookInterceptor(this DbContextOptionsBuilder options, IServiceProvider serviceProvider)
+    {
+        var interceptor = serviceProvider.GetRequiredService<HookInterceptor>();
+        return options.AddInterceptors(interceptor);
+    }
 
     /// <summary>
     ///     Add Implementation of <see /> or <see cref="IHookAsync" /> to <see cref="IServiceCollection" />
@@ -64,7 +65,7 @@ public static class SetupEfCoreHook
         }
 
         return services
-            .AddScoped<HookFactory>()
+            .AddScoped<HookInterceptor>()
             .AddKeyedScoped<HookRunner>(fullName);
     }
 
@@ -88,7 +89,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(provider, options);
-                options.AddHookInterceptor<TDbContext>(provider);
+                options.AddHookInterceptor(provider);
             }, contextLifetime, optionLifetime);
 
         return services;
@@ -114,7 +115,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(options);
-                options.AddHookInterceptor<TDbContext>(provider);
+                options.AddHookInterceptor(provider);
             }, contextLifetime, optionLifetime);
 
         return services;

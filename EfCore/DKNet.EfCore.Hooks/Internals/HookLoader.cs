@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks.Internals;
 
-internal class HookFactory(IServiceProvider provider)
+internal class HookFactory
 {
     private static bool IsBaseTypeAvailable(Type type) =>
         type.BaseType is not null && type.BaseType.IsClass && type.BaseType != typeof(object);
@@ -34,11 +34,12 @@ internal class HookFactory(IServiceProvider provider)
     /// Load all hooks for the nested DbContext.
     /// </summary>
     /// <param name="dbContext"></param>
-    public (IEnumerable<IBeforeSaveHookAsync> beforeSaveHooks, IEnumerable<IAfterSaveHookAsync> afterSaveHooks) LoadHooks(DbContext dbContext)
+    /// <param name="serviceProvider">The scoped service provider to resolve hooks from</param>
+    public static (IEnumerable<IBeforeSaveHookAsync> beforeSaveHooks, IEnumerable<IAfterSaveHookAsync> afterSaveHooks) LoadHooks(DbContext dbContext, IServiceProvider serviceProvider)
     {
         //The Hooks of Parents also able to be used here
         var keys = GetProviderKeyNames(dbContext);
-        var hooks = keys.SelectMany(provider.GetKeyedServices<IHookBaseAsync>).ToImmutableList();
+        var hooks = keys.SelectMany(serviceProvider.GetKeyedServices<IHookBaseAsync>).ToImmutableList();
 
         var beforeSaveHooks = hooks.OfType<IBeforeSaveHookAsync>();
         var afterSaveHooks = hooks.OfType<IAfterSaveHookAsync>();

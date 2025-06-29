@@ -25,9 +25,9 @@ public enum RunningTypes
 /// <summary>
 /// Runs hooks before and after save operations.
 /// </summary>
-/// <param name="hookLoader"></param>
+/// <param name="serviceProvider"></param>
 /// <param name="logger"></param>
-internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger) : ISaveChangesInterceptor
+internal sealed class HookRunner(IServiceProvider serviceProvider, ILogger<HookRunner> logger) : ISaveChangesInterceptor
 {
     private bool _initialized;
     private readonly ConcurrentQueue<string> _callersQueue = new();
@@ -69,7 +69,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
 
         if (!_initialized)
         {
-            var (beforeSaveHooks, afterSaveHooks) = hookLoader.LoadHooks(eventData.Context);
+            var (beforeSaveHooks, afterSaveHooks) = HookFactory.LoadHooks(eventData.Context, serviceProvider);
             _afterSaveHooks = afterSaveHooks;
             _beforeSaveHooks = beforeSaveHooks;
             //mark initialized flag
