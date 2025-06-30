@@ -1,12 +1,6 @@
 // Global using directives
-
-global using System;
 global using System.Globalization;
-global using System.Linq;
-global using System.Threading;
-global using System.Threading.Tasks;
-global using EfCore.TestDataLayer;
-global using EFCore.TestHelper;
+global using EfCore.Extensions.Tests.TestEntities;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Diagnostics;
 global using Microsoft.EntityFrameworkCore.Infrastructure;

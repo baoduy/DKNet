@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace DKNet.EfCore.Events.Internals;
 
 /// <summary>
@@ -35,8 +37,6 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
             select eventPublisher.PublishAllAsync(entityEventItem.Events, cancellationToken);
 
         await Task.WhenAll(publishers);
-        //Clear All events
-        _eventEntities = [];
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
     /// <exception cref="NoNullAllowedException"></exception>
     private ImmutableList<EntityEventItem> ProcessAndFilterDomainEvents(SnapshotContext context)
     {
-        var found = context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
+        var foundEvents = context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
             .Select(e =>
             {
                 var events = new List<object?>();
@@ -67,17 +67,27 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
                 if (finallyEventTypes.Count > 0)
                 {
                     if (_autoMapper == null)
-                        throw new NoNullAllowedException($"The {nameof(IMapper)} is not provided.");
+                        throw new NoNullAllowedException($"The {nameof(IMapper)} is not provided for the event types");
 
                     events.AddRange(finallyEventTypes.Distinct()
                         .Select(d => _autoMapper.Map(entity, e.Entry.Metadata.ClrType, d)));
                 }
 
-                return new EntityEventItem(entity, events.Where(i => i is not null).Distinct().ToArray()!);
+                return new EntityEventItem(entity,
+                    [.. events.Where(i => i is not null).Select(i => i!).Distinct()]);
             })
             .Where(e => e.Events.Count > 0)
             .ToImmutableList();
 
-        return found;
+        Trace.WriteLine($"EventHook: There are {foundEvents.Count} Entity Events Found.");
+        return foundEvents;
     }
+
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose() => _eventEntities = [];
 }

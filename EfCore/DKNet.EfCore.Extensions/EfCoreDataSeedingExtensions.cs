@@ -68,71 +68,66 @@ public static class EfCoreDataSeedingExtensions
     }
 
     private static async Task SetIdentityInsertAsync(this DbContext context, IdentityInserts enable,
-        ICollection<string> tableNames, CancellationToken cancellationToken)
+        string tableName, CancellationToken cancellationToken)
     {
-        var sql = string.Join(';',
-            tableNames.Select(t => $"SET IDENTITY_INSERT [{t}] {(enable == IdentityInserts.On ? "ON" : "OFF")}"));
-        await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        await context.Database.ExecuteSqlAsync($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}", cancellationToken);
     }
 
     private static void SetIdentityInsert(this DbContext context, IdentityInserts enable,
-        ICollection<string> tableNames)
+        string tableName)
     {
-        var sql = string.Join(';',
-            tableNames.Select(t => $"SET IDENTITY_INSERT [{t}] {(enable == IdentityInserts.On ? "ON" : "OFF")}"));
-        context.Database.ExecuteSqlRaw(sql);
+        context.Database.ExecuteSql($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}");
     }
 
     private static async Task RunDataSeedingAsync(this DbContext context, Type[] seedingTypes,
         CancellationToken cancellationToken)
     {
-        var tableNames = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
         foreach (var seedingType in seedingTypes)
         {
             var seedingInstance = Activator.CreateInstance(seedingType);
             if (seedingInstance is null) continue;
 
             var entityType = seedingType.GetEntityType();
-            tableNames.Add(context.GetTableName(entityType));
+            var tableName = context.GetTableName(entityType);
+
+            if (context.IsSqlServer())
+                await context.SetIdentityInsertAsync(IdentityInserts.On, tableName, cancellationToken);
 
             //Call the seeding method with generic entity type
             var md = AsyncDataSeedingMethodInfo.MakeGenericMethod(entityType);
             await (Task)md.Invoke(null, [context, seedingInstance, cancellationToken])!;
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            if (context.IsSqlServer())
+                await context.SetIdentityInsertAsync(IdentityInserts.Off, tableName, cancellationToken);
         }
-
-        if (context.IsSqlServer())
-            await context.SetIdentityInsertAsync(IdentityInserts.On, tableNames, cancellationToken);
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        if (context.IsSqlServer())
-            await context.SetIdentityInsertAsync(IdentityInserts.Off, tableNames, cancellationToken);
     }
 
     private static void RunDataSeeding(this DbContext context, Type[] seedingTypes)
     {
-        var tableNames = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
         foreach (var seedingType in seedingTypes)
         {
             var seedingInstance = Activator.CreateInstance(seedingType);
             if (seedingInstance is null) continue;
 
             var entityType = seedingType.GetEntityType();
-            tableNames.Add(context.GetTableName(entityType));
+            var tableName = context.GetTableName(entityType);
+
+            if (context.IsSqlServer())
+                context.SetIdentityInsert(IdentityInserts.On, tableName);
 
             //Call the seeding method with generic entity type
             var md = DataSeedingMethodInfo.MakeGenericMethod(entityType);
             md.Invoke(null, [context, seedingInstance]);
+
+            context.SaveChanges();
+
+            if (context.IsSqlServer())
+                context.SetIdentityInsert(IdentityInserts.Off, tableName);
         }
-
-        if (context.IsSqlServer())
-            context.SetIdentityInsert(IdentityInserts.On, tableNames);
-
-        context.SaveChanges();
-
-        if (context.IsSqlServer())
-            context.SetIdentityInsert(IdentityInserts.Off, tableNames);
     }
+
     /// <summary>
     ///
     /// </summary>
@@ -144,15 +139,16 @@ public static class EfCoreDataSeedingExtensions
         if (assemblies.Count == 0)
         {
             var op = @this.GetOrCreateExtension();
-            assemblies = op.Registrations.SelectMany(r => r.EntityAssemblies).ToList();
+            assemblies = [.. op.Registrations.SelectMany(r => r.EntityAssemblies)];
         }
 
         //Get Alls Seeding Types
         var seedingTypes = GetDataSeedingTypes(assemblies).ToArray();
 
-        @this.UseAsyncSeeding( (context, _, cancellationToken) => context.RunDataSeedingAsync(seedingTypes, cancellationToken));
+        @this.UseAsyncSeeding((context, _, cancellationToken) =>
+            context.RunDataSeedingAsync(seedingTypes, cancellationToken));
 
-        @this.UseSeeding( (context, _) => context.RunDataSeeding(seedingTypes));
+        @this.UseSeeding((context, _) => context.RunDataSeeding(seedingTypes));
 
         return @this;
     }

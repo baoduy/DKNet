@@ -1,58 +1,57 @@
+using EfCore.Relational.Helpers.Tests.Fixtures;
+
 namespace EfCore.Relational.Helpers.Tests;
 
-public class DbContextHelperTests
+public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public async Task GetTableName()
     {
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseSqlite($"Data Source={nameof(TestDbContext)}.db;").Options);
+        await fixture.EnsureSqlReadyAsync();
+
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await db.Database.EnsureCreatedAsync();
         var (schema, tableName) = db.GetTableName<TestEntity>();
         tableName.ShouldBe(nameof(TestEntity));
-
-        await db.Database.EnsureDeletedAsync();
     }
 
     [Fact]
     public async Task GetTableNameNotMapped()
     {
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseSqlite($"Data Source={nameof(TestDbContext)}.db;").Options);
+        await fixture.EnsureSqlReadyAsync();
+
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await db.Database.EnsureCreatedAsync();
         var (schema, tableName) = db.GetTableName<NotMappedTestEntity>();
         tableName.ShouldBeNullOrEmpty();
-
-        await db.Database.EnsureDeletedAsync();
     }
 
     [Fact]
     public async Task CheckTableExistsFailed()
     {
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseSqlite($"Data Source={nameof(TestDbContext)}.db;").Options);
-        //await db.Database.EnsureCreatedAsync();
-        var check = await db.TableExistsAsync<TestEntity>();
-        check.ShouldBeFalse();
+        await fixture.EnsureSqlReadyAsync();
 
-        await db.Database.EnsureDeletedAsync();
-    }
-
-    [Fact]
-    public async Task CheckTableExists()
-    {
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseSqlite($"Data Source={nameof(TestDbContext)}.db;").Options);
-        await db.Database.EnsureCreatedAsync();
-        var check = await db.TableExistsAsync<TestEntity>();
-        check.ShouldBeTrue();
-
-        await db.Database.EnsureDeletedAsync();
+        var action = async () =>
+        {
+            await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
+            await db.Database.EnsureCreatedAsync();
+            await db.TableExistsAsync<NotMappedTestEntity>();
+        };
+        await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
     [Fact]
     public async Task CreateTable()
     {
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseSqlite($"Data Source={nameof(TestDbContext)}.db;").Options);
-        await db.CreateTableAsync<TestEntity>();
+        await fixture.EnsureSqlReadyAsync();
 
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await db.CreateTableAsync<TestEntity>();
         var check = await db.TableExistsAsync<TestEntity>();
         check.ShouldBeTrue();
-
-        await db.Database.EnsureDeletedAsync();
     }
 }

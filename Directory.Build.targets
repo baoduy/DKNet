@@ -15,9 +15,8 @@
                 <PackageReference Include="Meziantou.Analyzer" Version="2.0.202" />
             </ItemGroup>
             <PropertyGroup>
-                <DefineConstants>$(DefineConstants);ROSLYN_4_8;ROSLYN_4_2_OR_GREATER;ROSLYN_4_4_OR_GREATER;ROSLYN_4_6_OR_GREATER;ROSLYN_4_8_OR_GREATER</DefineConstants>
+                <DefineConstants>$(DefineConstants);ROSLYN_4_8;ROSLYN_4_8_OR_GREATER</DefineConstants>
                 <DefineConstants>$(DefineConstants);CSHARP9_OR_GREATER;CSHARP10_OR_GREATER;CSHARP11_OR_GREATER;CSHARP12_OR_GREATER</DefineConstants>
-<!--                <NoWarn>$(NoWarn);nullable</NoWarn>-->
             </PropertyGroup>
         </When>
         <Otherwise>

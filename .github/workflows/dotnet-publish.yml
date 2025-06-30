@@ -1,9 +1,17 @@
 name: .NET
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
       - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ## Only build nuget package and release to Nuget.org when running on main branch

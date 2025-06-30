@@ -2,5 +2,5 @@
 
 internal class TestItem
 {
-    public string Name => "Duy";
+    public static string Name => "Duy";
 }

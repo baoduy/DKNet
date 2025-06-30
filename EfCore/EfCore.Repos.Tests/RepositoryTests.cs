@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using EfCore.TestDataLayer;
+using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
@@ -344,10 +344,4 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         // Act & Assert
         await Assert.ThrowsAsync<TaskCanceledException>(() => _fixture.Repository.BeginTransactionAsync(cts.Token));
     }
-}
-
-public class UserDto
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
 }

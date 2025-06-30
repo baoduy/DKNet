@@ -64,30 +64,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		.continuerules = .continuerules
 		NugetLogo.png = NugetLogo.png
 		nuget.sh = nuget.sh
+		.gitignore = .gitignore
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.TestHelper", "EfCore\EFCore.TestHelper\EFCore.TestHelper.csproj", "{3CDC0098-982E-43FE-9786-05A8B2F687E3}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.TestDataLayer", "EfCore\Entities\EfCore.TestDataLayer.csproj", "{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DDD4Tests", "EfCore\EfCore.DDD4Tests\EfCore.DDD4Tests.csproj", "{33CCB446-1B42-4D17-918A-190792036735}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "z_Templates", "z_Templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus.ApiEndpoints", "SlimBus.ApiEndpoints", "{212CE5D7-6FAF-466C-86A6-AA4810ED4F39}"
 	ProjectSection(SolutionItems) = preProject
-		z_Templates\SlimBus.ApiEndpoints\README.md = z_Templates\SlimBus.ApiEndpoints\README.md
+		Templates\SlimBus.ApiEndpoints\README.md = Templates\SlimBus.ApiEndpoints\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "z_Templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "Templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "z_Templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "Templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "z_Templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "Templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "z_Templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "Templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "z_Templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "Templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus", "SlimBus", "{C2686F33-39EF-4995-AA5B-E256F5130F9B}"
 EndProject
@@ -97,15 +92,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Extensions.Tests", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{740E24A2-315E-4C88-B8FF-C01FCEB9D5E8}"
 	ProjectSection(SolutionItems) = preProject
-		z_Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = z_Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
-		z_Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = z_Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
+		Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
+		Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore.Events", "EfCore.Events", "{0602506B-76E6-4909-9BD8-98B405967DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "z_Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "z_Templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "Templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Repos.Tests", "EfCore\EfCore.Repos.Tests\EfCore.Repos.Tests.csproj", "{BA96DA0C-2AA1-4379-ADDC-E68A580FA871}"
 EndProject
@@ -117,9 +112,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Abstr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{83994FE1-4B2A-4EFE-A83F-39C39E2CA643}"
 	ProjectSection(SolutionItems) = preProject
-		z_Templates\SlimBus.ApiEndpoints\build-docker.sh = z_Templates\SlimBus.ApiEndpoints\build-docker.sh
-		z_Templates\SlimBus.ApiEndpoints\Dockerfile = z_Templates\SlimBus.ApiEndpoints\Dockerfile
+		Templates\SlimBus.ApiEndpoints\build-docker.sh = Templates\SlimBus.ApiEndpoints\build-docker.sh
+		Templates\SlimBus.ApiEndpoints\Dockerfile = Templates\SlimBus.ApiEndpoints\Dockerfile
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -211,18 +208,6 @@ Global
 		{4FC95CCA-A8EC-44DB-8349-36F221F7250E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FC95CCA-A8EC-44DB-8349-36F221F7250E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FC95CCA-A8EC-44DB-8349-36F221F7250E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3CDC0098-982E-43FE-9786-05A8B2F687E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3CDC0098-982E-43FE-9786-05A8B2F687E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3CDC0098-982E-43FE-9786-05A8B2F687E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3CDC0098-982E-43FE-9786-05A8B2F687E3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{33CCB446-1B42-4D17-918A-190792036735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{33CCB446-1B42-4D17-918A-190792036735}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{33CCB446-1B42-4D17-918A-190792036735}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{33CCB446-1B42-4D17-918A-190792036735}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8912F944-C7C4-41DC-94B6-37541C80AED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8912F944-C7C4-41DC-94B6-37541C80AED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8912F944-C7C4-41DC-94B6-37541C80AED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -271,6 +256,10 @@ Global
 		{86684BD4-67DA-4771-B362-84574715BF36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86684BD4-67DA-4771-B362-84574715BF36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86684BD4-67DA-4771-B362-84574715BF36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -297,9 +286,6 @@ Global
 		{75D71601-1ED7-4067-828B-67D21A324A68} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{30258DF6-BC04-44E3-BB06-1BD011012917} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{4FC95CCA-A8EC-44DB-8349-36F221F7250E} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
-		{3CDC0098-982E-43FE-9786-05A8B2F687E3} = {79AB749C-6325-4718-9BE0-36C750367F00}
-		{AEF3358C-296C-4EC9-8F1A-92751E8F5F6C} = {79AB749C-6325-4718-9BE0-36C750367F00}
-		{33CCB446-1B42-4D17-918A-190792036735} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{212CE5D7-6FAF-466C-86A6-AA4810ED4F39} = {C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}
 		{8912F944-C7C4-41DC-94B6-37541C80AED1} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{7E501EF0-ABF1-44FB-8FF2-14675C943FEE} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
@@ -316,5 +302,6 @@ Global
 		{08F32651-ADE5-4EC5-AD5C-8A028B3C0757} = {3FE651AB-C845-4B8F-9694-68DBA5179067}
 		{86684BD4-67DA-4771-B362-84574715BF36} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{83994FE1-4B2A-4EFE-A83F-39C39E2CA643} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
+		{D3942179-366A-4A8B-A3A1-CBD04B2D3882} = {79AB749C-6325-4718-9BE0-36C750367F00}
 	EndGlobalSection
 EndGlobal

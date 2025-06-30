@@ -1,0 +1,41 @@
+name: Build and Collect Warnings
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-collect-warnings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.x'
+
+      - name: Build project
+        run: dotnet build --configuration Release 2>&1 | tee build.log
+
+      - name: Extract warnings
+        run: grep -i "Warning" build.log > warnings.log
+
+      - name: Create issue with warnings
+        uses: peter-evans/create-issue-from-file@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "The Build Warnings should be fixed as much as possible."
+          content-filepath: warnings.log
+          labels: |
+            build
+            warnings

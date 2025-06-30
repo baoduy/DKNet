@@ -14,6 +14,7 @@ coverage-report/
 core-coverage-report/
 new-core-coverage-report/
 final-core-coverage-report/
+CoverageReports
 *.cobertura.xml
 *.trx
 *.coverage

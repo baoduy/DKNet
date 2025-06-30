@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -23,6 +24,7 @@ public static class DistributedApplicationExtensions
     /// <remarks>
     /// If <paramref name="targetStates"/> is null, the default states are <see cref="KnownResourceStates.Running"/> and <see cref="KnownResourceStates.Hidden"/>.
     /// </remarks>
+    [SuppressMessage("Design", "MA0051:Method is too long")]
     public static async Task WaitForResourcesAsync(this DistributedApplication app,
         string[]? targetStates = null, CancellationToken cancellationToken = default)
     {
@@ -37,7 +39,7 @@ public static class DistributedApplicationExtensions
 
         foreach (var resource in applicationModel.Resources)
         {
-            resourceTasks[resource.Name] = GetResourceWaitTask(resource.Name, targetStates, cancellationToken);
+            resourceTasks[resource.Name] = GetResourceWaitTask(resourceNotificationService, resource.Name, targetStates, cancellationToken);
         }
 
         logger.LogInformation("Waiting for resources [{Resources}] to reach one of target states [{TargetStates}].",
@@ -80,13 +82,16 @@ public static class DistributedApplicationExtensions
         }
 
         logger.LogInformation("Wait for all resources completed successfully!");
+    }
 
-        async Task<(string Name, string State)> GetResourceWaitTask(string resourceName,
-            IEnumerable<string> targetStates, CancellationToken cancellationToken)
-        {
-            var state = await resourceNotificationService.WaitForResourceAsync(resourceName, targetStates,
-                cancellationToken);
-            return (resourceName, state);
-        }
+    private static async Task<(string Name, string State)> GetResourceWaitTask(
+        ResourceNotificationService resourceNotificationService,
+        string resourceName,
+        IEnumerable<string> targetStates,
+        CancellationToken cancellationToken)
+    {
+        var state = await resourceNotificationService.WaitForResourceAsync(resourceName, targetStates,
+            cancellationToken);
+        return (resourceName, state);
     }
 }

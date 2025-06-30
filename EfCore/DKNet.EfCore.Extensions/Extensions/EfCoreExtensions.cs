@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.Abstractions.Attributes;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using DKNet.EfCore.Extensions.Registers;
@@ -6,8 +7,38 @@ using DKNet.EfCore.Extensions.Registers;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// Provides extension methods for Entity Framework Core operations.
+/// </summary>
+/// <remarks>
+/// Purpose: To extend Entity Framework Core functionality with utility methods for common operations.
+/// Rationale: Simplifies complex EF Core operations and provides reusable patterns for entity management.
+/// 
+/// Functionality:
+/// - Table name resolution for entities
+/// - Primary key property and value extraction
+/// - Database sequence value generation with formatting support
+/// - Type resolution utilities for entity mapping
+/// 
+/// Integration:
+/// - Extends DbContext with additional utility methods
+/// - Works with DKNet.EfCore.Abstractions attributes
+/// - Supports SQL Server-specific features like sequences
+/// 
+/// Best Practices:
+/// - Use sequence methods only with SQL Server provider
+/// - Ensure sequence attributes are properly configured
+/// - Handle null returns appropriately from utility methods
+/// </remarks>
 public static class EfCoreExtensions
 {
+    /// <summary>
+    /// Gets the qualified table name for the specified entity type.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="entityType">The entity type to get the table name for.</param>
+    /// <returns>The schema-qualified table name.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
     internal static string GetTableName(this DbContext context, Type entityType)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -15,6 +46,13 @@ public static class EfCoreExtensions
         return entity.GetSchemaQualifiedTableName()!;
     }
 
+    /// <summary>
+    /// Gets the primary key property names for the specified entity type.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="entityType">The entity type to get primary key properties for.</param>
+    /// <returns>An enumerable of primary key property names.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
     private static IEnumerable<string> GetPrimaryKeyProperties(this DbContext context, Type entityType)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -40,9 +78,10 @@ public static class EfCoreExtensions
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        var keys = context.GetPrimaryKeyProperties(entity.GetType());
+        var type = entity.GetType();
+        var keys = context.GetPrimaryKeyProperties(type);
         foreach (var key in keys)
-            yield return entity.GetType().GetProperty(key)?.GetValue(entity);
+            yield return type.GetProperty(key)?.GetValue(entity);
     }
 
     /// <summary>
@@ -56,15 +95,17 @@ public static class EfCoreExtensions
     public static async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(this DbContext dbContext, TEnum name)
         where TEnum : struct
         where TValue : struct =>
-        (TValue?)await dbContext.NextSeqValue(name).ConfigureAwait(false);
+        (TValue?)await dbContext.NextSeqValue(name);
 
     /// <summary>
-    ///     Get the Next Sequence value
+    /// Gets the Next Sequence value
     /// </summary>
     /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
     /// <param name="dbContext">The database context.</param>
     /// <param name="name">The name of the sequence.</param>
     /// <returns>The next value of the sequence.</returns>
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", 
+        Justification = "SQL is constructed from internal metadata, not user input")]
     public static async ValueTask<object?> NextSeqValue<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
     {
@@ -77,15 +118,15 @@ public static class EfCoreExtensions
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceRegister.GetSequenceName(name)}";
 
-        await dbContext.Database.OpenConnectionAsync().ConfigureAwait(false);
-        await using var result = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        await dbContext.Database.OpenConnectionAsync();
+        await using var result = await command.ExecuteReaderAsync();
 
         object? rs = null;
-        if (await result.ReadAsync().ConfigureAwait(false))
+        if (await result.ReadAsync())
             rs = await result.GetFieldValueAsync<object>(0);
 
         await dbContext.Database.CloseConnectionAsync();
-        return rs ?? throw new InvalidOperationException(type.ToString());
+        return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
     }
 
     /// <summary>
@@ -99,7 +140,7 @@ public static class EfCoreExtensions
         where TEnum : struct
     {
         var att = SequenceRegister.GetFieldAttributeOrDefault(typeof(TEnum), name);
-        var value = await dbContext.NextSeqValue(name).ConfigureAwait(false);
+        var value = await dbContext.NextSeqValue(name);
 
         if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
 

@@ -1,0 +1,20 @@
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace SlimBus.Infra.Extensions;
+
+[ExcludeFromCodeCoverage]
+public static class InfraMigration
+{
+    public static async Task MigrateDb(string connectionString)
+    {
+        //Db migration
+        await using var db = new CoreDbContext(new DbContextOptionsBuilder()
+            .UseSqlWithMigration(connectionString)
+            .UseAutoConfigModel()
+            .Options);
+
+        await db.Database.MigrateAsync();
+
+        // Data seeding can be added here when needed (IDataSeedingConfiguration has limitations with owned types)
+    }
+}

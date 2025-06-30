@@ -2,33 +2,26 @@
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
 [TestClass]
-public class WithSqlDbTests
+public class WithSqlDbTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
-    private static MyDbContext _db;
-
-    [ClassCleanup]
-    public static void CleanUp()
-    {
-        _sql.StopAsync().GetAwaiter().GetResult();
-        _sql.DisposeAsync().GetAwaiter().GetResult();
-        _db?.Dispose();
-    }
+    private static MyDbContext _db = null!;
 
     [ClassInitialize]
-    public static void Setup(TestContext _)
+    public static async Task Setup(TestContext _)
     {
-        _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").WithAutoRemove(true).Build();
-        _sql.StartAsync().GetAwaiter().GetResult();
-        Task.Delay(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
-
         _db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqlServer(_sql.GetConnectionString())
+            .UseSqlServer(GetConnectionString("WithSqlDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding()
             .Options);
 
-        _db.Database.EnsureCreated();
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [TestInitialize]
+    public Task TestSetup()
+    {
+        return EnsureSqlStartedAsync();
     }
 
     [TestMethod]
@@ -68,15 +61,17 @@ public class WithSqlDbTests
             {
                 new Address
                 {
-                    Street = "12"
+                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
 
-        var count = await _db.SaveChangesAsync().ConfigureAwait(false);
+        var count = await _db.SaveChangesAsync();
         Assert.IsTrue(count >= 1);
 
-        var users = await _db.Set<User>().ToListAsync().ConfigureAwait(false);
+        var users = await _db.Set<User>().ToListAsync();
 
         Assert.IsTrue(users.Count >= 1);
         Assert.IsTrue(users.All(u => u.RowVersion != null));
@@ -85,16 +80,16 @@ public class WithSqlDbTests
     [TestMethod]
     public async Task TestDeleteWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync().ConfigureAwait(false);
+        await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync().ConfigureAwait(false);
+        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id).ConfigureAwait(false);
+        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
         Assert.IsTrue(count == 0);
     }
@@ -102,16 +97,16 @@ public class WithSqlDbTests
     [TestMethod]
     public async Task TestUpdateWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync().ConfigureAwait(false);
+        await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync().ConfigureAwait(false);
+        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        user = await _db.Set<User>().FirstAsync().ConfigureAwait(false);
+        user = await _db.Set<User>().FirstAsync();
 
         Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
 
@@ -128,25 +123,25 @@ public class WithSqlDbTests
             LastName = "User",
         };
         _db.Set<User>().Add(user);
-        await _db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
         // Create new contexts with same configuration
 #pragma warning disable EF1001 // Internal EF Core API usage.
         var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
 
-        using var db1 = new MyDbContext(dbOptions);
-        using var db2 = new MyDbContext(dbOptions);
+        await using var db1 = new MyDbContext(dbOptions);
+        await using var db2 = new MyDbContext(dbOptions);
 
-        var user1 = await db1.Set<User>().FindAsync(user.Id).ConfigureAwait(false);
-        var user2 = await db2.Set<User>().FindAsync(user.Id).ConfigureAwait(false);
+        var user1 = await db1.Set<User>().FindAsync(user.Id);
+        var user2 = await db2.Set<User>().FindAsync(user.Id);
 
         // Act - First update
         user1!.FirstName = "Updated1";
-        await db1.SaveChangesAsync().ConfigureAwait(false);
+        await db1.SaveChangesAsync();
 
         // Second update should conflict
         user2!.FirstName = "Updated2";
-        Func<Task> act = async () => await db2.SaveChangesAsync().ConfigureAwait(false);
+        Func<Task> act = async () => await db2.SaveChangesAsync();
 
         // Assert
         await act.ShouldThrowAsync<DbUpdateConcurrencyException>();

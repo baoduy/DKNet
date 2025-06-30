@@ -1,7 +1,62 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DKNet.EfCore.Abstractions.Entities;
+
+
+/// <summary>
+/// Defines the basic auditing properties required for tracking entity changes.
+/// </summary>
+/// <remarks>
+/// This interface provides the fundamental properties needed for maintaining
+/// audit trails of entity creation and modifications.
+/// </remarks>
+public interface IAuditedProperties
+{
+    /// <summary>
+    /// Gets the identifier of the user who created the entity.
+    /// </summary>
+    string CreatedBy { get; }
+
+    /// <summary>
+    /// Gets the timestamp when the entity was created.
+    /// </summary>
+    DateTimeOffset CreatedOn { get; }
+
+    /// <summary>
+    /// Gets the identifier of the user who last updated the entity.
+    /// </summary>
+    string? UpdatedBy { get; }
+
+    /// <summary>
+    /// Gets the timestamp when the entity was last updated.
+    /// </summary>
+    DateTimeOffset? UpdatedOn { get; }
+}
+
+/// <summary>
+/// Defines a contract for auditable entities with a specified key type.
+/// </summary>
+/// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
+/// <remarks>
+/// This interface combines entity identification, audit properties, and
+/// concurrency control capabilities.
+/// </remarks>
+public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties, IConcurrencyEntity
+{
+    /// <summary>
+    /// Sets the creation audit information for the entity.
+    /// </summary>
+    /// <param name="userName">The identifier of the creating user.</param>
+    /// <param name="createdOn">Optional creation timestamp.</param>
+    void SetCreatedBy(string userName, DateTimeOffset? createdOn = null);
+
+    /// <summary>
+    /// Sets the update audit information for the entity.
+    /// </summary>
+    /// <param name="userName">The identifier of the updating user.</param>
+    /// <param name="updatedOn">Optional update timestamp.</param>
+    void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null);
+}
 
 /// <summary>
 /// Base class for entities that require audit tracking with a specified key type.
@@ -9,7 +64,7 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </summary>
 /// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
 /// <remarks>
-/// This class implements basic audit functionality including:
+/// This class implements basic audit functionality including
 /// - Creation tracking (user and timestamp)
 /// - Modification tracking (user and timestamp)
 /// - Automatic timestamp management
@@ -34,34 +89,26 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     /// <summary>
     /// Gets the user who created this entity.
     /// </summary>
-    [Required]
-    [StringLength(500)]
-    [Column(Order = 996)]
-    public virtual string CreatedBy { get; private set; } = null!;
+    public string CreatedBy { get; private set; } = null!;
 
     /// <summary>
     /// Gets the timestamp when this entity was created.
     /// </summary>
-    [Required]
-    [Column(Order = 997)]
-    public virtual DateTimeOffset CreatedOn { get; private set; }
+    public DateTimeOffset CreatedOn { get; private set; }
 
     /// <summary>
     /// Gets the user who last modified this entity.
     /// </summary>
-    [StringLength(500)]
-    [Column(Order = 998)]
-    public virtual string? UpdatedBy { get; private set; }
+    public string? UpdatedBy { get; private set; }
 
     /// <summary>
     /// Gets the timestamp when this entity was last modified.
     /// </summary>
-    [Column(Order = 999)]
-    public virtual DateTimeOffset? UpdatedOn { get; private set; }
+    public DateTimeOffset? UpdatedOn { get; private set; }
 
-    [NotMapped] public virtual string LastModifiedBy => UpdatedBy ?? CreatedBy;
+    [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
 
-    [NotMapped] public virtual DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
+    [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
 
     /// <summary>
     /// Sets the creation audit information for this entity.

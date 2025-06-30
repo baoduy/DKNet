@@ -11,7 +11,5 @@
     "Interception",
     "Mediat"
   ],
-  "github.copilot.chat.codeGeneration.instructions": [
-    { "file": "copilot-instructions/class-format-instruction.md" }
-  ]
+  "github.copilot.chat.completionContext.typescript.mode": "on"
 }

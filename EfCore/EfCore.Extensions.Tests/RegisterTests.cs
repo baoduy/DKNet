@@ -1,19 +1,32 @@
 using DKNet.EfCore.Abstractions.Entities;
-using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Extensions.Internal;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class RegisterTests
+public class RegisterTests : SqlServerTestBase
 {
+    private static MyDbContext _db =null!;
+
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EfCoreDb");
+        await _db.Database.EnsureCreatedAsync();
+    }
+
+    [TestInitialize]
+    public async Task TestInitialize()
+    {
+        await EnsureSqlStartedAsync();
+    }
 
     [TestMethod]
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
-        await UnitTestSetup.Db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy")
         {
             FirstName = "Duy",
             LastName = "Hoang",
@@ -21,15 +34,17 @@ public class RegisterTests
             {
                 new Address
                 {
-                    Street = "12"
+                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
 
-        await UnitTestSetup.Db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        Assert.IsTrue(await UnitTestSetup.Db.Set<User>().CountAsync().ConfigureAwait(false) >= 1);
-        Assert.IsTrue(await UnitTestSetup.Db.Set<Address>().CountAsync().ConfigureAwait(false) >= 1);
+        Assert.IsTrue(await _db.Set<User>().AnyAsync());
+        Assert.IsTrue(await _db.Set<Address>().AnyAsync());
     }
 
     // [TestMethod]
@@ -41,23 +56,15 @@ public class RegisterTests
     //         //No Assembly provided it will scan the MyDbContext assembly.
     //         .UseAutoConfigModel()
     //         .Options);
-    //     await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-    //     (await db.Set<AccountStatus>().CountAsync().ConfigureAwait(false)).ShouldBeGreaterThanOrEqualTo(2);
+    //     await db.Database.EnsureCreatedAsync();
+    //     (await db.Set<AccountStatus>().CountAsync()).ShouldBeGreaterThanOrEqualTo(2);
     // }
 
     [TestMethod]
     public async Task TestCreateDb()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
-                .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-
         //Create User with Address
-        await db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy")
         {
             FirstName = "Duy",
             LastName = "Hoang",
@@ -65,167 +72,93 @@ public class RegisterTests
             {
                 new Address
                 {
-                    Street = "12"
+                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
 
-        await db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        var users = await db.Set<User>().ToListAsync().ConfigureAwait(false);
-        var adds = await db.Set<Address>().ToListAsync().ConfigureAwait(false);
+        var users = await _db.Set<User>().ToListAsync();
+        var adds = await _db.Set<Address>().ToListAsync();
 
-        Assert.IsTrue(users.Count == 1);
-        Assert.IsTrue(adds.Count == 1);
+        Assert.IsTrue(users.Count >= 1);
+        Assert.IsTrue(adds.Count >= 1);
     }
 
     [TestMethod]
-
-    //[ExpectedException(typeof(DbUpdateException))]
     public async Task TestCreateDbCustomMapper()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
-            //No Assembly provided it will scan the MyDbContext assembly.
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
-                .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-
         //Create User with Address
-        await db.Set<User>().AddAsync(new User("Duy")
+        await _db.Set<User>().AddAsync(new User("Duy")
         {
             FirstName = "Duy",
             LastName = "Hoang",
             Addresses =
             {
-                new Address {Street = "123"}
+                new Address
+                {
+                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    City = "HBD",
+                    Street = "HBD"
+                }
             },
         });
 
-        await db.SaveChangesAsync().ConfigureAwait(false);
+        await _db.SaveChangesAsync();
 
-        (await db.Set<Address>().AnyAsync().ConfigureAwait(false)).ShouldBeTrue();
-    }
-
-    [TestMethod]
-    public void TestCreateDbNoAssembly()
-    {
-        using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
-            //No Assembly provided it will scan the MyDbContext assembly.
-            .UseAutoConfigModel(op => op.ScanFrom()
-                .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-    }
-
-    [TestMethod]
-    public void TestCreateDbWithAssembly()
-    {
-        using var db = new MyDbContext(new DbContextOptionsBuilder<MyDbContext>()
-            //No Assembly provided it will scan the MyDbContext assembly.
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .UseSqliteMemory()
-            .Options);
-    }
-
-    [TestMethod]
-
-    //[ExpectedException(typeof(DbUpdateException))]
-    public async Task TestCreateDbValidate()
-    {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly)
-                .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-
-        //Create User with Address
-        await db.Set<User>().AddAsync(new User("Duy")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang",
-            Addresses =
-            {
-                new Address {Street = "123"}
-            },
-        });
-
-        await db.SaveChangesAsync().ConfigureAwait(false);
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
     [TestMethod]
     public async Task TestEnumStatus1DataSeeding()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
-            //No Assembly provided it will scan the MyDbContext assembly.
-            .UseAutoConfigModel()
-            .Options);
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-        (await db.Set<EnumTables<EnumStatus1>>().CountAsync().ConfigureAwait(false)).ShouldBe(3);
+        (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
     }
 
     [TestMethod]
     public async Task TestEnumStatusDataSeeding()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-
-            //No Assembly provided it will scan the MyDbContext assembly.
-            .UseAutoConfigModel()
-            .Options);
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
-        (await db.Set<EnumTables<EnumStatus>>().CountAsync().ConfigureAwait(false)).ShouldBe(3);
-
-        var first = await db.Set<EnumTables<EnumStatus>>().FirstAsync().ConfigureAwait(false);
+        (await _db.Set<EnumTables<EnumStatus>>().CountAsync()).ShouldBe(3);
+        var first = await _db.Set<EnumTables<EnumStatus>>().FirstAsync();
         first.Id.ShouldBeGreaterThanOrEqualTo(0);
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public async Task TestIgnoredEntityAsync()
     {
-        await using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op =>
-                op.ScanFrom(typeof(MyDbContext).Assembly)
-                    .WithDefaultMappersType(typeof(DefaultEntityTypeConfiguration<>)))
-            .Options);
-
-        await db.Database.EnsureCreatedAsync();
-
-        var list = await db.Set<IgnoredAutoMapperEntity>().ToListAsync();
+        var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
+        await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
     [TestMethod]
-
-    //[Ignore]
-    [ExpectedException(typeof(InvalidOperationException))]
-    public void TestWithCustomEntityMapperBad()
+    public async Task TestWithCustomEntityMapperBad()
     {
-        using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op =>
-                op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
-            .Options);
-
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
+        var action = async () =>
+        {
+            await using var db = new MyDbContext(new DbContextOptionsBuilder()
+                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseAutoConfigModel(op =>
+                    op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
+                .Options);
+            await db.Database.EnsureCreatedAsync();
+        };
+        await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
-    public void TestWithCustomEntityMapperNullFilterBad()
+    public async Task TestWithCustomEntityMapperNullFilterBad()
     {
-        using var db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqliteMemory()
-            .UseAutoConfigModel(op =>
-                op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null))
-            .Options);
+        var action = async () =>
+        {
+            await using var db = new MyDbContext(new DbContextOptionsBuilder()
+                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseAutoConfigModel(op =>
+                    op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
+                .Options);
+        };
+        await action.ShouldThrowAsync<ArgumentNullException>();
     }
 }

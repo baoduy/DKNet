@@ -1,11 +1,28 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 [TestClass]
-public class UserTests
+public class UserTests : SqlServerTestBase
 {
+    private static MyDbContext _db;
+
+    [ClassInitialize]
+    public static async Task ClassSetup(TestContext _)
+    {
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EntitiesDb");
+        await _db.Database.EnsureCreatedAsync();
+    }
 
     [TestMethod]
-    public void AddUserAndAddress()
+    public void CreatedUserIdShouldBeZero()
+    {
+        var user = new User("Duy")
+            { FirstName = "Steven", LastName = "Smith" };
+        user.Id.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task AddUserAndAddress()
     {
         var user = new User("A")
         {
@@ -15,44 +32,32 @@ public class UserTests
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "A"
-                    },
-                    Street = "123"
+                    OwnedEntity = new OwnedEntity { Name = "123" },
+                    City = "HBD",
+                    Street = "HBD"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity
-                    {
-                        Name = "B"
-                    },
-                    Street = "124"
+                    OwnedEntity = new OwnedEntity { Name = "123" },
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         };
 
-        UnitTestSetup.Db.Add(user);
-        UnitTestSetup.Db.SaveChanges();
+        _db.Add(user);
+        await _db.SaveChangesAsync();
 
-        var u = UnitTestSetup.Db.Set<User>().Include(i => i.Addresses).First();
+        var u =await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.ShouldNotBeNull();
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
 
         u.Addresses.Remove(u.Addresses.First());
-        UnitTestSetup.Db.SaveChanges();
+        await _db.SaveChangesAsync();
 
-        u = UnitTestSetup.Db.Set<User>().First();
+        u = await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
 
-        UnitTestSetup.Db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
+        _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
     }
-
-    [TestMethod]
-    public void CreatedUserIdShouldBeZero()
-    {
-        var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
-        user.Id.ShouldBe(0);
-    }
-    
 }

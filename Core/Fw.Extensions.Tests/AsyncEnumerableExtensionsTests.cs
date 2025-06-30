@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Fw.Extensions.Tests;
 
 [TestClass]

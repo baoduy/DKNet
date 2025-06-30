@@ -14,7 +14,8 @@ internal static class EntityAutoMappingRegisterExtensions
 {
     private static readonly MethodInfo RegisterMappingMethod = typeof(EntityAutoMappingRegisterExtensions)
         .GetMethod(nameof(RegisterMapping), BindingFlags.Static | BindingFlags.NonPublic)!;
-    internal static readonly Type DefaultEntityTypeConfiguration = typeof(DefaultEntityTypeConfiguration<>);
+
+    private static readonly Type DefaultEntityTypeConfiguration = typeof(DefaultEntityTypeConfiguration<>);
     internal static readonly Type InterfaceEntityTypeConfiguration = typeof(IEntityTypeConfiguration<>);
 
     /// <summary>
@@ -49,7 +50,7 @@ internal static class EntityAutoMappingRegisterExtensions
     /// <returns>An enumerable of entity types.</returns>
     internal static IEnumerable<Type> GetAllEntityTypes(this AutoEntityRegistrationInfo registration) =>
         registration.EntityAssemblies.Extract().Classes().NotGeneric().IsInstanceOf(typeof(IEntity<>))
-            .Where(t => !t.HasAttribute<IgnoreEntityMapperAttribute>(true));
+            .Where(t => !t.HasAttribute<IgnoreEntityAttribute>(true));
 
     /// <summary>
     ///     Get All IEntityTypeConfiguration for entities.
@@ -116,9 +117,10 @@ internal static class EntityAutoMappingRegisterExtensions
         {
             // The generic type should have 1 GenericTypeParameters only
             var genericType = mapperType.GetTypeInfo().GenericTypeParameters.Single();
+            if (!genericType.IsGenericTypeOf(entityType)) continue;
 
-            if (genericType.IsGenericTypeOf(entityType))
-                return mapperType.MakeGenericType(entityType);
+            Trace.TraceInformation($"Auto Created Entity Config Mapper For: {entityType.Name} using {mapperType.Name}");
+            return mapperType.MakeGenericType(entityType);
         }
 
         throw new ArgumentException(
@@ -138,16 +140,16 @@ internal static class EntityAutoMappingRegisterExtensions
         var allDefinedMappers = registration.GetDefinedMappers().ToList();
         var entityTypes = registration.GetAllEntityTypes().ToList();
 
-        Trace.TraceInformation($"Found entities: {string.Join('\n', entityTypes.Select(t => t.Name))}");
+        Trace.TraceInformation($"Auto Found entities: {string.Join('\n', entityTypes.Select(t => t.Name))}");
 
         var requiredEntityTypes = registration.Predicate == null
             ? entityTypes
-            : entityTypes.Where(registration.Predicate.Compile()).ToList();
+            : [.. entityTypes.Where(registration.Predicate.Compile())];
 
         var genericMappers =
             registration.GetGenericMappers().Concat(registration.DefaultEntityMapperTypes!).ToList();
 
-        Trace.TraceInformation($"Found Generic configuration: {string.Join('\n', genericMappers.Select(t => t.Name))}");
+        Trace.TraceInformation($"Auto Found Generic configuration: {string.Join('\n', genericMappers.Select(t => t.Name))}");
 
         // Map Entities to ModelBuilder
         foreach (var entityType in requiredEntityTypes)

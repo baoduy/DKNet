@@ -44,10 +44,12 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         => throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
 
     public void SaveChangesFailed(DbContextErrorEventData eventData)
-        => logger.LogError("SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
+        => logger.LogError(
+            "SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
 
     public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     #endregion
 
 
@@ -92,13 +94,13 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             //foreach (var h in _beforeSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
             foreach (var h in _beforeSaveHooks)
-                await h.RunBeforeSaveAsync(_snapshotContext, cancellationToken).ConfigureAwait(false);
+                await h.RunBeforeSaveAsync(_snapshotContext, cancellationToken);
         }
         else
         {
             //foreach (var h in _afterSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
             foreach (var h in _afterSaveHooks)
-                await h.RunAfterSaveAsync(_snapshotContext, cancellationToken).ConfigureAwait(false);
+                await h.RunAfterSaveAsync(_snapshotContext, cancellationToken);
         }
     }
 
@@ -115,8 +117,9 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         //Init Hook
         InitHook(eventData);
 
+        if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
         //Run Before Save
-        await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken).ConfigureAwait(false);
+        await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken);
         return result;
     }
 
@@ -125,15 +128,20 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     {
         try
         {
+            if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
             //Run After Events and ignore the result even failed.
             _callersQueue.TryDequeue(out _);
-            await RunHooksAsync(RunningTypes.AfterSave, cancellationToken).ConfigureAwait(false);
+            await RunHooksAsync(RunningTypes.AfterSave, cancellationToken);
         }
         finally
         {
-            if (_callersQueue.IsEmpty)
+            if (_callersQueue.IsEmpty && _snapshotContext is not null)
             {
-                _snapshotContext?.Dispose();
+                //Dispose the snapshot context if no more callers are left
+                logger.LogDebug("Disposing Snapshot Context");
+                //Dispose the snapshot context
+
+                await _snapshotContext.DisposeAsync();
                 _snapshotContext = null;
             }
         }

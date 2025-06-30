@@ -10,6 +10,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="Aspire.Hosting" Version="9.3.2" />
       <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.3.2" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
