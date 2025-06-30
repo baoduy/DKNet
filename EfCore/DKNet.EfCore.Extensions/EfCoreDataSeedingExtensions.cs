@@ -70,15 +70,13 @@ public static class EfCoreDataSeedingExtensions
     private static async Task SetIdentityInsertAsync(this DbContext context, IdentityInserts enable,
         string tableName, CancellationToken cancellationToken)
     {
-        var sql = $"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}";
-        await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        await context.Database.ExecuteSqlAsync($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}", cancellationToken);
     }
 
     private static void SetIdentityInsert(this DbContext context, IdentityInserts enable,
         string tableName)
     {
-        var sql = $"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}";
-        context.Database.ExecuteSqlRaw(sql);
+        context.Database.ExecuteSql($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}");
     }
 
     private static async Task RunDataSeedingAsync(this DbContext context, Type[] seedingTypes,
