@@ -73,7 +73,7 @@ public class TestItem3 : ITem, IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
+        Dispose(disposed: true);
         GC.SuppressFinalize(this);
     }
     protected virtual void Dispose(bool disposed) => IsDisposed = disposed;

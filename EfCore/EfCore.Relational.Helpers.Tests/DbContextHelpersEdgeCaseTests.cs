@@ -1,5 +1,6 @@
 using EfCore.Relational.Helpers.Tests.Fixtures;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace EfCore.Relational.Helpers.Tests;
 
@@ -19,18 +20,18 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         var connections = await Task.WhenAll(tasks);
 
         // Assert
-        connections.ShouldAllBe(conn => conn != null);
         connections.ShouldAllBe(conn => conn.State == ConnectionState.Open);
-        connections.Select(c => c.ConnectionString).Distinct().ShouldHaveSingleItem(); // Same connection string
+        connections.Select(c => c.ConnectionString).Distinct(StringComparer.OrdinalIgnoreCase).ShouldHaveSingleItem(); // Same connection string
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable")]
     public async Task TableExistsAsync_WithInvalidDbContext_ShouldHandleGracefully()
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
         
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+        using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Dispose the context to make it invalid

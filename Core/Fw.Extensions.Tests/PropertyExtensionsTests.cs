@@ -25,7 +25,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var property1 = item.GetProperty(null);
+        var property1 = item.GetProperty(propertyName: null);
         var property2 = item.GetProperty("");
 
         // Assert
@@ -98,7 +98,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var value1 = item.GetPropertyValue(null);
+        var value1 = item.GetPropertyValue(propertyName: null);
         var value2 = item.GetPropertyValue("");
 
         // Assert
@@ -252,7 +252,7 @@ public class PropertyExtensionsTests
         var propertyName = "Name";
 
         // Act
-        item.SetPropertyValue(propertyName, null);
+        item.SetPropertyValue(propertyName, value: null);
 
         // Assert
         Assert.IsNull(item.Name);
@@ -317,7 +317,7 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        item.SetPropertyValue("Name", null); // Set Name to null
+        item.SetPropertyValue("Name", value: null); // Set Name to null
 
         // Act
         var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
@@ -470,7 +470,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual(123, item.GetPropertyValue("NullableIntValue"));
         
         // Set to null
-        item.SetPropertyValue("NullableIntValue", null);
+        item.SetPropertyValue("NullableIntValue", value: null);
         Assert.IsNull(item.GetPropertyValue("NullableIntValue"));
     }
 

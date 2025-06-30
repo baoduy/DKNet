@@ -52,7 +52,7 @@ public class HashingTests
     public void HashCmd5KeyNullThrowsArgumentNullException()
     {
         var value = "value";
-        value.ToCmd5(null);
+        value.ToCmd5(key: null);
     }
 
     [TestMethod]

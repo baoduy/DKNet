@@ -8,20 +8,20 @@ public class EnumExtensionsTests
     [TestMethod]
     public void GetAttribute()
     {
-        HBDEnum.DescriptionEnum.GetAttribute<DisplayAttribute>()
+        HbdTypes.DescriptionEnum.GetAttribute<DisplayAttribute>()
             .ShouldNotBeNull();
     }
 
     [TestMethod]
     public void TestGetEnumInfo()
     {
-        HBDEnum.DescriptionEnum.GetEumInfo().Name.ShouldBe("HBD");
+        HbdTypes.DescriptionEnum.GetEumInfo().Name.ShouldBe("HBD");
     }
 
     [TestMethod]
     public void TestGetEnumInfos()
     {
-        var list = EnumExtensions.GetEumInfos<HBDEnum>().ToList();
+        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
         list.Count.ShouldBe(3);
     }
 
@@ -29,7 +29,7 @@ public class EnumExtensionsTests
     public void GetAttributeReturnsNullForNullEnum()
     {
         // Arrange
-        HBDEnum? nullEnum = null;
+        HbdTypes? nullEnum = null;
 
         // Act
         var result = nullEnum.GetAttribute<DisplayAttribute>();
@@ -42,7 +42,7 @@ public class EnumExtensionsTests
     public void GetAttributeReturnsNullForEnumWithoutAttribute()
     {
         // Arrange
-        var enumValue = HBDEnum.Enum;
+        var enumValue = HbdTypes.Enum;
 
         // Act
         var result = enumValue.GetAttribute<DisplayAttribute>();
@@ -55,7 +55,7 @@ public class EnumExtensionsTests
     public void GetEumInfoReturnsNullForNullEnum()
     {
         // Arrange
-        HBDEnum? nullEnum = null;
+        HbdTypes? nullEnum = null;
 
         // Act
         var result = nullEnum.GetEumInfo();
@@ -68,7 +68,7 @@ public class EnumExtensionsTests
     public void GetEumInfoReturnsCorrectInfoForEnumWithoutDisplay()
     {
         // Arrange
-        var enumValue = HBDEnum.Enum;
+        var enumValue = HbdTypes.Enum;
 
         // Act
         var result = enumValue.GetEumInfo();
@@ -85,7 +85,7 @@ public class EnumExtensionsTests
     public void GetEumInfosIncludesEnumWithoutDisplayAttribute()
     {
         // Arrange & Act
-        var list = EnumExtensions.GetEumInfos<HBDEnum>().ToList();
+        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
 
         // Assert
         var enumInfo = list.FirstOrDefault(x => string.Equals(x.Key, "Enum", StringComparison.OrdinalIgnoreCase));

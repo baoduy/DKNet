@@ -37,7 +37,7 @@ namespace Fw.Extensions.Tests
         public void AsKeyedImplementedInterfacesThrowsArgumentNullExceptionWhenTypesNull()
         {
             Assert.ThrowsException<ArgumentNullException>(() =>
-                _services.AsKeyedImplementedInterfaces("test", null));
+                _services.AsKeyedImplementedInterfaces("test", types: null));
         }
 
         [TestMethod]

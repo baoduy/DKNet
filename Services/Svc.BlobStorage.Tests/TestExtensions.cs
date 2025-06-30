@@ -11,6 +11,6 @@ public static class TestExtensions
             file.Delete();
 
         foreach (var dir in di.GetDirectories())
-            dir.Delete(true);
+            dir.Delete(recursive: true);
     }
 }

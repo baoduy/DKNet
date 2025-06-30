@@ -21,7 +21,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(null).ToList()
+        t.Extract(templateString: null).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -56,7 +56,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(null).ToList()
+        t.Extract(templateString: null).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -83,7 +83,7 @@ public class TokenExtractorTests
     [ExpectedException(typeof(ArgumentNullException))]
     public void TokenExtractorNullArgumentTest()
     {
-        new TokenExtractor(null);
+        new TokenExtractor(definition: null);
     }
 
     [TestMethod]

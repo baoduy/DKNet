@@ -90,7 +90,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        resolver.Resolve(null, [
+        resolver.Resolve(token: null, [
              null,
             new {A = (string) null},
             new {A = 123},

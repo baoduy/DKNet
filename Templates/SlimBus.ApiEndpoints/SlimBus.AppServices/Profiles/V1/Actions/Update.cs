@@ -25,7 +25,7 @@ internal sealed class UpdateProfileCommandHandler(
             return Result.Fail<ProfileResult>($"The Profile {request.Id} is not found.");
 
         //Update Here
-        profile.Update(null, request.Name, request.Phone, null, request.UserId!);
+        profile.Update(avatar: null, request.Name, request.Phone, birthday: null, request.UserId!);
 
         //Add Event
 

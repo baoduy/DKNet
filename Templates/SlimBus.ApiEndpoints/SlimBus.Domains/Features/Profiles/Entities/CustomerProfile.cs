@@ -22,7 +22,7 @@ public class CustomerProfile : AggregateRoot
         Email = email;
         MembershipNo = memberShipNo;
         
-        Update(null, name, phone,null,userId);
+        Update(avatar: null, name, phone, birthday: null,userId);
     }
 
     private CustomerProfile()
