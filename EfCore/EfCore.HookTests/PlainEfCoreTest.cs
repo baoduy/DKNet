@@ -49,22 +49,27 @@ public class PlainEfCoreTest : IAsyncLifetime
     [Fact]
     public async Task PlainEfCore_MultipleApiCalls_ShouldNotCreateTooManyServiceProviders()
     {
-        // This test checks if plain EF Core setup (without any extensions) has the issue
-        
-        // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
-        for (int i = 0; i < 25; i++)
+        var action = async () =>
         {
-            using var scope = _provider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<PlainHookContext>();
-            
-            var entity = new CustomerProfile { Name = $"Plain Entity {i}" };
-            await db.AddAsync(entity);
-            await db.SaveChangesAsync();
-            
-            _output.WriteLine($"Plain Iteration {i + 1}: Completed");
-        }
-        
-        _output.WriteLine("Plain EF Core test completed without service provider proliferation issues");
+            // This test checks if plain EF Core setup (without any extensions) has the issue
+
+            // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
+            for (int i = 0; i < 25; i++)
+            {
+                using var scope = _provider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<PlainHookContext>();
+
+                var entity = new CustomerProfile { Name = $"Plain Entity {i}" };
+                await db.AddAsync(entity);
+                await db.SaveChangesAsync();
+
+                _output.WriteLine($"Plain Iteration {i + 1}: Completed");
+            }
+
+            _output.WriteLine("Plain EF Core test completed without service provider proliferation issues");
+        };
+
+        await action.ShouldNotThrowAsync();
     }
 }
 

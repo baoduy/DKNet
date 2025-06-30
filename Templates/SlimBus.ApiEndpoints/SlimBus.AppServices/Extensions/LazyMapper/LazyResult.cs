@@ -8,7 +8,7 @@ internal class LazyResult<TResult>(object? originalValue, IMapper mapper)
 
     public List<IReason> Reasons { get; init; } = [];
 
-    public List<IError> Errors => [.. Reasons.OfType<IError>()];
+    public IReadOnlyList<IError> Errors => [.. Reasons.OfType<IError>()];
 
-    public List<ISuccess> Successes => [.. Reasons.OfType<ISuccess>()];
+    public IReadOnlyList<ISuccess> Successes => [.. Reasons.OfType<ISuccess>()];
 }

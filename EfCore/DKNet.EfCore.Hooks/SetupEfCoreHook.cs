@@ -64,7 +64,7 @@ public static class SetupEfCoreHook
         }
 
         return services
-            .AddSingleton<HookFactory>()
+            .AddScoped<HookFactory>()
             .AddKeyedScoped<HookRunner>(fullName);
     }
 

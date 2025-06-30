@@ -1,6 +1,5 @@
 using System.Reflection;
 using DKNet.Fw.Extensions.TypeExtractors;
-using Mapster;
 
 namespace SlimBus.AppServices.Extensions;
 

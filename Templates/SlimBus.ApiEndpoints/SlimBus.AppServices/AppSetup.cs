@@ -1,7 +1,4 @@
-﻿using Mapster;
-using SlimBus.AppServices.Extensions;
-
-namespace SlimBus.AppServices;
+﻿namespace SlimBus.AppServices;
 
 public static class AppSetup
 {

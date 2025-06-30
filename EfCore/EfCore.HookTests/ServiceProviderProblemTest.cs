@@ -50,27 +50,32 @@ public class ServiceProviderProblemTest : IAsyncLifetime
     [Fact]
     public async Task MultipleApiCalls_ShouldNotCreateTooManyServiceProviders()
     {
-        // This test simulates multiple API calls that each create entities
-        // This should reproduce the "More than twenty IServiceProvider instances" issue
-        
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
-        
-        // Simulate 25 consecutive API calls - this should trigger the EF Core warning
-        for (int i = 0; i < 25; i++)
+        var action = async () =>
         {
-            hook.Reset();
-            
-            using var scope = _provider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<HookContext>();
-            
-            var entity = new CustomerProfile { Name = $"Test Entity {i}" };
-            await db.AddAsync(entity);
-            await db.SaveChangesAsync();
-            
-            _output.WriteLine($"Iteration {i + 1}: Hook Before={hook.BeforeCalled}, After={hook.AfterCalled}");
-        }
-        
-        // The test itself may pass but we should see the EF Core warning in logs
-        _output.WriteLine("If you see 'More than twenty IServiceProvider instances' warning above, the issue is reproduced");
+            // This test simulates multiple API calls that each create entities
+            // This should reproduce the "More than twenty IServiceProvider instances" issue
+
+            var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+
+            // Simulate 25 consecutive API calls - this should trigger the EF Core warning
+            for (int i = 0; i < 25; i++)
+            {
+                hook.Reset();
+
+                using var scope = _provider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+
+                var entity = new CustomerProfile { Name = $"Test Entity {i}" };
+                await db.AddAsync(entity);
+                await db.SaveChangesAsync();
+
+                _output.WriteLine($"Iteration {i + 1}: Hook Before={hook.BeforeCalled}, After={hook.AfterCalled}");
+            }
+
+            // The test itself may pass but we should see the EF Core warning in logs
+            _output.WriteLine(
+                "If you see 'More than twenty IServiceProvider instances' warning above, the issue is reproduced");
+        };
+        await action.ShouldNotThrowAsync();
     }
 }

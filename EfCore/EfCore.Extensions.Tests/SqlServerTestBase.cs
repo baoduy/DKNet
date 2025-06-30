@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using DotNet.Testcontainers.Containers;
 
 namespace EfCore.Extensions.Tests;
@@ -7,9 +6,9 @@ namespace EfCore.Extensions.Tests;
 /// Base class for tests that need SQL Server TestContainer setup.
 /// Follow this pattern for isolated test methods that need fresh database instances.
 /// </summary>
-public abstract class SqlServerTestBase : IAsyncDisposable
+public abstract class SqlServerTestBase
 {
-    private static MsSqlContainer _container;
+    private static MsSqlContainer _container = null!;
 
     private static MsSqlContainer CreateSqlContainer() =>
         new MsSqlBuilder()
@@ -25,24 +24,17 @@ public abstract class SqlServerTestBase : IAsyncDisposable
         await Task.Delay(TimeSpan.FromSeconds(10));
     }
 
-    protected static Task EnsureSqlStartedAsync()
-    {
-        if (_container.State != TestcontainersStates.Running)
-            return _container.StartAsync();
-        return Task.CompletedTask;
-    }
+    protected static Task EnsureSqlStartedAsync() =>
+        _container.State != TestcontainersStates.Running ? _container.StartAsync() : Task.CompletedTask;
 
-    protected static string GetConnectionString(string DbName) =>
+    protected static string GetConnectionString(string dbName) =>
         _container.GetConnectionString()
-            .Replace("Database=master;", $"Database={DbName};", StringComparison.OrdinalIgnoreCase);
+            .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
 
-    protected static MyDbContext CreateDbContext(string DbName) =>
+    protected static MyDbContext CreateDbContext(string dbName) =>
         new(new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString(DbName))
+            .UseSqlServer(GetConnectionString(dbName))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding()
             .Options);
-
-    [SuppressMessage("Usage", "CA1816:Dispose methods should call SuppressFinalize")]
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

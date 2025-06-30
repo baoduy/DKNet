@@ -1,51 +1,45 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using SlimBus.Domains.Share;
 
 namespace SlimBus.Domains.Features.Profiles.Entities;
 
-
 [Table("CustomerProfiles", Schema = DomainSchemas.Profile)]
 public class CustomerProfile : AggregateRoot
 {
-    public CustomerProfile(string name, string memberShipNo, string email, string phone,
-        string userId)
-        : this(Guid.Empty, name, memberShipNo, email, phone, userId)
+    public CustomerProfile(string name, string membershipNo, string email, string phone,
+        string byUser)
+        : this(Guid.Empty, name, membershipNo, email, phone, byUser)
     {
-    }
-
-    public CustomerProfile(Guid id, string name, string memberShipNo, string email,
-        string phone,
-        string userId)
-        : base(id, userId)
-    {
+        Name = name;
         Email = email;
-        MembershipNo = memberShipNo;
-        
-        Update(avatar: null, name, phone, birthday: null,userId);
+        MembershipNo = membershipNo;
     }
 
-    private CustomerProfile()
+    internal CustomerProfile(Guid id, string name, string membershipNo, string email,
+        string phone,
+        string createdBy)
+        : base(id, createdBy)
     {
+        Name = name;
+        Email = email;
+        MembershipNo = membershipNo;
+
+        Update(avatar: null, name, phone, birthday: null, createdBy);
     }
 
-    [MaxLength(50)] public string? Avatar { get; private set; }
-    
-    [Column(TypeName = "Date")] public DateTime? BirthDay { get; private set; }
+    public string? Avatar { get; private set; }
 
-    [MaxLength(150)]
-    [EmailAddress]
-    [Required]
-    public string Email { get;private set; } = null!;
+    public DateTime? BirthDay { get; private set; }
 
-    [MaxLength(50)] [Required] public string MembershipNo { get; private set; } = null!;
+    public string Email { get; private set; }
 
-    [MaxLength(150)] [Required] 
-    public string Name { get; private set; } = null!;
+    public string MembershipNo { get; private set; }
 
-    [Phone] [MaxLength(50)] public string? Phone { get; private set; }
+    public string Name { get; private set; }
 
-    public void Update(string? avatar,string? name, string? phoneNumber, DateTime? birthday, string userId)
+    public string? Phone { get; private set; }
+
+    public void Update(string? avatar, string? name, string? phoneNumber, DateTime? birthday, string userId)
     {
         Avatar = avatar;
         BirthDay = birthday;
@@ -54,7 +48,7 @@ public class CustomerProfile : AggregateRoot
             Name = name;
         if (!string.IsNullOrEmpty(phoneNumber))
             Phone = phoneNumber;
-        
+
         SetUpdatedBy(userId);
     }
 }

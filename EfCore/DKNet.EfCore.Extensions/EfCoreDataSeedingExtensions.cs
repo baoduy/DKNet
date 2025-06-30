@@ -1,5 +1,6 @@
 // ReSharper disable CheckNamespace
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.Fw.Extensions.TypeExtractors;
@@ -67,16 +68,18 @@ public static class EfCoreDataSeedingExtensions
         Off,
     }
 
+    [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
     private static async Task SetIdentityInsertAsync(this DbContext context, IdentityInserts enable,
         string tableName, CancellationToken cancellationToken)
     {
-        await context.Database.ExecuteSqlAsync($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}", cancellationToken);
+        await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}", cancellationToken);
     }
 
+    [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
     private static void SetIdentityInsert(this DbContext context, IdentityInserts enable,
         string tableName)
     {
-        context.Database.ExecuteSql($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}");
+        context.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}");
     }
 
     private static async Task RunDataSeedingAsync(this DbContext context, Type[] seedingTypes,

@@ -9,6 +9,8 @@ public class WithSqlDbTests : SqlServerTestBase
     [ClassInitialize]
     public static async Task Setup(TestContext _)
     {
+        await StartSqlContainerAsync();
+
         _db = new MyDbContext(new DbContextOptionsBuilder()
             .UseSqlServer(GetConnectionString("WithSqlDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
@@ -19,10 +21,7 @@ public class WithSqlDbTests : SqlServerTestBase
     }
 
     [TestInitialize]
-    public Task TestSetup()
-    {
-        return EnsureSqlStartedAsync();
-    }
+    public Task TestSetup() => EnsureSqlStartedAsync();
 
     [TestMethod]
     public async Task SequenceValueTestAsync()
@@ -82,7 +81,7 @@ public class WithSqlDbTests : SqlServerTestBase
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses).LastAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
@@ -99,14 +98,14 @@ public class WithSqlDbTests : SqlServerTestBase
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).FirstAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
         await _db.SaveChangesAsync();
 
-        user = await _db.Set<User>().FirstAsync();
+        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
 
         Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
 

@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "TEMP.Api": {
+    "SlimBus.Api": {
       "commandName": "Project",
       "launchBrowser": false,
       "launchUrl": "docs/v1",

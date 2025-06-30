@@ -1,5 +1,8 @@
-﻿namespace SlimBus.AppServices.Profiles.V1.Actions;
+﻿using SlimBus.Domains.Features.Profiles.Entities;
 
+namespace SlimBus.AppServices.Profiles.V1.Actions;
+
+[MapsTo(typeof(CustomerProfile))]
 public record UpdateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<ProfileResult>
 {
     public required Guid Id { get; init; }
@@ -25,7 +28,7 @@ internal sealed class UpdateProfileCommandHandler(
             return Result.Fail<ProfileResult>($"The Profile {request.Id} is not found.");
 
         //Update Here
-        profile.Update(avatar: null, request.Name, request.Phone, birthday: null, request.UserId!);
+        profile.Update(avatar: null, request.Name, request.Phone, birthday: null, request.ByUser!);
 
         //Add Event
 

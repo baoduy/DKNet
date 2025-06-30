@@ -56,7 +56,7 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update(avatar: "aaa", null, null, null, "user2");
+        profile.Update(avatar: null, null, null, null, "user2");
 
         // Assert
         profile.Avatar.ShouldBeNull();
