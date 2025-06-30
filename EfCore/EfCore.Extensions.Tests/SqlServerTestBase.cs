@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using DotNet.Testcontainers.Containers;
 
 namespace EfCore.Extensions.Tests;
@@ -24,7 +25,7 @@ public abstract class SqlServerTestBase : IAsyncDisposable
         await Task.Delay(TimeSpan.FromSeconds(10));
     }
 
-    protected Task EnsureSqlStartedAsync()
+    protected static Task EnsureSqlStartedAsync()
     {
         if (_container.State != TestcontainersStates.Running)
             return _container.StartAsync();
@@ -42,5 +43,6 @@ public abstract class SqlServerTestBase : IAsyncDisposable
             .UseAutoDataSeeding()
             .Options);
 
+    [SuppressMessage("Usage", "CA1816:Dispose methods should call SuppressFinalize")]
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

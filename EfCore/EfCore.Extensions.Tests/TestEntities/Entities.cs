@@ -37,7 +37,7 @@ public class User : BaseEntity
 
     public Account? Account { get; set; }
 
-    public virtual HashSet<Address> Addresses { get; private set; } = new();
+    public ICollection<Address> Addresses { get; private set; } = new HashSet<Address>();
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 

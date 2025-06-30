@@ -4,14 +4,14 @@
 public class AuditEntityTests : SqlServerTestBase
 {
 
-    private static MyDbContext _db;
+    private static MyDbContext _db = null!;
 
     [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    public static async Task ClassSetup(TestContext context)
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("AuditDb");
-        await _db.Database.EnsureCreatedAsync();
+        await _db.Database.EnsureCreatedAsync(context.CancellationTokenSource.Token);
     }
 
     [TestInitialize]

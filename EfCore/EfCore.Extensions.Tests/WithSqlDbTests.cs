@@ -4,10 +4,10 @@
 [TestClass]
 public class WithSqlDbTests : SqlServerTestBase
 {
-    private static MyDbContext _db;
+    private static MyDbContext _db = null!;
 
     [ClassInitialize]
-    public async Task Setup(TestContext _)
+    public static async Task Setup(TestContext _)
     {
         _db = new MyDbContext(new DbContextOptionsBuilder()
             .UseSqlServer(GetConnectionString("WithSqlDb"))

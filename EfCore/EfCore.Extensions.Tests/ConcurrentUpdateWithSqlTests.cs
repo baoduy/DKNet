@@ -6,15 +6,15 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class ConcurrentUpdateWithSqlTests
 {
-    private static MsSqlContainer _sql;
-    private static MyDbContext _db;
+    private static MsSqlContainer _sql = null!;
+    private static MyDbContext _db= null!;
 
     [ClassInitialize]
-    public async Task Setup(TestContext _)
+    public static async Task Setup(TestContext context)
     {
         _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
-        await _sql.StartAsync();
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await _sql.StartAsync(context.CancellationTokenSource.Token);
+        await Task.Delay(TimeSpan.FromSeconds(5), context.CancellationTokenSource.Token);
 
         var options = new DbContextOptionsBuilder()
             .LogTo(Console.WriteLine, (eventId, logLevel) => logLevel >= LogLevel.Information
@@ -62,7 +62,7 @@ public class ConcurrentUpdateWithSqlTests
 
         //2. Update user with created version. It should allow to update.
         // Change the person's name in the database to simulate a concurrency conflict.
-        await _db.Database.ExecuteSqlRawAsync(
+        await _db.Database.ExecuteSqlAsync(
             $"UPDATE [User] SET [FirstName] = 'Duy2' WHERE Id = {user.Id}");
 
         //3. Update user with created version again. It should NOT allow to update.

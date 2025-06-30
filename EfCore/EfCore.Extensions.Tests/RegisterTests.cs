@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Internal;
 
@@ -7,7 +6,7 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class RegisterTests : SqlServerTestBase
 {
-    private static MyDbContext _db;
+    private static MyDbContext _db =null!;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
@@ -44,8 +43,8 @@ public class RegisterTests : SqlServerTestBase
 
         await _db.SaveChangesAsync();
 
-        Assert.IsTrue(await _db.Set<User>().CountAsync() >= 1);
-        Assert.IsTrue(await _db.Set<Address>().CountAsync() >= 1);
+        Assert.IsTrue(await _db.Set<User>().AnyAsync());
+        Assert.IsTrue(await _db.Set<Address>().AnyAsync());
     }
 
     // [TestMethod]
