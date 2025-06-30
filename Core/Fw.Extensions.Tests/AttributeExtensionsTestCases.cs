@@ -7,13 +7,6 @@ public class AttributeExtensionsTestCases
 {
     #region Methods
 
-    // [TestMethod]
-    // [TestCategory("Fw.Extensions")]
-    // public void GetAttribute()
-    // {
-    //     Assert.IsTrue(this.GetAttribute<TestClassAttribute>() != null);
-    // }
-
     [TestMethod]
     [TestCategory("Fw.Extensions")]
     [ExpectedException(typeof(ArgumentNullException))]

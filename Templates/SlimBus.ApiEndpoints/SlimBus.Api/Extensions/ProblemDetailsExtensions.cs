@@ -18,7 +18,7 @@ internal static class ProblemDetailsExtensions
         if (status.IsValid) return null;
 
         var errors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, value) in status)
+        foreach (var (_, value) in status)
         foreach (var err in value.Errors)
             errors.Add(err.ErrorMessage);
 

@@ -44,7 +44,7 @@ internal static class StaticEnumDataRegister
     private static void RegisterStaticDataType<TEnumTable>(ModelBuilder modelBuilder, StaticDataAttribute? attribute)
         where TEnumTable : class
     {
-        var enumType = typeof(TEnumTable).GetGenericArguments().First();
+        var enumType = typeof(TEnumTable).GetGenericArguments()[0];
         var builder = modelBuilder.Entity<TEnumTable>()
             .ToTable(attribute?.Name ?? enumType.Name, attribute?.Schema);
 

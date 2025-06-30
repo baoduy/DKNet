@@ -21,7 +21,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 
         // Assert
         properties.ShouldHaveSingleItem();
-        properties.First().ShouldBe("Id");
+        properties[0].ShouldBe("Id");
     }
 
     [TestMethod]
@@ -47,7 +47,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 
         // Assert
         keyValues.ShouldHaveSingleItem();
-        keyValues.First().ShouldBe(123);
+        keyValues[0].ShouldBe(123);
     }
 
     [TestMethod]

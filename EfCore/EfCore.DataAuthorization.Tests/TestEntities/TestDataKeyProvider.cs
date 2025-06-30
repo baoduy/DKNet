@@ -4,7 +4,7 @@ internal class TestDataKeyProvider : IDataOwnerProvider
 {
     private readonly string[] _ownedKeys = ["Steven"];
 
-    public string GetOwnershipKey() => _ownedKeys.First();
+    public string GetOwnershipKey() => _ownedKeys[0];
 
     public IEnumerable<string> GetAccessibleKeys() => _ownedKeys;
 }

@@ -150,7 +150,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
             var connection = await db.GetDbConnection(cts.Token);
             await db.CreateTableAsync<TestEntity>(cts.Token);
             var exists = await db.TableExistsAsync<TestEntity>(cts.Token);
-            var (schema, tableName) = db.GetTableName<TestEntity>();
+            var (_, tableName) = db.GetTableName<TestEntity>();
             
             connection.ShouldNotBeNull();
             exists.ShouldBeTrue();

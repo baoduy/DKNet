@@ -21,7 +21,6 @@ public interface IEntityAutoMappingRegister
 /// </summary>
 internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IEntityAutoMappingRegister
 {
-    //private bool _disableGlobalQueryFilterScan;
     private DbContextOptionsExtensionInfo? _info;
     private Action<IServiceCollection>? _extraServiceProvider;
 
@@ -53,11 +52,6 @@ internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IE
             services.Replace(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoMapModelCustomizer),
                 originalDescriptor.Lifetime));
         }
-
-        // //Register Global Query Filter from registration, it should be
-        // foreach (var g in EfCoreSetup.GlobalQueryFilters)
-        //     services.Add(
-        //         new ServiceDescriptor(typeof(IGlobalModelBuilderRegister), g, ServiceLifetime.Scoped));
     }
 
     /// <summary>
@@ -73,14 +67,14 @@ internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IE
     ///     If you have any IGlobalQueryFilterRegister implementation. Just provider the assemblies here and no need to add
     ///     them to any other DI.
     /// </summary>
-    /// <param name="assembliesToScans"></param>
+    /// <param name="entityAssemblies"></param>
     /// <returns></returns>
-    public AutoEntityRegistrationInfo ScanFrom(params Assembly[] assembliesToScans)
+    public AutoEntityRegistrationInfo ScanFrom(params Assembly[] entityAssemblies)
     {
-        if (assembliesToScans.Length == 0)
-            assembliesToScans = [Assembly.GetCallingAssembly()];
+        if (entityAssemblies.Length == 0)
+            entityAssemblies = [Assembly.GetCallingAssembly()];
 
-        var register = new AutoEntityRegistrationInfo(assembliesToScans);
+        var register = new AutoEntityRegistrationInfo(entityAssemblies);
         Registrations.Add(register);
         return register;
     }

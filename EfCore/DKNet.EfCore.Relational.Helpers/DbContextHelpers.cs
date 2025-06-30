@@ -23,9 +23,7 @@ public static class DbContextHelpers
 
     public static (string? schema, string? tableName) GetTableName<TEntity>(this DbContext dbContext)
     {
-        var defaultSchema = dbContext.IsSqlServer()
-            ? "dbo" // Default schema for SQL Server
-            : null; // Other providers may have different defaults;
+        var defaultSchema = dbContext.IsSqlServer() ? "dbo" : null;
 
         var entityType = dbContext.Model.FindEntityType(typeof(TEntity));
         if (entityType == null) return (null, null);

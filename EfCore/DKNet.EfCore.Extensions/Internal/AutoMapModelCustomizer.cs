@@ -29,18 +29,11 @@ internal sealed class AutoMapModelCustomizer(ModelCustomizer original) : IModelC
         //Register StaticData Of
         modelBuilder.RegisterStaticDataFrom(options.Registrations);
 
-        //Register Data Seeding
-        //modelBuilder.RegisterDataSeedingFrom(options.Registrations);
-
         //Register Global Filter
         modelBuilder.RegisterGlobalFilterFrom(options.Registrations, dbContext);
 
         //Register Sequence
         if (dbContext.Database.IsSequenceSupported())
             modelBuilder.RegisterSequencesFrom(options.Registrations);
-
-        //Config DataKey
-        // foreach (var filter in globalQueryFilters)
-        //     filter.Apply(modelBuilder, dbContext);
     }
 }

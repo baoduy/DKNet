@@ -146,7 +146,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     {
         if (!Directory.Exists(folderLocation))
         {
-            logger.LogError($"The directory {folderLocation} was not found", nameof(folderLocation));
+            logger.LogError("The directory {FolderLocation} was not found", nameof(folderLocation));
             return Task.FromResult(false);
         }
 

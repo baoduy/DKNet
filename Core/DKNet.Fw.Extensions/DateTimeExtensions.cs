@@ -20,7 +20,8 @@ public static class DateTimeExtensions
     public static DateTime LastDayOfMonth(this DateTime date)
     {
         var lastDay = DateTime.DaysInMonth(date.Year, date.Month);
-        return new DateTime(date.Year, date.Month, lastDay, date.Hour, date.Minute, date.Second, date.Millisecond);
+        return new DateTime(date.Year, date.Month, lastDay, date.Hour, date.Minute, date.Second, date.Millisecond,
+            DateTimeKind.Local);
     }
 
     /// <summary>

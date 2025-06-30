@@ -8,23 +8,6 @@ internal static class SwaggerConfig
 {
     private static bool _configAdded;
 
-    // private static OpenApiPathItem GetOrAdd(this OpenApiPaths paths, string key, OpenApiPathItem value)
-    // {
-    //     if (paths.TryGetValue(key, out var add)) return add;
-    //     paths.Add(key, new OpenApiPathItem(value){Operations = new Dictionary<OperationType, OpenApiOperation>()});
-    //     return paths[key];
-    // }
-    //
-    // private static string GetVersionFromTag(this IList<OpenApiTag> tags)
-    // {
-    //     var tag = tags.FirstOrDefault(t => t.Name.StartsWith('v'))?.Name ?? "v1";
-    //
-    //     // Extract version from the tag
-    //     return tag.Contains('/')
-    //         ? tag[..tag.IndexOf('/', StringComparison.Ordinal)]
-    //         : tag;
-    // }
-
     private static IServiceCollection AddOpenApiDocVersion(this IServiceCollection services, int version,
         bool enableAuthentication)
     {

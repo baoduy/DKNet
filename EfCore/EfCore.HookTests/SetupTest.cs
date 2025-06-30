@@ -13,12 +13,7 @@ public class SetupTest
             .AddSingleton<IHookAsync>(p => p.GetService<Hook>())
             .BuildServiceProvider();
 
-        //var instance1 = provider.GetService<IHook>();
         var instance2 = provider.GetService<IHookAsync>();
-
-        //instance1.Should().NotBeNull();
         instance2.ShouldNotBeNull();
-
-        //instance1.Should().Be(instance2, "2 instances should be the same");
     }
 }

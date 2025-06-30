@@ -33,7 +33,7 @@ public static class SetupEfCoreHook
                 s.IsKeyedService && ReferenceEquals(s.ServiceKey, key) &&
                 s.KeyedImplementationType == type))
         {
-            Trace.WriteLine($"The Hook {type.Name} already added.");
+            Debug.WriteLine($"The Hook {type.Name} already added.");
             return services;
         }
 
@@ -59,7 +59,7 @@ public static class SetupEfCoreHook
                 s.IsKeyedService && ReferenceEquals(s.ServiceKey, fullName) &&
                 s.KeyedImplementationType == typeof(HookRunner)))
         {
-            Trace.WriteLine($"The {nameof(HookRunner)} already registered.");
+            Debug.WriteLine($"The {nameof(HookRunner)} already registered.");
             return services;
         }
 

@@ -17,12 +17,10 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
             ;
     }
 
-    public async Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> parameters)
+    public async Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> tokenFactory)
     {
-        var tokens = await Task.WhenAll(options.TokenExtractors.Select(t => t.ExtractAsync(templateString)))
-            ;
-        return await InternalTransformAsync(templateString, tokens.SelectMany(i => i), [], parameters)
-            ;
+        var tokens = await Task.WhenAll(options.TokenExtractors.Select(t => t.ExtractAsync(templateString)));
+        return await InternalTransformAsync(templateString, tokens.SelectMany(i => i), [], tokenFactory);
     }
 
 
@@ -88,7 +86,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         if (additionalData.Length > 0)
             val = options.TokenResolver.Resolve(token, additionalData);
 
-        if (val is null && options.GlobalParameters is not null)
+        if (val is null)
             val = options.TokenResolver.Resolve(token, options.GlobalParameters);
 
         return val!;
