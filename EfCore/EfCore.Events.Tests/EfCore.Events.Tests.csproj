@@ -22,7 +22,7 @@
         </PackageReference>
         <PackageReference Include="Testcontainers.MsSql" Version="4.6.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
-        <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+        <PackageReference Update="Meziantou.Analyzer" Version="2.0.203">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
