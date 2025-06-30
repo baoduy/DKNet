@@ -1,14 +1,22 @@
+using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+
 namespace DKNet.EfCore.Events.Internals;
 
 /// <summary>
-/// EventRunnerHook
+/// EventRunnerHook - Modified to use Channels for asynchronous event processing
 /// </summary>
-/// <param name="eventPublishers"></param>
-/// <param name="autoMappers"></param>
-internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IEnumerable<IMapper> autoMappers)
-    : IHookAsync
+/// <param name="eventChannel">Channel for queuing events</param>
+/// <param name="autoMappers">Auto mappers for event transformation</param>
+/// <param name="logger">Logger instance</param>
+internal sealed class EventHook(
+    Channel<DKNet.EfCore.Events.Services.QueuedEventBatch> eventChannel,
+    IEnumerable<IMapper> autoMappers,
+    ILogger<EventHook> logger) : IHookAsync
 {
     private readonly IMapper? _autoMapper = autoMappers.FirstOrDefault();
+    private readonly Channel<DKNet.EfCore.Events.Services.QueuedEventBatch> _eventChannel = eventChannel;
+    private readonly ILogger<EventHook> _logger = logger;
     private ImmutableList<EntityEventItem> _eventEntities = [];
 
     /// <summary>
@@ -24,19 +32,39 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
     }
 
     /// <summary>
-    /// Run RunAfterSaveAsync Events and ignore the result even failed.
+    /// Run RunAfterSaveAsync - Queue events to channel for asynchronous processing
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>
     public async Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        var publishers = from entityEventItem in _eventEntities
-            from eventPublisher in eventPublishers
-            select eventPublisher.PublishAllAsync(entityEventItem.Events, cancellationToken);
-
-        await Task.WhenAll(publishers);
-        //Clear All events
-        _eventEntities = [];
+        if (_eventEntities.Count == 0)
+        {
+            _logger.LogDebug("No events to process");
+            return;
+        }
+        
+        try
+        {
+            var eventBatch = new DKNet.EfCore.Events.Services.QueuedEventBatch(_eventEntities);
+            
+            // Queue the events for background processing
+            await _eventChannel.Writer.WriteAsync(eventBatch, cancellationToken);
+            
+            _logger.LogDebug("Queued {EventCount} events from {EntityCount} entities for background processing",
+                _eventEntities.Sum(e => e.Events.Count),
+                _eventEntities.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to queue events for background processing");
+            // In case of channel failure, we continue without blocking the save operation
+        }
+        finally
+        {
+            // Clear the events
+            _eventEntities = [];
+        }
     }
 
     /// <summary>

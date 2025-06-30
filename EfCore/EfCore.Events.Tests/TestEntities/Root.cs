@@ -16,6 +16,9 @@ public class Root(string name, string ownedBy) : AggregateRoot(Guid.Empty, owned
     {
         var entity = new Entity(name, Id);
         _entities.Add(entity);
+        
+        // Add an event when an entity is added
+        AddEvent(new EntityAddedEvent { Id = entity.Id, Name = entity.Name });
     }
 }
 

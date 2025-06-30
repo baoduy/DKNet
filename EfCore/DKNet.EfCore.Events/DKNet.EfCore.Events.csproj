@@ -32,9 +32,10 @@
     <ItemGroup>
       <PackageReference Include="FluentResults" Version="3.16.0" />
       <PackageReference Include="Mapster" Version="7.4.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
       <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
         <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        <IncludeInsets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeInsets>
       </PackageReference>
     </ItemGroup>
 

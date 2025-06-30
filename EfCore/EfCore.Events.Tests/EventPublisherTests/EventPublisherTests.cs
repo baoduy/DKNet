@@ -17,6 +17,9 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
         db.Add(p);
         await db.SaveChangesAsync();
 
+        // Wait for background processing to complete
+        await Task.Delay(2000);
+
         TestEventPublisher.Events.Count.ShouldBeGreaterThan(0);
         TestEventPublisher.Events.Any(e=> e is EntityAddedEvent).ShouldBeTrue();
     }
@@ -36,6 +39,9 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
 
         db.Add(p);
         await db.SaveChangesAsync();
+
+        // Wait for background processing to complete
+        await Task.Delay(2000);
 
         TestEventPublisher.Events.Any(e=> e is TypeEvent).ShouldBeTrue();
     }
