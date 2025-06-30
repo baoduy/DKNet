@@ -1,7 +1,4 @@
 using DKNet.EfCore.Events.Handlers;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace EfCore.Events.Tests.TestEntities;
 
