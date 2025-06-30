@@ -48,4 +48,28 @@ public interface IWriteRepository<in TEntity> where TEntity : class
     /// </summary>
     /// <param name="entities"></param>
     void DeleteRange(IEnumerable<TEntity> entities);
+
+    ///// <summary>
+    /////  Bulk Insert Entities
+    ///// </summary>
+    ///// <param name="entities"></param>
+    ///// <param name="cancellationToken"></param>
+    ///// <returns></returns>
+    //Task<int> BulkInsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    ///// <summary>
+    ///// Bulk Update Entities
+    ///// </summary>
+    ///// <param name="setPropertyCalls"></param>
+    ///// <param name="cancellationToken"></param>
+    ///// <returns></returns>
+    //Task<int> BulkUpdateAsync(Expression<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>> setPropertyCalls, CancellationToken cancellationToken = default);
+
+    ///// <summary>
+    ///// Bulk Delete Entities
+    ///// </summary>
+    ///// <param name="predicate"></param>
+    ///// <param name="cancellationToken"></param>
+    ///// <returns></returns>
+    //Task<int> BulkDeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 }

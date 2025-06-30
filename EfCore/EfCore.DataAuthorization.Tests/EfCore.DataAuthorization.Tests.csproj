@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
-
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RunAnalyzers>false</RunAnalyzers>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
     <LangVersion>default</LangVersion>
-
-    <Nullable>disable</Nullable>
+    <Nullable>annotations</Nullable>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>true</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,14 +28,10 @@
     <PackageReference Include="AutoBogus" Version="2.13.1" />
     <PackageReference Include="Testcontainers.MsSql" Version="4.6.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
-    <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EfCore.DDD4Tests\EfCore.DDD4Tests.csproj" />
     <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj" />
+    <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
   </ItemGroup>
 </Project>

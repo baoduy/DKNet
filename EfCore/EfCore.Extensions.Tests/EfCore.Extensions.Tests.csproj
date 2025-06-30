@@ -2,11 +2,15 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <LangVersion>default</LangVersion>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RunAnalyzers>false</RunAnalyzers>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+    <LangVersion>default</LangVersion>
+    <Nullable>annotations</Nullable>
     <TargetFramework>net9.0</TargetFramework>
-    <Nullable>disable</Nullable>
+    <ImplicitUsings>true</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,14 +33,11 @@
     <PackageReference Include="MSTest.TestAdapter" Version="3.9.3" />
     <PackageReference Include="MSTest.TestFramework" Version="3.9.3" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
-    <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj" />
-    <ProjectReference Include="..\Entities\EfCore.TestDataLayer.csproj" />
+    <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj" />
+    <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
   </ItemGroup>
 </Project>

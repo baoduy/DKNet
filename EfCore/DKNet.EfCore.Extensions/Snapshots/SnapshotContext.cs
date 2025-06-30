@@ -7,7 +7,7 @@ namespace DKNet.EfCore.Extensions.Snapshots;
 ///     The EntitiesSnapshotContext. The Tracking changes of DbContext will be switch off after snapshot the Entities.
 ///     Call <see cref="Dispose" /> to enable it back.
 /// </summary>
-public sealed class SnapshotContext : IDisposable,IAsyncDisposable
+public sealed class SnapshotContext : IDisposable
 {
     internal SnapshotContext(DbContext context)
     {
@@ -26,8 +26,12 @@ public sealed class SnapshotContext : IDisposable,IAsyncDisposable
     {
         get
         {
+            // NOTE: Potential circular event handling in domain event handlers needs review
             if (_snapshotEntities != null) return _snapshotEntities;
-            return _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
+
+            _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
+
+            return _snapshotEntities;
         }
     }
 
@@ -35,11 +39,5 @@ public sealed class SnapshotContext : IDisposable,IAsyncDisposable
     {
         _snapshotEntities = null;
         _dbContext = null;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        Dispose();
-        return ValueTask.CompletedTask;
     }
 }
