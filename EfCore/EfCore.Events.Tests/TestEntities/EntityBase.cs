@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Collections.Generic;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.DataAuthorization;
 

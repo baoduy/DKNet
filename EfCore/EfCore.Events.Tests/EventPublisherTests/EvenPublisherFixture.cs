@@ -1,6 +1,7 @@
 using DotNet.Testcontainers.Containers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.Extensions.Hosting;
 using Testcontainers.MsSql;
 
 namespace EfCore.Events.Tests.EventPublisherTests;
@@ -29,11 +30,25 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         Provider = new ServiceCollection()
             .AddLogging()
             .AddEventPublisher<DddContext, TestEventPublisher>()
-            .AddSingleton(TypeAdapterConfig.GlobalSettings)
+            .AddSingleton(sp =>
+            {
+                var config = TypeAdapterConfig.GlobalSettings;
+                // Configure mapping from Root to TypeEvent
+                config.NewConfig<Root, TypeEvent>()
+                    .MapWith(src => new TypeEvent());
+                return config;
+            })
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(builder =>
                 builder.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
             .BuildServiceProvider();
+
+        // Start hosted services manually for test environment
+        var hostedServices = Provider.GetServices<IHostedService>();
+        foreach (var hostedService in hostedServices)
+        {
+            await hostedService.StartAsync(CancellationToken.None);
+        }
 
         var db = Provider.GetRequiredService<DddContext>();
         await db.Database.EnsureCreatedAsync();
@@ -51,7 +66,20 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         await _sqlContainer.StartAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public async Task DisposeAsync()
+    {
+        // Stop hosted services
+        var hostedServices = Provider?.GetServices<IHostedService>();
+        if (hostedServices != null)
+        {
+            foreach (var hostedService in hostedServices)
+            {
+                await hostedService.StopAsync(CancellationToken.None);
+            }
+        }
+        
+        Provider?.Dispose();
+    }
 
-    public ServiceProvider Provider { get; private set; }
+    public ServiceProvider Provider { get; private set; } = null!;
 }
