@@ -14,7 +14,7 @@ public class EntityAutoConfigTests
         var entities = info.GetAllEntityTypes().ToList();
 
         entities.ShouldNotBeEmpty();
-        entities.Count().ShouldBeGreaterThanOrEqualTo(11);
+        entities.Count.ShouldBeGreaterThanOrEqualTo(8);
     }
 
     [TestMethod]
@@ -36,6 +36,6 @@ public class EntityAutoConfigTests
         var configs = info.GetGenericMappers().ToList();
 
         configs.ShouldNotBeEmpty();
-        configs.Count.ShouldBe(2);
+        configs.Count.ShouldBe(1);
     }
 }

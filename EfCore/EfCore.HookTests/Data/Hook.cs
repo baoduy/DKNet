@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using DKNet.EfCore.Extensions.Snapshots;
 
 namespace EfCore.HookTests.Data;
@@ -26,10 +27,8 @@ public class Hook : /*IHook,*/ IHookAsync
 
     public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        if (ShouldThrowException)
-            throw new InvalidOperationException("Hook configured to throw exception");
-            
-        BeforeCalled = context != null;
+        Trace.WriteLine($"Running BeforeSaveAsync at {DateTime.Now}");
+        BeforeCalled = context.SnapshotEntities.Count > 0;
         BeforeCallCount++;
         LastBeforeContext = context;
         BeforeCallTime = DateTime.UtcNow;
@@ -38,10 +37,8 @@ public class Hook : /*IHook,*/ IHookAsync
 
     public Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        if (ShouldThrowException)
-            throw new InvalidOperationException("Hook configured to throw exception");
-            
-        AfterCalled = context != null;
+        Trace.WriteLine($"Running RunAfterSaveAsync at {DateTime.Now}");
+        AfterCalled = context.SnapshotEntities.Count > 0;
         AfterCallCount++;
         LastAfterContext = context;
         AfterCallTime = DateTime.UtcNow;
@@ -59,5 +56,21 @@ public class Hook : /*IHook,*/ IHookAsync
         BeforeCallTime = default;
         AfterCallTime = default;
         ShouldThrowException = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (LastAfterContext is not null)
+            await LastAfterContext.DisposeAsync();
+        if (LastBeforeContext is not null)
+            await LastBeforeContext.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        if (LastAfterContext is not null)
+             LastAfterContext.Dispose();
+        if (LastBeforeContext is not null)
+             LastBeforeContext.Dispose();
     }
 }

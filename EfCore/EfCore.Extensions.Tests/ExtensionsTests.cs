@@ -3,14 +3,13 @@
 [TestClass]
 public class ExtensionsTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("TestDb");
         await _db.Database.EnsureCreatedAsync();
     }
 

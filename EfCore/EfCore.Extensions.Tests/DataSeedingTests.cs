@@ -27,11 +27,10 @@ public class DataSeedingTests : SqlServerTestBase
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()
     {
         // Arrange
-        var container = await StartSqlContainerAsync();
-        var connectionString = container.GetConnectionString();
+        await StartSqlContainerAsync();
 
         var options = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(GetConnectionString("SeedingDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
             .Options;

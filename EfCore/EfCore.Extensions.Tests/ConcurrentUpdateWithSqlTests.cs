@@ -42,12 +42,14 @@ public class ConcurrentUpdateWithSqlTests
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "123"
+                    City = "HBD",
+                    Street = "HBD"
                 },
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "124"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         };
@@ -97,12 +99,14 @@ public class ConcurrentUpdateWithSqlTests
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "123"
+                    City = "HBD",
+                    Street = "HBD"
                 },
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "124"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         };

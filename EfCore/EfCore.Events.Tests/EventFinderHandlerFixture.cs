@@ -1,10 +1,14 @@
 namespace EfCore.Events.Tests;
 
-public sealed class EventFinderHandlerFixture : IDisposable
+public sealed class EventFinderHandlerFixture : IAsyncDisposable
 {
     public ServiceProvider Provider { get; } = new ServiceCollection()
         .AddLogging()
         .BuildServiceProvider();
 
-    public void Dispose() => Provider?.Dispose();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Provider != null) await Provider.DisposeAsync();
+    }
 }

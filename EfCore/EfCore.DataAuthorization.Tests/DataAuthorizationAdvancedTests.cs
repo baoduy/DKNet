@@ -136,7 +136,7 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
         await db.AddAsync(entity);
         await db.SaveChangesAsync();
 
-        // Verify the ownership wasn't changed by the hook
+        // Verify the hook didn't change the ownership
         var ownedBy = ((IOwnedBy)entity).OwnedBy;
         ownedBy.ShouldBe("pre-existing-key");
     }

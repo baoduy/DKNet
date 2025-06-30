@@ -44,6 +44,6 @@ public sealed class DataKeyAdvancedFixture : IAsyncLifetime
         {
             await _sqlContainer.DisposeAsync();
         }
-        Provider?.Dispose();
+        await Provider.DisposeAsync();
     }
 }

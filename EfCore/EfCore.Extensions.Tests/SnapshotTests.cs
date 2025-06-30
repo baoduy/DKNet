@@ -3,14 +3,13 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class SnapshotTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EventDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
@@ -26,13 +25,13 @@ public class SnapshotTests : SqlServerTestBase
     }
 
     [TestMethod]
-    public void SnapshotContext_Dispose_ShouldReleaseResources()
+    public async Task SnapshotContext_Dispose_ShouldReleaseResources()
     {
         // Arrange
         var snapshot = _db.Snapshot();
 
         // Act
-        snapshot.Dispose();
+        await snapshot.DisposeAsync();
 
         // Assert
         Should.Throw<ObjectDisposedException>(() => snapshot.DbContext);

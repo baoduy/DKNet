@@ -24,12 +24,12 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
 {
     public ICollection<User> Data =>
     [
-        new("Duy")
+        new(1, "Duy")
         {
             FirstName = "Duy",
             LastName = "Nguyen"
         },
-        new("Hoang") 
+        new(2,"Hoang")
         {
             FirstName = "Hoang",
             LastName = "Le"

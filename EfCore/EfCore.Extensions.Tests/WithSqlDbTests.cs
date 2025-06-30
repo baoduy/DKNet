@@ -4,18 +4,13 @@
 [TestClass]
 public class WithSqlDbTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public async Task Setup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        await _sql.StartAsync();
-        await Task.Delay(TimeSpan.FromSeconds(20));
-
         _db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqlServer(_sql.GetConnectionString())
+            .UseSqlServer(GetConnectionString("WithSqlDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding()
             .Options);
@@ -67,7 +62,8 @@ public class WithSqlDbTests : SqlServerTestBase
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "12"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });

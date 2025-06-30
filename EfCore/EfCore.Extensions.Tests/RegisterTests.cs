@@ -7,17 +7,13 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class RegisterTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        Trace.TraceInformation($"Sql Connection String: {_sql.GetConnectionString()}");
-        Console.WriteLine($"Sql Connection String: {_sql.GetConnectionString()}");
-
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EfCoreDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
@@ -40,7 +36,8 @@ public class RegisterTests : SqlServerTestBase
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "12"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
@@ -77,7 +74,8 @@ public class RegisterTests : SqlServerTestBase
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "12"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
@@ -104,7 +102,8 @@ public class RegisterTests : SqlServerTestBase
                 new Address
                 {
                     OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "123"
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         });
@@ -141,7 +140,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(_sql.GetConnectionString())
+                .UseSqlServer(GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
                 .Options);
@@ -156,7 +155,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(_sql.GetConnectionString())
+                .UseSqlServer(GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);

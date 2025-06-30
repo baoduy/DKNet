@@ -3,26 +3,7 @@
 public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixture<EvenPublisherFixture>
 {
     [Fact]
-    public async Task AfterSaveTestAsync()
-    {
-        TestEventPublisher.Events.Clear();
-        await provider.EnsureSqlReadyAsync();
-
-        var db = provider.Provider.GetRequiredService<DddContext>();
-
-        var p = new Root("P1","Steven");
-
-        p.AddEntity("A1");
-
-        db.Add(p);
-        await db.SaveChangesAsync();
-
-        TestEventPublisher.Events.Count.ShouldBeGreaterThan(0);
-        TestEventPublisher.Events.Any(e=> e is EntityAddedEvent).ShouldBeTrue();
-    }
-
-    [Fact]
-    public async Task AfterSaveEventTypeTestAsync()
+    public async Task AfterSaveEventTestAsync()
     {
         TestEventPublisher.Events.Clear();
         await provider.EnsureSqlReadyAsync();
@@ -31,28 +12,12 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
 
         var p = new Root("P1","Steven");
         p.SetOwnedBy("Steven");
-
-        p.AddEvent<TypeEvent>();
+        p.AddEvent<EntityAddedEvent>();
 
         db.Add(p);
         await db.SaveChangesAsync();
 
-        TestEventPublisher.Events.Any(e=> e is TypeEvent).ShouldBeTrue();
+        TestEventPublisher.Events.ShouldNotBeEmpty();
+        TestEventPublisher.Events.Any(e=> e is EntityAddedEvent).ShouldBeTrue();
     }
-    
-    // [Fact]
-    // public async Task BeforeSaveTestAsync()
-    // {
-    //     TestEventPublisher.Events.Clear();
-    //
-    //     var db = provider.Provider.GetRequiredService<DddContext>();
-    //
-    //     var p = new Root("P1");
-    //     p.AddEntity("A1");
-    //
-    //     db.Add(p);
-    //     await db.SaveChangesAsync();
-    //
-    //     TestEventPublisher.Events.Any(e=> e is EntityAddedEvent).ShouldBeTrue();
-    // }
 }

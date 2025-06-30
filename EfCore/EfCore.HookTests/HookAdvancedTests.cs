@@ -1,4 +1,6 @@
-namespace EfCore.HookTests.Hooks;
+using EfCore.HookTests.Hooks;
+
+namespace EfCore.HookTests;
 
 public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
 {
@@ -119,6 +121,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         var savedEntities = await db.Set<CustomerProfile>()
             .Where(e => e.Name.StartsWith("Bulk"))
             .ToListAsync();
+
         savedEntities.Count.ShouldBe(3);
     }
 
@@ -128,8 +131,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         // Arrange
         var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
 
+        var db = _provider.GetRequiredService<HookContext>();
         // Act - Save without any changes
         await db.SaveChangesAsync();
 
@@ -244,7 +247,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         var entity = new CustomerProfile { Name = "Transaction Test" };
 
         // Act
-        using var transaction = await db.Database.BeginTransactionAsync();
+        await using var transaction = await db.Database.BeginTransactionAsync();
         await db.AddAsync(entity);
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
@@ -264,12 +267,12 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         // Arrange
         var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
 
+        var db = _provider.GetRequiredService<HookContext>();
         var entity = new CustomerProfile { Name = "Rollback Test" };
 
         // Act
-        using var transaction = await db.Database.BeginTransactionAsync();
+        await using var transaction = await db.Database.BeginTransactionAsync();
         await db.AddAsync(entity);
         await db.SaveChangesAsync();
         await transaction.RollbackAsync();

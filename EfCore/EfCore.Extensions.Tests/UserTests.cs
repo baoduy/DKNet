@@ -3,14 +3,13 @@
 [TestClass]
 public class UserTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EntitiesDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
@@ -23,7 +22,7 @@ public class UserTests : SqlServerTestBase
     }
 
     [TestMethod]
-    public void AddUserAndAddress()
+    public async Task AddUserAndAddress()
     {
         var user = new User("A")
         {
@@ -33,28 +32,30 @@ public class UserTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "123"
+                    OwnedEntity = new OwnedEntity { Name = "123" },
+                    City = "HBD",
+                    Street = "HBD"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
-                    Street = "124"
+                    OwnedEntity = new OwnedEntity { Name = "123" },
+                    City = "HBD",
+                    Street = "HBD"
                 }
             },
         };
 
         _db.Add(user);
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
 
-        var u = _db.Set<User>().Include(i => i.Addresses).First();
+        var u =await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.ShouldNotBeNull();
-        u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
+        u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
 
         u.Addresses.Remove(u.Addresses.First());
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
 
-        u = _db.Set<User>().First();
+        u = await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
 
         _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();

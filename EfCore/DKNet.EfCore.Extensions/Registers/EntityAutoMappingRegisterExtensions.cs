@@ -50,7 +50,7 @@ internal static class EntityAutoMappingRegisterExtensions
     /// <returns>An enumerable of entity types.</returns>
     internal static IEnumerable<Type> GetAllEntityTypes(this AutoEntityRegistrationInfo registration) =>
         registration.EntityAssemblies.Extract().Classes().NotGeneric().IsInstanceOf(typeof(IEntity<>))
-            .Where(t => !t.HasAttribute<IgnoreEntityMapperAttribute>(true));
+            .Where(t => !t.HasAttribute<IgnoreEntityAttribute>(true));
 
     /// <summary>
     ///     Get All IEntityTypeConfiguration for entities.

@@ -9,7 +9,8 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
     [NotMapped] private readonly ICollection<Type> _eventTypes = [];
 
     /// <inheritdoc />
-    protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy,
+    protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null)
+        : base(id, createdBy,
         createdOn)
     {
         OwnedBy = ownedBy;
@@ -33,12 +34,8 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
     public void SetOwnedBy(string ownerKey) => OwnedBy = ownerKey;
 }
 
-public abstract class AggregateRoot : EntityBase<Guid>
-{
-    protected AggregateRoot(Guid id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null) : base(id, ownedBy, createdBy, createdOn)
-    {
-    }
-}
+public abstract class AggregateRoot(Guid id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null)
+    : EntityBase<Guid>(id, ownedBy, createdBy, createdOn);
 
 public class Root(string name, string ownedBy) : AggregateRoot(Guid.Empty, ownedBy, $"Unit Test {Guid.NewGuid()}")
 {

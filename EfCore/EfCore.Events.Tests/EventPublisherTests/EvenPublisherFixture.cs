@@ -9,7 +9,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
 {
     private MsSqlContainer _sqlContainer;
 
-    public string GetConnectionString() =>
+    private string GetConnectionString() =>
         _sqlContainer?.GetConnectionString()
             .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
         throw new InvalidOperationException(
@@ -25,6 +25,8 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         await _sqlContainer.StartAsync();
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(20));
+
+        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
 
         Provider = new ServiceCollection()
             .AddLogging()

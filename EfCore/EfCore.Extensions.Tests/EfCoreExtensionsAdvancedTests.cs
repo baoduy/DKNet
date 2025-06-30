@@ -3,14 +3,13 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql;
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EfCoreTestDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
@@ -92,11 +91,10 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     {
         // This would need a special test enum with empty format string
         // For now, we'll test the case where format string processing works
-        var container = await StartSqlContainerAsync();
-        var connectionString = container.GetConnectionString();
+        await StartSqlContainerAsync();
 
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(GetConnectionString("EfCoreTestDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 

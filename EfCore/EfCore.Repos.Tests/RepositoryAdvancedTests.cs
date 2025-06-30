@@ -100,19 +100,21 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("transtest1") { FirstName = "TransactionTest", LastName = "Test" };
 
         // Act
-        using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
+        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
         _fixture.RepositoryWithMapper.Add(entity);
         await _fixture.RepositoryWithMapper.SaveChangesAsync();
-        
+
         // Verify entity exists in transaction
         var resultInTransaction = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.NotNull(resultInTransaction);
 
         await transaction.RollbackAsync();
 
+        // Clear the change tracker to avoid stale data
+        //_fixture.DbContext.ChangeTracker.Clear();
         // Assert
-        var resultAfterRollback = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
-        Assert.Null(resultAfterRollback);
+        var resultAfterRollback = await _fixture.DbContext.Set<User>().Where(i => i.Id == entity.Id).ToListAsync();
+        Assert.True(resultAfterRollback.Count == 0);
     }
 
     [Fact]
@@ -122,7 +124,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("transtest2") { FirstName = "TransactionCommit", LastName = "Test" };
 
         // Act
-        using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
+        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
         _fixture.RepositoryWithMapper.Add(entity);
         await _fixture.RepositoryWithMapper.SaveChangesAsync();
         await transaction.CommitAsync();
@@ -191,7 +193,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("updatetest") { FirstName = "Original", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
-        
+
         // Detach to simulate external change
         _fixture.DbContext.Entry(entity).State = EntityState.Detached;
         entity.FirstName = "Updated";
@@ -297,7 +299,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         // Act & Assert
         entity.FirstName = "Updated by context1";
         _fixture.RepositoryWithMapper.Update(entity);
-        
+
         // This should succeed since we're not using row versioning in this simple test
         var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
         Assert.Equal(1, affectedRows);

@@ -3,22 +3,14 @@ namespace EfCore.Extensions.Tests;
 [TestClass]
 public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 {
-    private static MsSqlContainer _sql = null!;
     private static MyDbContext _db = null!;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("EfCoreTestDb");
         await _db.Database.EnsureCreatedAsync();
-    }
-
-    [ClassCleanup]
-    public static async Task ClassCleanup()
-    {
-        await _db.DisposeAsync();
-        await _sql.DisposeAsync();
     }
 
     [TestMethod]
@@ -84,7 +76,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
     {
         // This test would need a proper sequence setup
         // For now, let's test the error handling path
-        
+
         // Arrange
         var sequenceEnum = TestSequence.TestSeq;
 
@@ -114,11 +106,11 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
     {
         // This tests an internal method, but we can create a scenario that uses it
         // For now, let's test other extension methods
-        
+
         // Test that our entities are properly configured
         var userEntityType = _db.Model.FindEntityType(typeof(User));
         userEntityType.ShouldNotBeNull();
-        
+
         var accountEntityType = _db.Model.FindEntityType(typeof(Account));
         accountEntityType.ShouldNotBeNull();
     }
@@ -139,10 +131,10 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         // Act
         await _db.Database.OpenConnectionAsync();
         var connectionState = _db.Database.GetDbConnection().State;
-        
+
         // Assert
         connectionState.ShouldBe(System.Data.ConnectionState.Open);
-        
+
         // Cleanup
         await _db.Database.CloseConnectionAsync();
         connectionState = _db.Database.GetDbConnection().State;
@@ -165,7 +157,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
     public async Task SaveChanges_WithValidEntities_ShouldSucceed()
     {
         // Arrange
-        var user = new User(999, "SaveTest") { FirstName = "Save", LastName = "Test" };
+        var user = new User("SaveTest") { FirstName = "Save", LastName = "Test" };
 
         // Act
         await _db.AddAsync(user);
@@ -173,9 +165,9 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 
         // Assert
         result.ShouldBe(1);
-        
+
         // Verify entity was saved
-        var savedUser = await _db.Users.FindAsync(999);
+        var savedUser = await _db.Users.FindAsync(user.Id);
         savedUser.ShouldNotBeNull();
         savedUser.FirstName.ShouldBe("Save");
     }
@@ -184,7 +176,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
     public async Task ChangeTracking_ShouldDetectModifications()
     {
         // Arrange
-        var user = new User(998, "TrackTest") { FirstName = "Track", LastName = "Test" };
+        var user = new User("TrackTest") { FirstName = "Track", LastName = "Test" };
         await _db.AddAsync(user);
         await _db.SaveChangesAsync();
 
@@ -194,10 +186,10 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 
         // Assert
         changes.ShouldBe(1);
-        
+
         // Save changes
         await _db.SaveChangesAsync();
-        var updatedUser = await _db.Users.FindAsync(998);
+        var updatedUser = await _db.Users.FindAsync(user.Id);
         updatedUser!.FirstName.ShouldBe("Modified");
     }
 
@@ -207,9 +199,9 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         // Arrange
         var users = new[]
         {
-            new User(1001, "Bulk1") { FirstName = "Bulk", LastName = "User1" },
-            new User(1002, "Bulk2") { FirstName = "Bulk", LastName = "User2" },
-            new User(1003, "Bulk3") { FirstName = "Bulk", LastName = "User3" }
+            new User("Bulk1") { FirstName = "Bulk", LastName = "User1" },
+            new User("Bulk2") { FirstName = "Bulk", LastName = "User2" },
+            new User("Bulk3") { FirstName = "Bulk", LastName = "User3" }
         };
 
         // Act
@@ -218,7 +210,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 
         // Assert
         result.ShouldBe(3);
-        
+
         var savedUsers = await _db.Users.Where(u => u.FirstName == "Bulk").ToListAsync();
         savedUsers.Count.ShouldBe(3);
     }

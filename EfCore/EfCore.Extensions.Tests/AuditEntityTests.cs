@@ -3,14 +3,14 @@
 [TestClass]
 public class AuditEntityTests : SqlServerTestBase
 {
-    private static  MsSqlContainer _sql;
+
     private static MyDbContext _db;
 
     [ClassInitialize]
     public static async Task ClassSetup(TestContext _)
     {
-        _sql = await StartSqlContainerAsync();
-        _db = CreateDbContext(_sql.GetConnectionString());
+        await StartSqlContainerAsync();
+        _db = CreateDbContext("AuditDb");
         await _db.Database.EnsureCreatedAsync();
     }
 

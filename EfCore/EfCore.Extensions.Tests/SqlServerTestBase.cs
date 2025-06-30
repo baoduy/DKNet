@@ -16,13 +16,12 @@ public abstract class SqlServerTestBase : IAsyncDisposable
             //.WithReuse(true)
             .Build();
 
-    protected static async Task<MsSqlContainer> StartSqlContainerAsync()
+    protected static async Task StartSqlContainerAsync()
     {
         _container = CreateSqlContainer();
         await _container.StartAsync();
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(10));
-        return _container;
     }
 
     protected Task EnsureSqlStartedAsync()
@@ -32,9 +31,13 @@ public abstract class SqlServerTestBase : IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    protected static MyDbContext CreateDbContext(string connectionString) =>
+    protected static string GetConnectionString(string DbName) =>
+        _container.GetConnectionString()
+            .Replace("Database=master;", $"Database={DbName};", StringComparison.OrdinalIgnoreCase);
+
+    protected static MyDbContext CreateDbContext(string DbName) =>
         new(new DbContextOptionsBuilder()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(GetConnectionString(DbName))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding()
             .Options);

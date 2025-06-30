@@ -5,7 +5,7 @@ using SlimMessageBus.Host.Serialization.SystemTextJson;
 
 namespace SlimBus.Extensions.Tests.Fixtures;
 
-public sealed class Fixture : IDisposable, IAsyncDisposable
+public sealed class Fixture : IAsyncDisposable
 {
     public ServiceProvider ServiceProvider { get; }
 
@@ -33,8 +33,6 @@ public sealed class Fixture : IDisposable, IAsyncDisposable
         var db = ServiceProvider.GetRequiredService<TestDbContext>();
         db.Database.EnsureCreated();
     }
-
-    public void Dispose() => ServiceProvider.Dispose();
 
     public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
 }

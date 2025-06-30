@@ -3,7 +3,7 @@ namespace DKNet.EfCore.Events;
 /// <summary>
 ///     The Entity and Events information
 /// </summary>
-public sealed class EntityEventItem(IEventEntity entity, params object[] events)
+public sealed class EntityEventItem(IEventEntity entity, object[] events)
 {
     /// <summary>
     ///    The Owner Entity of the events.

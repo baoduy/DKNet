@@ -5,4 +5,4 @@
 ///     This attribute is primarily intended for use with delivered types where automatic mapping is not desired.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public sealed class IgnoreEntityMapperAttribute : Attribute;
+public sealed class IgnoreEntityAttribute : Attribute;

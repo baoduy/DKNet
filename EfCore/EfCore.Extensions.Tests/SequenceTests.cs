@@ -97,11 +97,10 @@ public class SequenceRegisterTests : SqlServerTestBase
     public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
     {
         // Arrange
-        var container = await StartSqlContainerAsync();
-        var connectionString = container.GetConnectionString();
+        await StartSqlContainerAsync();
         
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(GetConnectionString("SequenceDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 
@@ -121,11 +120,10 @@ public class SequenceRegisterTests : SqlServerTestBase
     public async Task NextSeqValueWithFormat_ShouldReturnFormattedValue()
     {
         // Arrange
-        var container = await StartSqlContainerAsync();
-        var connectionString = container.GetConnectionString();
-        
+        await StartSqlContainerAsync();
+
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(GetConnectionString("SequenceDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 

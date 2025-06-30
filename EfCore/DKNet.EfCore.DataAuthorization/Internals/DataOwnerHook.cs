@@ -1,6 +1,8 @@
+using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Extensions.Snapshots;
+using DKNet.Fw.Extensions;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
@@ -41,10 +43,20 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
         var dataKeyEntities = context.SnapshotEntities
             .Where(e => e.OriginalState == EntityState.Added)
-            .Select(e => e.Entity)
-            .OfType<IOwnedBy>();
+            .Select(e => e.Entity);
 
         foreach (var entity in dataKeyEntities)
-            entity.SetOwnedBy(dataOwnerProvider.GetOwnershipKey());
+        {
+            if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
+            {
+                au.SetPropertyValue(nameof(au.CreatedBy), dataOwnerProvider.GetOwnershipKey());
+                au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.Now);
+            }
+
+            if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
+            {
+                own.SetOwnedBy(dataOwnerProvider.GetOwnershipKey());
+            }
+        }
     }
 }

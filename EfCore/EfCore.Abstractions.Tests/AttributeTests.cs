@@ -6,7 +6,7 @@ public class AttributeTests
     public void IgnoreEntityMapperAttribute_ShouldBeApplicableToClass()
     {
         // Arrange
-        var attributeType = typeof(IgnoreEntityMapperAttribute);
+        var attributeType = typeof(IgnoreEntityAttribute);
 
         // Act
         var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
@@ -23,7 +23,7 @@ public class AttributeTests
     public void IgnoreEntityMapperAttribute_ShouldBeSealed()
     {
         // Arrange & Act
-        var attributeType = typeof(IgnoreEntityMapperAttribute);
+        var attributeType = typeof(IgnoreEntityAttribute);
 
         // Assert
         attributeType.IsSealed.ShouldBeTrue();
@@ -33,7 +33,7 @@ public class AttributeTests
     public void IgnoreEntityMapperAttribute_ShouldInheritFromAttribute()
     {
         // Arrange & Act
-        var attribute = new IgnoreEntityMapperAttribute();
+        var attribute = new IgnoreEntityAttribute();
 
         // Assert
         attribute.ShouldBeAssignableTo<Attribute>();

@@ -37,13 +37,13 @@ public class User : BaseEntity
 
     public Account? Account { get; set; }
 
-    public ICollection<Address> Addresses { get; private set; } = new HashSet<Address>();
+    public virtual HashSet<Address> Addresses { get; private set; } = new();
 
-    [Required][MaxLength(256)] public required string FirstName { get; set; }
+    [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
     public string FullName => $"{FirstName} {LastName}";
 
-    [Required][MaxLength(256)] public required string LastName { get; set; }
+    [Required] [MaxLength(256)] public required string LastName { get; set; }
 }
 
 public class Account : Entity<int>
@@ -63,8 +63,8 @@ public sealed class Address : Entity<int>
     }
 
     public OwnedEntity? OwnedEntity { get; set; }
-    [Required][MaxLength(256)] public string Street { get; set; } = null!;
-    public string City { get; set; } = null!;
+    [MaxLength(256)] public required string Street { get; set; } = null!;
+    [MaxLength(256)] public required string City { get; set; } = null!;
 
     public User User { get; set; } = null!;
     [ForeignKey("Address_User")] public long UserId { get; set; }
@@ -85,20 +85,26 @@ public class GuidEntity : Entity<Guid>
 
 public class GuidAuditEntity : AuditedEntity<Guid>
 {
-    public GuidAuditEntity() { }
-    public GuidAuditEntity(Guid id, string createdBy) : base(id, createdBy) { }
+    public GuidAuditEntity() : base(Guid.Empty, "Steven")
+    {
+    }
+
+    public GuidAuditEntity(Guid id, string createdBy) : base(id, createdBy)
+    {
+    }
+
     public string Name { get; set; } = null!;
 }
 
-public enum AccountStatusEnum
-{
-    Active = 1,
-    Inactive = 2
-}
+// public enum AccountStatusEnum
+// {
+//     Active = 1,
+//     Inactive = 2
+// }
 
 public class AccountStatus : Entity<int>
 {
-    [Required][MaxLength(100)] public string Name { get; set; } = null!;
+    [Required] [MaxLength(100)] public string Name { get; set; } = null!;
 
     public AccountStatus()
     {
@@ -138,6 +144,7 @@ public enum SequencesTest
     Payment,
 }
 
+[IgnoreEntity]
 public class IgnoredAutoMapperEntity : Entity<int>
 {
     public string Name { get; set; } = null!;

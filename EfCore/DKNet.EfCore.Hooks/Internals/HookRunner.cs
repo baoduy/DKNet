@@ -117,6 +117,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         //Init Hook
         InitHook(eventData);
 
+        if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
         //Run Before Save
         await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken);
         return result;
@@ -127,6 +128,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     {
         try
         {
+            if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
             //Run After Events and ignore the result even failed.
             _callersQueue.TryDequeue(out _);
             await RunHooksAsync(RunningTypes.AfterSave, cancellationToken);

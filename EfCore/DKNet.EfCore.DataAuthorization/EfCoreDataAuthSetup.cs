@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using DKNet.EfCore.DataAuthorization;
 using DKNet.EfCore.DataAuthorization.Internals;
 using DKNet.EfCore.Hooks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace DKNet.EfCore.DataAuthorization;
 
 /// <summary>
 /// Provides extension methods for configuring data authorization in Entity Framework Core.

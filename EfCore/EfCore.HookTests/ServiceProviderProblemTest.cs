@@ -42,7 +42,7 @@ public class ServiceProviderProblemTest : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        _provider?.Dispose();
+        await _provider.DisposeAsync();
         if (_sqlContainer != null)
             await _sqlContainer.DisposeAsync();
     }

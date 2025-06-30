@@ -1,8 +1,8 @@
 name: Build, Test, Coverage & Check
 
 on:
-#  push:
-#    branches: [main]
+  push:
+    branches: [dev]
   pull_request:
     branches: [main, dev]
 
