@@ -44,7 +44,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         return Path.GetFullPath(Path.Combine(_rootFolder, name));
     }
 
-    private BlobDetails CreateBlobDetails(FileInfo file) => new()
+    private static BlobDetails CreateBlobDetails(FileInfo file) => new()
     {
         ContentType = file.FullName.GetContentTypeByExtension(),
         ContentLength = file.Length,

@@ -14,7 +14,7 @@ public static class InfraSetup
             .AddGenericRepositories<CoreDbContext>()
             .AddImplementations()
             .AddEventPublisher<CoreDbContext, EventPublisher>()
-            .AddDbContextWithHook<CoreDbContext>((sp,builder) =>
+            .AddDbContextWithHook<CoreDbContext>((sp, builder) =>
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 var conn = config.GetConnectionString(SharedConsts.DbConnectionString)!;
@@ -30,7 +30,7 @@ public static class InfraSetup
     {
         services.Scan(s => s.FromAssemblies(typeof(InfraSetup).Assembly)
             .AddClasses(c => c.Where(t =>
-                t.IsSealed && t.Namespace is not null
+                t is { IsSealed: true, Namespace: not null }
                 && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
                     || t.Namespace!.Contains(".Services", StringComparison.Ordinal))
             ), publicOnly: false)
@@ -43,10 +43,11 @@ public static class InfraSetup
     internal static DbContextOptionsBuilder UseSqlWithMigration(this DbContextOptionsBuilder builder,
         string connectionString)
     {
-        // Suppress warnings for known EF Core issues (see https://github.com/dotnet/efcore/issues/35110)
-        builder.ConfigureWarnings(x => x.Ignore(RelationalEventId.PendingModelChangesWarning));
-        builder.ConfigureWarnings(x => x.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
-
+        builder.ConfigureWarnings(warnings =>
+        {
+            warnings.Log(RelationalEventId.PendingModelChangesWarning);
+            warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning);
+        });
 #if DEBUG
         builder.EnableDetailedErrors().EnableSensitiveDataLogging();
 #endif
@@ -60,5 +61,4 @@ public static class InfraSetup
                 .EnableRetryOnFailure()
                 .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
     }
-
 }

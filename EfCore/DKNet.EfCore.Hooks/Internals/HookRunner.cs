@@ -44,10 +44,12 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         => throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
 
     public void SaveChangesFailed(DbContextErrorEventData eventData)
-        => logger.LogError("SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
+        => logger.LogError(
+            "SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
 
     public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     #endregion
 
 
@@ -131,9 +133,13 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         }
         finally
         {
-            if (_callersQueue.IsEmpty)
+            if (_callersQueue.IsEmpty && _snapshotContext is not null)
             {
-                _snapshotContext?.Dispose();
+                //Dispose the snapshot context if no more callers are left
+                logger.LogDebug("Disposing Snapshot Context");
+                //Dispose the snapshot context
+
+                await _snapshotContext.DisposeAsync();
                 _snapshotContext = null;
             }
         }

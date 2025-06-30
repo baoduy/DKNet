@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -23,6 +24,7 @@ public static class DistributedApplicationExtensions
     /// <remarks>
     /// If <paramref name="targetStates"/> is null, the default states are <see cref="KnownResourceStates.Running"/> and <see cref="KnownResourceStates.Hidden"/>.
     /// </remarks>
+    [SuppressMessage("Design", "MA0051:Method is too long")]
     public static async Task WaitForResourcesAsync(this DistributedApplication app,
         string[]? targetStates = null, CancellationToken cancellationToken = default)
     {

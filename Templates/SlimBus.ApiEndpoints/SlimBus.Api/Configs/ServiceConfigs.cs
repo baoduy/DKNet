@@ -24,7 +24,7 @@ internal static class ServiceConfigs
         return services;
     }
 
-    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration, FeatureOptions features)
     {
         services
             .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()

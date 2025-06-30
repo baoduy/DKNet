@@ -3,7 +3,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class DbMigration
 {
-    public static async Task RunMigrationAsync(this WebApplicationBuilder builder, FeatureOptions features, params string[] args)
+    public static async Task RunMigrationAsync(this WebApplicationBuilder builder, FeatureOptions features,
+        params string[] args)
     {
 #if DEBUG
         var isMigration = features.RunDbMigrationWhenAppStart;

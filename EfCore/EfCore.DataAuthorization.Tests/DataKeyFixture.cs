@@ -7,7 +7,7 @@ namespace EfCore.DataAuthorization.Tests;
 
 public sealed class DataKeyFixture : IAsyncLifetime
 {
-    private MsSqlContainer? _sqlContainer;
+    private MsSqlContainer _sqlContainer;
     public ServiceProvider Provider { get; private set; }
 
     public string GetConnectionString() =>

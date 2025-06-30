@@ -35,7 +35,7 @@ internal static class AppConfig
             .AddCrosConfig()
             .AddAppVersioning()
             .AddGlobalException()
-            .AddAllAppServices(configuration)
+            .AddAllAppServices(configuration, features)
             .AddHealthzConfig(features);
     }
 
