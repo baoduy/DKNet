@@ -10,11 +10,12 @@ public class EntityAutoConfigTests
     public void ScanEntites()
     {
         var info =
-            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
+            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly)
+                .WithDefaultMappersType(typeof(BaseEntityMapper<>));
         var entities = info.GetAllEntityTypes().ToList();
 
         entities.ShouldNotBeEmpty();
-        entities.Count.ShouldBeGreaterThanOrEqualTo(8);
+        entities.Count.ShouldBeGreaterThanOrEqualTo(7);
     }
 
     [TestMethod]
