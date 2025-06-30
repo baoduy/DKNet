@@ -1,6 +1,4 @@
-using DKNet.EfCore.DataAuthorization;
 using Microsoft.EntityFrameworkCore;
-using EfCore.DataAuthorization.Tests.TestEntities;
 
 namespace EfCore.DataAuthorization.Tests;
 

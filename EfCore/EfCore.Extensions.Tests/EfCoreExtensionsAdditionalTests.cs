@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using EfCore.Extensions.Tests.TestEntities;
-using DKNet.EfCore.Abstractions.Attributes;
-
 namespace EfCore.Extensions.Tests;
 
 [TestClass]

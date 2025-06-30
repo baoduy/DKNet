@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Events.Tests.TestEntities;
 

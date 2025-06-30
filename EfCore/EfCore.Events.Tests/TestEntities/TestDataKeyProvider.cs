@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using DKNet.EfCore.DataAuthorization;
 
 namespace EfCore.Events.Tests.TestEntities;

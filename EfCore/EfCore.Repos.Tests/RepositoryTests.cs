@@ -345,9 +345,3 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         await Assert.ThrowsAsync<TaskCanceledException>(() => _fixture.Repository.BeginTransactionAsync(cts.Token));
     }
 }
-
-public class UserDto
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-}

@@ -1,9 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Abstractions.Attributes;
-using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Extensions.Tests.TestEntities;
 

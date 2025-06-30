@@ -1,6 +1,3 @@
-using EfCore.HookTests.Data;
-using Microsoft.EntityFrameworkCore;
-
 namespace EfCore.HookTests.Hooks;
 
 public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>

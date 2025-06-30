@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Hooks;
 using Testcontainers.MsSql;
-using EfCore.DataAuthorization.Tests.TestEntities;
 
 namespace EfCore.DataAuthorization.Tests;
 

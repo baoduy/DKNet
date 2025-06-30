@@ -1,7 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Linq;
-using DKNet.EfCore.DataAuthorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.DataAuthorization.Tests.TestEntities;

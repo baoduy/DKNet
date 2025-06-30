@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore.Storage;
 using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
-using Mapster;
 
 namespace EfCore.Repos.Tests;
 

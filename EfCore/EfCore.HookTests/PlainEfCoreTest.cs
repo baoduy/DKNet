@@ -1,10 +1,5 @@
-using EfCore.HookTests.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Shouldly;
 using Testcontainers.MsSql;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace EfCore.HookTests;

@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 
 namespace EfCore.Extensions.Tests.TestEntities;
