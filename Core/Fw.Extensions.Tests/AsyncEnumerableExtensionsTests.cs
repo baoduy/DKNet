@@ -16,7 +16,7 @@ public class AsyncEnumerableExtensionsTests
         // Assert
         result.ShouldNotBeNull();
         result.Count.ShouldBe(5);
-        CollectionAssert.AreEqual(items, result.ToArray());
+        items.ShouldBeEquivalentTo( result.ToArray());
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class AsyncEnumerableExtensionsTests
         // Assert
         result.ShouldNotBeNull();
         result.Count.ShouldBe(3);
-        CollectionAssert.AreEqual(items, result.ToArray());
+        items.ShouldBeEquivalentTo( result.ToArray());
     }
 
 #nullable enable
