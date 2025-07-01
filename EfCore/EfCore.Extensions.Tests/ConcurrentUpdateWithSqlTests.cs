@@ -13,8 +13,8 @@ public class ConcurrentUpdateWithSqlTests
     public static async Task Setup()
     {
         _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
-        await _sql.StartAsync(context.CancellationTokenSource.Token);
-        await Task.Delay(TimeSpan.FromSeconds(5), context.CancellationTokenSource.Token);
+        await _sql.StartAsync(CancellationToken.None);
+        await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
 
         var options = new DbContextOptionsBuilder()
             .LogTo(Console.WriteLine, (eventId, logLevel) => logLevel >= LogLevel.Information

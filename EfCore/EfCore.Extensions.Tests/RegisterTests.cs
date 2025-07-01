@@ -4,22 +4,15 @@ using DKNet.EfCore.Extensions.Internal;
 namespace EfCore.Extensions.Tests;
 
 
-public class RegisterTests : SqlServerTestBase
+public class RegisterTests : IClassFixture<SqlDatabaseFixture>
 {
-    private static MyDbContext _db =null!;
+    private readonly SqlDatabaseFixture _fixture;
+    private readonly MyDbContext _db;
 
-    
-    public static async Task ClassSetup()
+    public RegisterTests(SqlDatabaseFixture fixture)
     {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EfCoreDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
-
-    
-    public async Task TestInitialize()
-    {
-        await EnsureSqlStartedAsync();
+        _fixture = fixture;
+        _db = _fixture.GetDatabaseAsync("EfCoreDb").GetAwaiter().GetResult();
     }
 
     [Fact]
@@ -43,8 +36,8 @@ public class RegisterTests : SqlServerTestBase
 
         await _db.SaveChangesAsync();
 
-        Assert.IsTrue(await _db.Set<User>().AnyAsync());
-        Assert.IsTrue(await _db.Set<Address>().AnyAsync());
+        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
     // [Fact]
@@ -84,8 +77,8 @@ public class RegisterTests : SqlServerTestBase
         var users = await _db.Set<User>().ToListAsync();
         var adds = await _db.Set<Address>().ToListAsync();
 
-        users.Count >= 1.ShouldBeTrue();
-        adds.Count >= 1.ShouldBeTrue();
+        (users.Count >= 1).ShouldBeTrue();
+        (adds.Count >= 1).ShouldBeTrue();
     }
 
     [Fact]
@@ -139,7 +132,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(SqlDatabaseFixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
                 .Options);
@@ -154,7 +147,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(SqlDatabaseFixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);

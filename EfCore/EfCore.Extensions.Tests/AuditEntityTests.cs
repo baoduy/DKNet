@@ -1,23 +1,15 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 
-public class AuditEntityTests : SqlServerTestBase
+public class AuditEntityTests : IClassFixture<SqlDatabaseFixture>
 {
+    private readonly SqlDatabaseFixture _fixture;
+    private readonly MyDbContext _db;
 
-    private static MyDbContext _db = null!;
-
-    
-    public static async Task ClassSetup()
+    public AuditEntityTests(SqlDatabaseFixture fixture)
     {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("AuditDb");
-        await _db.Database.EnsureCreatedAsync(context.CancellationTokenSource.Token);
-    }
-
-    
-    public async Task TestInitialize()
-    {
-        await EnsureSqlStartedAsync();
+        _fixture = fixture;
+        _db = _fixture.GetDatabaseAsync("AuditDb").GetAwaiter().GetResult();
     }
 
     [Fact]

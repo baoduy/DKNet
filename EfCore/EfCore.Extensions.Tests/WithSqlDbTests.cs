@@ -68,12 +68,12 @@ public class WithSqlDbTests : SqlServerTestBase
         });
 
         var count = await _db.SaveChangesAsync();
-        count >= 1.ShouldBeTrue();
+        (count >= 1).ShouldBeTrue();
 
         var users = await _db.Set<User>().ToListAsync();
 
-        users.Count >= 1.ShouldBeTrue();
-        Assert.IsTrue(users.All(u => u.RowVersion != null));
+        (users.Count >= 1).ShouldBeTrue();
+        users.All(u => u.RowVersion != null).ShouldBeTrue();
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class WithSqlDbTests : SqlServerTestBase
 
         var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
-        count == 0.ShouldBeTrue();
+        (count == 0).ShouldBeTrue();
     }
 
     [Fact]
@@ -107,9 +107,9 @@ public class WithSqlDbTests : SqlServerTestBase
 
         user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
 
-        Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
 
-        Assert.IsTrue(string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
     }
 
     [Fact]

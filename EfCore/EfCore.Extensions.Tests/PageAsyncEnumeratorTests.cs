@@ -30,8 +30,8 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(150, result.Count);
-        Assert.AreEqual(150, result.Select(x => x.Id).Distinct().Count()); // All unique
+        result.Count.ShouldBe(150);
+        result.Select(x => x.Id).Distinct().Count().ShouldBe(150); // All unique
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count);
+        result.Count.ShouldBe(25);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(0, result.Count);
+        result.Count.ShouldBe(0);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(5, result.Count);
+        result.Count.ShouldBe(5);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(20, result.Count);
+        result.Count.ShouldBe(20);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class PageAsyncEnumeratorTests
             // Get the first few items
             for (int i = 0; i < 5; i++)
             {
-                Assert.IsTrue(await enumerator.MoveNextAsync());
+                (await enumerator.MoveNextAsync()).ShouldBeTrue();
                 result.Add(enumerator.Current);
             }
 
@@ -134,7 +134,7 @@ public class PageAsyncEnumeratorTests
             await cts.CancelAsync();
             
             // The next MoveNextAsync should respect cancellation
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+            await Should.ThrowAsync<OperationCanceledException>(
                 async () => await enumerator.MoveNextAsync());
         }
         finally
@@ -159,9 +159,9 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count);
+        result.Count.ShouldBe(25);
         var sortedResult = result.OrderBy(x => x.Id).ToList();
-        CollectionAssert.AreEqual(sortedResult, result);
+        result.ShouldBe(sortedResult);
     }
 
     [Fact]
@@ -180,8 +180,8 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count); // Half of 50
-        Assert.IsTrue(result.All(x => x.Id % 2 == 0));
+        result.Count.ShouldBe(25); // Half of 50
+        result.All(x => x.Id % 2 == 0).ShouldBeTrue();
     }
 
     private static async Task SeedDataAsync(TestDbContext context, int count)

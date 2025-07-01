@@ -75,12 +75,11 @@ public class StringExtensionsTests
         typeof(byte?).IsStringOrValueType().ShouldBeTrue();
 
         typeof(object).IsStringOrValueType().ShouldBeFalse();
-        typeof(ClassCleanupAttribute).IsStringOrValueType().ShouldBeFalse();
+        typeof(FactAttribute).IsStringOrValueType().ShouldBeFalse();
         typeof(string[]).IsStringOrValueType().ShouldBeFalse();
         typeof(int[]).IsStringOrValueType().ShouldBeFalse();
         typeof(List<int>).IsStringOrValueType().ShouldBeFalse();
         typeof(Dictionary<string, int>).IsStringOrValueType().ShouldBeFalse();
-        typeof(ClassCleanupAttribute).IsStringOrValueType().ShouldBeFalse();
     }
 
     [Fact]

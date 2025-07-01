@@ -276,29 +276,29 @@ public class TypeExtensionsTests
     public void IsNumericTypeAllNumericTypesReturnTrue()
     {
         // Arrange & Act & Assert
-        Assert.IsTrue(typeof(byte).IsNumericType());
-        Assert.IsTrue(typeof(sbyte).IsNumericType());
-        Assert.IsTrue(typeof(ushort).IsNumericType());
-        Assert.IsTrue(typeof(short).IsNumericType());
-        Assert.IsTrue(typeof(uint).IsNumericType());
-        Assert.IsTrue(typeof(int).IsNumericType());
-        Assert.IsTrue(typeof(ulong).IsNumericType());
-        Assert.IsTrue(typeof(long).IsNumericType());
-        Assert.IsTrue(typeof(float).IsNumericType());
-        Assert.IsTrue(typeof(double).IsNumericType());
-        Assert.IsTrue(typeof(decimal).IsNumericType());
+        typeof(byte).IsNumericType().ShouldBeTrue();
+        typeof(sbyte).IsNumericType().ShouldBeTrue();
+        typeof(ushort).IsNumericType().ShouldBeTrue();
+        typeof(short).IsNumericType().ShouldBeTrue();
+        typeof(uint).IsNumericType().ShouldBeTrue();
+        typeof(int).IsNumericType().ShouldBeTrue();
+        typeof(ulong).IsNumericType().ShouldBeTrue();
+        typeof(long).IsNumericType().ShouldBeTrue();
+        typeof(float).IsNumericType().ShouldBeTrue();
+        typeof(double).IsNumericType().ShouldBeTrue();
+        typeof(decimal).IsNumericType().ShouldBeTrue();
     }
 
     [Fact]
     public void IsNumericTypeAllNonNumericTypesReturnFalse()
     {
         // Arrange & Act & Assert
-        Assert.IsFalse(typeof(string).IsNumericType());
-        Assert.IsFalse(typeof(bool).IsNumericType());
-        Assert.IsFalse(typeof(char).IsNumericType());
-        Assert.IsFalse(typeof(DateTime).IsNumericType());
-        Assert.IsFalse(typeof(object).IsNumericType());
-        Assert.IsFalse(typeof(DBNull).IsNumericType());
+        typeof(string).IsNumericType().ShouldBeFalse();
+        typeof(bool).IsNumericType().ShouldBeFalse();
+        typeof(char).IsNumericType().ShouldBeFalse();
+        typeof(DateTime).IsNumericType().ShouldBeFalse();
+        typeof(object).IsNumericType().ShouldBeFalse();
+        typeof(DBNull).IsNumericType().ShouldBeFalse();
     }
 
     [Fact]
@@ -309,8 +309,8 @@ public class TypeExtensionsTests
         object nonNumericObj = "test";
 
         // Act & Assert
-        Assert.IsFalse(numericObj.IsNotNumericType());
-        Assert.IsTrue(nonNumericObj.IsNotNumericType());
+        numericObj.IsNotNumericType().ShouldBeFalse();
+        nonNumericObj.IsNotNumericType().ShouldBeTrue();
     }
 
     [Fact]
@@ -336,8 +336,8 @@ public class TypeExtensionsTests
         var interface2 = typeof(IEnumerable<string>);
         
         // Act & Assert
-        Assert.IsTrue(type.IsImplementOf(interface1));
-        Assert.IsTrue(type.IsImplementOf(interface2));
+        type.IsImplementOf(interface1).ShouldBeTrue();
+        type.IsImplementOf(interface2).ShouldBeTrue();
     }
 
     [Fact]
@@ -349,9 +349,9 @@ public class TypeExtensionsTests
         var type3 = typeof(DateTime);
         
         // Act & Assert
-        Assert.IsFalse(type1.IsImplementOf(type2));
-        Assert.IsFalse(type2.IsImplementOf(type3));
-        Assert.IsFalse(type3.IsImplementOf(type1));
+        type1.IsImplementOf(type2).ShouldBeFalse();
+        type2.IsImplementOf(type3).ShouldBeFalse();
+        type3.IsImplementOf(type1).ShouldBeFalse();
     }
 
     [Fact]
@@ -372,20 +372,20 @@ public class TypeExtensionsTests
     public void IsNumericTypeShouldHandleNullableNumericTypes()
     {
         // Arrange & Act & Assert
-        Assert.IsTrue(typeof(int?).IsNumericType());
-        Assert.IsTrue(typeof(double?).IsNumericType());
-        Assert.IsTrue(typeof(decimal?).IsNumericType());
-        Assert.IsTrue(typeof(float?).IsNumericType());
-        Assert.IsTrue(typeof(long?).IsNumericType());
+        typeof(int?).IsNumericType().ShouldBeTrue();
+        typeof(double?).IsNumericType().ShouldBeTrue();
+        typeof(decimal?).IsNumericType().ShouldBeTrue();
+        typeof(float?).IsNumericType().ShouldBeTrue();
+        typeof(long?).IsNumericType().ShouldBeTrue();
     }
 
     [Fact]
     public void IsNumericTypeShouldReturnFalseForNullableNonNumericTypes()
     {
         // Arrange & Act & Assert
-        Assert.IsFalse(typeof(bool?).IsNumericType());
-        Assert.IsFalse(typeof(char?).IsNumericType());
-        Assert.IsFalse(typeof(DateTime?).IsNumericType());
+        typeof(bool?).IsNumericType().ShouldBeFalse();
+        typeof(char?).IsNumericType().ShouldBeFalse();
+        typeof(DateTime?).IsNumericType().ShouldBeFalse();
     }
 
     [Fact]
@@ -433,17 +433,17 @@ public class TypeExtensionsTests
         object decimalObj = 1.0m;
         
         // Act & Assert
-        Assert.IsTrue(byteObj.IsNumericType());
-        Assert.IsTrue(sbyteObj.IsNumericType());
-        Assert.IsTrue(shortObj.IsNumericType());
-        Assert.IsTrue(ushortObj.IsNumericType());
-        Assert.IsTrue(intObj.IsNumericType());
-        Assert.IsTrue(uintObj.IsNumericType());
-        Assert.IsTrue(longObj.IsNumericType());
-        Assert.IsTrue(ulongObj.IsNumericType());
-        Assert.IsTrue(floatObj.IsNumericType());
-        Assert.IsTrue(doubleObj.IsNumericType());
-        Assert.IsTrue(decimalObj.IsNumericType());
+        byteObj.IsNumericType().ShouldBeTrue();
+        sbyteObj.IsNumericType().ShouldBeTrue();
+        shortObj.IsNumericType().ShouldBeTrue();
+        ushortObj.IsNumericType().ShouldBeTrue();
+        intObj.IsNumericType().ShouldBeTrue();
+        uintObj.IsNumericType().ShouldBeTrue();
+        longObj.IsNumericType().ShouldBeTrue();
+        ulongObj.IsNumericType().ShouldBeTrue();
+        floatObj.IsNumericType().ShouldBeTrue();
+        doubleObj.IsNumericType().ShouldBeTrue();
+        decimalObj.IsNumericType().ShouldBeTrue();
     }
 
     [Fact]
@@ -453,9 +453,9 @@ public class TypeExtensionsTests
         var type = typeof(SortedDictionary<string, int>);
         
         // Act & Assert
-        Assert.IsTrue(type.IsImplementOf<IDictionary<string, int>>());
-        Assert.IsTrue(type.IsImplementOf<ICollection<KeyValuePair<string, int>>>());
-        Assert.IsTrue(type.IsImplementOf<IEnumerable<KeyValuePair<string, int>>>());
-        Assert.IsFalse(type.IsImplementOf<IList<string>>());
+        type.IsImplementOf<IDictionary<string, int>>().ShouldBeTrue();
+        type.IsImplementOf<ICollection<KeyValuePair<string, int>>>().ShouldBeTrue();
+        type.IsImplementOf<IEnumerable<KeyValuePair<string, int>>>().ShouldBeTrue();
+        type.IsImplementOf<IList<string>>().ShouldBeFalse();
     }
 }
