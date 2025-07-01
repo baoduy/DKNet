@@ -74,7 +74,8 @@ If you are not sure, do not guess—ask clarifying questions or state that you d
 - **Only fall back to dummy or fake object frameworks (such as Moq, NSubstitute, etc.) if TestContainer or Aspire host are not practical or applicable for the scenario.**
 - Use mocks or fakes for external dependencies when containerized or Aspire-based approaches are not feasible.
 - Keep test methods focused and descriptive.
-
+- Try to use `Shouldly` for all assertions in tests.
+- For Collection assertions, prefer using `ShouldBeEquivalentTo` for comparing collections.
 ---
 
 ## Documentation

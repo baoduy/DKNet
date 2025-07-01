@@ -1,9 +1,9 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class DefaultComparisonTests
 {
-    [TestMethod]
+    [Fact]
     public void Test()
     {
         EqualityComparer<int>.Default.Equals(0, 0).ShouldBeTrue();

@@ -1,29 +1,13 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
-[TestClass]
-public class WithSqlDbTests : SqlServerTestBase
+
+public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db = null!;
+    private readonly MyDbContext _db = fixture.Db;
 
-    [ClassInitialize]
-    public static async Task Setup(TestContext _)
-    {
-        await StartSqlContainerAsync();
 
-        _db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString("WithSqlDb"))
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .UseAutoDataSeeding()
-            .Options);
-
-        await _db.Database.EnsureCreatedAsync();
-    }
-
-    [TestInitialize]
-    public Task TestSetup() => EnsureSqlStartedAsync();
-
-    [TestMethod]
+    [Fact]
     public async Task SequenceValueTestAsync()
     {
         var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
@@ -33,21 +17,21 @@ public class WithSqlDbTests : SqlServerTestBase
         val2!.Value.ShouldBeGreaterThan(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {
         var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestDataSeeding()
     {
         var account = await _db.Set<AccountStatus>().CountAsync();
         account.ShouldBeGreaterThanOrEqualTo(2);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateWithSqlDbAsync()
     {
         _db.ChangeTracker.Clear();
@@ -60,7 +44,7 @@ public class WithSqlDbTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -68,20 +52,21 @@ public class WithSqlDbTests : SqlServerTestBase
         });
 
         var count = await _db.SaveChangesAsync();
-        Assert.IsTrue(count >= 1);
+        (count >= 1).ShouldBeTrue();
 
         var users = await _db.Set<User>().ToListAsync();
 
-        Assert.IsTrue(users.Count >= 1);
-        Assert.IsTrue(users.All(u => u.RowVersion != null));
+        (users.Count >= 1).ShouldBeTrue();
+        users.All(u => u.RowVersion != null).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestDeleteWithSqlDbAsync()
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).LastAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses)
+            .OrderByDescending(c=>c.CreatedOn).FirstAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
@@ -90,29 +75,29 @@ public class WithSqlDbTests : SqlServerTestBase
 
         var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
-        Assert.IsTrue(count == 0);
+        (count == 0).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateWithSqlDbAsync()
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
         await _db.SaveChangesAsync();
 
-        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
+        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
-        Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
 
-        Assert.IsTrue(string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestConcurrentUpdateThrowsExceptionAsync()
     {
         // Arrange

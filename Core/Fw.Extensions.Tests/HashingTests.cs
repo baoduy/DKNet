@@ -2,10 +2,9 @@ using DKNet.Fw.Extensions.Encryption;
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
 public class HashingTests
 {
-    [TestMethod]
+    [Fact]
     public void ToCmd5ShouldReturnCorrectHmacHash()
     {
         // Arrange
@@ -17,10 +16,10 @@ public class HashingTests
         var actualHash = input.ToCmd5(key);
 
         // Assert
-        Assert.AreEqual(expectedHash, actualHash);
+        actualHash.ShouldBe(expectedHash);
     }
 
-    [TestMethod]
+    [Fact]
     public void ToCmd5ShouldReturnDifferentHashesForDifferentKeys()
     {
         // Arrange
@@ -33,33 +32,31 @@ public class HashingTests
         var hash2 = input.ToCmd5(key2);
 
         // Assert
-        Assert.AreNotEqual(hash1, hash2);
+        hash1.ShouldNotBe(hash2);
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
+    [Fact]
     public void ToCmd5ShouldHandleEmptyInput()
     {
         // Arrange
         var input = "";
         var key = "secret";
 
-        input.ToCmd5(key);
+        // Act & Assert
+        Should.Throw<ArgumentException>(() => input.ToCmd5(key));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void HashCmd5KeyNullThrowsArgumentNullException()
     {
         var value = "value";
-        value.ToCmd5(key: null);
+        Should.Throw<ArgumentNullException>(() => value.ToCmd5(key: null));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void HashCmd5ValueNullThrowsArgumentNullException()
     {
         var key = "key";
-        ((string)null).ToCmd5(key);
+        Should.Throw<ArgumentNullException>(() => ((string)null).ToCmd5(key));
     }
 }

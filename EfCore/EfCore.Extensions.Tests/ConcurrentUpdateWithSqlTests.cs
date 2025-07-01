@@ -3,37 +3,14 @@ namespace EfCore.Extensions.Tests;
 /// <summary>
 /// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
-[TestClass]
-public class ConcurrentUpdateWithSqlTests
+
+public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture):IClassFixture<SqlServerFixture>
 {
-    private static MsSqlContainer _sql = null!;
-    private static MyDbContext _db= null!;
-
-    [ClassInitialize]
-    public static async Task Setup(TestContext context)
-    {
-        _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
-        await _sql.StartAsync(context.CancellationTokenSource.Token);
-        await Task.Delay(TimeSpan.FromSeconds(5), context.CancellationTokenSource.Token);
-
-        var options = new DbContextOptionsBuilder()
-            .LogTo(Console.WriteLine, (eventId, logLevel) => logLevel >= LogLevel.Information
-                                                             || eventId == RelationalEventId.CommandExecuting)
-            .EnableSensitiveDataLogging()
-            .EnableDetailedErrors()
-            .UseSqlServer(_sql.GetConnectionString())
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .Options;
-
-        _db = new MyDbContext(options);
-        await _db.Database.EnsureCreatedAsync();
-    }
-
-    [TestMethod]
+    [Fact]
     public async Task ConcurrencyWithRepositoryTest()
     {
-        var writeRepo = new WriteRepository<User>(_db);
-        var readRepo = new ReadRepository<User>(_db);
+        var writeRepo = new WriteRepository<User>(fixture.Db);
+        var readRepo = new ReadRepository<User>(fixture.Db);
         //1. Create a new User.
         var user = new User("A")
         {

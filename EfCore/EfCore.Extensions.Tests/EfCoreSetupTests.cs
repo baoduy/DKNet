@@ -12,10 +12,10 @@ public class TestGlobalQueryFilterRegister : IGlobalQueryFilterRegister
     }
 }
 
-[TestClass]
-public class EfCoreSetupTests : SqlServerTestBase
+
+public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    [TestMethod]
+    [Fact]
     public void AddGlobalModelBuilderRegister_ShouldAddToGlobalQueryFilters()
     {
         // Arrange
@@ -30,18 +30,12 @@ public class EfCoreSetupTests : SqlServerTestBase
         EfCoreSetup.GlobalQueryFilters.ShouldContain(typeof(TestGlobalQueryFilterRegister));
     }
 
-    [TestMethod]
+    [Fact]
     public void UseAutoConfigModel_GenericDbContext_ShouldReturnTypedBuilder()
     {
         // Arrange
-        var container = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithAutoRemove(true)
-            .Build();
-
-        var connectionString = "Server=localhost;Database=TestDb;Integrated Security=true;";
         var builder = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(connectionString);
+            .UseSqlServer(fixture.GetConnectionString("TestDb"));
 
         // Act
         var result = builder.UseAutoConfigModel();
@@ -51,7 +45,7 @@ public class EfCoreSetupTests : SqlServerTestBase
         result.ShouldBeSameAs(builder);
     }
 
-    [TestMethod]
+    [Fact]
     public void UseAutoConfigModel_WithNullBuilder_ShouldThrowArgumentNullException()
     {
         // Act & Assert
@@ -59,7 +53,7 @@ public class EfCoreSetupTests : SqlServerTestBase
             ((DbContextOptionsBuilder)null!).UseAutoConfigModel());
     }
 
-    [TestMethod]
+    [Fact]
     public void UseAutoConfigModel_WithAction_ShouldInvokeAction()
     {
         // Arrange
@@ -79,7 +73,7 @@ public class EfCoreSetupTests : SqlServerTestBase
         actionInvoked.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetOrCreateExtension_ShouldReturnExtension()
     {
         // Arrange

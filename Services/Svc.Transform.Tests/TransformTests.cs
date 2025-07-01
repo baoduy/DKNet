@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Svc.Transform.Tests;
 
-[TestClass]
+
 public class TransformTests
 {
-    [TestMethod]
+    [Fact]
     public async Task TransformHugeTemplateAsyncDisableCacheTest()
     {
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
@@ -22,7 +22,7 @@ public class TransformTests
         s.ShouldNotContain("<");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TransformHugeTemplateAsyncDataProviderTest()
     {
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
@@ -37,7 +37,7 @@ public class TransformTests
         s.ShouldNotContain("<");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TransformHugeTemplateAsyncTest()
     {
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
@@ -52,7 +52,7 @@ public class TransformTests
         s.ShouldNotContain("<");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TransformAsyncDefaultDataTest()
     {
         var t = new TransformerService(new TransformOptions { GlobalParameters = [new { A = "Bao" }] });
@@ -60,7 +60,7 @@ public class TransformTests
         s.ShouldBe("Hoang Bao Duy");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TransformAsyncTest()
     {
         var t = new TransformerService(new TransformOptions());
@@ -69,7 +69,7 @@ public class TransformTests
     }
 
 
-    [TestMethod]
+    [Fact]
     public async Task TransformAsyncCustomTest()
     {
         var t = new TransformerService(new TransformOptions());
@@ -77,8 +77,7 @@ public class TransformTests
         s.ShouldBe("Hoang [Bao] Duy");
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(UnResolvedTokenException))]
+    [Fact]
     public async Task TestUnResolvedTokenException()
     {
         var service = new ServiceCollection()
@@ -86,10 +85,12 @@ public class TransformTests
             .BuildServiceProvider();
 
         var transformer = service.GetRequiredService<ITransformerService>();
-        await transformer.TransformAsync("{A}", "{A} 123", new Dictionary<string, object>
-            (StringComparer.OrdinalIgnoreCase)
-            {
-                { "B", "Duy" },
-            });
+        
+        await Should.ThrowAsync<UnResolvedTokenException>(async () =>
+            await transformer.TransformAsync("{A}", "{A} 123", new Dictionary<string, object>
+                (StringComparer.OrdinalIgnoreCase)
+                {
+                    { "B", "Duy" },
+                }));
     }
 }

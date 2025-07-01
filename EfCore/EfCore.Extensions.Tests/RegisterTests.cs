@@ -3,26 +3,12 @@ using DKNet.EfCore.Extensions.Internal;
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
-public class RegisterTests : SqlServerTestBase
+public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db =null!;
+    private readonly MyDbContext _db = fixture.Db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EfCoreDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
-    [TestInitialize]
-    public async Task TestInitialize()
-    {
-        await EnsureSqlStartedAsync();
-    }
-
-    [TestMethod]
+    [Fact]
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
@@ -34,7 +20,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -43,24 +29,11 @@ public class RegisterTests : SqlServerTestBase
 
         await _db.SaveChangesAsync();
 
-        Assert.IsTrue(await _db.Set<User>().AnyAsync());
-        Assert.IsTrue(await _db.Set<Address>().AnyAsync());
+        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
-    // [TestMethod]
-    // public async Task TestAccountStatusDataSeeding()
-    // {
-    //     await using var db = new MyDbContext(new DbContextOptionsBuilder()
-    //         .UseSqliteMemory()
-    //
-    //         //No Assembly provided it will scan the MyDbContext assembly.
-    //         .UseAutoConfigModel()
-    //         .Options);
-    //     await db.Database.EnsureCreatedAsync();
-    //     (await db.Set<AccountStatus>().CountAsync()).ShouldBeGreaterThanOrEqualTo(2);
-    // }
-
-    [TestMethod]
+    [Fact]
     public async Task TestCreateDb()
     {
         //Create User with Address
@@ -72,7 +45,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -84,11 +57,11 @@ public class RegisterTests : SqlServerTestBase
         var users = await _db.Set<User>().ToListAsync();
         var adds = await _db.Set<Address>().ToListAsync();
 
-        Assert.IsTrue(users.Count >= 1);
-        Assert.IsTrue(adds.Count >= 1);
+        (users.Count >= 1).ShouldBeTrue();
+        (adds.Count >= 1).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateDbCustomMapper()
     {
         //Create User with Address
@@ -100,7 +73,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -112,13 +85,13 @@ public class RegisterTests : SqlServerTestBase
         (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestEnumStatus1DataSeeding()
     {
         (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestEnumStatusDataSeeding()
     {
         (await _db.Set<EnumTables<EnumStatus>>().CountAsync()).ShouldBe(3);
@@ -126,20 +99,20 @@ public class RegisterTests : SqlServerTestBase
         first.Id.ShouldBeGreaterThanOrEqualTo(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestIgnoredEntityAsync()
     {
         var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestWithCustomEntityMapperBad()
     {
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
                 .Options);
@@ -148,13 +121,13 @@ public class RegisterTests : SqlServerTestBase
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestWithCustomEntityMapperNullFilterBad()
     {
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);

@@ -2,20 +2,14 @@ using DKNet.EfCore.Extensions.Extensions;
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class PageAsyncEnumeratorTests
 {
-    private DbContextOptions<TestDbContext> _options;
+    private readonly DbContextOptions<TestDbContext> _options = new DbContextOptionsBuilder<TestDbContext>()
+        .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        .Options;
 
-    [TestInitialize]
-    public void Setup()
-    {
-        _options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-    }
-
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithDefaultPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -30,11 +24,11 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(150, result.Count);
-        Assert.AreEqual(150, result.Select(x => x.Id).Distinct().Count()); // All unique
+        result.Count.ShouldBe(150);
+        result.Select(x => x.Id).Distinct().Count().ShouldBe(150); // All unique
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithCustomPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -50,10 +44,10 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count);
+        result.Count.ShouldBe(25);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithEmptyQuery_ShouldReturnNoItems()
     {
         // Arrange
@@ -68,10 +62,10 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(0, result.Count);
+        result.Count.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithSinglePage_ShouldReturnAllItems()
     {
         // Arrange
@@ -87,10 +81,10 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(5, result.Count);
+        result.Count.ShouldBe(5);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithExactPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -106,10 +100,10 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(20, result.Count);
+        result.Count.ShouldBe(20);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithCancellation_ShouldRespectCancellationToken()
     {
         // Arrange
@@ -126,7 +120,7 @@ public class PageAsyncEnumeratorTests
             // Get the first few items
             for (int i = 0; i < 5; i++)
             {
-                Assert.IsTrue(await enumerator.MoveNextAsync());
+                (await enumerator.MoveNextAsync()).ShouldBeTrue();
                 result.Add(enumerator.Current);
             }
 
@@ -134,7 +128,7 @@ public class PageAsyncEnumeratorTests
             await cts.CancelAsync();
             
             // The next MoveNextAsync should respect cancellation
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+            await Should.ThrowAsync<OperationCanceledException>(
                 async () => await enumerator.MoveNextAsync());
         }
         finally
@@ -143,7 +137,7 @@ public class PageAsyncEnumeratorTests
         }
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithOrderedQuery_ShouldMaintainOrder()
     {
         // Arrange
@@ -159,12 +153,12 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count);
+        result.Count.ShouldBe(25);
         var sortedResult = result.OrderBy(x => x.Id).ToList();
-        CollectionAssert.AreEqual(sortedResult, result);
+        result.ShouldBe(sortedResult);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithFilteredQuery_ShouldReturnFilteredItems()
     {
         // Arrange
@@ -180,8 +174,8 @@ public class PageAsyncEnumeratorTests
         }
 
         // Assert
-        Assert.AreEqual(25, result.Count); // Half of 50
-        Assert.IsTrue(result.All(x => x.Id % 2 == 0));
+        result.Count.ShouldBe(25); // Half of 50
+        result.All(x => x.Id % 2 == 0).ShouldBeTrue();
     }
 
     private static async Task SeedDataAsync(TestDbContext context, int count)

@@ -3,10 +3,10 @@ using DKNet.Fw.Extensions;
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
+
 public class TestTypeExtractorExtensions
 {
-    [TestMethod]
+    [Fact]
     public void TestAbstract()
     {
         // Arrange
@@ -16,7 +16,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestDuplicateAssemblies()
     {
         // Arrange
@@ -27,7 +27,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestInterface()
     {
         // Arrange
@@ -37,7 +37,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNested()
     {
         // Arrange
@@ -47,7 +47,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotClass()
     {
         // Arrange
@@ -57,7 +57,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotEnum()
     {
         // Arrange
@@ -67,7 +67,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtract()
     {
         // Arrange
@@ -77,7 +77,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractGenericClass()
     {
         // Arrange
@@ -87,7 +87,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThan(0);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractNotInstanceOf()
     {
         // Arrange
@@ -98,7 +98,7 @@ public class TestTypeExtractorExtensions
         types.Contains(typeof(TestItem2)).ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractInstanceOfAny()
     {
         // Arrange
@@ -109,7 +109,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestHasAttribute()
     {
         // Arrange
@@ -119,7 +119,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotAbstract()
     {
         // Arrange
@@ -130,7 +130,7 @@ public class TestTypeExtractorExtensions
     }
 
 
-    [TestMethod]
+    [Fact]
     public void TestNotGeneric()
     {
         // Arrange
@@ -140,7 +140,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotInterface()
     {
         // Arrange
@@ -150,7 +150,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotNested()
     {
         // Arrange
@@ -160,7 +160,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestNotPublic()
     {
         // Arrange
@@ -170,7 +170,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestPublic()
     {
         // Arrange
@@ -180,7 +180,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestWherePredicate()
     {
         // Arrange
@@ -190,7 +190,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractFromCollectionOfAssemblies()
     {
         // Arrange
@@ -201,7 +201,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractClasses()
     {
         // Arrange
@@ -212,7 +212,7 @@ public class TestTypeExtractorExtensions
         types.All(t => t.IsClass).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractInterfaces()
     {
         // Arrange
@@ -223,7 +223,7 @@ public class TestTypeExtractorExtensions
         types.All(t => t.IsInterface).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractEnums()
     {
         // Arrange
@@ -235,7 +235,7 @@ public class TestTypeExtractorExtensions
         types.Contains(typeof(TestEnumObject)).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractNonGenericTypes()
     {
         // Arrange
@@ -246,7 +246,7 @@ public class TestTypeExtractorExtensions
         types.All(t => !t.IsGenericType).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractWithoutAttribute()
     {
         // Arrange
@@ -255,7 +255,7 @@ public class TestTypeExtractorExtensions
         types.Count.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public void TestChainedFiltering()
     {
         // Arrange
@@ -271,7 +271,7 @@ public class TestTypeExtractorExtensions
         types.All(t => t.IsClass && t.IsPublic && !t.IsAbstract && !t.IsGenericType).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractWithCustomPredicate()
     {
         // Arrange
@@ -284,7 +284,7 @@ public class TestTypeExtractorExtensions
         types.All(t => t.Name.StartsWith("Test", StringComparison.OrdinalIgnoreCase)).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractNotInstanceOfAny()
     {
         // Arrange
@@ -303,7 +303,7 @@ public class TestTypeExtractorExtensions
         }
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractFromMultipleAssembliesWithDuplicates()
     {
         // Arrange
@@ -321,7 +321,7 @@ public class TestTypeExtractorExtensions
         uniqueTypes.Count.ShouldBe(types.Count); // Should handle duplicates
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractStaticClasses()
     {
         // Arrange - Look for static classes (abstract + sealed)
@@ -335,7 +335,7 @@ public class TestTypeExtractorExtensions
         types.All(t => t.IsAbstract && t.IsSealed).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestExtractValueTypes()
     {
         // Arrange

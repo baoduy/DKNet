@@ -1,19 +1,11 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
-public class UserTests : SqlServerTestBase
+public class UserTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db = fixture.Db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EntitiesDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
-    [TestMethod]
+    [Fact]
     public void CreatedUserIdShouldBeZero()
     {
         var user = new User("Duy")
@@ -21,7 +13,7 @@ public class UserTests : SqlServerTestBase
         user.Id.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddUserAndAddress()
     {
         var user = new User("A")
@@ -48,7 +40,7 @@ public class UserTests : SqlServerTestBase
         _db.Add(user);
         await _db.SaveChangesAsync();
 
-        var u =await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
+        var u = await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.ShouldNotBeNull();
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
 

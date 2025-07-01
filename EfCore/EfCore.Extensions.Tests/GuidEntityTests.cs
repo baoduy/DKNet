@@ -1,33 +1,24 @@
-﻿
-namespace EfCore.Extensions.Tests;
+﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
-public class GuidEntityTests : SqlServerTestBase
+public class GuidEntityTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db = fixture.Db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("TestDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateAsync()
     {
-        var entity = new GuidEntity {Name = "Duy"};
+        var entity = new GuidEntity { Name = "Duy" };
 
         _db.Add(entity);
         await _db.SaveChangesAsync();
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateAuditAsync()
     {
-        var entity = new GuidAuditEntity {Name = "Duy"};
+        var entity = new GuidAuditEntity { Name = "Duy" };
 
         _db.Add(entity);
         await _db.SaveChangesAsync();
@@ -35,10 +26,10 @@ public class GuidEntityTests : SqlServerTestBase
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateAsync()
     {
-        var entity = new GuidEntity {Name = "Duy"};
+        var entity = new GuidEntity { Name = "Duy" };
         var oldId = entity.Id.ToString();
 
         entity.Name = "Hoang";
@@ -48,10 +39,10 @@ public class GuidEntityTests : SqlServerTestBase
         entity.Id.ToString().ShouldBe(oldId);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateAuditAsync()
     {
-        var entity = new GuidAuditEntity {Name = "Duy"};
+        var entity = new GuidAuditEntity { Name = "Duy" };
         var oldId = entity.Id.ToString();
 
         entity.Name = "Hoang";
@@ -60,5 +51,4 @@ public class GuidEntityTests : SqlServerTestBase
 
         entity.Id.ToString().ShouldBe(oldId);
     }
-    
 }

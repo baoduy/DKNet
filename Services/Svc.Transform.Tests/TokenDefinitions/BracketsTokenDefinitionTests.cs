@@ -3,12 +3,12 @@ using DKNet.Svc.Transformation.TokenDefinitions;
 
 namespace Svc.Transform.Tests.TokenDefinitions;
 
-[TestClass]
+
 public class BracketsTokenDefinitionTests
 {
 
 
-    [TestMethod]
+    [Fact]
     public void BracketsTokenDefinitionTest()
     {
         var t = new CurlyBracketDefinition();

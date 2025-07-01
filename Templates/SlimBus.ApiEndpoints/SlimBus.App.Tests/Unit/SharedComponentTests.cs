@@ -33,35 +33,20 @@ public class SharedComponentTests
         query.PageSize.ShouldBe(pageSize);
     }
 
-    [Fact]
-    public void BaseCommandUserIdShouldReturnValue()
-    {
-        // Arrange
-        var command = new TestCommand();
-        var userId = "test-user-123";
-
-        // Act
-        var testUserId = typeof(TestCommand).GetProperty("UserId", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        testUserId?.SetValue(command, userId);
-        var result = testUserId?.GetValue(command);
-
-        // Assert
-        result.ShouldBe(userId);
-    }
 
     [Fact]
-    public void BaseCommandUserIdShouldBeSettable()
+    public void BaseCommandByUserShouldBeSettable()
     {
         // Arrange
         var command = new TestCommand();
         var expectedUserId = "new-user-456";
 
         // Act
-        var testUserId = typeof(TestCommand).GetProperty("UserId", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        testUserId?.SetValue(command, expectedUserId);
-        var result = testUserId?.GetValue(command);
+        var byUserProp = typeof(TestCommand).GetProperty(nameof(TestCommand.ByUser),
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)!;
+
+        byUserProp.SetValue(command, expectedUserId);
+        var result = byUserProp.GetValue(command);
 
         // Assert
         result.ShouldBe(expectedUserId);

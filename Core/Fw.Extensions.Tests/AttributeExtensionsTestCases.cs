@@ -2,60 +2,53 @@
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
 public class AttributeExtensionsTestCases
 {
     #region Methods
 
-    [TestMethod]
-    [TestCategory("Fw.Extensions")]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void GetAttributeWithNullTypeReturnNullTest()
     {
         Type type = null;
-        Assert.IsNull(type.GetCustomAttribute<TestingAttribute>());
-        Assert.IsNull(((PropertyInfo)null).GetCustomAttribute<TestingAttribute>());
+        Should.Throw<ArgumentNullException>(() => type.GetCustomAttribute<TestingAttribute>());
+        Should.Throw<ArgumentNullException>(() => ((PropertyInfo)null).GetCustomAttribute<TestingAttribute>());
     }
 
-    [TestMethod]
-    [TestCategory("Fw.Extensions")]
+    [Fact]
     public void GetAttributeWithTypeReturnExpectedAttributeTest()
     {
         var type = typeof(HasAttributeTestClass1);
-        Assert.IsNotNull(type.GetCustomAttribute<TestingAttribute>());
-        Assert.IsNotNull(type.GetCustomAttribute<TestingAttribute>() is not null);
+        type.GetCustomAttribute<TestingAttribute>().ShouldNotBeNull();
+        (type.GetCustomAttribute<TestingAttribute>() is not null).ShouldBeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Fw.Extensions")]
+    [Fact]
     public void GetAttributeGenericWithTypeReturnExpectedAttributeTest()
     {
         var type = typeof(HasAttributeTestClass1);
-        Assert.IsNotNull(type.GetCustomAttribute<TestingAttribute>());
+        type.GetCustomAttribute<TestingAttribute>().ShouldNotBeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Fw.Extensions")]
+    [Fact]
     public void HasAttributeTest()
     {
         var obj1 = new HasAttributeTestClass1();
-        Assert.IsTrue(obj1.GetType().HasAttribute<TestingAttribute>());
-        Assert.IsTrue(obj1.HasAttributeOnProperty<TestingAttribute>("Prop1"));
+        obj1.GetType().HasAttribute<TestingAttribute>().ShouldBeTrue();
+        obj1.HasAttributeOnProperty<TestingAttribute>("Prop1").ShouldBeTrue();
 
         var obj2 = new HasAttributeTestClass2();
-        Assert.IsTrue(obj2.GetType().HasAttribute<TestingAttribute>());
-        Assert.IsTrue(obj2.HasAttributeOnProperty<TestingAttribute>("Prop1"));
+        obj2.GetType().HasAttribute<TestingAttribute>().ShouldBeTrue();
+        obj2.HasAttributeOnProperty<TestingAttribute>("Prop1").ShouldBeTrue();
 
         var obj3 = new HasAttributeTestClass3();
-        Assert.IsFalse(obj3.GetType().HasAttribute<TestingAttribute>());
-        Assert.IsFalse(obj3.HasAttributeOnProperty<TestingAttribute>("Prop3"));
+        obj3.GetType().HasAttribute<TestingAttribute>().ShouldBeFalse();
+        obj3.HasAttributeOnProperty<TestingAttribute>("Prop3").ShouldBeFalse();
     }
 
-    [TestMethod]
-    [TestCategory("Fw.Extensions")]
+    [Fact]
     public void NullPropertyInfoHasAttributeReturnsFalseTest()
     {
-        Assert.IsFalse(((PropertyInfo)null).HasAttribute<TestingAttribute>());
+        ((PropertyInfo)null).HasAttribute<TestingAttribute>().ShouldBeFalse();
     }
 
     #endregion Methods

@@ -2,33 +2,32 @@ using DKNet.Fw.Extensions.Encryption;
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
 public class StringEncryptionTests
 {
-    [DataTestMethod]
-    [DataRow("test", false, DisplayName = "Plain text should return false")]
-    [DataRow("SGVsbG8gd29ybGQ=", true, DisplayName = "Valid Base64 'Hello world' should return true")]
-    [DataRow("true", false, DisplayName = "Boolean text should return false")]
-    [DataRow("false", false, DisplayName = "Boolean text should return false")]
-    [DataRow("12345", false, DisplayName = "Numeric text should return false")]
-    [DataRow("dGVzdA==", true, DisplayName = "Valid Base64 'test' should return true")]
-    [DataRow("SGVsbG8=", true, DisplayName = "Valid Base64 'Hello' should return true")]
-    [DataRow("Invalid Base64!", false, DisplayName = "String with special characters should return false")]
-    [DataRow("", false, DisplayName = "Empty string should return false")]
-    [DataRow("abc===", false, DisplayName = "Invalid padding should return false")]
+    [Theory]
+    [InlineData("test", false)]
+    [InlineData("SGVsbG8gd29ybGQ=", true)]
+    [InlineData("true", false)]
+    [InlineData("false", false)]
+    [InlineData("12345", false)]
+    [InlineData("dGVzdA==", true)]
+    [InlineData("SGVsbG8=", true)]
+    [InlineData("Invalid Base64!", false)]
+    [InlineData("", false)]
+    [InlineData("abc===", false)]
     public void IsBase64StringValidatesInputReturnsExpectedResult(string value, bool expectedResult)
     {
         // Arrange & Act
         var result = value.IsBase64String();
 
         // Assert
-        Assert.AreEqual(expectedResult, result, $"Failed for input: {value}");
+        result.ShouldBe(expectedResult, $"Failed for input: {value}");
     }
 
-    [DataTestMethod]
-    [DataRow("Hello World", "SGVsbG8gV29ybGQ=", DisplayName = "Convert 'Hello World' to Base64")]
-    [DataRow("Test123!@#", "VGVzdDEyMyFAIw==", DisplayName = "Convert string with special characters to Base64")]
-    [DataRow("", "", DisplayName = "Convert empty string to Base64")]
+    [Theory]
+    [InlineData("Hello World", "SGVsbG8gV29ybGQ=")]
+    [InlineData("Test123!@#", "VGVzdDEyMyFAIw==")]
+    [InlineData("", "")]
     public void ToBase64StringWithValidInputReturnsExpectedEncoding(string input, string expectedBase64)
     {
         // Arrange & Act
@@ -38,10 +37,10 @@ public class StringEncryptionTests
         result.ShouldBe(expectedBase64, $"Failed to encode: {input}");
     }
 
-    [DataTestMethod]
-    [DataRow("SGVsbG8gV29ybGQ=", "Hello World", DisplayName = "Decode 'Hello World' from Base64")]
-    [DataRow("VGVzdDEyMyFAIw==", "Test123!@#", DisplayName = "Decode string with special characters from Base64")]
-    [DataRow("", "", DisplayName = "Decode empty string from Base64")]
+    [Theory]
+    [InlineData("SGVsbG8gV29ybGQ=", "Hello World")]
+    [InlineData("VGVzdDEyMyFAIw==", "Test123!@#")]
+    [InlineData("", "")]
     public void FromBase64StringWithValidInputReturnsExpectedString(string base64Input, string expectedString)
     {
         // Arrange & Act
@@ -51,18 +50,18 @@ public class StringEncryptionTests
         result.ShouldBe(expectedString, $"Failed to decode: {base64Input}");
     }
 
-    [TestMethod]
+    [Fact]
     public void GenerateAesKeyWhenCalledReturnsValidKey()
     {
         // Arrange & Act
         var key = StringEncryption.GenerateAesKey();
 
         // Assert
-        Assert.IsNotNull(key, "Generated key should not be null");
-        Assert.IsTrue(key.Length > 0, "Generated key should not be empty");
+        key.ShouldNotBeNull("Generated key should not be null");
+        key.Length.ShouldBeGreaterThan(0, "Generated key should not be empty");
     }
 
-    [TestMethod]
+    [Fact]
     public void AesEncryptionDecryptionWithValidInputPerformsRoundtripSuccessfully()
     {
         // Arrange
@@ -74,37 +73,37 @@ public class StringEncryptionTests
         var decryptedText = encryptedText.FromAesString(key);
 
         // Assert
-        Assert.AreNotEqual(plainText, encryptedText, "Encrypted text should differ from plain text");
-        Assert.AreEqual(plainText, decryptedText, "Decrypted text should match original plain text");
+        encryptedText.ShouldNotBe(plainText, "Encrypted text should differ from plain text");
+        decryptedText.ShouldBe(plainText, "Decrypted text should match original plain text");
     }
 
-    [DataTestMethod]
-    [DataRow("This is a test message.", "", DisplayName = "Empty key should throw exception")]
-    [DataRow("", "InvalidKeyString", DisplayName = "Empty message with invalid key should throw exception")]
+    [Theory]
+    [InlineData("This is a test message.", "")]
+    [InlineData("", "InvalidKeyString")]
     public void ToAesStringWithInvalidInputThrowsArgumentException(string plainText, string key)
     {
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentException>(
+        var exception = Should.Throw<ArgumentException>(
             () => plainText.ToAesString(key),
             $"Should throw ArgumentException for plainText: '{plainText}', key: '{key}'"
         );
-        Assert.IsTrue(exception.Message.Length > 0, "Exception should have a message");
+        exception.Message.Length.ShouldBeGreaterThan(0, "Exception should have a message");
     }
 
-    [DataTestMethod]
-    [DataRow("InvalidCipherText", "", DisplayName = "Empty key should throw exception")]
-    [DataRow("", "InvalidKeyString", DisplayName = "Empty cipher text with invalid key should throw exception")]
+    [Theory]
+    [InlineData("InvalidCipherText", "")]
+    [InlineData("", "InvalidKeyString")]
     public void FromAesStringWithInvalidInputThrowsArgumentException(string cipherText, string key)
     {
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentException>(
+        var exception = Should.Throw<ArgumentException>(
             () => cipherText.FromAesString(key),
             $"Should throw ArgumentException for cipherText: '{cipherText}', key: '{key}'"
         );
-        Assert.IsTrue(exception.Message.Length > 0, "Exception should have a message");
+        exception.Message.Length.ShouldBeGreaterThan(0, "Exception should have a message");
     }
 
-    [TestMethod]
+    [Fact]
     public void FromAesStringWithInvalidKeyFormatThrowsArgumentException()
     {
         // Arrange
@@ -112,14 +111,14 @@ public class StringEncryptionTests
         var invalidKey = "InvalidKeyString";
 
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentException>(
+        var exception = Should.Throw<ArgumentException>(
             () => cipherText.FromAesString(invalidKey),
             "Should throw ArgumentException for invalid key format"
         );
-        Assert.IsTrue(exception.Message.Length > 0, "Exception should have a message");
+        exception.Message.Length.ShouldBeGreaterThan(0, "Exception should have a message");
     }
 
-    [TestMethod]
+    [Fact]
     public void ToSha256WithValidInputReturnsExpectedHash()
     {
         // Arrange
@@ -130,24 +129,24 @@ public class StringEncryptionTests
         var actualHash = input.ToSha256();
 
         // Assert
-        Assert.AreEqual(expectedHash, actualHash, "Hash should match expected value");
+        actualHash.ShouldBe(expectedHash, "Hash should match expected value");
     }
 
-    [TestMethod]
+    [Fact]
     public void ToSha256WithEmptyStringThrowsArgumentException()
     {
         // Arrange
         var input = "";
 
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentException>(
+        var exception = Should.Throw<ArgumentException>(
             () => input.ToSha256(),
             "Should throw ArgumentException for empty string"
         );
-        Assert.IsTrue(exception.Message.Length > 0, "Exception should have a message");
+        exception.Message.Length.ShouldBeGreaterThan(0, "Exception should have a message");
     }
 
-    [TestMethod]
+    [Fact]
     public void ToSha256WithSameInputReturnsSameHash()
     {
         // Arrange
@@ -159,6 +158,6 @@ public class StringEncryptionTests
         var hash2 = input2.ToSha256();
 
         // Assert
-        Assert.AreEqual(hash1, hash2, "Hash values should be identical for same input");
+        hash1.ShouldBe(hash2, "Hash values should be identical for same input");
     }
 }

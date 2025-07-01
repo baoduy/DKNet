@@ -5,12 +5,12 @@ using DKNet.Svc.Transformation.TokenResolvers;
 
 namespace Svc.Transform.Tests.TokenResolvers;
 
-[TestClass]
+
 public class TokenResolversTests
 {
 
 
-    [TestMethod]
+    [Fact]
     public void TestTokenResolver()
     {
         var resolver = new TokenResolver();
@@ -24,7 +24,7 @@ public class TokenResolversTests
         val.ShouldBe(123);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestTokenResolverAsync()
     {
         var resolver = new TokenResolver();
@@ -38,8 +38,7 @@ public class TokenResolversTests
         val.ShouldBe(123);
     }
 
-    // [TestMethod]
-    // [ExpectedException(typeof(ArgumentNullException))]
+    // [Fact]
     // public void TestTokenResolverDataEmpty()
     // {
     //     var resolver = new TokenResolver();
@@ -47,8 +46,7 @@ public class TokenResolversTests
     //     resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), []);
     // }
 
-    // [TestMethod]
-    // [ExpectedException(typeof(ArgumentNullException))]
+    // [Fact]
     // public void TestTokenResolverDataNull()
     // {
     //     var resolver = new TokenResolver();
@@ -56,7 +54,7 @@ public class TokenResolversTests
     //     resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null);
     // }
 
-    [TestMethod]
+    [Fact]
     public async Task TestTokenResolverDictionary()
     {
         var resolver = new TokenResolver();
@@ -70,13 +68,12 @@ public class TokenResolversTests
         val.ShouldBe("Duy");
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
+    [Fact]
     public async Task TestTokenResolverOnlyDictionaryStringObjectIsSupportted()
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), new Dictionary<object, object>
+        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
         {
             {"A", "Duy"},
         });
@@ -84,17 +81,18 @@ public class TokenResolversTests
         val.ShouldBe("Duy");
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void TestTokenResolverTokenNull()
     {
         var resolver = new TokenResolver();
 
-        resolver.Resolve(token: null, [
+        var action = ()=> resolver.Resolve(token: null, [
              null,
             new {A = (string) null},
             new {A = 123},
          ]);
+
+        action.ShouldThrow<ArgumentNullException>();
     }
 
  

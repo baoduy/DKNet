@@ -1,19 +1,12 @@
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
-public class SnapshotTests : SqlServerTestBase
+
+public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db=fixture.Db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EventDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
-    [TestMethod]
+    [Fact]
     public void Snapshot_ShouldCreateSnapshotContext()
     {
         // Act
@@ -24,7 +17,7 @@ public class SnapshotTests : SqlServerTestBase
         snapshot.DbContext.ShouldBe(_db);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SnapshotContext_Dispose_ShouldReleaseResources()
     {
         // Arrange
@@ -37,7 +30,7 @@ public class SnapshotTests : SqlServerTestBase
         Should.Throw<ObjectDisposedException>(() => snapshot.DbContext);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntities_ShouldCaptureChangedEntities()
     {
         // Arrange
@@ -53,7 +46,7 @@ public class SnapshotTests : SqlServerTestBase
         snapshotEntities.ShouldContain(e => e.Entity == user);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
     {
         // Arrange
@@ -67,7 +60,7 @@ public class SnapshotTests : SqlServerTestBase
         firstAccess.ShouldBeSameAs(secondAccess);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntityEntry_ShouldCaptureEntityState()
     {
         // Arrange
@@ -78,7 +71,7 @@ public class SnapshotTests : SqlServerTestBase
         var entry = snapshot.SnapshotEntities[0];
 
         // Assert
-        entry.Entity.ShouldBe(user);
-        entry.OriginalState.ShouldBe(Microsoft.EntityFrameworkCore.EntityState.Added);
+        entry.Entity.ShouldBeOfType<User>();
+        entry.OriginalState.ShouldBe(EntityState.Added);
     }
 }

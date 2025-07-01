@@ -20,17 +20,15 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
     };
 }
 
-[TestClass]
-public class DataSeedingTests : SqlServerTestBase
+
+public class DataSeedingTests (SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    [TestMethod]
+    [Fact]
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()
     {
         // Arrange
-        await StartSqlContainerAsync();
-
         var options = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(GetConnectionString("SeedingDb"))
+            .UseSqlServer(fixture.GetConnectionString("SeedingDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
             .Options;
@@ -47,43 +45,9 @@ public class DataSeedingTests : SqlServerTestBase
         users.ShouldContain(u => u.FirstName == "Seeded" && u.LastName == "User2");
     }
 
-    // [TestMethod]
-    // public async Task UseAutoDataSeeding_WithExistingData_ShouldNotDuplicateData()
-    // {
-    //     // Arrange
-    //     var container = await StartSqlContainerAsync();
-    //     var connectionString = container.GetConnectionString();
-    //
-    //     var options = new DbContextOptionsBuilder<MyDbContext>()
-    //         .UseSqlServer(connectionString)
-    //         .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-    //         .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
-    //         .Options;
-    //
-    //     await using var context = new MyDbContext(options);
-    //     await context.Database.EnsureCreatedAsync();
-    //
-    //     // Manually add one of the seeded entities first
-    //     context.Set<User>().Add(new User(1, "creator")
-    //     {
-    //         FirstName = "Already",
-    //         LastName = "Exists"
-    //     });
-    //     await context.SaveChangesAsync();
-    //
-    //     // Clear change tracker
-    //     context.ChangeTracker.Clear();
-    //
-    //     // Act - Try to seed again
-    //     await context.SaveChangesAsync();
-    //
-    //     // Assert - Should not duplicate the existing user
-    //     var users = await context.Set<User>().Where(u => u.Id == 1).ToListAsync();
-    //     users.Count.ShouldBe(1);
-    //     users.First().FirstName.ShouldBe("Already"); // Original data should remain
-    // }
 
-    [TestMethod]
+
+    [Fact]
     public void UseAutoDataSeeding_WithNullOptionsBuilder_ShouldThrowArgumentNullException()
     {
         // Act & Assert
