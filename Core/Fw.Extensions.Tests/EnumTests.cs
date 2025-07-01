@@ -2,30 +2,30 @@
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
+
 public class EnumExtensionsTests
 {
-    [TestMethod]
+    [Fact]
     public void GetAttribute()
     {
         HbdTypes.DescriptionEnum.GetAttribute<DisplayAttribute>()
             .ShouldNotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestGetEnumInfo()
     {
         HbdTypes.DescriptionEnum.GetEumInfo().Name.ShouldBe("HBD");
     }
 
-    [TestMethod]
+    [Fact]
     public void TestGetEnumInfos()
     {
         var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
         list.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
-    [TestMethod]
+    [Fact]
     public void GetAttributeReturnsNullForNullEnum()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class EnumExtensionsTests
         result.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetAttributeReturnsNullForEnumWithoutAttribute()
     {
         // Arrange
@@ -51,7 +51,7 @@ public class EnumExtensionsTests
         result.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetEumInfoReturnsNullForNullEnum()
     {
         // Arrange
@@ -64,7 +64,7 @@ public class EnumExtensionsTests
         result.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetEumInfoReturnsCorrectInfoForEnumWithoutDisplay()
     {
         // Arrange
@@ -81,7 +81,7 @@ public class EnumExtensionsTests
         result.GroupName.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetEumInfosIncludesEnumWithoutDisplayAttribute()
     {
         // Arrange & Act

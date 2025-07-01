@@ -2,10 +2,9 @@
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
 public class StringExtensionsTests
 {
-    [TestMethod]
+    [Fact]
     public void IsNumberTests()
     {
         "123".IsNumber().ShouldBeTrue();
@@ -37,7 +36,7 @@ public class StringExtensionsTests
         ((string)null).IsNumber().ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void ExtractNumberTests()
     {
         "123abc".ExtractDigits().ShouldBe("123");
@@ -59,7 +58,7 @@ public class StringExtensionsTests
         action.ShouldThrow<ArgumentException>();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsStringOrValueTypeTests()
     {
         typeof(string).IsStringOrValueType().ShouldBeTrue();
@@ -84,14 +83,14 @@ public class StringExtensionsTests
         typeof(ClassCleanupAttribute).IsStringOrValueType().ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsStringOrValueTypeNullTests()
     {
         ((Type)null).IsStringOrValueType().ShouldBeFalse();
         ((PropertyInfo)null).IsStringOrValueType().ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsStringOrValueTypeNullableTypesTests()
     {
         typeof(int?).IsStringOrValueType().ShouldBeTrue();

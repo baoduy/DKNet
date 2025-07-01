@@ -7,6 +7,6 @@ global using System.Linq;
 global using System.Reflection;
 global using System.Threading.Tasks;
 global using Fw.Extensions.Tests.TestObjects;
-global using Microsoft.VisualStudio.TestTools.UnitTesting;
+global using Xunit;
 global using Shouldly;
 global using DKNet.Fw.Extensions.TypeExtractors;

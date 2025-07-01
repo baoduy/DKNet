@@ -2,10 +2,10 @@
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
+
 public class TypeExtensionsTests
 {
-    [TestMethod]
+    [Fact]
     public void IsImplementOfSameTypeReturnsFalse()
     {
         // Arrange
@@ -15,10 +15,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(type);
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfDerivedTypeReturnsTrue()
     {
         // Arrange
@@ -29,10 +29,10 @@ public class TypeExtensionsTests
         var result = derivedType.IsImplementOf(baseType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfInterfaceTypeReturnsTrue()
     {
         // Arrange
@@ -43,10 +43,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(interfaceType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfNonMatchingTypeReturnsFalse()
     {
         // Arrange
@@ -57,10 +57,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(nonMatchingType);
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfNullTypeReturnsFalse()
     {
         // Arrange
@@ -71,10 +71,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(matchingType);
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfNullMatchingTypeReturnsFalse()
     {
         // Arrange
@@ -85,10 +85,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(matchingType);
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfGenericTypeReturnsTrue()
     {
         // Arrange
@@ -99,10 +99,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(genericType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNotNumericTypeNonNumericTypeReturnsTrue()
     {
         // Arrange
@@ -112,10 +112,10 @@ public class TypeExtensionsTests
         var result = obj.IsNotNumericType();
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNotNumericTypeNumericTypeReturnsFalse()
     {
         // Arrange
@@ -125,10 +125,10 @@ public class TypeExtensionsTests
         var result = obj.IsNotNumericType();
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeNumericTypeReturnsTrue()
     {
         // Arrange
@@ -138,10 +138,10 @@ public class TypeExtensionsTests
         var result = type.IsNumericType();
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeNonNumericTypeReturnsFalse()
     {
         // Arrange
@@ -151,21 +151,20 @@ public class TypeExtensionsTests
         var result = type.IsNumericType();
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void IsNumericTypeNullTypeReturnsFalse()
     {
         // Arrange
         Type type = null;
 
-        // Act
-        type.IsNumericType();
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => type.IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeNumericObjectReturnsTrue()
     {
         // Arrange
@@ -175,10 +174,10 @@ public class TypeExtensionsTests
         var result = obj.IsNumericType();
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeNonNumericObjectReturnsFalse()
     {
         // Arrange
@@ -188,10 +187,10 @@ public class TypeExtensionsTests
         var result = obj.IsNumericType();
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeNullObjectReturnsFalse()
     {
         // Arrange
@@ -201,10 +200,10 @@ public class TypeExtensionsTests
         var result = obj.IsNumericType();
 
         // Assert
-        Assert.IsFalse(result);
+        result.ShouldBeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfGenericTypeDefinitionReturnsTrue()
     {
         // Arrange
@@ -215,10 +214,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(genericType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfDerivedGenericTypeReturnsTrue()
     {
         // Arrange
@@ -229,10 +228,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(baseType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfGenericMethodReturnsCorrectResult()
     {
         // Arrange
@@ -242,10 +241,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf<IEnumerable<int>>();
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfNonGenericBaseClassReturnsTrue()
     {
         // Arrange
@@ -256,10 +255,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(baseType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfGenericBaseClassReturnsTrue()
     {
         // Arrange
@@ -270,10 +269,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(baseType);
 
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeAllNumericTypesReturnTrue()
     {
         // Arrange & Act & Assert
@@ -290,7 +289,7 @@ public class TypeExtensionsTests
         Assert.IsTrue(typeof(decimal).IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeAllNonNumericTypesReturnFalse()
     {
         // Arrange & Act & Assert
@@ -302,7 +301,7 @@ public class TypeExtensionsTests
         Assert.IsFalse(typeof(DBNull).IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNotNumericTypeReturnsOppositeOfIsNumericType()
     {
         // Arrange
@@ -314,7 +313,7 @@ public class TypeExtensionsTests
         Assert.IsTrue(nonNumericObj.IsNotNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfShouldHandleInheritanceChain()
     {
         // Arrange
@@ -325,10 +324,10 @@ public class TypeExtensionsTests
         var result = derivedType.IsImplementOf(baseType);
         
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfShouldHandleMultipleInterfaceImplementation()
     {
         // Arrange
@@ -341,7 +340,7 @@ public class TypeExtensionsTests
         Assert.IsTrue(type.IsImplementOf(interface2));
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfShouldReturnFalseForUnrelatedTypes()
     {
         // Arrange
@@ -355,7 +354,7 @@ public class TypeExtensionsTests
         Assert.IsFalse(type3.IsImplementOf(type1));
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfGenericShouldWorkWithOpenGenericTypes()
     {
         // Arrange
@@ -366,10 +365,10 @@ public class TypeExtensionsTests
         var result = closedGenericType.IsImplementOf(openGenericInterface);
         
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeShouldHandleNullableNumericTypes()
     {
         // Arrange & Act & Assert
@@ -380,7 +379,7 @@ public class TypeExtensionsTests
         Assert.IsTrue(typeof(long?).IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeShouldReturnFalseForNullableNonNumericTypes()
     {
         // Arrange & Act & Assert
@@ -389,7 +388,7 @@ public class TypeExtensionsTests
         Assert.IsFalse(typeof(DateTime?).IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfShouldWorkWithMultiLevelInheritance()
     {
         // Arrange
@@ -400,10 +399,10 @@ public class TypeExtensionsTests
         var result = grandChildType.IsImplementOf(grandParentType);
         
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfShouldHandleGenericInterfaceWithConstraints()
     {
         // Arrange  
@@ -414,10 +413,10 @@ public class TypeExtensionsTests
         var result = type.IsImplementOf(genericInterface);
         
         // Assert
-        Assert.IsTrue(result);
+        result.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void IsNumericTypeObjectShouldHandleBoxedPrimitives()
     {
         // Arrange
@@ -447,7 +446,7 @@ public class TypeExtensionsTests
         Assert.IsTrue(decimalObj.IsNumericType());
     }
 
-    [TestMethod]
+    [Fact]
     public void IsImplementOfWithGenericMethodShouldReturnCorrectResultForComplexTypes()
     {
         // Arrange

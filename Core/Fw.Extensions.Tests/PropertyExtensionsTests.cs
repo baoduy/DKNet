@@ -2,10 +2,10 @@
 
 namespace Fw.Extensions.Tests;
 
-[TestClass]
+
 public class PropertyExtensionsTests
 {
-    [TestMethod]
+    [Fact]
     public void GetPropertyShouldReturnNullForNullObject()
     {
         // Arrange
@@ -15,10 +15,10 @@ public class PropertyExtensionsTests
         var property = ((TestItem3)null).GetProperty(propertyName);
 
         // Assert
-        Assert.IsNull(property);
+        property.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyShouldReturnNullForNullOrEmptyPropertyName()
     {
         // Arrange
@@ -29,11 +29,11 @@ public class PropertyExtensionsTests
         var property2 = item.GetProperty("");
 
         // Assert
-        Assert.IsNull(property1);
-        Assert.IsNull(property2);
+        property1.ShouldBeNull();
+        property2.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyShouldReturnPublicProperty()
     {
         // Arrange
@@ -44,11 +44,11 @@ public class PropertyExtensionsTests
         var property = item.GetProperty(propertyName);
 
         // Assert
-        Assert.IsNotNull(property);
-        Assert.AreEqual("Name", property.Name);
+        property.ShouldNotBeNull();
+        property.Name.ShouldBe("Name");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyShouldReturnPrivateProperty()
     {
         // Arrange
@@ -59,11 +59,11 @@ public class PropertyExtensionsTests
         var property = item.GetProperty(propertyName);
 
         // Assert
-        Assert.IsNotNull(property);
-        Assert.AreEqual("PrivateObj", property.Name);
+        property.ShouldNotBeNull();
+        property.Name.ShouldBe("PrivateObj");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyShouldReturnProtectedProperty()
     {
         // Arrange
@@ -74,11 +74,11 @@ public class PropertyExtensionsTests
         var property = item.GetProperty(propertyName);
 
         // Assert
-        Assert.IsNotNull(property);
-        Assert.AreEqual("ProtectedObj", property.Name);
+        property.ShouldNotBeNull();
+        property.Name.ShouldBe("ProtectedObj");
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnNullForNullObject()
     {
         // Arrange
@@ -88,10 +88,10 @@ public class PropertyExtensionsTests
         var value = ((TestItem3)null).GetPropertyValue(propertyName);
 
         // Assert
-        Assert.IsNull(value);
+        value.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnNullForNullOrEmptyPropertyName()
     {
         // Arrange
@@ -102,11 +102,11 @@ public class PropertyExtensionsTests
         var value2 = item.GetPropertyValue("");
 
         // Assert
-        Assert.IsNull(value1);
-        Assert.IsNull(value2);
+        value1.ShouldBeNull();
+        value2.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnPublicPropertyValue()
     {
         // Arrange
@@ -117,10 +117,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue(propertyName);
 
         // Assert
-        Assert.AreEqual("Duy", value);
+        value.ShouldBe("Duy");
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnPrivatePropertyValue()
     {
         // Arrange
@@ -131,10 +131,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue(propertyName);
 
         // Assert
-        Assert.IsNotNull(value);
+        value.ShouldNotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnProtectedPropertyValue()
     {
         // Arrange
@@ -145,10 +145,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue(propertyName);
 
         // Assert
-        Assert.IsNotNull(value);
+        value.ShouldNotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void PropertyValueShouldReturnNestedPropertyValue()
     {
         // Arrange
@@ -158,10 +158,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue(nameof(TestItem3.Name));
 
         // Assert
-        Assert.AreEqual("Duy", value);
+        value.ShouldBe("Duy");
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldThrowForNullObject()
     {
         // Arrange
@@ -173,7 +173,7 @@ public class PropertyExtensionsTests
             ((TestItem3)null).SetPropertyValue(propertyName, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldThrowForNullOrEmptyPropertyName()
     {
         // Arrange
@@ -185,7 +185,7 @@ public class PropertyExtensionsTests
         Assert.ThrowsException<ArgumentNullException>(() => item.SetPropertyValue("", value));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldSetPublicPropertyValue()
     {
         // Arrange
@@ -197,10 +197,10 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(propertyName, value);
 
         // Assert
-        Assert.AreEqual("NewName", item.Name);
+        item.Name.ShouldBe("NewName");
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldSetPrivatePropertyValue()
     {
         // Arrange
@@ -215,7 +215,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual("NewPrivateValue", item.GetPropertyValue(propertyName));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldSetProtectedPropertyValue()
     {
         // Arrange
@@ -230,7 +230,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual("NewProtectedValue", item.GetPropertyValue(propertyName));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldSetNestedPropertyValue()
     {
         // Arrange
@@ -244,7 +244,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual("NewNestedName", item.GetPropertyValue(nameof(TestItem3.Name)));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleNullValue()
     {
         // Arrange
@@ -255,10 +255,10 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(propertyName, value: null);
 
         // Assert
-        Assert.IsNull(item.Name);
+        item.Name.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleEnumValue()
     {
         // Arrange
@@ -268,10 +268,10 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(nameof(TestItem3.Type), TestEnumObject.Enum2);
 
         // Assert
-        Assert.AreEqual(TestEnumObject.Enum2, item.Type);
+        item.Type.ShouldBe(TestEnumObject.Enum2);
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleInvalidPropertyName()
     {
         // Arrange
@@ -285,7 +285,7 @@ public class PropertyExtensionsTests
         a.ShouldThrow<ArgumentException>();
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueShouldHandleInvalidPropertyName()
     {
         // Arrange
@@ -299,7 +299,7 @@ public class PropertyExtensionsTests
         item.GetPropertyValue(propertyName).ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyValueShouldReturnNullForNonExistentNestedProperty()
     {
         // Arrange
@@ -309,10 +309,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue("NonExistent.Property");
 
         // Assert
-        Assert.IsNull(value);
+        value.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyValueShouldHandleNullIntermediateNestedProperty()
     {
         // Arrange
@@ -323,10 +323,10 @@ public class PropertyExtensionsTests
         var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
 
         // Assert
-        Assert.IsNull(value);
+        value.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyWithTypeObjectShouldReturnProperty()
     {
         // Arrange
@@ -336,11 +336,11 @@ public class PropertyExtensionsTests
         var property = type.GetProperty("Name");
 
         // Assert
-        Assert.IsNotNull(property);
-        Assert.AreEqual("Name", property.Name);
+        property.ShouldNotBeNull();
+        property.Name.ShouldBe("Name");
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueWithPropertyInfoShouldThrowForNullObject()
     {
         // Arrange
@@ -352,7 +352,7 @@ public class PropertyExtensionsTests
             ((TestItem3)null).SetPropertyValue(property, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
     {
         // Arrange
@@ -364,7 +364,7 @@ public class PropertyExtensionsTests
             item.SetPropertyValue((PropertyInfo)null, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullObject()
     {
         // Arrange
@@ -376,7 +376,7 @@ public class PropertyExtensionsTests
             ((TestItem3)null).TrySetPropertyValue(property, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueWithPropertyInfoShouldThrowForNullProperty()
     {
         // Arrange
@@ -388,7 +388,7 @@ public class PropertyExtensionsTests
             item.TrySetPropertyValue((PropertyInfo)null, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueWithStringNameShouldThrowForNullObject()
     {
         // Arrange
@@ -400,7 +400,7 @@ public class PropertyExtensionsTests
             ((TestItem3)null).TrySetPropertyValue(propertyName, value));
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueWithStringNameShouldThrowForNullPropertyName()
     {
         // Arrange
@@ -414,7 +414,7 @@ public class PropertyExtensionsTests
             item.TrySetPropertyValue("", value));
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleValueTypeConversion()
     {
         // Arrange
@@ -434,7 +434,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual(123.45m, item.GetPropertyValue("DecimalValue"));
     }
 
-    [TestMethod]
+    [Fact]
     public void TrySetPropertyValueShouldCatchAndLogArgumentExceptions()
     {
         // Arrange
@@ -448,7 +448,7 @@ public class PropertyExtensionsTests
         Assert.AreEqual(0, item.GetPropertyValue("IntValue"));
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyValueShouldHandleComplexNestedProperties()
     {
         // Arrange
@@ -456,10 +456,10 @@ public class PropertyExtensionsTests
         
         // Act & Assert for valid nested property
         var lengthValue = item.GetPropertyValue("Name.Length");
-        Assert.AreEqual(3, lengthValue); // "Duy".Length = 3
+        lengthValue.ShouldBe(3); // "Duy".Length = 3
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleNullableTypes()
     {
         // Arrange
@@ -474,7 +474,7 @@ public class PropertyExtensionsTests
         Assert.IsNull(item.GetPropertyValue("NullableIntValue"));
     }
 
-    [TestMethod] 
+    [Fact] 
     public void GetPropertyShouldHandleCaseInsensitiveSearch()
     {
         // Arrange
@@ -486,15 +486,15 @@ public class PropertyExtensionsTests
         var property3 = item.GetProperty("NaMe"); // mixed case
         
         // Assert
-        Assert.IsNotNull(property1);
-        Assert.IsNotNull(property2);
-        Assert.IsNotNull(property3);
-        Assert.AreEqual("Name", property1.Name);
-        Assert.AreEqual("Name", property2.Name);
-        Assert.AreEqual("Name", property3.Name);
+        property1.ShouldNotBeNull();
+        property2.ShouldNotBeNull();
+        property3.ShouldNotBeNull();
+        property1.Name.ShouldBe("Name");
+        property2.Name.ShouldBe("Name");
+        property3.Name.ShouldBe("Name");
     }
 
-    [TestMethod]
+    [Fact]
     public void SetPropertyValueShouldHandleEnumStringConversion()
     {
         // Arrange
@@ -504,10 +504,10 @@ public class PropertyExtensionsTests
         item.SetPropertyValue("Type", "Enum1");
         
         // Assert
-        Assert.AreEqual(TestEnumObject.Enum1, item.Type);
+        item.Type.ShouldBe(TestEnumObject.Enum1);
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPropertyValueShouldReturnNullForInvalidNestedPropertyPath()
     {
         // Arrange
@@ -515,10 +515,10 @@ public class PropertyExtensionsTests
         
         // Act & Assert for non-existent nested property
         var result = item.GetPropertyValue("Name.InvalidProperty");
-        Assert.IsNull(result);
+        result.ShouldBeNull();
         
         // Act & Assert for property that doesn't exist on the object
         var result2 = item.GetPropertyValue("NonExistentProperty.SubProperty");
-        Assert.IsNull(result2);
+        result2.ShouldBeNull();
     }
 }

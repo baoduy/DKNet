@@ -1,9 +1,9 @@
 namespace Fw.Extensions.Tests;
 
-[TestClass]
+
 public class AsyncEnumerableExtensionsTests
 {
-    [TestMethod]
+    [Fact]
     public async Task ToListAsync_WithItems_ReturnsCorrectList()
     {
         // Arrange
@@ -14,12 +14,12 @@ public class AsyncEnumerableExtensionsTests
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(5, result.Count);
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(5);
         CollectionAssert.AreEqual(items, result.ToArray());
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToListAsync_WithEmptySequence_ReturnsEmptyList()
     {
         // Arrange
@@ -29,11 +29,11 @@ public class AsyncEnumerableExtensionsTests
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Count);
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToListAsync_WithSingleItem_ReturnsListWithOneItem()
     {
         // Arrange
@@ -44,12 +44,12 @@ public class AsyncEnumerableExtensionsTests
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(1, result.Count);
-        Assert.AreEqual(42, result[0]);
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(1);
+        result[0].ShouldBe(42);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToListAsync_WithStringItems_ReturnsCorrectList()
     {
         // Arrange
@@ -60,13 +60,13 @@ public class AsyncEnumerableExtensionsTests
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(3, result.Count);
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(3);
         CollectionAssert.AreEqual(items, result.ToArray());
     }
 
 #nullable enable
-    [TestMethod]
+    [Fact]
     public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
     {
         // Arrange
@@ -77,11 +77,11 @@ public class AsyncEnumerableExtensionsTests
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(3, result.Count);
-        Assert.AreEqual("hello", result[0]);
-        Assert.IsNull(result[1]);
-        Assert.AreEqual("world", result[2]);
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(3);
+        result[0].ShouldBe("hello");
+        result[1].ShouldBeNull();
+        result[2].ShouldBe("world");
     }
 #nullable disable
 

@@ -2,30 +2,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fw.Extensions.Tests
 {
-    [TestClass]
     public class ServiceCollectionExtensionMethodsTests
     {
-        private ServiceCollection _services;
+        private readonly ServiceCollection _services;
 
-        [TestInitialize]
-        public void Initialize()
+        public ServiceCollectionExtensionMethodsTests()
         {
             _services = new ServiceCollection();
         }
 
-        [TestMethod]
-        [DataRow(null)]
-        [DataRow("")]
-        [DataRow("   ")]
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
         public void AsKeyedImplementedInterfacesThrowsArgumentExceptionForInvalidKeys(string key)
         {
             var types = new List<Type> { typeof(TestService) };
 
-            Assert.ThrowsException<ArgumentException>(() =>
+            Should.Throw<ArgumentException>(() =>
                 _services.AsKeyedImplementedInterfaces(key, types));
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesThrowsArgumentNullExceptionWhenServicesNull()
         {
             IServiceCollection services = null;
@@ -33,14 +31,14 @@ namespace Fw.Extensions.Tests
                 services.AsKeyedImplementedInterfaces("test", new List<Type>()));
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesThrowsArgumentNullExceptionWhenTypesNull()
         {
             Assert.ThrowsException<ArgumentNullException>(() =>
                 _services.AsKeyedImplementedInterfaces("test", types: null));
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesRegistersAllPublicInterfacesAndSelf()
         {
             var types = new List<Type> { typeof(TestService) };
@@ -48,7 +46,7 @@ namespace Fw.Extensions.Tests
             var result = _services.AsKeyedImplementedInterfaces("test", types);
 
             var descriptors = _services.ToList();
-            Assert.AreEqual(3, descriptors.Count);
+            descriptors.Count.ShouldBe(3);
             Assert.IsTrue(descriptors.Any(d =>
                 d.ServiceType == typeof(ITestService) &&
                 d.KeyedImplementationType == typeof(TestService)));
@@ -60,20 +58,20 @@ namespace Fw.Extensions.Tests
                 d.KeyedImplementationType == typeof(TestService)));
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesSkipsInterfaceTypes()
         {
             var types = new List<Type> { typeof(ISkipInterface) };
 
             _services.AsKeyedImplementedInterfaces("test", types);
 
-            Assert.AreEqual(0, _services.Count);
+            _services.Count.ShouldBe(0);
         }
 
-        [TestMethod]
-        [DataRow(ServiceLifetime.Singleton)]
-        [DataRow(ServiceLifetime.Scoped)]
-        [DataRow(ServiceLifetime.Transient)]
+        [Fact]
+        [InlineData(ServiceLifetime.Singleton)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Transient)]
         public void AsKeyedImplementedInterfacesRespectsServiceLifetime(ServiceLifetime lifetime)
         {
             var types = new List<Type> { typeof(TestService) };
@@ -83,7 +81,7 @@ namespace Fw.Extensions.Tests
             Assert.IsTrue(_services.All(d => d.Lifetime == lifetime));
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesReturnsSameInstanceForChaining()
         {
             var types = new List<Type> { typeof(TestService) };
@@ -93,25 +91,25 @@ namespace Fw.Extensions.Tests
             Assert.AreSame(_services, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesWhenTypesEmptyNoRegistrationsAdded()
         {
             _services.AsKeyedImplementedInterfaces("test", new List<Type>());
 
-            Assert.AreEqual(0, _services.Count);
+            _services.Count.ShouldBe(0);
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesWithMultipleTypesRegistersAllImplementations()
         {
             var types = new List<Type> { typeof(TestService), typeof(AnotherTestService) };
 
             _services.AsKeyedImplementedInterfaces("test", types);
 
-            Assert.AreEqual(5, _services.Count); // 3 for TestService, 2 for AnotherTestService
+            _services.Count.ShouldBe(5); // 3 for TestService, 2 for AnotherTestService
         }
 
-        [TestMethod]
+        [Fact]
         public void AsKeyedImplementedInterfacesWithDifferentKeysRegistersSeparately()
         {
             var types = new List<Type> { typeof(TestService) };
@@ -119,7 +117,7 @@ namespace Fw.Extensions.Tests
             _services.AsKeyedImplementedInterfaces("key1", types)
                     .AsKeyedImplementedInterfaces("key2", types);
 
-            Assert.AreEqual(6, _services.Count); // 3 registrations per key
+            _services.Count.ShouldBe(6); // 3 registrations per key
         }
     }
 
