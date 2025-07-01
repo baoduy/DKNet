@@ -3,26 +3,26 @@ using DKNet.EfCore.Extensions.Internal;
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class RegisterTests : SqlServerTestBase
 {
     private static MyDbContext _db =null!;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("EfCoreDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestInitialize]
+    
     public async Task TestInitialize()
     {
         await EnsureSqlStartedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
@@ -47,7 +47,7 @@ public class RegisterTests : SqlServerTestBase
         Assert.IsTrue(await _db.Set<Address>().AnyAsync());
     }
 
-    // [TestMethod]
+    // [Fact]
     // public async Task TestAccountStatusDataSeeding()
     // {
     //     await using var db = new MyDbContext(new DbContextOptionsBuilder()
@@ -60,7 +60,7 @@ public class RegisterTests : SqlServerTestBase
     //     (await db.Set<AccountStatus>().CountAsync()).ShouldBeGreaterThanOrEqualTo(2);
     // }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateDb()
     {
         //Create User with Address
@@ -84,11 +84,11 @@ public class RegisterTests : SqlServerTestBase
         var users = await _db.Set<User>().ToListAsync();
         var adds = await _db.Set<Address>().ToListAsync();
 
-        Assert.IsTrue(users.Count >= 1);
-        Assert.IsTrue(adds.Count >= 1);
+        users.Count >= 1.ShouldBeTrue();
+        adds.Count >= 1.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateDbCustomMapper()
     {
         //Create User with Address
@@ -112,13 +112,13 @@ public class RegisterTests : SqlServerTestBase
         (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestEnumStatus1DataSeeding()
     {
         (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestEnumStatusDataSeeding()
     {
         (await _db.Set<EnumTables<EnumStatus>>().CountAsync()).ShouldBe(3);
@@ -126,14 +126,14 @@ public class RegisterTests : SqlServerTestBase
         first.Id.ShouldBeGreaterThanOrEqualTo(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestIgnoredEntityAsync()
     {
         var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestWithCustomEntityMapperBad()
     {
         var action = async () =>
@@ -148,7 +148,7 @@ public class RegisterTests : SqlServerTestBase
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestWithCustomEntityMapperNullFilterBad()
     {
         var action = async () =>

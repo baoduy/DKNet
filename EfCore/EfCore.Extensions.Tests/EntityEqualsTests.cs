@@ -1,9 +1,9 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class EntityEqualsTests
 {
-    // [TestMethod]
+    // [Fact]
     // public void TestGetHashCode()
     // {
     //     var user1 = new User(0, "Hello") { FirstName = "Steven", LastName = "Smith" };
@@ -17,7 +17,7 @@ public class EntityEqualsTests
     //     //user3.GetHashCode().ShouldBe(user4.GetHashCode());
     // }
 
-    [TestMethod]
+    [Fact]
     public void TestReferenceEquals()
     {
         var user1 = new User(1, "Hello")
@@ -36,7 +36,7 @@ public class EntityEqualsTests
         user2.Equals(user2).ShouldBeTrue();
     }
 
-    //[TestMethod]
+    //[Fact]
     //public void TestEquals()
     //{
     //    var user1 = new User(1, "Hello");
@@ -53,7 +53,7 @@ public class EntityEqualsTests
     //    user5.Equals(user4).ShouldBeFalse("Two default Key entity should not be the same");
     //}
 
-    //[TestMethod]
+    //[Fact]
     //public void TestEqualsOperator()
     //{
     //    var user1 = new User(1, "Hello");
@@ -66,7 +66,7 @@ public class EntityEqualsTests
     //    (user3 == new Address()).ShouldBeFalse();
     //}
 
-    [TestMethod]
+    [Fact]
     public void CanRemoveWhereItemFromHashSet()
     {
         var set = new HashSet<User>
@@ -82,7 +82,7 @@ public class EntityEqualsTests
         set.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void CanRemoveItemFromHashSet()
     {
         var set = new HashSet<User>

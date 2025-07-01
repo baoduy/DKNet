@@ -1,20 +1,20 @@
 ﻿
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class GuidEntityTests : SqlServerTestBase
 {
     private static MyDbContext _db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("TestDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateAsync()
     {
         var entity = new GuidEntity {Name = "Duy"};
@@ -24,7 +24,7 @@ public class GuidEntityTests : SqlServerTestBase
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateAuditAsync()
     {
         var entity = new GuidAuditEntity {Name = "Duy"};
@@ -35,7 +35,7 @@ public class GuidEntityTests : SqlServerTestBase
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateAsync()
     {
         var entity = new GuidEntity {Name = "Duy"};
@@ -48,7 +48,7 @@ public class GuidEntityTests : SqlServerTestBase
         entity.Id.ToString().ShouldBe(oldId);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateAuditAsync()
     {
         var entity = new GuidAuditEntity {Name = "Duy"};

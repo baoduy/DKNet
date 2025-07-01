@@ -1,19 +1,19 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class UserTests : SqlServerTestBase
 {
     private static MyDbContext _db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("EntitiesDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public void CreatedUserIdShouldBeZero()
     {
         var user = new User("Duy")
@@ -21,7 +21,7 @@ public class UserTests : SqlServerTestBase
         user.Id.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddUserAndAddress()
     {
         var user = new User("A")

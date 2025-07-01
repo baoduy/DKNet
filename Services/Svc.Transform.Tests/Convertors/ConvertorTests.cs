@@ -1,11 +1,11 @@
 ﻿namespace Svc.Transform.Tests.Convertors;
 
-[TestClass]
+
 public class ConvertorTests
 {
     #region Methods
 
-    [TestMethod]
+    [Fact]
     public void Convertor()
     {
         var c = new ValueFormatter();

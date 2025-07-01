@@ -3,14 +3,14 @@ namespace EfCore.Extensions.Tests;
 /// <summary>
 /// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
-[TestClass]
+
 public class ConcurrentUpdateWithSqlTests
 {
     private static MsSqlContainer _sql = null!;
     private static MyDbContext _db= null!;
 
-    [ClassInitialize]
-    public static async Task Setup(TestContext context)
+    
+    public static async Task Setup()
     {
         _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
         await _sql.StartAsync(context.CancellationTokenSource.Token);
@@ -29,7 +29,7 @@ public class ConcurrentUpdateWithSqlTests
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ConcurrencyWithRepositoryTest()
     {
         var writeRepo = new WriteRepository<User>(_db);

@@ -3,10 +3,10 @@ using EfCore.Extensions.Tests.TestEntities.Mappers;
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class EntityAutoConfigTests
 {
-    [TestMethod]
+    [Fact]
     public void ScanEntites()
     {
         var info =
@@ -18,7 +18,7 @@ public class EntityAutoConfigTests
         entities.Count.ShouldBeGreaterThanOrEqualTo(7);
     }
 
-    [TestMethod]
+    [Fact]
     public void ScanConfigsShouldIncludeEntitiesThatNotInheritIEntity()
     {
         var info =
@@ -29,7 +29,7 @@ public class EntityAutoConfigTests
         configs.Any(c => c == typeof(NotInheritIEntityConfig)).ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void ScanGenericConfigs()
     {
         var info =

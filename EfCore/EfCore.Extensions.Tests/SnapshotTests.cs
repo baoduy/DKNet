@@ -1,19 +1,19 @@
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class SnapshotTests : SqlServerTestBase
 {
     private static MyDbContext _db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("EventDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public void Snapshot_ShouldCreateSnapshotContext()
     {
         // Act
@@ -24,7 +24,7 @@ public class SnapshotTests : SqlServerTestBase
         snapshot.DbContext.ShouldBe(_db);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SnapshotContext_Dispose_ShouldReleaseResources()
     {
         // Arrange
@@ -37,7 +37,7 @@ public class SnapshotTests : SqlServerTestBase
         Should.Throw<ObjectDisposedException>(() => snapshot.DbContext);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntities_ShouldCaptureChangedEntities()
     {
         // Arrange
@@ -53,7 +53,7 @@ public class SnapshotTests : SqlServerTestBase
         snapshotEntities.ShouldContain(e => e.Entity == user);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
     {
         // Arrange
@@ -67,7 +67,7 @@ public class SnapshotTests : SqlServerTestBase
         firstAccess.ShouldBeSameAs(secondAccess);
     }
 
-    [TestMethod]
+    [Fact]
     public void SnapshotEntityEntry_ShouldCaptureEntityState()
     {
         // Arrange

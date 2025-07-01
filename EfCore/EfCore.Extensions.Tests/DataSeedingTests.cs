@@ -20,10 +20,10 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
     };
 }
 
-[TestClass]
+
 public class DataSeedingTests : SqlServerTestBase
 {
-    [TestMethod]
+    [Fact]
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()
     {
         // Arrange
@@ -47,7 +47,7 @@ public class DataSeedingTests : SqlServerTestBase
         users.ShouldContain(u => u.FirstName == "Seeded" && u.LastName == "User2");
     }
 
-    // [TestMethod]
+    // [Fact]
     // public async Task UseAutoDataSeeding_WithExistingData_ShouldNotDuplicateData()
     // {
     //     // Arrange
@@ -83,7 +83,7 @@ public class DataSeedingTests : SqlServerTestBase
     //     users.First().FirstName.ShouldBe("Already"); // Original data should remain
     // }
 
-    [TestMethod]
+    [Fact]
     public void UseAutoDataSeeding_WithNullOptionsBuilder_ShouldThrowArgumentNullException()
     {
         // Act & Assert

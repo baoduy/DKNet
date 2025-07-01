@@ -1,19 +1,19 @@
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
 {
     private static MyDbContext _db = null!;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("EfCoreTestDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnCorrectProperties()
     {
         // Act
@@ -24,7 +24,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         properties[0].ShouldBe("Id");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyProperties_WithCompositeKey_ShouldReturnAllKeyProperties()
     {
         // Act
@@ -36,7 +36,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         properties.ShouldContain("Id");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyValues_WithValidEntity_ShouldReturnCorrectValues()
     {
         // Arrange
@@ -50,7 +50,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         keyValues[0].ShouldBe(123);
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
     {
         // Act & Assert
@@ -58,7 +58,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         action.ShouldThrow<ArgumentNullException>();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyValues_WithNonEntityObject_ShouldReturnEmpty()
     {
         // Arrange
@@ -71,7 +71,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         keyValues.ShouldBeEmpty();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
     {
         // This test would need a proper sequence setup
@@ -86,7 +86,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         result.ShouldBeNull(); // Since no sequence attribute is registered
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValueWithFormat_WithValidSequence_ShouldReturnFormattedValue()
     {
         // Arrange
@@ -101,7 +101,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         result.ShouldBe("");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetEntityType_WithValidMappingType_ShouldReturnCorrectType()
     {
         // This tests an internal method, but we can create a scenario that uses it
@@ -115,7 +115,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         accountEntityType.ShouldNotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void DatabaseProvider_ShouldBeSqlServer()
     {
         // Act
@@ -125,7 +125,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task DatabaseConnection_ShouldOpenAndClose()
     {
         // Act
@@ -141,7 +141,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         connectionState.ShouldBe(System.Data.ConnectionState.Closed);
     }
 
-    [TestMethod]
+    [Fact]
     public void Model_ShouldContainAllExpectedEntityTypes()
     {
         // Act
@@ -153,7 +153,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         entityTypes.ShouldContain(typeof(Address));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SaveChanges_WithValidEntities_ShouldSucceed()
     {
         // Arrange
@@ -172,7 +172,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         savedUser.FirstName.ShouldBe("Save");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ChangeTracking_ShouldDetectModifications()
     {
         // Arrange
@@ -193,7 +193,7 @@ public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
         updatedUser!.FirstName.ShouldBe("Modified");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task BulkOperations_ShouldWorkCorrectly()
     {
         // Arrange

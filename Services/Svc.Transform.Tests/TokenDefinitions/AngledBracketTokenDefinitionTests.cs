@@ -3,12 +3,12 @@ using DKNet.Svc.Transformation.TokenDefinitions;
 
 namespace Svc.Transform.Tests.TokenDefinitions;
 
-[TestClass]
+
 public class AngledBracketTokenDefinitionTests
 {
 
 
-    [TestMethod]
+    [Fact]
     public void AngledBracketTokenDefinitionTest()
     {
         var t = new AngledBracketDefinition();

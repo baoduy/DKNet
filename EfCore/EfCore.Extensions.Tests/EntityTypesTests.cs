@@ -2,11 +2,11 @@
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class EntityTypesTests
 {
 
-    [TestMethod]
+    [Fact]
     public void TestEntityAudit()
     {
         typeof(Entity<int>).IsAssignableFrom(typeof(AuditedEntity<int>))
@@ -22,28 +22,28 @@ public class EntityTypesTests
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestEntityAuditEntityGeneric()
     {
         typeof(IEntity<int>).IsAssignableFrom(typeof(IAuditedEntity<int>))
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestEntityAuditGeneric()
     {
         typeof(IEntity<int>).IsAssignableFrom(typeof(IAuditedEntity<int>))
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestEntityGenericAuditGeneric()
     {
         typeof(IEntity<int>).IsAssignableFrom(typeof(IAuditedEntity<int>))
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestIAuditAudit()
     {
         typeof(IAuditedEntity<int>).IsAssignableFrom(typeof(AuditedEntity<int>))
@@ -53,7 +53,7 @@ public class EntityTypesTests
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestIEntityEntity()
     {
         typeof(IEntity<int>).IsAssignableFrom(typeof(Entity<int>))
@@ -63,7 +63,7 @@ public class EntityTypesTests
             .ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestIEntityIEntityGeneric()
     {
         typeof(IEntity<int>).IsAssignableFrom(typeof(IEntity<int>))

@@ -3,10 +3,10 @@ using DKNet.Svc.Transformation.TokenExtractors;
 
 namespace Svc.Transform.Tests.TokenExtractors;
 
-[TestClass]
+
 public class TokenExtractorTests
 {
-    [TestMethod]
+    [Fact]
     public void TokenExtractorAngledBracketTest()
     {
         var t = new TokenExtractor(new AngledBracketDefinition());
@@ -32,7 +32,7 @@ public class TokenExtractorTests
         list[0].Key.ShouldBe("Duy");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TokenExtractorAsyncTest()
     {
         var t = new TokenExtractor(new CurlyBracketDefinition());
@@ -41,7 +41,7 @@ public class TokenExtractorTests
             .Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void TokenExtractorBracketsTokenTest()
     {
         var t = new TokenExtractor(new CurlyBracketDefinition());
@@ -67,7 +67,7 @@ public class TokenExtractorTests
         list[0].Key.ShouldBe("Duy");
     }
 
-    [TestMethod]
+    [Fact]
     public void TokenExtractorInCorrectTokenTest()
     {
         var t = new TokenExtractor(new CurlyBracketDefinition());
@@ -79,14 +79,13 @@ public class TokenExtractorTests
             .Count.ShouldBeGreaterThanOrEqualTo(0);
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
+    [Fact]
     public void TokenExtractorNullArgumentTest()
     {
         new TokenExtractor(definition: null);
     }
 
-    [TestMethod]
+    [Fact]
     public void TokenExtractorSupportDuplicateOfTokenTest()
     {
         var t = new TokenExtractor(new CurlyBracketDefinition());

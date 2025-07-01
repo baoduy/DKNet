@@ -6,7 +6,7 @@ global using Microsoft.EntityFrameworkCore.Diagnostics;
 global using Microsoft.EntityFrameworkCore.Infrastructure;
 global using Microsoft.EntityFrameworkCore.Internal;
 global using Microsoft.Extensions.Logging;
-global using Microsoft.VisualStudio.TestTools.UnitTesting;
+global using Xunit;
 global using Shouldly;
 global using Testcontainers.MsSql;
 global using DKNet.EfCore.Repos;

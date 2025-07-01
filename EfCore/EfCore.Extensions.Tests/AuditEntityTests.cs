@@ -1,26 +1,26 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class AuditEntityTests : SqlServerTestBase
 {
 
     private static MyDbContext _db = null!;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext context)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("AuditDb");
         await _db.Database.EnsureCreatedAsync(context.CancellationTokenSource.Token);
     }
 
-    [TestInitialize]
+    
     public async Task TestInitialize()
     {
         await EnsureSqlStartedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public void TestCreatingEntity()
     {
         var user = new User("Duy") { FirstName = "Steven", LastName = "Smith" };
@@ -28,7 +28,7 @@ public class AuditEntityTests : SqlServerTestBase
         user.Id.ShouldBe(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdatingEntityAsync()
     {
         _db.Set<User>().AddRange(new User("StevenHoang")

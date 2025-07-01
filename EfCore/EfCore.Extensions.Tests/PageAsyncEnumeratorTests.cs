@@ -2,12 +2,12 @@ using DKNet.EfCore.Extensions.Extensions;
 
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class PageAsyncEnumeratorTests
 {
     private DbContextOptions<TestDbContext> _options;
 
-    [TestInitialize]
+    
     public void Setup()
     {
         _options = new DbContextOptionsBuilder<TestDbContext>()
@@ -15,7 +15,7 @@ public class PageAsyncEnumeratorTests
             .Options;
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithDefaultPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -34,7 +34,7 @@ public class PageAsyncEnumeratorTests
         Assert.AreEqual(150, result.Select(x => x.Id).Distinct().Count()); // All unique
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithCustomPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -53,7 +53,7 @@ public class PageAsyncEnumeratorTests
         Assert.AreEqual(25, result.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithEmptyQuery_ShouldReturnNoItems()
     {
         // Arrange
@@ -71,7 +71,7 @@ public class PageAsyncEnumeratorTests
         Assert.AreEqual(0, result.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithSinglePage_ShouldReturnAllItems()
     {
         // Arrange
@@ -90,7 +90,7 @@ public class PageAsyncEnumeratorTests
         Assert.AreEqual(5, result.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithExactPageSize_ShouldReturnAllItems()
     {
         // Arrange
@@ -109,7 +109,7 @@ public class PageAsyncEnumeratorTests
         Assert.AreEqual(20, result.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithCancellation_ShouldRespectCancellationToken()
     {
         // Arrange
@@ -143,7 +143,7 @@ public class PageAsyncEnumeratorTests
         }
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithOrderedQuery_ShouldMaintainOrder()
     {
         // Arrange
@@ -164,7 +164,7 @@ public class PageAsyncEnumeratorTests
         CollectionAssert.AreEqual(sortedResult, result);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ToPageEnumerable_WithFilteredQuery_ShouldReturnFilteredItems()
     {
         // Arrange

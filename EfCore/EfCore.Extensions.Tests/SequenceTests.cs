@@ -21,10 +21,10 @@ public enum DefaultSchemaSequenceTypes
     DefaultSequence
 }
 
-[TestClass]
+
 public class SequenceRegisterTests : SqlServerTestBase
 {
-    [TestMethod]
+    [Fact]
     public void GetAttribute_WithValidEnum_ShouldReturnAttribute()
     {
         // Act
@@ -35,7 +35,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         attribute.Schema.ShouldBe("test_seq");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetAttribute_WithDefaultSchema_ShouldReturnDefaultSchema()
     {
         // Act
@@ -46,7 +46,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         attribute.Schema.ShouldBe("seq");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetAttribute_WithoutAttribute_ShouldReturnNull()
     {
         // Act
@@ -56,7 +56,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         attribute.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetFieldAttributeOrDefault_WithFieldAttribute_ShouldReturnAttribute()
     {
         // Act
@@ -70,7 +70,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         attribute.FormatString.ShouldBe("TEST-{1:000}");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetFieldAttributeOrDefault_WithoutFieldAttribute_ShouldReturnDefault()
     {
         // Act
@@ -83,7 +83,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         attribute.IncrementsBy.ShouldBe(-1); // Default value
     }
 
-    [TestMethod]
+    [Fact]
     public void GetSequenceName_ShouldReturnFormattedName()
     {
         // Act
@@ -93,7 +93,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         name.ShouldBe("Sequence_TestSequence1");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
     {
         // Arrange
@@ -116,7 +116,7 @@ public class SequenceRegisterTests : SqlServerTestBase
         ((int)value).ShouldBeGreaterThanOrEqualTo(100); // Should start from the StartAt value
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValueWithFormat_ShouldReturnFormattedValue()
     {
         // Arrange

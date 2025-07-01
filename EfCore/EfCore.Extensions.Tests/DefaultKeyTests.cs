@@ -1,9 +1,9 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class DefaultKeyTests
 {
-    [TestMethod]
+    [Fact]
     public void DefaultKey()
     {
         new User("Duy")

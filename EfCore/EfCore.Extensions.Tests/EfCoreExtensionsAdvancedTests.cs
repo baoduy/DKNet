@@ -1,19 +1,19 @@
 namespace EfCore.Extensions.Tests;
 
-[TestClass]
+
 public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
 {
     private static MyDbContext _db;
 
-    [ClassInitialize]
-    public static async Task ClassSetup(TestContext _)
+    
+    public static async Task ClassSetup()
     {
         await StartSqlContainerAsync();
         _db = CreateDbContext("EfCoreTestDb");
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
     {
         var action =()=> _db.GetPrimaryKeyValues(null!).ToList();
@@ -21,7 +21,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         action.ShouldThrow<ArgumentNullException>();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyValues_WithEntityHavingMultipleKeys_ShouldReturnAllKeys()
     {
         // Arrange - Assuming we have an entity with composite keys (may need to create one)
@@ -35,7 +35,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         keyValues[0].ShouldBe(1);
     }
 
-    [TestMethod]
+    [Fact]
     public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnPropertyNames()
     {
         // Act
@@ -46,7 +46,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         properties[0].ShouldBe("Id");
     }
 
-    [TestMethod]
+    [Fact]
     public void GetTableName_WithValidEntity_ShouldReturnQualifiedTableName()
     {
         // Act
@@ -57,7 +57,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         tableName.ShouldContain("User"); // Should contain the entity name
     }
 
-    [TestMethod]
+    [Fact]
     public void GetTableName_WithNullContext_ShouldThrowArgumentNullException()
     {
         // Act & Assert
@@ -65,7 +65,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
             ((DbContext)null!).GetTableName(typeof(User)));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValue_WithNullContext_ShouldThrowArgumentNullException()
     {
         // Act & Assert
@@ -73,7 +73,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
             await ((DbContext)null!).NextSeqValue(TestSequenceTypes.TestSequence1));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValue_WithUnsupportedEnum_ShouldReturnNull()
     {
         // Arrange - Use a regular enum without sequence attributes
@@ -86,7 +86,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         result.ShouldBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
         // This would need a special test enum with empty format string
@@ -106,7 +106,7 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
         result.ShouldNotBeNullOrEmpty();
     }
 
-    [TestMethod]
+    [Fact]
     public void GetEntityType_WithValidMappingType_ShouldReturnEntityType()
     {
         // Arrange

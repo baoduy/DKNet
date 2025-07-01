@@ -1,13 +1,13 @@
 ﻿namespace EfCore.Extensions.Tests;
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
-[TestClass]
+
 public class WithSqlDbTests : SqlServerTestBase
 {
     private static MyDbContext _db = null!;
 
-    [ClassInitialize]
-    public static async Task Setup(TestContext _)
+    
+    public static async Task Setup()
     {
         await StartSqlContainerAsync();
 
@@ -20,10 +20,10 @@ public class WithSqlDbTests : SqlServerTestBase
         await _db.Database.EnsureCreatedAsync();
     }
 
-    [TestInitialize]
+    
     public Task TestSetup() => EnsureSqlStartedAsync();
 
-    [TestMethod]
+    [Fact]
     public async Task SequenceValueTestAsync()
     {
         var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
@@ -33,21 +33,21 @@ public class WithSqlDbTests : SqlServerTestBase
         val2!.Value.ShouldBeGreaterThan(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {
         var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestDataSeeding()
     {
         var account = await _db.Set<AccountStatus>().CountAsync();
         account.ShouldBeGreaterThanOrEqualTo(2);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestCreateWithSqlDbAsync()
     {
         _db.ChangeTracker.Clear();
@@ -68,15 +68,15 @@ public class WithSqlDbTests : SqlServerTestBase
         });
 
         var count = await _db.SaveChangesAsync();
-        Assert.IsTrue(count >= 1);
+        count >= 1.ShouldBeTrue();
 
         var users = await _db.Set<User>().ToListAsync();
 
-        Assert.IsTrue(users.Count >= 1);
+        users.Count >= 1.ShouldBeTrue();
         Assert.IsTrue(users.All(u => u.RowVersion != null));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestDeleteWithSqlDbAsync()
     {
         await TestCreateWithSqlDbAsync();
@@ -90,10 +90,10 @@ public class WithSqlDbTests : SqlServerTestBase
 
         var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
-        Assert.IsTrue(count == 0);
+        count == 0.ShouldBeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestUpdateWithSqlDbAsync()
     {
         await TestCreateWithSqlDbAsync();
@@ -112,7 +112,7 @@ public class WithSqlDbTests : SqlServerTestBase
         Assert.IsTrue(string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task TestConcurrentUpdateThrowsExceptionAsync()
     {
         // Arrange
