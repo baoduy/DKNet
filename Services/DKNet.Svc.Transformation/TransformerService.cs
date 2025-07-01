@@ -34,7 +34,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         {
             var val = (await TryGetAndCacheValueAsync(token, dataProvider) ??
                        TryGetAndCacheValue(token, additionalData))
-                      ?? throw new UnResolvedTokenException(token.Token);
+                      ?? throw new UnResolvedTokenException(token);
 
             var strVal = options.Formatter.Convert(token, val);
 

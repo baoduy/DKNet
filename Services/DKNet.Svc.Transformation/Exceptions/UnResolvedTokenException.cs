@@ -1,3 +1,5 @@
-﻿namespace DKNet.Svc.Transformation.Exceptions;
+﻿using DKNet.Svc.Transformation.TokenExtractors;
 
-public sealed class UnResolvedTokenException(string token, Exception? innerException = null) : Exception(token, innerException);
+namespace DKNet.Svc.Transformation.Exceptions;
+
+public sealed class UnResolvedTokenException(IToken token, Exception? innerException = null) : Exception(token.Token, innerException);

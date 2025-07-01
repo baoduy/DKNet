@@ -9,7 +9,7 @@ internal static class AuthConfig
     /// <summary>
     /// Indicates whether the authentication configuration has been added to the services.
     /// </summary>
-    public static bool IsAuthConfigAdded;
+    public static bool IsAuthConfigAdded { get; private set; }
 
     // NOTE: Switch this one off if we are not using MS Graph token
     private const bool ValidateMsGraphJwtToken = true;

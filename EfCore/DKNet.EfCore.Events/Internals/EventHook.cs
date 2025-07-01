@@ -21,33 +21,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
     /// <exception cref="EventException"></exception>
     public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        _eventEntities = ProcessAndFilterDomainEvents(context);
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Run RunAfterSaveAsync Events and ignore the result even failed.
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="cancellationToken"></param>
-    public async Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
-    {
-        var publishers = from entityEventItem in _eventEntities
-            from eventPublisher in eventPublishers
-            select eventPublisher.PublishAllAsync(entityEventItem.Events, cancellationToken);
-
-        await Task.WhenAll(publishers);
-    }
-
-    /// <summary>
-    /// ProcessAndFilterDomainEvents
-    /// </summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
-    /// <exception cref="NoNullAllowedException"></exception>
-    private ImmutableList<EntityEventItem> ProcessAndFilterDomainEvents(SnapshotContext context)
-    {
-        var foundEvents = context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
+        _eventEntities = context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
             .Select(e =>
             {
                 var events = new List<object?>();
@@ -79,15 +53,23 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
             .Where(e => e.Events.Count > 0)
             .ToImmutableList();
 
-        Debug.WriteLine($"EventHook: There are {foundEvents.Count} Entity Events Found.");
-        return foundEvents;
+        Debug.WriteLine($"EventHook: There are {_eventEntities.Count} Entity Events Found.");
+        return Task.CompletedTask;
     }
 
-    public ValueTask DisposeAsync()
+    /// <summary>
+    /// Run RunAfterSaveAsync Events and ignore the result even failed.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="cancellationToken"></param>
+    public async Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        Dispose();
-        return ValueTask.CompletedTask;
-    }
+        var publishers = from entityEventItem in _eventEntities
+            from eventPublisher in eventPublishers
+            select eventPublisher.PublishAllAsync(entityEventItem.Events, cancellationToken);
 
-    public void Dispose() => _eventEntities = [];
+        await Task.WhenAll(publishers);
+        //Reset the event entities after processing
+        _eventEntities = _eventEntities.Clear();
+    }
 }
