@@ -23,7 +23,7 @@
         <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="FluentResults" Version="3.16.0" />
+      <PackageReference Include="FluentResults" Version="4.0.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6" />
       <PackageReference Include="SlimMessageBus" Version="3.0.0" />
       <PackageReference Include="SlimMessageBus.Host" Version="3.2.0" />

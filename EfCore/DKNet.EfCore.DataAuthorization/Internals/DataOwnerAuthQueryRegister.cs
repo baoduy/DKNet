@@ -17,14 +17,9 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 /// </remarks>
 internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
 {
-    #region Private Fields
-
     private static readonly MethodInfo Method = typeof(DataOwnerAuthQueryRegister)
         .GetMethod(nameof(ApplyQueryFilter), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-    #endregion
-
-    #region Public Methods
 
     /// <summary>
     /// Applies the global query filters to the model builder.
@@ -35,13 +30,13 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
     {
         if (modelBuilder == null)
         {
-            Trace.WriteLine($"{nameof(DataOwnerAuthQueryRegister)}-Ignored: ModelBuilder is null.");
+            Debug.WriteLine($"{nameof(DataOwnerAuthQueryRegister)}-Ignored: ModelBuilder is null.");
             return;
         }
 
         if (context is not IDataOwnerDbContext keyContext)
         {
-            Trace.WriteLine(
+            Debug.WriteLine(
                 $"{nameof(DataOwnerAuthQueryRegister)}-Ignored: DbContext is not an implementation of IDataKeyContext.");
             return;
         }
@@ -57,9 +52,6 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
         }
     }
 
-    #endregion
-
-    #region Private Methods
 
     /// <summary>
     /// Applies the ownership query filter to a specific entity type.
@@ -73,6 +65,4 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
         modelBuilder.Entity<TEntity>()
             .HasQueryFilter(x => x.OwnedBy == null || context.AccessibleKeys.Contains(x.OwnedBy));
     }
-
-    #endregion
 }

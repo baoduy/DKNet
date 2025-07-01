@@ -38,7 +38,7 @@ public class TokenResultTests
     [ExpectedException(typeof(ArgumentNullException))]
     public void CreateTokenResultDefinitionIsNull()
     {
-        new TokenResult(null, "[A]", "123 [A]", 1);
+        new TokenResult(definition: null, "[A]", "123 [A]", 1);
     }
 
     [TestMethod]
@@ -66,13 +66,13 @@ public class TokenResultTests
     [ExpectedException(typeof(ArgumentNullException))]
     public void CreateTokenResultOriginalStringIsNull()
     {
-        new TokenResult(new SquareBracketDefinition(), "[A]", null, 1);
+        new TokenResult(new SquareBracketDefinition(), "[A]", originalString: null, 1);
     }
 
     [TestMethod]
     [ExpectedException(typeof(ArgumentNullException))]
     public void CreateTokenResultTokenIsNull()
     {
-        new TokenResult(new SquareBracketDefinition(), null, "123 [A]", 1);
+        new TokenResult(new SquareBracketDefinition(), token: null, "123 [A]", 1);
     }
 }

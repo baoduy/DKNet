@@ -18,9 +18,9 @@ public interface ITransformerService
     /// Transform template from TransformData and additionalData
     /// </summary>
     /// <param name="templateString">the template ex: Hello [Name]. Your {Email} had been [ApprovedStatus]</param>
-    /// <param name="parameterFactory">Dynamic loading data based on Token <see cref="IToken"/></param>
+    /// <param name="tokenFactory">Dynamic loading data based on Token <see cref="IToken"/></param>
     /// <returns>"Hello Duy. Your drunkcoding@outlook.net had been Approved" with TransformData or dataProvider is new {Name = "Duy", Email= "drunkcoding@outlook.net", ApprovedStatus = "Approved"}</returns>
-    Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> parameterFactory);
+    Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> tokenFactory);
 
     #endregion Methods
 }

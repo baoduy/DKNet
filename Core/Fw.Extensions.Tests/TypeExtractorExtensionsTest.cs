@@ -281,7 +281,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.Name.StartsWith("Test")).ShouldBeTrue();
+        types.All(t => t.Name.StartsWith("Test", StringComparison.OrdinalIgnoreCase)).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -298,8 +298,8 @@ public class TestTypeExtractorExtensions
         types.ShouldNotBeEmpty();
         foreach (var type in types)
         {
-            type.IsImplementOf(typeof(ITem)).ShouldBeFalse();
-            type.IsImplementOf(typeof(IDisposable)).ShouldBeFalse();
+            type.IsImplementOf<ITem>().ShouldBeFalse();
+            type.IsImplementOf<IDisposable>().ShouldBeFalse();
         }
     }
 

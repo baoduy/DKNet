@@ -1,7 +1,8 @@
 ﻿namespace Fw.Extensions.Tests.TestObjects;
 
-public enum HBDEnum
+public enum HbdTypes
 {
+    None,
     [Display(Name = "HBD")]
     DescriptionEnum = 1,
 

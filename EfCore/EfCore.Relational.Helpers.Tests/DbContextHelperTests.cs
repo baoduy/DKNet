@@ -12,7 +12,7 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
-        var (schema, tableName) = db.GetTableName<TestEntity>();
+        var (_, tableName) = db.GetTableName<TestEntity>();
         tableName.ShouldBe(nameof(TestEntity));
     }
 
@@ -24,7 +24,7 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
-        var (schema, tableName) = db.GetTableName<NotMappedTestEntity>();
+        var (_, tableName) = db.GetTableName<NotMappedTestEntity>();
         tableName.ShouldBeNullOrEmpty();
     }
 

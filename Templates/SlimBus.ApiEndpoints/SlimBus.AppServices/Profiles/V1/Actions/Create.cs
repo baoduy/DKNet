@@ -1,18 +1,25 @@
-﻿using SlimBus.AppServices.Extensions.LazyMapper;
+﻿using System.ComponentModel;
+using System.Data;
+using System.Text.Json.Serialization;
+using SlimBus.AppServices.Extensions.LazyMapper;
 using SlimBus.Domains.Features.Profiles.Entities;
+
 // ReSharper disable UnusedType.Global
 
 
 namespace SlimBus.AppServices.Profiles.V1.Actions;
 
+[MapsTo(typeof(CustomerProfile))]
 public sealed record CreateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<ProfileResult>
 {
     [Required] public string Email { get; set; } = null!;
     [Phone] public string Phone { get; set; } = null!;
-    internal string MembershipNo { get; set; } = null!;
-    [StringLength(150)][Required] public string Name { get; set; } = null!;
-}
 
+    [JsonIgnore,Description("This property is not used in the mapping, it will be set by the membership provider if not provided.")]
+    public string MembershipNo { get; set; } = null!;
+
+    [StringLength(150)] [Required] public string Name { get; set; } = null!;
+}
 
 internal sealed class CreateProfileCommandValidator : AbstractValidator<CreateProfileCommand>
 {
@@ -30,7 +37,8 @@ internal sealed class CreateProfileCommandHandler(
     IMapper mapper)
     : Fluents.Requests.IHandler<CreateProfileCommand, ProfileResult>
 {
-    public async Task<IResult<ProfileResult>> OnHandle(CreateProfileCommand request, CancellationToken cancellationToken)
+    public async Task<IResult<ProfileResult>> OnHandle(CreateProfileCommand request,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MembershipNo))
             request.MembershipNo = await membershipProvider.NextValueAsync();
@@ -40,6 +48,10 @@ internal sealed class CreateProfileCommandHandler(
             return Result.Fail<ProfileResult>($"Email {request.Email} is already existed.");
 
         var profile = mapper.Map<CustomerProfile>(request);
+
+        if (string.IsNullOrEmpty(profile.MembershipNo))
+            throw new NoNullAllowedException(nameof(profile.MembershipNo));
+
         //Add
         repository.Add(profile);
 

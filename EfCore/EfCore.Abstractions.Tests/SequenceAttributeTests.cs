@@ -122,7 +122,7 @@ public class SequenceAttributeTests
         var attributeType = typeof(SequenceAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 

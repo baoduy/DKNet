@@ -11,15 +11,15 @@ namespace Fw.Extensions.Tests
             [TestMethod]
             public void ReturnsLastDayForNonNullDate()
             {
-                var date = new DateTime(2024, 2, 15);
+                var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
                 var result = date.LastDayOfMonth();
-                Assert.AreEqual(new DateTime(2024, 2, 29), result);
+                Assert.AreEqual(new DateTime(new DateOnly(2024, 2, 29), TimeOnly.MinValue, DateTimeKind.Local), result);
             }
 
             [TestMethod]
             public void HandlesLeapYearCorrectly()
             {
-                var date = new DateTime(2020, 2, 15);
+                var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
                 var result = date.LastDayOfMonth();
                 Assert.AreEqual(29, result.Day);
             }
@@ -39,7 +39,7 @@ namespace Fw.Extensions.Tests
             [DataRow(12, 31)]
             public void HandlesAllMonthsCorrectly(int month, int expectedDay)
             {
-                var date = new DateTime(2024, month, 1);
+                var date = new DateTime(new DateOnly(2024, month, 15), TimeOnly.MinValue, DateTimeKind.Local);
                 var result = date.LastDayOfMonth();
                 Assert.AreEqual(expectedDay, result.Day);
             }

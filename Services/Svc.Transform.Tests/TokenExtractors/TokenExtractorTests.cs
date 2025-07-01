@@ -13,7 +13,7 @@ public class TokenExtractorTests
 
         var list1 = t.Extract("Hoang <Duy> Bao").ToList();
         list1.Count.ShouldBeGreaterThanOrEqualTo(1);
-        list1.First().Token.ShouldBe("<Duy>");
+        list1[0].Token.ShouldBe("<Duy>");
 
         t.Extract("Hoang Duy Bao").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
@@ -21,7 +21,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(null).ToList()
+        t.Extract(templateString: null!).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -29,7 +29,7 @@ public class TokenExtractorTests
             .ToList();
 
         list.Count.ShouldBeGreaterThanOrEqualTo(12);
-        list.First().Key.ShouldBe("Duy");
+        list[0].Key.ShouldBe("Duy");
     }
 
     [TestMethod]
@@ -48,7 +48,7 @@ public class TokenExtractorTests
 
         var list1 = t.Extract("Hoang {Duy} Bao").ToList();
         list1.Count.ShouldBeGreaterThanOrEqualTo(1);
-        list1.First().Token.ShouldBe("{Duy}");
+        list1[0].Token.ShouldBe("{Duy}");
 
         t.Extract("Hoang Duy Bao").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
@@ -56,7 +56,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(null).ToList()
+        t.Extract(templateString: null).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -64,7 +64,7 @@ public class TokenExtractorTests
             .ToList();
 
         list.Count.ShouldBeGreaterThanOrEqualTo(12);
-        list.First().Key.ShouldBe("Duy");
+        list[0].Key.ShouldBe("Duy");
     }
 
     [TestMethod]
@@ -83,7 +83,7 @@ public class TokenExtractorTests
     [ExpectedException(typeof(ArgumentNullException))]
     public void TokenExtractorNullArgumentTest()
     {
-        new TokenExtractor(null);
+        new TokenExtractor(definition: null);
     }
 
     [TestMethod]
@@ -93,6 +93,6 @@ public class TokenExtractorTests
 
         var list = t.Extract("Hoang [{Duy}] Bao").ToList();
         list.Count.ShouldBeGreaterThanOrEqualTo(1);
-        list.First().Token.ShouldBe("{Duy}");
+        list[0].Token.ShouldBe("{Duy}");
     }
 }

@@ -15,16 +15,6 @@ public class Hook : /*IHook,*/ IHookAsync
     public DateTime AfterCallTime { get; private set; }
     public bool ShouldThrowException { get; set; }
 
-    // public void RunBeforeSave(SnapshotContext context)
-    // {
-    //     BeforeCalled = context != null;
-    // }
-    //
-    // public void RunAfterSave(SnapshotContext context)
-    // {
-    //     AfterCalled = context != null;
-    // }
-
     public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         Trace.WriteLine($"Running BeforeSaveAsync at {DateTime.Now}");

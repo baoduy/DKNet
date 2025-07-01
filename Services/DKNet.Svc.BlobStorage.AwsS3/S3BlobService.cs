@@ -30,11 +30,6 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
         if (!string.IsNullOrWhiteSpace(_options.AccessKey) && !string.IsNullOrWhiteSpace(_options.Secret))
         {
-            // _client = isLocal
-            //     ? new AmazonS3Client(new BasicAWSCredentials(_options.AccessKey, _options.Secret), config)
-            //     : new AmazonS3Client(new BasicAWSCredentials(_options.AccessKey, _options.Secret),
-            //         RegionEndpoint.GetBySystemName(_options.RegionEndpointName));
-
             _client = new AmazonS3Client(new BasicAWSCredentials(_options.AccessKey, _options.Secret), config);
             logger.LogInformation("Loaded AmazonS3Client with BasicAWSCredentials");
         }

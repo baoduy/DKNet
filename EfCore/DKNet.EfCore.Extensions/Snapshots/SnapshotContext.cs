@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Extensions.Snapshots;
@@ -30,7 +29,6 @@ public sealed class SnapshotContext : IDisposable, IAsyncDisposable
             // NOTE: Potential circular event handling in domain event handlers needs review
             if (_snapshotEntities.Count > 0) return _snapshotEntities;
             _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
-            Trace.WriteLine($"SnapshotContext: Created SnapshotEntities with {_snapshotEntities.Count} ");
             return _snapshotEntities;
         }
     }

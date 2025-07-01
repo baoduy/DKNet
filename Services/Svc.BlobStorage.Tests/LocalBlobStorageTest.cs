@@ -12,7 +12,7 @@ public class LocalBlobStorageTest
         _testRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
 
         if (Directory.Exists(_testRoot))
-            Directory.Delete(_testRoot, true);
+            Directory.Delete(_testRoot, recursive: true);
         Directory.CreateDirectory(_testRoot);
 
         var config = new ConfigurationBuilder()

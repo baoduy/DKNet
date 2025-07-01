@@ -77,7 +77,7 @@ public class DomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "orig@example.com", "+1111111111", "user1");
 
         // Act
-        profile.Update("avatar.jpg", null, "+2222222222", null, "user2");
+        profile.Update("avatar.jpg", name: null, "+2222222222", birthday: null, "user2");
 
         // Assert
         profile.Name.ShouldBe(originalName);
@@ -92,7 +92,7 @@ public class DomainEntityTests
         var profile = new CustomerProfile("Name", "MEM123", "orig@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update("avatar.jpg", "New Name", string.Empty, null, "user2");
+        profile.Update("avatar.jpg", "New Name", string.Empty, birthday: null, "user2");
 
         // Assert
         profile.Name.ShouldBe("New Name");

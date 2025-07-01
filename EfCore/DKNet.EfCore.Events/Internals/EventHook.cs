@@ -79,7 +79,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
             .Where(e => e.Events.Count > 0)
             .ToImmutableList();
 
-        Trace.WriteLine($"EventHook: There are {foundEvents.Count} Entity Events Found.");
+        Debug.WriteLine($"EventHook: There are {foundEvents.Count} Entity Events Found.");
         return foundEvents;
     }
 

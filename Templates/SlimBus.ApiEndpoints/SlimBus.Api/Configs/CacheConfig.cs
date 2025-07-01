@@ -7,7 +7,9 @@ internal static class CacheConfigs
     {
         var conn = configuration.GetConnectionString("Redis");
 
-        if (!string.IsNullOrWhiteSpace(conn))
+        if (string.IsNullOrWhiteSpace(conn))
+            services.AddDistributedMemoryCache();
+        else
         {
             services.AddStackExchangeRedisCache(s =>
             {

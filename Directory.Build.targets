@@ -12,7 +12,14 @@
                 <PackageReference Update="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
                 <PackageReference Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.11.0" />
                 <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
-                <PackageReference Include="Meziantou.Analyzer" Version="2.0.202" />
+                <PackageReference Include="Meziantou.Analyzer" Version="2.0.203" >
+                    <PrivateAssets>all</PrivateAssets>
+                    <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+                </PackageReference>
+                <PackageReference Include="SonarAnalyzer.CSharp" Version="10.12.0.118525">
+                    <PrivateAssets>all</PrivateAssets>
+                    <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+                </PackageReference>
             </ItemGroup>
             <PropertyGroup>
                 <DefineConstants>$(DefineConstants);ROSLYN_4_8;ROSLYN_4_8_OR_GREATER</DefineConstants>

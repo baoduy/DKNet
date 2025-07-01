@@ -35,7 +35,7 @@ public class StringEncryptionTests
         var result = input.ToBase64String();
 
         // Assert
-        Assert.AreEqual(expectedBase64, result, $"Failed to encode: {input}");
+        result.ShouldBe(expectedBase64, $"Failed to encode: {input}");
     }
 
     [DataTestMethod]
@@ -48,7 +48,7 @@ public class StringEncryptionTests
         var result = base64Input.FromBase64String();
 
         // Assert
-        Assert.AreEqual(expectedString, result, $"Failed to decode: {base64Input}");
+        result.ShouldBe(expectedString, $"Failed to decode: {base64Input}");
     }
 
     [TestMethod]

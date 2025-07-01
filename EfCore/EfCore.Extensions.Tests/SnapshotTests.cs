@@ -75,7 +75,7 @@ public class SnapshotTests : SqlServerTestBase
         _db.Set<User>().Add(user);
         
         var snapshot = _db.Snapshot();
-        var entry = snapshot.SnapshotEntities.First();
+        var entry = snapshot.SnapshotEntities[0];
 
         // Assert
         entry.Entity.ShouldBe(user);

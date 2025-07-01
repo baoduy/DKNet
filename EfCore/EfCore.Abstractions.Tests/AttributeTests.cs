@@ -9,7 +9,7 @@ public class AttributeTests
         var attributeType = typeof(IgnoreEntityAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 
@@ -69,7 +69,7 @@ public class AttributeTests
         var attributeType = typeof(SqlSequenceAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 
@@ -108,7 +108,7 @@ public class AttributeTests
         var attributeType = typeof(StaticDataAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 

@@ -11,6 +11,9 @@ internal sealed class GlobalExceptionHandler(
     {
         logger.LogError(exception, exception.Message);
 
+        if (exception.InnerException is not null)
+            exception = exception.InnerException;
+
         var problem = new ProblemDetails
         {
             Status = (int)HttpStatusCode.InternalServerError,
@@ -18,9 +21,6 @@ internal sealed class GlobalExceptionHandler(
             Detail = exception.Message,
             Type = exception.GetType().Name,
         };
-
-        if(exception is DbUpdateException && exception.InnerException is not null)
-            exception = exception.InnerException;
 
         return problemDetailsService.TryWriteAsync(new ProblemDetailsContext
             { HttpContext = httpContext, ProblemDetails = problem, Exception = exception });

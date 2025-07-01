@@ -11,7 +11,9 @@ public class TestServiceActivator(
     ILogger<TestServiceActivator> logger,
     IEnumerable<ITestInterface> interfaces)
 {
-    private readonly IServiceProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-    private readonly ILogger<TestServiceActivator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    private readonly ITestInterface _interface = interfaces.FirstOrDefault()?? throw new ArgumentNullException(nameof(interfaces));
+    public IServiceProvider Provider { get; } = provider ?? throw new ArgumentNullException(nameof(provider));
+    public ILogger<TestServiceActivator> Logger1 { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    public ITestInterface Interface { get; } =
+        interfaces.FirstOrDefault() ?? throw new ArgumentNullException(nameof(interfaces));
 }

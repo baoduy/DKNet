@@ -181,9 +181,9 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
             .Where(u => u.CreatedBy.StartsWith("multi"))
             .ToListAsync();
         Assert.Equal(3, results.Count);
-        Assert.Contains(results, r => r.FirstName == "Multi1");
-        Assert.Contains(results, r => r.FirstName == "Multi2");
-        Assert.Contains(results, r => r.FirstName == "Multi3");
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi1", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi2", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi3", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

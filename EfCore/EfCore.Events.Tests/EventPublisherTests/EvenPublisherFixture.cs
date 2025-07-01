@@ -26,7 +26,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(20));
 
-        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
+        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(value: true);
 
         Provider = new ServiceCollection()
             .AddLogging()

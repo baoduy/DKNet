@@ -12,21 +12,6 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual void AddRange(IEnumerable<TEntity> entities)
     => dbContext.AddRange(entities);
 
-    // public virtual Task<int> BulkDeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-    // => dbContext.Set<TEntity>()
-    //         .Where(predicate)
-    //         .ExecuteDeleteAsync(cancellationToken);
-
-    // public virtual Task<int> BulkInsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
-    // {
-    //     foreach (var entity in entities)
-    //         dbContext.Add(entity);
-    //     return dbContext.SaveChangesAsync(cancellationToken);
-    // }
-
-    // public virtual Task<int> BulkUpdateAsync(Expression<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>> setPropertyCalls, CancellationToken cancellationToken = default)
-    // => dbContext.Set<TEntity>().ExecuteUpdateAsync(setPropertyCalls, cancellationToken);
-
     public virtual void Delete(TEntity entity)
     => dbContext.Set<TEntity>().Remove(entity);
 

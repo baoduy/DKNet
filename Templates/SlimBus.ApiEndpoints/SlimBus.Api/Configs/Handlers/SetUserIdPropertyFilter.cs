@@ -18,7 +18,7 @@ internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndp
         foreach (var a in context.Arguments)
         {
             if (a is not BaseCommand b) continue;
-            b.SetPropertyValue("UserId", userName);
+            b.ByUser = userName;
             Console.WriteLine("Set user for model: " + b.GetType().Name);
         }
 

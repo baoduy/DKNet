@@ -21,7 +21,6 @@ internal static class EndpointConfig
     {
         var path = $"/v{{version:apiVersion}}{config.GroupEndpoint}";
         var displayName = $"/v{config.Version}{config.GroupEndpoint}";
-        //var description = $"{config.GroupEndpoint} version {config.Version}";
 
         var group = app.MapGroup(path)
             .AddEndpointFilter<SetUserIdPropertyFilter>()
@@ -38,9 +37,6 @@ internal static class EndpointConfig
 
         if (AuthConfig.IsAuthConfigAdded)
             group.RequireAuthorization();
-
-        // if (RateLimitConfig.ConfigAdded)
-        //     group.RequireRateLimiting(RateLimitConfig.DefaultRateLimitName);
 
         return group;
     }

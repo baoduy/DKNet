@@ -3,9 +3,9 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <IsPackable>false</IsPackable>
-        <RunAnalyzers>false</RunAnalyzers>
-        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
-        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+<!--        <RunAnalyzers>false</RunAnalyzers>-->
+<!--        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>-->
+<!--        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>-->
         <LangVersion>default</LangVersion>
         <Nullable>annotations</Nullable>
         <TargetFramework>net9.0</TargetFramework>

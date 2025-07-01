@@ -39,7 +39,7 @@ internal static class FluentsEndpointMapperExtensions
         app.MapPost(endpoint, async (IMessageBus bus, TCommand request) =>
             {
                 var rs = await bus.Send(request);
-                return rs.Response(true);
+                return rs.Response(isCreated: true);
             }).Produces<TResponse>()
             .ProducesCommons();
 
@@ -48,7 +48,7 @@ internal static class FluentsEndpointMapperExtensions
         app.MapPost(endpoint, async (IMessageBus bus, TCommand request) =>
         {
             var rs = await bus.Send(request);
-            return rs.Response(true);
+            return rs.Response(isCreated: true);
         }).ProducesCommons();
 
     public static RouteHandlerBuilder MapPut<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)

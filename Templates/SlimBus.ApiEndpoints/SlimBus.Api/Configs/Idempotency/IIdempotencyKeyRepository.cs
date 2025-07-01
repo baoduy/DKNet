@@ -8,19 +8,19 @@ public interface IIdempotencyKeyRepository
     /// <summary>
     /// Checks if the key has been processed. If it has, returns true and the result if provided when marking the key as processed.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="idempotencyKey"></param>
     /// <returns></returns>
-    ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string key);
+    ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string idempotencyKey);
 
     /// <summary>
     /// Marks the key as processed and caches the result.
     ///  The result can be null. If the result is null, the key will be marked as processed but no result will be cached. 
     ///  This is useful for idempotent commands that do not return a result.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="idempotencyKey"></param>
     /// <param name="result">The result can be null.</param>
     /// <returns></returns>
-    ValueTask MarkKeyAsProcessedAsync(string key, string? result);
+    ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, string? result);
 }
 
 internal class IdempotencyKeyRepository(IDistributedCache cache, IOptions<IdempotencyOptions> options, ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyRepository

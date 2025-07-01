@@ -193,28 +193,6 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         hook.LastAfterContext.ShouldNotBeNull();
     }
 
-    // [Fact]
-    // public async Task Hook_ShouldHandleExceptionsDuringExecution()
-    // {
-    //     // Arrange
-    //     var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
-    //     hook.Reset();
-    //     hook.ShouldThrowException = true; // Configure hook to throw exception
-    //     var db = _provider.GetRequiredService<HookContext>();
-    //
-    //     var entity = new CustomerProfile { Name = "Exception Test" };
-    //
-    //     // Act & Assert
-    //     await db.AddAsync(entity);
-    //
-    //     // The hook should throw an exception during save
-    //     var action = async () => await db.SaveChangesAsync();
-    //     await action.ShouldThrowAsync<InvalidOperationException>();
-    //
-    //     // Reset exception flag
-    //     hook.ShouldThrowException = false;
-    // }
-
     [Fact]
     public async Task Hook_ShouldExecuteInCorrectOrder()
     {
