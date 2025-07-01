@@ -2,26 +2,10 @@
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
 
-public class WithSqlDbTests : SqlServerTestBase
+public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db = null!;
+    private readonly MyDbContext _db = fixture.Db;
 
-    
-    public static async Task Setup()
-    {
-        await StartSqlContainerAsync();
-
-        _db = new MyDbContext(new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString("WithSqlDb"))
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .UseAutoDataSeeding()
-            .Options);
-
-        await _db.Database.EnsureCreatedAsync();
-    }
-
-    
-    public Task TestSetup() => EnsureSqlStartedAsync();
 
     [Fact]
     public async Task SequenceValueTestAsync()
@@ -60,7 +44,7 @@ public class WithSqlDbTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -68,12 +52,12 @@ public class WithSqlDbTests : SqlServerTestBase
         });
 
         var count = await _db.SaveChangesAsync();
-        count >= 1.ShouldBeTrue();
+        (count >= 1).ShouldBeTrue();
 
         var users = await _db.Set<User>().ToListAsync();
 
-        users.Count >= 1.ShouldBeTrue();
-        Assert.IsTrue(users.All(u => u.RowVersion != null));
+        (users.Count >= 1).ShouldBeTrue();
+        users.All(u => u.RowVersion != null).ShouldBeTrue();
     }
 
     [Fact]
@@ -81,7 +65,8 @@ public class WithSqlDbTests : SqlServerTestBase
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).LastAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses)
+            .OrderByDescending(c=>c.CreatedOn).FirstAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
@@ -90,7 +75,7 @@ public class WithSqlDbTests : SqlServerTestBase
 
         var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
-        count == 0.ShouldBeTrue();
+        (count == 0).ShouldBeTrue();
     }
 
     [Fact]
@@ -98,18 +83,18 @@ public class WithSqlDbTests : SqlServerTestBase
     {
         await TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
+        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
         await _db.SaveChangesAsync();
 
-        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u=>u.CreatedOn).FirstAsync();
+        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
-        Assert.IsTrue(string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
 
-        Assert.IsTrue(string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase));
+        string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
     }
 
     [Fact]

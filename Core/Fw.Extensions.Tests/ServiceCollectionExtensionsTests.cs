@@ -27,14 +27,14 @@ namespace Fw.Extensions.Tests
         public void AsKeyedImplementedInterfacesThrowsArgumentNullExceptionWhenServicesNull()
         {
             IServiceCollection services = null;
-            Assert.ThrowsException<ArgumentNullException>(() =>
+            Should.Throw<ArgumentNullException>(() =>
                 services.AsKeyedImplementedInterfaces("test", new List<Type>()));
         }
 
         [Fact]
         public void AsKeyedImplementedInterfacesThrowsArgumentNullExceptionWhenTypesNull()
         {
-            Assert.ThrowsException<ArgumentNullException>(() =>
+            Should.Throw<ArgumentNullException>(() =>
                 _services.AsKeyedImplementedInterfaces("test", types: null));
         }
 
@@ -47,15 +47,15 @@ namespace Fw.Extensions.Tests
 
             var descriptors = _services.ToList();
             descriptors.Count.ShouldBe(3);
-            Assert.IsTrue(descriptors.Any(d =>
+            descriptors.ShouldContain(d =>
                 d.ServiceType == typeof(ITestService) &&
-                d.KeyedImplementationType == typeof(TestService)));
-            Assert.IsTrue(descriptors.Any(d =>
+                d.KeyedImplementationType == typeof(TestService));
+            descriptors.ShouldContain(d =>
                 d.ServiceType == typeof(IAnotherService) &&
-                d.KeyedImplementationType == typeof(TestService)));
-            Assert.IsTrue(descriptors.Any(d =>
+                d.KeyedImplementationType == typeof(TestService));
+            descriptors.ShouldContain(d =>
                 d.ServiceType == typeof(TestService) &&
-                d.KeyedImplementationType == typeof(TestService)));
+                d.KeyedImplementationType == typeof(TestService));
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace Fw.Extensions.Tests
             _services.Count.ShouldBe(0);
         }
 
-        [Fact]
+        [Theory]
         [InlineData(ServiceLifetime.Singleton)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Transient)]
@@ -78,7 +78,7 @@ namespace Fw.Extensions.Tests
 
             _services.AsKeyedImplementedInterfaces("test", types, lifetime);
 
-            Assert.IsTrue(_services.All(d => d.Lifetime == lifetime));
+            _services.ShouldAllBe(d => d.Lifetime == lifetime);
         }
 
         [Fact]
@@ -88,7 +88,7 @@ namespace Fw.Extensions.Tests
 
             var result = _services.AsKeyedImplementedInterfaces("test", types);
 
-            Assert.AreSame(_services, result);
+            result.ShouldBeSameAs(_services);
         }
 
         [Fact]

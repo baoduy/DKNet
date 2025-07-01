@@ -3,24 +3,10 @@ using DKNet.EfCore.Extensions.Internal;
 
 namespace EfCore.Extensions.Tests;
 
-
-public class RegisterTests : SqlServerTestBase
+public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db =null!;
+    private readonly MyDbContext _db = fixture.Db;
 
-    
-    public static async Task ClassSetup()
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EfCoreDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
-
-    
-    public async Task TestInitialize()
-    {
-        await EnsureSqlStartedAsync();
-    }
 
     [Fact]
     public async Task TestRegisterEntitiesDefaultOptions()
@@ -34,7 +20,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -43,22 +29,9 @@ public class RegisterTests : SqlServerTestBase
 
         await _db.SaveChangesAsync();
 
-        Assert.IsTrue(await _db.Set<User>().AnyAsync());
-        Assert.IsTrue(await _db.Set<Address>().AnyAsync());
+        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
-
-    // [Fact]
-    // public async Task TestAccountStatusDataSeeding()
-    // {
-    //     await using var db = new MyDbContext(new DbContextOptionsBuilder()
-    //         .UseSqliteMemory()
-    //
-    //         //No Assembly provided it will scan the MyDbContext assembly.
-    //         .UseAutoConfigModel()
-    //         .Options);
-    //     await db.Database.EnsureCreatedAsync();
-    //     (await db.Set<AccountStatus>().CountAsync()).ShouldBeGreaterThanOrEqualTo(2);
-    // }
 
     [Fact]
     public async Task TestCreateDb()
@@ -72,7 +45,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -84,8 +57,8 @@ public class RegisterTests : SqlServerTestBase
         var users = await _db.Set<User>().ToListAsync();
         var adds = await _db.Set<Address>().ToListAsync();
 
-        users.Count >= 1.ShouldBeTrue();
-        adds.Count >= 1.ShouldBeTrue();
+        (users.Count >= 1).ShouldBeTrue();
+        (adds.Count >= 1).ShouldBeTrue();
     }
 
     [Fact]
@@ -100,7 +73,7 @@ public class RegisterTests : SqlServerTestBase
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -139,7 +112,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
                 .Options);
@@ -154,7 +127,7 @@ public class RegisterTests : SqlServerTestBase
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(GetConnectionString("EfCoreDb"))
+                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);

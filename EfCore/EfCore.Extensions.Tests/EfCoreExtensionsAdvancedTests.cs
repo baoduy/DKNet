@@ -1,22 +1,14 @@
 namespace EfCore.Extensions.Tests;
 
-
-public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
+public class EfCoreExtensionsAdvancedTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db = fixture.Db;
 
-    
-    public static async Task ClassSetup()
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EfCoreTestDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
     [Fact]
     public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
     {
-        var action =()=> _db.GetPrimaryKeyValues(null!).ToList();
+        var action = () => _db.GetPrimaryKeyValues(null!).ToList();
         // Act & Assert
         action.ShouldThrow<ArgumentNullException>();
     }
@@ -89,20 +81,8 @@ public class EfCoreExtensionsAdvancedTests : SqlServerTestBase
     [Fact]
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
-        // This would need a special test enum with empty format string
-        // For now, we'll test the case where format string processing works
-        await StartSqlContainerAsync();
-
-        var options = new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString("EfCoreTestDb"))
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
-            .Options;
-
-        await using var context = new DbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
         // This test verifies the format processing logic
-        var result = await context.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
+        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
         result.ShouldNotBeNullOrEmpty();
     }
 

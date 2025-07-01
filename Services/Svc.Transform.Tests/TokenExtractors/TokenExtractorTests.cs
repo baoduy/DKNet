@@ -82,7 +82,8 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorNullArgumentTest()
     {
-        new TokenExtractor(definition: null);
+        var action=()=>new TokenExtractor(definition: null);
+        action.ShouldThrow<ArgumentNullException>();
     }
 
     [Fact]

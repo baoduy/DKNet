@@ -13,7 +13,7 @@ public class TestGlobalQueryFilterRegister : IGlobalQueryFilterRegister
 }
 
 
-public class EfCoreSetupTests : SqlServerTestBase
+public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public void AddGlobalModelBuilderRegister_ShouldAddToGlobalQueryFilters()
@@ -34,14 +34,8 @@ public class EfCoreSetupTests : SqlServerTestBase
     public void UseAutoConfigModel_GenericDbContext_ShouldReturnTypedBuilder()
     {
         // Arrange
-        var container = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .WithAutoRemove(true)
-            .Build();
-
-        var connectionString = "Server=localhost;Database=TestDb;Integrated Security=true;";
         var builder = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(connectionString);
+            .UseSqlServer(fixture.GetConnectionString("TestDb"));
 
         // Act
         var result = builder.UseAutoConfigModel();

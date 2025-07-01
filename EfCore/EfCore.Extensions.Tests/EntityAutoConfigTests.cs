@@ -1,5 +1,4 @@
-﻿using DKNet.EfCore.Extensions.Registers;
-using EfCore.Extensions.Tests.TestEntities.Mappers;
+﻿using EfCore.Extensions.Tests.TestEntities.Mappers;
 
 namespace EfCore.Extensions.Tests;
 

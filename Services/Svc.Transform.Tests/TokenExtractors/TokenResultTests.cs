@@ -1,5 +1,4 @@
-﻿
-using DKNet.Svc.Transformation.Exceptions;
+﻿using DKNet.Svc.Transformation.Exceptions;
 using DKNet.Svc.Transformation.TokenDefinitions;
 using DKNet.Svc.Transformation.TokenExtractors;
 
@@ -37,36 +36,42 @@ public class TokenResultTests
     [Fact]
     public void CreateTokenResultDefinitionIsNull()
     {
-        new TokenResult(definition: null, "[A]", "123 [A]", 1);
+       var action =()=> new TokenResult(definition: null, "[A]", "123 [A]", 1);
+       action.ShouldThrow<ArgumentNullException>();
     }
 
     [Fact]
     public void CreateTokenResultInCorrectIndex()
     {
-        new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", -1);
+        var action = ()=>new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", -1);
+        action.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Fact]
     public void CreateTokenResultInCorrectIndex2()
     {
-        new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", 100);
+        var action = ()=>new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", 100);
+        action.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Fact]
     public void CreateTokenResultInCorrectToken()
     {
-        new TokenResult(new CurlyBracketDefinition(), "{A", "123 {A}", 1);
+        var action = ()=>new TokenResult(new CurlyBracketDefinition(), "{A", "123 {A}", 1);
+        action.ShouldThrow<InvalidTokenException>();
     }
 
     [Fact]
     public void CreateTokenResultOriginalStringIsNull()
     {
-        new TokenResult(new SquareBracketDefinition(), "[A]", originalString: null, 1);
+        var action = ()=>new TokenResult(new SquareBracketDefinition(), "[A]", originalString: null, 1);
+        action.ShouldThrow<ArgumentNullException>();
     }
 
     [Fact]
     public void CreateTokenResultTokenIsNull()
     {
-        new TokenResult(new SquareBracketDefinition(), token: null, "123 [A]", 1);
+        var action = ()=>new TokenResult(new SquareBracketDefinition(), token: null, "123 [A]", 1);
+        action.ShouldThrow<ArgumentNullException>();
     }
 }

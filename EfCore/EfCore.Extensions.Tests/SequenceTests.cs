@@ -1,6 +1,3 @@
-using DKNet.EfCore.Abstractions.Attributes;
-using DKNet.EfCore.Extensions.Registers;
-
 namespace EfCore.Extensions.Tests;
 
 // Test enum for sequence testing
@@ -22,7 +19,7 @@ public enum DefaultSchemaSequenceTypes
 }
 
 
-public class SequenceRegisterTests : SqlServerTestBase
+public class SequenceRegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public void GetAttribute_WithValidEnum_ShouldReturnAttribute()
@@ -97,10 +94,9 @@ public class SequenceRegisterTests : SqlServerTestBase
     public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
     {
         // Arrange
-        await StartSqlContainerAsync();
         
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString("SequenceDb"))
+            .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 
@@ -120,10 +116,9 @@ public class SequenceRegisterTests : SqlServerTestBase
     public async Task NextSeqValueWithFormat_ShouldReturnFormattedValue()
     {
         // Arrange
-        await StartSqlContainerAsync();
 
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(GetConnectionString("SequenceDb"))
+            .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))
             .Options;
 

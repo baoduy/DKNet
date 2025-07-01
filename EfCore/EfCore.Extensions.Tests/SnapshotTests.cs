@@ -1,17 +1,10 @@
 namespace EfCore.Extensions.Tests;
 
 
-public class SnapshotTests : SqlServerTestBase
+public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db=fixture.Db;
 
-    
-    public static async Task ClassSetup()
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EventDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
     [Fact]
     public void Snapshot_ShouldCreateSnapshotContext()
@@ -78,7 +71,7 @@ public class SnapshotTests : SqlServerTestBase
         var entry = snapshot.SnapshotEntities[0];
 
         // Assert
-        entry.Entity.ShouldBe(user);
-        entry.OriginalState.ShouldBe(Microsoft.EntityFrameworkCore.EntityState.Added);
+        entry.Entity.ShouldBeOfType<User>();
+        entry.OriginalState.ShouldBe(EntityState.Added);
     }
 }

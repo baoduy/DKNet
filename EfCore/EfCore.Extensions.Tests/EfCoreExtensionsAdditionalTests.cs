@@ -1,17 +1,8 @@
 namespace EfCore.Extensions.Tests;
 
-
-public class EfCoreExtensionsAdditionalTests : SqlServerTestBase
+public class EfCoreExtensionsAdditionalTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db = null!;
-
-    
-    public static async Task ClassSetup()
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("EfCoreTestDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
+    private readonly MyDbContext _db = fixture.Db;
 
     [Fact]
     public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnCorrectProperties()

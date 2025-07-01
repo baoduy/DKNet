@@ -73,7 +73,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), new Dictionary<object, object>
+        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
         {
             {"A", "Duy"},
         });
@@ -86,11 +86,13 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        resolver.Resolve(token: null, [
+        var action = ()=> resolver.Resolve(token: null, [
              null,
             new {A = (string) null},
             new {A = 123},
          ]);
+
+        action.ShouldThrow<ArgumentNullException>();
     }
 
  

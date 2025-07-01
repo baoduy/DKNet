@@ -1,17 +1,9 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-
-public class ExtensionsTests : SqlServerTestBase
+public class ExtensionsTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static MyDbContext _db;
+    private readonly MyDbContext _db = fixture.Db;
 
-    
-    public static async Task ClassSetup()
-    {
-        await StartSqlContainerAsync();
-        _db = CreateDbContext("TestDb");
-        await _db.Database.EnsureCreatedAsync();
-    }
 
     [Fact]
     public void TestGetKeys()
@@ -19,13 +11,6 @@ public class ExtensionsTests : SqlServerTestBase
         _db.GetPrimaryKeyProperties<User>().Single()
             .ShouldBe("Id");
     }
-
-    // [Fact]
-    // public void Test_GetKeys_NotEntity()
-    // {
-    //     _db.GetKeys<UserAccountStartWithDSpec>().Any()
-    //         .ShouldBeFalse();
-    // }
 
     [Fact]
     public void TestGetKeyValue()

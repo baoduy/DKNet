@@ -169,7 +169,7 @@ public class PropertyExtensionsTests
         var value = "Duy";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             ((TestItem3)null).SetPropertyValue(propertyName, value));
     }
 
@@ -181,8 +181,8 @@ public class PropertyExtensionsTests
         var value = "Duy";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() => item.SetPropertyValue((string)null, value));
-        Assert.ThrowsException<ArgumentNullException>(() => item.SetPropertyValue("", value));
+        Should.Throw<ArgumentNullException>(() => item.SetPropertyValue((string)null, value));
+        Should.Throw<ArgumentNullException>(() => item.SetPropertyValue("", value));
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(propertyName, value);
 
         // Assert
-        Assert.AreEqual("NewPrivateValue", item.GetPropertyValue(propertyName));
+        item.GetPropertyValue(propertyName).ShouldBe("NewPrivateValue");
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(propertyName, value);
 
         // Assert
-        Assert.AreEqual("NewProtectedValue", item.GetPropertyValue(propertyName));
+        item.GetPropertyValue(propertyName).ShouldBe("NewProtectedValue");
     }
 
     [Fact]
@@ -241,7 +241,7 @@ public class PropertyExtensionsTests
         item.SetPropertyValue(nameof(TestItem3.Name), value);
 
         // Assert
-        Assert.AreEqual("NewNestedName", item.GetPropertyValue(nameof(TestItem3.Name)));
+        item.GetPropertyValue(nameof(TestItem3.Name)).ShouldBe("NewNestedName");
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             ((TestItem3)null).SetPropertyValue(property, value));
     }
 
@@ -360,7 +360,7 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             item.SetPropertyValue((PropertyInfo)null, value));
     }
 
@@ -372,7 +372,7 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             ((TestItem3)null).TrySetPropertyValue(property, value));
     }
 
@@ -384,7 +384,7 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             item.TrySetPropertyValue((PropertyInfo)null, value));
     }
 
@@ -396,7 +396,7 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             ((TestItem3)null).TrySetPropertyValue(propertyName, value));
     }
 
@@ -408,9 +408,9 @@ public class PropertyExtensionsTests
         var value = "Test";
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             item.TrySetPropertyValue((string)null, value));
-        Assert.ThrowsException<ArgumentNullException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
             item.TrySetPropertyValue("", value));
     }
 
@@ -423,15 +423,15 @@ public class PropertyExtensionsTests
 
         // Act & Test integer conversion
         item.SetPropertyValue("IntValue", stringValue);
-        Assert.AreEqual(42, item.GetPropertyValue("IntValue"));
+        item.GetPropertyValue("IntValue").ShouldBe(42);
 
         // Act & Test boolean conversion  
         item.SetPropertyValue("BoolValue", "true");
-        Assert.AreEqual(true, item.GetPropertyValue("BoolValue"));
+        item.GetPropertyValue("BoolValue").ShouldBe(true);
 
         // Act & Test decimal conversion
         item.SetPropertyValue("DecimalValue", "123.45");
-        Assert.AreEqual(123.45m, item.GetPropertyValue("DecimalValue"));
+        item.GetPropertyValue("DecimalValue").ShouldBe(123.45m);
     }
 
     [Fact]
@@ -445,7 +445,7 @@ public class PropertyExtensionsTests
         item.TrySetPropertyValue(property, "invalid_conversion_value_that_cannot_be_converted_to_int");
         
         // Assert - Value should remain unchanged
-        Assert.AreEqual(0, item.GetPropertyValue("IntValue"));
+        item.GetPropertyValue("IntValue").ShouldBe(0);
     }
 
     [Fact]
@@ -467,11 +467,11 @@ public class PropertyExtensionsTests
         
         // Act & Assert for nullable int
         item.SetPropertyValue("NullableIntValue", 123);
-        Assert.AreEqual(123, item.GetPropertyValue("NullableIntValue"));
+        item.GetPropertyValue("NullableIntValue").ShouldBe(123);
         
         // Set to null
         item.SetPropertyValue("NullableIntValue", value: null);
-        Assert.IsNull(item.GetPropertyValue("NullableIntValue"));
+        item.GetPropertyValue("NullableIntValue").ShouldBeNull();
     }
 
     [Fact] 
