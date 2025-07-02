@@ -22,13 +22,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Azure.Storage.Blobs" Version="12.24.1" />
-      <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+      <PackageReference Include="Azure.Storage.Blobs" />
+      <PackageReference Update="Meziantou.Analyzer">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.6" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.6" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+      <PackageReference Include="Microsoft.Extensions.Options" />
     </ItemGroup>
 
     <ItemGroup>

@@ -5,7 +5,7 @@ public sealed record ProfileCreatedEvent(Guid Id, string Name) : DomainEvent;
 /// <summary>
 /// NOTE: remove this as just for testing purposed only
 /// </summary>
-internal sealed class ProfileCreatedEventFromMemoryHandler : Fluents.Events.IHandler<ProfileCreatedEvent>
+internal sealed class ProfileCreatedEventFromMemoryHandler : Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {
     public static bool Called { get; set; }
 

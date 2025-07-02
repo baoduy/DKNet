@@ -33,9 +33,9 @@
         <None Remove="Is the repository pattern useful with Entity Framework Core_ – The Reformed Programmer.pdf" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Mapster" Version="7.4.0" />
-        <PackageReference Include="X.PagedList.EF" Version="10.5.7" />
-        <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+        <PackageReference Include="Mapster" />
+        <PackageReference Include="X.PagedList.EF" />
+        <PackageReference Update="Meziantou.Analyzer">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

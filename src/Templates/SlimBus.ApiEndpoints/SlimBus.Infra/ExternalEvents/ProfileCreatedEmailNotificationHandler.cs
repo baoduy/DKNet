@@ -4,7 +4,7 @@ using DKNet.SlimBus.Extensions;
 
 namespace SlimBus.Infra.ExternalEvents;
 
-internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler>logger): Fluents.Events.IHandler<ProfileCreatedEvent>
+internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler>logger): Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {
     public static bool Called { get; set; }
 

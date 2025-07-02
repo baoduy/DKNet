@@ -67,7 +67,7 @@ using FluentResults;
                 where TQuery : Queries.IWitPageResponse<TResponse>;
         }
 
-        public static class Events
+        public static class EventsConsumers
         {
             /// <summary>
             /// Represents a handler for an event of type <typeparamref name="TEvent"/>.
