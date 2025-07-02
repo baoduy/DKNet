@@ -1,3 +1,5 @@
+using Aspire.Hosting.ApplicationModel;
+
 namespace Aspire.Hosting.ServiceBus;
 
 public sealed class ServiceBusResource(string name) : ContainerResource(name), IResourceWithConnectionString

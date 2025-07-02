@@ -1,6 +1,9 @@
 
 // ReSharper disable once CheckNamespace
-namespace Aspire.Hosting;
+
+using Aspire.Hosting.ApplicationModel;
+
+namespace Aspire.Hosting.ServiceBus;
 
 public static class ServiceBusExtensions
 {
