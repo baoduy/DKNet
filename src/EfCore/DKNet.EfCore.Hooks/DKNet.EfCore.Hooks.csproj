@@ -17,28 +17,29 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
     </ItemGroup>
     <ItemGroup>
-        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
-        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
-        <InternalsVisibleTo Include="EfCore.HookTests" />
+        <InternalsVisibleTo Include="EfCore.HookTests"/>
     </ItemGroup>
-    
+
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore" />
-      <PackageReference Update="Meziantou.Analyzer">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+        <PackageReference Update="Meziantou.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
-    
+
     <ItemGroup>
-      <ProjectReference Include="..\..\Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj" />
-      <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj" />
+        <ProjectReference Include="..\..\Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
     </ItemGroup>
 </Project>
