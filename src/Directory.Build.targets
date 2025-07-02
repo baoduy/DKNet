@@ -8,11 +8,11 @@
     <Choose>
         <When Condition="true">
             <ItemGroup>
-                <PackageReference Update="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
-                <PackageReference Update="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
-                <PackageReference Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.11.0" />
-                <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
-                <PackageReference Include="Meziantou.Analyzer" Version="2.0.203" >
+                <PackageReference Update="Microsoft.CodeAnalysis.Analyzers"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.CSharp"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.Workspaces.Common"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces"/>
+                <PackageReference Include="Meziantou.Analyzer">
                     <PrivateAssets>all</PrivateAssets>
                     <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
                 </PackageReference>
