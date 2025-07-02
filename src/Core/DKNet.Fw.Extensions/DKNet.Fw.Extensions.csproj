@@ -22,9 +22,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Microsoft.CSharp"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="System.ComponentModel.Annotations"/>
@@ -36,6 +33,8 @@
 
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
-        <None Include="README.md" Pack="true" PackagePath="\"/>
+        <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
+            <Link>README.md</Link>
+        </Content>
     </ItemGroup>
 </Project>
