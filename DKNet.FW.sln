@@ -3,51 +3,51 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 #
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{2498442D-F5D2-4A8B-9D86-83AD0C6857F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fw.Extensions.Tests", "Core\Fw.Extensions.Tests\Fw.Extensions.Tests.csproj", "{7D2D5D88-DBC8-445C-ABF4-0D5BD1B8F2E0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fw.Extensions.Tests", "src\Core\Fw.Extensions.Tests\Fw.Extensions.Tests.csproj", "{7D2D5D88-DBC8-445C-ABF4-0D5BD1B8F2E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Fw.Extensions", "Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj", "{4F6257FB-B6B4-4D6F-933D-31D0E009CBCE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Fw.Extensions", "src\Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj", "{4F6257FB-B6B4-4D6F-933D-31D0E009CBCE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore", "EfCore", "{79AB749C-6325-4718-9BE0-36C750367F00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DataAuthorization.Tests", "EfCore\EfCore.DataAuthorization.Tests\EfCore.DataAuthorization.Tests.csproj", "{24070CA1-ACF8-42E6-ACDE-48BFA17D85D1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DataAuthorization.Tests", "src\EfCore\EfCore.DataAuthorization.Tests\EfCore.DataAuthorization.Tests.csproj", "{24070CA1-ACF8-42E6-ACDE-48BFA17D85D1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Events.Tests", "EfCore\EfCore.Events.Tests\EfCore.Events.Tests.csproj", "{92114AAA-7227-47B7-874F-56D4300BDD9E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Events.Tests", "src\EfCore\EfCore.Events.Tests\EfCore.Events.Tests.csproj", "{92114AAA-7227-47B7-874F-56D4300BDD9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Extensions.Tests", "EfCore\EfCore.Extensions.Tests\EfCore.Extensions.Tests.csproj", "{2C6CF565-EFD7-4F96-8FFC-1C7B12183F9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Extensions.Tests", "src\EfCore\EfCore.Extensions.Tests\EfCore.Extensions.Tests.csproj", "{2C6CF565-EFD7-4F96-8FFC-1C7B12183F9F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.HookTests", "EfCore\EfCore.HookTests\EfCore.HookTests.csproj", "{01130110-7E70-46B2-AD4A-1090E908E5B5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.HookTests", "src\EfCore\EfCore.HookTests\EfCore.HookTests.csproj", "{01130110-7E70-46B2-AD4A-1090E908E5B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Relational.Helpers.Tests", "EfCore\EfCore.Relational.Helpers.Tests\EfCore.Relational.Helpers.Tests.csproj", "{672FFD51-7486-4178-966B-507BE87A951D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Relational.Helpers.Tests", "src\EfCore\EfCore.Relational.Helpers.Tests\EfCore.Relational.Helpers.Tests.csproj", "{672FFD51-7486-4178-966B-507BE87A951D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Abstractions", "EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj", "{7539D154-15E7-4982-92C3-39CED335D9E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Abstractions", "src\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj", "{7539D154-15E7-4982-92C3-39CED335D9E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DataAuthorization", "EfCore\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj", "{43A103C0-1928-4A8B-A2DA-C8F1A7F00A4A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DataAuthorization", "src\EfCore\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj", "{43A103C0-1928-4A8B-A2DA-C8F1A7F00A4A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Events", "EfCore\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj", "{0DFF7522-3CEE-42EE-A765-FE93CF0E5A58}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Events", "src\EfCore\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj", "{0DFF7522-3CEE-42EE-A765-FE93CF0E5A58}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Extensions", "EfCore\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj", "{ED883728-2174-42DE-A0E3-37DEA5CD7B0C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Extensions", "src\EfCore\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj", "{ED883728-2174-42DE-A0E3-37DEA5CD7B0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Hooks", "EfCore\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj", "{FD4F1EFE-E16F-49A1-9027-D27C68FB9BC8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Hooks", "src\EfCore\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj", "{FD4F1EFE-E16F-49A1-9027-D27C68FB9BC8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Relational.Helpers", "EfCore\DKNet.EfCore.Relational.Helpers\DKNet.EfCore.Relational.Helpers.csproj", "{22C5093E-70F7-4BFE-BDC1-0F1F55F56748}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Relational.Helpers", "src\EfCore\DKNet.EfCore.Relational.Helpers\DKNet.EfCore.Relational.Helpers.csproj", "{22C5093E-70F7-4BFE-BDC1-0F1F55F56748}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Repos", "EfCore\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj", "{83CD37B3-B6A2-4D0E-9452-DD6398471ED6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Repos", "src\EfCore\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj", "{83CD37B3-B6A2-4D0E-9452-DD6398471ED6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Repos.Abstractions", "EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj", "{11F03F5C-58F3-445C-B5DF-C1DBFFE7019F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Repos.Abstractions", "src\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj", "{11F03F5C-58F3-445C-B5DF-C1DBFFE7019F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.BlobStorage.Tests", "Services\Svc.BlobStorage.Tests\Svc.BlobStorage.Tests.csproj", "{CEA2D300-3EE6-4CC6-A778-07B262976C3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.BlobStorage.Tests", "src\Services\Svc.BlobStorage.Tests\Svc.BlobStorage.Tests.csproj", "{CEA2D300-3EE6-4CC6-A778-07B262976C3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Local", "Services\DKNet.Svc.BlobStorage.Local\DKNet.Svc.BlobStorage.Local.csproj", "{D13D35ED-D099-489F-879B-94B73AD43D1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Local", "src\Services\DKNet.Svc.BlobStorage.Local\DKNet.Svc.BlobStorage.Local.csproj", "{D13D35ED-D099-489F-879B-94B73AD43D1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AwsS3", "Services\DKNet.Svc.BlobStorage.AwsS3\DKNet.Svc.BlobStorage.AwsS3.csproj", "{50298C29-0ACF-49F7-973C-B34D786F1537}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AwsS3", "src\Services\DKNet.Svc.BlobStorage.AwsS3\DKNet.Svc.BlobStorage.AwsS3.csproj", "{50298C29-0ACF-49F7-973C-B34D786F1537}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AzureStorage", "Services\DKNet.Svc.BlobStorage.AzureStorage\DKNet.Svc.BlobStorage.AzureStorage.csproj", "{75D71601-1ED7-4067-828B-67D21A324A68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.AzureStorage", "src\Services\DKNet.Svc.BlobStorage.AzureStorage\DKNet.Svc.BlobStorage.AzureStorage.csproj", "{75D71601-1ED7-4067-828B-67D21A324A68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.Transform.Tests", "Services\Svc.Transform.Tests\Svc.Transform.Tests.csproj", "{30258DF6-BC04-44E3-BB06-1BD011012917}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.Transform.Tests", "src\Services\Svc.Transform.Tests\Svc.Transform.Tests.csproj", "{30258DF6-BC04-44E3-BB06-1BD011012917}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Transformation", "Services\DKNet.Svc.Transformation\DKNet.Svc.Transformation.csproj", "{4FC95CCA-A8EC-44DB-8349-36F221F7250E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Transformation", "src\Services\DKNet.Svc.Transformation\DKNet.Svc.Transformation.csproj", "{4FC95CCA-A8EC-44DB-8349-36F221F7250E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203BB-C314-4216-8C48-BC98BFEE7F89}"
 	ProjectSection(SolutionItems) = preProject
@@ -71,52 +71,52 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus.ApiEndpoints", "SlimBus.ApiEndpoints", "{212CE5D7-6FAF-466C-86A6-AA4810ED4F39}"
 	ProjectSection(SolutionItems) = preProject
-		Templates\SlimBus.ApiEndpoints\README.md = Templates\SlimBus.ApiEndpoints\README.md
+		src\Templates\SlimBus.ApiEndpoints\README.md = src\Templates\SlimBus.ApiEndpoints\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "Templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Api", "src\Templates\SlimBus.ApiEndpoints\SlimBus.Api\SlimBus.Api.csproj", "{8912F944-C7C4-41DC-94B6-37541C80AED1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "Templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppServices", "src\Templates\SlimBus.ApiEndpoints\SlimBus.AppServices\SlimBus.AppServices.csproj", "{7E501EF0-ABF1-44FB-8FF2-14675C943FEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "Templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Domains", "src\Templates\SlimBus.ApiEndpoints\SlimBus.Domains\SlimBus.Domains.csproj", "{F61F5730-2703-47AD-ACDD-B13C3A53FEAF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "Templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Infra", "src\Templates\SlimBus.ApiEndpoints\SlimBus.Infra\SlimBus.Infra.csproj", "{4EC513CA-94E4-4E5F-ACA2-BB77043B8535}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "Templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Share", "src\Templates\SlimBus.ApiEndpoints\SlimBus.Share\SlimBus.Share.csproj", "{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus", "SlimBus", "{C2686F33-39EF-4995-AA5B-E256F5130F9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.SlimBus.Extensions", "SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj", "{9DAB84BA-84CF-43C2-A35D-490A28992C62}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.SlimBus.Extensions", "src\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj", "{9DAB84BA-84CF-43C2-A35D-490A28992C62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Extensions.Tests", "SlimBus\SlimBus.Extensions.Tests\SlimBus.Extensions.Tests.csproj", "{BC6A92F4-BE7F-405F-87A1-43A73D3CCD29}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Extensions.Tests", "src\SlimBus\SlimBus.Extensions.Tests\SlimBus.Extensions.Tests.csproj", "{BC6A92F4-BE7F-405F-87A1-43A73D3CCD29}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{740E24A2-315E-4C88-B8FF-C01FCEB9D5E8}"
 	ProjectSection(SolutionItems) = preProject
-		Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
-		Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
+		src\Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = src\Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
+		src\Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = src\Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore.Events", "EfCore.Events", "{0602506B-76E6-4909-9BD8-98B405967DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "src\Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "Templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.App.Tests", "src\Templates\SlimBus.ApiEndpoints\SlimBus.App.Tests\SlimBus.App.Tests.csproj", "{C5C4E313-B1C9-40A0-B7E8-44A7A779A518}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Repos.Tests", "EfCore\EfCore.Repos.Tests\EfCore.Repos.Tests.csproj", "{BA96DA0C-2AA1-4379-ADDC-E68A580FA871}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Repos.Tests", "src\EfCore\EfCore.Repos.Tests\EfCore.Repos.Tests.csproj", "{BA96DA0C-2AA1-4379-ADDC-E68A580FA871}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{3FE651AB-C845-4B8F-9694-68DBA5179067}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.Hosting.ServiceBus", "Aspire\Aspire.Hosting.ServiceBus\Aspire.Hosting.ServiceBus.csproj", "{08F32651-ADE5-4EC5-AD5C-8A028B3C0757}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.Hosting.ServiceBus", "src\Aspire\Aspire.Hosting.ServiceBus\Aspire.Hosting.ServiceBus.csproj", "{08F32651-ADE5-4EC5-AD5C-8A028B3C0757}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Abstractions", "Services\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj", "{86684BD4-67DA-4771-B362-84574715BF36}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.BlobStorage.Abstractions", "src\Services\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj", "{86684BD4-67DA-4771-B362-84574715BF36}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{83994FE1-4B2A-4EFE-A83F-39C39E2CA643}"
 	ProjectSection(SolutionItems) = preProject
-		Templates\SlimBus.ApiEndpoints\build-docker.sh = Templates\SlimBus.ApiEndpoints\build-docker.sh
-		Templates\SlimBus.ApiEndpoints\Dockerfile = Templates\SlimBus.ApiEndpoints\Dockerfile
+		src\Templates\SlimBus.ApiEndpoints\build-docker.sh = src\Templates\SlimBus.ApiEndpoints\build-docker.sh
+		src\Templates\SlimBus.ApiEndpoints\Dockerfile = src\Templates\SlimBus.ApiEndpoints\Dockerfile
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "src\EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
