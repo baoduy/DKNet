@@ -17,6 +17,7 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>

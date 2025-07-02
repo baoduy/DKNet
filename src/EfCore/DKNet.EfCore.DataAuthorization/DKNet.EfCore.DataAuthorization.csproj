@@ -17,26 +17,27 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj" />
-      <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Part 2_ Handling data authorization in ASP.NET Core and Entity Framework Core – The Reformed Programmer.pdf" />
-      <None Remove="Part 4_ Building a robust and secure data authorization with EF Core – The Reformed Programmer.pdf" />
+        <None Remove="Part 2_ Handling data authorization in ASP.NET Core and Entity Framework Core – The Reformed Programmer.pdf"/>
+        <None Remove="Part 4_ Building a robust and secure data authorization with EF Core – The Reformed Programmer.pdf"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="Meziantou.Analyzer">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+        <PackageReference Update="Meziantou.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
 </Project>

@@ -9,30 +9,32 @@
         <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>Extensions,DDD,Api,EfCore</PackageTags>
+        <PackageTags>Storage Services</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="AWSSDK.Core" />
-      <PackageReference Include="AWSSDK.S3" />
-      <PackageReference Update="Meziantou.Analyzer">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-      <PackageReference Include="Microsoft.Extensions.Options" />
+        <PackageReference Include="AWSSDK.Core"/>
+        <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Update="Meziantou.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Options"/>
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj" />
+        <ProjectReference Include="..\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj"/>
     </ItemGroup>
 
 </Project>
