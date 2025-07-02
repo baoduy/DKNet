@@ -42,15 +42,15 @@ jobs:
         run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.projectBaseDir="src/" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
-        run: dotnet restore DKNet.FW.sln
+        run: dotnet restore src/DKNet.FW.sln
 
       - name: Build
         continue-on-error: true
-        run: dotnet build DKNet.FW.sln --no-restore --configuration Release
+        run: dotnet build src/DKNet.FW.sln --no-restore --configuration Release
 
       - name: Test
         continue-on-error: true
-        run: dotnet test DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
+        run: dotnet test src/DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
 
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool

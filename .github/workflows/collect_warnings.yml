@@ -25,7 +25,7 @@ jobs:
           dotnet-version: '9.x'
 
       - name: Build project
-        run: dotnet build --configuration Release 2>&1 | tee build.log
+        run: dotnet build src/DKNet.FW.sln --configuration Release 2>&1 | tee build.log
 
       - name: Extract warnings
         run: grep -i "Warning" build.log > warnings.log
