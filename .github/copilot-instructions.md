@@ -56,6 +56,15 @@ If you are not sure, do not guess—ask clarifying questions or state that you d
 
 ---
 
+## NuGet Package Management
+
+- Use centralized package version management (e.g., `Directory.Packages.props` or equivalent).
+- **Do not specify the `Version` attribute in individual project/package references.**
+- When adding or updating NuGet package references, only include the package name; versioning is handled centrally.
+- Ensure all new dependencies are added to the central configuration file as needed.
+
+---
+
 ## Architecture and Design Patterns
 
 - Favor dependency injection for services or components that may need to be replaced, mocked, or extended.
