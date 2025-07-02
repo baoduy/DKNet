@@ -63,6 +63,6 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
         where TEntity : class, IOwnedBy
     {
         modelBuilder.Entity<TEntity>()
-            .HasQueryFilter(x => x.OwnedBy == null || context.AccessibleKeys.Contains(x.OwnedBy));
+            .HasQueryFilter(x => x.OwnedBy == null || context.AccessibleKeys.Contains(x.OwnedBy, StringComparer.OrdinalIgnoreCase));
     }
 }
