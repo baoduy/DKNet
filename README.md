@@ -2,12 +2,19 @@
 
 [![codecov](https://codecov.io/github/baoduy/DKNet/graph/badge.svg?token=xtNN7AtB1O)](https://codecov.io/github/baoduy/DKNet)
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
+[![GitHub release](https://img.shields.io/github/release/baoduy/DKNet.svg)](https://github.com/baoduy/DKNet/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
 [![CodeQL Advanced](https://github.com/baoduy/DKNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/baoduy/DKNet/actions/workflows/codeql.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=baoduy_DKNet&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=baoduy_DKNet)
+[![GitHub issues](https://img.shields.io/github/issues/baoduy/DKNet)](https://github.com/baoduy/DKNet/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/baoduy/DKNet)](https://github.com/baoduy/DKNet/pulls)
+[![StyleCop](https://img.shields.io/badge/code%20style-StyleCop-brightgreen.svg)](https://github.com/DotNetAnalyzers/StyleCopAnalyzers)
 
 ![codeCove](https://codecov.io/gh/baoduy/DKNet/graphs/sunburst.svg?token=xtNN7AtB1O)
+
+[![GitHub contributors](https://img.shields.io/github/contributors/baoduy/DKNet)](https://github.com/baoduy/DKNet/graphs/contributors)
 
 ## DKNet Project Overview
 
