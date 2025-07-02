@@ -10,16 +10,21 @@
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>Storage Services</PackageTags>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageIcon>NugetLogo.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
-
+    <ItemGroup>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
+            <Link>README.md</Link>
+        </Content>
+    </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.Memory.Data"/>
         <PackageReference Update="Meziantou.Analyzer">

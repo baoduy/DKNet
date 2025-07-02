@@ -1,0 +1,1 @@
+dotnet pack DKNet.FW.sln --configuration Release --output ./nupkgs -p:PackageVersion=9.0.0
