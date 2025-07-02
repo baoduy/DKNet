@@ -17,9 +17,9 @@ variables:
   - name: NugetPackages
     value: $(Pipeline.Workspace)/.nuget/packages
   - name: BuildParameters.RestoreBuildProjects
-    value: "**/DKNet.*.csproj"
+    value: "src/**/DKNet.*.csproj"
   - name: BuildParameters.TestProjects
-    value: "**/*.Tests.csproj"
+    value: "src/**/*.Tests.csproj"
   - name: BuildConfiguration
     value: Release
   - name: ArtifactFeed
@@ -132,7 +132,7 @@ jobs:
         condition: and(succeeded(),eq(variables['isMain'], 'true'))
         inputs:
           command: "pack"
-          packagesToPack: "**/*.csproj;!**/*Tests.csproj;!**/z_Templates"
+          packagesToPack: "src/**/*.csproj;!src/**/*Tests.csproj;!src/**/z_Templates"
           versioningScheme: "byEnvVar"
           versionEnvVar: "Package.Version"
 

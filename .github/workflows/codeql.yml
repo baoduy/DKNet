@@ -57,12 +57,12 @@ jobs:
 
       - name: Restore dependencies
         if: ${{matrix.language == 'csharp'}}
-        run: dotnet restore DKNet.FW.sln
+        run: dotnet restore src/DKNet.FW.sln
 
       - name: Build
         if: ${{matrix.language == 'csharp'}}
         continue-on-error: true
-        run: dotnet build DKNet.FW.sln --no-restore --configuration Release
+        run: dotnet build src/DKNet.FW.sln --no-restore --configuration Release
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

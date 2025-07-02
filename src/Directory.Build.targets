@@ -1,0 +1,32 @@
+<Project>
+    <!-- https://www.nuget.org/packages/Microsoft.CodeAnalysis.Analyzers/ -->
+    <!-- https://www.nuget.org/packages/Microsoft.CodeAnalysis.CSharp.Workspaces/ -->
+    <PropertyGroup>
+        <RoslynVersion></RoslynVersion>
+    </PropertyGroup>
+
+    <Choose>
+        <When Condition="true">
+            <ItemGroup>
+                <PackageReference Update="Microsoft.CodeAnalysis.Analyzers"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.CSharp"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.Workspaces.Common"/>
+                <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces"/>
+                <PackageReference Include="Meziantou.Analyzer">
+                    <PrivateAssets>all</PrivateAssets>
+                    <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+                </PackageReference>
+                <PackageReference Include="SonarAnalyzer.CSharp" Version="10.12.0.118525">
+                    <PrivateAssets>all</PrivateAssets>
+                    <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+                </PackageReference>
+            </ItemGroup>
+            <PropertyGroup>
+                <DefineConstants>$(DefineConstants);ROSLYN_4_8;ROSLYN_4_8_OR_GREATER</DefineConstants>
+                <DefineConstants>$(DefineConstants);CSHARP9_OR_GREATER;CSHARP10_OR_GREATER;CSHARP11_OR_GREATER;CSHARP12_OR_GREATER</DefineConstants>
+            </PropertyGroup>
+        </When>
+        <Otherwise>
+        </Otherwise>
+    </Choose>
+</Project>
