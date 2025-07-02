@@ -1,50 +1,20 @@
 using DKNet.Svc.BlobStorage.AwsS3;
 using System.Text;
 using Testcontainers.Minio;
+using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
 
-[TestFixture]
-public class S3BlobServiceTest
+public class S3BlobServiceTest : IClassFixture<S3BlobServiceFixture>
 {
-    private IBlobService _service;
+    private readonly IBlobService _service;
 
-    [OneTimeSetUp]
-    public void Setup()
+    public S3BlobServiceTest(S3BlobServiceFixture fixture)
     {
-        var minioContainer = new MinioBuilder()
-            //.WithExposedPort(80)
-            .Build();
-        minioContainer.StartAsync().GetAwaiter().GetResult();
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
-                (StringComparer.OrdinalIgnoreCase)
-                {
-                    { "BlobService:S3:ConnectionString", "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com" },
-                    { "BlobService:S3:AccessKey", "c5240e9de9fb8f2b24d67315eed90737" },
-                    { "BlobService:S3:Secret", "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b" },
-                    { "BlobService:S3:BucketName", "dev" },
-                    { "BlobService:S3:DisablePayloadSigning", "true" },
-
-                    // { "BlobService:S3:ConnectionString", minioContainer.GetConnectionString() },
-                    // { "BlobService:S3:AccessKey",minioContainer.GetAccessKey() },
-                    // { "BlobService:S3:Secret", minioContainer.GetSecretKey() },
-                    // { "BlobService:S3:BucketName", "test" },
-                    // { "BlobService:S3:ForcePathStyle", "true" },
-                })
-            .Build();
-
-        var service =
-            new ServiceCollection()
-                .AddLogging()
-                .AddS3BlobService(config)
-                .BuildServiceProvider();
-
-        _service = service.GetRequiredService<IBlobService>();
+        _service = fixture.Service;
     }
 
-    [Test]
+    [Fact]
     public async Task SavesFileAndList()
     {
         var fileName = $"new-file-{Guid.NewGuid()}.txt";
@@ -60,7 +30,7 @@ public class S3BlobServiceTest
         items.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Test]
+    [Fact]
     public async Task SaveAsyncSavesFileAndOverwrites()
     {
         var fileName = $"test-{Guid.NewGuid()}.txt";
@@ -80,7 +50,7 @@ public class S3BlobServiceTest
         content.ShouldBe("hello");
     }
 
-    [Test]
+    [Fact]
     public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
     {
         var fileName = $"exists-{Guid.NewGuid()}.txt";
@@ -95,7 +65,7 @@ public class S3BlobServiceTest
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [Test]
+    [Fact]
     public async Task GetAsyncReturnsBlobDataResult()
     {
         var fileName = $"get-{Guid.NewGuid()}.txt";
@@ -111,7 +81,7 @@ public class S3BlobServiceTest
         result.Details.ContentLength.ShouldBe(3);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAsyncReturnsNullIfNotFound()
     {
         var result =
@@ -119,7 +89,7 @@ public class S3BlobServiceTest
         result.ShouldBeNull();
     }
 
-    [Test]
+    [Fact]
     public async Task ListItemsAsyncListsFiles()
     {
         var dir = $"dir-{Guid.NewGuid()}";
@@ -136,7 +106,7 @@ public class S3BlobServiceTest
         items.ShouldContain(i => i.Name.Contains(fileName));
     }
 
-    [Test]
+    [Fact]
     public async Task DeleteAsyncDeletesFile()
     {
         var fileName = $"delete-{Guid.NewGuid()}.txt";
@@ -149,7 +119,7 @@ public class S3BlobServiceTest
         result.ShouldBeNull();
     }
 
-    [Test]
+    [Fact]
     public async Task DeleteAsyncDeletesDirectory()
     {
         var dir = $"delete-dir-{Guid.NewGuid()}";
@@ -168,7 +138,7 @@ public class S3BlobServiceTest
         items.ShouldBeEmpty();
     }
 
-    [Test]
+    [Fact]
     public async Task CheckExistsAsyncReturnsTrueIfExists()
     {
         var fileName = $"exists-check-{Guid.NewGuid()}.txt";
@@ -180,7 +150,7 @@ public class S3BlobServiceTest
         exists.ShouldBeTrue();
     }
 
-    [Test]
+    [Fact]
     public async Task CheckExistsAsyncReturnsFalseIfNotExists()
     {
         var fileName = $"not-exists-{Guid.NewGuid()}.txt";
@@ -188,7 +158,7 @@ public class S3BlobServiceTest
         exists.ShouldBeFalse();
     }
 
-    [Test]
+    [Fact]
     public async Task GetPublicAccessUrlReturnsUrl()
     {
         var fileName = $"public-{Guid.NewGuid()}.txt";

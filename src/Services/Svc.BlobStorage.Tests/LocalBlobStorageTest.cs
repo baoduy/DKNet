@@ -1,38 +1,19 @@
+using Svc.BlobStorage.Tests.Fixtures;
+
 namespace Svc.BlobStorage.Tests;
 
-[TestFixture]
-public class LocalBlobStorageTest
+public class LocalBlobStorageTest : IClassFixture<LocalBlobServiceFixture>
 {
-    private IBlobService _service;
-    private string _testRoot;
+    private readonly IBlobService _service;
+    private readonly string _testRoot;
 
-    [OneTimeSetUp]
-    public void Setup()
+    public LocalBlobStorageTest(LocalBlobServiceFixture fixture)
     {
-        _testRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
-
-        if (Directory.Exists(_testRoot))
-            Directory.Delete(_testRoot, recursive: true);
-        Directory.CreateDirectory(_testRoot);
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
-                (StringComparer.OrdinalIgnoreCase)
-                {
-                    { "BlobStorage:LocalFolder:RootFolder", "Test-Folder" },
-                })
-            .Build();
-
-        var service =
-            new ServiceCollection()
-                .AddLogging()
-                .AddLocalDirectoryBlobService(config)
-                .BuildServiceProvider();
-
-        _service = service.GetRequiredService<IBlobService>();
+        _service = fixture.Service;
+        _testRoot = fixture.TestRoot;
     }
 
-    [Test]
+    [Fact]
     public async Task SaveAsyncSavesFileAndOverwrites()
     {
         var fileName = $"test-{Guid.NewGuid()}.txt";
@@ -52,7 +33,7 @@ public class LocalBlobStorageTest
         content.ShouldBe("hello");
     }
 
-    [Test]
+    [Fact]
     public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
     {
         var filePath = Path.Combine(_testRoot, "exists.txt");
@@ -68,7 +49,7 @@ public class LocalBlobStorageTest
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [Test]
+    [Fact]
     public async Task GetAsyncReturnsBlobDataResult()
     {
         var filePath = Path.Combine(_testRoot, "get.txt");
@@ -80,14 +61,14 @@ public class LocalBlobStorageTest
         result.ShouldNotBeNull();
     }
 
-    [Test]
-    public void GetAsyncThrowsIfNotFound()
+    [Fact]
+    public async Task GetAsyncThrowsIfNotFound()
     {
         var blob = new BlobRequest("notfound.txt") { Type = BlobTypes.File };
-        Assert.ThrowsAsync<FileNotFoundException>(async () => await _service.GetAsync(blob));
+        await Should.ThrowAsync<FileNotFoundException>(async () => await _service.GetAsync(blob));
     }
 
-    [Test]
+    [Fact]
     public async Task ListItemsAsyncListsFilesAndDirectories()
     {
         var dir = Path.Combine(_testRoot, "dir1");
@@ -112,7 +93,7 @@ public class LocalBlobStorageTest
         items.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
-    [Test]
+    [Fact]
     public async Task ListItemsAsyncListsSingleFile()
     {
         var file = Path.Combine(_testRoot, "single.txt");
@@ -127,7 +108,7 @@ public class LocalBlobStorageTest
         items.Count.ShouldBe(1);
     }
 
-    [Test]
+    [Fact]
     public async Task DeleteAsyncDeletesFileAndDirectory()
     {
         var file = Path.Combine(_testRoot, "delete-me.txt");
@@ -145,7 +126,7 @@ public class LocalBlobStorageTest
         Directory.Exists(dir).ShouldBeFalse();
     }
 
-    [Test]
+    [Fact]
     public async Task DeleteAsyncReturnsFalseForNonExistentFileOrDirectory()
     {
         var blob = new BlobRequest("no-file.txt") { Type = BlobTypes.File };
@@ -157,7 +138,7 @@ public class LocalBlobStorageTest
         dirDeleted.ShouldBeFalse();
     }
 
-    [Test]
+    [Fact]
     public async Task CheckExistsAsyncReturnsCorrectly()
     {
         var file = Path.Combine(_testRoot, "exists-check.txt");
@@ -174,7 +155,7 @@ public class LocalBlobStorageTest
         (await _service.CheckExistsAsync(missingBlob)).ShouldBeFalse();
     }
 
-    [Test]
+    [Fact]
     public void GetPublicAccessUrlThrowsNotSupportedException()
     {
         var blob = new BlobRequest("any.txt") { Type = BlobTypes.File };

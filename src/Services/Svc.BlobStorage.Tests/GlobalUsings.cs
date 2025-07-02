@@ -2,7 +2,7 @@
 
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
-global using NUnit.Framework;
+global using Xunit;
 global using Shouldly;
 global using Testcontainers.Azurite;
 global using DKNet.Svc.BlobStorage.Abstractions;
