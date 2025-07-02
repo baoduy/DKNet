@@ -50,7 +50,7 @@ jobs:
 
       - name: Test
         continue-on-error: true
-        run: dotnet test src/DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings coverage.runsettings --verbosity minimal
+        run: dotnet test src/DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings src/coverage.runsettings --verbosity minimal
 
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
