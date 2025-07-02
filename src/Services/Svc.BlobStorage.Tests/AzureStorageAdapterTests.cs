@@ -1,69 +1,59 @@
 using DKNet.Svc.BlobStorage.AzureStorage;
+using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
 
-public class AzureStorageBlobServiceTest
+public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobServiceFixture>
 {
-    private IBlobService _adapter;
+    private readonly IBlobService _adapter;
 
-    [OneTimeSetUp]
-    public void Setup()
+    public AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
     {
-        var azureContainer = new AzuriteBuilder()
-            .WithCommand("--skipApiVersionCheck")
-            .WithPortBinding(10000)
-            .WithAutoRemove(true)
-            .Build();
-
-        azureContainer.StartAsync().GetAwaiter().GetResult();
-
-        var config = new ConfigurationBuilder()
-            //.AddJsonFile("appsettings.json")
-            .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "BlobService:AzureStorage:ConnectionString", "UseDevelopmentStorage=true" },
-                { "BlobService:AzureStorage:ContainerName", "test" },
-            })
-            .Build();
-
-        var service =
-            new ServiceCollection()
-                .AddLogging()
-                .AddSingleton<IBlobService, AzureStorageBlobService>()
-                .AddAzureStorageAdapter(config)
-                .BuildServiceProvider();
-
-        _adapter = service.GetRequiredService<IBlobService>();
+        _adapter = fixture.Service;
     }
 
-    [Test]
-    [Order(0)]
+    [Fact]
     public async Task SaveNewFile()
     {
+        var fileName = $"log-{Guid.NewGuid()}.txt";
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        await _adapter.SaveAsync(new BlobData("log.txt",file)
+        await _adapter.SaveAsync(new BlobData(fileName, file)
         {
             ContentType = "text/plain",
         });
 
-        (await _adapter.CheckExistsAsync(new BlobRequest("log.txt") { Type = BlobTypes.File }
+        (await _adapter.CheckExistsAsync(new BlobRequest(fileName) { Type = BlobTypes.File }
         )).ShouldBeTrue();
     }
 
-    [Test]
-    [Order(1)]
+    [Fact]
     public async Task GetPublicUrl()
     {
-        var uri = await _adapter.GetPublicAccessUrl(new BlobRequest("log.txt") { Type = BlobTypes.File });
+        var fileName = $"public-url-{Guid.NewGuid()}.txt";
+        var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
+        await _adapter.SaveAsync(new BlobData(fileName, file)
+        {
+            ContentType = "text/plain",
+        });
+        
+        var uri = await _adapter.GetPublicAccessUrl(new BlobRequest(fileName) { Type = BlobTypes.File });
         uri.ShouldNotBeNull();
     }
 
-    [Test]
-    [Order(1)]
+    [Fact]
     public async Task SaveExistedFile()
     {
+        var fileName = $"exists-{Guid.NewGuid()}.txt";
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        var action = () => _adapter.SaveAsync(new BlobData("log.txt", file)
+        
+        // First save the file
+        await _adapter.SaveAsync(new BlobData(fileName, file)
+        {
+            ContentType = "text/plain",
+        });
+        
+        // Try to save again without overwrite - should fail
+        var action = () => _adapter.SaveAsync(new BlobData(fileName, file)
         {
             ContentType = "text/plain",
         });
@@ -71,12 +61,20 @@ public class AzureStorageBlobServiceTest
         await action.ShouldThrowAsync<Exception>();
     }
 
-    [Test]
-    [Order(1)]
+    [Fact]
     public async Task SaveExistedWithOverWriteFile()
     {
+        var fileName = $"overwrite-{Guid.NewGuid()}.txt";
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        var action = () => _adapter.SaveAsync(new BlobData("log.txt", file)
+        
+        // First save the file
+        await _adapter.SaveAsync(new BlobData(fileName, file)
+        {
+            ContentType = "text/plain",
+        });
+        
+        // Try to save again with overwrite - should succeed
+        var action = () => _adapter.SaveAsync(new BlobData(fileName, file)
         {
             ContentType = "text/plain",
             Overwrite = true,
@@ -85,26 +83,32 @@ public class AzureStorageBlobServiceTest
         await action.ShouldNotThrowAsync();
     }
 
-    [Test]
-    [Order(2)]
+    [Fact]
     public async Task GetFile()
     {
+        var fileName = $"get-file-{Guid.NewGuid()}.txt";
         var oldfile = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        var file = await _adapter.GetAsync(new BlobRequest("log.txt") { Type = BlobTypes.File });
+        
+        // First save the file
+        await _adapter.SaveAsync(new BlobData(fileName, oldfile)
+        {
+            ContentType = "text/plain",
+        });
+        
+        // Then get it back
+        var file = await _adapter.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
 
         oldfile.ToString().ShouldBe(file!.Data.ToString());
     }
 
-    [Test]
-    [Order(2)]
+    [Fact]
     public async Task ListFile()
     {
         (await _adapter.ListItemsAsync(new BlobRequest("/") { Type = BlobTypes.Directory }).ToListAsync()).Count
             .ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Test]
-    [Order(3)]
+    [Fact]
     public async Task DeleteFileShouldReturnTrueWhenFileExists()
     {
         var file = BinaryData.FromString("test");
@@ -113,16 +117,14 @@ public class AzureStorageBlobServiceTest
         result.ShouldBeTrue();
     }
 
-    [Test]
-    [Order(4)]
+    [Fact]
     public async Task DeleteFileShouldReturnTrueWhenFileDoesNotExist()
     {
         var result = await _adapter.DeleteAsync(new BlobRequest("not-exist.txt") { Type = BlobTypes.File });
         result.ShouldBeFalse();
     }
 
-    [Test]
-    [Order(5)]
+    [Fact]
     public async Task DeleteFolderShouldReturnTrueWhenFolderExists()
     {
         var file = BinaryData.FromString("test");
@@ -131,16 +133,14 @@ public class AzureStorageBlobServiceTest
         result.ShouldBeTrue();
     }
 
-    [Test]
-    [Order(6)]
+    [Fact]
     public async Task CheckExistsAsyncShouldReturnFalseWhenBlobDoesNotExist()
     {
         var exists = await _adapter.CheckExistsAsync(new BlobRequest("not-exist.txt") { Type = BlobTypes.File });
         exists.ShouldBeFalse();
     }
 
-    [Test]
-    [Order(7)]
+    [Fact]
     public async Task ListItemsAsyncShouldReturnEmptyWhenNoItems()
     {
         var items = await _adapter.ListItemsAsync(new BlobRequest("empty-folder") { Type = BlobTypes.Directory })

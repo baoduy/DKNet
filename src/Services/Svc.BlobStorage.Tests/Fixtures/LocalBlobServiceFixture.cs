@@ -1,0 +1,42 @@
+using DKNet.Svc.BlobStorage.Local;
+
+namespace Svc.BlobStorage.Tests.Fixtures;
+
+public sealed class LocalBlobServiceFixture : IDisposable
+{
+    public IBlobService Service { get; }
+    public string TestRoot { get; }
+
+    public LocalBlobServiceFixture()
+    {
+        TestRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
+
+        if (Directory.Exists(TestRoot))
+            Directory.Delete(TestRoot, recursive: true);
+        Directory.CreateDirectory(TestRoot);
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+                (StringComparer.OrdinalIgnoreCase)
+                {
+                    { "BlobStorage:LocalFolder:RootFolder", "Test-Folder" },
+                })
+            .Build();
+
+        var serviceCollection = new ServiceCollection()
+            .AddLogging()
+            .AddLocalDirectoryBlobService(config);
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        Service = serviceProvider.GetRequiredService<IBlobService>();
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(TestRoot))
+        {
+            Directory.Delete(TestRoot, recursive: true);
+        }
+        GC.SuppressFinalize(this);
+    }
+}
