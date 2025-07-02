@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Extensions.Configurations;
@@ -59,6 +60,7 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
     /// <typeparam name="TEntity">The type of entity to filter.</typeparam>
     /// <param name="modelBuilder">The model builder instance.</param>
     /// <param name="context">The data owner context.</param>
+    [SuppressMessage("Usage", "MA0002:The IEqualityComparer<string> is not compatible with EfCore.")]
     private static void ApplyQueryFilter<TEntity>(ModelBuilder modelBuilder, IDataOwnerDbContext context)
         where TEntity : class, IOwnedBy
     {
