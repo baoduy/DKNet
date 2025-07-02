@@ -9,7 +9,7 @@
         <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>Extensions,DDD,Api,EfCore</PackageTags>
+        <PackageTags>Storage Services</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
@@ -17,6 +17,7 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
