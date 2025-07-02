@@ -1,5 +1,3 @@
-using DKNet.Svc.BlobStorage.Local;
-
 namespace Svc.BlobStorage.Tests.Fixtures;
 
 public sealed class LocalBlobServiceFixture : IDisposable

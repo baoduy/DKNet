@@ -1,6 +1,4 @@
-using DKNet.Svc.BlobStorage.AwsS3;
 using System.Text;
-using Testcontainers.Minio;
 using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;

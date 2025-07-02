@@ -1,4 +1,3 @@
-using DKNet.Svc.BlobStorage.AzureStorage;
 using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
