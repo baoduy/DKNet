@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Design;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Design;
 using SlimBus.Infra.Extensions;
-using System.Diagnostics.CodeAnalysis;
 
-namespace SlimBus.Infra;
+namespace SlimBus.Infra.Contexts;
 
 [ExcludeFromCodeCoverage]
 internal sealed class DbContextFactory : IDesignTimeDbContextFactory<CoreDbContext>

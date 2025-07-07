@@ -25,13 +25,6 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     }
 
     [Fact]
-    public async Task TestDataSeeding()
-    {
-        var account = await _db.Set<AccountStatus>().CountAsync();
-        account.ShouldBeGreaterThanOrEqualTo(2);
-    }
-
-    [Fact]
     public async Task TestCreateWithSqlDbAsync()
     {
         _db.ChangeTracker.Clear();

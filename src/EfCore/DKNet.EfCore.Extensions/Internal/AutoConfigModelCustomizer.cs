@@ -4,7 +4,7 @@ using DKNet.EfCore.Extensions.Registers;
 
 namespace DKNet.EfCore.Extensions.Internal;
 
-internal sealed class AutoMapModelCustomizer(ModelCustomizer original) : IModelCustomizer
+internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IModelCustomizer
 {
     public void Customize(ModelBuilder modelBuilder, DbContext context)
     {
@@ -17,7 +17,7 @@ internal sealed class AutoMapModelCustomizer(ModelCustomizer original) : IModelC
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        var options = dbContext.GetService<EntityMappingRegisterService>()?.EntityMapping;
+        var options = dbContext.GetService<EntityConfigRegisterService>()?.EntityConfig;
         if (options == null) return;
 
         if (options.Registrations.Count <= 0)

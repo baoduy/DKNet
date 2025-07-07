@@ -17,13 +17,15 @@ public interface IWriteRepository<in TEntity> where TEntity : class
     ///   Add Entity
     /// </summary>
     /// <param name="entity"></param>
-    void Add(TEntity entity);
+    /// <param name="cancellationToken"></param>
+    ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///  Add Range of Entities
     /// </summary>
     /// <param name="entities"></param>
-    void AddRange(IEnumerable<TEntity> entities);
+    /// <param name="cancellationToken"></param>
+    ValueTask AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///   Update Entity

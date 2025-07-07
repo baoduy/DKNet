@@ -1,4 +1,4 @@
-﻿namespace SlimBus.Infra.Core.Services;
+﻿namespace SlimBus.Infra.Services;
 
 internal abstract class SequenceService(DbContext dbContext, Sequences sequence) : ISequenceServices
 {

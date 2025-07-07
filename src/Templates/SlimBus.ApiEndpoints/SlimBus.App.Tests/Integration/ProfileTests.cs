@@ -2,7 +2,7 @@ using SlimBus.App.Tests.Fixtures;
 using SlimBus.AppServices.Profiles.V1.Actions;
 using SlimBus.AppServices.Profiles.V1.Events;
 using SlimBus.AppServices.Profiles.V1.Queries;
-using SlimBus.Infra.ExternalEvents;
+using SlimBus.Infra.Features.Profiles.ExternalEvents;
 
 namespace SlimBus.App.Tests.Integration;
 

@@ -1,6 +1,6 @@
 using DKNet.EfCore.DataAuthorization;
 
-namespace SlimBus.Infra;
+namespace SlimBus.Infra.Contexts;
 
 internal class OwnedDataContext(DbContextOptions options, IEnumerable<IDataOwnerProvider>? dataKeyProviders)
     : CoreDbContext(options), IDataOwnerDbContext

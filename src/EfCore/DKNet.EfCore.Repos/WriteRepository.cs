@@ -4,25 +4,26 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     where TEntity : class
 {
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
-    => dbContext.Database.BeginTransactionAsync(cancellationToken);
+        => dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-    public virtual void Add(TEntity entity)
-    => dbContext.Add(entity);
+    public virtual async ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default)
+        => await dbContext.AddAsync(entity, cancellationToken);
 
-    public virtual void AddRange(IEnumerable<TEntity> entities)
-    => dbContext.AddRange(entities);
+    public virtual async ValueTask AddRangeAsync(IEnumerable<TEntity> entities,
+        CancellationToken cancellationToken = default)
+        => await dbContext.AddRangeAsync(entities, cancellationToken);
 
     public virtual void Delete(TEntity entity)
-    => dbContext.Set<TEntity>().Remove(entity);
+        => dbContext.Set<TEntity>().Remove(entity);
 
     public virtual void DeleteRange(IEnumerable<TEntity> entities)
-    => dbContext.Set<TEntity>().RemoveRange(entities);
+        => dbContext.Set<TEntity>().RemoveRange(entities);
 
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    => dbContext.SaveChangesAsync(cancellationToken);
+        => dbContext.SaveChangesAsync(cancellationToken);
 
     public virtual void Update(TEntity entity)
-    => dbContext.Entry(entity).State = EntityState.Modified;
+        => dbContext.Entry(entity).State = EntityState.Modified;
 
     public virtual void UpdateRange(IEnumerable<TEntity> entities)
     {

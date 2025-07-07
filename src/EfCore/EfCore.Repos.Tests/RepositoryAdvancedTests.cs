@@ -101,7 +101,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
 
         // Act
         await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
-        _fixture.RepositoryWithMapper.Add(entity);
+        await _fixture.RepositoryWithMapper.AddAsync(entity);
         await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Verify entity exists in transaction
@@ -125,7 +125,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
 
         // Act
         await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
-        _fixture.RepositoryWithMapper.Add(entity);
+        await _fixture.RepositoryWithMapper.AddAsync(entity);
         await _fixture.RepositoryWithMapper.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -173,7 +173,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         };
 
         // Act
-        _fixture.RepositoryWithMapper.AddRange(entities);
+        await _fixture.RepositoryWithMapper.AddRangeAsync(entities);
         await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert

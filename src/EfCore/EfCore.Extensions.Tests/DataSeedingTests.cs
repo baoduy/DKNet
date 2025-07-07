@@ -5,19 +5,19 @@ namespace EfCore.Extensions.Tests;
 // Test seeding configuration for testing
 public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
 {
-    public ICollection<User> Data => new List<User>
-    {
-        new(1, "seeded1")
+    public ICollection<User> Data =>
+    [
+        new( "seeded1")
         {
             Account = new Account { UserName = "Steven", Password = "Pass@word1",},
             FirstName = "Seeded", LastName = "User1"
         },
-        new(2, "seeded2")
+        new( "seeded2")
         {
             Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Seeded",
             LastName = "User2"
         }
-    };
+    ];
 }
 
 
@@ -44,8 +44,6 @@ public class DataSeedingTests (SqlServerFixture fixture) : IClassFixture<SqlServ
         users.ShouldContain(u => u.FirstName == "Seeded" && u.LastName == "User1");
         users.ShouldContain(u => u.FirstName == "Seeded" && u.LastName == "User2");
     }
-
-
 
     [Fact]
     public void UseAutoDataSeeding_WithNullOptionsBuilder_ShouldThrowArgumentNullException()

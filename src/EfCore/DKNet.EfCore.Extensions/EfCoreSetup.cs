@@ -31,7 +31,7 @@ public static class EfCoreSetup
     /// <param name="options"></param>
     /// <returns></returns>
     public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
-        this DbContextOptionsBuilder<TContext> @this, Action<IEntityAutoMappingRegister>? options = null)
+        this DbContextOptionsBuilder<TContext> @this, Action<IEntityAutoConfigRegister>? options = null)
         where TContext : DbContext
     {
         return (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
@@ -46,7 +46,7 @@ public static class EfCoreSetup
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
     public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this,
-        Action<IEntityAutoMappingRegister>? options = null)
+        Action<IEntityAutoConfigRegister>? options = null)
     {
         ArgumentNullException.ThrowIfNull(@this);
 
@@ -61,12 +61,12 @@ public static class EfCoreSetup
     /// </summary>
     /// <param name="optionsBuilder"></param>
     /// <returns></returns>
-    internal static EntityAutoMappingRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder)
+    internal static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder)
     {
-        var op = optionsBuilder.Options.FindExtension<EntityAutoMappingRegister>();
+        var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
         if (op != null) return op;
 
-        op = new EntityAutoMappingRegister();
+        op = new EntityAutoConfigRegister();
         ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);
 
         return op;
