@@ -15,7 +15,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
         // Act
-        _fixture.Repository.Add(entity);
+        await _fixture.Repository.AddAsync(entity);
         await _fixture.Repository.SaveChangesAsync();
 
         // Assert
@@ -145,7 +145,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         };
 
         // Act
-        _fixture.Repository.AddRange(entities);
+        await _fixture.Repository.AddRangeAsync(entities);
         await _fixture.Repository.SaveChangesAsync();
 
         // Assert
@@ -166,7 +166,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         };
 
         // Act
-        _fixture.Repository.AddRange(entities);
+        await _fixture.Repository.AddRangeAsync(entities);
         var affectedRows = await _fixture.Repository.SaveChangesAsync();
 
         // Assert
@@ -326,7 +326,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     {
         // Arrange
         var entity = new User("savecancel") { FirstName = "SaveCancel", LastName = "Test" };
-        _fixture.Repository.Add(entity);
+        await _fixture.Repository.AddAsync(entity);
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 

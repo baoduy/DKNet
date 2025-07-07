@@ -1,7 +1,7 @@
-using SlimMessageBus;
 using DKNet.EfCore.Events.Handlers;
+using SlimMessageBus;
 
-namespace SlimBus.Infra.Core;
+namespace SlimBus.Infra.Services;
 
 /// <summary>
 /// The event publisher, IMessageBus for both internal and external events.

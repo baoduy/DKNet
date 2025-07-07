@@ -1,3 +1,5 @@
+using SlimBus.Infra.Contexts;
+
 namespace SlimBus.App.Tests.Fixtures;
 
 public abstract class ApiFixtureBase(ShareInfraFixture infra) : WebApplicationFactory<Api.Program>, IAsyncLifetime

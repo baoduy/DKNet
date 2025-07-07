@@ -8,7 +8,6 @@ global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Hosting;
 global using SlimBus.Api.Extensions;
 global using SlimBus.App.Tests.Extensions;
-global using SlimBus.Infra;
 global using SlimBus.Share;
 global using SlimBus.Share.Options;
 global using Xunit.Abstractions;

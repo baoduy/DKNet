@@ -1,6 +1,7 @@
 ﻿using SlimBus.Domains.Features.Profiles.Entities;
 using SlimBus.Domains.Features.Profiles.Repos;
 using DKNet.EfCore.Repos;
+using SlimBus.Infra.Contexts;
 
 namespace SlimBus.Infra.Features.Profiles.Repos;
 

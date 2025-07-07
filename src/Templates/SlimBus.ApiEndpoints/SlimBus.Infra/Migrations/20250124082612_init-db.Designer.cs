@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SlimBus.Infra;
+using SlimBus.Infra.Contexts;
 
 #nullable disable
 #pragma warning disable CS8981,CA1861,IDE0300,MA0051

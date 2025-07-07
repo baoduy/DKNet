@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
-using SlimBus.Infra.Core;
 using DKNet.EfCore.Hooks;
 using System.Diagnostics.CodeAnalysis;
+using SlimBus.Infra.Contexts;
+using SlimBus.Infra.Services;
 
 namespace SlimBus.Infra.Extensions;
 
@@ -20,7 +21,8 @@ public static class InfraSetup
                 var conn = config.GetConnectionString(SharedConsts.DbConnectionString)!;
 
                 builder.UseSqlWithMigration(conn)
-                    .UseAutoConfigModel(o => o.ScanFrom(typeof(InfraSetup).Assembly, typeof(DomainSchemas).Assembly));
+                    .UseAutoConfigModel(o => o.ScanFrom(typeof(InfraSetup).Assembly, typeof(DomainSchemas).Assembly))
+                    .UseAutoDataSeeding(typeof(InfraSetup).Assembly);
             });
 
         return service;

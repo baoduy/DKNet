@@ -10,9 +10,9 @@ using DKNet.Fw.Extensions.TypeExtractors;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
-internal static class EntityAutoMappingRegisterExtensions
+internal static class EntityAutoConfigRegisterExtensions
 {
-    private static readonly MethodInfo RegisterMappingMethod = typeof(EntityAutoMappingRegisterExtensions)
+    private static readonly MethodInfo RegisterMappingMethod = typeof(EntityAutoConfigRegisterExtensions)
         .GetMethod(nameof(RegisterMapping), BindingFlags.Static | BindingFlags.NonPublic)!;
 
     private static readonly Type DefaultEntityTypeConfiguration = typeof(DefaultEntityTypeConfiguration<>);

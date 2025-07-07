@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.EfCore.Extensions.Registers;
 
-public interface IEntityAutoMappingRegister
+public interface IEntityAutoConfigRegister
 {
     /// <summary>
     ///     The Assemblies will be scanned
@@ -19,12 +19,12 @@ public interface IEntityAutoMappingRegister
 /// <summary>
 ///    The Entity Mapping Register
 /// </summary>
-internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IEntityAutoMappingRegister
+internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEntityAutoConfigRegister
 {
     private DbContextOptionsExtensionInfo? _info;
     private Action<IServiceCollection>? _extraServiceProvider;
 
-    public DbContextOptionsExtensionInfo Info => _info ??= new EntityMappingExtensionInfo(this);
+    public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
     internal ICollection<AutoEntityRegistrationInfo> Registrations { get; } = [];
 
     public void ApplyServices(IServiceCollection services)
@@ -33,7 +33,7 @@ internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IE
         _extraServiceProvider?.Invoke(services);
 
         //Add EntityMappingService using a factory to avoid instance-specific registrations
-        services.AddSingleton<EntityMappingRegisterService>(provider => new EntityMappingRegisterService(this));
+        services.AddSingleton<EntityConfigRegisterService>(provider => new EntityConfigRegisterService(this));
 
         //Replace the IModelCustomizer with ExtraModelCustomizer. This only available for Relational Db.
         var originalDescriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IModelCustomizer));
@@ -42,14 +42,14 @@ internal sealed class EntityAutoMappingRegister : IDbContextOptionsExtension, IE
         {
             //it should be
             services.AddScoped<ModelCustomizer, RelationalModelCustomizer>();
-            services.Add(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoMapModelCustomizer), ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer), ServiceLifetime.Scoped));
         }
         else
         {
             // ReSharper disable once AssignNullToNotNullAttribute
             services.Add(new ServiceDescriptor(typeof(ModelCustomizer), originalDescriptor.ImplementationType!,
                 originalDescriptor.Lifetime));
-            services.Replace(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoMapModelCustomizer),
+            services.Replace(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer),
                 originalDescriptor.Lifetime));
         }
     }

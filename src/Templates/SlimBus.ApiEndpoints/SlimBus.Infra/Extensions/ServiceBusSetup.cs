@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Azure.Messaging.ServiceBus;
 using SlimBus.AppServices.Profiles.V1.Events;
-using SlimBus.Infra.ExternalEvents;
+using SlimBus.Infra.Features.Profiles.ExternalEvents;
 
 namespace SlimBus.Infra.Extensions;
 

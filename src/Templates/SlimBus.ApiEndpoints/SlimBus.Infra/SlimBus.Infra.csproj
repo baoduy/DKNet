@@ -39,8 +39,4 @@
     <ItemGroup>
         <InternalsVisibleTo Include="SlimBus.App.Tests"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="Features\Profiles"/>
-    </ItemGroup>
 </Project>

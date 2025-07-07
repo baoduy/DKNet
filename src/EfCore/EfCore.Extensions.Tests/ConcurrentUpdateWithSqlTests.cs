@@ -33,7 +33,7 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture):IClassFixtur
             },
         };
 
-        writeRepo.Add(user);
+        await writeRepo.AddAsync(user);
         await writeRepo.SaveChangesAsync();
 
         var createdVersion = (byte[])user.RowVersion!.Clone();

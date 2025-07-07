@@ -15,7 +15,8 @@ public class AuditEntityTests(SqlServerFixture fixture) : IClassFixture<SqlServe
     [Fact]
     public async Task TestUpdatingEntityAsync()
     {
-        _db.Set<User>().AddRange(new User("StevenHoang")
+        await _db.Set<User>()
+            .AddRangeAsync(new User("StevenHoang")
         {
             FirstName = "Steven",
             LastName = "Hoang"

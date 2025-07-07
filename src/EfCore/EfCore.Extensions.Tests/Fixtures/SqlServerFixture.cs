@@ -18,7 +18,8 @@ public class SqlServerFixture : IAsyncLifetime
             .EnableDetailedErrors()
             .UseSqlServer(_sql.GetConnectionString())
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
-            .UseAutoDataSeeding()
+            //DONOT use auto seeding here as there are a dedicated test for it
+            //.UseAutoDataSeeding()
             .Options;
 
         Db = new MyDbContext(options);

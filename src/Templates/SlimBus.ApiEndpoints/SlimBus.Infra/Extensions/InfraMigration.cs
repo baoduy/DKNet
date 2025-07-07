@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using SlimBus.Infra.Contexts;
 
 namespace SlimBus.Infra.Extensions;
 

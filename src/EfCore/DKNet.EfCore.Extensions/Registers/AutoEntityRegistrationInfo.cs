@@ -35,9 +35,9 @@ public sealed class AutoEntityRegistrationInfo
             throw new InvalidOperationException($"The {nameof(DefaultEntityMapperTypes)} must be a Generic Type.");
 
         if (!entityMapperTypes.All(t => t.GetInterfaces().Any(y =>
-                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoMappingRegisterExtensions.InterfaceEntityTypeConfiguration)))
+                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
             throw new InvalidOperationException(
-                $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoMappingRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
+                $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
 
         DefaultEntityMapperTypes = entityMapperTypes;
         return this;
@@ -67,8 +67,8 @@ public sealed class AutoEntityRegistrationInfo
             throw new InvalidOperationException($"The {nameof(DefaultEntityMapperTypes)} must be a Generic Type.");
 
         if (!DefaultEntityMapperTypes.All(t => t.GetInterfaces().Any(y =>
-                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoMappingRegisterExtensions.InterfaceEntityTypeConfiguration)))
+                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
             throw new InvalidOperationException(
-                $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoMappingRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
+                $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
     }
 }

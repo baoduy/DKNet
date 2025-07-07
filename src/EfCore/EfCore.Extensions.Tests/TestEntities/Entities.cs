@@ -26,7 +26,7 @@ public class User : BaseEntity
 {
     public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 
-    public User(string createdBy) : this(0, createdBy)
+    public User(string createdBy) : this(default, createdBy)
     {
     }
 

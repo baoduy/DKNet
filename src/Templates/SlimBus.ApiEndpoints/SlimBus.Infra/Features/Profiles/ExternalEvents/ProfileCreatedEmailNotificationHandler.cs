@@ -1,8 +1,8 @@
+using DKNet.SlimBus.Extensions;
 using Microsoft.Extensions.Logging;
 using SlimBus.AppServices.Profiles.V1.Events;
-using DKNet.SlimBus.Extensions;
 
-namespace SlimBus.Infra.ExternalEvents;
+namespace SlimBus.Infra.Features.Profiles.ExternalEvents;
 
 internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler>logger): Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {
