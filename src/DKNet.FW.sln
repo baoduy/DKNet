@@ -85,12 +85,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.SlimBus.Extensions", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.Extensions.Tests", "SlimBus\SlimBus.Extensions.Tests\SlimBus.Extensions.Tests.csproj", "{BC6A92F4-BE7F-405F-87A1-43A73D3CCD29}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{740E24A2-315E-4C88-B8FF-C01FCEB9D5E8}"
-	ProjectSection(SolutionItems) = preProject
-		Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\add-migration.sh
-		Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh = Templates\SlimBus.ApiEndpoints\scripts\remove-migration.sh
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore.Events", "EfCore.Events", "{0602506B-76E6-4909-9BD8-98B405967DAD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.AppHost", "Templates\SlimBus.ApiEndpoints\SlimBus.AppHost\SlimBus.AppHost.csproj", "{9932A464-FF05-4EF8-BD52-65753D5504F1}"
@@ -109,6 +103,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{83994FE1
 	ProjectSection(SolutionItems) = preProject
 		Templates\SlimBus.ApiEndpoints\build-docker.sh = Templates\SlimBus.ApiEndpoints\build-docker.sh
 		Templates\SlimBus.ApiEndpoints\Dockerfile = Templates\SlimBus.ApiEndpoints\Dockerfile
+		Templates\SlimBus.ApiEndpoints\add-migration.sh = Templates\SlimBus.ApiEndpoints\add-migration.sh
+		Templates\SlimBus.ApiEndpoints\remove-migration.sh = Templates\SlimBus.ApiEndpoints\remove-migration.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"
@@ -289,7 +285,6 @@ Global
 		{0FF2FD3C-E4A2-4482-845E-9BFAC1BBFE15} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{9DAB84BA-84CF-43C2-A35D-490A28992C62} = {C2686F33-39EF-4995-AA5B-E256F5130F9B}
 		{BC6A92F4-BE7F-405F-87A1-43A73D3CCD29} = {C2686F33-39EF-4995-AA5B-E256F5130F9B}
-		{740E24A2-315E-4C88-B8FF-C01FCEB9D5E8} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{0602506B-76E6-4909-9BD8-98B405967DAD} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{9932A464-FF05-4EF8-BD52-65753D5504F1} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{C5C4E313-B1C9-40A0-B7E8-44A7A779A518} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
