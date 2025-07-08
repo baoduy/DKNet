@@ -56,7 +56,7 @@
                 <PackageReference Update="Mapster.DependencyInjection" Version="1.0.1" />
                 <PackageReference Update="X.PagedList.EF" Version="10.5.7" />
                 <PackageReference Update="AWSSDK.Core" Version="4.0.0.14" />
-                <PackageReference Update="AWSSDK.S3" Version="4.0.3.2" />
+                <PackageReference Update="AWSSDK.S3" Version="4.0.4.1" />
                 <PackageReference Update="Azure.Storage.Blobs" Version="12.24.1" />
                 <PackageReference Update="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26" />
                 <PackageReference Update="Aspire.Hosting.AppHost" Version="9.3.1" />
@@ -86,7 +86,7 @@
                 <PackageReference Update="Testcontainers.Minio" Version="4.6.0" />
             </ItemGroup>
             <ItemGroup>
-                <PackageReference Include="Meziantou.Analyzer" Version="2.0.203">
+                <PackageReference Include="Meziantou.Analyzer" Version="2.0.205">
                     <PrivateAssets>all</PrivateAssets>
                     <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
                 </PackageReference>

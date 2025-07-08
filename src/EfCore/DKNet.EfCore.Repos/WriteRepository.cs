@@ -1,4 +1,6 @@
-﻿namespace DKNet.EfCore.Repos;
+﻿using System.Collections;
+
+namespace DKNet.EfCore.Repos;
 
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
@@ -22,14 +24,27 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 
-    public virtual void Update(TEntity entity)
-        => dbContext.Entry(entity).State = EntityState.Modified;
+    public virtual async Task UpdateAsync(TEntity entity)
+    {
+        var entry = dbContext.Entry(entity);
+        entry.State = EntityState.Modified;
+        //Scan and include all untracked entities from navigation properties
+        foreach (var property in entry.Navigations)
+        {
+            if (property.CurrentValue is not ICollection coll) continue;
+            foreach (var item in coll)
+            {
+                var itemEntry = dbContext.Entry(item);
+                if (itemEntry.State == EntityState.Detached)
+                    await dbContext.AddAsync(itemEntry);
+            }
+        }
 
-    public virtual void UpdateRange(IEnumerable<TEntity> entities)
+    }
+
+    public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
     {
         foreach (var entity in entities)
-        {
-            dbContext.Entry(entity).State = EntityState.Modified;
-        }
+            await UpdateAsync(entity);
     }
 }

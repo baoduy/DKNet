@@ -39,4 +39,8 @@
     <ItemGroup>
         <InternalsVisibleTo Include="SlimBus.App.Tests"/>
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+    </ItemGroup>
 </Project>

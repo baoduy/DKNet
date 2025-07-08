@@ -6,4 +6,5 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
 {
     public DbContextOptions<TestDbContext> Options => options;
     public DbSet<User> Users { get; set; }
+    public DbSet<Address> Addresses { get; set; }
 }

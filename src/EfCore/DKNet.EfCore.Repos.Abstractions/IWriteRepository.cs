@@ -31,13 +31,13 @@ public interface IWriteRepository<in TEntity> where TEntity : class
     ///   Update Entity
     /// </summary>
     /// <param name="entity"></param>
-    void Update(TEntity entity);
+    Task UpdateAsync(TEntity entity);
 
     /// <summary>
     ///  Update Range of Entities
     /// </summary>
     /// <param name="entities"></param>
-    void UpdateRange(IEnumerable<TEntity> entities);
+    Task UpdateRangeAsync(IEnumerable<TEntity> entities);
 
     /// <summary>
     ///  Delete Entity

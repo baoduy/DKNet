@@ -54,7 +54,7 @@ public class PlainEfCoreTest : IAsyncLifetime
             // This test checks if plain EF Core setup (without any extensions) has the issue
 
             // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
-            for (int i = 0; i < 25; i++)
+            for (var i = 0; i < 25; i++)
             {
                 using var scope = _provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PlainHookContext>();

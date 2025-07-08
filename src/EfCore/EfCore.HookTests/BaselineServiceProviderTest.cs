@@ -55,7 +55,7 @@ public class BaselineServiceProviderTest : IAsyncLifetime
             // If this also fails, then the issue is not with our hooks
 
             // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
-            for (int i = 0; i < 25; i++)
+            for (var i = 0; i < 25; i++)
             {
                 using var scope = _provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<HookContext>();
