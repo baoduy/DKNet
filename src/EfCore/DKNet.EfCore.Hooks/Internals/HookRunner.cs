@@ -57,7 +57,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     /// Initializes the hook by loading the hooks and setting up the context.
     /// </summary>
     /// <param name="eventData"></param>
-    private void InitHook(DbContextEventData eventData)
+    private void EnsureHookInitialized(DbContextEventData eventData)
     {
         //Validate and Mark the caller queues
         if (eventData.Context is null) throw new ArgumentNullException(nameof(eventData));
@@ -115,7 +115,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         //Init Hook
-        InitHook(eventData);
+        EnsureHookInitialized(eventData);
 
         if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
         //Run Before Save
