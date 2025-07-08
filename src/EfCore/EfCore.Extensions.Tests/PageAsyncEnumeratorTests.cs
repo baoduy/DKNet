@@ -118,7 +118,7 @@ public class PageAsyncEnumeratorTests
         try
         {
             // Get the first few items
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 (await enumerator.MoveNextAsync()).ShouldBeTrue();
                 result.Add(enumerator.Current);

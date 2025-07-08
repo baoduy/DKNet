@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
+using Shouldly;
 
 namespace EfCore.Repos.Tests;
 
@@ -19,9 +20,70 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         await _fixture.Repository.SaveChangesAsync();
 
         // Assert
-        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        var result = await _fixture.DbContext.Set<User>().Where(e => e.Id == entity.Id).FirstAsync();
         Assert.NotNull(result);
         Assert.Equal("Test User", result.FirstName);
+    }
+
+    [Fact]
+    public async Task AddUserWithAddressAsync()
+    {
+        // Arrange
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+        entity.Addresses.Add(new Address
+        {
+            City = "Test City",
+            Street = "Test Street",
+            Country = "Test Country",
+        });
+
+        // Act
+        await _fixture.Repository.AddAsync(entity);
+        await _fixture.Repository.SaveChangesAsync();
+
+        // Assert
+        var result = await _fixture.DbContext.Set<User>()
+            .Where(e => e.Id == entity.Id)
+            .Include(user => user.Addresses)
+            .FirstAsync();
+
+        Assert.NotNull(result);
+        result.Addresses.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task UpdateNavigationPropertiesAsync()
+    {
+        // Arrange
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+
+
+        // Act
+        await _fixture.Repository.AddAsync(entity);
+        await _fixture.Repository.SaveChangesAsync();
+
+        // Assert
+        var user = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        Assert.NotNull(user);
+
+        user!.Addresses.Add(new Address
+        {
+            City = "Test City",
+            Street = "Test Street",
+            Country = "Test Country",
+        });
+
+        await _fixture.Repository.UpdateAsync(entity);
+        await _fixture.Repository.SaveChangesAsync();
+
+        // Assert
+        var result = await _fixture.DbContext.Set<User>()
+            .Where(e => e.Id == user.Id)
+            .Include(u => u.Addresses)
+            .FirstAsync();
+
+        Assert.NotNull(result);
+        result.Addresses.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -218,19 +280,19 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     }
 
     [Fact]
-    public void UpdateMarksEntityAsModified()
+    public async Task UpdateMarksEntityAsModified()
     {
         // Arrange
         var entity = new User("updtest") { FirstName = "Original", LastName = "Test" };
         _fixture.DbContext.Add(entity);
-        _fixture.DbContext.SaveChanges();
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Detach the entity to simulate it coming from another context
         _fixture.DbContext.Entry(entity).State = EntityState.Detached;
         entity.FirstName = "Modified";
 
         // Act
-        _fixture.Repository.Update(entity);
+        await _fixture.Repository.UpdateAsync(entity);
 
         // Assert
         var entry = _fixture.DbContext.Entry(entity);
@@ -238,7 +300,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
     }
 
     [Fact]
-    public void UpdateRangeMarksMultipleEntitiesAsModified()
+    public async Task UpdateRangeMarksMultipleEntitiesAsModified()
     {
         // Arrange
         var entities = new[]
@@ -247,7 +309,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
             new User("updrange2") { FirstName = "UpdRange2", LastName = "Original" }
         };
         _fixture.DbContext.AddRange(entities);
-        _fixture.DbContext.SaveChanges();
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Detach entities to simulate them coming from another context
         foreach (var entity in entities)
@@ -257,7 +319,7 @@ public class RepositoryTests(RepositoryFixture fixture) : IClassFixture<Reposito
         }
 
         // Act
-        _fixture.Repository.UpdateRange(entities);
+        await _fixture.Repository.UpdateRangeAsync(entities);
 
         // Assert
         foreach (var entity in entities)

@@ -17,5 +17,7 @@ public class User : AuditedEntity<int>
 
     [Required][MaxLength(256)] public required string LastName { get; set; }
 
+    public ICollection<Address> Addresses { get; init; } = new HashSet<Address>();
+
     public string FullName => $"{FirstName} {LastName}";
 }

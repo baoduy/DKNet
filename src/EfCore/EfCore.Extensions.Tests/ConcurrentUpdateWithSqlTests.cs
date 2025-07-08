@@ -3,8 +3,7 @@ namespace EfCore.Extensions.Tests;
 /// <summary>
 /// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
-
-public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture):IClassFixture<SqlServerFixture>
+public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public async Task ConcurrencyWithRepositoryTest()
@@ -20,13 +19,13 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture):IClassFixtur
             {
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 },
                 new Address
                 {
-                    OwnedEntity = new OwnedEntity{Name = "123"},
+                    OwnedEntity = new OwnedEntity { Name = "123" },
                     City = "HBD",
                     Street = "HBD"
                 }
@@ -50,7 +49,11 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture):IClassFixtur
         user.SetRowVersion(createdVersion);
 
         //The DbUpdateConcurrencyException will be throw here
-        Func<Task> fun = async () => { writeRepo.Update(user); await writeRepo.SaveChangesAsync(); };
+        var fun = async () =>
+        {
+            await writeRepo.UpdateAsync(user);
+            await writeRepo.SaveChangesAsync();
+        };
         await fun.ShouldThrowAsync<DbUpdateConcurrencyException>();
     }
 }

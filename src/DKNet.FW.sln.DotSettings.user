@@ -236,6 +236,9 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=296dae2f_002D7c00_002D4649_002Dadde_002D5f20c34ab2e4/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=c35d851f_002D5dc1_002D461b_002Daa7e_002D986e59cf9dae/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Repos.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src/EfCore/EfCore.Repos.Tests" Presentation="&amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Repos.Tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
 	
 	
 	

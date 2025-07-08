@@ -58,7 +58,7 @@ public class ServiceProviderProblemTest : IAsyncLifetime
             var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
 
             // Simulate 25 consecutive API calls - this should trigger the EF Core warning
-            for (int i = 0; i < 25; i++)
+            for (var i = 0; i < 25; i++)
             {
                 hook.Reset();
 

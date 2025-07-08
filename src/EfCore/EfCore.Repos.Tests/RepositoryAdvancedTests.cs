@@ -199,7 +199,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         entity.FirstName = "Updated";
 
         // Act
-        _fixture.RepositoryWithMapper.Update(entity);
+        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
         var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
@@ -270,7 +270,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         }
 
         // Act
-        _fixture.RepositoryWithMapper.UpdateRange(entities);
+        await _fixture.RepositoryWithMapper.UpdateRangeAsync(entities);
         var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
@@ -298,7 +298,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
 
         // Act & Assert
         entity.FirstName = "Updated by context1";
-        _fixture.RepositoryWithMapper.Update(entity);
+        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
 
         // This should succeed since we're not using row versioning in this simple test
         var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
