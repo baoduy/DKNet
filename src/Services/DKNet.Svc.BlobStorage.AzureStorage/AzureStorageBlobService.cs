@@ -100,8 +100,8 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             {
                 ContentType = props.Value.ContentType,
                 ContentLength = props.Value.ContentLength,
-                CreatedOn = props.Value.CreatedOn!.LocalDateTime,
-                LastModified = props.Value.LastModified!.LocalDateTime,
+                CreatedOn = props.Value.CreatedOn.LocalDateTime,
+                LastModified = props.Value.LastModified.LocalDateTime,
             }
         };
     }
