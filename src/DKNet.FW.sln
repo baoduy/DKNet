@@ -60,6 +60,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		..\README.md = ..\README.md
 		verify_package.sh = verify_package.sh
 		..\.github\copilot-instructions.md = ..\.github\copilot-instructions.md
+		..\.gitignore = ..\.gitignore
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
