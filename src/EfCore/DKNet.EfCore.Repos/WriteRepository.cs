@@ -36,7 +36,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
             {
                 var itemEntry = dbContext.Entry(item);
                 if (itemEntry.State == EntityState.Detached)
-                    await dbContext.AddAsync(itemEntry);
+                    await dbContext.AddAsync(item);
             }
         }
 
