@@ -20,4 +20,5 @@ CoverageReports
 *.coverage
 *.coveragexml
 *.testlog
-src/nupkgs
+**/nupkgs
+**/*.DotSettings*

@@ -8,7 +8,7 @@ namespace Fw.Extensions.Tests
 
         public ServiceCollectionExtensionMethodsTests()
         {
-            _services = new ServiceCollection();
+            _services = [];
         }
 
         [Theory]

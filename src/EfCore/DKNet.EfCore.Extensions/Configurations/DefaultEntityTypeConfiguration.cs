@@ -1,4 +1,5 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
+using DKNet.Fw.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,31 +9,52 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
 {
     public virtual void Configure(EntityTypeBuilder<TEntity> builder)
     {
-        //The IEntity<Guid> is regardless to the generic type. Using Guid here just to get the property name
-        if (builder.Metadata.ClrType.GetProperty(nameof(IEntity<Guid>.Id)) is not null)
-            builder.HasKey(nameof(IEntity<Guid>.Id));
+        var clrType = builder.Metadata.ClrType;
 
-        //These only for IEntity<int>
-        if (builder.Metadata.ClrType.IsAssignableTo(typeof(IEntity<int>)))
+        // Handle IEntity<T> to set the primary key
+        var idProperty = clrType.GetProperty(nameof(IEntity<dynamic>.Id));
+        if (idProperty != null)
         {
-            builder.Property(nameof(IEntity<int>.Id)).ValueGeneratedOnAdd();
+            builder.HasKey(nameof(IEntity<dynamic>.Id));
+
+            if (idProperty.PropertyType.IsNumericType())
+            {
+                builder.Property(nameof(IEntity<dynamic>.Id)).ValueGeneratedOnAdd();
+            }
         }
 
-        if (builder.Metadata.ClrType == typeof(IAuditedProperties))
+        // Handle audit properties
+        if (typeof(IAuditedProperties).IsAssignableFrom(clrType))
         {
-            builder.Property(nameof(IAuditedProperties.CreatedBy)).IsRequired().HasMaxLength(255);
-            builder.Property(nameof(IAuditedProperties.CreatedOn)).IsRequired()
+            builder.Property(nameof(IAuditedProperties.CreatedBy))
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(nameof(IAuditedProperties.CreatedOn))
+                .IsRequired()
                 .HasDefaultValueSql("getdate()");
-            builder.Property(nameof(IAuditedProperties.UpdatedBy)).HasMaxLength(255);
+
+            builder.Property(nameof(IAuditedProperties.UpdatedBy))
+                .HasMaxLength(255);
+
+            builder.Property(nameof(IAuditedProperties.UpdatedOn));
         }
 
-        if (typeof(IConcurrencyEntity).IsAssignableFrom(builder.Metadata.ClrType))
+        // Handle concurrency token
+        if (typeof(IConcurrencyEntity).IsAssignableFrom(clrType))
         {
             builder.Property(nameof(IConcurrencyEntity.RowVersion))
-                .IsRequired()
-                .ValueGeneratedOnAddOrUpdate()
                 .IsRowVersion()
-                .HasColumnType("rowversion");
+                .IsConcurrencyToken();
         }
+
+        // Automatically ignore navigation collections without backing properties (optional safety)
+        // foreach (var navigation in builder.Metadata.GetNavigations())
+        // {
+        //     if (navigation.PropertyInfo == null)
+        //     {
+        //         builder.Ignore(navigation.Name);
+        //     }
+        // }
     }
 }

@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
 public class User : AuditedEntity<int>
 {
+    private readonly HashSet<Address> _addresses = [];
+
     public User(string createdBy) : this(0, createdBy)
     {
     }
@@ -13,11 +16,13 @@ public class User : AuditedEntity<int>
     {
     }
 
-    [Required][MaxLength(256)] public required string FirstName { get; set; }
+    [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    [Required][MaxLength(256)] public required string LastName { get; set; }
+    [Required] [MaxLength(256)] public required string LastName { get; set; }
 
-    public ICollection<Address> Addresses { get; init; } = new HashSet<Address>();
+    [BackingField(nameof(_addresses))] public IReadOnlyCollection<Address> Addresses => _addresses;
 
     public string FullName => $"{FirstName} {LastName}";
+
+    public void AddAddress(Address address) => _addresses.Add(address);
 }

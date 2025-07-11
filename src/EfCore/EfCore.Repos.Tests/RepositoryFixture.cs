@@ -36,10 +36,12 @@ public class RepositoryFixture : IAsyncLifetime
         await _app.StartAsync();
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
+        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
+                  ";TrustServerCertificate=true";
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(_dbConn);
+            .UseSqlServer(_dbConn)
+            .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
 
         DbContext = new TestDbContext(optionsBuilder.Options);
         DbContext.Database.SetConnectionString(_dbConn);

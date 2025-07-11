@@ -1,10 +1,13 @@
-﻿using System.Collections;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.Repos;
 
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
 {
+    public EntityEntry<TEntity> Entry(TEntity entity)
+        => dbContext.Entry(entity);
+
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -24,22 +27,23 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 
-    public virtual async Task UpdateAsync(TEntity entity)
+    public virtual Task UpdateAsync(TEntity entity)
     {
         var entry = dbContext.Entry(entity);
         entry.State = EntityState.Modified;
+        return Task.CompletedTask;
         //Scan and include all untracked entities from navigation properties
-        foreach (var property in entry.Navigations)
-        {
-            if (property.CurrentValue is not ICollection coll) continue;
-            foreach (var item in coll)
-            {
-                var itemEntry = dbContext.Entry(item);
-                if (itemEntry.State == EntityState.Detached)
-                    await dbContext.AddAsync(item);
-            }
-        }
-
+        // foreach (var nav in entry.Navigations)
+        // {
+        //     if (!nav.Metadata.IsCollection) continue;
+        //     if (nav.CurrentValue is not IEnumerable coll) continue;
+        //     foreach (var item in coll)
+        //     {
+        //         var itemEntry = dbContext.Entry(item);
+        //         if (itemEntry.State is not EntityState.Modified and EntityState.Deleted)
+        //             await dbContext.AddAsync(item);
+        //     }
+        // }
     }
 
     public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
