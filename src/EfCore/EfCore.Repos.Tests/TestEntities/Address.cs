@@ -9,9 +9,9 @@ public class Address:Entity<int>
     public User User { get; set; } = null!;
 
     [MaxLength(100)]
-    public required string Street { get; set; } = string.Empty;
+    public required string Street { get; set; }
     [MaxLength(100)]
-    public required string City { get; set; } = string.Empty;
+    public required string City { get; set; }
     [MaxLength(100)]
-    public required string Country { get; set; } = string.Empty;
+    public required string Country { get; set; }
 }
