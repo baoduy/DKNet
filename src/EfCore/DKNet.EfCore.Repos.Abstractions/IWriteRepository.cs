@@ -34,7 +34,7 @@ public interface IWriteRepository<TEntity> where TEntity : class
     ///   Update Entity
     /// </summary>
     /// <param name="entity"></param>
-    Task UpdateAsync(TEntity entity);
+    Task<int> UpdateAsync(TEntity entity);
 
     /// <summary>
     ///  Update Range of Entities
