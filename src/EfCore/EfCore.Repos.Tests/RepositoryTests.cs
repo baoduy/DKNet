@@ -1,3 +1,4 @@
+using DKNet.EfCore.Repos;
 using Microsoft.EntityFrameworkCore.Storage;
 using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
@@ -6,11 +7,12 @@ using Xunit.Abstractions;
 
 namespace EfCore.Repos.Tests;
 
-public class RepositoryTests(RepositoryFixture fixture,ITestOutputHelper output) : IClassFixture<RepositoryFixture>
+public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output) : IClassFixture<RepositoryFixture>
 {
     [Fact]
     public async Task AddAsyncAddsEntityToDatabase()
     {
+        fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
@@ -108,6 +110,7 @@ public class RepositoryTests(RepositoryFixture fixture,ITestOutputHelper output)
     [Fact]
     public async Task UpdateAndSaveAsyncUpdatesEntityInDatabase()
     {
+        fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("steven3") { FirstName = "Original", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -134,21 +137,59 @@ public class RepositoryTests(RepositoryFixture fixture,ITestOutputHelper output)
         Assert.IsAssignableFrom<IDbContextTransaction>(transaction);
     }
 
-    // [Fact]
-    // public async Task UpdateRowVersionUpdatesConcurrencyToken()
-    // {
-    //     // Arrange
-    //     var entity = new User("steven4") { FirstName = "Test", LastName = "Test" };
-    //     fixture.DbContext.Add(entity);
-    //     await fixture.DbContext.SaveChangesAsync();
+    [Fact]
+    public async Task ConcurrencyGuidWithRepositoryTest()
+    {
+        fixture.DbContext.ChangeTracker.Clear();
+        var writeRepo = new WriteRepository<UserGuid>(fixture.DbContext);
+        var readRepo = new ReadRepository<UserGuid>(fixture.DbContext);
+        //1. Create a new User.
+        var user = new UserGuid("A")
+        {
+            FirstName = "Duy",
+            LastName = "Hoang",
+        };
 
-    //     // Act
-    //     var newVersion = new byte[] { 1, 2, 3 };
-    //     fixture.Repository.UpdateRowVersion(entity, newVersion);
+        user.AddAddress(
+            new AddressGuid
+            {
+                City = "HBD",
+                Street = "HBD",
+                Country = "HBD",
+            });
+        user.AddAddress(
+            new AddressGuid
+            {
+                City = "HBD",
+                Street = "HBD",
+                Country = "HBD",
+            });
 
-    //     // Assert
-    //     Assert.Equal(newVersion, entity.RowVersion);
-    // }
+        await writeRepo.AddAsync(user);
+        await writeRepo.SaveChangesAsync();
+
+        var createdVersion = (byte[])user.RowVersion!.Clone();
+
+        //2. Update user with a created version. It should allow to update.
+        // Change the person's name in the database to simulate a concurrency conflict.
+        user.FirstName = "Duy3";
+        user.SetUpdatedBy("System");
+        await writeRepo.SaveChangesAsync();
+
+        //3. Update user with a created version again. It should NOT allow to update.
+        user = await readRepo.FindAsync(user.Id);
+        user!.FirstName = "Duy3";
+        user.SetRowVersion(createdVersion);
+
+        //The DbUpdateConcurrencyException will be thrown here
+        var fun = async () =>
+        {
+            await writeRepo.UpdateAsync(user);
+            await writeRepo.SaveChangesAsync();
+        };
+
+        await fun.ShouldThrowAsync<DbUpdateConcurrencyException>();
+    }
 
     [Fact]
     public async Task FindAsyncWithExpressionReturnsCorrectEntity()
@@ -262,6 +303,7 @@ public class RepositoryTests(RepositoryFixture fixture,ITestOutputHelper output)
     [Fact]
     public void DeleteRemovesEntityFromContext()
     {
+        fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("deltest") { FirstName = "ToDelete", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -321,6 +363,7 @@ public class RepositoryTests(RepositoryFixture fixture,ITestOutputHelper output)
     [Fact]
     public async Task UpdateRangeMarksMultipleEntitiesAsModified()
     {
+        fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entities = new[]
         {

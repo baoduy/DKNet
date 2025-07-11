@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
-internal sealed class UserConfig:DefaultEntityTypeConfiguration<User>
+internal sealed class UserGuidConfig:DefaultEntityTypeConfiguration<UserGuid>
 {
-    public override void Configure(EntityTypeBuilder<User> builder)
+    public override void Configure(EntityTypeBuilder<UserGuid> builder)
     {
         base.Configure(builder);
 
