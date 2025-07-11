@@ -11,7 +11,7 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
     /// </summary>
     /// <returns></returns>
     public virtual IQueryable<TEntity> Gets()
-        => dbContext.Set<TEntity>().AsNoTracking().AsNoTrackingWithIdentityResolution();
+        => dbContext.Set<TEntity>().AsNoTrackingWithIdentityResolution();
 
 
     public virtual async ValueTask<TEntity?> FindAsync(params object[] id)

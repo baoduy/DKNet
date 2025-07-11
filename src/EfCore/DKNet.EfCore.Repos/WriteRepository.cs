@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DKNet.EfCore.Repos;
 
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
 {
+    private readonly IEntityType _entityType = dbContext.Model.FindEntityType(typeof(TEntity))!;
+
     public EntityEntry<TEntity> Entry(TEntity entity)
         => dbContext.Entry(entity);
 
@@ -27,23 +30,22 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 
-    public virtual Task UpdateAsync(TEntity entity)
+    public virtual async Task UpdateAsync(TEntity entity)
     {
-        var entry = dbContext.Entry(entity);
-        entry.State = EntityState.Modified;
-        return Task.CompletedTask;
+        dbContext.Entry(entity).State = EntityState.Modified;
+
         //Scan and include all untracked entities from navigation properties
-        // foreach (var nav in entry.Navigations)
-        // {
-        //     if (!nav.Metadata.IsCollection) continue;
-        //     if (nav.CurrentValue is not IEnumerable coll) continue;
-        //     foreach (var item in coll)
-        //     {
-        //         var itemEntry = dbContext.Entry(item);
-        //         if (itemEntry.State is not EntityState.Modified and EntityState.Deleted)
-        //             await dbContext.AddAsync(item);
-        //     }
-        // }
+        var navigations = _entityType
+            .GetNavigations().Where(n => n.IsCollection && !n.IsShadowProperty());
+
+        foreach (var nav in navigations)
+        {
+            foreach (var item in entity.GetNavigationCollection(nav))
+            {
+                if (dbContext.Entry(item).State == EntityState.Detached)
+                    await dbContext.AddAsync(item);
+            }
+        }
     }
 
     public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
