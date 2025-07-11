@@ -30,7 +30,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 
-    public virtual async Task UpdateAsync(TEntity entity)
+    public virtual async Task<int> UpdateAsync(TEntity entity)
     {
         dbContext.Entry(entity).State = EntityState.Modified;
 
@@ -38,14 +38,21 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
         var navigations = _entityType
             .GetNavigations().Where(n => n.IsCollection && !n.IsShadowProperty());
 
+        var count = 0;
         foreach (var nav in navigations)
         {
             foreach (var item in entity.GetNavigationCollection(nav))
             {
-                if (dbContext.Entry(item).State == EntityState.Detached)
+                var newEntry = dbContext.Entry(item);
+                if (newEntry is { IsKeySet: false, State: EntityState.Detached })
+                {
                     await dbContext.AddAsync(item);
+                    count += 1;
+                }
             }
         }
+
+        return count;
     }
 
     public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)

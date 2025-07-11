@@ -3,7 +3,8 @@ namespace EfCore.Extensions.Tests;
 /// <summary>
 /// Concurrent update needs to be tested with real SQL Server.
 /// </summary>
-public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture)
+    : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public async Task ConcurrencyWithRepositoryTest()
@@ -37,18 +38,18 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture) : IClassFixt
 
         var createdVersion = (byte[])user.RowVersion!.Clone();
 
-        //2. Update user with created version. It should allow to update.
+        //2. Update user with a created version. It should allow to update.
         // Change the person's name in the database to simulate a concurrency conflict.
         user.FirstName = "Duy3";
         user.SetUpdatedBy("System");
         await writeRepo.SaveChangesAsync();
 
-        //3. Update user with created version again. It should NOT allow to update.
+        //3. Update user with a created version again. It should NOT allow to update.
         user = await readRepo.FindAsync(user.Id);
         user!.FirstName = "Duy3";
         user.SetRowVersion(createdVersion);
 
-        //The DbUpdateConcurrencyException will be throw here
+        //The DbUpdateConcurrencyException will be thrown here
         var fun = async () =>
         {
             await writeRepo.UpdateAsync(user);
