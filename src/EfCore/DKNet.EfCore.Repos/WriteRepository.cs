@@ -1,8 +1,13 @@
-﻿namespace DKNet.EfCore.Repos;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+
+namespace DKNet.EfCore.Repos;
 
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
 {
+    public EntityEntry<TEntity> Entry(TEntity entity)
+        => dbContext.Entry(entity);
+
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => dbContext.Database.BeginTransactionAsync(cancellationToken);
 

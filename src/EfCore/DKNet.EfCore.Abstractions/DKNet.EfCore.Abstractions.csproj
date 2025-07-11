@@ -32,7 +32,8 @@
         <PackageReference Include="Microsoft.CSharp"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions"/>
         <PackageReference Include="System.ComponentModel.Annotations"/>
-        <PackageReference Update="Meziantou.Analyzer">
+        <PackageReference Include="FluentResults"/>
+        <PackageReference Include="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

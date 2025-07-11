@@ -56,7 +56,7 @@ using FluentResults;
             /// <typeparam name="TQuery">The type of the query.</typeparam>
             /// <typeparam name="TResponse">The type of the response.</typeparam>
             public interface IHandler<in TQuery, TResponse> : IRequestHandler<TQuery, TResponse?>
-                where TQuery : Queries.IWitResponse<TResponse>;
+                where TQuery : IWitResponse<TResponse>;
 
             /// <summary>
             /// Represents a handler for a query that returns a paged response of type <typeparamref name="TResponse"/>.
@@ -64,7 +64,7 @@ using FluentResults;
             /// <typeparam name="TQuery">The type of the query.</typeparam>
             /// <typeparam name="TResponse">The type of the response.</typeparam>
             public interface IPageHandler<in TQuery, TResponse> : IRequestHandler<TQuery, IPagedList<TResponse>>
-                where TQuery : Queries.IWitPageResponse<TResponse>;
+                where TQuery : IWitPageResponse<TResponse>;
         }
 
         public static class EventsConsumers

@@ -19,7 +19,7 @@ internal class LazyMap<TResult>(object? originalValue, IMapper mapper) : ILazyMa
         if (originalValue is null) return default;
         if (_value is not null) return _value;
         if (originalValue is TResult o) _value = o;
-        _value = _mapper.Map<TResult>(originalValue);
+        else _value = _mapper.Map<TResult>(originalValue);
         return _value;
     }
 }
