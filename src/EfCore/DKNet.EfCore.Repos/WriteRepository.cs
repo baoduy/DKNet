@@ -32,7 +32,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
 
 
 
-    public virtual async Task<int> UpdateAsync(TEntity entity)
+    public virtual async Task<int> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         dbContext.Entry(entity).State = EntityState.Modified;
 
@@ -48,7 +48,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
                 var newEntry = dbContext.Entry(item);
                 if (newEntry.IsNewItem())
                 {
-                    await dbContext.AddAsync(item);
+                    await dbContext.AddAsync(item, cancellationToken);
                     count += 1;
                 }
             }
@@ -57,9 +57,9 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
         return count;
     }
 
-    public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
+    public async Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         foreach (var entity in entities)
-            await UpdateAsync(entity);
+            await UpdateAsync(entity, cancellationToken);
     }
 }
