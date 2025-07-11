@@ -55,6 +55,7 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture)
             await writeRepo.UpdateAsync(user);
             await writeRepo.SaveChangesAsync();
         };
+
         await fun.ShouldThrowAsync<DbUpdateConcurrencyException>();
     }
 }
