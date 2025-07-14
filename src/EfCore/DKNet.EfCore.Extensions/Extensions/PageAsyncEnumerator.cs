@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace DKNet.EfCore.Extensions.Extensions;
 
 internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) : IAsyncEnumerable<T>

@@ -1,3 +1,4 @@
+using DKNet.EfCore.Extensions.Extensions;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,10 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
         
         var dbContexts = serviceProvider.GetServices<DbContext>().ToHashSet();
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
+        {
+            await db.AddNewEntitiesFromNavigations();
             await db.SaveChangesAsync(context.CancellationToken);
+        }
 
         return response;
     }

@@ -1,6 +1,5 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
 using DKNet.Fw.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DKNet.EfCore.Extensions.Configurations;

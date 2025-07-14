@@ -1,10 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace DKNet.EfCore.Repos;
+namespace DKNet.EfCore.Extensions.Extensions;
 
-internal static class RepoExtensions
+public static class NavigationExtensions
 {
     public static IEnumerable<object> GetNavigationEntities(this object obj, INavigation navigation)
     {
@@ -82,7 +81,7 @@ internal static class RepoExtensions
         foreach (var entity in entities)
         {
             var list = context.GetNewEntitiesFromNavigations(entity);
-            await context.AddRangeAsync(list) ;
+            await context.AddRangeAsync(list);
         }
     }
 }

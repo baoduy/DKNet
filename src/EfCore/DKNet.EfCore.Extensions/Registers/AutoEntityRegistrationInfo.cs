@@ -1,6 +1,4 @@
 ﻿using System.Linq.Expressions;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Extensions.Registers;
 
