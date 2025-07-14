@@ -11,10 +11,10 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
     [NotMapped] private readonly ICollection<Type> _eventTypes = [];
 
     /// <inheritdoc />
-    protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy,
-        createdOn)
+    protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null) : base(id)
     {
         OwnedBy = ownedBy;
+        SetCreatedBy(createdBy, createdOn);
     }
 
     public void AddEvent(object eventObj) => _events.Add(eventObj);

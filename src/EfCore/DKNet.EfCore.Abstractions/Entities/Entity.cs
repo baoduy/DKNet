@@ -1,4 +1,6 @@
-﻿namespace DKNet.EfCore.Abstractions.Entities;
+﻿using System.Collections.ObjectModel;
+
+namespace DKNet.EfCore.Abstractions.Entities;
 
 /// <summary>
 /// Defines the base contract for all entities in the system.
@@ -30,8 +32,11 @@ public interface IEntity<out TKey>
 /// The generic key type allows for flexibility in choosing appropriate identifier types
 /// while maintaining a consistent entity structure across the application.
 /// </remarks>
-public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
+public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity, IEventEntity
 {
+    private readonly Collection<object> _events = [];
+    private readonly Collection<Type> _eventTypes = [];
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Entity{TKey}"/> class.
     /// </summary>
@@ -72,6 +77,19 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity
     /// </summary>
     /// <param name="rowVersion">The new row version value to set.</param>
     public void SetRowVersion(byte[] rowVersion) => RowVersion = rowVersion;
+
+    public void AddEvent(object eventObj) => _events.Add(eventObj);
+    public void AddEvent<TEvent>() where TEvent : class => _eventTypes.Add(typeof(TEvent));
+
+    public (object[]events, Type[]eventTypes) GetEventsAndClear()
+    {
+        var events = _events.ToArray();
+        var eventTypes = _eventTypes.ToArray();
+        _events.Clear();
+        _eventTypes.Clear();
+
+        return (events, eventTypes);
+    }
 
     /// <summary>
     /// Returns a string that represents the current entity.

@@ -28,7 +28,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
 
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.AddNewEntitiesFromNavigations();
+        await dbContext.AddNewEntitiesFromNavigations(cancellationToken);
         return await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -36,9 +36,9 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     {
         dbContext.Entry(entity).State = EntityState.Modified;
 
-        var newNavigationEntities = dbContext.GetNewEntitiesFromNavigations(entity).ToList();
-        await dbContext.AddRangeAsync(newNavigationEntities, cancellationToken);
-        return newNavigationEntities.Count;
+        var newEntities = dbContext.GetNewEntitiesFromNavigations(dbContext.Entry(entity)).ToList();
+        await dbContext.AddRangeAsync(newEntities, cancellationToken);
+        return newEntities.Count;
     }
 
     public async Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
