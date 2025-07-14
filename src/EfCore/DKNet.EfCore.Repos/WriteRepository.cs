@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿using DKNet.EfCore.Extensions.Extensions;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.Repos;
 
