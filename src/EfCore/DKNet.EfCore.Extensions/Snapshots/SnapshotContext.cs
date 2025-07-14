@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Extensions.Snapshots;
 

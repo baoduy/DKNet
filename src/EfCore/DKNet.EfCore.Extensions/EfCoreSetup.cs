@@ -1,7 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using DKNet.EfCore.Extensions.Configurations;
-using DKNet.EfCore.Extensions.Registers;
 
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;

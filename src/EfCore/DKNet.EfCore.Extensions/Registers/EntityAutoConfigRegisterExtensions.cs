@@ -1,9 +1,6 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
-using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Configurations;
-using DKNet.EfCore.Extensions.Registers;
 using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.TypeExtractors;
 

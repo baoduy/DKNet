@@ -1,7 +1,4 @@
-﻿using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using DKNet.EfCore.Abstractions.Attributes;
-using DKNet.Fw.Extensions;
+﻿using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace DKNet.EfCore.Extensions.Registers;

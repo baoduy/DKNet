@@ -1,8 +1,4 @@
-﻿using System.Globalization;
-using DKNet.EfCore.Extensions.Registers;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-
-namespace DKNet.EfCore.Extensions.Internal;
+﻿namespace DKNet.EfCore.Extensions.Internal;
 
 internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extension) : DbContextOptionsExtensionInfo(extension)
 {

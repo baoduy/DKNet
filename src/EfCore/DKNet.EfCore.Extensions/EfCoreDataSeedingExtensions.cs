@@ -1,7 +1,6 @@
 // ReSharper disable CheckNamespace
 
 using System.Diagnostics;
-using System.Reflection;
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.Fw.Extensions.TypeExtractors;
 

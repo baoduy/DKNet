@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
-using DKNet.EfCore.Abstractions.Attributes;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using DKNet.EfCore.Extensions.Registers;
-
-// ReSharper disable CheckNamespace
+﻿// ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
 /// <summary>

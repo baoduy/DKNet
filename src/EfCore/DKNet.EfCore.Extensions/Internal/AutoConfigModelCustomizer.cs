@@ -1,8 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using DKNet.EfCore.Extensions.Registers;
-
-namespace DKNet.EfCore.Extensions.Internal;
+﻿namespace DKNet.EfCore.Extensions.Internal;
 
 internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IModelCustomizer
 {

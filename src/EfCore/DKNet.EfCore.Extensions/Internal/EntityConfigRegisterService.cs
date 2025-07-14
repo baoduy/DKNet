@@ -1,6 +1,4 @@
-﻿using DKNet.EfCore.Extensions.Registers;
-
-namespace DKNet.EfCore.Extensions.Internal;
+﻿namespace DKNet.EfCore.Extensions.Internal;
 
 internal sealed class EntityConfigRegisterService(EntityAutoConfigRegister entityConfig)
 {
