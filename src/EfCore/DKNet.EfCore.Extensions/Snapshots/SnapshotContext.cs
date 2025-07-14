@@ -28,6 +28,7 @@ public sealed class SnapshotContext : IDisposable, IAsyncDisposable
         {
             // NOTE: Potential circular event handling in domain event handlers needs review
             if (_snapshotEntities.Count > 0) return _snapshotEntities;
+            DbContext.ChangeTracker.DetectChanges();
             _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
             return _snapshotEntities;
         }

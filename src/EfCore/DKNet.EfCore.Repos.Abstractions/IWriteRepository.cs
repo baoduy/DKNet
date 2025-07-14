@@ -34,13 +34,15 @@ public interface IWriteRepository<TEntity> where TEntity : class
     ///   Update Entity
     /// </summary>
     /// <param name="entity"></param>
-    Task<int> UpdateAsync(TEntity entity);
+    /// <param name="cancellationToken"></param>
+    Task<int> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///  Update Range of Entities
     /// </summary>
     /// <param name="entities"></param>
-    Task UpdateRangeAsync(IEnumerable<TEntity> entities);
+    /// <param name="cancellationToken"></param>
+    Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///  Delete Entity
