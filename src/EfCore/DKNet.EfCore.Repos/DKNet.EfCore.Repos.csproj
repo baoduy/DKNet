@@ -27,6 +27,7 @@
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.Infra.Tests"/>
+        <InternalsVisibleTo Include="EfCore.Repos.Tests"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>

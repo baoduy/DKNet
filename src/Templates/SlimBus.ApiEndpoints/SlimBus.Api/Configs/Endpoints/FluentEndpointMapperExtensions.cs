@@ -1,3 +1,4 @@
+using SlimBus.Api.Configs.Endpoints;
 using SlimBus.Api.Extensions;
 
 // ReSharper disable once CheckNamespace
@@ -30,8 +31,12 @@ internal static class FluentsEndpointMapperExtensions
     public static RouteHandlerBuilder MapGetPage<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Queries.IWitPageResponse<TResponse> =>
         app.MapGet(endpoint,
-                async (IMessageBus bus, [AsParameters] TCommand request) => Results.Ok(await bus.Send(request)))
-            .Produces<TResponse>()
+                async (IMessageBus bus, [AsParameters] TCommand request) =>
+                {
+                    var rs = await bus.Send(request);
+                    return Results.Ok(new PagedResult<TResponse>(rs));
+                })
+            .Produces<PagedResult<TResponse>>()
             .ProducesCommons();
 
     public static RouteHandlerBuilder MapPost<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
