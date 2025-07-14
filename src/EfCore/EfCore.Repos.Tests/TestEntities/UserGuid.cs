@@ -12,8 +12,9 @@ public class UserGuid : AuditedEntity<Guid>
     {
     }
 
-    public UserGuid(Guid id, string createdBy) : base(id, createdBy)
+    public UserGuid(Guid id, string createdBy) : base(id)
     {
+        SetCreatedBy(createdBy);
     }
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }

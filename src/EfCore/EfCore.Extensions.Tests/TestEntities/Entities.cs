@@ -12,8 +12,9 @@ public abstract class BaseEntity : AuditedEntity<int>
     }
 
     /// <inheritdoc />
-    protected BaseEntity(int id, string createdBy) : base(id, createdBy)
+    protected BaseEntity(int id, string createdBy) : base(id)
     {
+        SetCreatedBy(createdBy);
     }
 
     /// <inheritdoc />
@@ -84,12 +85,14 @@ public class GuidEntity : Entity<Guid>
 
 public class GuidAuditEntity : AuditedEntity<Guid>
 {
-    public GuidAuditEntity() : base(Guid.Empty, "Steven")
+    public GuidAuditEntity() : base(default )
     {
+        SetCreatedBy("Steven");
     }
 
-    public GuidAuditEntity(Guid id, string createdBy) : base(id, createdBy)
+    public GuidAuditEntity(Guid id, string createdBy) : base(id)
     {
+        SetCreatedBy(createdBy);
     }
 
     public string Name { get; set; } = null!;

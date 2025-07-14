@@ -12,8 +12,9 @@ public class User : AuditedEntity<int>
     {
     }
 
-    public User(int id, string createdBy) : base(id, createdBy)
+    public User(int id, string createdBy) : base(id)
     {
+        SetCreatedBy(createdBy);
     }
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }

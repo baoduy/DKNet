@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
-
 /// <summary>
 /// Defines the basic auditing properties required for tracking entity changes.
 /// </summary>
@@ -80,12 +79,6 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     {
     }
 
-    protected AuditedEntity(TKey id, string createdBy, DateTimeOffset? createdOn = null)
-        : base(id)
-    {
-        SetCreatedBy(createdBy, createdOn);
-    }
-
     /// <summary>
     /// Gets the user who created this entity.
     /// </summary>
@@ -151,11 +144,6 @@ public abstract class AuditedEntity : AuditedEntity<Guid>
     }
 
     protected AuditedEntity(Guid id) : base(id)
-    {
-    }
-
-    protected AuditedEntity(Guid id, string createdBy, DateTimeOffset? createdOn = null)
-        : base(id, createdBy, createdOn)
     {
     }
 }

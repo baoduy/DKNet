@@ -1,6 +1,6 @@
 namespace SlimBus.AppServices.Profiles.V1.Events;
 
-public sealed record ProfileCreatedEvent(Guid Id, string Name) : DomainEvent;
+public sealed record ProfileCreatedEvent(Guid Id, string Name);
 
 /// <summary>
 /// NOTE: remove this as just for testing purposed only

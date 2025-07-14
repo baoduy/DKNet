@@ -3,17 +3,37 @@ namespace EfCore.Abstractions.Tests;
 // Test entities for testing purposes
 public class TestAuditedEntity : AuditedEntity<int>
 {
-    public TestAuditedEntity() { }
-    public TestAuditedEntity(int id) : base(id) { }
-    public TestAuditedEntity(int id, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy, createdOn) { }
+    public TestAuditedEntity()
+    {
+    }
+
+    public TestAuditedEntity(int id) : base(id)
+    {
+    }
+
+    public TestAuditedEntity(int id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
+    {
+        SetCreatedBy(createdBy, createdOn);
+    }
+
     public string Name { get; set; } = string.Empty;
 }
 
 public class TestAuditedGuidEntity : AuditedEntity
 {
-    public TestAuditedGuidEntity() { }
-    public TestAuditedGuidEntity(Guid id) : base(id) { }
-    public TestAuditedGuidEntity(Guid id, string createdBy, DateTimeOffset? createdOn = null) : base(id, createdBy, createdOn) { }
+    public TestAuditedGuidEntity()
+    {
+    }
+
+    public TestAuditedGuidEntity(Guid id) : base(id)
+    {
+    }
+
+    public TestAuditedGuidEntity(Guid id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
+    {
+        SetCreatedBy(createdBy, createdOn);
+    }
+
     public string Name { get; set; } = string.Empty;
 }
 
@@ -192,7 +212,7 @@ public class AuditedEntityTests
         var entity = new TestAuditedEntity();
         const string createdBy = "creator";
         const string updatedBy = "updater";
-        
+
         entity.SetCreatedBy(createdBy);
         entity.SetUpdatedBy(updatedBy);
 
@@ -219,7 +239,7 @@ public class AuditedEntityTests
         var entity = new TestAuditedEntity();
         var createdOn = DateTimeOffset.UtcNow.AddMinutes(-10);
         var updatedOn = DateTimeOffset.UtcNow.AddMinutes(-5);
-        
+
         entity.SetCreatedBy("creator", createdOn);
         entity.SetUpdatedBy("updater", updatedOn);
 
