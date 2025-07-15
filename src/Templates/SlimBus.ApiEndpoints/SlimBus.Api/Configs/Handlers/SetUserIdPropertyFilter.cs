@@ -13,7 +13,10 @@ internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndp
             if (context.HttpContext.User.Identity?.IsAuthenticated == true)
                 userName = context.HttpContext.User.Identity.Name!;
         }
-        else userName = SharedConsts.SystemAccount;
+        else
+        {
+            userName = SharedConsts.SystemAccount;
+        }
 
         foreach (var a in context.Arguments)
         {

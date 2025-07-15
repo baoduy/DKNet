@@ -5,21 +5,6 @@ internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) :
     private int _currentPage;
     private bool _hasMorePages = true;
 
-    private async Task<IReadOnlyList<T>> GetNextPageAsync(CancellationToken cancellationToken = default)
-    {
-        if (!_hasMorePages) return [];
-
-        var page = await query
-            .Skip(_currentPage * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        _currentPage++;
-        _hasMorePages = page.Count == pageSize;
-
-        return page;
-    }
-
     public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         do
@@ -39,10 +24,25 @@ internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) :
             }
         } while (_hasMorePages);
     }
+
+    private async Task<IReadOnlyList<T>> GetNextPageAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_hasMorePages) return [];
+
+        var page = await query
+            .Skip(_currentPage * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        _currentPage++;
+        _hasMorePages = page.Count == pageSize;
+
+        return page;
+    }
 }
 
 public static class PageAsyncEnumeratorExtensions
 {
-    public static IAsyncEnumerable<T> ToPageEnumerable<T>(this IQueryable<T> query, int pageSize = 100)
-        => new EfCorePageAsyncEnumerator<T>(query, pageSize);
+    public static IAsyncEnumerable<T> ToPageEnumerable<T>(this IQueryable<T> query, int pageSize = 100) =>
+        new EfCorePageAsyncEnumerator<T>(query, pageSize);
 }

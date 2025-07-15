@@ -25,8 +25,6 @@ public abstract class BaseEntity : AuditedEntity<int>
 
 public class User : BaseEntity
 {
-    public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
-
     public User(string createdBy) : this(default, createdBy)
     {
     }
@@ -44,12 +42,15 @@ public class User : BaseEntity
     public string FullName => $"{FirstName} {LastName}";
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
+
+    public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 }
 
 public class Account : Entity<int>
 {
-    public string Password { get; set; } = null!;
-    public string UserName { get; set; } = null!;
+    [MaxLength(500)] public string Password { get; set; } = null!;
+
+    [MaxLength(500)] public string UserName { get; set; } = null!;
 }
 
 public sealed class Address : Entity<int>
@@ -75,7 +76,8 @@ public sealed class Address : Entity<int>
 public class OwnedEntity
 {
     public string FullName => $"{nameof(OwnedEntity)} {Name}";
-    public string? Name { get; set; }
+
+    [MaxLength(500)] public string? Name { get; set; }
 }
 
 public class GuidEntity : Entity<Guid>
@@ -85,29 +87,15 @@ public class GuidEntity : Entity<Guid>
 
 public class GuidAuditEntity : AuditedEntity<Guid>
 {
-    public GuidAuditEntity() : base(default )
-    {
-        SetCreatedBy("Steven");
-    }
+    public GuidAuditEntity() : base(default) => SetCreatedBy("Steven");
 
-    public GuidAuditEntity(Guid id, string createdBy) : base(id)
-    {
-        SetCreatedBy(createdBy);
-    }
+    public GuidAuditEntity(Guid id, string createdBy) : base(id) => SetCreatedBy(createdBy);
 
     public string Name { get; set; } = null!;
 }
 
-// public enum AccountStatusEnum
-// {
-//     Active = 1,
-//     Inactive = 2
-// }
-
 public class AccountStatus : Entity<int>
 {
-    [Required] [MaxLength(100)] public string Name { get; set; } = null!;
-
     public AccountStatus()
     {
     }
@@ -115,6 +103,8 @@ public class AccountStatus : Entity<int>
     public AccountStatus(int id) : base(id)
     {
     }
+
+    [Required] [MaxLength(100)] public string Name { get; set; } = null!;
 }
 
 [StaticData(nameof(EnumStatus))]
@@ -122,7 +112,7 @@ public enum EnumStatus
 {
     UnKnow = 0,
     Active = 1,
-    InActive = 2,
+    InActive = 2
 }
 
 [StaticData("EnumStatusOther")]
@@ -131,7 +121,7 @@ public enum EnumStatus1
     [Display(Name = "AA", Description = "BB")]
     UnKnow = 0,
     Active = 1,
-    InActive = 2,
+    InActive = 2
 }
 
 [SqlSequence]
@@ -143,7 +133,7 @@ public enum SequencesTest
     Invoice,
 
     [Sequence(typeof(long), IncrementsBy = 1, Max = long.MaxValue)]
-    Payment,
+    Payment
 }
 
 [IgnoreEntity]

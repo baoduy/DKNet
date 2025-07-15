@@ -1,13 +1,9 @@
-
 using DKNet.Svc.Transformation.TokenDefinitions;
 
 namespace Svc.Transform.Tests.TokenDefinitions;
 
-
 public class BracesTokenDefinitionTests
 {
-
-
     [Fact]
     public void BracesTokenDefinitionTest()
     {
@@ -25,6 +21,4 @@ public class BracesTokenDefinitionTests
         t.IsToken("Duy>")
             .ShouldBeFalse();
     }
-
-
 }

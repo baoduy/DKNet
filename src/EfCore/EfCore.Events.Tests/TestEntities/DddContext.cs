@@ -1,5 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.DataAuthorization;
 
 namespace EfCore.Events.Tests.TestEntities;
@@ -10,7 +10,8 @@ namespace EfCore.Events.Tests.TestEntities;
 /// <param name="dataKeyProviders">
 ///     optional <see cref="IDataOwnerProvider" /> injected from DI. Only first runner will be picked.
 /// </param>
-public class DddContext(DbContextOptions options,
+public class DddContext(
+    DbContextOptions options,
     [AllowNull] IEnumerable<IDataOwnerProvider> dataKeyProviders) : DbContext(options), IDataOwnerDbContext
 {
     //Internal fields will be available in unit test project.

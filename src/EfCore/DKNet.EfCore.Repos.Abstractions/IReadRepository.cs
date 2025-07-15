@@ -3,13 +3,13 @@ using System.Linq.Expressions;
 namespace DKNet.EfCore.Repos.Abstractions;
 
 /// <summary>
-///    Read Repository Interface
+///     Read Repository Interface
 /// </summary>
 /// <typeparam name="TEntity"></typeparam>
 public interface IReadRepository<TEntity> where TEntity : class
 {
     /// <summary>
-    /// Get IQueryable of entity.
+    ///     Get IQueryable of entity.
     /// </summary>
     /// <returns></returns>
     IQueryable<TEntity> Gets();
@@ -19,17 +19,26 @@ public interface IReadRepository<TEntity> where TEntity : class
     /// </summary>
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
-    IQueryable<TModel> GetProjection<TModel>() where TModel : class;
+    IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null) where TModel : class;
 
     /// <summary>
-    ///    Find Entity by Id
+    ///     Find Entity by Id
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="keyValue"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    ValueTask<TEntity?> FindAsync(params object[] id);
+    ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///   Find Entity by Filter
+    ///     Find Entity by Id
+    /// </summary>
+    /// <param name="keyValues"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Find Entity by Filter
     /// </summary>
     /// <param name="filter"></param>
     /// <param name="cancellationToken"></param>

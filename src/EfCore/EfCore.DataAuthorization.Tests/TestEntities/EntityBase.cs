@@ -16,8 +16,15 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
         SetCreatedBy(createdBy, createdOn);
     }
 
-    public void AddEvent(object eventObj) => _events.Add(eventObj);
-    public void AddEvent<TEvent>() where TEvent : class => _eventTypes.Add(typeof(TEvent));
+    public void AddEvent(object eventObj)
+    {
+        _events.Add(eventObj);
+    }
+
+    public void AddEvent<TEvent>() where TEvent : class
+    {
+        _eventTypes.Add(typeof(TEvent));
+    }
 
     public (object[] events, Type[] eventTypes) GetEventsAndClear()
     {
@@ -29,9 +36,14 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwn
         return (events, eventTypes);
     }
 
-    public override string ToString() => $"{GetType().Name} '{Id}'";
     public string OwnedBy { get; private set; }
-    public void SetOwnedBy(string ownerKey) => OwnedBy = ownerKey;
+
+    public void SetOwnedBy(string ownerKey)
+    {
+        OwnedBy = ownerKey;
+    }
+
+    public override string ToString() => $"{GetType().Name} '{Id}'";
 }
 
 public abstract class AggregateRoot(Guid id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null)

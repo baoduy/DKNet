@@ -7,7 +7,7 @@ internal static class GlobalExceptionConfigs
     private static bool _configAdded;
 
     /// <summary>
-    /// Configures the services to add global exception handling.
+    ///     Configures the services to add global exception handling.
     /// </summary>
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The service collection with the global exception handler configured.</returns>
@@ -35,7 +35,7 @@ internal static class GlobalExceptionConfigs
     }
 
     /// <summary>
-    /// Applies the global exception handling middleware to the application.
+    ///     Applies the global exception handling middleware to the application.
     /// </summary>
     /// <param name="app">The web application to configure.</param>
     /// <returns>The web application with the global exception handler applied.</returns>

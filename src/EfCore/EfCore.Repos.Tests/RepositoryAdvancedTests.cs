@@ -16,7 +16,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = _fixture.RepositoryWithMapper.GetProjection<UserDto>();
+        var projection = _fixture.RepositoryWithMapper.GetDto<UserDto>();
         var result = await projection.Where(u => u.FirstName == "ProjectMe").FirstOrDefaultAsync();
 
         // Assert
@@ -29,7 +29,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.RepositoryWithoutMapper.GetProjection<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => _fixture.RepositoryWithoutMapper.GetDto<UserDto>());
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = _fixture.ReadRepositoryWithMapper.GetProjection<UserDto>();
+        var projection = _fixture.ReadRepositoryWithMapper.GetDto<UserDto>();
         var result = await projection.Where(u => u.FirstName == "ReadProjectMe").FirstOrDefaultAsync();
 
         // Assert
@@ -54,7 +54,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void ReadRepositoryGetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepositoryWithoutMapper.GetProjection<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepositoryWithoutMapper.GetDto<UserDto>());
     }
 
     [Fact]

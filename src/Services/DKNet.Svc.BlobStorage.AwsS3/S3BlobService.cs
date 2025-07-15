@@ -3,9 +3,9 @@ using System.Runtime.CompilerServices;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DKNet.Svc.BlobStorage.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using DKNet.Svc.BlobStorage.Abstractions;
 
 namespace DKNet.Svc.BlobStorage.AwsS3;
 
@@ -14,6 +14,12 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 {
     private readonly S3Options _options = options.Value;
     private AmazonS3Client? _client;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     private async Task<AmazonS3Client> GetS3ClientAsync(CancellationToken cancellationToken = default)
     {
@@ -25,7 +31,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
             ForcePathStyle = _options.ForcePathStyle,
             UseHttp = !_options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
             RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
-            ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
+            ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
         };
 
         if (!string.IsNullOrWhiteSpace(_options.AccessKey) && !string.IsNullOrWhiteSpace(_options.Secret))
@@ -43,9 +49,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         var buckets = await _client.ListBucketsAsync(cancellationToken);
         if (buckets.Buckets is null || !buckets.Buckets.Exists(b =>
                 b.BucketName.Equals(_options.BucketName, StringComparison.OrdinalIgnoreCase)))
-        {
             await _client.PutBucketAsync(new PutBucketRequest { BucketName = _options.BucketName }, cancellationToken);
-        }
 
         return _client;
     }
@@ -75,7 +79,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
             var info = await client.ListObjectsV2Async(new ListObjectsV2Request
             {
                 BucketName = _options.BucketName,
-                Prefix = folderLocation,
+                Prefix = folderLocation
             }, cancellationToken);
 
             if (info?.S3Objects is null || info.S3Objects.Count == 0)
@@ -107,7 +111,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
             Key = location,
             InputStream = blob.Data.ToStream(),
             ContentType = blob.ContentType,
-            DisablePayloadSigning = _options.DisablePayloadSigning,
+            DisablePayloadSigning = _options.DisablePayloadSigning
         };
 
         await client.PutObjectAsync(uploadRequest, cancellationToken);
@@ -132,8 +136,8 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
                     ContentType = info.Headers.ContentType,
                     ContentLength = info.ContentLength,
                     CreatedOn = info.LastModified!.Value,
-                    LastModified = info.LastModified!.Value,
-                },
+                    LastModified = info.LastModified!.Value
+                }
             };
         }
         catch (AmazonS3Exception e)
@@ -153,7 +157,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         var info = await client.ListObjectsV2Async(new ListObjectsV2Request
         {
             BucketName = _options.BucketName,
-            Prefix = location,
+            Prefix = location
         }, cancellationToken);
 
         if (info?.S3Objects is null) yield break;
@@ -170,7 +174,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
                         ContentType = string.Empty,
                         ContentLength = obj.Size.Value,
                         CreatedOn = obj.LastModified!.Value,
-                        LastModified = obj.LastModified!.Value,
+                        LastModified = obj.LastModified!.Value
                     }
                     : null
             };
@@ -189,7 +193,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
                 BucketName = _options.BucketName,
                 Prefix = location,
                 //Delimiter = "/",
-                MaxKeys = 2,
+                MaxKeys = 2
             }, cancellationToken);
 
             return response.S3Objects is not null
@@ -212,7 +216,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         {
             BucketName = _options.BucketName,
             Key = location,
-            Expires = DateTime.UtcNow.Add(expiresFromNow ?? TimeSpan.FromHours(1)),
+            Expires = DateTime.UtcNow.Add(expiresFromNow ?? TimeSpan.FromHours(1))
         };
 
         var uri = await client.GetPreSignedURLAsync(request);
@@ -221,12 +225,6 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
             ? throw new NotSupportedException(
                 $"Current Container '{_options.BucketName}' does not support Shared Public Access Url")
             : new Uri(uri);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 
     // The bulk of the clean-up code is implemented in Dispose(bool)

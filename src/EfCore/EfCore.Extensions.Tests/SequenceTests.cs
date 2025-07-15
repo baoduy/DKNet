@@ -6,7 +6,7 @@ public enum TestSequenceTypes
 {
     [Sequence(typeof(int), StartAt = 100, IncrementsBy = 5, FormatString = "TEST-{1:000}")]
     TestSequence1,
-    
+
     [Sequence(typeof(long), StartAt = 1, IncrementsBy = 1)]
     TestSequence2
 }
@@ -14,10 +14,8 @@ public enum TestSequenceTypes
 [SqlSequence] // Uses default schema "seq"
 public enum DefaultSchemaSequenceTypes
 {
-    [Sequence]
-    DefaultSequence
+    [Sequence] DefaultSequence
 }
-
 
 public class SequenceRegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
@@ -57,7 +55,8 @@ public class SequenceRegisterTests(SqlServerFixture fixture) : IClassFixture<Sql
     public void GetFieldAttributeOrDefault_WithFieldAttribute_ShouldReturnAttribute()
     {
         // Act
-        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(TestSequenceTypes), TestSequenceTypes.TestSequence1);
+        var attribute =
+            SequenceRegister.GetFieldAttributeOrDefault(typeof(TestSequenceTypes), TestSequenceTypes.TestSequence1);
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -71,7 +70,8 @@ public class SequenceRegisterTests(SqlServerFixture fixture) : IClassFixture<Sql
     public void GetFieldAttributeOrDefault_WithoutFieldAttribute_ShouldReturnDefault()
     {
         // Act
-        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(DefaultSchemaSequenceTypes), DefaultSchemaSequenceTypes.DefaultSequence);
+        var attribute = SequenceRegister.GetFieldAttributeOrDefault(typeof(DefaultSchemaSequenceTypes),
+            DefaultSchemaSequenceTypes.DefaultSequence);
 
         // Assert
         attribute.ShouldNotBeNull();
@@ -94,7 +94,7 @@ public class SequenceRegisterTests(SqlServerFixture fixture) : IClassFixture<Sql
     public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
     {
         // Arrange
-        
+
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
             .UseAutoConfigModel(op => op.ScanFrom(typeof(TestSequenceTypes).Assembly))

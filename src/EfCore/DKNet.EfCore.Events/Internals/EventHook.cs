@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace DKNet.EfCore.Events.Internals;
 
 /// <summary>
-/// EventRunnerHook
+///     EventRunnerHook
 /// </summary>
 /// <param name="eventPublishers"></param>
 /// <param name="autoMappers"></param>
@@ -14,7 +14,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
     private ImmutableList<EntityEventItem> _eventEntities = [];
 
     /// <summary>
-    /// RunBeforeSaveAsync
+    ///     RunBeforeSaveAsync
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>
@@ -30,10 +30,8 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
                 var eventsAndTypes = entity.GetEventsAndClear();
 
                 if (eventsAndTypes.events != null)
-                {
                     //Collect events
                     events.AddRange(eventsAndTypes.events);
-                }
 
                 if (eventsAndTypes.eventTypes != null)
                     finallyEventTypes.AddRange(eventsAndTypes.eventTypes);
@@ -58,7 +56,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
     }
 
     /// <summary>
-    /// Run RunAfterSaveAsync Events and ignore the result even failed.
+    ///     Run RunAfterSaveAsync Events and ignore the result even failed.
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>

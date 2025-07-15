@@ -19,7 +19,7 @@ internal sealed class GlobalExceptionHandler(
             Status = (int)HttpStatusCode.InternalServerError,
             Title = "Something went wrong!.",
             Detail = exception.Message,
-            Type = exception.GetType().Name,
+            Type = exception.GetType().Name
         };
 
         return problemDetailsService.TryWriteAsync(new ProblemDetailsContext

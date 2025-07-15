@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.Repos.Abstractions;
+using SlimBus.Domains.Features.Profiles.Entities;
 using X.PagedList;
 using X.PagedList.EF;
 
@@ -22,12 +23,15 @@ internal sealed class ProfilePageableQueryValidator : AbstractValidator<PageProf
 }
 
 internal sealed class PageProfilesQueryHandler(
-    IReadRepository<Domains.Features.Profiles.Entities.CustomerProfile> repo,
+    IReadRepository<CustomerProfile> repo,
     IMapper mapper) : Fluents.Queries.IPageHandler<PageProfilePageQuery, ProfileResult>
 {
-    public async Task<IPagedList<ProfileResult>> OnHandle(PageProfilePageQuery request, CancellationToken cancellationToken) =>
-        await repo.Gets()
+    public async Task<IPagedList<ProfileResult>> OnHandle(PageProfilePageQuery request,
+        CancellationToken cancellationToken)
+    {
+        return await repo.Gets()
             .ProjectToType<ProfileResult>(mapper.Config)
             .OrderBy(p => p.Name)
-            .ToPagedListAsync(pageNumber: request.PageIndex, pageSize: request.PageSize, totalSetCount: null, cancellationToken: cancellationToken);
+            .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);
+    }
 }

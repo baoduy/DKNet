@@ -3,7 +3,7 @@ namespace SlimBus.AppServices.Profiles.V1.Events;
 public sealed record ProfileCreatedEvent(Guid Id, string Name);
 
 /// <summary>
-/// NOTE: remove this as just for testing purposed only
+///     NOTE: remove this as just for testing purposed only
 /// </summary>
 internal sealed class ProfileCreatedEventFromMemoryHandler : Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {

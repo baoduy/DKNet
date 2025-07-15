@@ -4,7 +4,8 @@ namespace SlimBus.App.Tests.Extensions;
 
 public static class JsonExtensions
 {
-    private static readonly JsonSerializerOptions? Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions?
+        Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public static async Task<(bool success, TValue? result, ProblemDetails? error, string content)> As<TValue>(
         this HttpResponseMessage message) where TValue : class

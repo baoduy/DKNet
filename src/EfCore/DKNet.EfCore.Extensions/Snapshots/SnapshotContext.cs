@@ -8,13 +8,11 @@ namespace DKNet.EfCore.Extensions.Snapshots;
 /// </summary>
 public sealed class SnapshotContext : IDisposable, IAsyncDisposable
 {
-    internal SnapshotContext(DbContext context)
-    {
-        _dbContext = context;
-    }
+    private DbContext? _dbContext;
 
     private ImmutableList<SnapshotEntityEntry> _snapshotEntities = [];
-    private DbContext? _dbContext;
+
+    internal SnapshotContext(DbContext context) => _dbContext = context;
 
     public DbContext DbContext => _dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
 
@@ -33,15 +31,15 @@ public sealed class SnapshotContext : IDisposable, IAsyncDisposable
         }
     }
 
-    public void Dispose()
-    {
-        _ = _snapshotEntities.Clear();
-        _dbContext = null;
-    }
-
     public ValueTask DisposeAsync()
     {
         Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _ = _snapshotEntities.Clear();
+        _dbContext = null;
     }
 }

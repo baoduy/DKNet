@@ -7,12 +7,12 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
 {
     public ICollection<User> Data =>
     [
-        new( "seeded1")
+        new("seeded1")
         {
-            Account = new Account { UserName = "Steven", Password = "Pass@word1",},
+            Account = new Account { UserName = "Steven", Password = "Pass@word1" },
             FirstName = "Seeded", LastName = "User1"
         },
-        new( "seeded2")
+        new("seeded2")
         {
             Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Seeded",
             LastName = "User2"
@@ -20,8 +20,7 @@ public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
     ];
 }
 
-
-public class DataSeedingTests (SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class DataSeedingTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()

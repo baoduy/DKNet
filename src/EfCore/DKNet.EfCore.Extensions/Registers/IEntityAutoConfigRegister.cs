@@ -15,15 +15,15 @@ public interface IEntityAutoConfigRegister
 }
 
 /// <summary>
-///    The Entity Mapping Register
+///     The Entity Mapping Register
 /// </summary>
 internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEntityAutoConfigRegister
 {
-    private DbContextOptionsExtensionInfo? _info;
     private Action<IServiceCollection>? _extraServiceProvider;
+    private DbContextOptionsExtensionInfo? _info;
+    internal ICollection<AutoEntityRegistrationInfo> Registrations { get; } = [];
 
     public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
-    internal ICollection<AutoEntityRegistrationInfo> Registrations { get; } = [];
 
     public void ApplyServices(IServiceCollection services)
     {
@@ -40,7 +40,8 @@ internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEn
         {
             //it should be
             services.AddScoped<ModelCustomizer, RelationalModelCustomizer>();
-            services.Add(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer), ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer),
+                ServiceLifetime.Scoped));
         }
         else
         {
@@ -52,11 +53,11 @@ internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEn
         }
     }
 
-    /// <summary>
-    ///     Register extra service to internal IServiceCollection of EfCore.
-    /// </summary>
-    /// <param name="provider"></param>
-    public void AddExtraServices(Action<IServiceCollection> provider) => _extraServiceProvider = provider;
+    public void Validate(IDbContextOptions options)
+    {
+        foreach (var info in Registrations)
+            info.Validate();
+    }
 
     /// <inheritdoc />
     /// <summary>
@@ -77,9 +78,12 @@ internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEn
         return register;
     }
 
-    public void Validate(IDbContextOptions options)
+    /// <summary>
+    ///     Register extra service to internal IServiceCollection of EfCore.
+    /// </summary>
+    /// <param name="provider"></param>
+    public void AddExtraServices(Action<IServiceCollection> provider)
     {
-        foreach (var info in Registrations)
-            info.Validate();
+        _extraServiceProvider = provider;
     }
 }

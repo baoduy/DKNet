@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace EfCore.Events.Tests.TestEntities;
 
@@ -11,7 +11,10 @@ public class Root(string name, string ownedBy) : AggregateRoot(Guid.Empty, owned
 
     [BackingField(nameof(_entities))] public IReadOnlyCollection<Entity> Entities => _entities;
 
-    public void UpdateName(string name) => Name = name;
+    public void UpdateName(string name)
+    {
+        Name = name;
+    }
 
     public void AddEntity(string name)
     {

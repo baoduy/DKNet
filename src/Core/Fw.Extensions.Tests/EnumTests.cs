@@ -2,7 +2,6 @@
 
 namespace Fw.Extensions.Tests;
 
-
 public class EnumExtensionsTests
 {
     [Fact]

@@ -1,36 +1,34 @@
 using System.Runtime.CompilerServices;
+using DKNet.Svc.BlobStorage.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using DKNet.Svc.BlobStorage.Abstractions;
 
 #pragma warning disable CS1998
 
 namespace DKNet.Svc.BlobStorage.Local;
 
 /// <summary>
-/// Provides local file system-based blob storage implementation.
+///     Provides local file system-based blob storage implementation.
 /// </summary>
 /// <remarks>
-/// Purpose: To provide blob storage capabilities using the local file system.
-/// Rationale: Enables blob storage functionality for development, testing, or scenarios where cloud storage is not required.
-/// 
-/// Functionality:
-/// - Stores blobs as files in a local directory structure
-/// - Supports directory-based organization
-/// - Provides file metadata through BlobDetails
-/// - Implements all IBlobService operations except public URL generation
-/// 
-/// Integration:
-/// - Implements IBlobService for compatibility with other blob storage providers
-/// - Uses LocalDirectoryOptions for configuration
-/// - Leverages standard .NET file I/O operations
-/// 
-/// Best Practices:
-/// - Ensure the root folder has appropriate read/write permissions
-/// - Consider file system limitations when storing large numbers of files
-/// - Use cloud storage for production scenarios requiring public access
-/// - Monitor disk space usage in production environments
+///     Purpose: To provide blob storage capabilities using the local file system.
+///     Rationale: Enables blob storage functionality for development, testing, or scenarios where cloud storage is not
+///     required.
+///     Functionality:
+///     - Stores blobs as files in a local directory structure
+///     - Supports directory-based organization
+///     - Provides file metadata through BlobDetails
+///     - Implements all IBlobService operations except public URL generation
+///     Integration:
+///     - Implements IBlobService for compatibility with other blob storage providers
+///     - Uses LocalDirectoryOptions for configuration
+///     - Leverages standard .NET file I/O operations
+///     Best Practices:
+///     - Ensure the root folder has appropriate read/write permissions
+///     - Consider file system limitations when storing large numbers of files
+///     - Use cloud storage for production scenarios requiring public access
+///     - Monitor disk space usage in production environments
 /// </remarks>
 public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<LocalBlobService> logger)
     : BlobService(options.Value)
@@ -44,15 +42,16 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         return Path.GetFullPath(Path.Combine(_rootFolder, name));
     }
 
-    private static BlobDetails CreateBlobDetails(FileInfo file) => new()
-    {
-        ContentType = file.FullName.GetContentTypeByExtension(),
-        ContentLength = file.Length,
-        CreatedOn = file.CreationTime,
-        LastModified = file.LastWriteTime
-    };
+    private static BlobDetails CreateBlobDetails(FileInfo file) =>
+        new()
+        {
+            ContentType = file.FullName.GetContentTypeByExtension(),
+            ContentLength = file.Length,
+            CreatedOn = file.CreationTime,
+            LastModified = file.LastWriteTime
+        };
 
-    private string GetRelativePath(string fullPath) => 
+    private string GetRelativePath(string fullPath) =>
         fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
 
     public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
@@ -75,9 +74,9 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     {
         var finalFile = GetFinalPath(blob);
         if (!File.Exists(finalFile)) throw new FileNotFoundException("File not found", blob.Name);
-        
+
         var file = new FileInfo(finalFile);
-        var data = await BinaryData.FromStreamAsync(file.OpenRead(), cancellationToken: cancellationToken);
+        var data = await BinaryData.FromStreamAsync(file.OpenRead(), cancellationToken);
         var relativePath = GetRelativePath(file.FullName);
 
         return new BlobDataResult(relativePath, data)
@@ -151,7 +150,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         }
 
         if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
-        Directory.Delete(folderLocation, recursive: true);
+        Directory.Delete(folderLocation, true);
         return Task.FromResult(true);
     }
 
@@ -163,11 +162,9 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     }
 
     public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
-        CancellationToken cancellationToken = default)
-    {
+        CancellationToken cancellationToken = default) =>
         throw new NotSupportedException(
             $"Public access URLs are not supported in {nameof(LocalBlobService)}. " +
             "This service is designed for local file system storage only. " +
             "Consider using a cloud-based blob storage service if you require public access functionality.");
-    }
 }

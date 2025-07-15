@@ -1,4 +1,5 @@
 using FluentValidation;
+using NetArchTest.Rules;
 using SlimBus.AppServices;
 using SlimMessageBus;
 
@@ -10,7 +11,7 @@ public class AppServiceTests
     public void AllHandlerClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(AppSetup).Assembly);
+        var types = Types.InAssembly(typeof(AppSetup).Assembly);
 
         var result = types
             .That()
@@ -30,7 +31,7 @@ public class AppServiceTests
     public void AllValidatorClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(AppSetup).Assembly);
+        var types = Types.InAssembly(typeof(AppSetup).Assembly);
 
         var result = types
             .That()

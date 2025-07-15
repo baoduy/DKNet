@@ -1,33 +1,31 @@
 ﻿// ReSharper disable CheckNamespace
+
 namespace Microsoft.EntityFrameworkCore;
 
 /// <summary>
-/// Provides extension methods for Entity Framework Core operations.
+///     Provides extension methods for Entity Framework Core operations.
 /// </summary>
 /// <remarks>
-/// Purpose: To extend Entity Framework Core functionality with utility methods for common operations.
-/// Rationale: Simplifies complex EF Core operations and provides reusable patterns for entity management.
-/// 
-/// Functionality:
-/// - Table name resolution for entities
-/// - Primary key property and value extraction
-/// - Database sequence value generation with formatting support
-/// - Type resolution utilities for entity mapping
-/// 
-/// Integration:
-/// - Extends DbContext with additional utility methods
-/// - Works with DKNet.EfCore.Abstractions attributes
-/// - Supports SQL Server-specific features like sequences
-/// 
-/// Best Practices:
-/// - Use sequence methods only with SQL Server provider
-/// - Ensure sequence attributes are properly configured
-/// - Handle null returns appropriately from utility methods
+///     Purpose: To extend Entity Framework Core functionality with utility methods for common operations.
+///     Rationale: Simplifies complex EF Core operations and provides reusable patterns for entity management.
+///     Functionality:
+///     - Table name resolution for entities
+///     - Primary key property and value extraction
+///     - Database sequence value generation with formatting support
+///     - Type resolution utilities for entity mapping
+///     Integration:
+///     - Extends DbContext with additional utility methods
+///     - Works with DKNet.EfCore.Abstractions attributes
+///     - Supports SQL Server-specific features like sequences
+///     Best Practices:
+///     - Use sequence methods only with SQL Server provider
+///     - Ensure sequence attributes are properly configured
+///     - Handle null returns appropriately from utility methods
 /// </remarks>
 public static class EfCoreExtensions
 {
     /// <summary>
-    /// Gets the qualified table name for the specified entity type.
+    ///     Gets the qualified table name for the specified entity type.
     /// </summary>
     /// <param name="context">The database context.</param>
     /// <param name="entityType">The entity type to get the table name for.</param>
@@ -41,7 +39,7 @@ public static class EfCoreExtensions
     }
 
     /// <summary>
-    /// Gets the primary key property names for the specified entity type.
+    ///     Gets the primary key property names for the specified entity type.
     /// </summary>
     /// <param name="context">The database context.</param>
     /// <param name="entityType">The entity type to get primary key properties for.</param>
@@ -92,13 +90,13 @@ public static class EfCoreExtensions
         (TValue?)await dbContext.NextSeqValue(name);
 
     /// <summary>
-    /// Gets the Next Sequence value
+    ///     Gets the Next Sequence value
     /// </summary>
     /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
     /// <param name="dbContext">The database context.</param>
     /// <param name="name">The name of the sequence.</param>
     /// <returns>The next value of the sequence.</returns>
-    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", 
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
         Justification = "SQL is constructed from internal metadata, not user input")]
     public static async ValueTask<object?> NextSeqValue<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
@@ -143,8 +141,10 @@ public static class EfCoreExtensions
     }
 
 
-    internal static Type GetEntityType(Type entityMappingType) =>
-        entityMappingType.GetInterfaces().First(a => a.IsGenericType).GetGenericArguments()[0];
+    internal static Type GetEntityType(Type entityMappingType)
+    {
+        return entityMappingType.GetInterfaces().First(a => a.IsGenericType).GetGenericArguments()[0];
+    }
 
     internal static bool IsSequenceSupported(this DatabaseFacade database) =>
         string.Equals(database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",

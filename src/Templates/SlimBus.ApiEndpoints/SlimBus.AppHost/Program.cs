@@ -10,8 +10,8 @@ var apDb = sql
     .AddDatabase("AppDb");
 
 builder.AddProject<SlimBus_Api>("Api")
-    .WithReference(cache,"Redis")
-    .WithReference(apDb,"AppDb")
+    .WithReference(cache, "Redis")
+    .WithReference(apDb, "AppDb")
     //.WithReference(bus, "AzureBus")
     //.WaitFor(bus)
     .WaitFor(cache)

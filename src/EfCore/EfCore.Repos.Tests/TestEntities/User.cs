@@ -25,5 +25,8 @@ public class User : AuditedEntity<int>
 
     public string FullName => $"{FirstName} {LastName}";
 
-    public void AddAddress(Address address) => _addresses.Add(address);
+    public void AddAddress(Address address)
+    {
+        _addresses.Add(address);
+    }
 }

@@ -13,11 +13,12 @@ public class TestQueryResult
     public string Name { get; set; } = null!;
 }
 
-internal class TestQueryHandler(TestDbContext dbContext, IMapper mapper):Fluents.Queries.IHandler<TestQuery, TestQueryResult>
+internal class TestQueryHandler(TestDbContext dbContext, IMapper mapper)
+    : Fluents.Queries.IHandler<TestQuery, TestQueryResult>
 {
-    public async Task<TestQueryResult?> OnHandle(TestQuery request,CancellationToken cancellationToken)
+    public async Task<TestQueryResult?> OnHandle(TestQuery request, CancellationToken cancellationToken)
     {
-       var rs= await dbContext.FindAsync<TestEntity>([request.Id], cancellationToken);
-       return rs is null ? null : mapper.Map<TestQueryResult>(rs);
+        var rs = await dbContext.FindAsync<TestEntity>([request.Id], cancellationToken);
+        return rs is null ? null : mapper.Map<TestQueryResult>(rs);
     }
 }

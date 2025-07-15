@@ -3,6 +3,7 @@ namespace SlimBus.Share.Options;
 public class FeatureOptions
 {
     public static string Name => "FeatureManagement";
+
     public bool EnableHttps { get; set; }
     public bool EnableSwagger { get; set; }
     public bool EnableAntiforgery { get; set; }
@@ -14,19 +15,19 @@ public class FeatureOptions
     public bool EnableHealthCheck { get; set; } = true;
 
     /// <summary>
-    /// Enable Graph token validation
+    ///     Enable Graph token validation
     /// </summary>
     public bool EnableMsGraphJwtTokenValidation { get; set; }
 
-    public bool EnableOpenTelemetry{ get; set; }
+    public bool EnableOpenTelemetry { get; set; }
 
     /// <summary>
-    /// Enable Rate Limiting
+    ///     Enable Rate Limiting
     /// </summary>
     public bool EnableRateLimit { get; set; }
 
     /// <summary>
-    /// Enable Azure App Configuration for remote configuration and feature management
+    ///     Enable Azure App Configuration for remote configuration and feature management
     /// </summary>
     public bool EnableAzureAppConfig { get; set; }
 }

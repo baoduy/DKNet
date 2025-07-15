@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Svc.Transform.Tests;
 
-
 public class TransformTests
 {
     [Fact]
@@ -85,12 +84,12 @@ public class TransformTests
             .BuildServiceProvider();
 
         var transformer = service.GetRequiredService<ITransformerService>();
-        
+
         await Should.ThrowAsync<UnResolvedTokenException>(async () =>
             await transformer.TransformAsync("{A}", "{A} 123", new Dictionary<string, object>
                 (StringComparer.OrdinalIgnoreCase)
                 {
-                    { "B", "Duy" },
+                    { "B", "Duy" }
                 }));
     }
 }

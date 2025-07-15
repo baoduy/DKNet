@@ -2,7 +2,6 @@
 
 namespace Fw.Extensions.Tests;
 
-
 public class PropertyExtensionsTests
 {
     [Fact]
@@ -25,7 +24,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var property1 = item.GetProperty(propertyName: null);
+        var property1 = item.GetProperty(null);
         var property2 = item.GetProperty("");
 
         // Assert
@@ -98,7 +97,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var value1 = item.GetPropertyValue(propertyName: null);
+        var value1 = item.GetPropertyValue(null);
         var value2 = item.GetPropertyValue("");
 
         // Assert
@@ -252,7 +251,7 @@ public class PropertyExtensionsTests
         var propertyName = "Name";
 
         // Act
-        item.SetPropertyValue(propertyName, value: null);
+        item.SetPropertyValue(propertyName, null);
 
         // Assert
         item.Name.ShouldBeNull();
@@ -317,7 +316,7 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        item.SetPropertyValue("Name", value: null); // Set Name to null
+        item.SetPropertyValue("Name", null); // Set Name to null
 
         // Act
         var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
@@ -440,10 +439,10 @@ public class PropertyExtensionsTests
         // Arrange
         using var item = new TestItem3("Duy");
         var property = typeof(TestItem3).GetProperty("IntValue");
-        
+
         // Act - This should not throw, but should catch internal ArgumentNullException
         item.TrySetPropertyValue(property, "invalid_conversion_value_that_cannot_be_converted_to_int");
-        
+
         // Assert - Value should remain unchanged
         item.GetPropertyValue("IntValue").ShouldBe(0);
     }
@@ -453,7 +452,7 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        
+
         // Act & Assert for valid nested property
         var lengthValue = item.GetPropertyValue("Name.Length");
         lengthValue.ShouldBe(3); // "Duy".Length = 3
@@ -464,27 +463,27 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        
+
         // Act & Assert for nullable int
         item.SetPropertyValue("NullableIntValue", 123);
         item.GetPropertyValue("NullableIntValue").ShouldBe(123);
-        
+
         // Set to null
-        item.SetPropertyValue("NullableIntValue", value: null);
+        item.SetPropertyValue("NullableIntValue", null);
         item.GetPropertyValue("NullableIntValue").ShouldBeNull();
     }
 
-    [Fact] 
+    [Fact]
     public void GetPropertyShouldHandleCaseInsensitiveSearch()
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        
+
         // Act
         var property1 = item.GetProperty("name"); // lowercase
         var property2 = item.GetProperty("NAME"); // uppercase
         var property3 = item.GetProperty("NaMe"); // mixed case
-        
+
         // Assert
         property1.ShouldNotBeNull();
         property2.ShouldNotBeNull();
@@ -499,10 +498,10 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        
+
         // Act - Set enum value from string
         item.SetPropertyValue("Type", "Enum1");
-        
+
         // Assert
         item.Type.ShouldBe(TestEnumObject.Enum1);
     }
@@ -512,11 +511,11 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        
+
         // Act & Assert for non-existent nested property
         var result = item.GetPropertyValue("Name.InvalidProperty");
         result.ShouldBeNull();
-        
+
         // Act & Assert for property that doesn't exist on the object
         var result2 = item.GetPropertyValue("NonExistentProperty.SubProperty");
         result2.ShouldBeNull();

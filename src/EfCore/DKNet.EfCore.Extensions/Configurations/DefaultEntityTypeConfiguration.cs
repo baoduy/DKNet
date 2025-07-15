@@ -17,9 +17,7 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
             builder.HasKey(nameof(IEntity<dynamic>.Id));
 
             if (idProperty.PropertyType.IsNumericType())
-            {
                 builder.Property(nameof(IEntity<dynamic>.Id)).ValueGeneratedOnAdd();
-            }
         }
 
         // Handle audit properties
@@ -41,19 +39,9 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
 
         // Handle concurrency token
         if (typeof(IConcurrencyEntity).IsAssignableFrom(clrType))
-        {
             builder.Property(nameof(IConcurrencyEntity.RowVersion))
                 .IsRowVersion()
-                .IsConcurrencyToken();
-        }
-
-        // Automatically ignore navigation collections without backing properties (optional safety)
-        // foreach (var navigation in builder.Metadata.GetNavigations())
-        // {
-        //     if (navigation.PropertyInfo == null)
-        //     {
-        //         builder.Ignore(navigation.Name);
-        //     }
-        // }
+                .IsConcurrencyToken()
+                .ValueGeneratedOnAddOrUpdate();
     }
 }

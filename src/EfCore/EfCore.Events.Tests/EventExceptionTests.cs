@@ -1,5 +1,5 @@
-using FluentResults;
 using DKNet.EfCore.Events;
+using FluentResults;
 
 namespace EfCore.Events.Tests;
 

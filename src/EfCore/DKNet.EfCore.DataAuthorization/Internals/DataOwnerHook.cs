@@ -1,28 +1,28 @@
 using DKNet.EfCore.Abstractions.Entities;
-using DKNet.EfCore.Hooks;
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Extensions.Snapshots;
+using DKNet.EfCore.Hooks;
 using DKNet.Fw.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
 /// <summary>
-/// Implements a hook that manages data ownership assignments before saving entities.
+///     Implements a hook that manages data ownership assignments before saving entities.
 /// </summary>
 /// <remarks>
-/// This hook is responsible for:
-/// - Automatically setting ownership information on newly created entities
-/// - Ensuring proper data authorization context is maintained
-/// - Managing entity ownership during the save process
+///     This hook is responsible for:
+///     - Automatically setting ownership information on newly created entities
+///     - Ensuring proper data authorization context is maintained
+///     - Managing entity ownership during the save process
 /// </remarks>
 /// <remarks>
-/// Initializes a new instance of the <see cref="DataOwnerHook"/> class.
+///     Initializes a new instance of the <see cref="DataOwnerHook" /> class.
 /// </remarks>
 /// <param name="dataOwnerProvider">The provider that supplies ownership information.</param>
 internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBeforeSaveHookAsync
 {
     /// <summary>
-    /// Executes before saving changes to ensure proper ownership assignment.
+    ///     Executes before saving changes to ensure proper ownership assignment.
     /// </summary>
     /// <param name="context">The snapshot context containing entity changes.</param>
     /// <param name="cancellationToken">A token to observe for cancellation requests.</param>
@@ -34,7 +34,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    /// Updates the ownership information for newly added entities.
+    ///     Updates the ownership information for newly added entities.
     /// </summary>
     /// <param name="context">The snapshot context containing entity changes.</param>
     private void UpdatingOwner(SnapshotContext context)
@@ -54,9 +54,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             }
 
             if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-            {
                 own.SetOwnedBy(dataOwnerProvider.GetOwnershipKey());
-            }
         }
     }
 }

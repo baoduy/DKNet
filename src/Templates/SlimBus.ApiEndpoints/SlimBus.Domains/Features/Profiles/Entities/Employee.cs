@@ -9,7 +9,7 @@ public enum EmployeeType
     None = 0,
     Director = 1,
     Secretary = 2,
-    Other = 3,
+    Other = 3
 }
 
 [Table("Employees", Schema = DomainSchemas.Profile)]

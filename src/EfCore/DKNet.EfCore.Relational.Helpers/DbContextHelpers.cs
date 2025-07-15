@@ -8,8 +8,8 @@ namespace DKNet.EfCore.Relational.Helpers;
 
 public static class DbContextHelpers
 {
-    private static bool IsSqlServer(this DbContext context)
-        => string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+    private static bool IsSqlServer(this DbContext context) =>
+        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
             StringComparison.OrdinalIgnoreCase);
 
     public static async Task<DbConnection> GetDbConnection(this DbContext dbContext,
@@ -34,7 +34,7 @@ public static class DbContextHelpers
     }
 
     /// <summary>
-    /// Check whether a particular table of entity is exited or not.
+    ///     Check whether a particular table of entity is exited or not.
     /// </summary>
     /// <param name="dbContext"></param>
     /// <param name="cancellationToken"></param>
@@ -45,7 +45,7 @@ public static class DbContextHelpers
     {
         try
         {
-            await dbContext.Set<TEntity>().AnyAsync(cancellationToken: cancellationToken);
+            await dbContext.Set<TEntity>().AnyAsync(cancellationToken);
             return true;
         }
         catch (DbException)
@@ -55,7 +55,7 @@ public static class DbContextHelpers
     }
 
     /// <summary>
-    /// Create Table for Entity this is not migration so you need to ensure to call this methods once only.
+    ///     Create Table for Entity this is not migration so you need to ensure to call this methods once only.
     /// </summary>
     /// <param name="dbContext"></param>
     /// <param name="cancellationToken"></param>

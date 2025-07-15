@@ -1,6 +1,5 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-
 public class DefaultComparisonTests
 {
     [Fact]

@@ -3,12 +3,12 @@ using System.Text;
 namespace DKNet.Svc.BlobStorage.Abstractions;
 
 /// <summary>
-/// Provides an interface for blob storage operations including saving, retrieving, listing, and deleting blobs.
+///     Provides an interface for blob storage operations including saving, retrieving, listing, and deleting blobs.
 /// </summary>
 public interface IBlobService
 {
     /// <summary>
-    /// Saves a blob with the specified data and returns its location.
+    ///     Saves a blob with the specified data and returns its location.
     /// </summary>
     /// <param name="blob">The blob data to save.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -16,7 +16,7 @@ public interface IBlobService
     Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves a blob's data based on blob arguments.
+    ///     Retrieves a blob's data based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blob to retrieve.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -24,7 +24,7 @@ public interface IBlobService
     Task<BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves a blob item's metadata based on blob arguments.
+    ///     Retrieves a blob item's metadata based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blob to retrieve.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -32,7 +32,7 @@ public interface IBlobService
     Task<BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lists blob items based on blob arguments.
+    ///     Lists blob items based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blobs to list.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -40,7 +40,7 @@ public interface IBlobService
     IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a blob based on blob arguments.
+    ///     Deletes a blob based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blob to delete.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -48,7 +48,7 @@ public interface IBlobService
     Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks if a blob exists based on blob arguments.
+    ///     Checks if a blob exists based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blob to check.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
@@ -56,7 +56,7 @@ public interface IBlobService
     Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a Shared access URL for a blob based on blob arguments.
+    ///     Gets a Shared access URL for a blob based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blob to get the URL for.</param>
     /// <param name="expiresFromNow"></param>
@@ -68,6 +68,27 @@ public interface IBlobService
 
 public abstract class BlobService(BlobServiceOptions options) : IBlobService
 {
+    public abstract Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default);
+
+    public abstract Task<BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken cancellationToken = default);
+
+    public virtual async Task<BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    {
+        await foreach (var item in ListItemsAsync(blob, cancellationToken))
+            return item;
+        return null;
+    }
+
+    public abstract IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+        CancellationToken cancellationToken = default);
+
+    public abstract Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default);
+
+    public abstract Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default);
+
+    public abstract Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+        CancellationToken cancellationToken = default);
+
     protected virtual string GetBlobLocation(BlobRequest item)
     {
         var builder = new StringBuilder();
@@ -100,25 +121,4 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
                 throw new FileLoadException("File size is invalid.");
         }
     }
-
-    public abstract Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default);
-
-    public abstract Task<BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken cancellationToken = default);
-
-    public virtual async Task<BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken cancellationToken = default)
-    {
-        await foreach (var item in ListItemsAsync(blob, cancellationToken))
-            return item;
-        return null;
-    }
-
-    public abstract IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
-        CancellationToken cancellationToken = default);
-
-    public abstract Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default);
-
-    public abstract Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default);
-
-    public abstract Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
-        CancellationToken cancellationToken = default);
 }

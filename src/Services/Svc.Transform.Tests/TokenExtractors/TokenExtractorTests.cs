@@ -3,7 +3,6 @@ using DKNet.Svc.Transformation.TokenExtractors;
 
 namespace Svc.Transform.Tests.TokenExtractors;
 
-
 public class TokenExtractorTests
 {
     [Fact]
@@ -21,7 +20,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(templateString: null!).ToList()
+        t.Extract(null!).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -56,7 +55,7 @@ public class TokenExtractorTests
         t.Extract("").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
-        t.Extract(templateString: null).ToList()
+        t.Extract(null).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
 
         var list = t.Extract(
@@ -82,7 +81,7 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorNullArgumentTest()
     {
-        var action=()=>new TokenExtractor(definition: null);
+        var action = () => new TokenExtractor(null);
         action.ShouldThrow<ArgumentNullException>();
     }
 

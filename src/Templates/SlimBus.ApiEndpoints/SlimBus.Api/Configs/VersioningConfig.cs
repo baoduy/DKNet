@@ -8,7 +8,7 @@ internal static class VersioningConfig
         services.AddEndpointsApiExplorer()
             .AddApiVersioning(op =>
             {
-                op.DefaultApiVersion = new ApiVersion(1,0);
+                op.DefaultApiVersion = new ApiVersion(1, 0);
                 op.ReportApiVersions = true;
                 op.AssumeDefaultVersionWhenUnspecified = true;
                 op.ApiVersionReader = new UrlSegmentApiVersionReader();

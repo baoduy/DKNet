@@ -1,29 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <LangVersion>default</LangVersion>
-    <ImplicitUsings>true</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>default</LangVersion>
+        <ImplicitUsings>true</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Update="Meziantou.Analyzer">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Update="Meziantou.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj" />
-    <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj" />
-    <ProjectReference Include="..\SlimBus.Share\SlimBus.Share.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj"/>
+        <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
+        <ProjectReference Include="..\SlimBus.Share\SlimBus.Share.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="SlimBus.App.Tests" />
-    <InternalsVisibleTo Include="SlimBus.Infra" />
-  </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="SlimBus.App.Tests"/>
+        <InternalsVisibleTo Include="SlimBus.Infra"/>
+    </ItemGroup>
 </Project>

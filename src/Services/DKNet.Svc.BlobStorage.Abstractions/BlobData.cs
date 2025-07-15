@@ -3,12 +3,13 @@ namespace DKNet.Svc.BlobStorage.Abstractions;
 public enum BlobTypes
 {
     File,
-    Directory,
+    Directory
 }
 
 public record BlobRequest(string Name)
 {
-    public BlobTypes Type { get; init; } = string.IsNullOrEmpty(Path.GetExtension(Name)) ? BlobTypes.Directory : BlobTypes.File;
+    public BlobTypes Type { get; init; } =
+        string.IsNullOrEmpty(Path.GetExtension(Name)) ? BlobTypes.Directory : BlobTypes.File;
 }
 
 public record BlobDetails

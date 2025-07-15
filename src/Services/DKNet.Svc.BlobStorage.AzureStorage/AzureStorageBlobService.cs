@@ -2,8 +2,8 @@ using System.Runtime.CompilerServices;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
-using Microsoft.Extensions.Options;
 using DKNet.Svc.BlobStorage.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.Svc.BlobStorage.AzureStorage;
 
@@ -54,21 +54,16 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
 
             //Delete Files
             await foreach (var blob in resultSegment)
-            {
                 if (blob.IsDirectory())
                     queue.Enqueue(blob.Name.EnsureTrailingSlash());
                 else await DeleteFileAsync(blob.Name, cancellationToken);
-            }
 
             //Add Empty folder to stack and delete later
             subStack.Push(tbDelete);
         }
 
         //Delete all empty Subfolders and folder
-        while (subStack.Count > 0)
-        {
-            await DeleteFileAsync(subStack.Pop(), cancellationToken);
-        }
+        while (subStack.Count > 0) await DeleteFileAsync(subStack.Pop(), cancellationToken);
 
         //Tobe True or Exception.
         return true;
@@ -93,7 +88,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         if (!es.Value) return null;
 
         var data = await b.DownloadContentAsync(cancellationToken);
-        return new BlobDataResult(blob.Name,data.Value.Content)
+        return new BlobDataResult(blob.Name, data.Value.Content)
         {
             Type = BlobTypes.File,
             Details = new BlobDetails
@@ -101,7 +96,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
                 ContentType = props.Value.ContentType,
                 ContentLength = props.Value.ContentLength,
                 CreatedOn = props.Value.CreatedOn.LocalDateTime,
-                LastModified = props.Value.LastModified.LocalDateTime,
+                LastModified = props.Value.LastModified.LocalDateTime
             }
         };
     }
@@ -114,7 +109,6 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
 
         await foreach (var b in resultSegment)
-        {
             yield return new BlobResult(blob.Name)
             {
                 Name = blob.Name,
@@ -125,10 +119,9 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
                         ContentType = b.Properties.ContentType,
                         ContentLength = b.Properties.ContentLength!.Value,
                         CreatedOn = b.Properties.CreatedOn!.Value.LocalDateTime,
-                        LastModified = b.Properties.LastModified!.Value.LocalDateTime,
+                        LastModified = b.Properties.LastModified!.Value.LocalDateTime
                     }
             };
-        }
     }
 
 
@@ -136,7 +129,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     {
         var client = await GetClient();
         var location = GetBlobLocation(blob);
-        var rs = await client.GetBlobClient(location).ExistsAsync(cancellationToken: cancellationToken);
+        var rs = await client.GetBlobClient(location).ExistsAsync(cancellationToken);
         return rs.Value;
     }
 

@@ -26,14 +26,14 @@ public class SqlServerFixture : IAsyncLifetime
         await Db.Database.EnsureCreatedAsync();
     }
 
-    public string GetConnectionString(string dbName) =>
-        _sql.GetConnectionString()
-            .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
-
     public async Task DisposeAsync()
     {
         await Db.DisposeAsync();
         await _sql.StopAsync();
         await _sql.DisposeAsync();
     }
+
+    public string GetConnectionString(string dbName) =>
+        _sql.GetConnectionString()
+            .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
 }

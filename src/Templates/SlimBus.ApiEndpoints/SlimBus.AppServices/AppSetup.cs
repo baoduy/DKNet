@@ -4,8 +4,8 @@ public static class AppSetup
 {
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
-        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(value: true);
-        TypeAdapterConfig.GlobalSettings.Default.PreserveReference(value: true);
+        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
+        TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         TypeAdapterConfig.GlobalSettings.ScanMapsTo();
         TypeAdapterConfig.GlobalSettings.Compile();
 
@@ -15,6 +15,5 @@ public static class AppSetup
 
 
         return services;
-
     }
 }

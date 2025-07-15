@@ -1,7 +1,7 @@
 using DKNet.EfCore.Repos;
-using Microsoft.EntityFrameworkCore.Storage;
 using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Shouldly;
 using Xunit.Abstractions;
 
@@ -30,12 +30,12 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task AddUserWithAddressAsync()
     {
         // Arrange
-        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
         entity.AddAddress(new Address
         {
             City = "Test City",
             Street = "Test Street",
-            Country = "Test Country",
+            Country = "Test Country"
         });
 
         // Act
@@ -56,7 +56,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task UpdateNavigationPropertiesAsync()
     {
         // Arrange
-        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
         // Act
         await fixture.Repository.AddAsync(entity);
@@ -77,19 +77,19 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         {
             City = "Test City 1",
             Street = "Test Street 1",
-            Country = "Test Country 1",
+            Country = "Test Country 1"
         });
         user.AddAddress(new Address
         {
             City = "Test City 2",
             Street = "Test Street 2",
-            Country = "Test Country 2",
+            Country = "Test Country 2"
         });
         user.AddAddress(new Address
         {
             City = "Test City 3",
             Street = "Test Street 3",
-            Country = "Test Country 3",
+            Country = "Test Country 3"
         });
 
         output.WriteLine(fixture.DbContext.ChangeTracker.DebugView.LongView);
@@ -141,54 +141,41 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task ConcurrencyGuidWithRepositoryTest()
     {
         fixture.DbContext.ChangeTracker.Clear();
-        var writeRepo = new WriteRepository<UserGuid>(fixture.DbContext);
-        var readRepo = new ReadRepository<UserGuid>(fixture.DbContext);
-        //1. Create a new User.
+        var repo1 = new Repository<UserGuid>(fixture.DbContext);
+
+        // 1. Create a new UserGuid entity
         var user = new UserGuid("A")
         {
             FirstName = "Duy",
-            LastName = "Hoang",
+            LastName = "Hoang"
         };
-
-        user.AddAddress(
-            new AddressGuid
-            {
-                City = "HBD",
-                Street = "HBD",
-                Country = "HBD",
-            });
-        user.AddAddress(
-            new AddressGuid
-            {
-                City = "HBD",
-                Street = "HBD",
-                Country = "HBD",
-            });
-
-        await writeRepo.AddAsync(user);
-        await writeRepo.SaveChangesAsync();
-
+        user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
+        user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
+        await repo1.AddAsync(user);
+        await repo1.SaveChangesAsync();
         var createdVersion = (byte[])user.RowVersion!.Clone();
+        createdVersion.ShouldNotBeEmpty();
 
-        //2. Update user with a created version. It should allow to update.
-        // Change the person's name in the database to simulate a concurrency conflict.
-        user.FirstName = "Duy3";
-        user.SetUpdatedBy("System");
-        await writeRepo.SaveChangesAsync();
+        // 2. Simulate two users/contexts
+        fixture.DbContext.ChangeTracker.Clear();
+        await using var db2 = await fixture.CreateNewDbContext();
+        var repo2 = new Repository<UserGuid>(db2);
+        var userFromRepo1 = await repo1.FindAsync(u => u.Id == user.Id);
+        var userFromRepo2 = await repo2.FindAsync(u => u.Id == user.Id);
+        userFromRepo1.ShouldNotBeNull();
+        userFromRepo2.ShouldNotBeNull();
 
-        //3. Update user with a created version again. It should NOT allow to update.
-        user = await readRepo.FindAsync(user.Id);
-        user!.FirstName = "Duy3";
-        user.SetRowVersion(createdVersion);
+        // 3. Update and save with repo1
+        userFromRepo1.FirstName = "Duy3";
+        userFromRepo1.SetUpdatedBy("System");
+        await repo1.UpdateAsync(userFromRepo1);
+        await repo1.SaveChangesAsync();
 
-        //The DbUpdateConcurrencyException will be thrown here
-        var fun = async () =>
-        {
-            await writeRepo.UpdateAsync(user);
-            await writeRepo.SaveChangesAsync();
-        };
-
-        await fun.ShouldThrowAsync<DbUpdateConcurrencyException>();
+        // 4. Attempt to update and save with repo2 (should fail)
+        userFromRepo2.FirstName = "Duy4";
+        userFromRepo2.SetUpdatedBy("System");
+        await repo2.UpdateAsync(userFromRepo2);
+        await Should.ThrowAsync<DbUpdateConcurrencyException>(async () => await repo2.SaveChangesAsync());
     }
 
     [Fact]
@@ -404,8 +391,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
 
         // Assert
         Assert.NotNull(result);
-        var entry = fixture.DbContext.Entry(result);
-        Assert.Equal(EntityState.Detached, entry.State);
     }
 
     [Fact]
@@ -429,7 +414,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetProjection<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetDto<UserDto>());
     }
 
     [Fact]

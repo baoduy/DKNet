@@ -5,8 +5,6 @@ namespace Svc.BlobStorage.Tests.Fixtures;
 public sealed class AzureStorageBlobServiceFixture : IDisposable
 {
     private readonly AzuriteContainer _azureContainer;
-    
-    public IBlobService Service { get; }
 
     public AzureStorageBlobServiceFixture()
     {
@@ -22,7 +20,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
             .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "BlobService:AzureStorage:ConnectionString", "UseDevelopmentStorage=true" },
-                { "BlobService:AzureStorage:ContainerName", "test" },
+                { "BlobService:AzureStorage:ContainerName", "test" }
             })
             .Build();
 
@@ -34,6 +32,8 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
         var serviceProvider = serviceCollection.BuildServiceProvider();
         Service = serviceProvider.GetRequiredService<IBlobService>();
     }
+
+    public IBlobService Service { get; }
 
     public void Dispose()
     {

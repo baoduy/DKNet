@@ -77,7 +77,7 @@ public class DomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "orig@example.com", "+1111111111", "user1");
 
         // Act
-        profile.Update("avatar.jpg", name: null, "+2222222222", birthday: null, "user2");
+        profile.Update("avatar.jpg", null, "+2222222222", null, "user2");
 
         // Assert
         profile.Name.ShouldBe(originalName);
@@ -92,7 +92,7 @@ public class DomainEntityTests
         var profile = new CustomerProfile("Name", "MEM123", "orig@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update("avatar.jpg", "New Name", string.Empty, birthday: null, "user2");
+        profile.Update("avatar.jpg", "New Name", string.Empty, null, "user2");
 
         // Assert
         profile.Name.ShouldBe("New Name");
@@ -124,7 +124,8 @@ public class DomainEntityTests
     [InlineData("123 Main St", "CA", "Los Angeles", "USA", "90210")]
     [InlineData("456 Oak Ave", "NY", "New York", "USA", "10001")]
     [InlineData("789 Pine Rd", "TX", "Houston", "USA", "77001")]
-    public void AddressConstructorWithDifferentValuesShouldWork(string line, string state, string city, string country, string postal)
+    public void AddressConstructorWithDifferentValuesShouldWork(string line, string state, string city, string country,
+        string postal)
     {
         // Act
         var address = new Address(line, state, city, country, postal);
@@ -161,7 +162,8 @@ public class DomainEntityTests
     [Theory]
     [InlineData("Tech Solutions Inc", "UEN987654321", "ABN987654321", "ARBN987654321", "CAN987654321")]
     [InlineData("Global Services Ltd", "UEN111222333", "ABN111222333", "ARBN111222333", "CAN111222333")]
-    public void CompanyConstructorWithDifferentValuesShouldWork(string name, string uen, string abn, string arbn, string can)
+    public void CompanyConstructorWithDifferentValuesShouldWork(string name, string uen, string abn, string arbn,
+        string can)
     {
         // Act
         var company = new Company(name, uen, abn, arbn, can);

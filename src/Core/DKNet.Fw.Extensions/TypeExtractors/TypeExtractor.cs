@@ -5,24 +5,22 @@ using System.Reflection;
 namespace DKNet.Fw.Extensions.TypeExtractors;
 
 /// <summary>
-/// Provides methods for extracting and filtering types from assemblies.
+///     Provides methods for extracting and filtering types from assemblies.
 /// </summary>
 /// <remarks>
-/// This class implements the <see cref="ITypeExtractor"/> interface and provides methods for extracting and filtering types from assemblies.
-/// 
-/// Purpose: To provide a way to extract and filter types from assemblies.
-/// Rationale: Simplifies the process of working with types in assemblies, reducing the amount of boilerplate code.
-/// 
-/// Functionality:
-/// - Extracts types from assemblies.
-/// - Filters types based on various criteria (e.g., abstract, class, enum, generic, interface, nested, public, attribute, instance of).
-/// 
-/// Integration:
-/// - Implements the <see cref="ITypeExtractor"/> interface.
-/// 
-/// Best Practices:
-/// - Use the appropriate filtering methods based on the criteria you want to use.
-/// - Ensure that the assemblies are loaded before attempting to extract types from them.
+///     This class implements the <see cref="ITypeExtractor" /> interface and provides methods for extracting and filtering
+///     types from assemblies.
+///     Purpose: To provide a way to extract and filter types from assemblies.
+///     Rationale: Simplifies the process of working with types in assemblies, reducing the amount of boilerplate code.
+///     Functionality:
+///     - Extracts types from assemblies.
+///     - Filters types based on various criteria (e.g., abstract, class, enum, generic, interface, nested, public,
+///     attribute, instance of).
+///     Integration:
+///     - Implements the <see cref="ITypeExtractor" /> interface.
+///     Best Practices:
+///     - Use the appropriate filtering methods based on the criteria you want to use.
+///     - Ensure that the assemblies are loaded before attempting to extract types from them.
 /// </remarks>
 internal class TypeExtractor : ITypeExtractor
 {
@@ -30,7 +28,7 @@ internal class TypeExtractor : ITypeExtractor
     private readonly List<Expression<Func<Type, bool>>> _predicates = [];
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="TypeExtractor"/> class.
+    ///     Initializes a new instance of the <see cref="TypeExtractor" /> class.
     /// </summary>
     /// <param name="assemblies">The assemblies to extract types from.</param>
     /// <exception cref="ArgumentException">Thrown when the assemblies collection is null or empty.</exception>
@@ -43,76 +41,127 @@ internal class TypeExtractor : ITypeExtractor
     }
 
     /// <inheritdoc />
-    public ITypeExtractor Abstract() => FilterBy(t => t.IsAbstract);
+    public ITypeExtractor Abstract()
+    {
+        return FilterBy(t => t.IsAbstract);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Classes() => FilterBy(t => t.IsClass);
+    public ITypeExtractor Classes()
+    {
+        return FilterBy(t => t.IsClass);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Enums() => FilterBy(t => t.IsEnum);
+    public ITypeExtractor Enums()
+    {
+        return FilterBy(t => t.IsEnum);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Generic() => FilterBy(t => t.IsGenericType);
+    public ITypeExtractor Generic()
+    {
+        return FilterBy(t => t.IsGenericType);
+    }
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute
-        => FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
+    {
+        return FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
+    }
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute(Type attributeType)
-        => FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
+    {
+        return FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Interfaces() => FilterBy(t => t.IsInterface);
+    public ITypeExtractor Interfaces()
+    {
+        return FilterBy(t => t.IsInterface);
+    }
 
     /// <inheritdoc />
     public ITypeExtractor IsInstanceOf(Type? type)
-        => type == null ? this : FilterBy(t => t.IsImplementOf(type));
+    {
+        return type == null ? this : FilterBy(t => t.IsImplementOf(type));
+    }
 
     /// <inheritdoc />
     public ITypeExtractor IsInstanceOf<T>() => IsInstanceOf(typeof(T));
 
     /// <inheritdoc />
     public ITypeExtractor IsInstanceOfAny(params Type[] types)
-        => FilterBy(t => types.Any(t.IsImplementOf));
+    {
+        return FilterBy(t => types.Any(t.IsImplementOf));
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Nested() => FilterBy(t => t.IsNested);
+    public ITypeExtractor Nested()
+    {
+        return FilterBy(t => t.IsNested);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotAbstract() => FilterBy(t => !t.IsAbstract);
+    public ITypeExtractor NotAbstract()
+    {
+        return FilterBy(t => !t.IsAbstract);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotClass() => FilterBy(t => !t.IsClass);
+    public ITypeExtractor NotClass()
+    {
+        return FilterBy(t => !t.IsClass);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotEnum() => FilterBy(t => !t.IsEnum);
+    public ITypeExtractor NotEnum()
+    {
+        return FilterBy(t => !t.IsEnum);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotGeneric() => FilterBy(t => !t.IsGenericType);
+    public ITypeExtractor NotGeneric()
+    {
+        return FilterBy(t => !t.IsGenericType);
+    }
 
     /// <inheritdoc />
     public ITypeExtractor NotInstanceOf(Type? type)
-        => type == null ? this : FilterBy(t => !t.IsImplementOf(type));
+    {
+        return type == null ? this : FilterBy(t => !t.IsImplementOf(type));
+    }
 
     /// <inheritdoc />
     public ITypeExtractor NotInstanceOf<T>() => NotInstanceOf(typeof(T));
 
     /// <inheritdoc />
-    public ITypeExtractor NotInterface() => FilterBy(t => !t.IsInterface);
+    public ITypeExtractor NotInterface()
+    {
+        return FilterBy(t => !t.IsInterface);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotNested() => FilterBy(t => !t.IsNested);
+    public ITypeExtractor NotNested()
+    {
+        return FilterBy(t => !t.IsNested);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor NotPublic() => FilterBy(t => !t.IsPublic);
+    public ITypeExtractor NotPublic()
+    {
+        return FilterBy(t => !t.IsPublic);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Publics() => FilterBy(t => t.IsPublic);
+    public ITypeExtractor Publics()
+    {
+        return FilterBy(t => t.IsPublic);
+    }
 
     /// <inheritdoc />
-    public ITypeExtractor Where(Expression<Func<Type, bool>>? predicate)
-        => FilterBy(predicate);
+    public ITypeExtractor Where(Expression<Func<Type, bool>>? predicate) => FilterBy(predicate);
 
     /// <inheritdoc />
     public IEnumerator<Type> GetEnumerator()

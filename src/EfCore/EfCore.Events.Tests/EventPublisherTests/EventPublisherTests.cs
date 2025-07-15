@@ -10,7 +10,7 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
 
         var db = provider.Provider.GetRequiredService<DddContext>();
 
-        var p = new Root("P1","Steven");
+        var p = new Root("P1", "Steven");
         p.SetOwnedBy("Steven");
         p.AddEvent<EntityAddedEvent>();
 
@@ -18,6 +18,6 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
         await db.SaveChangesAsync();
 
         TestEventPublisher.Events.ShouldNotBeEmpty();
-        TestEventPublisher.Events.Any(e=> e is EntityAddedEvent).ShouldBeTrue();
+        TestEventPublisher.Events.Any(e => e is EntityAddedEvent).ShouldBeTrue();
     }
 }

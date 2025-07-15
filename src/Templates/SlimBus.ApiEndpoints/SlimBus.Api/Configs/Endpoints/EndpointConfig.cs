@@ -1,8 +1,8 @@
 using Asp.Versioning.Conventions;
+using DKNet.Fw.Extensions.TypeExtractors;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 using SlimBus.Api.Configs;
 using SlimBus.Api.Configs.Auth;
-using DKNet.Fw.Extensions.TypeExtractors;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.AspNetCore.Builder;
@@ -11,10 +11,12 @@ namespace Microsoft.AspNetCore.Builder;
 internal static class EndpointConfig
 {
     private static ApiVersionSet CreateVersionSet(this WebApplication app, IEnumerable<int> versions)
-        => app.NewApiVersionSet()
+    {
+        return app.NewApiVersionSet()
             .HasApiVersions(versions.Distinct().Select(v => new ApiVersion(v)))
             .ReportApiVersions()
             .Build();
+    }
 
     private static RouteGroupBuilder CreateGroup(this WebApplication app, ApiVersionSet versionSet,
         IEndpointConfig config)

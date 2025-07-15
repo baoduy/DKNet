@@ -50,7 +50,7 @@ public class HashingTests
     public void HashCmd5KeyNullThrowsArgumentNullException()
     {
         var value = "value";
-        Should.Throw<ArgumentNullException>(() => value.ToCmd5(key: null));
+        Should.Throw<ArgumentNullException>(() => value.ToCmd5(null));
     }
 
     [Fact]

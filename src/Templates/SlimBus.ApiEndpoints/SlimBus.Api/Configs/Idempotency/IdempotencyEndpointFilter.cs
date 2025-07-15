@@ -5,7 +5,7 @@ using SlimBus.Share.Extensions;
 namespace SlimBus.Api.Configs.Idempotency;
 
 /// <summary>
-/// Filter to handle idempotency for API endpoints.
+///     Filter to handle idempotency for API endpoints.
 /// </summary>
 internal sealed class IdempotencyEndpointFilter(
     IIdempotencyKeyRepository cacher,
@@ -15,7 +15,7 @@ internal sealed class IdempotencyEndpointFilter(
     private readonly IdempotencyOptions _options = options.Value;
 
     /// <summary>
-    /// Invokes the endpoint filter to handle idempotency.
+    ///     Invokes the endpoint filter to handle idempotency.
     /// </summary>
     /// <param name="context">The endpoint filter invocation context.</param>
     /// <param name="next">The next delegate to invoke.</param>
@@ -37,7 +37,7 @@ internal sealed class IdempotencyEndpointFilter(
         var routeTemplate = endpoint?.Metadata.GetMetadata<RouteAttribute>()?.Template ??
                             context.HttpContext.Request.Path;
         var compositeKey = $"{routeTemplate}_{idempotencyKey}";
-        
+
         var existingResult = await cacher.IsKeyProcessedAsync(compositeKey);
         if (existingResult.processed)
         {

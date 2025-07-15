@@ -12,6 +12,7 @@ internal class LazyMap<TResult>(object? originalValue, IMapper mapper) : ILazyMa
     private TResult? _value;
 
     public TResult ValueOrDefault => GetValue()!;
+
     public TResult Value => ValueOrDefault ?? throw new InvalidOperationException(nameof(ValueOrDefault));
 
     private TResult? GetValue()

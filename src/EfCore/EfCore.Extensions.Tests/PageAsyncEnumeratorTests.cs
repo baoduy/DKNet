@@ -2,11 +2,10 @@ using DKNet.EfCore.Extensions.Extensions;
 
 namespace EfCore.Extensions.Tests;
 
-
 public class PageAsyncEnumeratorTests
 {
     private readonly DbContextOptions<TestDbContext> _options = new DbContextOptionsBuilder<TestDbContext>()
-        .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        .UseInMemoryDatabase(Guid.NewGuid().ToString())
         .Options;
 
     [Fact]
@@ -18,10 +17,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable())
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.ToPageEnumerable()) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(150);
@@ -38,10 +34,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(25);
@@ -56,10 +49,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable())
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.ToPageEnumerable()) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(0);
@@ -75,10 +65,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(5);
@@ -94,10 +81,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(20);
@@ -114,7 +98,7 @@ public class PageAsyncEnumeratorTests
         // Act & Assert
         var result = new List<TestEntity>();
         var enumerator = context.TestEntities.ToPageEnumerable(10).GetAsyncEnumerator(cts.Token);
-        
+
         try
         {
             // Get the first few items
@@ -126,10 +110,9 @@ public class PageAsyncEnumeratorTests
 
             // Cancel and try to get more
             await cts.CancelAsync();
-            
+
             // The next MoveNextAsync should respect cancellation
-            await Should.ThrowAsync<OperationCanceledException>(
-                async () => await enumerator.MoveNextAsync());
+            await Should.ThrowAsync<OperationCanceledException>(async () => await enumerator.MoveNextAsync());
         }
         finally
         {
@@ -147,10 +130,7 @@ public class PageAsyncEnumeratorTests
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.OrderBy(x => x.Id).ToPageEnumerable(pageSize))
-        {
-            result.Add(item);
-        }
+        await foreach (var item in context.TestEntities.OrderBy(x => x.Id).ToPageEnumerable(pageSize)) result.Add(item);
 
         // Assert
         result.Count.ShouldBe(25);
@@ -169,9 +149,7 @@ public class PageAsyncEnumeratorTests
         // Act - Only get even IDs
         var result = new List<TestEntity>();
         await foreach (var item in context.TestEntities.Where(x => x.Id % 2 == 0).ToPageEnumerable(pageSize))
-        {
             result.Add(item);
-        }
 
         // Assert
         result.Count.ShouldBe(25); // Half of 50
@@ -197,7 +175,9 @@ public class TestEntity
 
 public class TestDbContext : DbContext
 {
-    public TestDbContext(DbContextOptions<TestDbContext> options) : base(options) { }
+    public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
+    {
+    }
 
     public DbSet<TestEntity> TestEntities { get; set; }
 

@@ -77,20 +77,20 @@ public static class NavigationExtensions
     }
 
     /// <summary>
-    /// Determines whether the given <see cref="EntityEntry"/> represents a new entity
-    /// that hasn't yet been persisted to the database.
+    ///     Determines whether the given <see cref="EntityEntry" /> represents a new entity
+    ///     that hasn't yet been persisted to the database.
     /// </summary>
-    /// <param name="entry">The <see cref="EntityEntry"/> to evaluate.</param>
+    /// <param name="entry">The <see cref="EntityEntry" /> to evaluate.</param>
     /// <returns>
-    /// <c>true</c> if the entity is new (i.e., its state is Detached, its key is not set,
-    /// or its primary key properties have null original values); otherwise, <c>false</c>.
+    ///     <c>true</c> if the entity is new (i.e., its state is Detached, its key is not set,
+    ///     or its primary key properties have null original values); otherwise, <c>false</c>.
     /// </returns>
     public static bool IsNewEntity(this EntityEntry entry)
     {
         // If the entity's key is not set, it is considered new.
         if (!entry.IsKeySet) return true;
 
-        if( entry.State is EntityState.Added) return true;
+        if (entry.State is EntityState.Added) return true;
         // If the entity is not in the Detached state, it is not new.
         if (entry.State is EntityState.Modified or EntityState.Deleted) return false;
 
@@ -121,12 +121,10 @@ public static class NavigationExtensions
     {
         var navigations = context.GetCollectionNavigations(entity.Metadata.ClrType);
         foreach (var nav in navigations)
+        foreach (var i in entity.Entity.GetNavigationValues(nav))
         {
-            foreach (var i in entity.Entity.GetNavigationValues(nav))
-            {
-                var item = context.Entry(i);
-                if (item.IsNewEntity()) yield return i;
-            }
+            var item = context.Entry(i);
+            if (item.IsNewEntity()) yield return i;
         }
     }
 

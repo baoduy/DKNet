@@ -1,56 +1,59 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
 /// <summary>
-/// Defines the basic auditing properties required for tracking entity changes.
+///     Defines the basic auditing properties required for tracking entity changes.
 /// </summary>
 /// <remarks>
-/// This interface provides the fundamental properties needed for maintaining
-/// audit trails of entity creation and modifications.
+///     This interface provides the fundamental properties needed for maintaining
+///     audit trails of entity creation and modifications.
 /// </remarks>
 public interface IAuditedProperties
 {
     /// <summary>
-    /// Gets the identifier of the user who created the entity.
+    ///     Gets the identifier of the user who created the entity.
     /// </summary>
+    [MaxLength(500)]
     string CreatedBy { get; }
 
     /// <summary>
-    /// Gets the timestamp when the entity was created.
+    ///     Gets the timestamp when the entity was created.
     /// </summary>
     DateTimeOffset CreatedOn { get; }
 
     /// <summary>
-    /// Gets the identifier of the user who last updated the entity.
+    ///     Gets the identifier of the user who last updated the entity.
     /// </summary>
+    [MaxLength(500)]
     string? UpdatedBy { get; }
 
     /// <summary>
-    /// Gets the timestamp when the entity was last updated.
+    ///     Gets the timestamp when the entity was last updated.
     /// </summary>
     DateTimeOffset? UpdatedOn { get; }
 }
 
 /// <summary>
-/// Defines a contract for auditable entities with a specified key type.
+///     Defines a contract for auditable entities with a specified key type.
 /// </summary>
 /// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
 /// <remarks>
-/// This interface combines entity identification, audit properties, and
-/// concurrency control capabilities.
+///     This interface combines entity identification, audit properties, and
+///     concurrency control capabilities.
 /// </remarks>
 public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties, IConcurrencyEntity
 {
     /// <summary>
-    /// Sets the creation audit information for the entity.
+    ///     Sets the creation audit information for the entity.
     /// </summary>
     /// <param name="userName">The identifier of the creating user.</param>
     /// <param name="createdOn">Optional creation timestamp.</param>
     void SetCreatedBy(string userName, DateTimeOffset? createdOn = null);
 
     /// <summary>
-    /// Sets the update audit information for the entity.
+    ///     Sets the update audit information for the entity.
     /// </summary>
     /// <param name="userName">The identifier of the updating user.</param>
     /// <param name="updatedOn">Optional update timestamp.</param>
@@ -58,16 +61,16 @@ public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties, I
 }
 
 /// <summary>
-/// Base class for entities that require audit tracking with a specified key type.
-/// Provides automatic tracking of creation and modification timestamps and user information.
+///     Base class for entities that require audit tracking with a specified key type.
+///     Provides automatic tracking of creation and modification timestamps and user information.
 /// </summary>
 /// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
 /// <remarks>
-/// This class implements basic audit functionality including
-/// - Creation tracking (user and timestamp)
-/// - Modification tracking (user and timestamp)
-/// - Automatic timestamp management
-/// - Concurrency control through inheritance
+///     This class implements basic audit functionality including
+///     - Creation tracking (user and timestamp)
+///     - Modification tracking (user and timestamp)
+///     - Automatic timestamp management
+///     - Concurrency control through inheritance
 /// </remarks>
 public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
 {
@@ -79,32 +82,34 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     {
     }
 
-    /// <summary>
-    /// Gets the user who created this entity.
-    /// </summary>
-    public string CreatedBy { get; private set; } = null!;
-
-    /// <summary>
-    /// Gets the timestamp when this entity was created.
-    /// </summary>
-    public DateTimeOffset CreatedOn { get; private set; }
-
-    /// <summary>
-    /// Gets the user who last modified this entity.
-    /// </summary>
-    public string? UpdatedBy { get; private set; }
-
-    /// <summary>
-    /// Gets the timestamp when this entity was last modified.
-    /// </summary>
-    public DateTimeOffset? UpdatedOn { get; private set; }
-
     [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
 
     [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
 
     /// <summary>
-    /// Sets the creation audit information for this entity.
+    ///     Gets the user who created this entity.
+    /// </summary>
+    [MaxLength(500)]
+    public string CreatedBy { get; private set; } = null!;
+
+    /// <summary>
+    ///     Gets the timestamp when this entity was created.
+    /// </summary>
+    public DateTimeOffset CreatedOn { get; private set; }
+
+    /// <summary>
+    ///     Gets the user who last modified this entity.
+    /// </summary>
+    [MaxLength(500)]
+    public string? UpdatedBy { get; private set; }
+
+    /// <summary>
+    ///     Gets the timestamp when this entity was last modified.
+    /// </summary>
+    public DateTimeOffset? UpdatedOn { get; private set; }
+
+    /// <summary>
+    ///     Sets the creation audit information for this entity.
     /// </summary>
     /// <param name="userName">The username of the creator.</param>
     /// <param name="createdOn">Optional creation timestamp. Defaults to UTC now if not specified.</param>
@@ -118,7 +123,7 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     }
 
     /// <summary>
-    /// Sets the modification audit information for this entity.
+    ///     Sets the modification audit information for this entity.
     /// </summary>
     /// <param name="userName">The username of the modifier.</param>
     /// <param name="updatedOn">Optional modification timestamp. Defaults to UTC now if not specified.</param>
@@ -134,8 +139,8 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
 }
 
 /// <summary>
-/// Base class for entities that require audit tracking with a GUID key.
-/// Provides a specialized implementation of AuditedEntity using GUIDs as the primary key.
+///     Base class for entities that require audit tracking with a GUID key.
+///     Provides a specialized implementation of AuditedEntity using GUIDs as the primary key.
 /// </summary>
 public abstract class AuditedEntity : AuditedEntity<Guid>
 {

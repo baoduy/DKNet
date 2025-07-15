@@ -7,7 +7,7 @@ namespace EfCore.Repos.Tests;
 public static class DistributedApplicationExtensions
 {
     /// <summary>
-    /// Waits for the specified resource to reach the specified state.
+    ///     Waits for the specified resource to reach the specified state.
     /// </summary>
     public static Task WaitForResource(this DistributedApplication app, string resourceName, string? targetState = null,
         CancellationToken cancellationToken = default)
@@ -19,10 +19,11 @@ public static class DistributedApplicationExtensions
     }
 
     /// <summary>
-    /// Waits for all resources in the application to reach one of the specified states.
+    ///     Waits for all resources in the application to reach one of the specified states.
     /// </summary>
     /// <remarks>
-    /// If <paramref name="targetStates"/> is null, the default states are <see cref="KnownResourceStates.Running"/> and <see cref="KnownResourceStates.Hidden"/>.
+    ///     If <paramref name="targetStates" /> is null, the default states are <see cref="KnownResourceStates.Running" /> and
+    ///     <see cref="KnownResourceStates.Hidden" />.
     /// </remarks>
     [SuppressMessage("Design", "MA0051:Method is too long")]
     public static async Task WaitForResourcesAsync(this DistributedApplication app,
@@ -38,9 +39,8 @@ public static class DistributedApplicationExtensions
         var resourceTasks = new Dictionary<string, Task<(string Name, string State)>>(StringComparer.Ordinal);
 
         foreach (var resource in applicationModel.Resources)
-        {
-            resourceTasks[resource.Name] = GetResourceWaitTask(resourceNotificationService, resource.Name, targetStates, cancellationToken);
-        }
+            resourceTasks[resource.Name] = GetResourceWaitTask(resourceNotificationService, resource.Name, targetStates,
+                cancellationToken);
 
         logger.LogInformation("Waiting for resources [{Resources}] to reach one of target states [{TargetStates}].",
             string.Join(',', resourceTasks.Keys),
@@ -51,7 +51,8 @@ public static class DistributedApplicationExtensions
             var completedTask = await Task.WhenAny(resourceTasks.Values);
             var (completedResourceName, targetStateReached) = await completedTask;
 
-            if (string.Equals(targetStateReached, KnownResourceStates.FailedToStart, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(targetStateReached, KnownResourceStates.FailedToStart,
+                    StringComparison.OrdinalIgnoreCase))
                 throw new DistributedApplicationException($"Resource '{completedResourceName}' failed to start.");
 
             resourceTasks.Remove(completedResourceName);
@@ -64,7 +65,8 @@ public static class DistributedApplicationExtensions
             for (var i = remainingResources.Count - 1; i > 0; i--)
             {
                 var name = remainingResources[i];
-                if (applicationModel.Resources.All(r => !string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase)))
+                if (applicationModel.Resources.All(r =>
+                        !string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger.LogInformation("Resource '{ResourceName}' was deleted while waiting for it.", name);
                     resourceTasks.Remove(name);
@@ -73,12 +75,10 @@ public static class DistributedApplicationExtensions
             }
 
             if (resourceTasks.Count > 0)
-            {
                 logger.LogInformation(
                     "Still waiting for resources [{Resources}] to reach one of target states [{TargetStates}].",
                     string.Join(',', remainingResources),
                     string.Join(',', targetStates));
-            }
         }
 
         logger.LogInformation("Wait for all resources completed successfully!");

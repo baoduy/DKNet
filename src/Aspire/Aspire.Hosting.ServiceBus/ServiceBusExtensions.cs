@@ -1,4 +1,3 @@
-
 // ReSharper disable once CheckNamespace
 
 using Aspire.Hosting.ApplicationModel;
@@ -30,7 +29,7 @@ public static class ServiceBusExtensions
             .WithEnvironment("ACCEPT_EULA", "Y")
             .WithEnvironment("SQL_SERVER", sqlServer.Resource.Name)
             .WithEnvironment("MSSQL_SA_PASSWORD", sqlServer.Resource.PasswordParameter.Value)
-            .WithBindMount(configFilePath, "/ServiceBus_Emulator/ConfigFiles/Config.json", isReadOnly: true)
+            .WithBindMount(configFilePath, "/ServiceBus_Emulator/ConfigFiles/Config.json", true)
             .WithEndpoint(
                 targetPort: 5672,
                 port: 5672,

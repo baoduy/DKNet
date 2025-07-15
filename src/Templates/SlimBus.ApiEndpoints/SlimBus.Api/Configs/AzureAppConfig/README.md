@@ -1,10 +1,12 @@
 # Azure App Configuration Integration
 
-This folder contains the Azure App Configuration integration for SlimBus.Api, providing centralized configuration management and feature flags.
+This folder contains the Azure App Configuration integration for SlimBus.Api, providing centralized configuration
+management and feature flags.
 
 ## Overview
 
-Azure App Configuration is a managed service that helps developers centralize their application configuration and feature flags simply and securely. This integration enables the SlimBus.Api application to:
+Azure App Configuration is a managed service that helps developers centralize their application configuration and
+feature flags simply and securely. This integration enables the SlimBus.Api application to:
 
 - Load configuration values from Azure App Configuration
 - Override local appsettings.json values with remote configuration
@@ -79,6 +81,7 @@ AzureAppConfiguration__Label="Production"
 ### 2. Configure Connection String
 
 **For Development:**
+
 ```json
 {
   "ConnectionStrings": {
@@ -88,6 +91,7 @@ AzureAppConfiguration__Label="Production"
 ```
 
 **For Production (using environment variables):**
+
 ```bash
 export ConnectionStrings__AzureAppConfiguration="Endpoint=https://your-app-config.azconfig.io;Id=your-id;Secret=your-secret"
 ```
@@ -101,22 +105,26 @@ Set `FeatureManagement:EnableAzureAppConfiguration` to `true` in your configurat
 In Azure Portal, navigate to your App Configuration resource and add key-value pairs:
 
 **Configuration Keys:**
+
 - `SlimBus:FeatureManagement:EnableSwagger` = `true`
 - `SlimBus:Logging:LogLevel:Default` = `Information`
 - `SlimBus:CustomSetting` = `RemoteValue`
 
 **Feature Flags:**
+
 - `SlimBus.EnableNewFeature` = `true`
 - `SlimBus.EnableBetaFeatures` = `false`
 
 ### 5. Use Labels for Environment-Specific Configuration
 
 Create labels for different environments:
+
 - `Development`
 - `Staging`
 - `Production`
 
 Configure the label in your appsettings:
+
 ```json
 {
   "AzureAppConfiguration": {
@@ -230,15 +238,20 @@ The integration includes robust error handling:
 ### Common Issues
 
 **Issue**: "Azure App Configuration connection string is not provided"
+
 - **Solution**: Ensure the connection string is set in `ConnectionStrings:AzureAppConfiguration`
 
 **Issue**: Configuration values not updating
+
 - **Solution**: Check the refresh interval and ensure the application is running long enough for refresh to occur
 
 **Issue**: Feature flags not working
-- **Solution**: Verify that `LoadFeatureFlags` is set to `true` and feature flags are properly created in Azure App Configuration
+
+- **Solution**: Verify that `LoadFeatureFlags` is set to `true` and feature flags are properly created in Azure App
+  Configuration
 
 **Issue**: Environment-specific configuration not loading
+
 - **Solution**: Ensure the `Label` is set correctly and matches the label in Azure App Configuration
 
 ### Debugging

@@ -12,7 +12,7 @@ internal static class CrosConfig
         return services;
     }
 
-    public static  WebApplication UseCrosConfig(this  WebApplication app)
+    public static WebApplication UseCrosConfig(this WebApplication app)
     {
         if (_configAdded)
         {

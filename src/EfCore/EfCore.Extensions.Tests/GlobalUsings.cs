@@ -1,4 +1,5 @@
 // Global using directives
+
 global using System.Globalization;
 global using DKNet.EfCore.Abstractions.Attributes;
 global using DKNet.EfCore.Extensions.Registers;

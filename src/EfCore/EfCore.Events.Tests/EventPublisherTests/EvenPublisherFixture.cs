@@ -9,11 +9,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
 {
     private MsSqlContainer _sqlContainer;
 
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
+    public ServiceProvider Provider { get; private set; }
 
     public async Task InitializeAsync()
     {
@@ -26,7 +22,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(20));
 
-        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(value: true);
+        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
 
         Provider = new ServiceCollection()
             .AddLogging()
@@ -46,14 +42,18 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         await db.SaveChangesAsync();
     }
 
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    private string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
+
     public async Task EnsureSqlReadyAsync()
     {
         if (_sqlContainer is null) return;
         if (_sqlContainer.State == TestcontainersStates.Running) return;
         await _sqlContainer.StartAsync();
     }
-
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    public ServiceProvider Provider { get; private set; }
 }

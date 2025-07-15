@@ -1,37 +1,35 @@
-﻿
+﻿namespace DKNet.EfCore.Repos;
 
-namespace DKNet.EfCore.Repos;
-
-public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null) : IReadRepository<TEntity>
+public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
+    : IReadRepository<TEntity>
     where TEntity : class
 {
     private readonly IMapper? _mapper = mappers?.FirstOrDefault();
+
     /// <summary>
     ///     Get ReadOnly (No Tracking) Query for Entity
     /// </summary>
     /// <returns></returns>
-    public virtual IQueryable<TEntity> Gets()
-        => dbContext.Set<TEntity>().AsNoTrackingWithIdentityResolution();
+    public virtual IQueryable<TEntity> Gets() => dbContext.Set<TEntity>().AsNoTrackingWithIdentityResolution();
 
+    public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
+        => dbContext.Set<TEntity>().FindAsync([keyValue], cancellationToken);
 
-    public virtual async ValueTask<TEntity?> FindAsync(params object[] id)
+    public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default) =>
+        await dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
+
+    public async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter,
+        CancellationToken cancellationToken = default) =>
+        await Gets().Where(filter).FirstOrDefaultAsync(cancellationToken);
+
+    public IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null)
+        where TModel : class
     {
-        var entity = await dbContext.FindAsync<TEntity>(id);
-        if (entity != null)
-            dbContext.Entry(entity).State = EntityState.Detached;
-        return entity;
-    }
+        if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
 
-    public virtual async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
-    {
-        var entity = await Gets().Where(filter).FirstOrDefaultAsync(cancellationToken);
-        if (entity != null)
-            dbContext.Entry(entity).State = EntityState.Detached;
-        return entity;
+        var query = Gets();
+        if (filter is not null)
+            query = query.Where(filter);
+        return query.ProjectToType<TModel>(_mapper.Config);
     }
-
-    public virtual IQueryable<TModel> GetProjection<TModel>() where TModel : class
-        => _mapper == null
-            ? throw new InvalidOperationException("Mapper is not registered")
-            : Gets().ProjectToType<TModel>(_mapper.Config);
 }

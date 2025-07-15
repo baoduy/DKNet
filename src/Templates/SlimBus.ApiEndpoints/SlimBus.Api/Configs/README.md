@@ -1,43 +1,45 @@
 # SlimBus.Api Configs
 
-This directory contains modular configuration components for a MediatR-based API built with SlimBus. Each module is responsible for a specific aspect of API infrastructure, promoting maintainability and extensibility.
+This directory contains modular configuration components for a MediatR-based API built with SlimBus. Each module is
+responsible for a specific aspect of API infrastructure, promoting maintainability and extensibility.
 
 ---
 
 ## Table of Contents
 
 - [SlimBus.Api Configs](#slimbusapi-configs)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Configuration Modules](#configuration-modules)
-    - [AppConfig.cs](#appconfigcs)
-    - [ServiceConfigs.cs](#serviceconfigscs)
-    - [Azure App Configuration](#azure-app-configuration)
-      - [AzureAppConfiguration (`AzureAppConfiguration/`)](#azureappconfiguration-azureappconfiguration)
-    - [Authentication \& Security](#authentication--security)
-      - [Antiforgery (`Antiforgery/`)](#antiforgery-antiforgery)
-      - [Auth (`Auth/`)](#auth-auth)
-    - [API Documentation](#api-documentation)
-      - [Swagger (`Swagger/`)](#swagger-swagger)
-    - [API Features](#api-features)
-      - [Versioning (`VersioningConfig.cs`)](#versioning-versioningconfigcs)
-      - [Endpoints (`Endpoints/`)](#endpoints-endpoints)
-      - [Idempotency (`Idempotency/`)](#idempotency-idempotency)
-    - [Error Handling (`GlobalExceptions/`)](#error-handling-globalexceptions)
-    - [Monitoring \& Health](#monitoring--health)
-      - [Healthz (`Healthz/`)](#healthz-healthz)
-    - [Performance \& Reliability](#performance--reliability)
-      - [CacheConfig.cs](#cacheconfigcs)
-  - [Implementation Examples](#implementation-examples)
-  - [Best Practices](#best-practices)
-  - [Directory Structure](#directory-structure)
-  - [Middleware Order](#middleware-order)
+    - [Table of Contents](#table-of-contents)
+    - [Overview](#overview)
+    - [Configuration Modules](#configuration-modules)
+        - [AppConfig.cs](#appconfigcs)
+        - [ServiceConfigs.cs](#serviceconfigscs)
+        - [Azure App Configuration](#azure-app-configuration)
+            - [AzureAppConfiguration (`AzureAppConfiguration/`)](#azureappconfiguration-azureappconfiguration)
+        - [Authentication \& Security](#authentication--security)
+            - [Antiforgery (`Antiforgery/`)](#antiforgery-antiforgery)
+            - [Auth (`Auth/`)](#auth-auth)
+        - [API Documentation](#api-documentation)
+            - [Swagger (`Swagger/`)](#swagger-swagger)
+        - [API Features](#api-features)
+            - [Versioning (`VersioningConfig.cs`)](#versioning-versioningconfigcs)
+            - [Endpoints (`Endpoints/`)](#endpoints-endpoints)
+            - [Idempotency (`Idempotency/`)](#idempotency-idempotency)
+        - [Error Handling (`GlobalExceptions/`)](#error-handling-globalexceptions)
+        - [Monitoring \& Health](#monitoring--health)
+            - [Healthz (`Healthz/`)](#healthz-healthz)
+        - [Performance \& Reliability](#performance--reliability)
+            - [CacheConfig.cs](#cacheconfigcs)
+    - [Implementation Examples](#implementation-examples)
+    - [Best Practices](#best-practices)
+    - [Directory Structure](#directory-structure)
+    - [Middleware Order](#middleware-order)
 
 ---
 
 ## Overview
 
-The configuration system is organized into focused modules, each handling a distinct concern such as authentication, versioning, documentation, error handling, and more. This modularity enables easy customization and feature toggling.
+The configuration system is organized into focused modules, each handling a distinct concern such as authentication,
+versioning, documentation, error handling, and more. This modularity enables easy customization and feature toggling.
 
 ---
 
@@ -69,6 +71,7 @@ The configuration system is organized into focused modules, each handling a dist
 - **Feature Toggle Control**: Can be enabled/disabled via `FeatureOptions.EnableAzureAppConfiguration`.
 
 **Configuration Options:**
+
 - `ConnectionString`: Azure App Configuration connection string (stored in `ConnectionStrings` section)
 - `KeyPrefix`: Optional prefix to filter configuration keys
 - `Label`: Optional label to filter configuration values by environment
@@ -77,6 +80,7 @@ The configuration system is organized into focused modules, each handling a dist
 - `FeatureFlagPrefix`: Optional prefix to filter feature flags
 
 **Usage Example:**
+
 ```json
 {
   "ConnectionStrings": {
@@ -96,6 +100,7 @@ The configuration system is organized into focused modules, each handling a dist
 ```
 
 **Setup Process:**
+
 1. Configuration is loaded early in `Program.cs` before service registration
 2. Azure App Configuration values override local `appsettings.json` values
 3. Feature flags are automatically integrated with .NET Feature Management

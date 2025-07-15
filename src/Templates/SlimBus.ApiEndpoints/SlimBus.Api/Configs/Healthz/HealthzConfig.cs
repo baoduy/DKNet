@@ -16,7 +16,7 @@ internal static class HealthzConfig
     }
 
     /// <summary>
-    /// The health check endpoint will be "/healthz"
+    ///     The health check endpoint will be "/healthz"
     /// </summary>
     /// <param name="endpoints"></param>
     /// <returns></returns>
@@ -27,7 +27,7 @@ internal static class HealthzConfig
         var options = new HealthCheckOptions
         {
             AllowCachingResponses = false,
-            Predicate = _ => true,
+            Predicate = _ => true
         };
         endpoints.MapHealthChecks("/healthz", options);
         endpoints.MapHealthChecks("/", options);

@@ -3,10 +3,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace EfCore.Extensions.Tests;
 
-
 public class TypeExtractorExtensionsTests
 {
-
     [Fact]
     public void TestAbstract()
     {
@@ -38,8 +36,7 @@ public class TypeExtractorExtensionsTests
     [Fact]
     public void TestNotClass()
     {
-        typeof(MyDbContext).Assembly.Extract().NotClass().
-            Count().ShouldBeGreaterThanOrEqualTo(1);
+        typeof(MyDbContext).Assembly.Extract().NotClass().Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
     [Fact]
@@ -62,7 +59,6 @@ public class TypeExtractorExtensionsTests
         typeof(MyDbContext).Assembly.Extract().Publics().Classes().Count()
             .ShouldBeGreaterThanOrEqualTo(3);
     }
-
 
 
     [Fact]

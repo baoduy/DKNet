@@ -8,7 +8,8 @@ namespace EfCore.DataAuthorization.Tests.TestEntities;
 /// <param name="dataKeyProviders">
 ///     optional <see cref="IDataOwnerProvider" /> injected from DI. Only first runner will be picked.
 /// </param>
-public class DddContext(DbContextOptions options,
+public class DddContext(
+    DbContextOptions options,
     IEnumerable<IDataOwnerProvider> dataKeyProviders) : DbContext(options), IDataOwnerDbContext
 {
     //Internal fields will be available in unit test project.

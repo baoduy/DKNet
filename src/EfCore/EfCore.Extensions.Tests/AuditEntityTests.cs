@@ -17,14 +17,14 @@ public class AuditEntityTests(SqlServerFixture fixture) : IClassFixture<SqlServe
     {
         await _db.Set<User>()
             .AddRangeAsync(new User("StevenHoang")
-        {
-            FirstName = "Steven",
-            LastName = "Hoang"
-        }, new User("DuyHoang")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang"
-        });
+            {
+                FirstName = "Steven",
+                LastName = "Hoang"
+            }, new User("DuyHoang")
+            {
+                FirstName = "Duy",
+                LastName = "Hoang"
+            });
         await _db.SaveChangesAsync();
 
         _db.ChangeTracker.Clear();

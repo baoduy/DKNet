@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace EfCore.Repos.Tests;
 
-public class RepoExtensionsTests(RepositoryFixture fixture,ITestOutputHelper output) : IClassFixture<RepositoryFixture>
+public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper output) : IClassFixture<RepositoryFixture>
 {
     private async Task CreateUser(int number = 1)
     {
@@ -15,7 +15,8 @@ public class RepoExtensionsTests(RepositoryFixture fixture,ITestOutputHelper out
         for (var i = 0; i < number; i++)
         {
             var newGuid = Guid.NewGuid();
-            var entity = new UserGuid($"Test {newGuid}") { FirstName = $"Test {newGuid}", LastName = $"Test {newGuid}" };
+            var entity = new UserGuid($"Test {newGuid}")
+                { FirstName = $"Test {newGuid}", LastName = $"Test {newGuid}" };
             await repo.AddAsync(entity);
         }
 

@@ -17,6 +17,5 @@ internal sealed class ProfileMapper : DefaultEntityTypeConfiguration<CustomerPro
         builder.Property(p => p.Name).HasMaxLength(150).IsRequired();
         builder.Property(p => p.Phone).HasMaxLength(50).IsRequired(false);
         builder.ToTable("CustomerProfiles", DomainSchemas.Profile);
-
     }
 }

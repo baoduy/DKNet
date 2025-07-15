@@ -3,15 +3,27 @@ namespace EfCore.Abstractions.Tests;
 // Test entities for testing purposes
 public class TestEntity : Entity<int>
 {
-    public TestEntity() { }
-    public TestEntity(int id) : base(id) { }
+    public TestEntity()
+    {
+    }
+
+    public TestEntity(int id) : base(id)
+    {
+    }
+
     public string Name { get; set; } = string.Empty;
 }
 
 public class TestGuidEntity : Entity
 {
-    public TestGuidEntity() { }
-    public TestGuidEntity(Guid id) : base(id) { }
+    public TestGuidEntity()
+    {
+    }
+
+    public TestGuidEntity(Guid id) : base(id)
+    {
+    }
+
     public string Name { get; set; } = string.Empty;
 }
 

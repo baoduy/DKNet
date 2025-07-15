@@ -6,7 +6,6 @@ global using SlimBus.AppServices.Profiles.V1.Queries;
 global using SlimBus.Domains.Features.Profiles.Repos;
 global using SlimBus.Domains.Services;
 global using Microsoft.Extensions.DependencyInjection;
-global using SlimBus.Domains.Share;
 global using FluentValidation;
 global using Mapster;
 global using MapsterMapper;

@@ -1,6 +1,7 @@
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Repos.Abstractions;
 using FluentValidation;
+using NetArchTest.Rules;
 using SlimBus.Infra.Extensions;
 using SlimMessageBus;
 
@@ -12,7 +13,7 @@ public class InfraTests
     public void AllHandlerClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(InfraSetup).Assembly);
+        var types = Types.InAssembly(typeof(InfraSetup).Assembly);
 
         var result = types
             .That()
@@ -32,7 +33,7 @@ public class InfraTests
     public void AllValidatorClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(InfraSetup).Assembly);
+        var types = Types.InAssembly(typeof(InfraSetup).Assembly);
 
         var result = types
             .That()
@@ -51,7 +52,7 @@ public class InfraTests
     public void AllEfConfigClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(InfraSetup).Assembly);
+        var types = Types.InAssembly(typeof(InfraSetup).Assembly);
 
         var result = types
             .That()
@@ -70,7 +71,7 @@ public class InfraTests
     public void AllRepoClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(InfraSetup).Assembly);
+        var types = Types.InAssembly(typeof(InfraSetup).Assembly);
 
         var result = types
             .That()
@@ -89,7 +90,7 @@ public class InfraTests
     public void AllSeedingDataClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(InfraSetup).Assembly);
+        var types = Types.InAssembly(typeof(InfraSetup).Assembly);
 
         var result = types
             .That()

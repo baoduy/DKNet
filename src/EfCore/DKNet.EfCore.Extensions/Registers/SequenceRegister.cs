@@ -9,7 +9,8 @@ internal static class SequenceRegister
         enumType.GetCustomAttribute<SqlSequenceAttribute>();
 
     internal static SequenceAttribute GetFieldAttributeOrDefault(Type enumType, object field) =>
-        enumType.GetMember(field.ToString()!)[0].GetCustomAttribute<SequenceAttribute>() ?? new SequenceAttribute();
+        enumType.GetMember(field.ToString()!)[0].GetCustomAttribute<SequenceAttribute>() ??
+        new SequenceAttribute();
 
     internal static string GetSequenceName(object field) => $"Sequence_{field}";
 
@@ -22,7 +23,7 @@ internal static class SequenceRegister
         IEnumerable<AutoEntityRegistrationInfo> registrations)
     {
         var enumTypes = registrations.SelectMany(r =>
-                     r.EntityAssemblies.Extract().Enums().ToList());
+            r.EntityAssemblies.Extract().Enums().ToList());
         var sequenceEnums = enumTypes.Where(e => e.HasAttribute<SqlSequenceAttribute>());
 
         foreach (var type in sequenceEnums)

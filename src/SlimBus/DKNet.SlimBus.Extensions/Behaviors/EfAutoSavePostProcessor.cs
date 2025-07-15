@@ -11,6 +11,8 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
     IServiceProvider serviceProvider)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
 {
+    public int Order => int.MaxValue;
+
     public async Task<TResponse> OnHandle(TRequest request, Func<Task<TResponse>> next, IConsumerContext context)
     {
         // Handle the actual request
@@ -19,7 +21,7 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
         if (response is null || request is Fluents.Queries.IWitResponse<TResponse> ||
             request is Fluents.Queries.IWitPageResponse<TResponse>) return response;
         if (response is IResultBase { IsSuccess: false }) return response;
-        
+
         var dbContexts = serviceProvider.GetServices<DbContext>().ToHashSet();
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
@@ -29,6 +31,4 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
 
         return response;
     }
-
-    public int Order => int.MaxValue;
 }

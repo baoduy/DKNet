@@ -56,7 +56,7 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update(avatar: null, null, null, null, "user2");
+        profile.Update(null, null, null, null, "user2");
 
         // Assert
         profile.Avatar.ShouldBeNull();
@@ -111,7 +111,7 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", "+1111111111", "user1");
 
         // Act
-        profile.Update("avatar.jpg", emptyString, "+2222222222", birthday: null, "user2");
+        profile.Update("avatar.jpg", emptyString, "+2222222222", null, "user2");
 
         // Assert
         profile.Name.ShouldBe(originalName);
@@ -128,7 +128,7 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile("Original Name", "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update("avatar.jpg", "New Name", emptyString, birthday: null, "user2");
+        profile.Update("avatar.jpg", "New Name", emptyString, null, "user2");
 
         // Assert
         profile.Name.ShouldBe("New Name"); // Name should update
@@ -147,7 +147,7 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update("avatar.jpg", whitespaceString, whitespaceString, birthday: null, "user2");
+        profile.Update("avatar.jpg", whitespaceString, whitespaceString, null, "user2");
 
         // Assert - Since string.IsNullOrEmpty(whitespace) is false, they will be updated
         profile.Name.ShouldBe(whitespaceString);

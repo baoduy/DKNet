@@ -25,7 +25,7 @@ internal static class AntiforgeryConfig
         return services;
     }
 
-    public static  WebApplication UseAntiforgeryConfig(this  WebApplication app)
+    public static WebApplication UseAntiforgeryConfig(this WebApplication app)
     {
         if (_configAdded)
         {
@@ -33,6 +33,7 @@ internal static class AntiforgeryConfig
             app.UseCookiePolicy();
             Console.WriteLine("Antiforgery enabled.");
         }
+
         return app;
     }
 }

@@ -1,9 +1,8 @@
 namespace EfCore.Extensions.Tests;
 
-
 public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private readonly MyDbContext _db=fixture.Db;
+    private readonly MyDbContext _db = fixture.Db;
 
 
     [Fact]
@@ -66,7 +65,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         // Arrange
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
-        
+
         var snapshot = _db.Snapshot();
         var entry = snapshot.SnapshotEntities[0];
 

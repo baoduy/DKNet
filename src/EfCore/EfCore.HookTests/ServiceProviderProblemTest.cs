@@ -6,19 +6,11 @@ namespace EfCore.HookTests;
 
 public class ServiceProviderProblemTest : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer;
-    private ServiceProvider _provider;
     private readonly ITestOutputHelper _output;
+    private ServiceProvider _provider;
+    private MsSqlContainer _sqlContainer;
 
-    public ServiceProviderProblemTest(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=ServiceProviderTestDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException("SQL Server container is not initialized.");
+    public ServiceProviderProblemTest(ITestOutputHelper output) => _output = output;
 
     public async Task InitializeAsync()
     {
@@ -46,6 +38,11 @@ public class ServiceProviderProblemTest : IAsyncLifetime
         if (_sqlContainer != null)
             await _sqlContainer.DisposeAsync();
     }
+
+    private string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=ServiceProviderTestDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     [Fact]
     public async Task MultipleApiCalls_ShouldNotCreateTooManyServiceProviders()

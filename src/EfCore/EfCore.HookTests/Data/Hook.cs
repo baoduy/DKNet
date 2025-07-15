@@ -59,8 +59,8 @@ public class Hook : /*IHook,*/ IHookAsync
     public void Dispose()
     {
         if (LastAfterContext is not null)
-             LastAfterContext.Dispose();
+            LastAfterContext.Dispose();
         if (LastBeforeContext is not null)
-             LastBeforeContext.Dispose();
+            LastBeforeContext.Dispose();
     }
 }

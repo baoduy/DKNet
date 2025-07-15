@@ -2,5 +2,6 @@
 
 internal sealed class EntityConfigRegisterService(EntityAutoConfigRegister entityConfig)
 {
-    public EntityAutoConfigRegister EntityConfig { get; } = entityConfig ?? throw new ArgumentNullException(nameof(entityConfig));
+    public EntityAutoConfigRegister EntityConfig { get; } =
+        entityConfig ?? throw new ArgumentNullException(nameof(entityConfig));
 }

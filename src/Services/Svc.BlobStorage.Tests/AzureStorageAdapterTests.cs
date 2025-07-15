@@ -6,10 +6,7 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
 {
     private readonly IBlobService _adapter;
 
-    public AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
-    {
-        _adapter = fixture.Service;
-    }
+    public AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture) => _adapter = fixture.Service;
 
     [Fact]
     public async Task SaveNewFile()
@@ -18,7 +15,7 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
         await _adapter.SaveAsync(new BlobData(fileName, file)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
 
         (await _adapter.CheckExistsAsync(new BlobRequest(fileName) { Type = BlobTypes.File }
@@ -32,9 +29,9 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
         await _adapter.SaveAsync(new BlobData(fileName, file)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
-        
+
         var uri = await _adapter.GetPublicAccessUrl(new BlobRequest(fileName) { Type = BlobTypes.File });
         uri.ShouldNotBeNull();
     }
@@ -44,17 +41,17 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
     {
         var fileName = $"exists-{Guid.NewGuid()}.txt";
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        
+
         // First save the file
         await _adapter.SaveAsync(new BlobData(fileName, file)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
-        
+
         // Try to save again without overwrite - should fail
         var action = () => _adapter.SaveAsync(new BlobData(fileName, file)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
 
         await action.ShouldThrowAsync<Exception>();
@@ -65,18 +62,18 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
     {
         var fileName = $"overwrite-{Guid.NewGuid()}.txt";
         var file = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        
+
         // First save the file
         await _adapter.SaveAsync(new BlobData(fileName, file)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
-        
+
         // Try to save again with overwrite - should succeed
         var action = () => _adapter.SaveAsync(new BlobData(fileName, file)
         {
             ContentType = "text/plain",
-            Overwrite = true,
+            Overwrite = true
         });
 
         await action.ShouldNotThrowAsync();
@@ -87,13 +84,13 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
     {
         var fileName = $"get-file-{Guid.NewGuid()}.txt";
         var oldfile = BinaryData.FromBytes(await File.ReadAllBytesAsync("TestData/log.txt"));
-        
+
         // First save the file
         await _adapter.SaveAsync(new BlobData(fileName, oldfile)
         {
-            ContentType = "text/plain",
+            ContentType = "text/plain"
         });
-        
+
         // Then get it back
         var file = await _adapter.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
 
@@ -101,11 +98,9 @@ public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobService
     }
 
     [Fact]
-    public async Task ListFile()
-    {
+    public async Task ListFile() =>
         (await _adapter.ListItemsAsync(new BlobRequest("/") { Type = BlobTypes.Directory }).ToListAsync()).Count
-            .ShouldBeGreaterThanOrEqualTo(1);
-    }
+        .ShouldBeGreaterThanOrEqualTo(1);
 
     [Fact]
     public async Task DeleteFileShouldReturnTrueWhenFileExists()

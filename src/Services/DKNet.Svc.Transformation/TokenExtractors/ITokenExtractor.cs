@@ -5,14 +5,14 @@ public interface ITokenExtractor
     #region Methods
 
     /// <summary>
-    /// Extract token from string.
+    ///     Extract token from string.
     /// </summary>
     /// <param name="templateString"></param>
     /// <returns></returns>
     IEnumerable<IToken> Extract(string templateString);
 
     /// <summary>
-    /// Extract token from string.
+    ///     Extract token from string.
     /// </summary>
     /// <param name="templateString"></param>
     /// <returns></returns>

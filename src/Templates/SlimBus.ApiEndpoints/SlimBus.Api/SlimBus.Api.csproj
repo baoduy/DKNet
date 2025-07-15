@@ -11,7 +11,7 @@
         <PackageReference Include="Asp.Versioning.Http"/>
         <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
         <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore"/>

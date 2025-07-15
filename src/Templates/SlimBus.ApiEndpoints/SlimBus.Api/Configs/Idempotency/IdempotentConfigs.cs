@@ -5,7 +5,8 @@ internal static class IdempotentConfigs
 {
     private static bool _configAdded;
 
-    public static IServiceCollection AddIdempotency(this IServiceCollection services, Action<IdempotencyOptions>? config = null)
+    public static IServiceCollection AddIdempotency(this IServiceCollection services,
+        Action<IdempotencyOptions>? config = null)
     {
         var options = new IdempotencyOptions();
         config?.Invoke(options);

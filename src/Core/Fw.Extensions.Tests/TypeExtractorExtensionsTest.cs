@@ -3,7 +3,6 @@ using DKNet.Fw.Extensions;
 
 namespace Fw.Extensions.Tests;
 
-
 public class TestTypeExtractorExtensions
 {
     [Fact]
@@ -102,7 +101,8 @@ public class TestTypeExtractorExtensions
     public void TestExtractInstanceOfAny()
     {
         // Arrange
-        var types = typeof(TestEnumObject).Assembly.Extract().Classes().IsInstanceOfAny(typeof(ITem), typeof(IConfigItem))
+        var types = typeof(TestEnumObject).Assembly.Extract().Classes()
+            .IsInstanceOfAny(typeof(ITem), typeof(IConfigItem))
             .ToList();
 
         // Act & Assert
@@ -311,7 +311,7 @@ public class TestTypeExtractorExtensions
         {
             typeof(ITypeExtractor).Assembly,
             typeof(TestEnumObject).Assembly,
-            typeof(ITypeExtractor).Assembly  // Duplicate
+            typeof(ITypeExtractor).Assembly // Duplicate
         };
         var types = assemblies.Extract().Classes().ToList();
 

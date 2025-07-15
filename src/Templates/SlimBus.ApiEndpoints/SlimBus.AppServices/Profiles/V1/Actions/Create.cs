@@ -15,7 +15,9 @@ public sealed record CreateProfileCommand : BaseCommand, Fluents.Requests.IWitRe
     [Required] public string Email { get; set; } = null!;
     [Phone] public string Phone { get; set; } = null!;
 
-    [JsonIgnore,Description("This property is not used in the mapping, it will be set by the membership provider if not provided.")]
+    [JsonIgnore]
+    [Description(
+        "This property is not used in the mapping, it will be set by the membership provider if not provided.")]
     public string MembershipNo { get; set; } = null!;
 
     [StringLength(150)] [Required] public string Name { get; set; } = null!;

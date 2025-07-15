@@ -15,13 +15,13 @@ public sealed class ServiceBusResource(string name) : ContainerResource(name), I
         ReferenceExpression.Create(
             $"Endpoint=sb://{PrimaryEndpoint.Host};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;");
 
-    public ReferenceExpression ConnectionStringExpression
-        => this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
+    public ReferenceExpression ConnectionStringExpression =>
+        this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
             ? connectionStringAnnotation.Resource.ConnectionStringExpression
             : ConnectionString;
 
-    public ValueTask<string?> GetConnectionStringAsync(CancellationToken cancellationToken = default)
-        => this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
+    public ValueTask<string?> GetConnectionStringAsync(CancellationToken cancellationToken = default) =>
+        this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
             ? connectionStringAnnotation.Resource.GetConnectionStringAsync(cancellationToken)
             : ConnectionString.GetValueAsync(cancellationToken);
 }

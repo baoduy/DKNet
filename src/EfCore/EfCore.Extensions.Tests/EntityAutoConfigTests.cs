@@ -2,7 +2,6 @@
 
 namespace EfCore.Extensions.Tests;
 
-
 public class EntityAutoConfigTests
 {
     [Fact]
@@ -21,7 +20,8 @@ public class EntityAutoConfigTests
     public void ScanConfigsShouldIncludeEntitiesThatNotInheritIEntity()
     {
         var info =
-            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
+            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(
+                typeof(BaseEntityMapper<>));
         var configs = info.GetDefinedMappers().ToList();
 
         configs.ShouldNotBeEmpty();
@@ -32,7 +32,8 @@ public class EntityAutoConfigTests
     public void ScanGenericConfigs()
     {
         var info =
-            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(BaseEntityMapper<>));
+            new AutoEntityRegistrationInfo(typeof(MyDbContext).Assembly).WithDefaultMappersType(
+                typeof(BaseEntityMapper<>));
         var configs = info.GetGenericMappers().ToList();
 
         configs.ShouldNotBeEmpty();
