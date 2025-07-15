@@ -7,7 +7,8 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
     public virtual DbSet<TestEntity> Entities { get; set; } = null!;
 
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new())
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = new())
     {
         Called = true;
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);

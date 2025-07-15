@@ -7,7 +7,6 @@ namespace DKNet.EfCore.Extensions.Registers;
 
 internal static class StaticEnumDataRegister
 {
-
     private static readonly MethodInfo Method = typeof(StaticEnumDataRegister)
         .GetMethod(nameof(RegisterStaticDataType), BindingFlags.Static | BindingFlags.NonPublic)!;
 
@@ -85,13 +84,13 @@ internal static class StaticEnumDataRegister
                     Id = (int)value,
                     Name = displayAtt?.Name ?? value.ToString(),
                     displayAtt?.Description,
-                    displayAtt?.GroupName,
+                    displayAtt?.GroupName
                 });
             else
                 builder.HasData(new
                 {
                     Id = (int)value,
-                    Name = value.ToString(),
+                    Name = value.ToString()
                 });
         }
     }

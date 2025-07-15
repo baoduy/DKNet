@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
-internal sealed class UserConfig:DefaultEntityTypeConfiguration<User>
+internal sealed class UserConfig : DefaultEntityTypeConfiguration<User>
 {
     public override void Configure(EntityTypeBuilder<User> builder)
     {
@@ -14,7 +14,7 @@ internal sealed class UserConfig:DefaultEntityTypeConfiguration<User>
             .HasField("_addresses");
 
         builder.HasMany(u => u.Addresses)
-            .WithOne(a=>a.User)
+            .WithOne(a => a.User)
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }

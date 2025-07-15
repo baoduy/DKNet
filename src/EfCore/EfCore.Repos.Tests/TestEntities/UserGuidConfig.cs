@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
-internal sealed class UserGuidConfig:DefaultEntityTypeConfiguration<UserGuid>
+internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
 {
     public override void Configure(EntityTypeBuilder<UserGuid> builder)
     {
@@ -14,7 +14,7 @@ internal sealed class UserGuidConfig:DefaultEntityTypeConfiguration<UserGuid>
             .HasField("_addresses");
 
         builder.HasMany(u => u.Addresses)
-            .WithOne(a=>a.User)
+            .WithOne(a => a.User)
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }

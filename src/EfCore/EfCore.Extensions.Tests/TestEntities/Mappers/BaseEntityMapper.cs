@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using DKNet.EfCore.Extensions.Configurations;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Extensions.Tests.TestEntities.Mappers;
 

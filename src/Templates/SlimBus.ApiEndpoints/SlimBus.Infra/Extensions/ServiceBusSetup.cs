@@ -37,7 +37,7 @@ public static class ServiceBusSetup
                         new ServiceBusClient(settings.ConnectionString, new ServiceBusClientOptions
                         {
                             // Use WebSockets transport for Azure Service Bus
-                            TransportType = ServiceBusTransportType.AmqpWebSockets,
+                            TransportType = ServiceBusTransportType.AmqpWebSockets
                         });
 
                     st.TopologyProvisioning = new ServiceBusTopologySettings
@@ -54,7 +54,7 @@ public static class ServiceBusSetup
                             op.AutoDeleteOnIdle = TimeSpan.FromDays(60);
                             op.DeadLetteringOnMessageExpiration = true;
                             op.DefaultMessageTimeToLive = TimeSpan.FromDays(7);
-                        },
+                        }
                     };
                 });
 

@@ -34,7 +34,7 @@ public class UserTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixtur
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         };
 
         _db.Add(user);

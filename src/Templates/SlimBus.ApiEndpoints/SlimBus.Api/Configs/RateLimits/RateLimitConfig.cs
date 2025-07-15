@@ -3,7 +3,7 @@ using System.Threading.RateLimiting;
 namespace SlimBus.Api.Configs.RateLimits;
 
 /// <summary>
-/// Rate limiting configuration for SlimBus API
+///     Rate limiting configuration for SlimBus API
 /// </summary>
 [ExcludeFromCodeCoverage]
 internal static class RateLimitConfig
@@ -11,13 +11,14 @@ internal static class RateLimitConfig
     private static bool _configAdded;
 
     /// <summary>
-    /// Adds rate limiting services to the service collection
+    ///     Adds rate limiting services to the service collection
     /// </summary>
     /// <param name="services">The service collection to configure</param>
     /// <param name="configuration">configuration action for rate limit options</param>
     /// <param name="feature">Feature options to determine if rate limiting is enabled</param>
     /// <returns>The service collection with rate limiting configured</returns>
-    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration, FeatureOptions feature)
+    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration,
+        FeatureOptions feature)
     {
         _configAdded = false;
         if (!feature.EnableRateLimit) return services;
@@ -49,7 +50,7 @@ internal static class RateLimitConfig
     }
 
     /// <summary>
-    /// Applies rate limiting middleware to the application
+    ///     Applies rate limiting middleware to the application
     /// </summary>
     /// <param name="app">The web application to configure</param>
     /// <returns>The web application with rate limiting applied</returns>

@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+﻿using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.Hooks;
-using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using SlimBus.Infra.Contexts;
 using SlimBus.Infra.Services;
 
@@ -35,7 +35,7 @@ public static class InfraSetup
                 t is { IsSealed: true, Namespace: not null }
                 && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
                     || t.Namespace!.Contains(".Services", StringComparison.Ordinal))
-            ), publicOnly: false)
+            ), false)
             .AsImplementedInterfaces()
             .WithScopedLifetime());
 

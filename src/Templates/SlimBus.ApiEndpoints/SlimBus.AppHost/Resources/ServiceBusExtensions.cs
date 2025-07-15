@@ -14,7 +14,8 @@ internal static class ServiceBusExtensions
             connectionString = await bus.GetConnectionStringAsync(ct);
 
             if (connectionString == null)
-                throw new DistributedApplicationException($"ConnectionStringAvailableEvent was published for the '{bus.Name}' resource but the connection string was null.");
+                throw new DistributedApplicationException(
+                    $"ConnectionStringAvailableEvent was published for the '{bus.Name}' resource but the connection string was null.");
         });
 
         return builder.AddResource(bus)
@@ -24,7 +25,7 @@ internal static class ServiceBusExtensions
             .WithEnvironment("ACCEPT_EULA", "Y")
             .WithEnvironment("SQL_SERVER", sqlServer.Resource.Name)
             .WithEnvironment("MSSQL_SA_PASSWORD", sqlServer.Resource.PasswordParameter.Value)
-            .WithBindMount(configFilePath, "/ServiceBus_Emulator/ConfigFiles/Config.json", isReadOnly: true)
+            .WithBindMount(configFilePath, "/ServiceBus_Emulator/ConfigFiles/Config.json", true)
             .WithEndpoint(
                 targetPort: 5672,
                 port: 5672,

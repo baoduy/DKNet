@@ -4,18 +4,18 @@ namespace SlimBus.Api.Configs.Idempotency;
 
 public interface IIdempotencyKeyRepository
 {
-
     /// <summary>
-    /// Checks if the key has been processed. If it has, returns true and the result if provided when marking the key as processed.
+    ///     Checks if the key has been processed. If it has, returns true and the result if provided when marking the key as
+    ///     processed.
     /// </summary>
     /// <param name="idempotencyKey"></param>
     /// <returns></returns>
     ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string idempotencyKey);
 
     /// <summary>
-    /// Marks the key as processed and caches the result.
-    ///  The result can be null. If the result is null, the key will be marked as processed but no result will be cached. 
-    ///  This is useful for idempotent commands that do not return a result.
+    ///     Marks the key as processed and caches the result.
+    ///     The result can be null. If the result is null, the key will be marked as processed but no result will be cached.
+    ///     This is useful for idempotent commands that do not return a result.
     /// </summary>
     /// <param name="idempotencyKey"></param>
     /// <param name="result">The result can be null.</param>
@@ -23,13 +23,17 @@ public interface IIdempotencyKeyRepository
     ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, string? result);
 }
 
-internal class IdempotencyKeyRepository(IDistributedCache cache, IOptions<IdempotencyOptions> options, ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyRepository
+internal class IdempotencyKeyRepository(
+    IDistributedCache cache,
+    IOptions<IdempotencyOptions> options,
+    ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyRepository
 {
     private readonly IdempotencyOptions _options = options.Value;
 
     public async ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string idempotencyKey)
     {
-        idempotencyKey = idempotencyKey.Replace("\n", "", StringComparison.Ordinal).Replace("\r", "", StringComparison.Ordinal); // Sanitize user input
+        idempotencyKey = idempotencyKey.Replace("\n", "", StringComparison.Ordinal)
+            .Replace("\r", "", StringComparison.Ordinal); // Sanitize user input
         var cacheKey = $"{_options.CachePrefix}{idempotencyKey}";
         logger.LogDebug("Trying to get existing result for cache key: {CacheKey}", cacheKey);
 
@@ -41,13 +45,14 @@ internal class IdempotencyKeyRepository(IDistributedCache cache, IOptions<Idempo
 
     public async ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, string? result)
     {
-        idempotencyKey = idempotencyKey.Replace("\n", "", StringComparison.Ordinal).Replace("\r", "", StringComparison.Ordinal); // Sanitize user input
+        idempotencyKey = idempotencyKey.Replace("\n", "", StringComparison.Ordinal)
+            .Replace("\r", "", StringComparison.Ordinal); // Sanitize user input
         var cacheKey = $"{_options.CachePrefix}{idempotencyKey}";
         logger.LogDebug("Setting cache result for cache key: {CacheKey}", cacheKey);
 
-        await cache.SetStringAsync(cacheKey, result ?? Boolean.TrueString,new DistributedCacheEntryOptions
+        await cache.SetStringAsync(cacheKey, result ?? bool.TrueString, new DistributedCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = _options.Expiration,
-        } );
+            AbsoluteExpirationRelativeToNow = _options.Expiration
+        });
     }
 }

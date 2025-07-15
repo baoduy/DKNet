@@ -1,7 +1,7 @@
 using DKNet.EfCore.Repos;
-using Microsoft.EntityFrameworkCore.Storage;
 using EfCore.Repos.Tests.TestEntities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Shouldly;
 using Xunit.Abstractions;
 
@@ -30,12 +30,12 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task AddUserWithAddressAsync()
     {
         // Arrange
-        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
         entity.AddAddress(new Address
         {
             City = "Test City",
             Street = "Test Street",
-            Country = "Test Country",
+            Country = "Test Country"
         });
 
         // Act
@@ -56,7 +56,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task UpdateNavigationPropertiesAsync()
     {
         // Arrange
-        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test", };
+        var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
         // Act
         await fixture.Repository.AddAsync(entity);
@@ -77,19 +77,19 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         {
             City = "Test City 1",
             Street = "Test Street 1",
-            Country = "Test Country 1",
+            Country = "Test Country 1"
         });
         user.AddAddress(new Address
         {
             City = "Test City 2",
             Street = "Test Street 2",
-            Country = "Test Country 2",
+            Country = "Test Country 2"
         });
         user.AddAddress(new Address
         {
             City = "Test City 3",
             Street = "Test Street 3",
-            Country = "Test Country 3",
+            Country = "Test Country 3"
         });
 
         output.WriteLine(fixture.DbContext.ChangeTracker.DebugView.LongView);
@@ -147,7 +147,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         var user = new UserGuid("A")
         {
             FirstName = "Duy",
-            LastName = "Hoang",
+            LastName = "Hoang"
         };
 
         user.AddAddress(
@@ -155,14 +155,14 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
             {
                 City = "HBD",
                 Street = "HBD",
-                Country = "HBD",
+                Country = "HBD"
             });
         user.AddAddress(
             new AddressGuid
             {
                 City = "HBD",
                 Street = "HBD",
-                Country = "HBD",
+                Country = "HBD"
             });
 
         await writeRepo.AddAsync(user);
@@ -429,7 +429,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetProjection<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetDto<UserDto>());
     }
 
     [Fact]

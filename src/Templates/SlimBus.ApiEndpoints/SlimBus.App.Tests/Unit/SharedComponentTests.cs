@@ -1,3 +1,4 @@
+using System.Reflection;
 using SlimBus.AppServices.Share;
 
 namespace SlimBus.App.Tests.Unit;
@@ -43,7 +44,7 @@ public class SharedComponentTests
 
         // Act
         var byUserProp = typeof(TestCommand).GetProperty(nameof(TestCommand.ByUser),
-            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)!;
+            BindingFlags.Public | BindingFlags.Instance)!;
 
         byUserProp.SetValue(command, expectedUserId);
         var result = byUserProp.GetValue(command);

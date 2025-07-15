@@ -7,12 +7,6 @@ public sealed class HookFixture : IAsyncLifetime
     private MsSqlContainer _sqlContainer;
     public ServiceProvider Provider { get; private set; }
 
-    public string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
-
     public async Task InitializeAsync()
     {
         _sqlContainer = new MsSqlBuilder()
@@ -37,4 +31,10 @@ public sealed class HookFixture : IAsyncLifetime
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
 }

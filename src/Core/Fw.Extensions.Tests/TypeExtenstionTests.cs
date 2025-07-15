@@ -2,7 +2,6 @@
 
 namespace Fw.Extensions.Tests;
 
-
 public class TypeExtensionsTests
 {
     [Fact]
@@ -319,10 +318,10 @@ public class TypeExtensionsTests
         // Arrange
         var derivedType = typeof(ArgumentNullException);
         var baseType = typeof(SystemException);
-        
+
         // Act
         var result = derivedType.IsImplementOf(baseType);
-        
+
         // Assert
         result.ShouldBeTrue();
     }
@@ -334,7 +333,7 @@ public class TypeExtensionsTests
         var type = typeof(List<string>);
         var interface1 = typeof(ICollection<string>);
         var interface2 = typeof(IEnumerable<string>);
-        
+
         // Act & Assert
         type.IsImplementOf(interface1).ShouldBeTrue();
         type.IsImplementOf(interface2).ShouldBeTrue();
@@ -347,7 +346,7 @@ public class TypeExtensionsTests
         var type1 = typeof(string);
         var type2 = typeof(int);
         var type3 = typeof(DateTime);
-        
+
         // Act & Assert
         type1.IsImplementOf(type2).ShouldBeFalse();
         type2.IsImplementOf(type3).ShouldBeFalse();
@@ -360,10 +359,10 @@ public class TypeExtensionsTests
         // Arrange
         var closedGenericType = typeof(Dictionary<string, int>);
         var openGenericInterface = typeof(IDictionary<,>);
-        
+
         // Act
         var result = closedGenericType.IsImplementOf(openGenericInterface);
-        
+
         // Assert
         result.ShouldBeTrue();
     }
@@ -394,10 +393,10 @@ public class TypeExtensionsTests
         // Arrange
         var grandChildType = typeof(ArgumentOutOfRangeException);
         var grandParentType = typeof(Exception);
-        
+
         // Act
         var result = grandChildType.IsImplementOf(grandParentType);
-        
+
         // Assert
         result.ShouldBeTrue();
     }
@@ -408,10 +407,10 @@ public class TypeExtensionsTests
         // Arrange  
         var type = typeof(SortedList<int, string>);
         var genericInterface = typeof(IDictionary<,>);
-        
+
         // Act
         var result = type.IsImplementOf(genericInterface);
-        
+
         // Assert
         result.ShouldBeTrue();
     }
@@ -431,7 +430,7 @@ public class TypeExtensionsTests
         object floatObj = 1.0f;
         object doubleObj = 1.0;
         object decimalObj = 1.0m;
-        
+
         // Act & Assert
         byteObj.IsNumericType().ShouldBeTrue();
         sbyteObj.IsNumericType().ShouldBeTrue();
@@ -451,7 +450,7 @@ public class TypeExtensionsTests
     {
         // Arrange
         var type = typeof(SortedDictionary<string, int>);
-        
+
         // Act & Assert
         type.IsImplementOf<IDictionary<string, int>>().ShouldBeTrue();
         type.IsImplementOf<ICollection<KeyValuePair<string, int>>>().ShouldBeTrue();

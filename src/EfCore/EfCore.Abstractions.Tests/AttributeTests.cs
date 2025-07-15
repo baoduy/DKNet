@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace EfCore.Abstractions.Tests;
 
 public class AttributeTests
@@ -9,7 +11,7 @@ public class AttributeTests
         var attributeType = typeof(IgnoreEntityAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 
@@ -69,7 +71,7 @@ public class AttributeTests
         var attributeType = typeof(SqlSequenceAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 
@@ -108,7 +110,7 @@ public class AttributeTests
         var attributeType = typeof(StaticDataAttribute);
 
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), inherit: true)
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
             .Cast<AttributeUsageAttribute>()
             .FirstOrDefault();
 
@@ -134,6 +136,6 @@ public class AttributeTests
         var attribute = new StaticDataAttribute("test");
 
         // Assert
-        attribute.ShouldBeAssignableTo<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+        attribute.ShouldBeAssignableTo<TableAttribute>();
     }
 }

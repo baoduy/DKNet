@@ -25,7 +25,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Email = $"abc_{v}@hbd.com",
             Name = $"HBD {v}",
-            Phone = "+6512345678",
+            Phone = "+6512345678"
         });
 
         var (success, result, error, _) = await rp.As<ProfileResult>();
@@ -53,7 +53,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Email = "abc1@hbd.com",
             Name = "HBD",
-            Phone = "+6512345678",
+            Phone = "+6512345678"
         });
 
         //And create other with the same email
@@ -62,7 +62,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Email = "abc1@hbd.com",
             Name = "HBD",
-            Phone = "+6512345678",
+            Phone = "+6512345678"
         });
         var (success, _, error, _) = await rp.As<ProfileResult>();
 
@@ -80,7 +80,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Email = "update_test@hbd.com",
             Name = "Duy Hoang",
-            Phone = "+6512345678",
+            Phone = "+6512345678"
         });
 
         var (_, createdResult, createdError, _) = await created.As<ProfileResult>();
@@ -91,7 +91,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Id = createdResult.Id,
             Name = "HBD New",
-            Phone = "+6512399999",
+            Phone = "+6512399999"
         });
 
         var (success, result, error, _) = await rp.As<ProfileResult>();
@@ -112,7 +112,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         {
             Email = "delete_test@hbd.com",
             Name = "Steven Hoang",
-            Phone = "+6512345678",
+            Phone = "+6512345678"
         });
 
         var (_, createdResult, createdError, _) = await created.As<ProfileResult>();

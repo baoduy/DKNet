@@ -13,10 +13,9 @@ public class LazyResultTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixt
         var v = mapper.ResultOf<View>(m);
 
         v.ValueOrDefault.ShouldNotBeNull();
-       //v.ValueOrDefault.ShouldNotBe(m);
+        //v.ValueOrDefault.ShouldNotBe(m);
         v.ValueOrDefault!.Id.ShouldBe(m.Id);
         v.ValueOrDefault!.Name.ShouldBe(m.Name);
-
     }
 
     [Fact]
@@ -34,7 +33,7 @@ public class LazyResultTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixt
     public void LazyMapNullValueTest()
     {
         var mapper = fixture.ServiceProvider.GetRequiredService<IMapper>();
-        var v =()=> mapper.ResultOf<TestDataModel>(null!);
+        var v = () => mapper.ResultOf<TestDataModel>(null!);
         v.ShouldNotThrow();
     }
 }

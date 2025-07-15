@@ -8,5 +8,6 @@ public static class SanitizeForLoggingExtensions
             .Trim() // Trim leading and trailing spaces
             .Replace('\0', ' ') // Replace null characters
             .Replace('\f', ' ') // Replace form feed characters
-            .Replace('\r', ' '); // Sanitize user input
+            .Replace('\r', ' ');
+    // Sanitize user input
 }

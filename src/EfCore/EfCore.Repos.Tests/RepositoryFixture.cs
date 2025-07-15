@@ -1,15 +1,12 @@
-using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Repos;
+using DKNet.EfCore.Repos.Abstractions;
 using EfCore.Repos.Tests.TestEntities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryFixture : IAsyncLifetime
 {
-    public TestDbContext DbContext { get; set; } = null!;
-    public IRepository<User> Repository { get; set; } = null!;
-    public IReadRepository<User> ReadRepository { get; set; } = null!;
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     private string? _dbConn;
@@ -20,7 +17,7 @@ public class RepositoryFixture : IAsyncLifetime
         {
             AssemblyName = typeof(RepositoryFixture).Assembly.FullName,
             DisableDashboard = true,
-            AllowUnsecuredTransport = true,
+            AllowUnsecuredTransport = true
         };
         var builder = DistributedApplication.CreateBuilder(options);
 
@@ -30,6 +27,10 @@ public class RepositoryFixture : IAsyncLifetime
 
         _app = builder.Build();
     }
+
+    public TestDbContext DbContext { get; set; } = null!;
+    public IRepository<User> Repository { get; set; } = null!;
+    public IReadRepository<User> ReadRepository { get; set; } = null!;
 
     public async Task InitializeAsync()
     {

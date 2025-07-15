@@ -1,6 +1,6 @@
-using DKNet.EfCore.Events.Handlers;
 using System.Collections.Generic;
 using System.Threading;
+using DKNet.EfCore.Events.Handlers;
 
 namespace EfCore.Events.Tests.TestEntities;
 

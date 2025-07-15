@@ -1,6 +1,5 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-
 public class DefaultKeyTests
 {
     [Fact]
@@ -10,7 +9,7 @@ public class DefaultKeyTests
             { FirstName = "Steven", LastName = "Smith" }.Id.ShouldBe(0);
         new Address
         {
-            OwnedEntity = new OwnedEntity{Name = "123"},
+            OwnedEntity = new OwnedEntity { Name = "123" },
             City = "HBD",
             Street = "HBD"
         }.Id.ShouldBe(0);

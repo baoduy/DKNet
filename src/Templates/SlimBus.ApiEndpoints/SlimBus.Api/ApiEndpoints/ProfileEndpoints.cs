@@ -6,8 +6,15 @@ namespace SlimBus.Api.ApiEndpoints;
 
 internal sealed class ProfileV1Endpoint : IEndpointConfig
 {
-    public string GroupEndpoint => "/profiles";
-    public int Version => 1;
+    public string GroupEndpoint
+    {
+        get => "/profiles";
+    }
+
+    public int Version
+    {
+        get => 1;
+    }
 
     public void Map(RouteGroupBuilder group)
     {
@@ -28,8 +35,15 @@ internal sealed class ProfileV1Endpoint : IEndpointConfig
 
 internal sealed class ProfileV2Endpoint : IEndpointConfig
 {
-    public string GroupEndpoint => "/profiles";
-    public int Version => 2;
+    public string GroupEndpoint
+    {
+        get => "/profiles";
+    }
+
+    public int Version
+    {
+        get => 2;
+    }
 
     public void Map(RouteGroupBuilder group)
     {

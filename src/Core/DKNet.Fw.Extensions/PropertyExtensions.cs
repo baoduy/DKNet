@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
 namespace DKNet.Fw.Extensions;
 
 /// <summary>
-/// The extensions methods to work with object properties.
+///     The extensions methods to work with object properties.
 /// </summary>
 public static class PropertyExtensions
 {
@@ -15,14 +16,15 @@ public static class PropertyExtensions
         // Check if the type is a generic type and is Nullable<>
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
+
     /// <summary>
-    /// Gets a property by name, considering all access levels and ignoring case.
+    ///     Gets a property by name, considering all access levels and ignoring case.
     /// </summary>
     /// <typeparam name="T">The type of the object to get the property from.</typeparam>
     /// <param name="obj">The object to get the property from.</param>
     /// <param name="propertyName">The name of the property to get.</param>
-    /// <returns>The <see cref="PropertyInfo"/> of the property, or null if not found.</returns>
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075",
+    /// <returns>The <see cref="PropertyInfo" /> of the property, or null if not found.</returns>
+    [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075",
         Justification = "Everything referenced in the loaded assembly is manually preserved, so it's safe")]
     public static PropertyInfo? GetProperty<T>(this T? obj, string propertyName) where T : class
     {
@@ -34,8 +36,8 @@ public static class PropertyExtensions
     }
 
     /// <summary>
-    /// Gets the value of a property by name, considering all access levels and ignoring case.
-    /// Supports nested properties.
+    ///     Gets the value of a property by name, considering all access levels and ignoring case.
+    ///     Supports nested properties.
     /// </summary>
     /// <typeparam name="T">The type of the object to get the property value from.</typeparam>
     /// <param name="obj">The object to get the property value from.</param>
@@ -62,12 +64,15 @@ public static class PropertyExtensions
     }
 
     /// <summary>
-    /// Sets the value of a property.
+    ///     Sets the value of a property.
     /// </summary>
     /// <param name="obj">The object to set the property on.</param>
-    /// <param name="property">The <see cref="PropertyInfo"/> of the property to set.</param>
+    /// <param name="property">The <see cref="PropertyInfo" /> of the property to set.</param>
     /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="obj"/> or <paramref name="property"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">
+    ///     Thrown when the <paramref name="obj" /> or <paramref name="property" /> is
+    ///     null.
+    /// </exception>
     public static void SetPropertyValue(this object obj, PropertyInfo property, object? value)
     {
         ArgumentNullException.ThrowIfNull(obj);
@@ -75,11 +80,13 @@ public static class PropertyExtensions
 
         if (value == null)
         {
-            property.SetValue(obj, value: null);
+            property.SetValue(obj, null);
         }
         else if (property.PropertyType.IsNullableType())
         {
-            property.SetValue(obj,  Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType)!, CultureInfo.CurrentCulture));
+            property.SetValue(obj,
+                Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType)!,
+                    CultureInfo.CurrentCulture));
         }
         else
         {
@@ -92,23 +99,20 @@ public static class PropertyExtensions
     }
 
     /// <summary>
-    /// Tries to set the value of a property and ignores any exceptions that occur.
+    ///     Tries to set the value of a property and ignores any exceptions that occur.
     /// </summary>
     /// <param name="obj">The object to set the property on.</param>
-    /// <param name="property">The <see cref="PropertyInfo"/> of the property to set.</param>
+    /// <param name="property">The <see cref="PropertyInfo" /> of the property to set.</param>
     /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="obj"/> or <paramref name="property"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">
+    ///     Thrown when the <paramref name="obj" /> or <paramref name="property" /> is
+    ///     null.
+    /// </exception>
     public static void TrySetPropertyValue(this object obj, PropertyInfo property, object? value)
     {
-        if (obj == null)
-        {
-            throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
-        }
+        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
 
-        if (property == null)
-        {
-            throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
-        }
+        if (property == null) throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
 
         try
         {
@@ -126,12 +130,15 @@ public static class PropertyExtensions
     }
 
     /// <summary>
-    /// Sets the value of a property by name, considering all access levels and ignoring case.
+    ///     Sets the value of a property by name, considering all access levels and ignoring case.
     /// </summary>
     /// <param name="obj">The object to set the property on.</param>
     /// <param name="propertyName">The name of the property to set.</param>
     /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="obj"/> or <paramref name="propertyName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">
+    ///     Thrown when the <paramref name="obj" /> or <paramref name="propertyName" /> is
+    ///     null.
+    /// </exception>
     /// <exception cref="ArgumentException">Thrown when the property is not found.</exception>
     public static void SetPropertyValue(this object obj, string propertyName, object value)
     {
@@ -146,23 +153,22 @@ public static class PropertyExtensions
     }
 
     /// <summary>
-    /// Tries to set the value of a property by name, considering all access levels and ignoring case, and ignores any exceptions that occur.
+    ///     Tries to set the value of a property by name, considering all access levels and ignoring case, and ignores any
+    ///     exceptions that occur.
     /// </summary>
     /// <param name="obj">The object to set the property on.</param>
     /// <param name="propertyName">The name of the property to set.</param>
     /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="obj"/> or <paramref name="propertyName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">
+    ///     Thrown when the <paramref name="obj" /> or <paramref name="propertyName" /> is
+    ///     null.
+    /// </exception>
     public static void TrySetPropertyValue(this object obj, string propertyName, object value)
     {
-        if (obj == null)
-        {
-            throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
-        }
+        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
 
         if (string.IsNullOrEmpty(propertyName))
-        {
             throw new ArgumentNullException(nameof(propertyName), "The property name cannot be null or empty.");
-        }
 
         try
         {

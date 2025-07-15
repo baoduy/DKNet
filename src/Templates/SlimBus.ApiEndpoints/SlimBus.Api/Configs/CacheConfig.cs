@@ -10,13 +10,11 @@ internal static class CacheConfigs
         if (string.IsNullOrWhiteSpace(conn))
             services.AddDistributedMemoryCache();
         else
-        {
             services.AddStackExchangeRedisCache(s =>
             {
                 s.Configuration = conn;
                 s.InstanceName = SharedConsts.ApiName;
             });
-        }
 
         services.AddHybridCache();
 

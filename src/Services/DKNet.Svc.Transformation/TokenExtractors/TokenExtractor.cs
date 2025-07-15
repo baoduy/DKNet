@@ -5,17 +5,17 @@
 namespace DKNet.Svc.Transformation.TokenExtractors;
 
 /// <summary>
-/// The extractor of &lt;token&gt;
+///     The extractor of &lt;token&gt;
 /// </summary>
 public class AngledBracketTokenExtractor() : TokenExtractor(new AngledBracketDefinition());
 
 /// <summary>
-/// The extractor of {token}
+///     The extractor of {token}
 /// </summary>
 public class CurlyBracketExtractor() : TokenExtractor(new CurlyBracketDefinition());
 
 /// <summary>
-/// The extractor of [token]
+///     The extractor of [token]
 /// </summary>
 public class SquareBracketExtractor() : TokenExtractor(new SquareBracketDefinition());
 
@@ -25,7 +25,10 @@ public class TokenExtractor(ITokenDefinition definition) : ITokenExtractor
 
     public IEnumerable<IToken> Extract(string templateString) => ExtractCore(templateString);
 
-    public Task<IEnumerable<IToken>> ExtractAsync(string templateString) => Task.Run(() => ExtractCore(templateString));
+    public Task<IEnumerable<IToken>> ExtractAsync(string templateString)
+    {
+        return Task.Run(() => ExtractCore(templateString));
+    }
 
     protected virtual IEnumerable<IToken> ExtractCore(string templateString)
     {
@@ -37,7 +40,9 @@ public class TokenExtractor(ITokenDefinition definition) : ITokenExtractor
         while (si >= 0 && si < length)
         {
             //If next is beginning of Token then move to next
-            if (si < length - 1 && string.Equals(templateString.Substring(si + Definition.BeginTag.Length, Definition.BeginTag.Length), Definition.BeginTag, StringComparison.OrdinalIgnoreCase))
+            if (si < length - 1 &&
+                string.Equals(templateString.Substring(si + Definition.BeginTag.Length, Definition.BeginTag.Length),
+                    Definition.BeginTag, StringComparison.OrdinalIgnoreCase))
             {
                 si += Definition.BeginTag.Length;
                 continue;
@@ -46,7 +51,8 @@ public class TokenExtractor(ITokenDefinition definition) : ITokenExtractor
             var li = templateString.IndexOf(Definition.EndTag, si, StringComparison.Ordinal);
             if (li <= si) break;
 
-            yield return new TokenResult(Definition, templateString.Substring(si, li - si + Definition.BeginTag.Length), templateString, si);
+            yield return new TokenResult(Definition, templateString.Substring(si, li - si + Definition.BeginTag.Length),
+                templateString, si);
             si = templateString.IndexOf(Definition.BeginTag, li, StringComparison.Ordinal);
         }
     }

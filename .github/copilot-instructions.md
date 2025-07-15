@@ -1,8 +1,10 @@
 # DKNet – GitHub Copilot Instructions
 
-This document provides guidance for GitHub Copilot when generating code for the DKNet project. Follow these guidelines to ensure that generated code aligns with the project's coding standards, architecture, and best practices.
+This document provides guidance for GitHub Copilot when generating code for the DKNet project. Follow these guidelines
+to ensure that generated code aligns with the project's coding standards, architecture, and best practices.
 
-If you are not sure, do not guess—ask clarifying questions or state that you don't know. Do not copy code that only follows a pattern from a different context. Do not rely solely on names; always evaluate the intent and logic.
+If you are not sure, do not guess—ask clarifying questions or state that you don't know. Do not copy code that only
+follows a pattern from a different context. Do not rely solely on names; always evaluate the intent and logic.
 
 ---
 
@@ -10,7 +12,9 @@ If you are not sure, do not guess—ask clarifying questions or state that you d
 
 ### General Guidelines
 
-- Follow the language/platform's standard coding guidelines (e.g., for .NET, see [Microsoft .NET Coding Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md); for other languages, use their official style guides).
+- Follow the language/platform's standard coding guidelines (e.g., for .NET,
+  see [Microsoft .NET Coding Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md);
+  for other languages, use their official style guides).
 - Adhere to rules defined in the `.editorconfig` or equivalent configuration files.
 - Write code that is clean, maintainable, and easy to understand.
 - Favor readability over brevity. Keep methods focused and concise.
@@ -41,7 +45,8 @@ If you are not sure, do not guess—ask clarifying questions or state that you d
 
 ### Naming Conventions
 
-- Use PascalCase for: Classes, structs, enums, properties, methods, events, namespaces, delegates, public fields, static private fields, constants.
+- Use PascalCase for: Classes, structs, enums, properties, methods, events, namespaces, delegates, public fields, static
+  private fields, constants.
 - Use camelCase for: Parameters, local variables.
 - Use `_camelCase` for private instance fields.
 - Prefix interfaces with `I`.
@@ -79,12 +84,16 @@ If you are not sure, do not guess—ask clarifying questions or state that you d
 - Follow existing test patterns and conventions.
 - Write both unit and integration tests where appropriate.
 - Ensure tests are isolated and reproducible.
-- **When writing unit tests, prefer using [TestContainer](https://testcontainers.com/) or [Aspire host](https://learn.microsoft.com/en-us/dotnet/aspire/) for orchestrating dependencies and infrastructure.**
-- **Only fall back to dummy or fake object frameworks (such as Moq, NSubstitute, etc.) if TestContainer or Aspire host are not practical or applicable for the scenario.**
+- **When writing unit tests, prefer using [TestContainer](https://testcontainers.com/)
+  or [Aspire host](https://learn.microsoft.com/en-us/dotnet/aspire/) for orchestrating dependencies and infrastructure.
+  **
+- **Only fall back to dummy or fake object frameworks (such as Moq, NSubstitute, etc.) if TestContainer or Aspire host
+  are not practical or applicable for the scenario.**
 - Use mocks or fakes for external dependencies when containerized or Aspire-based approaches are not feasible.
 - Keep test methods focused and descriptive.
 - Try to use `Shouldly` for all assertions in tests.
 - For Collection assertions, prefer using `ShouldBeEquivalentTo` for comparing collections.
+
 ---
 
 ## Documentation

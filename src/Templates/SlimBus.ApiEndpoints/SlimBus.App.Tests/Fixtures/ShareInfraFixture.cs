@@ -6,16 +6,13 @@ public sealed class ShareInfraFixture : IAsyncLifetime
     private readonly IResourceBuilder<RedisResource> _cache;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
 
-    public string? CacheConn { get; private set; }
-    public string? DbConn { get; private set; }
-
     public ShareInfraFixture()
     {
         var builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
             AssemblyName = typeof(ApiFixture).Assembly.FullName,
             DisableDashboard = true,
-            AllowUnsecuredTransport = true,
+            AllowUnsecuredTransport = true
         });
 
         _cache = builder.AddRedis("Redis");
@@ -27,13 +24,17 @@ public sealed class ShareInfraFixture : IAsyncLifetime
         _app = builder.Build();
     }
 
+    public string? CacheConn { get; private set; }
+    public string? DbConn { get; private set; }
+
     public async Task InitializeAsync()
     {
         await _app.StartAsync();
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
         CacheConn = await _cache.Resource.GetConnectionStringAsync();
-        DbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";Connection Timeout=60;TrustServerCertificate=true";
+        DbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
+                 ";Connection Timeout=60;TrustServerCertificate=true";
     }
 
     public async Task DisposeAsync()

@@ -1,6 +1,5 @@
 namespace Fw.Extensions.Tests;
 
-
 public class AsyncEnumerableExtensionsTests
 {
     [Fact]
@@ -16,7 +15,7 @@ public class AsyncEnumerableExtensionsTests
         // Assert
         result.ShouldNotBeNull();
         result.Count.ShouldBe(5);
-        items.ShouldBeEquivalentTo( result.ToArray());
+        items.ShouldBeEquivalentTo(result.ToArray());
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public class AsyncEnumerableExtensionsTests
         // Assert
         result.ShouldNotBeNull();
         result.Count.ShouldBe(3);
-        items.ShouldBeEquivalentTo( result.ToArray());
+        items.ShouldBeEquivalentTo(result.ToArray());
     }
 
 #nullable enable
@@ -70,7 +69,7 @@ public class AsyncEnumerableExtensionsTests
     public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
     {
         // Arrange
-        var items = new string?[] { "hello", null, "world" };
+        var items = new[] { "hello", null, "world" };
         var asyncEnumerable = CreateAsyncEnumerable(items);
 
         // Act

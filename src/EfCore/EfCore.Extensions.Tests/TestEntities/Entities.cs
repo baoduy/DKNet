@@ -25,8 +25,6 @@ public abstract class BaseEntity : AuditedEntity<int>
 
 public class User : BaseEntity
 {
-    public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
-
     public User(string createdBy) : this(default, createdBy)
     {
     }
@@ -41,9 +39,17 @@ public class User : BaseEntity
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    public string FullName => $"{FirstName} {LastName}";
+    public string FullName
+    {
+        get => $"{FirstName} {LastName}";
+    }
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
+
+    public void UpdatedByUser(string userName)
+    {
+        SetUpdatedBy(userName);
+    }
 }
 
 public class Account : Entity<int>
@@ -74,7 +80,11 @@ public sealed class Address : Entity<int>
 [Table("OwnedEntities")]
 public class OwnedEntity
 {
-    public string FullName => $"{nameof(OwnedEntity)} {Name}";
+    public string FullName
+    {
+        get => $"{nameof(OwnedEntity)} {Name}";
+    }
+
     public string? Name { get; set; }
 }
 
@@ -85,7 +95,7 @@ public class GuidEntity : Entity<Guid>
 
 public class GuidAuditEntity : AuditedEntity<Guid>
 {
-    public GuidAuditEntity() : base(default )
+    public GuidAuditEntity() : base(default)
     {
         SetCreatedBy("Steven");
     }
@@ -106,8 +116,6 @@ public class GuidAuditEntity : AuditedEntity<Guid>
 
 public class AccountStatus : Entity<int>
 {
-    [Required] [MaxLength(100)] public string Name { get; set; } = null!;
-
     public AccountStatus()
     {
     }
@@ -115,6 +123,8 @@ public class AccountStatus : Entity<int>
     public AccountStatus(int id) : base(id)
     {
     }
+
+    [Required] [MaxLength(100)] public string Name { get; set; } = null!;
 }
 
 [StaticData(nameof(EnumStatus))]
@@ -122,7 +132,7 @@ public enum EnumStatus
 {
     UnKnow = 0,
     Active = 1,
-    InActive = 2,
+    InActive = 2
 }
 
 [StaticData("EnumStatusOther")]
@@ -131,7 +141,7 @@ public enum EnumStatus1
     [Display(Name = "AA", Description = "BB")]
     UnKnow = 0,
     Active = 1,
-    InActive = 2,
+    InActive = 2
 }
 
 [SqlSequence]
@@ -143,7 +153,7 @@ public enum SequencesTest
     Invoice,
 
     [Sequence(typeof(long), IncrementsBy = 1, Max = long.MaxValue)]
-    Payment,
+    Payment
 }
 
 [IgnoreEntity]

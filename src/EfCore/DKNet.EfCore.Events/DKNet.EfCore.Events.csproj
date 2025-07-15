@@ -23,19 +23,19 @@
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
-      <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
     </ItemGroup>
     <ItemGroup>
-        <InternalsVisibleTo Include="EfCore.Events.Tests" />
+        <InternalsVisibleTo Include="EfCore.Events.Tests"/>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="FluentResults" />
-      <PackageReference Include="Mapster" />
-      <PackageReference Update="Meziantou.Analyzer">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+        <PackageReference Include="FluentResults"/>
+        <PackageReference Include="Mapster"/>
+        <PackageReference Update="Meziantou.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
 </Project>

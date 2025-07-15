@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Events.Internals;
+using Microsoft.EntityFrameworkCore;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable once CheckNamespace
@@ -16,8 +16,8 @@ public static class EventSetup
     /// <returns></returns>
     public static IServiceCollection AddEventPublisher<TDbContext, TImplementation>(this IServiceCollection services)
         where TImplementation : class, IEventPublisher
-        where TDbContext : DbContext
-        => services
+        where TDbContext : DbContext =>
+        services
             .AddScoped<IEventPublisher, TImplementation>()
             .AddHook<TDbContext, EventHook>();
 }

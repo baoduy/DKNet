@@ -1,15 +1,15 @@
 using System.Diagnostics.CodeAnalysis;
+using NetArchTest.Rules;
 
 namespace SlimBus.App.Tests.Architecture;
 
 public class ApiTests
 {
-
     [Fact]
     public void AllApiClassesShouldBeInternal()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(Api.Program).Assembly);
+        var types = Types.InAssembly(typeof(Api.Program).Assembly);
 
         var result = types
             .That()
@@ -28,7 +28,7 @@ public class ApiTests
     public void AllConfigsClassesShouldBeStaticAndExcludedFromCodeCoverage()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(Api.Program).Assembly);
+        var types = Types.InAssembly(typeof(Api.Program).Assembly);
 
         var result = types
             .That()
@@ -48,7 +48,7 @@ public class ApiTests
     public void AllEndPointClassesShouldBeInternalAndSealed()
     {
         // Adjust the assembly name if needed
-        var types = NetArchTest.Rules.Types.InAssembly(typeof(Api.Program).Assembly);
+        var types = Types.InAssembly(typeof(Api.Program).Assembly);
 
         var result = types
             .That()

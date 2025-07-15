@@ -19,13 +19,13 @@ public class Address
     {
     }
 
-    [MaxLength(50), Required] public string City { get; private set; } = null!;
+    [MaxLength(50)] [Required] public string City { get; private set; } = null!;
 
-    [MaxLength(50),Required] public string Country { get;private set; } = null!;
+    [MaxLength(50)] [Required] public string Country { get; private set; } = null!;
 
-    [MaxLength(50),Required] public string Line { get; private set; } = null!;
+    [MaxLength(50)] [Required] public string Line { get; private set; } = null!;
 
-    [MaxLength(50),Required] public string Postal { get; private set; } = null!;
+    [MaxLength(50)] [Required] public string Postal { get; private set; } = null!;
 
-    [MaxLength(50),Required] public string State { get; private set; } = null!;
+    [MaxLength(50)] [Required] public string State { get; private set; } = null!;
 }

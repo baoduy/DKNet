@@ -2,10 +2,8 @@
 
 namespace EfCore.Extensions.Tests;
 
-
 public class EntityTypesTests
 {
-
     [Fact]
     public void TestEntityAudit()
     {
@@ -69,5 +67,4 @@ public class EntityTypesTests
         typeof(IEntity<int>).IsAssignableFrom(typeof(IEntity<int>))
             .ShouldBeTrue();
     }
-    
 }

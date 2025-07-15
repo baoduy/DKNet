@@ -28,7 +28,7 @@ internal static class SwaggerConfig
                     doc.Servers.Add(new OpenApiServer
                     {
                         Description = "LocalHost",
-                        Url = "http://localhost:5000",
+                        Url = "http://localhost:5000"
                     });
 
                     var paths = new OpenApiPaths();
@@ -64,7 +64,7 @@ internal static class SwaggerConfig
                 .WithTheme(ScalarTheme.Default)
                 //.WithOpenApiRoutePattern("{documentName}.json")
                 .AddPreferredSecuritySchemes("Bearer")
-                .AddHttpAuthentication("Bearer",b => b.Token = "bearer token")
+                .AddHttpAuthentication("Bearer", b => b.Token = "bearer token")
         );
 
         Console.WriteLine("Swagger enabled.");

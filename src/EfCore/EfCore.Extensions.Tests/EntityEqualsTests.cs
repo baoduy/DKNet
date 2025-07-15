@@ -1,6 +1,5 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-
 public class EntityEqualsTests
 {
     // [Fact]
@@ -74,7 +73,7 @@ public class EntityEqualsTests
             new(1, "Hoang")
                 { FirstName = "Steven", LastName = "Smith" },
             new(2, "Duy")
-                { FirstName = "Steven", LastName = "Smith" },
+                { FirstName = "Steven", LastName = "Smith" }
         };
 
         set.RemoveWhere(u => u.Id == 1);
@@ -90,7 +89,7 @@ public class EntityEqualsTests
             new(1, "Hoang")
                 { FirstName = "Steven", LastName = "Smith" },
             new(2, "Duy")
-                { FirstName = "Steven", LastName = "Smith" },
+                { FirstName = "Steven", LastName = "Smith" }
         };
 
         set.Remove(set.First());

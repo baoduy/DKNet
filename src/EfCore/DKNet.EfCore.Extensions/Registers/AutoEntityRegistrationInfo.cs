@@ -19,11 +19,15 @@ public sealed class AutoEntityRegistrationInfo
     internal Expression<Func<Type, bool>>? Predicate { get; private set; }
 
     /// <summary>
-    /// Sets the default mapper types for the entities. These mapper types must be generic and implement <see cref="IEntityTypeConfiguration{TEntity}"/>.
+    ///     Sets the default mapper types for the entities. These mapper types must be generic and implement
+    ///     <see cref="IEntityTypeConfiguration{TEntity}" />.
     /// </summary>
     /// <param name="entityMapperTypes">The default mapper types.</param>
-    /// <returns>The current <see cref="AutoEntityRegistrationInfo"/> instance.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if any of the provided types are not generic or do not implement <see cref="IEntityTypeConfiguration{TEntity}"/>.</exception>
+    /// <returns>The current <see cref="AutoEntityRegistrationInfo" /> instance.</returns>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown if any of the provided types are not generic or do not implement
+    ///     <see cref="IEntityTypeConfiguration{TEntity}" />.
+    /// </exception>
     public AutoEntityRegistrationInfo WithDefaultMappersType(params Type[] entityMapperTypes)
     {
         if (entityMapperTypes == null || entityMapperTypes.Length == 0)
@@ -33,7 +37,8 @@ public sealed class AutoEntityRegistrationInfo
             throw new InvalidOperationException($"The {nameof(DefaultEntityMapperTypes)} must be a Generic Type.");
 
         if (!entityMapperTypes.All(t => t.GetInterfaces().Any(y =>
-                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
+                y.IsGenericType && y.GetGenericTypeDefinition() ==
+                EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
             throw new InvalidOperationException(
                 $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
 
@@ -42,10 +47,10 @@ public sealed class AutoEntityRegistrationInfo
     }
 
     /// <summary>
-    /// Sets a filter predicate to determine which types should be registered.
+    ///     Sets a filter predicate to determine which types should be registered.
     /// </summary>
     /// <param name="predicate">The filter predicate.</param>
-    /// <returns>The current <see cref="AutoEntityRegistrationInfo"/> instance.</returns>
+    /// <returns>The current <see cref="AutoEntityRegistrationInfo" /> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if the provided predicate is null.</exception>
     public AutoEntityRegistrationInfo WithFilter(Expression<Func<Type, bool>> predicate)
     {
@@ -54,9 +59,12 @@ public sealed class AutoEntityRegistrationInfo
     }
 
     /// <summary>
-    /// Validates the current configuration.
+    ///     Validates the current configuration.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if any of the default entity mapper types are not generic or do not implement <see cref="IEntityTypeConfiguration{TEntity}"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown if any of the default entity mapper types are not generic or do not
+    ///     implement <see cref="IEntityTypeConfiguration{TEntity}" />.
+    /// </exception>
     internal void Validate()
     {
         if (DefaultEntityMapperTypes == null) return;
@@ -65,7 +73,8 @@ public sealed class AutoEntityRegistrationInfo
             throw new InvalidOperationException($"The {nameof(DefaultEntityMapperTypes)} must be a Generic Type.");
 
         if (!DefaultEntityMapperTypes.All(t => t.GetInterfaces().Any(y =>
-                y.IsGenericType && y.GetGenericTypeDefinition() == EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
+                y.IsGenericType && y.GetGenericTypeDefinition() ==
+                EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration)))
             throw new InvalidOperationException(
                 $"The {nameof(DefaultEntityMapperTypes)} must be an instance of {EntityAutoConfigRegisterExtensions.InterfaceEntityTypeConfiguration.Name}.");
     }

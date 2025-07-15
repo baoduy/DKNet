@@ -1,6 +1,6 @@
-using EfCore.Relational.Helpers.Tests.Fixtures;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using EfCore.Relational.Helpers.Tests.Fixtures;
 
 namespace EfCore.Relational.Helpers.Tests;
 
@@ -11,7 +11,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -21,7 +21,8 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
 
         // Assert
         connections.ShouldAllBe(conn => conn.State == ConnectionState.Open);
-        connections.Select(c => c.ConnectionString).Distinct(StringComparer.OrdinalIgnoreCase).ShouldHaveSingleItem(); // Same connection string
+        connections.Select(c => c.ConnectionString).Distinct(StringComparer.OrdinalIgnoreCase)
+            .ShouldHaveSingleItem(); // Same connection string
     }
 
     [Fact]
@@ -30,7 +31,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -47,7 +48,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         const string invalidConnectionString = "Server=invalid;Database=invalid;Integrated Security=true;";
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(invalidConnectionString).Options);
 
@@ -61,7 +62,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -72,7 +73,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Assert
         tableName1.ShouldBe(nameof(TestEntity));
         schema1.ShouldNotBeNullOrEmpty();
-        
+
         tableName2.ShouldBeNullOrEmpty(); // Not mapped entity
         schema2.ShouldBeNullOrEmpty();
     }
@@ -82,10 +83,10 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
-        
+
         await db.Database.EnsureCreatedAsync();
 
         // Act - Use a longer timeout to simulate longer operations
@@ -101,7 +102,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -120,7 +121,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -138,7 +139,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -151,7 +152,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
             await db.CreateTableAsync<TestEntity>(cts.Token);
             var exists = await db.TableExistsAsync<TestEntity>(cts.Token);
             var (_, tableName) = db.GetTableName<TestEntity>();
-            
+
             connection.ShouldNotBeNull();
             exists.ShouldBeTrue();
             tableName.ShouldBe(nameof(TestEntity));

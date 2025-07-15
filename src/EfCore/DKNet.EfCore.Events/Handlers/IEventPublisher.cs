@@ -8,6 +8,8 @@ public interface IEventPublisher
 {
     Task PublishAsync(object eventObj, CancellationToken cancellationToken = default);
 
-    Task PublishAllAsync(IEnumerable<object> events, CancellationToken cancellationToken = default) =>
-        Task.WhenAll(events.Select(e => PublishAsync(e, cancellationToken)));
+    Task PublishAllAsync(IEnumerable<object> events, CancellationToken cancellationToken = default)
+    {
+        return Task.WhenAll(events.Select(e => PublishAsync(e, cancellationToken)));
+    }
 }

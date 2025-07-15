@@ -7,10 +7,7 @@ public class S3BlobServiceTest : IClassFixture<S3BlobServiceFixture>
 {
     private readonly IBlobService _service;
 
-    public S3BlobServiceTest(S3BlobServiceFixture fixture)
-    {
-        _service = fixture.Service;
-    }
+    public S3BlobServiceTest(S3BlobServiceFixture fixture) => _service = fixture.Service;
 
     [Fact]
     public async Task SavesFileAndList()
@@ -97,9 +94,7 @@ public class S3BlobServiceTest : IClassFixture<S3BlobServiceFixture>
         await _service.SaveAsync(blob);
         var items = new List<BlobResult>();
         await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
-        {
             items.Add(item);
-        }
 
         items.ShouldContain(i => i.Name.Contains(fileName));
     }
@@ -129,9 +124,7 @@ public class S3BlobServiceTest : IClassFixture<S3BlobServiceFixture>
         deleted.ShouldBeTrue();
         var items = new List<BlobResult>();
         await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
-        {
             items.Add(item);
-        }
 
         items.ShouldBeEmpty();
     }

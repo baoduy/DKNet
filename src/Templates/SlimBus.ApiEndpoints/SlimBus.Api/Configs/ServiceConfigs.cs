@@ -13,7 +13,8 @@ internal static class ServiceConfigs
             op.SerializerOptions.PropertyNamingPolicy = SharedConsts.JsonSerializerOptions.PropertyNamingPolicy;
             op.SerializerOptions.DefaultIgnoreCondition = SharedConsts.JsonSerializerOptions.DefaultIgnoreCondition;
             op.SerializerOptions.WriteIndented = SharedConsts.JsonSerializerOptions.WriteIndented;
-            op.SerializerOptions.PropertyNameCaseInsensitive = SharedConsts.JsonSerializerOptions.PropertyNameCaseInsensitive;
+            op.SerializerOptions.PropertyNameCaseInsensitive =
+                SharedConsts.JsonSerializerOptions.PropertyNameCaseInsensitive;
             op.SerializerOptions.DictionaryKeyPolicy = SharedConsts.JsonSerializerOptions.DictionaryKeyPolicy;
 
             op.SerializerOptions.Converters.Clear();
@@ -24,7 +25,8 @@ internal static class ServiceConfigs
         return services;
     }
 
-    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration, FeatureOptions features)
+    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration,
+        FeatureOptions features)
     {
         services
             .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()

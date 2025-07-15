@@ -24,7 +24,7 @@ public class CustomerProfile : AggregateRoot
         Email = email;
         MembershipNo = membershipNo;
 
-        Update(avatar: null, name, phone, birthday: null, createdBy);
+        Update(null, name, phone, null, createdBy);
     }
 
     public string? Avatar { get; private set; }

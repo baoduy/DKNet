@@ -46,19 +46,21 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     }
 
     /// <summary>
-    /// Try to Get data for <see cref="IToken"/> from additionalData and then TransformData and Cache for later use.
+    ///     Try to Get data for <see cref="IToken" /> from additionalData and then TransformData and Cache for later use.
     /// </summary>
     /// <param name="token"></param>
     /// <param name="additionalData"></param>
     /// <returns></returns>
-    private object TryGetAndCacheValue(IToken token, object[] additionalData) =>
-        options.DisabledLocalCache
+    private object TryGetAndCacheValue(IToken token, object[] additionalData)
+    {
+        return options.DisabledLocalCache
             ? TryGetValue(token, additionalData)
             : _cacheService.GetOrAdd(token.Token.ToUpperInvariant(),
                 _ => TryGetValue(token, additionalData));
+    }
 
     /// <summary>
-    /// Try to Get data for <see cref="IToken"/> from dataProvider and Cache for later use.
+    ///     Try to Get data for <see cref="IToken" /> from dataProvider and Cache for later use.
     /// </summary>
     /// <param name="token"></param>
     /// <param name="dataProvider"></param>
@@ -74,7 +76,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     }
 
     /// <summary>
-    /// Try Get data for <see cref="IToken"/> from additionalData and then TransformData
+    ///     Try Get data for <see cref="IToken" /> from additionalData and then TransformData
     /// </summary>
     /// <param name="token"></param>
     /// <param name="additionalData"></param>
@@ -92,5 +94,8 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         return val!;
     }
 
-    internal void ClearCache() => _cacheService.Clear();
+    internal void ClearCache()
+    {
+        _cacheService.Clear();
+    }
 }

@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace EfCore.Extensions.Tests;
 
 public class EfCoreExtensionsAdditionalTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
@@ -124,12 +126,12 @@ public class EfCoreExtensionsAdditionalTests(SqlServerFixture fixture) : IClassF
         var connectionState = _db.Database.GetDbConnection().State;
 
         // Assert
-        connectionState.ShouldBe(System.Data.ConnectionState.Open);
+        connectionState.ShouldBe(ConnectionState.Open);
 
         // Cleanup
         await _db.Database.CloseConnectionAsync();
         connectionState = _db.Database.GetDbConnection().State;
-        connectionState.ShouldBe(System.Data.ConnectionState.Closed);
+        connectionState.ShouldBe(ConnectionState.Closed);
     }
 
     [Fact]

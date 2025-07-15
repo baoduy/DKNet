@@ -24,7 +24,7 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         });
 
         await _db.SaveChangesAsync();
@@ -49,7 +49,7 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         });
 
         await _db.SaveChangesAsync();
@@ -77,7 +77,7 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         });
 
         await _db.SaveChangesAsync();
@@ -86,10 +86,8 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
     }
 
     [Fact]
-    public async Task TestEnumStatus1DataSeeding()
-    {
+    public async Task TestEnumStatus1DataSeeding() =>
         (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
-    }
 
     [Fact]
     public async Task TestEnumStatusDataSeeding()

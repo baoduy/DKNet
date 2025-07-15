@@ -150,7 +150,7 @@ public class ComprehensiveModelTests
             Id = id,
             Email = "updated@example.com",
             Phone = null, // Keep existing phone
-            Name = null  // Keep existing name
+            Name = null // Keep existing name
         };
 
         // Assert

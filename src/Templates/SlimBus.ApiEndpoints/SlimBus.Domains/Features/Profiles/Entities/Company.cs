@@ -25,8 +25,7 @@ public class Company
 
     [MaxLength(50)] public string? CAN { get; private set; }
 
-    [MaxLength(100),Required] public string Name { get; private set; } = null!;
+    [MaxLength(100)] [Required] public string Name { get; private set; } = null!;
 
-    [MaxLength(100),Required] public string UEN { get; private set; } = null!;
-    
+    [MaxLength(100)] [Required] public string UEN { get; private set; } = null!;
 }

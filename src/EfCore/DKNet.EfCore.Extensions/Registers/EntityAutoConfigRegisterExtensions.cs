@@ -45,9 +45,11 @@ internal static class EntityAutoConfigRegisterExtensions
     /// </summary>
     /// <param name="registration">The registration information.</param>
     /// <returns>An enumerable of entity types.</returns>
-    internal static IEnumerable<Type> GetAllEntityTypes(this AutoEntityRegistrationInfo registration) =>
-        registration.EntityAssemblies.Extract().Classes().NotGeneric().IsInstanceOf(typeof(IEntity<>))
+    internal static IEnumerable<Type> GetAllEntityTypes(this AutoEntityRegistrationInfo registration)
+    {
+        return registration.EntityAssemblies.Extract().Classes().NotGeneric().IsInstanceOf(typeof(IEntity<>))
             .Where(t => !t.HasAttribute<IgnoreEntityAttribute>(true));
+    }
 
     /// <summary>
     ///     Get All IEntityTypeConfiguration for entities.
@@ -81,9 +83,11 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <param name="modelBuilder">The model builder.</param>
     /// <param name="info">The registration information.</param>
     /// <param name="dbContext">The database context.</param>
-    private static void RegisterGlobalFilterFrom(this ModelBuilder modelBuilder, AutoEntityRegistrationInfo info, DbContext dbContext)
+    private static void RegisterGlobalFilterFrom(this ModelBuilder modelBuilder, AutoEntityRegistrationInfo info,
+        DbContext dbContext)
     {
-        var globalFilters = info.EntityAssemblies.ScanGlobalFilterFrom().Union(EfCoreSetup.GlobalQueryFilters).Distinct();
+        var globalFilters = info.EntityAssemblies.ScanGlobalFilterFrom().Union(EfCoreSetup.GlobalQueryFilters)
+            .Distinct();
         foreach (var filter in globalFilters)
         {
             var filterInstance = Activator.CreateInstance(filter) as IGlobalQueryFilterRegister;
@@ -97,13 +101,16 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <param name="genericType">The generic type.</param>
     /// <param name="type">The type to check against.</param>
     /// <returns>True if the type is a generic type of the specified generic type; otherwise, false.</returns>
-    private static bool IsGenericTypeOf(this Type genericType, Type type) =>
-        genericType.GetGenericParameterConstraints().Any(c => c.IsAssignableFrom(type))
-                || genericType.IsAssignableFrom(type)
-                || genericType.BaseType?.IsAssignableFrom(type) == true;
+    private static bool IsGenericTypeOf(this Type genericType, Type type)
+    {
+        return genericType.GetGenericParameterConstraints().Any(c => c.IsAssignableFrom(type))
+               || genericType.IsAssignableFrom(type)
+               || genericType.BaseType?.IsAssignableFrom(type) == true;
+    }
 
     /// <summary>
-    ///     Create a Mapper for an entity type. The first generic type that matches with entity type condition will be selected.
+    ///     Create a Mapper for an entity type. The first generic type that matches with entity type condition will be
+    ///     selected.
     /// </summary>
     /// <param name="entityType">The entity type.</param>
     /// <param name="mapperTypes">The list of generic types.</param>
@@ -129,7 +136,8 @@ internal static class EntityAutoConfigRegisterExtensions
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
     /// <param name="registration">The registration information.</param>
-    private static void RegisterEntityMappingFrom(this ModelBuilder modelBuilder, AutoEntityRegistrationInfo registration)
+    private static void RegisterEntityMappingFrom(this ModelBuilder modelBuilder,
+        AutoEntityRegistrationInfo registration)
     {
         if (registration.DefaultEntityMapperTypes == null)
             registration.WithDefaultMappersType(DefaultEntityTypeConfiguration);
@@ -146,7 +154,8 @@ internal static class EntityAutoConfigRegisterExtensions
         var genericMappers =
             registration.GetGenericMappers().Concat(registration.DefaultEntityMapperTypes!).ToList();
 
-        Trace.TraceInformation($"Auto Found Generic configuration: {string.Join('\n', genericMappers.Select(t => t.Name))}");
+        Trace.TraceInformation(
+            $"Auto Found Generic configuration: {string.Join('\n', genericMappers.Select(t => t.Name))}");
 
         // Map Entities to ModelBuilder
         foreach (var entityType in requiredEntityTypes)

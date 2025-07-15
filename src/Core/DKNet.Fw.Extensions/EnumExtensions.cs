@@ -6,13 +6,12 @@ using System.Reflection;
 namespace DKNet.Fw.Extensions;
 
 /// <summary>
-/// Helper class for working with enums in WPF and other .NET applications.
+///     Helper class for working with enums in WPF and other .NET applications.
 /// </summary>
 public static class EnumExtensions
 {
-
     /// <summary>
-    /// Gets the display attribute of the provided enum.
+    ///     Gets the display attribute of the provided enum.
     /// </summary>
     /// <typeparam name="T">The type of the attribute to retrieve.</typeparam>
     /// <param name="this">The enum to get the attribute from.</param>
@@ -27,10 +26,11 @@ public static class EnumExtensions
     }
 
     /// <summary>
-    /// Gets the enum information, including description, name, and group name, from the display attribute of the provided enum.
+    ///     Gets the enum information, including description, name, and group name, from the display attribute of the provided
+    ///     enum.
     /// </summary>
     /// <param name="this">The enum to get the information from.</param>
-    /// <returns>The <see cref="EnumInfo"/> containing the enum's information, or null if the enum is null.</returns>
+    /// <returns>The <see cref="EnumInfo" /> containing the enum's information, or null if the enum is null.</returns>
     public static EnumInfo? GetEumInfo(this Enum? @this)
     {
         if (@this == null) return null;
@@ -42,15 +42,15 @@ public static class EnumExtensions
             Key = @this.ToString(),
             Description = att?.Description!,
             Name = att?.Name!,
-            GroupName = att?.GroupName!,
+            GroupName = att?.GroupName!
         };
     }
 
     /// <summary>
-    /// Gets the enum information for all values of the specified enum type.
+    ///     Gets the enum information for all values of the specified enum type.
     /// </summary>
     /// <typeparam name="T">The enum type.</typeparam>
-    /// <returns>An <see cref="IEnumerable{EnumInfo}"/> containing the enum's information.</returns>
+    /// <returns>An <see cref="IEnumerable{EnumInfo}" /> containing the enum's information.</returns>
     public static IEnumerable<EnumInfo> GetEumInfos<T>() where T : Enum
     {
         var type = typeof(T);
@@ -67,9 +67,8 @@ public static class EnumExtensions
                 Key = info.Name,
                 Description = att?.Description!,
                 Name = att?.Name ?? info.Name,
-                GroupName = att?.GroupName!,
+                GroupName = att?.GroupName!
             };
         }
     }
-
 }

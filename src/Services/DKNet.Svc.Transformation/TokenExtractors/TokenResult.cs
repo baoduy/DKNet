@@ -11,9 +11,9 @@ namespace DKNet.Svc.Transformation.TokenExtractors;
 internal sealed class TokenResult : IToken
 {
     private string? _key;
-        
+
     /// <summary>
-    /// The Token result
+    ///     The Token result
     /// </summary>
     /// <param name="definition"></param>
     /// <param name="token"></param>
@@ -32,7 +32,7 @@ internal sealed class TokenResult : IToken
         if (index < 0 || index > originalString.Length)
             throw new ArgumentOutOfRangeException(nameof(index));
     }
-        
+
     public ITokenDefinition Definition { get; }
 
     public int Index { get; }
@@ -42,7 +42,8 @@ internal sealed class TokenResult : IToken
         get
         {
             if (!string.IsNullOrWhiteSpace(_key)) return _key;
-            _key = Token.Replace(Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase).Replace(Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
+            _key = Token.Replace(Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace(Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
             return _key;
         }
     }

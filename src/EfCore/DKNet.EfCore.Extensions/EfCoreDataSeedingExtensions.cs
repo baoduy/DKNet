@@ -17,13 +17,15 @@ public static class EfCoreDataSeedingExtensions
     private static Type[] GetDataSeedingTypes(this ICollection<Assembly> assemblies) =>
     [
         .. assemblies.Extract().Classes().NotGeneric().NotAbstract().NotInterface()
-            .IsInstanceOf(typeof(IDataSeedingConfiguration<>)),
+            .IsInstanceOf(typeof(IDataSeedingConfiguration<>))
     ];
 
     private static Type GetEntityType(this Type instanceType)
-        => instanceType.GetInterfaces()
+    {
+        return instanceType.GetInterfaces()
             .First(interfaceType => interfaceType.IsGenericType)
             .GetGenericArguments()[0];
+    }
 
     private static async Task AsyncDataSeeding<TEntity>(DbContext context,
         IDataSeedingConfiguration<TEntity> seedingInstance,
@@ -37,7 +39,7 @@ public static class EfCoreDataSeedingExtensions
             //Check whether entity instance exists in db before adding
             var keyValues = context.GetPrimaryKeyValues(entity).ToArray();
 
-            if (await dbSet.FindAsync(keyValues, cancellationToken: cancellationToken) == null)
+            if (await dbSet.FindAsync(keyValues, cancellationToken) == null)
                 await dbSet.AddAsync(entity, cancellationToken);
         }
     }
@@ -63,8 +65,6 @@ public static class EfCoreDataSeedingExtensions
     //         StringComparison.OrdinalIgnoreCase);
 
 
-
-
     // [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
     // private static async Task SetIdentityInsertAsync(this DbContext context, IdentityInserts enable,
     //     string tableName, CancellationToken cancellationToken)
@@ -82,7 +82,7 @@ public static class EfCoreDataSeedingExtensions
     private static async Task RunDataSeedingAsync(this DbContext context, Type[] seedingTypes,
         CancellationToken cancellationToken)
     {
-        if ((await context.Database.GetPendingMigrationsAsync(cancellationToken: cancellationToken)).Any())
+        if ((await context.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
             return;
 
         Debug.Write($"Run DataSeedingAsync for: {typeof(DbContext).FullName}");
@@ -139,7 +139,6 @@ public static class EfCoreDataSeedingExtensions
     }
 
     /// <summary>
-    ///
     /// </summary>
     public static DbContextOptionsBuilder UseAutoDataSeeding(this DbContextOptionsBuilder @this,
         params ICollection<Assembly> assemblies)

@@ -8,7 +8,7 @@ namespace DKNet.EfCore.Hooks;
 public static class SetupEfCoreHook
 {
     /// <summary>
-    /// Add HookRunner from ServiceProvider to DbContext Interceptors.
+    ///     Add HookRunner from ServiceProvider to DbContext Interceptors.
     /// </summary>
     /// <param name="options"></param>
     /// <param name="provider"></param>
@@ -71,13 +71,12 @@ public static class SetupEfCoreHook
     /// <summary>
     ///     Add Hook Runner to <see cref="IServiceCollection" /> and register the Hook Interceptor to
     /// </summary>
-    ///     <see cref="DbContextOptionsBuilder" />
-    ///     <param name="services"></param>
-    ///     <param name="builder"></param>
-    ///     <param name="contextLifetime"></param>
-    ///     <param name="optionLifetime"></param>
-    ///     <returns></returns>
-    /// 
+    /// <see cref="DbContextOptionsBuilder" />
+    /// <param name="services"></param>
+    /// <param name="builder"></param>
+    /// <param name="contextLifetime"></param>
+    /// <param name="optionLifetime"></param>
+    /// <returns></returns>
     public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
         Action<IServiceProvider, DbContextOptionsBuilder> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
@@ -97,13 +96,12 @@ public static class SetupEfCoreHook
     /// <summary>
     ///     Add Hook Runner to <see cref="IServiceCollection" /> and register the Hook Interceptor to
     /// </summary>
-    ///     <see cref="DbContextOptionsBuilder" />
-    ///     <param name="services"></param>
-    ///     <param name="builder"></param>
-    ///     <param name="contextLifetime"></param>
-    ///     <param name="optionLifetime"></param>
-    ///     <returns></returns>
-    ///
+    /// <see cref="DbContextOptionsBuilder" />
+    /// <param name="services"></param>
+    /// <param name="builder"></param>
+    /// <param name="contextLifetime"></param>
+    /// <param name="optionLifetime"></param>
+    /// <returns></returns>
     public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
         Action<DbContextOptionsBuilder> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,

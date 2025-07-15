@@ -7,6 +7,4 @@ public interface ITokenDefinition
     string EndTag { get; }
 
     bool IsToken(string value);
-
-
 }

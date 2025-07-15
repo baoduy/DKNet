@@ -1,5 +1,3 @@
-
-
 namespace EfCore.HookTests;
 
 public class SetupTest

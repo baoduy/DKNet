@@ -4,7 +4,8 @@ using SlimBus.AppServices.Profiles.V1.Events;
 
 namespace SlimBus.Infra.Features.Profiles.ExternalEvents;
 
-internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler>logger): Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
+internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler> logger)
+    : Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {
     public static bool Called { get; set; }
 

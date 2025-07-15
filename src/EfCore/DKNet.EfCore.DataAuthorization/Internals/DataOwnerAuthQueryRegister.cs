@@ -1,20 +1,20 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Extensions.Configurations;
+using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
 /// <summary>
-/// Implements global query filters for entities implementing data ownership.
+///     Implements global query filters for entities implementing data ownership.
 /// </summary>
 /// <remarks>
-/// This register automatically applies data authorization filters by:
-/// - Detecting entities that implement IOwnedBy
-/// - Applying appropriate query filters based on current context
-/// - Handling inheritance scenarios correctly
-/// - Ensuring proper data visibility based on ownership rules
+///     This register automatically applies data authorization filters by:
+///     - Detecting entities that implement IOwnedBy
+///     - Applying appropriate query filters based on current context
+///     - Handling inheritance scenarios correctly
+///     - Ensuring proper data visibility based on ownership rules
 /// </remarks>
 internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
 {
@@ -23,7 +23,7 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
 
 
     /// <summary>
-    /// Applies the global query filters to the model builder.
+    ///     Applies the global query filters to the model builder.
     /// </summary>
     /// <param name="modelBuilder">The model builder to configure.</param>
     /// <param name="context">The database context.</param>
@@ -55,7 +55,7 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
 
 
     /// <summary>
-    /// Applies the ownership query filter to a specific entity type.
+    ///     Applies the ownership query filter to a specific entity type.
     /// </summary>
     /// <typeparam name="TEntity">The type of entity to filter.</typeparam>
     /// <param name="modelBuilder">The model builder instance.</param>

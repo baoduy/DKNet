@@ -21,9 +21,19 @@ public class User : AuditedEntity<int>
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
-    [BackingField(nameof(_addresses))] public IReadOnlyCollection<Address> Addresses => _addresses;
+    [BackingField(nameof(_addresses))]
+    public IReadOnlyCollection<Address> Addresses
+    {
+        get => _addresses;
+    }
 
-    public string FullName => $"{FirstName} {LastName}";
+    public string FullName
+    {
+        get => $"{FirstName} {LastName}";
+    }
 
-    public void AddAddress(Address address) => _addresses.Add(address);
+    public void AddAddress(Address address)
+    {
+        _addresses.Add(address);
+    }
 }

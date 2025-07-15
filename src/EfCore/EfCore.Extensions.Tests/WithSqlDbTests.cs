@@ -41,7 +41,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         });
 
         var count = await _db.SaveChangesAsync();
@@ -59,7 +59,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
         await TestCreateWithSqlDbAsync();
 
         var user = await _db.Set<User>().Include(u => u.Addresses)
-            .OrderByDescending(c=>c.CreatedOn).FirstAsync();
+            .OrderByDescending(c => c.CreatedOn).FirstAsync();
 
         _db.RemoveRange(user.Addresses);
         _db.Remove(user);
@@ -97,7 +97,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
         var user = new User("ConcurrencyTest")
         {
             FirstName = "Test",
-            LastName = "User",
+            LastName = "User"
         };
         _db.Set<User>().Add(user);
         await _db.SaveChangesAsync();

@@ -1,5 +1,5 @@
-using EfCore.Relational.Helpers.Tests.Fixtures;
 using System.Data;
+using EfCore.Relational.Helpers.Tests.Fixtures;
 
 namespace EfCore.Relational.Helpers.Tests;
 
@@ -10,15 +10,12 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Ensure connection is closed first
-        if (db.Database.GetDbConnection().State != ConnectionState.Closed)
-        {
-            await db.Database.CloseConnectionAsync();
-        }
+        if (db.Database.GetDbConnection().State != ConnectionState.Closed) await db.Database.CloseConnectionAsync();
 
         // Act
         var connection = await db.GetDbConnection();
@@ -33,7 +30,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -53,7 +50,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -70,10 +67,10 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
-        
+
         await db.Database.EnsureCreatedAsync();
 
         // Act
@@ -88,10 +85,10 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
-        
+
         // Don't create the database - table won't exist
 
         // Act
@@ -106,7 +103,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -123,10 +120,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         // Create a unique database name to ensure it doesn't exist
-        var uniqueConnectionString = fixture.GetConnectionString().Replace("master", $"TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase);
-        
+        var uniqueConnectionString = fixture.GetConnectionString()
+            .Replace("master", $"TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase);
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(uniqueConnectionString).Options);
 
@@ -146,15 +144,15 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
-        
+
         await db.Database.EnsureCreatedAsync();
 
         // Act & Assert - Should not throw even if table already exists
         await Should.NotThrowAsync(async () => await db.CreateTableAsync<TestEntity>());
-        
+
         var exists = await db.TableExistsAsync<TestEntity>();
         exists.ShouldBeTrue();
     }
@@ -164,7 +162,7 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
@@ -181,10 +179,10 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     {
         // Arrange
         await fixture.EnsureSqlReadyAsync();
-        
+
         await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
-        
+
         await db.Database.EnsureCreatedAsync();
 
         // Act

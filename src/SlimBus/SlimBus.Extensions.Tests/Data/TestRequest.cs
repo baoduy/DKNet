@@ -7,7 +7,7 @@ public class TestRequest : IRequest<Guid>
 
 internal sealed class TestRequestHandler(TestDbContext dbContext) : IRequestHandler<TestRequest, Guid>
 {
-    public async Task<Guid> OnHandle(TestRequest request,CancellationToken cancellationToken)
+    public async Task<Guid> OnHandle(TestRequest request, CancellationToken cancellationToken)
     {
         var entity = new TestEntity { Name = request.Name };
         await dbContext.AddAsync(entity, cancellationToken);

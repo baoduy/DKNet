@@ -85,10 +85,7 @@ public class LocalBlobStorageTest : IClassFixture<LocalBlobServiceFixture>
         var blob = new BlobRequest("dir1") { Type = BlobTypes.Directory };
         var items = new List<BlobResult>();
 
-        await foreach (var item in _service.ListItemsAsync(blob))
-        {
-            items.Add(item);
-        }
+        await foreach (var item in _service.ListItemsAsync(blob)) items.Add(item);
 
         items.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
@@ -100,10 +97,7 @@ public class LocalBlobStorageTest : IClassFixture<LocalBlobServiceFixture>
         await File.WriteAllTextAsync(file, "x");
         var blob = new BlobRequest("single.txt") { Type = BlobTypes.File };
         var items = new List<BlobResult>();
-        await foreach (var item in _service.ListItemsAsync(blob))
-        {
-            items.Add(item);
-        }
+        await foreach (var item in _service.ListItemsAsync(blob)) items.Add(item);
 
         items.Count.ShouldBe(1);
     }

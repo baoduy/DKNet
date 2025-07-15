@@ -10,48 +10,48 @@ public interface IWriteRepository<TEntity> where TEntity : class
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///    Save Changes to Database
+    ///     Save Changes to Database
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///   Add Entity
+    ///     Add Entity
     /// </summary>
     /// <param name="entity"></param>
     /// <param name="cancellationToken"></param>
     ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///  Add Range of Entities
+    ///     Add Range of Entities
     /// </summary>
     /// <param name="entities"></param>
     /// <param name="cancellationToken"></param>
     ValueTask AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///   Update Entity
+    ///     Update Entity
     /// </summary>
     /// <param name="entity"></param>
     /// <param name="cancellationToken"></param>
     Task<int> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///  Update Range of Entities
+    ///     Update Range of Entities
     /// </summary>
     /// <param name="entities"></param>
     /// <param name="cancellationToken"></param>
     Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///  Delete Entity
+    ///     Delete Entity
     /// </summary>
     /// <param name="entity"></param>
     void Delete(TEntity entity);
 
     /// <summary>
-    /// Delete Range of Entities
+    ///     Delete Range of Entities
     /// </summary>
     /// <param name="entities"></param>
     void DeleteRange(IEnumerable<TEntity> entities);

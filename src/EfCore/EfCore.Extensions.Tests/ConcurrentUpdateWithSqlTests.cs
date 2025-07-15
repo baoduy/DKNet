@@ -1,7 +1,7 @@
 namespace EfCore.Extensions.Tests;
 
 /// <summary>
-/// Concurrent update needs to be tested with real SQL Server.
+///     Concurrent update needs to be tested with real SQL Server.
 /// </summary>
 public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture)
     : IClassFixture<SqlServerFixture>
@@ -30,7 +30,7 @@ public class ConcurrentUpdateWithSqlTests(SqlServerFixture fixture)
                     City = "HBD",
                     Street = "HBD"
                 }
-            },
+            }
         };
 
         await writeRepo.AddAsync(user);

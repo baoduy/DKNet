@@ -5,13 +5,13 @@ using Microsoft.IdentityModel.Tokens;
 namespace SlimBus.Api.Configs.Auth;
 
 /// <summary>
-/// Extends JwtSecurityTokenHandler to validate JWT tokens using the Microsoft Graph API.
+///     Extends JwtSecurityTokenHandler to validate JWT tokens using the Microsoft Graph API.
 /// </summary>
 [ExcludeFromCodeCoverage]
 internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
 {
     /// <summary>
-    /// Validates the provided JWT token by calling the Microsoft Graph API.
+    ///     Validates the provided JWT token by calling the Microsoft Graph API.
     /// </summary>
     /// <param name="token">The JWT token to validate.</param>
     /// <exception cref="SecurityTokenValidationException">Thrown if the token validation against Microsoft Graph fails.</exception>
@@ -31,22 +31,23 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
     }
 
     /// <summary>
-    /// Override the default signature validation to bypass internal signature validation.
-    /// This reads the token without validating the signature, assuming external validation.
+    ///     Override the default signature validation to bypass internal signature validation.
+    ///     This reads the token without validating the signature, assuming external validation.
     /// </summary>
     /// <param name="token">The JWT token to read.</param>
     /// <param name="validationParameters">The token validation parameters.</param>
     /// <returns>The JWT security token read from the provided token string.</returns>
-    protected override JwtSecurityToken ValidateSignature(string token, TokenValidationParameters validationParameters) =>
-        ReadJwtToken(token);
+    protected override JwtSecurityToken
+        ValidateSignature(string token, TokenValidationParameters validationParameters) => ReadJwtToken(token);
 
     /// <summary>
-    /// Asynchronously validates the JWT token.
+    ///     Asynchronously validates the JWT token.
     /// </summary>
     /// <param name="token">The JWT token to validate.</param>
     /// <param name="validationParameters">The token validation parameters.</param>
     /// <returns>A Task containing the TokenValidationResult.</returns>
-    public override async Task<TokenValidationResult> ValidateTokenAsync(string token, TokenValidationParameters validationParameters)
+    public override async Task<TokenValidationResult> ValidateTokenAsync(string token,
+        TokenValidationParameters validationParameters)
     {
         // Override the default signature validation process with the custom method.
         validationParameters.SignatureValidator = ValidateSignature;
@@ -72,7 +73,7 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
             return new TokenValidationResult
             {
                 IsValid = false,
-                Exception = ex,
+                Exception = ex
             };
         }
     }

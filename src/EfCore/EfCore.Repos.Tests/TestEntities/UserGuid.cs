@@ -21,9 +21,19 @@ public class UserGuid : AuditedEntity<Guid>
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
-    [BackingField(nameof(_addresses))] public IReadOnlyCollection<AddressGuid> Addresses => _addresses;
+    [BackingField(nameof(_addresses))]
+    public IReadOnlyCollection<AddressGuid> Addresses
+    {
+        get => _addresses;
+    }
 
-    public string FullName => $"{FirstName} {LastName}";
+    public string FullName
+    {
+        get => $"{FirstName} {LastName}";
+    }
 
-    public void AddAddress(AddressGuid address) => _addresses.Add(address);
+    public void AddAddress(AddressGuid address)
+    {
+        _addresses.Add(address);
+    }
 }

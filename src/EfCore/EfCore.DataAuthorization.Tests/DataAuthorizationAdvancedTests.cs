@@ -36,11 +36,11 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
     {
         // Arrange
         var db = fixture.Provider.GetRequiredService<DddContext>();
-        
+
         // Create data with different ownership keys
         var ownedEntity = new Root("Owned Entity", "Steven");
         var unownedEntity = new Root("Unowned Entity", "different-key");
-        
+
         await db.AddRangeAsync(ownedEntity, unownedEntity);
         await db.SaveChangesAsync();
 
@@ -100,7 +100,7 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
             new Root("Complex Entity 2", "Steven"),
             new Root("Test Entity 3", "Steven")
         };
-        
+
         await db.AddRangeAsync(entities);
         await db.SaveChangesAsync();
 
@@ -147,10 +147,10 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
         // Arrange
         var db = fixture.Provider.GetRequiredService<DddContext>();
         var entity = new Root("Update Test Entity", "Steven");
-        
+
         await db.AddAsync(entity);
         await db.SaveChangesAsync();
-        
+
         var originalOwnership = ((IOwnedBy)entity).OwnedBy;
 
         // Act
@@ -169,10 +169,10 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
         // Arrange
         var db = fixture.Provider.GetRequiredService<DddContext>();
         var entity = new Root("Delete Test Entity", "Steven");
-        
+
         await db.AddAsync(entity);
         await db.SaveChangesAsync();
-        
+
         var entityId = entity.Id;
 
         // Act
@@ -197,7 +197,7 @@ public class DataAuthorizationAdvancedTests(DataKeyAdvancedFixture fixture) : IC
             new Root("Bulk 4", "Steven"),
             new Root("Bulk 5", "Steven")
         };
-        
+
         await db.AddRangeAsync(entities);
         await db.SaveChangesAsync();
 

@@ -1,5 +1,5 @@
-﻿using SlimBus.Domains.Features.Profiles.Entities;
-using DKNet.EfCore.Repos.Abstractions;
+﻿using DKNet.EfCore.Repos.Abstractions;
+using SlimBus.Domains.Features.Profiles.Entities;
 
 namespace SlimBus.Domains.Features.Profiles.Repos;
 

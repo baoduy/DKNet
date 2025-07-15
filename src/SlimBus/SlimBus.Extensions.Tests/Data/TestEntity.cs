@@ -4,7 +4,7 @@ public class TestEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public Guid Id { get; set; }= Guid.Empty;
+    public Guid Id { get; set; } = Guid.Empty;
 
     [MaxLength(500)] public string Name { get; set; } = null!;
 }

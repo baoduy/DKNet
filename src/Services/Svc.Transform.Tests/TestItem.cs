@@ -2,5 +2,8 @@
 
 internal class TestItem
 {
-    public static string Name => "Duy";
+    public static string Name
+    {
+        get => "Duy";
+    }
 }

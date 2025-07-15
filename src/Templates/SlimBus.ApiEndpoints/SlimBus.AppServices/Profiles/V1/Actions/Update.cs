@@ -22,13 +22,13 @@ internal sealed class UpdateProfileCommandHandler(
         if (request.Id == Guid.Empty)
             return Result.Fail<ProfileResult>("The Id is in valid.");
 
-        var profile = await repo.FindAsync(request.Id);
+        var profile = await repo.FindAsync(request.Id, cancellationToken);
 
         if (profile == null)
             return Result.Fail<ProfileResult>($"The Profile {request.Id} is not found.");
 
         //Update Here
-        profile.Update(avatar: null, request.Name, request.Phone, birthday: null, request.ByUser!);
+        profile.Update(null, request.Name, request.Phone, null, request.ByUser!);
 
         //Add Event
 

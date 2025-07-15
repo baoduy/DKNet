@@ -12,7 +12,6 @@ public class TestGlobalQueryFilterRegister : IGlobalQueryFilterRegister
     }
 }
 
-
 public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
     [Fact]
@@ -49,7 +48,7 @@ public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServe
     public void UseAutoConfigModel_WithNullBuilder_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => 
+        Should.Throw<ArgumentNullException>(() =>
             ((DbContextOptionsBuilder)null!).UseAutoConfigModel());
     }
 
@@ -59,7 +58,7 @@ public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         // Arrange
         var builder = new DbContextOptionsBuilder()
             .UseSqlServer("Server=localhost;Database=TestDb;Integrated Security=true;");
-        
+
         var actionInvoked = false;
 
         // Act

@@ -49,7 +49,8 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
         _userName = context.User.Identity?.Name!;
 
         //Get from ProfileId Claims
-        var id = context.User.FindFirst(c => string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase));
+        var id = context.User.FindFirst(c =>
+            string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase));
         if (id != null && Guid.TryParse(id.Value, out var p))
             _profileId = p;
 

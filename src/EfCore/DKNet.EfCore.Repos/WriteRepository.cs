@@ -6,9 +6,7 @@ namespace DKNet.EfCore.Repos;
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
 {
-
-    public EntityEntry<TEntity> Entry(TEntity entity)
-        => dbContext.Entry(entity);
+    public EntityEntry<TEntity> Entry(TEntity entity) => dbContext.Entry(entity);
 
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -17,14 +15,12 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
         => await dbContext.AddAsync(entity, cancellationToken);
 
     public virtual async ValueTask AddRangeAsync(IEnumerable<TEntity> entities,
-        CancellationToken cancellationToken = default)
-        => await dbContext.AddRangeAsync(entities, cancellationToken);
+        CancellationToken cancellationToken = default) =>
+        await dbContext.AddRangeAsync(entities, cancellationToken);
 
-    public virtual void Delete(TEntity entity)
-        => dbContext.Set<TEntity>().Remove(entity);
+    public virtual void Delete(TEntity entity) => dbContext.Set<TEntity>().Remove(entity);
 
-    public virtual void DeleteRange(IEnumerable<TEntity> entities)
-        => dbContext.Set<TEntity>().RemoveRange(entities);
+    public virtual void DeleteRange(IEnumerable<TEntity> entities) => dbContext.Set<TEntity>().RemoveRange(entities);
 
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

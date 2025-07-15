@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Repos.Abstractions;
+using Microsoft.EntityFrameworkCore;
+using SlimBus.Domains.Features.Profiles.Entities;
 
 namespace SlimBus.AppServices.Profiles.V1.Queries;
 
@@ -10,9 +11,12 @@ public record ProfileQuery : Fluents.Queries.IWitResponse<ProfileResult>
 }
 
 internal sealed class SingleProfileQueryHandler(
-    IReadRepository<Domains.Features.Profiles.Entities.CustomerProfile> repo)
+    IReadRepository<CustomerProfile> repo)
     : Fluents.Queries.IHandler<ProfileQuery, ProfileResult>
 {
     public async Task<ProfileResult?> OnHandle(ProfileQuery request, CancellationToken cancellationToken)
-        => await repo.GetProjection<ProfileResult>().FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken: cancellationToken);
+    {
+        return await repo.GetDto<ProfileResult>()
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+    }
 }

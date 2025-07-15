@@ -1,19 +1,14 @@
-using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Repos;
+using DKNet.EfCore.Repos.Abstractions;
 using EfCore.Repos.Tests.TestEntities;
 using Mapster;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedFixture : IAsyncLifetime
 {
-    public TestDbContext DbContext { get; set; } = null!;
-    public IRepository<User> RepositoryWithMapper { get; set; } = null!;
-    public IRepository<User> RepositoryWithoutMapper { get; set; } = null!;
-    public IReadRepository<User> ReadRepositoryWithMapper { get; set; } = null!;
-    public IReadRepository<User> ReadRepositoryWithoutMapper { get; set; } = null!;
     private readonly DistributedApplication _app;
     private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
     private string? _dbConn;
@@ -24,7 +19,7 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         {
             AssemblyName = typeof(RepositoryAdvancedFixture).Assembly.FullName,
             DisableDashboard = true,
-            AllowUnsecuredTransport = true,
+            AllowUnsecuredTransport = true
         };
         var builder = DistributedApplication.CreateBuilder(options);
 
@@ -35,12 +30,19 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         _app = builder.Build();
     }
 
+    public TestDbContext DbContext { get; set; } = null!;
+    public IRepository<User> RepositoryWithMapper { get; set; } = null!;
+    public IRepository<User> RepositoryWithoutMapper { get; set; } = null!;
+    public IReadRepository<User> ReadRepositoryWithMapper { get; set; } = null!;
+    public IReadRepository<User> ReadRepositoryWithoutMapper { get; set; } = null!;
+
     public async Task InitializeAsync()
     {
         await _app.StartAsync();
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None)+";TrustServerCertificate=true";
+        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
+                  ";TrustServerCertificate=true";
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(_dbConn);

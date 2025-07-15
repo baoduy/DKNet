@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Configuration;
 using DKNet.Svc.BlobStorage.Abstractions;
 using DKNet.Svc.BlobStorage.Local;
+using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -26,7 +26,9 @@ public static class LocalDirectorySetup
 
     public static IServiceCollection AddLocalDirectoryBlobService(this IServiceCollection services,
         IConfiguration configuration)
-        => services
+    {
+        return services
             .Configure<LocalDirectoryOptions>(o => configuration.GetSection(LocalDirectoryOptions.Name).Bind(o))
             .AddScoped<IBlobService, LocalBlobService>();
+    }
 }

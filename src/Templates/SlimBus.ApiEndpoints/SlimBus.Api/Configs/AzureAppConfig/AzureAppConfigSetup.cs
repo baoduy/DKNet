@@ -5,13 +5,13 @@ using SlimBus.Api.Extensions;
 namespace SlimBus.Api.Configs.AzureAppConfig;
 
 /// <summary>
-/// Extension methods for configuring Azure App Configuration integration
+///     Extension methods for configuring Azure App Configuration integration
 /// </summary>
 [ExcludeFromCodeCoverage]
 internal static class AzureAppConfigSetup
 {
     /// <summary>
-    /// Adds Azure App Configuration as a configuration source
+    ///     Adds Azure App Configuration as a configuration source
     /// </summary>
     /// <param name="builder">The configuration builder</param>
     /// <param name="feature">The feature flag management</param>

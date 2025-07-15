@@ -10,7 +10,7 @@ internal class HookFactory(IServiceProvider provider)
         type.BaseType is not null && type.BaseType.IsClass && type.BaseType != typeof(object);
 
     /// <summary>
-    /// Load all hooks keyed names for the nested DbContext.
+    ///     Load all hooks keyed names for the nested DbContext.
     /// </summary>
     /// <param name="dbContext"></param>
     /// <returns></returns>
@@ -24,17 +24,17 @@ internal class HookFactory(IServiceProvider provider)
         {
             name.Add(type.FullName!);
             type = IsBaseTypeAvailable(type) ? type.BaseType : null;
-
         } while (type is not null);
 
         return [.. name];
     }
 
     /// <summary>
-    /// Load all hooks for the nested DbContext.
+    ///     Load all hooks for the nested DbContext.
     /// </summary>
     /// <param name="dbContext"></param>
-    public (IEnumerable<IBeforeSaveHookAsync> beforeSaveHooks, IEnumerable<IAfterSaveHookAsync> afterSaveHooks) LoadHooks(DbContext dbContext)
+    public (IEnumerable<IBeforeSaveHookAsync> beforeSaveHooks, IEnumerable<IAfterSaveHookAsync> afterSaveHooks)
+        LoadHooks(DbContext dbContext)
     {
         //The Hooks of Parents also able to be used here
         var keys = GetProviderKeyNames(dbContext);

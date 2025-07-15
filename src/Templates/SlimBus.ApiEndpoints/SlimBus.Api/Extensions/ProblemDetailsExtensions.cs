@@ -3,7 +3,8 @@ namespace SlimBus.Api.Extensions;
 [ExcludeFromCodeCoverage]
 internal static class ProblemDetailsExtensions
 {
-    public static ProblemDetails? ToProblemDetails(this IResultBase result, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+    public static ProblemDetails? ToProblemDetails(this IResultBase result,
+        HttpStatusCode statusCode = HttpStatusCode.BadRequest)
     {
         if (result.IsSuccess) return null;
 
@@ -23,13 +24,13 @@ internal static class ProblemDetailsExtensions
             errors.Add(err.ErrorMessage);
 
         var firstMessage = errors.FirstOrDefault() ?? nameof(HttpStatusCode.BadRequest);
-        
+
         return CreateProblemDetails(HttpStatusCode.BadRequest, firstMessage, errors);
     }
 
-    private static ProblemDetails CreateProblemDetails(HttpStatusCode statusCode, string detail, IEnumerable<string> errors)
-    {
-        return new ProblemDetails
+    private static ProblemDetails CreateProblemDetails(HttpStatusCode statusCode, string detail,
+        IEnumerable<string> errors) =>
+        new()
         {
             Status = (int)statusCode,
             Type = statusCode.ToString(),
@@ -38,7 +39,6 @@ internal static class ProblemDetailsExtensions
             Extensions =
             {
                 ["errors"] = errors
-            },
+            }
         };
-    }
 }

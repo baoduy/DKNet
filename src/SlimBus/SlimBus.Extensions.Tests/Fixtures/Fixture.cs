@@ -7,8 +7,6 @@ namespace SlimBus.Extensions.Tests.Fixtures;
 
 public sealed class Fixture : IAsyncDisposable
 {
-    public ServiceProvider ServiceProvider { get; }
-
     public Fixture()
     {
         ServiceProvider = new ServiceCollection()
@@ -16,7 +14,7 @@ public sealed class Fixture : IAsyncDisposable
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContext<TestDbContext>(b => b.UseInMemoryDatabase(nameof(TestDbContext)))
-            .AddScoped<DbContext>(p=>p.GetRequiredService<TestDbContext>())
+            .AddScoped<DbContext>(p => p.GetRequiredService<TestDbContext>())
             .AddSlimBusForEfCore(mmb =>
             {
                 //This is a global config for all the child busses
@@ -33,6 +31,8 @@ public sealed class Fixture : IAsyncDisposable
         var db = ServiceProvider.GetRequiredService<TestDbContext>();
         db.Database.EnsureCreated();
     }
+
+    public ServiceProvider ServiceProvider { get; }
 
     public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
 }
