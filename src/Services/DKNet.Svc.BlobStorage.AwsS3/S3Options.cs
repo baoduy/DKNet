@@ -4,10 +4,7 @@ namespace DKNet.Svc.BlobStorage.AwsS3;
 
 public class S3Options : BlobServiceOptions
 {
-    public static string Name
-    {
-        get => "BlobService:S3";
-    }
+    public static string Name => "BlobService:S3";
 
     public string ConnectionString { get; set; } = null!;
 

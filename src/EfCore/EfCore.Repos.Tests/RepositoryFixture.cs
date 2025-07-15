@@ -28,7 +28,7 @@ public class RepositoryFixture : IAsyncLifetime
         _app = builder.Build();
     }
 
-    public TestDbContext DbContext { get; set; } = null!;
+    public DbContext DbContext { get; set; } = null!;
     public IRepository<User> Repository { get; set; } = null!;
     public IReadRepository<User> ReadRepository { get; set; } = null!;
 
@@ -37,16 +37,7 @@ public class RepositoryFixture : IAsyncLifetime
         await _app.StartAsync();
         await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
 
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
-                  ";TrustServerCertificate=true";
-
-        var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(_dbConn)
-            .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
-
-        DbContext = new TestDbContext(optionsBuilder.Options);
-        DbContext.Database.SetConnectionString(_dbConn);
-
+        DbContext = await CreateNewDbContext();
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
 
@@ -56,10 +47,21 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        //await DbContext.Database.EnsureDeletedAsync();
         await DbContext.DisposeAsync();
 
         await _app.StopAsync();
         await _app.DisposeAsync();
+    }
+
+    public async Task<DbContext> CreateNewDbContext()
+    {
+        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
+                  ";TrustServerCertificate=true";
+
+        var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(_dbConn)
+            .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
+
+        return new TestDbContext(optionsBuilder.Options);
     }
 }

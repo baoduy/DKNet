@@ -39,23 +39,18 @@ public class User : BaseEntity
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    public string FullName
-    {
-        get => $"{FirstName} {LastName}";
-    }
+    public string FullName => $"{FirstName} {LastName}";
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
-    public void UpdatedByUser(string userName)
-    {
-        SetUpdatedBy(userName);
-    }
+    public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
 }
 
 public class Account : Entity<int>
 {
-    public string Password { get; set; } = null!;
-    public string UserName { get; set; } = null!;
+    [MaxLength(500)] public string Password { get; set; } = null!;
+
+    [MaxLength(500)] public string UserName { get; set; } = null!;
 }
 
 public sealed class Address : Entity<int>
@@ -80,12 +75,9 @@ public sealed class Address : Entity<int>
 [Table("OwnedEntities")]
 public class OwnedEntity
 {
-    public string FullName
-    {
-        get => $"{nameof(OwnedEntity)} {Name}";
-    }
+    public string FullName => $"{nameof(OwnedEntity)} {Name}";
 
-    public string? Name { get; set; }
+    [MaxLength(500)] public string? Name { get; set; }
 }
 
 public class GuidEntity : Entity<Guid>
@@ -95,24 +87,12 @@ public class GuidEntity : Entity<Guid>
 
 public class GuidAuditEntity : AuditedEntity<Guid>
 {
-    public GuidAuditEntity() : base(default)
-    {
-        SetCreatedBy("Steven");
-    }
+    public GuidAuditEntity() : base(default) => SetCreatedBy("Steven");
 
-    public GuidAuditEntity(Guid id, string createdBy) : base(id)
-    {
-        SetCreatedBy(createdBy);
-    }
+    public GuidAuditEntity(Guid id, string createdBy) : base(id) => SetCreatedBy(createdBy);
 
     public string Name { get; set; } = null!;
 }
-
-// public enum AccountStatusEnum
-// {
-//     Active = 1,
-//     Inactive = 2
-// }
 
 public class AccountStatus : Entity<int>
 {

@@ -23,10 +23,7 @@ internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEn
     private DbContextOptionsExtensionInfo? _info;
     internal ICollection<AutoEntityRegistrationInfo> Registrations { get; } = [];
 
-    public DbContextOptionsExtensionInfo Info
-    {
-        get => _info ??= new EntityConfigExtensionInfo(this);
-    }
+    public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
 
     public void ApplyServices(IServiceCollection services)
     {

@@ -5,22 +5,19 @@ namespace EfCore.Extensions.Tests;
 // Test seeding configuration for testing
 public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
 {
-    public ICollection<User> Data
-    {
-        get =>
-        [
-            new("seeded1")
-            {
-                Account = new Account { UserName = "Steven", Password = "Pass@word1" },
-                FirstName = "Seeded", LastName = "User1"
-            },
-            new("seeded2")
-            {
-                Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Seeded",
-                LastName = "User2"
-            }
-        ];
-    }
+    public ICollection<User> Data =>
+    [
+        new("seeded1")
+        {
+            Account = new Account { UserName = "Steven", Password = "Pass@word1" },
+            FirstName = "Seeded", LastName = "User1"
+        },
+        new("seeded2")
+        {
+            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Seeded",
+            LastName = "User2"
+        }
+    ];
 }
 
 public class DataSeedingTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>

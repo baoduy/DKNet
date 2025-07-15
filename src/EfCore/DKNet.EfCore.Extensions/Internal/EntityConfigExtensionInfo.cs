@@ -3,15 +3,9 @@
 internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extension)
     : DbContextOptionsExtensionInfo(extension)
 {
-    public override bool IsDatabaseProvider
-    {
-        get => false;
-    }
+    public override bool IsDatabaseProvider => false;
 
-    public override string LogFragment
-    {
-        get => $"using {nameof(EntityAutoConfigRegister)}";
-    }
+    public override string LogFragment => $"using {nameof(EntityAutoConfigRegister)}";
 
     public override int GetServiceProviderHashCode() =>
         nameof(EntityAutoConfigRegister).GetHashCode(StringComparison.Ordinal);

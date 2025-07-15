@@ -2,10 +2,7 @@ namespace SlimBus.Share.Options;
 
 public class FeatureOptions
 {
-    public static string Name
-    {
-        get => "FeatureManagement";
-    }
+    public static string Name => "FeatureManagement";
 
     public bool EnableHttps { get; set; }
     public bool EnableSwagger { get; set; }

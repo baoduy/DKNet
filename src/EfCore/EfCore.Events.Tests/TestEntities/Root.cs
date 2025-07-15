@@ -9,11 +9,7 @@ public class Root(string name, string ownedBy) : AggregateRoot(Guid.Empty, owned
 
     [Required] public string Name { get; private set; } = name;
 
-    [BackingField(nameof(_entities))]
-    public IReadOnlyCollection<Entity> Entities
-    {
-        get => _entities;
-    }
+    [BackingField(nameof(_entities))] public IReadOnlyCollection<Entity> Entities => _entities;
 
     public void UpdateName(string name)
     {

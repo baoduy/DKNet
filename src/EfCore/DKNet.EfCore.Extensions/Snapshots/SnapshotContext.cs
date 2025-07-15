@@ -14,10 +14,7 @@ public sealed class SnapshotContext : IDisposable, IAsyncDisposable
 
     internal SnapshotContext(DbContext context) => _dbContext = context;
 
-    public DbContext DbContext
-    {
-        get => _dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
-    }
+    public DbContext DbContext => _dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
 
     /// <summary>
     ///     The snapshot of changed entities. Only Entity with status is Modified or Created.

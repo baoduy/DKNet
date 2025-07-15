@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -58,16 +59,14 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity, IEventEn
     /// <value>
     ///     A byte array representing the current version of the entity row.
     /// </value>
-    public virtual byte[]? RowVersion { get; private set; }
+    [Timestamp]
+    public byte[]? RowVersion { get; private set; }
 
     /// <summary>
     ///     Sets the row version for concurrency control.
     /// </summary>
     /// <param name="rowVersion">The new row version value to set.</param>
-    public void SetRowVersion(byte[] rowVersion)
-    {
-        RowVersion = rowVersion;
-    }
+    public void SetRowVersion(byte[]? rowVersion) => RowVersion = rowVersion;
 
     /// <summary>
     ///     Gets the unique identifier for this entity.
@@ -75,17 +74,12 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity, IEventEn
     /// <value>
     ///     The entity's unique identifier of type <typeparamref name="TKey" />.
     /// </value>
-    public virtual TKey Id { get; } = default!;
+    [Key]
+    public virtual TKey Id { get; private set; } = default!;
 
-    public void AddEvent(object eventObj)
-    {
-        _events.Add(eventObj);
-    }
+    public void AddEvent(object eventObj) => _events.Add(eventObj);
 
-    public void AddEvent<TEvent>() where TEvent : class
-    {
-        _eventTypes.Add(typeof(TEvent));
-    }
+    public void AddEvent<TEvent>() where TEvent : class => _eventTypes.Add(typeof(TEvent));
 
     public (object[]events, Type[]eventTypes) GetEventsAndClear()
     {

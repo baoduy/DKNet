@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -11,8 +10,7 @@ namespace DKNet.EfCore.Abstractions.Entities;
 ///     This interface provides the necessary properties and methods to implement
 ///     optimistic concurrency control using a row version timestamp.
 /// </remarks>
-[SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
-public interface IConcurrencyEntity
+public interface IConcurrencyEntity<TType>
 {
     /// <summary>
     ///     Gets the row version timestamp used for concurrency checking.
@@ -20,12 +18,13 @@ public interface IConcurrencyEntity
     /// <value>A byte array containing the row version timestamp.</value>
     [Column(Order = 1000)]
     [Timestamp]
-    [ConcurrencyCheck]
-    byte[]? RowVersion { get; }
+    TType? RowVersion { get; }
 
     /// <summary>
     ///     Sets the row version timestamp for the entity.
     /// </summary>
     /// <param name="rowVersion">The new row version timestamp.</param>
-    void SetRowVersion(byte[] rowVersion);
+    void SetRowVersion(TType rowVersion);
 }
+
+public interface IConcurrencyEntity : IConcurrencyEntity<byte[]>;

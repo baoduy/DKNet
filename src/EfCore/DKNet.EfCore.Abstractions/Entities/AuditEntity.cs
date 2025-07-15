@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DKNet.EfCore.Abstractions.Entities;
@@ -14,6 +15,7 @@ public interface IAuditedProperties
     /// <summary>
     ///     Gets the identifier of the user who created the entity.
     /// </summary>
+    [MaxLength(500)]
     string CreatedBy { get; }
 
     /// <summary>
@@ -24,6 +26,7 @@ public interface IAuditedProperties
     /// <summary>
     ///     Gets the identifier of the user who last updated the entity.
     /// </summary>
+    [MaxLength(500)]
     string? UpdatedBy { get; }
 
     /// <summary>
@@ -79,21 +82,14 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     {
     }
 
-    [NotMapped]
-    public string LastModifiedBy
-    {
-        get => UpdatedBy ?? CreatedBy;
-    }
+    [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
 
-    [NotMapped]
-    public DateTimeOffset LastModifiedOn
-    {
-        get => UpdatedOn ?? CreatedOn;
-    }
+    [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
 
     /// <summary>
     ///     Gets the user who created this entity.
     /// </summary>
+    [MaxLength(500)]
     public string CreatedBy { get; private set; } = null!;
 
     /// <summary>
@@ -104,6 +100,7 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>
     /// <summary>
     ///     Gets the user who last modified this entity.
     /// </summary>
+    [MaxLength(500)]
     public string? UpdatedBy { get; private set; }
 
     /// <summary>

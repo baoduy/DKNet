@@ -11,10 +11,7 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
     IServiceProvider serviceProvider)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
 {
-    public int Order
-    {
-        get => int.MaxValue;
-    }
+    public int Order => int.MaxValue;
 
     public async Task<TResponse> OnHandle(TRequest request, Func<Task<TResponse>> next, IConsumerContext context)
     {

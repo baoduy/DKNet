@@ -15,8 +15,5 @@ public sealed class SnapshotEntityEntry(EntityEntry entry)
     /// </summary>
     public EntityState OriginalState { get; } = entry.State;
 
-    public object Entity
-    {
-        get => Entry.Entity;
-    }
+    public object Entity => Entry.Entity;
 }

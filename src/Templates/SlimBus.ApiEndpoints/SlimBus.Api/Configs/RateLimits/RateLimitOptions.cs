@@ -7,10 +7,7 @@ namespace SlimBus.Api.Configs.RateLimits;
 /// </summary>
 internal sealed class RateLimitOptions
 {
-    public static string Name
-    {
-        get => "RateLimit";
-    }
+    public static string Name => "RateLimit";
 
     /// <summary>
     ///     Default number of requests allowed per time window

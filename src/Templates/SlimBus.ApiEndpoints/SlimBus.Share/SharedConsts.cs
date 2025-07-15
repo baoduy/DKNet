@@ -14,23 +14,11 @@ public static class SharedConsts
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
-    public static string DbConnectionString
-    {
-        get => "AppDb";
-    }
+    public static string DbConnectionString => "AppDb";
 
-    public static string AzureBusConnectionString
-    {
-        get => "AzureBus";
-    }
+    public static string AzureBusConnectionString => "AzureBus";
 
-    public static string RedisConnectionString
-    {
-        get => "Redis";
-    }
+    public static string RedisConnectionString => "Redis";
 
-    public static string SystemAccount
-    {
-        get => "System";
-    }
+    public static string SystemAccount => "System";
 }

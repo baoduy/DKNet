@@ -9,10 +9,7 @@ internal sealed class AzureAppConfigOptions
     /// <summary>
     ///     Configuration section name
     /// </summary>
-    public static string Name
-    {
-        get => "AzureAppConfig";
-    }
+    public static string Name => "AzureAppConfig";
 
     /// <summary>
     ///     Connection string for Azure App Configuration
