@@ -22,9 +22,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CSharp"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
-        <PackageReference Include="System.ComponentModel.Annotations"/>
+        <PackageReference Include="Microsoft.CSharp" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+        <PackageReference Include="System.ComponentModel.Annotations" />
         <PackageReference Update="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -32,7 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
         <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
             <Link>README.md</Link>
         </Content>

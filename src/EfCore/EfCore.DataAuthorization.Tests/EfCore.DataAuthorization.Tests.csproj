@@ -14,10 +14,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Bogus" Version="35.6.3"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="Shouldly" Version="4.3.0"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="Bogus" Version="35.6.3" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Shouldly" Version="4.3.0" />
+        <PackageReference Include="xunit" />
         <PackageReference Include="xunit.runner.visualstudio">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -26,13 +26,13 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="AutoBogus"/>
-        <PackageReference Include="Testcontainers.MsSql"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer"/>
+        <PackageReference Include="AutoBogus" />
+        <PackageReference Include="Testcontainers.MsSql" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj"/>
-        <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
     </ItemGroup>
 </Project>

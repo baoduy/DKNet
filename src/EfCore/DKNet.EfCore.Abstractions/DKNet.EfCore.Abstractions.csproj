@@ -23,16 +23,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
         <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
             <Link>README.md</Link>
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Microsoft.CSharp"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions"/>
-        <PackageReference Include="System.ComponentModel.Annotations"/>
-        <PackageReference Include="FluentResults"/>
+        <PackageReference Include="Microsoft.CSharp" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" />
+        <PackageReference Include="System.ComponentModel.Annotations" />
+        <PackageReference Include="FluentResults" />
         <PackageReference Include="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -40,6 +40,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="EfCore.Extensions.Tests"/>
+        <InternalsVisibleTo Include="EfCore.Extensions.Tests" />
     </ItemGroup>
 </Project>

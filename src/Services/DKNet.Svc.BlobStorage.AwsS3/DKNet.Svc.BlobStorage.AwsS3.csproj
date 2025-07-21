@@ -20,24 +20,24 @@
         <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
         <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
             <Link>README.md</Link>
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="AWSSDK.Core"/>
-        <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Include="AWSSDK.Core" />
+        <PackageReference Include="AWSSDK.S3" />
         <PackageReference Update="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Binder"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
-        <PackageReference Include="Microsoft.Extensions.Options"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Options" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj"/>
+        <ProjectReference Include="..\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

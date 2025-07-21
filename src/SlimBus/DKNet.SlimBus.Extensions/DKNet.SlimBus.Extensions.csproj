@@ -20,24 +20,24 @@
         <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\" />
         <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
             <Link>README.md</Link>
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="FluentResults"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
-        <PackageReference Include="SlimMessageBus"/>
-        <PackageReference Include="SlimMessageBus.Host"/>
-        <PackageReference Include="SlimMessageBus.Host.Interceptor"/>
+        <PackageReference Include="FluentResults" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+        <PackageReference Include="SlimMessageBus" />
+        <PackageReference Include="SlimMessageBus.Host" />
+        <PackageReference Include="SlimMessageBus.Host.Interceptor" />
         <PackageReference Update="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj" />
     </ItemGroup>
 
 </Project>

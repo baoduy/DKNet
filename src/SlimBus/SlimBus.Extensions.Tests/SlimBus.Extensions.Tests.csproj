@@ -14,14 +14,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mapster.DependencyInjection"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
-        <PackageReference Include="Shouldly"/>
-        <PackageReference Include="SlimMessageBus.Host.Memory"/>
-        <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="Mapster.DependencyInjection" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="SlimMessageBus.Host.Memory" />
+        <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson" />
+        <PackageReference Include="xunit" />
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -33,7 +33,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj" />
     </ItemGroup>
 
 </Project>
