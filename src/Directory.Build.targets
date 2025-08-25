@@ -59,7 +59,7 @@
                 <PackageReference Update="AWSSDK.S3" Version="4.0.4.1"/>
                 <PackageReference Update="Azure.Storage.Blobs" Version="12.24.1"/>
                 <PackageReference Update="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26"/>
-                <PackageReference Update="Aspire.Hosting.AppHost" Version="9.3.1"/>
+                <PackageReference Update="Aspire.Hosting.AppHost" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.Redis" Version="9.3.1"/>
                 <PackageReference Update="Aspire.Hosting.SqlServer" Version="9.3.2"/>
                 <PackageReference Update="Aspire.Hosting.Testing" Version="9.3.1"/>
