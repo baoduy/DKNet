@@ -55,7 +55,7 @@
                 <PackageReference Update="Mapster.EFCore" Version="5.1.1"/>
                 <PackageReference Update="Mapster.DependencyInjection" Version="1.0.1"/>
                 <PackageReference Update="X.PagedList.EF" Version="10.5.7"/>
-                <PackageReference Update="AWSSDK.Core" Version="4.0.0.14"/>
+                <PackageReference Update="AWSSDK.Core" Version="4.0.0.25"/>
                 <PackageReference Update="AWSSDK.S3" Version="4.0.4.1"/>
                 <PackageReference Update="Azure.Storage.Blobs" Version="12.24.1"/>
                 <PackageReference Update="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26"/>
