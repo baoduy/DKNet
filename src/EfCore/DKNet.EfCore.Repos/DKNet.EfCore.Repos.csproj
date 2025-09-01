@@ -37,9 +37,8 @@
         <None Remove="Is the repository pattern useful with Entity Framework Core_ – The Reformed Programmer.pdf"/>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Facet.Extensions.EFCore"/>
         <PackageReference Include="X.PagedList.EF"/>
-        <PackageReference Update="Meziantou.Analyzer">
+        <PackageReference Include="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

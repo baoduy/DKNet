@@ -14,14 +14,5 @@ public class Repository<TEntity>(DbContext dbContext)
         CancellationToken cancellationToken = default) =>
         dbContext.Set<TEntity>().Where(filter).FirstOrDefaultAsync(cancellationToken);
 
-    public IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null)
-        where TModel : class
-    {
-        var query = Gets();
-        if (filter is not null)
-            query = query.Where(filter);
-        return query.SelectFacet<TEntity,TModel>();
-    }
-
     public virtual IQueryable<TEntity> Gets() => dbContext.Set<TEntity>();
 }

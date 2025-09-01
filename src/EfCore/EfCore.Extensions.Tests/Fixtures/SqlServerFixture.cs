@@ -28,7 +28,6 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await Db.DisposeAsync();
         await _sql.StopAsync();
         await _sql.DisposeAsync();
     }

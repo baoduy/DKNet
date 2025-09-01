@@ -15,13 +15,6 @@ public interface IReadRepository<TEntity> where TEntity : class
     IQueryable<TEntity> Gets();
 
     /// <summary>
-    ///     Get Projection of Entity
-    /// </summary>
-    /// <typeparam name="TModel"></typeparam>
-    /// <returns></returns>
-    IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null) where TModel : class;
-
-    /// <summary>
     ///     Find Entity by Id
     /// </summary>
     /// <param name="keyValue"></param>

@@ -20,13 +20,4 @@ public class ReadRepository<TEntity>(DbContext dbContext)
     public async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter,
         CancellationToken cancellationToken = default) =>
         await Gets().Where(filter).FirstOrDefaultAsync(cancellationToken);
-
-    public IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null)
-        where TModel : class
-    {
-        var query = Gets();
-        if (filter is not null)
-            query = query.Where(filter);
-        return query.SelectFacet<TEntity, TModel>();
-    }
 }

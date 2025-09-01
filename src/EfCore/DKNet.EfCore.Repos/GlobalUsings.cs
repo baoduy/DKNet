@@ -5,4 +5,3 @@ global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Storage;
 global using DKNet.EfCore.Repos;
 global using DKNet.EfCore.Repos.Abstractions;
-global using Facet.Extensions;
