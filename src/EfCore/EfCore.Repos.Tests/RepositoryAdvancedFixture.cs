@@ -1,8 +1,6 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
 using EfCore.Repos.Tests.TestEntities;
-using Mapster;
-using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
@@ -51,18 +49,18 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         DbContext.Database.SetConnectionString(_dbConn);
 
         // Configure Mapster
-        var config = new TypeAdapterConfig();
-        config.NewConfig<User, UserDto>()
-            .Map(dest => dest.FirstName, src => src.FirstName)
-            .Map(dest => dest.LastName, src => src.LastName);
-
-        var mapper = new Mapper(config);
-        var mappers = new[] { mapper };
+        // var config = new TypeAdapterConfig();
+        // config.NewConfig<User, UserDto>()
+        //     .Map(dest => dest.FirstName, src => src.FirstName)
+        //     .Map(dest => dest.LastName, src => src.LastName);
+        //
+        // var mapper = new Mapper(config);
+        // var mappers = new[] { mapper };
 
         // Create repositories with and without mappers
-        ReadRepositoryWithMapper = new ReadRepository<User>(DbContext, mappers);
+        ReadRepositoryWithMapper = new ReadRepository<User>(DbContext);
         ReadRepositoryWithoutMapper = new ReadRepository<User>(DbContext);
-        RepositoryWithMapper = new Repository<User>(DbContext, mappers);
+        RepositoryWithMapper = new Repository<User>(DbContext);
         RepositoryWithoutMapper = new Repository<User>(DbContext);
 
         await Task.Delay(TimeSpan.FromSeconds(15));

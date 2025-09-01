@@ -16,7 +16,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = _fixture.RepositoryWithMapper.GetDto<UserDto>();
+        var projection = _fixture.RepositoryWithMapper.GetDto<TestEntities.UserDto>();
         var result = await projection.Where(u => u.FirstName == "ProjectMe").FirstOrDefaultAsync();
 
         // Assert
@@ -29,7 +29,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.RepositoryWithoutMapper.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => _fixture.RepositoryWithoutMapper.GetDto<TestEntities.UserDto>());
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = _fixture.ReadRepositoryWithMapper.GetDto<UserDto>();
+        var projection = _fixture.ReadRepositoryWithMapper.GetDto<TestEntities.UserDto>();
         var result = await projection.Where(u => u.FirstName == "ReadProjectMe").FirstOrDefaultAsync();
 
         // Assert
@@ -54,7 +54,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void ReadRepositoryGetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepositoryWithoutMapper.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepositoryWithoutMapper.GetDto<TestEntities.UserDto>());
     }
 
     [Fact]
@@ -304,10 +304,4 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
         Assert.Equal(1, affectedRows);
     }
-}
-
-public class UserDto
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
 }

@@ -414,7 +414,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetDto<TestEntities.UserDto>());
     }
 
     [Fact]

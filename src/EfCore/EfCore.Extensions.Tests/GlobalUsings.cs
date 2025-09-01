@@ -1,5 +1,4 @@
 // Global using directives
-
 global using System.Globalization;
 global using DKNet.EfCore.Abstractions.Attributes;
 global using DKNet.EfCore.Extensions.Registers;
@@ -12,5 +11,4 @@ global using Microsoft.Extensions.Logging;
 global using Xunit;
 global using Shouldly;
 global using Testcontainers.MsSql;
-global using DKNet.EfCore.Repos;
 global using EfCore.Extensions.Tests.Fixtures;

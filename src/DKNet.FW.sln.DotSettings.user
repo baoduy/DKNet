@@ -81,6 +81,8 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AExceptionDispatchInfo_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E2_003Fresharper_002Dhost_003FSourcesCache_003Fbf9021a960b74107a7e141aa06bc9d8a0a53c929178c2fb95b1597be8af8dc_003FExceptionDispatchInfo_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AExceptionDispatchInfo_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Fbf9021a960b74107a7e141aa06bc9d8a0a53c929178c2fb95b1597be8af8dc_003FExceptionDispatchInfo_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AExceptionHandlerServiceCollectionExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E2_003Fresharper_002Dhost_003FSourcesCache_003Ff5c1546381f8c9ea5d5ffbb29a5276d13d9c4878382445b13d52ad5157bbdf_003FExceptionHandlerServiceCollectionExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFacetAttribute_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003F026859b349fa44469dd5e49f94b816764200_003Ffb_003Fe5ef42ec_003FFacetAttribute_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFacetExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003F7a50ab171fb64d0ea6cf5e35e31308c41a00_003F91_003F6411d9cb_003FFacetExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFixtureMethodRunner_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003Fd4ca1e5a92fc75932c8ddef25b934f48ed8015686ce1b79256171845d4291_003FFixtureMethodRunner_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFluentValidationAutoValidationEndpointFilter_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F2d5429fa67e5eaefa77c65addaa7f33c2976fa146fb9503d5bcf25697acafc_003FFluentValidationAutoValidationEndpointFilter_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFluentValidationMessageBusBuilder_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F3df9c74ba153a402d7ed51da72fd2ebb308a2857b78832de5dff41a1a91b3_003FFluentValidationMessageBusBuilder_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
@@ -241,7 +243,13 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=89173539_002D19cb_002D43e5_002Daed6_002De00aae463a9a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" IsLocked="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=16618e23_002D43eb_002D4719_002D8412_002D212355632ab2/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Solution /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=308699ea_002D5e79_002D4be7_002Dbbc3_002De3eac6b8b0a1/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from Solution #3" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Solution /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=89173539_002D19cb_002D43e5_002Daed6_002De00aae463a9a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsLocked="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Or&gt;
     &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;EfCore&amp;gt;" /&gt;
@@ -249,6 +257,9 @@
     &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;Templates&amp;gt;" /&gt;
   &lt;/Or&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=da178a86_002D9b66_002D46a4_002Dbdbf_002D7eeb7bf8e937/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
 	
 	

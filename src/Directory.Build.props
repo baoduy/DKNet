@@ -5,8 +5,11 @@
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <AnalysisMode>All</AnalysisMode>
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+        <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
+        <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
         <TargetFramework>net9.0</TargetFramework>
     </PropertyGroup>
+
     <PropertyGroup>
         <WarningsAsErrors>
             CA1068;CA1724;CA2016;CA2000;CS0414;CS8625;CS8604;CS8603;CS8620;CS8619;CS1998;CS8714;CS8618;CS8600;CS8602;

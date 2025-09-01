@@ -1,10 +1,9 @@
 ﻿namespace DKNet.EfCore.Repos;
 
-public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
+public class ReadRepository<TEntity>(DbContext dbContext)
     : IReadRepository<TEntity>
     where TEntity : class
 {
-    private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
     /// <summary>
     ///     Get ReadOnly (No Tracking) Query for Entity
@@ -25,11 +24,9 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
     public IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null)
         where TModel : class
     {
-        if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
-
         var query = Gets();
         if (filter is not null)
             query = query.Where(filter);
-        return query.ProjectToType<TModel>(_mapper.Config);
+        return query.SelectFacet<TEntity, TModel>();
     }
 }

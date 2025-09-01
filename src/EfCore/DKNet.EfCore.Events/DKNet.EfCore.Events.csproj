@@ -31,7 +31,6 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="FluentResults"/>
-        <PackageReference Include="Mapster"/>
         <PackageReference Update="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

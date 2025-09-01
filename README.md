@@ -49,6 +49,8 @@ Here’s a summary of all DKNET-prefixed projects in this repository, with links
 For detailed information about architecture, implementation patterns, and usage examples, visit
 our [complete documentation](docs/README.md) or refer to our [GitHub Pages](https://baoduy.github.io/DKNet/)
 
+To Verify the nuget packages, you can use the following website: [NuGet Package Explorer](https://nuget.info/packages)
+
 ---
 
 ## 📄 License

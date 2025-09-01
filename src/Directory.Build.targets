@@ -28,8 +28,8 @@
                 <PackageReference Update="OpenTelemetry.Instrumentation.Http" Version="1.12.0"/>
                 <PackageReference Update="Scalar.AspNetCore" Version="2.7.2"/>
                 <PackageReference Update="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0"/>
-
                 <PackageReference Update="Microsoft.CSharp" Version="4.7.0"/>
+                <PackageReference Update="Microsoft.Extensions.DependencyInjection" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore" Version="9.0.8"/>
@@ -51,9 +51,13 @@
                 <PackageReference Update="SlimMessageBus.Host.FluentValidation" Version="3.3.1"/>
                 <PackageReference Update="FluentResults" Version="4.0.0"/>
                 <PackageReference Update="Scrutor" Version="6.1.0"/>
-                <PackageReference Update="Mapster" Version="7.4.0"/>
-                <PackageReference Update="Mapster.EFCore" Version="5.1.1"/>
-                <PackageReference Update="Mapster.DependencyInjection" Version="1.0.1"/>
+                <PackageReference Update="Facet" Version="1.8.0" />
+                <PackageReference Update="Facet.Extensions" Version="1.8.0" />
+                <PackageReference Update="Facet.Extensions.EFCore" Version="1.8.0"/>
+                <PackageReference Update="Facet.Mapping" Version="1.8.0" />
+<!--                <PackageReference Update="Mapster" Version="7.4.0"/>-->
+<!--                <PackageReference Update="Mapster.EFCore" Version="5.1.1"/>-->
+<!--                <PackageReference Update="Mapster.DependencyInjection" Version="1.0.1"/>-->
                 <PackageReference Update="X.PagedList.EF" Version="10.5.9"/>
                 <PackageReference Update="AWSSDK.Core" Version="4.0.0.26"/>
                 <PackageReference Update="AWSSDK.S3" Version="4.0.6.12"/>
@@ -85,12 +89,13 @@
                 <PackageReference Update="Testcontainers.Azurite" Version="4.7.0"/>
                 <PackageReference Update="Testcontainers.Minio" Version="4.7.0"/>
             </ItemGroup>
+            
             <ItemGroup>
-                <PackageReference Include="Meziantou.Analyzer" Version="2.0.205">
+                <PackageReference Update="Meziantou.Analyzer" Version="2.0.205">
                     <PrivateAssets>all</PrivateAssets>
                     <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
                 </PackageReference>
-                <PackageReference Include="SonarAnalyzer.CSharp" Version="10.12.0.118525">
+                <PackageReference Update="SonarAnalyzer.CSharp" Version="10.12.0.118525">
                     <PrivateAssets>all</PrivateAssets>
                     <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
                 </PackageReference>

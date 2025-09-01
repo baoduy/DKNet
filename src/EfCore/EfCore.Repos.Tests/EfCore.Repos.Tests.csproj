@@ -16,12 +16,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Facet" />
+        <PackageReference Include="Facet.Extensions" />
+        <PackageReference Include="Facet.Extensions.EFCore"/>
+        <PackageReference Include="Facet.Mapping" />
         <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1"/>
         <PackageReference Include="Aspire.Hosting.SqlServer"/>
         <PackageReference Include="Aspire.Hosting.Testing"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer"/>
-        <PackageReference Include="Mapster"/>
-        <PackageReference Include="Mapster.EFCore"/>
         <PackageReference Include="coverlet.collector">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
