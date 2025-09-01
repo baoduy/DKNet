@@ -4,7 +4,7 @@ using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.Extensions.Tests.TestEntities;
 
-public abstract class BaseEntity : AuditedEntity<int>
+public abstract class BaseEntity : AuditedEntity<int>, IConcurrencyEntity<byte[]>
 {
     /// <inheritdoc />
     protected BaseEntity(string createdBy) : this(0, createdBy)
@@ -20,6 +20,13 @@ public abstract class BaseEntity : AuditedEntity<int>
     /// <inheritdoc />
     protected BaseEntity()
     {
+    }
+
+    public byte[]? RowVersion { get; private set; }
+
+    public void SetRowVersion(byte[] rowVersion)
+    {
+        RowVersion = rowVersion;
     }
 }
 

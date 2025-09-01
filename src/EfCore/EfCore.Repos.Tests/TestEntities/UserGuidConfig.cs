@@ -13,6 +13,12 @@ internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
         builder.Navigation(u => u.Addresses)
             .HasField("_addresses");
 
+        builder.Property(u => u.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken()
+            .ValueGeneratedOnAddOrUpdate()
+            .HasColumnType("xid");
+
         builder.HasMany(u => u.Addresses)
             .WithOne(a => a.User)
             .HasForeignKey(a => a.UserId)

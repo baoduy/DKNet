@@ -153,15 +153,16 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
         await repo1.AddAsync(user);
         await repo1.SaveChangesAsync();
-        var createdVersion = (byte[])user.RowVersion!.Clone();
-        createdVersion.ShouldNotBeEmpty();
+        var createdVersion = user.RowVersion;
+        createdVersion.ShouldBeGreaterThan(0u);
 
         // 2. Simulate two users/contexts
         fixture.DbContext.ChangeTracker.Clear();
         await using var db2 = await fixture.CreateNewDbContext();
         var repo2 = new Repository<UserGuid>(db2);
-        var userFromRepo1 = await repo1.FindAsync(u => u.Id == user.Id);
-        var userFromRepo2 = await repo2.FindAsync(u => u.Id == user.Id);
+        var userFromRepo1 = await repo1.Gets().FirstOrDefaultAsync (u => u.Id == user.Id);
+        var userFromRepo2 = await repo2.Gets().FirstOrDefaultAsync(u => u.Id == user.Id);
+
         userFromRepo1.ShouldNotBeNull();
         userFromRepo2.ShouldNotBeNull();
 
@@ -425,7 +426,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<TaskCanceledException>(() =>
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
             fixture.ReadRepository.FindAsync(u => u.FirstName == "Test", cts.Token));
     }
 
@@ -440,7 +441,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<TaskCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
     }
 
     [Fact]
@@ -451,6 +452,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<TaskCanceledException>(() => fixture.Repository.BeginTransactionAsync(cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.BeginTransactionAsync(cts.Token));
     }
 }

@@ -26,5 +26,3 @@ public interface IConcurrencyEntity<TType>
     /// <param name="rowVersion">The new row version timestamp.</param>
     void SetRowVersion(TType rowVersion);
 }
-
-public interface IConcurrencyEntity : IConcurrencyEntity<byte[]>;

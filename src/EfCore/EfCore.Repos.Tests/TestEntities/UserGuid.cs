@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
-public class UserGuid : AuditedEntity<Guid>
+public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<uint>
 {
     private readonly HashSet<AddressGuid> _addresses = [];
 
@@ -26,4 +26,11 @@ public class UserGuid : AuditedEntity<Guid>
     public string FullName => $"{FirstName} {LastName}";
 
     public void AddAddress(AddressGuid address) => _addresses.Add(address);
+
+    public uint RowVersion { get; private set; }
+
+    public void SetRowVersion(uint rowVersion)
+    {
+        RowVersion = rowVersion;
+    }
 }

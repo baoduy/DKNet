@@ -32,7 +32,7 @@ public interface IEntity<out TKey>
 ///     The generic key type allows for flexibility in choosing appropriate identifier types
 ///     while maintaining a consistent entity structure across the application.
 /// </remarks>
-public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity, IEventEntity
+public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 {
     private readonly Collection<object> _events = [];
     private readonly Collection<Type> _eventTypes = [];
@@ -52,21 +52,6 @@ public abstract class Entity<TKey> : IEntity<TKey>, IConcurrencyEntity, IEventEn
     ///     This constructor is primarily used for EF Core data seeding scenarios.
     /// </remarks>
     protected Entity(TKey id) => Id = id;
-
-    /// <summary>
-    ///     Gets the row version used for optimistic concurrency control.
-    /// </summary>
-    /// <value>
-    ///     A byte array representing the current version of the entity row.
-    /// </value>
-    [Timestamp]
-    public byte[]? RowVersion { get; private set; }
-
-    /// <summary>
-    ///     Sets the row version for concurrency control.
-    /// </summary>
-    /// <param name="rowVersion">The new row version value to set.</param>
-    public void SetRowVersion(byte[]? rowVersion) => RowVersion = rowVersion;
 
     /// <summary>
     ///     Gets the unique identifier for this entity.
