@@ -14,6 +14,8 @@ internal class BaseEntityMapper<T> : DefaultEntityTypeConfiguration<T> where T :
         base.Configure(builder);
         builder.HasIndex(c => c.Id).IsUnique();
         builder.Property(c => c.Id).UseIdentityColumn().ValueGeneratedOnAdd();
+        builder.Property(c => c.CreatedOn).HasDefaultValueSql("getdate()");
+        builder.Property(c => c.RowVersion).IsRowVersion().IsConcurrencyToken().HasColumnType("rowversion");
     }
 }
 

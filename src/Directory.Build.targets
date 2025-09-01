@@ -30,6 +30,7 @@
                 <PackageReference Update="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0"/>
 
                 <PackageReference Update="Microsoft.CSharp" Version="4.7.0"/>
+                <PackageReference Update="Microsoft.Extensions.DependencyInjection" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore" Version="9.0.8"/>
@@ -59,10 +60,12 @@
                 <PackageReference Update="AWSSDK.S3" Version="4.0.6.12"/>
                 <PackageReference Update="Azure.Storage.Blobs" Version="12.25.0"/>
                 <PackageReference Update="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26"/>
+                <PackageReference Update="Aspire.Hosting" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.AppHost" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.Redis" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.SqlServer" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.Testing" Version="9.4.1"/>
+                <PackageReference Update="Aspire.Hosting.PostgreSQL" Version="9.4.1"/>
                 <PackageReference Update="coverlet.collector" Version="6.0.4"/>
                 <PackageReference Update="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.8"/>
@@ -70,6 +73,7 @@
                 <PackageReference Update="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore.Design" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8"/>
+                <PackageReference Update="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
                 <PackageReference Update="Microsoft.Extensions.Logging" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.Logging.Console" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.Logging.Debug" Version="9.0.8"/>

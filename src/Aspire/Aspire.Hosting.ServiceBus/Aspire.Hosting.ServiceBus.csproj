@@ -14,16 +14,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting" Version="9.3.2"/>
-        <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.3.2"/>
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.6"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6"/>
-        <PackageReference Update="Meziantou.Analyzer" Version="2.0.202">
+        <PackageReference Include="Aspire.Hosting" />
+        <PackageReference Include="Aspire.Hosting.SqlServer"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
+        <PackageReference Update="Meziantou.Analyzer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.6"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.6"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
     </ItemGroup>
 
 </Project>

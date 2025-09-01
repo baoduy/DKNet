@@ -257,7 +257,6 @@ public class AuditedEntityTests
         entity.ShouldBeAssignableTo<IAuditedEntity<int>>();
         entity.ShouldBeAssignableTo<IAuditedProperties>();
         entity.ShouldBeAssignableTo<IEntity<int>>();
-        entity.ShouldBeAssignableTo<IConcurrencyEntity>();
     }
 
     [Fact]

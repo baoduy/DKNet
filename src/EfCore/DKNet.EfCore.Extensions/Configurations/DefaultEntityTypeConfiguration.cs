@@ -28,20 +28,12 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
                 .HasMaxLength(255);
 
             builder.Property(nameof(IAuditedProperties.CreatedOn))
-                .IsRequired()
-                .HasDefaultValueSql("getdate()");
+                .IsRequired();
 
             builder.Property(nameof(IAuditedProperties.UpdatedBy))
                 .HasMaxLength(255);
 
             builder.Property(nameof(IAuditedProperties.UpdatedOn));
         }
-
-        // Handle concurrency token
-        if (typeof(IConcurrencyEntity).IsAssignableFrom(clrType))
-            builder.Property(nameof(IConcurrencyEntity.RowVersion))
-                .IsRowVersion()
-                .IsConcurrencyToken()
-                .ValueGeneratedOnAddOrUpdate();
     }
 }

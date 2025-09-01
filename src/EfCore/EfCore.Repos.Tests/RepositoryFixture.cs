@@ -8,7 +8,7 @@ namespace EfCore.Repos.Tests;
 public class RepositoryFixture : IAsyncLifetime
 {
     private readonly DistributedApplication _app;
-    private readonly IResourceBuilder<SqlServerDatabaseResource> _db;
+    private readonly IResourceBuilder<PostgresServerResource> _db;
     private string? _dbConn;
 
     public RepositoryFixture()
@@ -21,9 +21,7 @@ public class RepositoryFixture : IAsyncLifetime
         };
         var builder = DistributedApplication.CreateBuilder(options);
 
-        _db = builder.AddSqlServer("sqlServer")
-            .PublishAsConnectionString()
-            .AddDatabase("RepoTestDb");
+        _db = builder.AddPostgres("sqlServer");
 
         _app = builder.Build();
     }
@@ -55,11 +53,10 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task<DbContext> CreateNewDbContext()
     {
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None) +
-                  ";TrustServerCertificate=true";
+        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(_dbConn)
+            .UseNpgsql(_dbConn)
             .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
 
         return new TestDbContext(optionsBuilder.Options);
