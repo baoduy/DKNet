@@ -111,9 +111,6 @@ public static class EfCoreDataSeedingExtensions
 
     private static void RunDataSeeding(this DbContext context, Type[] seedingTypes)
     {
-        if (context.Database.GetPendingMigrations().Any())
-            return;
-
         Debug.Write($"Run DataSeeding for: {typeof(DbContext).FullName}");
 
         foreach (var seedingType in seedingTypes)
@@ -154,9 +151,16 @@ public static class EfCoreDataSeedingExtensions
         //Get Alls Seeding Types
         var seedingTypes = GetDataSeedingTypes(assemblies).ToArray();
 
-        @this.UseSeeding((context, _) => context.RunDataSeeding(seedingTypes));
-        @this.UseAsyncSeeding((context, _, cancellationToken) =>
-            context.RunDataSeedingAsync(seedingTypes, cancellationToken));
+        @this.UseSeeding((context, performedStoreOperation) =>
+        {
+            if (!performedStoreOperation)
+                return;
+            context.RunDataSeeding(seedingTypes);
+        });
+
+        @this.UseAsyncSeeding((context, performedStoreOperation, cancellationToken) => !performedStoreOperation
+            ? Task.CompletedTask
+            : context.RunDataSeedingAsync(seedingTypes, cancellationToken));
 
         return @this;
     }
