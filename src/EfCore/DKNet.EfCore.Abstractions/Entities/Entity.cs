@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -59,7 +58,6 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <value>
     ///     The entity's unique identifier of type <typeparamref name="TKey" />.
     /// </value>
-    [Key]
     public virtual TKey Id { get; private set; } = default!;
 
     public void AddEvent(object eventObj) => _events.Add(eventObj);
