@@ -198,10 +198,10 @@ SlimBus.AppServices/{Feature}/V1/
 │   └── Delete.cs
 ├── Queries/
 │   ├── {Feature}Result.cs
-│   ├── Page{Feature}sQueryHandler.cs
-│   └── Single{Feature}QueryHandler.cs
+│   ├── Page{Feature}sHandler.cs
+│   └── Single{Feature}Handler.cs
 └── Events/
-    └── {Feature}CreatedEventHandlers.cs
+    └── {Feature}CreatedHandler.cs
 SlimBus.Domains/Features/{Feature}/
 ├── Entities/{Feature}.cs
 └── Repos/I{Feature}Repo.cs
@@ -232,13 +232,13 @@ internal sealed class {Feature}V1Endpoint : IEndpointConfig
             .WithDescription("Get all {features}");
         group.MapGet<{Feature}Query, {Feature}Result?>("{id:guid}")
             .WithDescription("Get {feature} by id");
-        group.MapPost<Create{Feature}Command, {Feature}Result>("")
+        group.MapPost<Create{Feature}, {Feature}Result>("")
             .AddIdempotencyFilter()
             .WithDescription("Create {feature}. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
                              "X-Idempotency-Key: {IdempotencyKey} <br/>");
-        group.MapPut<Update{Feature}Command, {Feature}Result>("{id:guid}")
+        group.MapPut<Update{Feature}, {Feature}Result>("{id:guid}")
             .WithDescription("Update {feature} by id");
-        group.MapDelete<Delete{Feature}Command>("{id:guid}")
+        group.MapDelete<Delete{Feature}>("{id:guid}")
             .WithDescription("Delete {feature} by id");
     }
 }
@@ -259,7 +259,7 @@ internal sealed class {Feature}V1Endpoint : IEndpointConfig
 
 ```csharp
 [MapsTo(typeof({Feature}))]
-public sealed record Create{Feature}Command : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+public sealed record Create{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
 {
     [Required] public string RequiredProperty { get; set; } = null!;
     [Optional] public string? OptionalProperty { get; set; }
@@ -269,22 +269,22 @@ public sealed record Create{Feature}Command : BaseCommand, Fluents.Requests.IWit
     public string SystemProperty { get; set; } = null!;
 }
 
-internal sealed class Create{Feature}CommandValidator : AbstractValidator<Create{Feature}Command>
+internal sealed class Create{Feature}Validator : AbstractValidator<Create{Feature}>
 {
-    public Create{Feature}CommandValidator()
+    public Create{Feature}Validator()
     {
         RuleFor(a => a.RequiredProperty).NotEmpty().Length(1, 150);
         RuleFor(a => a.OptionalProperty).Length(0, 100).When(x => x.OptionalProperty != null);
     }
 }
 
-internal sealed class Create{Feature}CommandHandler(
+internal sealed class Create{Feature}Handler(
     I{Feature}Repo repository,
     IRequiredService requiredService,
     IMapper mapper)
-    : Fluents.Requests.IHandler<Create{Feature}Command, {Feature}Result>
+    : Fluents.Requests.IHandler<Create{Feature}, {Feature}Result>
 {
-    public async Task<IResult<{Feature}Result>> OnHandle(Create{Feature}Command request,
+    public async Task<IResult<{Feature}Result>> OnHandle(Create{Feature} request,
         CancellationToken cancellationToken)
     {
         // Business logic validation
@@ -310,18 +310,18 @@ internal sealed class Create{Feature}CommandHandler(
 
 ```csharp
 [MapsTo(typeof({Feature}))]
-public record Update{Feature}Command : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+public record Update{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
 {
     public required Guid Id { get; init; }
     public string? PropertyToUpdate { get; init; }
     // Only include properties that can be updated
 }
 
-internal sealed class Update{Feature}CommandHandler(
+internal sealed class Update{Feature}Handler(
     IMapper mapper,
-    I{Feature}Repo repo) : Fluents.Requests.IHandler<Update{Feature}Command, {Feature}Result>
+    I{Feature}Repo repo) : Fluents.Requests.IHandler<Update{Feature}, {Feature}Result>
 {
-    public async Task<IResult<{Feature}Result>> OnHandle(Update{Feature}Command request,
+    public async Task<IResult<{Feature}Result>> OnHandle(Update{Feature} request,
         CancellationToken cancellationToken)
     {
         if (request.Id == Guid.Empty)
@@ -345,15 +345,15 @@ internal sealed class Update{Feature}CommandHandler(
 #### Delete Command Pattern
 
 ```csharp
-public record Delete{Feature}Command : BaseCommand, Fluents.Requests.INoResponse
+public record Delete{Feature} : BaseCommand, Fluents.Requests.INoResponse
 {
     public required Guid Id { get; init; }
 }
 
-internal sealed class Delete{Feature}CommandHandler(I{Feature}Repo repository)
-    : Fluents.Requests.IHandler<Delete{Feature}Command>
+internal sealed class Delete{Feature}Handler(I{Feature}Repo repository)
+    : Fluents.Requests.IHandler<Delete{Feature}>
 {
-    public async Task<IResultBase> OnHandle(Delete{Feature}Command request, CancellationToken cancellationToken)
+    public async Task<IResultBase> OnHandle(Delete{Feature} request, CancellationToken cancellationToken)
     {
         if (request.Id == Guid.Empty)
             return Result.Fail("The Id is invalid.")
@@ -392,16 +392,16 @@ public class Page{Feature}PageQuery : Fluents.Queries.IWitPageResponse<{Feature}
     public int PageIndex { get; init; }
 }
 
-internal sealed class {Feature}PageableQueryValidator : AbstractValidator<Page{Feature}PageQuery>
+internal sealed class {Feature}PageableValidator : AbstractValidator<Page{Feature}PageQuery>
 {
-    public {Feature}PageableQueryValidator()
+    public {Feature}PageableValidator()
     {
         RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
         RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
     }
 }
 
-internal sealed class Page{Feature}sQueryHandler(
+internal sealed class Page{Feature}sHandler(
     IReadRepository<{Feature}> repo,
     IMapper mapper) : Fluents.Queries.IPageHandler<Page{Feature}PageQuery, {Feature}Result>
 {
@@ -424,7 +424,7 @@ public record {Feature}Query : Fluents.Queries.IWitResponse<{Feature}Result>
     public required Guid Id { get; init; }
 }
 
-internal sealed class Single{Feature}QueryHandler(
+internal sealed class Single{Feature}Handler(
     IReadRepository<{Feature}> repo)
     : Fluents.Queries.IHandler<{Feature}Query, {Feature}Result>
 {
@@ -441,7 +441,7 @@ internal sealed class Single{Feature}QueryHandler(
 ```csharp
 public sealed record {Feature}CreatedEvent(Guid Id, string Name);
 
-internal sealed class {Feature}CreatedEventHandler : Fluents.EventsConsumers.IHandler<{Feature}CreatedEvent>
+internal sealed class {Feature}CreatedHandler : Fluents.EventsConsumers.IHandler<{Feature}CreatedEvent>
 {
     public Task OnHandle({Feature}CreatedEvent notification, CancellationToken cancellationToken)
     {
@@ -546,7 +546,7 @@ internal sealed class {Feature}Mapper : DefaultEntityTypeConfiguration<{Feature}
 
 Always include these common using statements based on the layer:
 
-**Actions/Commands:**
+**Actions:**
 ```csharp
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -575,23 +575,23 @@ using SlimBus.Infra.Contexts;
 - Use `FluentValidation` with `AbstractValidator<T>` for input validation
 - Include appropriate length constraints and business rules
 - Use `.When()` for conditional validation
-- Validate business rules in command handlers, not validators
+- Validate business rules in action handlers, not validators
 - Use `Result.Fail<T>()` for business rule violations
 - Include field metadata in error results for better client experience:
   ```csharp
   return Result.Fail("The Id is invalid.")
       .WithError(new Error("The Id is invalid.") { Metadata = { ["field"] = nameof(request.Id) } });
   ```
-- Return `IResult<T>` from command handlers for consistent error handling
+- Return `IResult<T>` from action handlers for consistent error handling
 
 ### Naming Conventions
 
-- **Commands**: `{Action}{Feature}Command` (e.g., `CreateProfileCommand`)
+- **Commands**: `{Action}{Feature}` (e.g., `CreateProfile`)
 - **Queries**: `{Feature}Query` for single, `Page{Feature}PageQuery` for collections
 - **Results**: `{Feature}Result`
 - **Events**: `{Feature}{Action}Event` (e.g., `ProfileCreatedEvent`)
-- **Handlers**: `{Command/Query/Event}Handler`
-- **Validators**: `{Command/Query}Validator`
+- **Handlers**: `{Action}{Feature}Handler`, `{Feature}Handler` for queries/events
+- **Validators**: `{Action}{Feature}Validator`
 - **Repositories**: `{Feature}Repo` and `I{Feature}Repo`
 - **Mappers**: `{Feature}Mapper`
 
