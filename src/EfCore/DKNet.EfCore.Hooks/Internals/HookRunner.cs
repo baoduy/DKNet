@@ -117,6 +117,9 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     {
         ArgumentNullException.ThrowIfNull(_snapshotContext);
 
+        logger.LogInformation("Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
+            type, _beforeSaveHooks.Count(), _afterSaveHooks.Count());
+
         //Run Hooks Async
         if (type == RunningTypes.BeforeSave)
             //foreach (var h in _beforeSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))

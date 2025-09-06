@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace DKNet.EfCore.Events.Internals;
 
@@ -7,7 +7,10 @@ namespace DKNet.EfCore.Events.Internals;
 /// </summary>
 /// <param name="eventPublishers"></param>
 /// <param name="autoMappers"></param>
-internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IEnumerable<IMapper> autoMappers)
+internal sealed class EventHook(
+    IEnumerable<IEventPublisher> eventPublishers,
+    IEnumerable<IMapper> autoMappers,
+    ILogger<EventHook> logger)
     : IHookAsync
 {
     private readonly IMapper? _autoMapper = autoMappers.FirstOrDefault();
@@ -51,7 +54,7 @@ internal sealed class EventHook(IEnumerable<IEventPublisher> eventPublishers, IE
             .Where(e => e.Events.Count > 0)
             .ToImmutableList();
 
-        Debug.WriteLine($"EventHook: There are {_eventEntities.Count} Entity Events Found.");
+        logger.LogInformation("EventHook: There are {Count} Entity Events Found.", _eventEntities.Count);
         return Task.CompletedTask;
     }
 
