@@ -154,24 +154,458 @@ follows a pattern from a different context. Do not rely solely on names; always 
 
 ## DKNet Overview
 
-_Describe the project's core architecture and concepts here. Example:_
-
-DKNet is a [brief description of the project's purpose and domain]. Its core components include:
+DKNet is a comprehensive .NET framework providing extensions, templates, and tools for building modern, scalable applications using Domain-Driven Design (DDD) principles and CQRS patterns.
 
 ### Main Concepts
 
-- **Main API/Entry Point**: [Describe main class/module/function]
-- **Configuration**: [How is configuration managed?]
-- **Core Workflow**: [How does data flow through the main components?]
-- **Extensibility Points**: [How can users extend/customize the library?]
-- **Supported Platforms/Frameworks**: [.NET, Python, etc.—list as relevant]
+- **Main API/Entry Point**: SlimBus template provides a complete API template with minimal endpoints using ASP.NET Core
+- **Configuration**: Centralized configuration through `appsettings.json`, dependency injection, and options pattern
+- **Core Workflow**: Request → Endpoint → Command/Query Handler → Domain Logic → Repository → Database
+- **Extensibility Points**: Custom validators, event handlers, mapping configurations, and domain services
+- **Supported Platforms/Frameworks**: .NET 9.0+, ASP.NET Core, Entity Framework Core, FluentValidation
+
+### Architecture Layers
+
+- **API Layer**: Minimal API endpoints with versioning and documentation
+- **Application Services**: Command/Query handlers, validation, and business orchestration  
+- **Domain Layer**: Entities, value objects, domain events, and business rules
+- **Infrastructure Layer**: Data access, external services, and cross-cutting concerns
+
+### Key Technologies
+
+- **SlimBus**: Lightweight message bus for CQRS implementation
+- **Entity Framework Core**: ORM for data persistence
+- **FluentValidation**: Input validation framework
+- **Mapster**: Object-to-object mapping
+- **Result Pattern**: Error handling without exceptions
+- **Domain Events**: Decoupled business event handling
+
+---
+
+## SlimBus Template CRUD Conventions
+
+When generating CRUD operations for the SlimBus template, follow these established patterns and conventions. All examples are based on the Profile feature implementation in `src/Templates/SlimBus.ApiEndpoints/`.
+
+### File Organization Structure
+
+Organize CRUD components using this feature-based structure:
+```
+SlimBus.Api/ApiEndpoints/{Feature}Endpoints.cs
+SlimBus.AppServices/{Feature}/V1/
+├── Actions/
+│   ├── Create.cs
+│   ├── Update.cs
+│   └── Delete.cs
+├── Queries/
+│   ├── {Feature}Result.cs
+│   ├── Page{Feature}sHandler.cs
+│   └── Single{Feature}Handler.cs
+└── Events/
+    └── {Feature}CreatedHandler.cs
+SlimBus.Domains/Features/{Feature}/
+├── Entities/{Feature}.cs
+└── Repos/I{Feature}Repo.cs
+SlimBus.Infra/Features/{Feature}/
+├── Repos/{Feature}Repo.cs
+└── Mappers/{Feature}Mapper.cs
+```
+
+**Schema Organization:**
+- Define database schemas in `SlimBus.Domains/Share/DomainSchemas.cs`
+- Use short, meaningful schema names (e.g., "pro" for Profile, "ord" for Orders)
+- Group related entities under the same schema
+
+### 1. API Endpoint Conventions
+
+Create endpoint classes that implement `IEndpointConfig`:
+
+```csharp
+internal sealed class {Feature}V1Endpoint : IEndpointConfig
+{
+    public string GroupEndpoint => "/{features}"; // lowercase plural
+    public int Version => 1;
+
+    public void Map(RouteGroupBuilder group)
+    {
+        // Standard CRUD mappings
+        group.MapGetPage<Page{Feature}PageQuery, {Feature}Result>("")
+            .WithDescription("Get all {features}");
+        group.MapGet<{Feature}Query, {Feature}Result?>("{id:guid}")
+            .WithDescription("Get {feature} by id");
+        group.MapPost<Create{Feature}, {Feature}Result>("")
+            .AddIdempotencyFilter()
+            .WithDescription("Create {feature}. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
+                             "X-Idempotency-Key: {IdempotencyKey} <br/>");
+        group.MapPut<Update{Feature}, {Feature}Result>("{id:guid}")
+            .WithDescription("Update {feature} by id");
+        group.MapDelete<Delete{Feature}>("{id:guid}")
+            .WithDescription("Delete {feature} by id");
+    }
+}
+```
+
+**Key Patterns:**
+- Use lowercase plural endpoint paths
+- Always include descriptive documentation
+- Add idempotency filter for creation operations using `.AddIdempotencyFilter()`
+- Use Guid route constraints for ID parameters (`{id:guid}`)
+- Version endpoints with separate classes for each version
+- Standard HTTP status codes are automatically configured via `.ProducesCommons()`
+- Endpoints return appropriate HTTP status codes (200, 404, 400, 500, etc.)
+
+### 2. Command/Action Conventions
+
+#### Create Command Pattern
+
+```csharp
+[MapsTo(typeof({Feature}))]
+public sealed record Create{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+{
+    [Required] public string RequiredProperty { get; set; } = null!;
+    [Optional] public string? OptionalProperty { get; set; }
+    
+    [JsonIgnore]
+    [Description("Property set by business logic, not user input")]
+    public string SystemProperty { get; set; } = null!;
+}
+
+internal sealed class Create{Feature}Validator : AbstractValidator<Create{Feature}>
+{
+    public Create{Feature}Validator()
+    {
+        RuleFor(a => a.RequiredProperty).NotEmpty().Length(1, 150);
+        RuleFor(a => a.OptionalProperty).Length(0, 100).When(x => x.OptionalProperty != null);
+    }
+}
+
+internal sealed class Create{Feature}Handler(
+    I{Feature}Repo repository,
+    IRequiredService requiredService,
+    IMapper mapper)
+    : Fluents.Requests.IHandler<Create{Feature}, {Feature}Result>
+{
+    public async Task<IResult<{Feature}Result>> OnHandle(Create{Feature} request,
+        CancellationToken cancellationToken)
+    {
+        // Business logic validation
+        if (await repository.IsDuplicateAsync(request.UniqueProperty))
+            return Result.Fail<{Feature}Result>($"{request.UniqueProperty} already exists.");
+
+        // Map and create entity
+        var entity = mapper.Map<{Feature}>(request);
+        
+        // Add to repository
+        await repository.AddAsync(entity, cancellationToken);
+
+        // Add domain event
+        entity.AddEvent(new {Feature}CreatedEvent(entity.Id, entity.Name));
+
+        // Return lazy mapped result
+        return mapper.ResultOf<{Feature}Result>(entity);
+    }
+}
+```
+
+#### Update Command Pattern
+
+```csharp
+[MapsTo(typeof({Feature}))]
+public record Update{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+{
+    public required Guid Id { get; init; }
+    public string? PropertyToUpdate { get; init; }
+    // Only include properties that can be updated
+}
+
+internal sealed class Update{Feature}Handler(
+    IMapper mapper,
+    I{Feature}Repo repo) : Fluents.Requests.IHandler<Update{Feature}, {Feature}Result>
+{
+    public async Task<IResult<{Feature}Result>> OnHandle(Update{Feature} request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Id == Guid.Empty)
+            return Result.Fail<{Feature}Result>("The Id is invalid.");
+
+        var entity = await repo.FindAsync(request.Id, cancellationToken);
+        if (entity == null)
+            return Result.Fail<{Feature}Result>($"The {Feature} {request.Id} is not found.");
+
+        // Call domain method for updates
+        entity.Update(request.PropertyToUpdate, request.ByUser!);
+
+        // Add events if needed
+        // entity.AddEvent(new {Feature}UpdatedEvent(entity.Id));
+
+        return Result.Ok(mapper.Map<{Feature}Result>(entity));
+    }
+}
+```
+
+#### Delete Command Pattern
+
+```csharp
+public record Delete{Feature} : BaseCommand, Fluents.Requests.INoResponse
+{
+    public required Guid Id { get; init; }
+}
+
+internal sealed class Delete{Feature}Handler(I{Feature}Repo repository)
+    : Fluents.Requests.IHandler<Delete{Feature}>
+{
+    public async Task<IResultBase> OnHandle(Delete{Feature} request, CancellationToken cancellationToken)
+    {
+        if (request.Id == Guid.Empty)
+            return Result.Fail("The Id is invalid.")
+                .WithError(new Error("The Id is invalid.") { Metadata = { ["field"] = nameof(request.Id) } });
+
+        var entity = await repository.FindAsync(request.Id, cancellationToken);
+        if (entity == null)
+            return Result.Fail($"The {Feature} {request.Id} is not found.");
+
+        repository.Delete(entity);
+        return Result.Ok();
+    }
+}
+```
+
+### 3. Query Conventions
+
+#### Result DTO Pattern
+
+```csharp
+public record {Feature}Result
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public required string RequiredProperty { get; init; }
+    public string? OptionalProperty { get; init; }
+}
+```
+
+#### Paginated Query Pattern
+
+```csharp
+public class Page{Feature}PageQuery : Fluents.Queries.IWitPageResponse<{Feature}Result>
+{
+    public int PageSize { get; init; } = 100;
+    public int PageIndex { get; init; }
+}
+
+internal sealed class {Feature}PageableValidator : AbstractValidator<Page{Feature}PageQuery>
+{
+    public {Feature}PageableValidator()
+    {
+        RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
+        RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
+    }
+}
+
+internal sealed class Page{Feature}sHandler(
+    IReadRepository<{Feature}> repo,
+    IMapper mapper) : Fluents.Queries.IPageHandler<Page{Feature}PageQuery, {Feature}Result>
+{
+    public async Task<IPagedList<{Feature}Result>> OnHandle(Page{Feature}PageQuery request,
+        CancellationToken cancellationToken)
+    {
+        return await repo.Gets()
+            .ProjectToType<{Feature}Result>(mapper.Config)
+            .OrderBy(p => p.Name) // Default ordering
+            .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);
+    }
+}
+```
+
+#### Single Item Query Pattern
+
+```csharp
+public record {Feature}Query : Fluents.Queries.IWitResponse<{Feature}Result>
+{
+    public required Guid Id { get; init; }
+}
+
+internal sealed class Single{Feature}Handler(
+    IReadRepository<{Feature}> repo)
+    : Fluents.Queries.IHandler<{Feature}Query, {Feature}Result>
+{
+    public async Task<{Feature}Result?> OnHandle({Feature}Query request, CancellationToken cancellationToken)
+    {
+        return await repo.GetDto<{Feature}Result>()
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+    }
+}
+```
+
+### 4. Event and Handler Conventions
+
+```csharp
+public sealed record {Feature}CreatedEvent(Guid Id, string Name);
+
+internal sealed class {Feature}CreatedHandler : Fluents.EventsConsumers.IHandler<{Feature}CreatedEvent>
+{
+    public Task OnHandle({Feature}CreatedEvent notification, CancellationToken cancellationToken)
+    {
+        // Handle the event (logging, notifications, integration, etc.)
+        return Task.CompletedTask;
+    }
+}
+```
+
+### 5. DDD Entity Conventions
+
+```csharp
+[Table("{Feature}s", Schema = DomainSchemas.{FeatureArea})]
+public class {Feature} : AggregateRoot
+{
+    public {Feature}(string name, string requiredProperty, string byUser)
+        : this(Guid.Empty, name, requiredProperty, byUser)
+    {
+    }
+
+    internal {Feature}(Guid id, string name, string requiredProperty, string createdBy)
+        : base(id, createdBy)
+    {
+        Name = name;
+        RequiredProperty = requiredProperty;
+    }
+
+    public string Name { get; private set; }
+    public string RequiredProperty { get; private set; }
+    public string? OptionalProperty { get; private set; }
+
+    public void Update(string? name, string? optionalProperty, string userId)
+    {
+        if (!string.IsNullOrEmpty(name))
+            Name = name;
+        
+        OptionalProperty = optionalProperty;
+        SetUpdatedBy(userId);
+    }
+}
+```
+
+**Key Patterns:**
+- Private setters for all properties
+- Constructor overloads (public with Guid.Empty, internal with explicit ID)
+- Update methods that call `SetUpdatedBy(userId)`
+- Use `[Table]` attribute with appropriate schema
+- Domain behavior encapsulated in methods
+
+### 6. Repository Conventions
+
+#### Interface Pattern
+
+```csharp
+public interface I{Feature}Repo : IRepository<{Feature}>
+{
+    Task<bool> IsDuplicateAsync(string uniqueProperty);
+    // Add other custom query methods
+}
+```
+
+#### Implementation Pattern
+
+```csharp
+internal sealed class {Feature}Repo(CoreDbContext dbContext)
+    : Repository<{Feature}>(dbContext), I{Feature}Repo
+{
+    public Task<bool> IsDuplicateAsync(string uniqueProperty)
+    {
+        return Gets().AnyAsync(f => f.UniqueProperty == uniqueProperty);
+    }
+}
+```
+
+### 7. EfCore Configuration Conventions
+
+```csharp
+internal sealed class {Feature}Mapper : DefaultEntityTypeConfiguration<{Feature}>
+{
+    public override void Configure(EntityTypeBuilder<{Feature}> builder)
+    {
+        base.Configure(builder);
+
+        // Indexes
+        builder.HasIndex(p => p.UniqueProperty).IsUnique();
+        
+        // Property configurations
+        builder.Property(p => p.Name).HasMaxLength(150).IsRequired();
+        builder.Property(p => p.RequiredProperty).HasMaxLength(100).IsRequired();
+        builder.Property(p => p.OptionalProperty).HasMaxLength(50).IsRequired(false);
+        
+        // Special column types
+        builder.Property(p => p.DateProperty).HasColumnType("Date");
+        
+        // Table mapping
+        builder.ToTable("{Feature}s", DomainSchemas.{FeatureArea});
+    }
+}
+```
+
+### Common Imports and Attributes
+
+Always include these common using statements based on the layer:
+
+**Actions:**
+```csharp
+using System.ComponentModel;
+using System.Text.Json.Serialization;
+using SlimBus.AppServices.Extensions.LazyMapper;
+using SlimBus.Domains.Features.{Feature}.Entities;
+```
+
+**Queries:**
+```csharp
+using DKNet.EfCore.Repos.Abstractions;
+using Microsoft.EntityFrameworkCore;
+using X.PagedList;
+using X.PagedList.EF;
+```
+
+**Repositories:**
+```csharp
+using DKNet.EfCore.Repos;
+using SlimBus.Domains.Features.{Feature}.Entities;
+using SlimBus.Domains.Features.{Feature}.Repos;
+using SlimBus.Infra.Contexts;
+```
+
+### Validation Patterns
+
+- Use `FluentValidation` with `AbstractValidator<T>` for input validation
+- Include appropriate length constraints and business rules
+- Use `.When()` for conditional validation
+- Validate business rules in action handlers, not validators
+- Use `Result.Fail<T>()` for business rule violations
+- Include field metadata in error results for better client experience:
+  ```csharp
+  return Result.Fail("The Id is invalid.")
+      .WithError(new Error("The Id is invalid.") { Metadata = { ["field"] = nameof(request.Id) } });
+  ```
+- Return `IResult<T>` from action handlers for consistent error handling
+
+### Naming Conventions
+
+- **Commands**: `{Action}{Feature}` (e.g., `CreateProfile`)
+- **Queries**: `{Feature}Query` for single, `Page{Feature}PageQuery` for collections
+- **Results**: `{Feature}Result`
+- **Events**: `{Feature}{Action}Event` (e.g., `ProfileCreatedEvent`)
+- **Handlers**: `{Action}{Feature}Handler`, `{Feature}Handler` for queries/events
+- **Validators**: `{Action}{Feature}Validator`
+- **Repositories**: `{Feature}Repo` and `I{Feature}Repo`
+- **Mappers**: `{Feature}Mapper`
 
 ---
 
 ## Additional DKNet-Specific Guidelines
 
-- [Add any project-specific best practices, patterns, or caveats here.]
-- [For example: Use project-specific logging, adhere to security or compliance requirements, follow specific database/provider patterns, etc.]
+- Follow Domain-Driven Design principles in entity design
+- Use the Result pattern for error handling instead of exceptions
+- Implement idempotency for creation operations
+- Add domain events for significant business operations
+- Use lazy mapping for command results to improve performance
+- Prefer composition over inheritance in service design
+- Use schema-based table organization for better database management
 
 ---
 
