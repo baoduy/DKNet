@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using DKNet.EfCore.Extensions.Snapshots;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -94,7 +93,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             _callersQueue.Enqueue(eventData.EventIdCode);
             //Preparing the hook data and hooks before executing the hook
-            _snapshotContext = eventData.Context.Snapshot();
+            _snapshotContext =new SnapshotContext( eventData.Context);
         }
 
         if (!_initialized)

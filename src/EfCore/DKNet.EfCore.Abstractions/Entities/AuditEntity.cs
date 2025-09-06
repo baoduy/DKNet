@@ -39,7 +39,6 @@ public interface IAuditedProperties
 ///     Defines a contract for auditable entities with a specified key type.
 /// </summary>
 /// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
-/// <typeparam name="TConcurrentType"></typeparam>
 /// <remarks>
 ///     This interface combines entity identification, audit properties, and
 ///     concurrency control capabilities.
