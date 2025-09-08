@@ -65,7 +65,7 @@
                 <PackageReference Update="Aspire.Hosting.Redis" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.SqlServer" Version="9.4.1"/>
                 <PackageReference Update="Aspire.Hosting.Testing" Version="9.4.1"/>
-                <PackageReference Update="Aspire.Hosting.PostgreSQL" Version="9.4.1"/>
+                <PackageReference Update="Aspire.Hosting.PostgreSQL" Version="9.4.2"/>
                 <PackageReference Update="coverlet.collector" Version="6.0.4"/>
                 <PackageReference Update="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.8"/>
