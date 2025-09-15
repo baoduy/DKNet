@@ -11,7 +11,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
     public void Snapshot_ShouldCreateSnapshotContext()
     {
         // Act
-        using var snapshot =new SnapshotContext( _db);
+        using var snapshot = new SnapshotContext(_db);
 
         // Assert
         snapshot.ShouldNotBeNull();
@@ -22,7 +22,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
     public async Task SnapshotContext_Dispose_ShouldReleaseResources()
     {
         // Arrange
-         var snapshot =new SnapshotContext( _db);
+        var snapshot = new SnapshotContext(_db);
 
         // Act
         await snapshot.DisposeAsync();
@@ -39,7 +39,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         _db.Set<User>().Add(user);
 
         // Act
-        using var snapshot =new SnapshotContext( _db);
+        using var snapshot = new SnapshotContext(_db);
         var snapshotEntities = snapshot.SnapshotEntities;
 
         // Assert
@@ -51,7 +51,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
     public void SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
     {
         // Arrange
-        using var snapshot =new SnapshotContext( _db);
+        using var snapshot = new SnapshotContext(_db);
 
         // Act
         var firstAccess = snapshot.SnapshotEntities;
@@ -68,7 +68,7 @@ public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
 
-        using var snapshot =new SnapshotContext( _db);
+        using var snapshot = new SnapshotContext(_db);
         var entry = snapshot.SnapshotEntities[0];
 
         // Assert

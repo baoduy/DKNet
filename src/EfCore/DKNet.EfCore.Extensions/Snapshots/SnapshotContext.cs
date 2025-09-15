@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace DKNet.EfCore.Extensions.Snapshots;
 
 /// <summary>
-///     The EntitiesSnapshotContext. The Tracking changes of DbContext will be switch off after snapshot the Entities.
+///     The EntitiesSnapshotContext. The Tracking changes of DbContext will be switched off after snapshot the Entities.
 ///     Call <see cref="Dispose" /> to enable it back.
 /// </summary>
 public sealed class SnapshotContext(DbContext context) : IDisposable, IAsyncDisposable

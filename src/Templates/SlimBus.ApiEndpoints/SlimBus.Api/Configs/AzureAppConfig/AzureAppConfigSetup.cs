@@ -28,9 +28,7 @@ internal static class AzureAppConfigSetup
         {
             op.Connect(new Uri(conn), new DefaultAzureCredential())
                 .UseFeatureFlags()
-                .ConfigureRefresh(rs =>
-                    rs.RegisterAll()
-                        .SetRefreshInterval(TimeSpan.FromMinutes(options.RefreshIntervalInMinutes)));
+                .ConfigureRefresh(c=>c.RegisterAll().SetRefreshInterval(TimeSpan.FromMinutes(30)));
 
             var label = options.Label ?? SharedConsts.ApiName;
             op.Select(KeyFilter.Any, label);
