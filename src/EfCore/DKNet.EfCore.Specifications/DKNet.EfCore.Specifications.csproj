@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
@@ -9,7 +9,7 @@
         <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>Repo,EfCore</PackageTags>
+        <PackageTags>Repo,Specification,EfCore</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
@@ -19,29 +19,21 @@
         <ImplicitUsings>true</ImplicitUsings>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
         <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
             <Link>README.md</Link>
         </Content>
     </ItemGroup>
+
     <ItemGroup>
-        <InternalsVisibleTo Include="EfCore.Infra.Tests"/>
-        <InternalsVisibleTo Include="EfCore.Repos.Tests"/>
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
-        <ProjectReference Include="..\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
-    </ItemGroup>
-    <ItemGroup>
-        <None Remove="Is the repository pattern useful with Entity Framework Core_ – The Reformed Programmer.pdf"/>
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Mapster"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="X.PagedList.EF"/>
-        <PackageReference Update="Meziantou.Analyzer">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj" />
+    </ItemGroup>
+
 </Project>

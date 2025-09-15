@@ -1,6 +1,4 @@
 // Global using directives
-
-global using System.Collections.Immutable;
 global using System.Data;
 global using MapsterMapper;
 global using DKNet.EfCore.Abstractions.Entities;
