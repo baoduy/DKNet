@@ -32,7 +32,7 @@
                 <PackageReference Update="Microsoft.CSharp" Version="4.7.0"/>
                 <PackageReference Update="Microsoft.Extensions.DependencyInjection" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8"/>
-                <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.8"/>
+                <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.9"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.EntityFrameworkCore.Relational" Version="9.0.8"/>
                 <PackageReference Update="Microsoft.Extensions.Configuration" Version="9.0.8"/>
