@@ -26,7 +26,8 @@ public enum RunningTypes
 /// </summary>
 /// <param name="hookLoader"></param>
 /// <param name="logger"></param>
-internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger) : ISaveChangesInterceptor
+internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger)
+    : ISaveChangesInterceptor, IDisposable, IAsyncDisposable
 {
     private readonly ConcurrentQueue<string> _callersQueue = new();
     private IEnumerable<IAfterSaveHookAsync> _afterSaveHooks = [];
@@ -93,7 +94,7 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             _callersQueue.Enqueue(eventData.EventIdCode);
             //Preparing the hook data and hooks before executing the hook
-            _snapshotContext =new SnapshotContext( eventData.Context);
+            _snapshotContext = new SnapshotContext(eventData.Context);
         }
 
         if (!_initialized)
@@ -130,7 +131,6 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
                 await h.RunAfterSaveAsync(_snapshotContext, cancellationToken);
     }
 
-    #region Not Support SavingChanges
 
     public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
         throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
@@ -148,5 +148,13 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
-    #endregion
+    public void Dispose()
+    {
+        _snapshotContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_snapshotContext != null) await _snapshotContext.DisposeAsync();
+    }
 }
