@@ -14,7 +14,7 @@ internal sealed class EventHook(
     : IHookAsync
 {
     private readonly IMapper? _autoMapper = autoMappers.FirstOrDefault();
-    private ImmutableList<EntityEventItem> _eventEntities = [];
+    private List<EntityEventItem> _eventEntities = [];
 
     /// <summary>
     ///     RunBeforeSaveAsync
@@ -24,7 +24,7 @@ internal sealed class EventHook(
     /// <exception cref="EventException"></exception>
     public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        _eventEntities = context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
+        _eventEntities = [.. context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
             .Select(e =>
             {
                 var events = new List<object?>();
@@ -51,8 +51,7 @@ internal sealed class EventHook(
                 return new EntityEventItem(entity,
                     [.. events.Where(i => i is not null).Select(i => i!).Distinct()]);
             })
-            .Where(e => e.Events.Count > 0)
-            .ToImmutableList();
+            .Where(e => e.Events.Count > 0)];
 
         logger.LogInformation("EventHook: There are {Count} Entity Events Found.", _eventEntities.Count);
         return Task.CompletedTask;
@@ -71,6 +70,6 @@ internal sealed class EventHook(
 
         await Task.WhenAll(publishers);
         //Reset the event entities after processing
-        _eventEntities = _eventEntities.Clear();
+        _eventEntities.Clear();
     }
 }

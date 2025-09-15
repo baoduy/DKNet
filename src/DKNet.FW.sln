@@ -58,11 +58,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		NugetLogo.png = NugetLogo.png
 		nuget.sh = nuget.sh
 		..\README.md = ..\README.md
-		verify_package.sh = verify_package.sh
+		verify_nuget_package.sh = verify_nuget_package.sh
 		..\.github\copilot-instructions.md = ..\.github\copilot-instructions.md
 		..\.gitignore = ..\.gitignore
 		dotnet-install.sh = dotnet-install.sh
-		nuget_update_all.sh = nuget_update_all.sh
+		update_all_nuget.sh = update_all_nuget.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{C9A0CD01-2FCF-4D0E-BB0D-CB61A1478017}"
@@ -111,6 +111,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{83994FE1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Abstractions.Tests", "EfCore\EfCore.Abstractions.Tests\EfCore.Abstractions.Tests.csproj", "{D3942179-366A-4A8B-A3A1-CBD04B2D3882}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Specifications", "EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj", "{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -254,6 +256,10 @@ Global
 		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3942179-366A-4A8B-A3A1-CBD04B2D3882}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -296,5 +302,6 @@ Global
 		{86684BD4-67DA-4771-B362-84574715BF36} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{83994FE1-4B2A-4EFE-A83F-39C39E2CA643} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{D3942179-366A-4A8B-A3A1-CBD04B2D3882} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{8D9B3152-D023-4FDE-A1FE-AC0EA291CB1D} = {79AB749C-6325-4718-9BE0-36C750367F00}
 	EndGlobalSection
 EndGlobal
