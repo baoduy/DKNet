@@ -8,6 +8,7 @@ The EfCore Extensions provide comprehensive enhancements to Entity Framework Cor
 - [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) - Core abstractions and interfaces
 - [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) - Repository pattern abstractions
 - [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) - Repository pattern implementations
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) - Specification pattern for flexible query composition
 
 ### Domain Events & Lifecycle Management
 - [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) - Domain event handling and dispatching
@@ -56,6 +57,7 @@ The EfCore Extensions form the **Infrastructure Layer** in the Onion Architectur
 │  ⚡ DKNet.EfCore.Hooks - Lifecycle Management                  │
 │  ⚙️ DKNet.EfCore.Extensions - EF Core Enhancements            │
 │  🔧 DKNet.EfCore.Relational.Helpers - DB Utilities            │
+│  📐 DKNet.EfCore.Specifications - Query Specification Pattern │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,6 +86,12 @@ The EfCore Extensions form the **Infrastructure Layer** in the Onion Architectur
 - **Policy-Based Authorization**: Flexible authorization rules
 - **Field-Level Security**: Granular access control
 - **Audit Logging**: Comprehensive audit trail
+
+### 5. Specification Pattern
+- **Flexible Query Logic**: Reusable query specifications without repository pattern overhead
+- **Composable Specifications**: Combine specifications using AND/OR operators
+- **Business Rule Encapsulation**: Query logic that reflects domain terminology
+- **Type-Safe Queries**: Generic specifications with compile-time type checking
 
 ## DDD Implementation Benefits
 
@@ -166,6 +174,24 @@ public class OrderCompletedEventHandler : IEventHandler<OrderCompletedEvent>
     {
         // Handle cross-aggregate concerns
         // Send notifications, update read models, etc.
+    }
+}
+```
+
+### 4. Specification Pattern Usage
+```csharp
+public class CustomerService
+{
+    public async Task<List<Customer>> GetTargetCustomersAsync(string region)
+    {
+        var activeCustomers = new ActiveCustomersSpec();
+        var inRegion = new CustomersInRegionSpec(region);
+        var highValue = new HighValueCustomersSpec(1000m);
+        
+        // Combine business rules using logical operators
+        var specification = activeCustomers & inRegion & highValue;
+        
+        return await _customerRepository.SpecsListAsync(specification);
     }
 }
 ```
