@@ -6,6 +6,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace Microsoft.EntityFrameworkCore;
 
+[SuppressMessage("Major Code Smell",
+    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 public static class EfCoreDataSeedingExtensions
 {
     private static readonly MethodInfo AsyncDataSeedingMethodInfo = typeof(EfCoreDataSeedingExtensions)
@@ -17,7 +19,7 @@ public static class EfCoreDataSeedingExtensions
     private static Type[] GetDataSeedingTypes(this ICollection<Assembly> assemblies) =>
     [
         .. assemblies.Extract().Classes().NotGeneric().NotAbstract().NotInterface()
-            .IsInstanceOf(typeof(IDataSeedingConfiguration<>))
+            .IsAssignableTo(typeof(IDataSeedingConfiguration<>))
     ];
 
     private static Type GetEntityType(this Type instanceType)
@@ -60,24 +62,6 @@ public static class EfCoreDataSeedingExtensions
         }
     }
 
-    // private static bool IsSqlServer(this DbContext context)
-    //     => string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
-    //         StringComparison.OrdinalIgnoreCase);
-
-
-    // [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
-    // private static async Task SetIdentityInsertAsync(this DbContext context, IdentityInserts enable,
-    //     string tableName, CancellationToken cancellationToken)
-    // {
-    //     await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}", cancellationToken);
-    // }
-    //
-    // [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
-    // private static void SetIdentityInsert(this DbContext context, IdentityInserts enable,
-    //     string tableName)
-    // {
-    //     context.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{tableName}] {(enable == IdentityInserts.On ? "ON" : "OFF")}");
-    // }
 
     private static async Task RunDataSeedingAsync(this DbContext context, Type[] seedingTypes,
         CancellationToken cancellationToken)
@@ -93,19 +77,12 @@ public static class EfCoreDataSeedingExtensions
             if (seedingInstance is null) continue;
 
             var entityType = seedingType.GetEntityType();
-            //var tableName = context.GetTableName(entityType);
-
-            // if (context.IsSqlServer())
-            //     await context.SetIdentityInsertAsync(IdentityInserts.On, tableName, cancellationToken);
 
             //Call the seeding method with generic entity type
             var md = AsyncDataSeedingMethodInfo.MakeGenericMethod(entityType);
             await (Task)md.Invoke(null, [context, seedingInstance, cancellationToken])!;
 
             await context.SaveChangesAsync(cancellationToken);
-
-            // if (context.IsSqlServer())
-            //     await context.SetIdentityInsertAsync(IdentityInserts.Off, tableName, cancellationToken);
         }
     }
 
@@ -119,19 +96,12 @@ public static class EfCoreDataSeedingExtensions
             if (seedingInstance is null) continue;
 
             var entityType = seedingType.GetEntityType();
-            //var tableName = context.GetTableName(entityType);
-
-            // if (context.IsSqlServer())
-            //     context.SetIdentityInsert(IdentityInserts.On, tableName);
 
             //Call the seeding method with generic entity type
             var md = DataSeedingMethodInfo.MakeGenericMethod(entityType);
             md.Invoke(null, [context, seedingInstance]);
 
             context.SaveChanges();
-
-            // if (context.IsSqlServer())
-            //     context.SetIdentityInsert(IdentityInserts.Off, tableName);
         }
     }
 

@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using DKNet.Fw.Extensions;
 
 namespace Fw.Extensions.Tests;
 
@@ -20,7 +19,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var assemblies = new[] { typeof(ITypeExtractor).Assembly, typeof(ITypeExtractor).Assembly };
-        var types = assemblies.Extract().IsInstanceOf<ITypeExtractor>().ToList();
+        var types = assemblies.Extract().IsAssignableTo<ITypeExtractor>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -30,7 +29,7 @@ public class TestTypeExtractorExtensions
     public void TestInterface()
     {
         // Arrange
-        var types = typeof(TestEnumObject).Assembly.Extract().IsInstanceOf<ITem>().ToList();
+        var types = typeof(TestEnumObject).Assembly.Extract().IsAssignableTo<ITem>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -90,7 +89,7 @@ public class TestTypeExtractorExtensions
     public void TestExtractNotInstanceOf()
     {
         // Arrange
-        var types = typeof(TestEnumObject).Assembly.Extract().Classes().NotInstanceOf<ITem>().ToList();
+        var types = typeof(TestEnumObject).Assembly.Extract().Classes().IsNotAssignableTo<ITem>().ToList();
 
         // Act & Assert
         types.Contains(typeof(TestItem)).ShouldBeFalse();
@@ -102,7 +101,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var types = typeof(TestEnumObject).Assembly.Extract().Classes()
-            .IsInstanceOfAny(typeof(ITem), typeof(IConfigItem))
+            .IsIsAssignableToAny(typeof(ITem), typeof(IConfigItem))
             .ToList();
 
         // Act & Assert
@@ -195,7 +194,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var assemblies = new List<Assembly> { typeof(ITypeExtractor).Assembly, typeof(TestEnumObject).Assembly };
-        var types = assemblies.Extract().IsInstanceOf<ITypeExtractor>().ToList();
+        var types = assemblies.Extract().IsAssignableTo<ITypeExtractor>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -290,16 +289,16 @@ public class TestTypeExtractorExtensions
         // Arrange
         var types = typeof(TestEnumObject).Assembly.Extract()
             .Classes()
-            .NotInstanceOf<ITem>()
-            .NotInstanceOf<IDisposable>()
+            .IsNotAssignableTo<ITem>()
+            .IsNotAssignableTo<IDisposable>()
             .ToList();
 
         // Act & Assert
         types.ShouldNotBeEmpty();
         foreach (var type in types)
         {
-            type.IsImplementOf<ITem>().ShouldBeFalse();
-            type.IsImplementOf<IDisposable>().ShouldBeFalse();
+            type.IsAssignableTo(typeof(ITem)).ShouldBeFalse();
+            type.IsAssignableTo(typeof(IDisposable)).ShouldBeFalse();
         }
     }
 

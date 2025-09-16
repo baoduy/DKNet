@@ -55,6 +55,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADefaultAzureMonitorOptions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Fdeddfe719bf2f3c8d359ffe311e1d79e638f33eea7b46dbe982a3073f85a78_003FDefaultAzureMonitorOptions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADelegates_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003F12fb6dbbb3943361a79f38391d33ff05b86a752974d713fcb6e63a1ec563f9_003FDelegates_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADictionary_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E2_003Fresharper_002Dhost_003FSourcesCache_003F326268ddb927895dce924c78646b4d4ce2b05971ed1d8c9be99051ad1d2_003FDictionary_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADisplayAttribute_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003F3290304a461b0af5a3b3f3d2d3f448c14e654a1cc80bf4ce44f69a92a5c8_003FDisplayAttribute_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADistinct_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003Fbdb2fa64a65c97eadf5ef039ab91ac3699779b32dbdaf8f723e7ac238db251_003FDistinct_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADistributedApplicationOptions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003F4fa744dc4ddd5eb9ca0f24fef09f96334436933da6a1cf2d8e45736c4f1c_003FDistributedApplicationOptions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADockerContainer_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003Fb33d625e2cea3a79dcc357daf817035893c5ed15051f8901af4a219bfd14cc7_003FDockerContainer_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
@@ -243,15 +244,9 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=89173539_002D19cb_002D43e5_002Daed6_002De00aae463a9a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" IsLocked="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Or&gt;
-    &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;EfCore&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/GIT/DKNet/src" Presentation="&amp;lt;Templates&amp;gt;" /&gt;
-  &lt;/Or&gt;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
 	
 	
 	

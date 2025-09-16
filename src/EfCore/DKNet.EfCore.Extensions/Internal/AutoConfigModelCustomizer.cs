@@ -23,7 +23,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         modelBuilder.RegisterEntityMappingFrom(options.Registrations);
 
         //Register StaticData Of
-        modelBuilder.RegisterStaticDataFrom(options.Registrations);
+        //modelBuilder.RegisterStaticDataFrom(options.Registrations);
 
         //Register Global Filter
         modelBuilder.RegisterGlobalFilterFrom(options.Registrations, dbContext);

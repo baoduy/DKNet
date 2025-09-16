@@ -24,7 +24,7 @@ internal static class ServiceBusExtensions
             .WithImageTag("latest")
             .WithEnvironment("ACCEPT_EULA", "Y")
             .WithEnvironment("SQL_SERVER", sqlServer.Resource.Name)
-            .WithEnvironment("MSSQL_SA_PASSWORD", sqlServer.Resource.PasswordParameter.Value)
+            .WithEnvironment("MSSQL_SA_PASSWORD", sqlServer.Resource.PasswordParameter)
             .WithBindMount(configFilePath, "/ServiceBus_Emulator/ConfigFiles/Config.json", true)
             .WithEndpoint(
                 targetPort: 5672,

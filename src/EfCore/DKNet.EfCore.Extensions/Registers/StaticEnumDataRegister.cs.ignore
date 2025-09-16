@@ -5,37 +5,38 @@ using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace DKNet.EfCore.Extensions.Registers;
 
+[SuppressMessage("Major Code Smell", "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal static class StaticEnumDataRegister
 {
-    private static readonly MethodInfo Method = typeof(StaticEnumDataRegister)
-        .GetMethod(nameof(RegisterStaticDataType), BindingFlags.Static | BindingFlags.NonPublic)!;
+    // private static readonly MethodInfo Method = typeof(StaticEnumDataRegister)
+    //     .GetMethod(nameof(RegisterStaticDataType), BindingFlags.Static | BindingFlags.NonPublic)!;
 
     /// <summary>
     ///     Register StaticDataOfAttribute Entities from RegistrationInfos <see cref="AutoEntityRegistrationInfo" />
     /// </summary>
     /// <param name="modelBuilder"></param>
     /// <param name="registrations"></param>
-    internal static void RegisterStaticDataFrom(this ModelBuilder modelBuilder,
-        IEnumerable<AutoEntityRegistrationInfo> registrations)
-    {
-        foreach (var type in registrations.SelectMany(r =>
-                     r.EntityAssemblies.Extract().Enums().HasAttribute<StaticDataAttribute>()))
-            modelBuilder.RegisterStaticDataFromEnumType(type);
-    }
+    // internal static void RegisterStaticDataFrom(this ModelBuilder modelBuilder,
+    //     IEnumerable<AutoEntityRegistrationInfo> registrations)
+    // {
+    //     foreach (var type in registrations.SelectMany(r =>
+    //                  r.EntityAssemblies.Extract().Enums().HasAttribute<StaticDataAttribute>()))
+    //         modelBuilder.RegisterStaticDataFromEnumType(type);
+    // }
 
-    private static void RegisterStaticDataFromEnumType(this ModelBuilder modelBuilder, Type enumType)
-    {
-        var att = enumType.GetCustomAttribute<StaticDataAttribute>();
-        if (att == null) return;
-
-        var enumTableType = typeof(EnumTables<>).MakeGenericType(enumType);
-
-        if (Method == null)
-            throw new InvalidOperationException($"The {nameof(RegisterStaticDataType)} is not found");
-
-        var md = Method.MakeGenericMethod(enumTableType);
-        md.Invoke(null, [modelBuilder, att]);
-    }
+    // private static void RegisterStaticDataFromEnumType(this ModelBuilder modelBuilder, Type enumType)
+    // {
+    //     var att = enumType.GetCustomAttribute<StaticDataAttribute>();
+    //     if (att == null) return;
+    //
+    //     var enumTableType = typeof(EnumTables<>).MakeGenericType(enumType);
+    //
+    //     if (Method == null)
+    //         throw new InvalidOperationException($"The {nameof(RegisterStaticDataType)} is not found");
+    //
+    //     var md = Method.MakeGenericMethod(enumTableType);
+    //     md.Invoke(null, [modelBuilder, att]);
+    // }
 
     private static void RegisterStaticDataType<TEnumTable>(ModelBuilder modelBuilder, StaticDataAttribute? attribute)
         where TEnumTable : class

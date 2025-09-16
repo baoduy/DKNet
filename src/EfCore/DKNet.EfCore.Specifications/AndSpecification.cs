@@ -3,22 +3,27 @@
 namespace DKNet.EfCore.Specifications;
 
 /// <summary>
-///     Represents an expression that combines two specifications with a logical "and"
+///     Represents an expression that combines two specifications with a logical "and".
 /// </summary>
 /// <typeparam name="TEntity">Type of the entity</typeparam>
 public class AndSpecification<TEntity> : Specification<TEntity>
     where TEntity : class
 {
     /// <summary>
-    ///     Initializes a new instance of the class
+    ///     Initializes a new instance of the <see cref="AndSpecification{TEntity}"/> class.
     /// </summary>
-    /// <param name="left">A left operand expression to combine to</param>
-    /// <param name="right">A right operand expression to combine with</param>
+    /// <param name="left">A left operand specification to combine</param>
+    /// <param name="right">A right operand specification to combine</param>
     public AndSpecification(Specification<TEntity> left, Specification<TEntity> right)
     {
         RegisterFilteringQuery(left, right);
     }
 
+    /// <summary>
+    ///     Registers the filtering query by combining two specifications with logical "and".
+    /// </summary>
+    /// <param name="left">Left specification</param>
+    /// <param name="right">Right specification</param>
     private void RegisterFilteringQuery(Specification<TEntity> left, Specification<TEntity> right)
     {
         var leftExpression = left.FilterQuery;

@@ -1,4 +1,6 @@
-﻿namespace Fw.Extensions.Tests.TestObjects;
+﻿// ReSharper disable UnusedTypeParameter
+
+namespace Fw.Extensions.Tests.TestObjects;
 
 public interface IGenericClassItem<T> where T : class;
 

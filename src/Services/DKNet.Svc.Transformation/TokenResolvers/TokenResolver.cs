@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using DKNet.Svc.Transformation.TokenExtractors;
 
@@ -28,7 +29,9 @@ public interface ITokenResolver
     Task<object?> ResolveAsync(IToken token, params object?[] data);
 }
 
-public class TokenResolver : ITokenResolver
+[SuppressMessage("Major Code Smell",
+    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
+public sealed class TokenResolver : ITokenResolver
 {
     /// <summary>
     ///     Get the first not null value of the public property of data.
@@ -38,7 +41,7 @@ public class TokenResolver : ITokenResolver
     /// <exception cref="ArgumentException"></exception>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">if data or token is null</exception>
-    public virtual object? Resolve(IToken token, params object?[] data)
+    public object? Resolve(IToken token, params object?[] data)
     {
         ArgumentNullException.ThrowIfNull(token);
 
@@ -70,9 +73,7 @@ public class TokenResolver : ITokenResolver
         try
         {
             var prop = data.GetType().GetProperty(propertyName,
-                           BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public)
-                       ?? data.GetType().GetProperty(propertyName,
-                           BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic);
 
             return prop?.GetValue(data);
         }

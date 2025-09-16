@@ -22,7 +22,7 @@ public class TypeExtractorExtensionsTests
     [Fact]
     public void TestInterface()
     {
-        typeof(MyDbContext).Assembly.Extract().IsInstanceOf<BaseEntity>()
+        typeof(MyDbContext).Assembly.Extract().IsAssignableTo<BaseEntity>()
             .Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
@@ -64,7 +64,7 @@ public class TypeExtractorExtensionsTests
     [Fact]
     public void TestExtractNotInstanceOf()
     {
-        var list = typeof(MyDbContext).Assembly.Extract().Classes().NotInstanceOf(typeof(IEntity<>)).ToList();
+        var list = typeof(MyDbContext).Assembly.Extract().Classes().IsNotAssignableTo(typeof(IEntity<>)).ToList();
         list.Contains(typeof(User)).ShouldBeFalse();
         list.Contains(typeof(Address)).ShouldBeFalse();
     }

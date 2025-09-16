@@ -83,18 +83,18 @@ internal class TypeExtractor : ITypeExtractor
     }
 
     /// <inheritdoc />
-    public ITypeExtractor IsInstanceOf(Type? type)
+    public ITypeExtractor IsAssignableTo(Type? type)
     {
-        return type == null ? this : FilterBy(t => t.IsImplementOf(type));
+        return type == null ? this : FilterBy(t => t.IsAssignableTo(type));
     }
 
     /// <inheritdoc />
-    public ITypeExtractor IsInstanceOf<T>() => IsInstanceOf(typeof(T));
+    public ITypeExtractor IsAssignableTo<T>() => IsAssignableTo(typeof(T));
 
     /// <inheritdoc />
-    public ITypeExtractor IsInstanceOfAny(params Type[] types)
+    public ITypeExtractor IsIsAssignableToAny(params Type[] types)
     {
-        return FilterBy(t => types.Any(t.IsImplementOf));
+        return FilterBy(t => types.Any(t.IsAssignableTo));
     }
 
     /// <inheritdoc />
@@ -128,13 +128,13 @@ internal class TypeExtractor : ITypeExtractor
     }
 
     /// <inheritdoc />
-    public ITypeExtractor NotInstanceOf(Type? type)
+    public ITypeExtractor IsNotAssignableTo(Type? type)
     {
-        return type == null ? this : FilterBy(t => !t.IsImplementOf(type));
+        return type == null ? this : FilterBy(t => !t.IsAssignableTo(type));
     }
 
     /// <inheritdoc />
-    public ITypeExtractor NotInstanceOf<T>() => NotInstanceOf(typeof(T));
+    public ITypeExtractor IsNotAssignableTo<T>() => IsNotAssignableTo(typeof(T));
 
     /// <inheritdoc />
     public ITypeExtractor NotInterface()

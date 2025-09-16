@@ -7,6 +7,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
+[SuppressMessage("Major Code Smell",
+    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal static class EntityAutoConfigRegisterExtensions
 {
     private static readonly MethodInfo RegisterMappingMethod = typeof(EntityAutoConfigRegisterExtensions)
@@ -47,7 +49,7 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <returns>An enumerable of entity types.</returns>
     internal static IEnumerable<Type> GetAllEntityTypes(this AutoEntityRegistrationInfo registration)
     {
-        return registration.EntityAssemblies.Extract().Classes().NotGeneric().IsInstanceOf(typeof(IEntity<>))
+        return registration.EntityAssemblies.Extract().Classes().NotGeneric().IsAssignableTo(typeof(IEntity<>))
             .Where(t => !t.HasAttribute<IgnoreEntityAttribute>(true));
     }
 
@@ -58,7 +60,7 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <returns>An enumerable of defined mapper types.</returns>
     internal static IEnumerable<Type> GetDefinedMappers(this AutoEntityRegistrationInfo registration) =>
         registration.EntityAssemblies.Extract().Classes().NotAbstract().NotGeneric()
-            .IsInstanceOf(InterfaceEntityTypeConfiguration);
+            .IsAssignableTo(InterfaceEntityTypeConfiguration);
 
     /// <summary>
     ///     Get All generic IEntityTypeConfiguration that can be used for the un-mapped entities.
@@ -67,7 +69,7 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <returns>An enumerable of generic mapper types.</returns>
     internal static IEnumerable<Type> GetGenericMappers(this AutoEntityRegistrationInfo registration) =>
         registration.EntityAssemblies.Extract().Classes().NotAbstract().Generic()
-            .IsInstanceOf(InterfaceEntityTypeConfiguration);
+            .IsAssignableTo(InterfaceEntityTypeConfiguration);
 
     /// <summary>
     ///     Scan GlobalFilter from Assemblies
@@ -75,7 +77,7 @@ internal static class EntityAutoConfigRegisterExtensions
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>An enumerable of global filter types.</returns>
     private static IEnumerable<Type> ScanGlobalFilterFrom(this ICollection<Assembly> assemblies) =>
-        assemblies.Extract().Classes().NotAbstract().IsInstanceOf<IGlobalQueryFilterRegister>();
+        assemblies.Extract().Classes().NotAbstract().IsAssignableTo<IGlobalQueryFilterRegister>();
 
     /// <summary>
     ///     Register GlobalFilter from RegistrationInfo <see cref="AutoEntityRegistrationInfo" />

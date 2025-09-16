@@ -56,7 +56,7 @@ public class DomainEntityTests
         var newAvatar = "new-avatar.jpg";
         var newName = "Updated Name";
         var newPhone = "+2222222222";
-        var newBirthday = new DateTime(1990, 5, 15);
+        var newBirthday = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Local);
         var userId = "user2";
 
         // Act
