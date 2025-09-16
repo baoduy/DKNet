@@ -1,3 +1,8 @@
-﻿namespace SlimBus.Infra.Contexts;
+﻿using SlimBus.Domains.Features.Profiles.Entities;
 
-internal class CoreDbContext(DbContextOptions options) : DbContext(options);
+namespace SlimBus.Infra.Contexts;
+
+internal class CoreDbContext(DbContextOptions options) : DbContext(options)
+{
+    public DbSet<CustomerProfile> CustomerProfiles { get; set; }
+}
