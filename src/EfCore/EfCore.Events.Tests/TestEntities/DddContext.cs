@@ -20,4 +20,7 @@ public class DddContext(
     internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders?.SingleOrDefault();
 
     public IEnumerable<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
+    
+    public DbSet<Root> Roots { get; set; }
+    public DbSet<Entity> Entities { get; set; }
 }
