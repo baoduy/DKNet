@@ -1,4 +1,5 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.Extensions.Convertors;
 using DKNet.Fw.Extensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +20,10 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
             if (idProperty.PropertyType.IsNumericType())
                 builder.Property(nameof(IEntity<dynamic>.Id))
                     .ValueGeneratedOnAdd();
+            else if (idProperty.PropertyType == typeof(Guid))
+                builder.Property(nameof(IEntity<dynamic>.Id))
+                    .ValueGeneratedOnAdd()
+                    .HasValueGenerator<GuidV7ValueGenerator>();
         }
 
         // Handle audit properties
