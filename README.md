@@ -6,51 +6,121 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
-[![CodeQL Advanced](https://github.com/baoduy/DKNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/baoduy/DKNet/actions/workflows/codeql.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=baoduy_DKNet&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=baoduy_DKNet)
-[![GitHub issues](https://img.shields.io/github/issues/baoduy/DKNet)](https://github.com/baoduy/DKNet/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/baoduy/DKNet)](https://github.com/baoduy/DKNet/pulls)
-[![StyleCop](https://img.shields.io/badge/code%20style-StyleCop-brightgreen.svg)](https://github.com/DotNetAnalyzers/StyleCopAnalyzers)
 
-![codeCove](https://codecov.io/gh/baoduy/DKNet/graphs/sunburst.svg?token=xtNN7AtB1O)
+A comprehensive .NET framework designed to enhance enterprise application development using **Domain-Driven Design (DDD)** principles and **Onion Architecture** patterns.
 
-[![GitHub contributors](https://img.shields.io/github/contributors/baoduy/DKNet)](https://github.com/baoduy/DKNet/graphs/contributors)
+## 🚀 Quick Start
 
-## DKNet Project Overview
+### Installation
+```bash
+# Core framework extensions
+dotnet add package DKNet.Fw.Extensions
 
-Here’s a summary of all DKNET-prefixed projects in this repository, with links to their source code and documentation:
+# Entity Framework Core extensions
+dotnet add package DKNet.EfCore.Extensions
+dotnet add package DKNet.EfCore.Repos
 
-| Project Name                       | Description                                  | Source Code                                                                                        | Documentation                                                                                              |
-|------------------------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| DKNet.Fw.Extensions                | Framework-level extensions and utilities     | [src/Core/DKNet.Fw.Extensions](src/Core/DKNet.Fw.Extensions)                                       | [docs/Core/DKNet.Fw.Extensions.md](docs/Core/DKNet.Fw.Extensions.md)                                       |
-| DKNet.EfCore.Abstractions          | Core abstractions and interfaces for EF Core | [src/EfCore/DKNet.EfCore.Abstractions](src/EfCore/DKNet.EfCore.Abstractions)                       | [docs/EfCore/DKNet.EfCore.Abstractions.md](docs/EfCore/DKNet.EfCore.Abstractions.md)                       |
-| DKNet.EfCore.DataAuthorization     | Data authorization and access control        | [src/EfCore/DKNet.EfCore.DataAuthorization](src/EfCore/DKNet.EfCore.DataAuthorization)             | [docs/EfCore/DKNet.EfCore.DataAuthorization.md](docs/EfCore/DKNet.EfCore.DataAuthorization.md)             |
-| DKNet.EfCore.Events                | Domain event handling and dispatching        | [src/EfCore/DKNet.EfCore.Events](src/EfCore/DKNet.EfCore.Events)                                   | [docs/EfCore/DKNet.EfCore.Events.md](docs/EfCore/DKNet.EfCore.Events.md)                                   |
-| DKNet.EfCore.Extensions            | EF Core functionality enhancements           | [src/EfCore/DKNet.EfCore.Extensions](src/EfCore/DKNet.EfCore.Extensions)                           | [docs/EfCore/DKNet.EfCore.Extensions.md](docs/EfCore/DKNet.EfCore.Extensions.md)                           |
-| DKNet.EfCore.Hooks                 | Lifecycle hooks for EF Core operations       | [src/EfCore/DKNet.EfCore.Hooks](src/EfCore/DKNet.EfCore.Hooks)                                     | [docs/EfCore/DKNet.EfCore.Hooks.md](docs/EfCore/DKNet.EfCore.Hooks.md)                                     |
-| DKNet.EfCore.Relational.Helpers    | Relational database utilities                | [src/EfCore/DKNet.EfCore.Relational.Helpers](src/EfCore/DKNet.EfCore.Relational.Helpers)           | [docs/EfCore/DKNet.EfCore.Relational.Helpers.md](docs/EfCore/DKNet.EfCore.Relational.Helpers.md)           |
-| DKNet.EfCore.Repos                 | Repository pattern implementations           | [src/EfCore/DKNet.EfCore.Repos](src/EfCore/DKNet.EfCore.Repos)                                     | [docs/EfCore/DKNet.EfCore.Repos.md](docs/EfCore/DKNet.EfCore.Repos.md)                                     |
-| DKNet.EfCore.Repos.Abstractions    | Repository abstractions                      | [src/EfCore/DKNet.EfCore.Repos.Abstractions](src/EfCore/DKNet.EfCore.Repos.Abstractions)           | [docs/EfCore/DKNet.EfCore.Repos.Abstractions.md](docs/EfCore/DKNet.EfCore.Repos.Abstractions.md)           |
-| DKNet.SlimBus.Extensions           | SlimMessageBus extensions for EF Core        | [src/SlimBus/DKNet.SlimBus.Extensions](src/SlimBus/DKNet.SlimBus.Extensions)                       | [docs/Messaging/DKNet.SlimBus.Extensions.md](docs/Messaging/DKNet.SlimBus.Extensions.md)                   |
-| DKNet.Svc.BlobStorage.Abstractions | File storage service abstractions            | [src/Services/DKNet.Svc.BlobStorage.Abstractions](src/Services/DKNet.Svc.BlobStorage.Abstractions) | [docs/Services/DKNet.Svc.BlobStorage.Abstractions.md](docs/Services/DKNet.Svc.BlobStorage.Abstractions.md) |
-| DKNet.Svc.BlobStorage.AwsS3        | AWS S3 storage adapter                       | [src/Services/DKNet.Svc.BlobStorage.AwsS3](src/Services/DKNet.Svc.BlobStorage.AwsS3)               | [docs/Services/DKNet.Svc.BlobStorage.AwsS3.md](docs/Services/DKNet.Svc.BlobStorage.AwsS3.md)               |
-| DKNet.Svc.BlobStorage.AzureStorage | Azure Blob storage adapter                   | [src/Services/DKNet.Svc.BlobStorage.AzureStorage](src/Services/DKNet.Svc.BlobStorage.AzureStorage) | [docs/Services/DKNet.Svc.BlobStorage.AzureStorage.md](docs/Services/DKNet.Svc.BlobStorage.AzureStorage.md) |
-| DKNet.Svc.BlobStorage.Local        | Local file system storage                    | [src/Services/DKNet.Svc.BlobStorage.Local](src/Services/DKNet.Svc.BlobStorage.Local)               | [docs/Services/DKNet.Svc.BlobStorage.Local.md](docs/Services/DKNet.Svc.BlobStorage.Local.md)               |
-| DKNet.Svc.Transformation           | Data transformation services                 | [src/Services/DKNet.Svc.Transformation](src/Services/DKNet.Svc.Transformation)                     | [docs/Services/DKNet.Svc.Transformation.md](docs/Services/DKNet.Svc.Transformation.md)                     |
-| Aspire.Hosting.ServiceBus          | .NET Aspire Service Bus hosting extensions   | [src/Aspire/Aspire.Hosting.ServiceBus](src/Aspire/Aspire.Hosting.ServiceBus)                       | - (No dedicated docs yet)                                                                                  |
-| SlimBus.ApiEndpoints (Template)    | Complete API template using SlimMessageBus   | [src/Templates/SlimBus.ApiEndpoints](src/Templates/SlimBus.ApiEndpoints)                           | [src/Templates/SlimBus.ApiEndpoints/README.md](src/Templates/SlimBus.ApiEndpoints/README.md)               |
+# Messaging & CQRS
+dotnet add package DKNet.SlimBus.Extensions
 
----
+# Blob storage (choose your provider)
+dotnet add package DKNet.Svc.BlobStorage.AzureStorage
+```
 
-### Documentation
+### Get Started with Template
+```bash
+# Use the complete SlimBus API template
+git clone https://github.com/baoduy/DKNet.git
+cd DKNet/src/Templates/SlimBus.ApiEndpoints
+dotnet run --project SlimBus.Api
+```
 
-📖 **[Complete Framework Documentation](docs/README.md)** - Comprehensive documentation organized by functional areas
+## 🏗️ Key Features
 
-For detailed information about architecture, implementation patterns, and usage examples, visit
-our [complete documentation](docs/README.md) or refer to our [GitHub Pages](https://baoduy.github.io/DKNet/)
+- **🎯 Domain-Driven Design**: Rich domain models with business logic encapsulation
+- **🧅 Onion Architecture**: Clean separation of concerns with dependency inversion
+- **⚡ CQRS Pattern**: Command/Query separation for scalable applications
+- **🔄 Event-Driven**: Domain events for loose coupling and integration
+- **🗄️ Repository Pattern**: Abstracted data access with specifications
+- **🗃️ Multi-Storage**: Azure Blob, AWS S3, and local file storage
+- **🧪 Test-Ready**: 99% code coverage with TestContainers integration
 
----
+## 📋 Core Packages
+
+| Package | Description | NuGet |
+|---------|-------------|--------|
+| **DKNet.Fw.Extensions** | Core framework utilities and extensions | [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/) |
+| **DKNet.EfCore.Extensions** | Entity Framework Core enhancements | [![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/) |
+| **DKNet.SlimBus.Extensions** | CQRS and messaging integration | [![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Extensions)](https://www.nuget.org/packages/DKNet.SlimBus.Extensions/) |
+
+[**→ View All Packages**](docs/README.md#component-documentation)
+
+## 📖 Documentation
+
+| Section | Description |
+|---------|-------------|
+| **[📚 Complete Documentation](docs/README.md)** | Comprehensive guides organized by functional areas |
+| **[🚀 Getting Started](docs/Getting-Started.md)** | Installation, setup, and first steps |
+| **[🏗️ Architecture Guide](docs/Architecture.md)** | Understanding DDD and Onion Architecture |
+| **[⚙️ Configuration](docs/Configuration.md)** | Setup and configuration options |
+| **[📝 Examples & Recipes](docs/Examples/README.md)** | Practical implementation examples |
+| **[📖 API Reference](docs/API-Reference.md)** | Complete API documentation |
+| **[❓ FAQ](docs/FAQ.md)** | Frequently asked questions |
+
+## 🔧 Example Usage
+
+### Domain Entity with Events
+```csharp
+public class Product : AggregateRoot
+{
+    public Product(string name, decimal price, string createdBy)
+        : base(Guid.NewGuid(), createdBy)
+    {
+        Name = name;
+        Price = price;
+    }
+
+    public string Name { get; private set; }
+    public decimal Price { get; private set; }
+
+    public void UpdatePrice(decimal newPrice, string userId)
+    {
+        var oldPrice = Price;
+        Price = newPrice;
+        SetUpdatedBy(userId);
+        
+        AddEvent(new ProductPriceChangedEvent(Id, oldPrice, newPrice));
+    }
+}
+```
+
+### CQRS Command Handler
+```csharp
+public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
+{
+    private readonly IProductRepository _repository;
+
+    public async Task<ProductResult> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    {
+        var product = new Product(request.Name, request.Price, request.UserId);
+        await _repository.AddAsync(product, cancellationToken);
+        return _mapper.Map<ProductResult>(product);
+    }
+}
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](docs/Contributing.md) for details on:
+- Development setup
+- Coding standards  
+- Pull request process
+- Testing requirements
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+
+---
+
+> 💡 **New to DKNet?** Start with our [Getting Started Guide](docs/Getting-Started.md) or explore the [SlimBus Template](src/Templates/SlimBus.ApiEndpoints/README.md) for a complete working example!
