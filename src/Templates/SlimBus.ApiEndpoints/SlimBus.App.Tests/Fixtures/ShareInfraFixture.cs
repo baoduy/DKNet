@@ -18,9 +18,6 @@ public sealed class ShareInfraFixture : IAsyncLifetime
         _cache = builder.AddRedis("Redis");
         var sqlServer = builder.AddSqlServer("sqlServer");
         _db = sqlServer.AddDatabase("TestDb");
-
-        // _bus = builder.AddServiceBus(sqlServer, "Data/busConfig.json")
-        //     .WithLifetime(ContainerLifetime.Persistent);
         _app = builder.Build();
     }
 

@@ -2,11 +2,6 @@ using Microsoft.Extensions.Logging;
 
 namespace DKNet.EfCore.Events.Internals;
 
-/// <summary>
-///     EventRunnerHook
-/// </summary>
-/// <param name="eventPublishers"></param>
-/// <param name="autoMappers"></param>
 internal sealed class EventHook(
     IEnumerable<IEventPublisher> eventPublishers,
     IEnumerable<IMapper> autoMappers,
@@ -24,34 +19,38 @@ internal sealed class EventHook(
     /// <exception cref="EventException"></exception>
     public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        _eventEntities = [.. context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
-            .Select(e =>
-            {
-                var events = new List<object?>();
-                var finallyEventTypes = new List<Type>();
-                var entity = (IEventEntity)e.Entity;
-                var eventsAndTypes = entity.GetEventsAndClear();
-
-                if (eventsAndTypes.events != null)
-                    //Collect events
-                    events.AddRange(eventsAndTypes.events);
-
-                if (eventsAndTypes.eventTypes != null)
-                    finallyEventTypes.AddRange(eventsAndTypes.eventTypes);
-
-                if (finallyEventTypes.Count > 0)
+        _eventEntities =
+        [
+            .. context.SnapshotEntities.Where(e => e.Entity is IEventEntity)
+                .Select(e =>
                 {
-                    if (_autoMapper == null)
-                        throw new NoNullAllowedException($"The {nameof(IMapper)} is not provided for the event types");
+                    var events = new List<object?>();
+                    var finallyEventTypes = new List<Type>();
+                    var entity = (IEventEntity)e.Entity;
+                    var eventsAndTypes = entity.GetEventsAndClear();
 
-                    events.AddRange(finallyEventTypes.Distinct()
-                        .Select(d => _autoMapper.Map(entity, e.Entry.Metadata.ClrType, d)));
-                }
+                    if (eventsAndTypes.events != null)
+                        //Collect events
+                        events.AddRange(eventsAndTypes.events);
 
-                return new EntityEventItem(entity,
-                    [.. events.Where(i => i is not null).Select(i => i!).Distinct()]);
-            })
-            .Where(e => e.Events.Count > 0)];
+                    if (eventsAndTypes.eventTypes != null)
+                        finallyEventTypes.AddRange(eventsAndTypes.eventTypes);
+
+                    if (finallyEventTypes.Count > 0)
+                    {
+                        if (_autoMapper == null)
+                            throw new NoNullAllowedException(
+                                $"The {nameof(IMapper)} is not provided for the event types");
+
+                        events.AddRange(finallyEventTypes.Distinct()
+                            .Select(d => _autoMapper.Map(entity, e.Entry.Metadata.ClrType, d)));
+                    }
+
+                    return new EntityEventItem(entity,
+                        [.. events.Where(i => i is not null).Select(i => i!).Distinct()]);
+                })
+                .Where(e => e.Events.Count > 0)
+        ];
 
         logger.LogInformation("EventHook: There are {Count} Entity Events Found.", _eventEntities.Count);
         return Task.CompletedTask;

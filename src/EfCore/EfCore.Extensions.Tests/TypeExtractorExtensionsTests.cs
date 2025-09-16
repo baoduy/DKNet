@@ -1,4 +1,5 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
+using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace EfCore.Extensions.Tests;
@@ -60,6 +61,12 @@ public class TypeExtractorExtensionsTests
             .ShouldBeGreaterThanOrEqualTo(3);
     }
 
+    [Fact]
+    public void TestIsImplementOf()
+    {
+        typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
+        typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
+    }
 
     [Fact]
     public void TestExtractNotInstanceOf()

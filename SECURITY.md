@@ -1,21 +1,22 @@
 # Security Policy
 
-## Supported Versions
+This is the security policy for the DKNet Framework.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+## 📄 Complete Security Documentation
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+For comprehensive security information, please see our [Security Documentation](docs/Security.md) which includes:
+- Supported versions
+- Vulnerability reporting process
+- Security best practices
+- Security contact information
 
-## Reporting a Vulnerability
+## 🚨 Quick Security Reporting
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability, please:
+1. **Do NOT** open a public issue
+2. Email security details to the maintainers
+3. Refer to our [complete security documentation](docs/Security.md) for detailed reporting instructions
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+---
+
+> 🔒 **Important**: For detailed security policies and procedures, please refer to the [Security Documentation](docs/Security.md).

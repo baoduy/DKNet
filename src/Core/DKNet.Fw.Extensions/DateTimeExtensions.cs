@@ -29,5 +29,5 @@ public static class DateTimeExtensions
     /// </summary>
     /// <param name="date">The date to determine the quarter for.</param>
     /// <returns>The quarter of the year (1, 2, 3, or 4).</returns>
-    public static int Quarter(this DateTime date) => (date.Month - 1) / 3 + 1;
+    public static int InQuarter(this DateTime date) => (date.Month - 1) / 3 + 1;
 }

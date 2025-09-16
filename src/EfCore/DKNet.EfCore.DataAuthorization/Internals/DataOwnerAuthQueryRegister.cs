@@ -16,6 +16,8 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 ///     - Handling inheritance scenarios correctly
 ///     - Ensuring proper data visibility based on ownership rules
 /// </remarks>
+[SuppressMessage("Major Code Smell",
+    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
 {
     private static readonly MethodInfo Method = typeof(DataOwnerAuthQueryRegister)

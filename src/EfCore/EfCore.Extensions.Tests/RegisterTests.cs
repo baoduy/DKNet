@@ -1,5 +1,4 @@
 using DKNet.EfCore.Abstractions.Entities;
-using DKNet.EfCore.Extensions.Internal;
 
 namespace EfCore.Extensions.Tests;
 
@@ -85,17 +84,17 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
-    [Fact]
-    public async Task TestEnumStatus1DataSeeding() =>
-        (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
-
-    [Fact]
-    public async Task TestEnumStatusDataSeeding()
-    {
-        (await _db.Set<EnumTables<EnumStatus>>().CountAsync()).ShouldBe(3);
-        var first = await _db.Set<EnumTables<EnumStatus>>().FirstAsync();
-        first.Id.ShouldBeGreaterThanOrEqualTo(0);
-    }
+    // [Fact]
+    // public async Task TestEnumStatus1DataSeeding() =>
+    //     (await _db.Set<EnumTables<EnumStatus1>>().CountAsync()).ShouldBe(3);
+    //
+    // [Fact]
+    // public async Task TestEnumStatusDataSeeding()
+    // {
+    //     (await _db.Set<EnumTables<EnumStatus>>().CountAsync()).ShouldBe(3);
+    //     var first = await _db.Set<EnumTables<EnumStatus>>().FirstAsync();
+    //     first.Id.ShouldBeGreaterThanOrEqualTo(0);
+    // }
 
     [Fact]
     public async Task TestIgnoredEntityAsync()

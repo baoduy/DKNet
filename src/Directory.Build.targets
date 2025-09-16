@@ -2,7 +2,7 @@
     <!-- https://www.nuget.org/packages/Microsoft.CodeAnalysis.Analyzers/ -->
     <!-- https://www.nuget.org/packages/Microsoft.CodeAnalysis.CSharp.Workspaces/ -->
     <PropertyGroup>
-        <RoslynVersion></RoslynVersion>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <Choose>
@@ -99,10 +99,6 @@
                     <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
                 </PackageReference>
             </ItemGroup>
-            <PropertyGroup>
-                <DefineConstants>$(DefineConstants);ROSLYN_4_8;ROSLYN_4_8_OR_GREATER</DefineConstants>
-                <DefineConstants>$(DefineConstants);CSHARP9_OR_GREATER;CSHARP10_OR_GREATER;CSHARP11_OR_GREATER;CSHARP12_OR_GREATER</DefineConstants>
-            </PropertyGroup>
         </When>
         <Otherwise>
         </Otherwise>

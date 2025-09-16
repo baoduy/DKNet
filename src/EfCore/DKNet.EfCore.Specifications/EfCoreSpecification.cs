@@ -3,21 +3,19 @@
 namespace DKNet.EfCore.Specifications;
 
 /// <summary>
-///     The Ef Core specification implementation
+///     The Ef Core specification implementation.
 /// </summary>
 /// <typeparam name="TEntity">Type of the entity</typeparam>
-/// <remarks>
-///     Initializes a new instance of the class
-/// </remarks>
 public sealed class EfCoreSpecification<TEntity>(ISpecification<TEntity> specification)
     : Specification<TEntity>(specification)
     where TEntity : class
 {
     /// <summary>
-    ///     Returns a specification expression.<br />
-    ///     IMPORTANT: EfCore Specification supports IncludeQueries
+    ///     Applies the specification to the given queryable source.
+    ///     Supports filtering, includes, and ordering.
     /// </summary>
-    /// <returns>Expression</returns>
+    /// <param name="queryable">The queryable source</param>
+    /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
     public IQueryable<TEntity> Apply(IQueryable<TEntity> queryable)
     {
         if (FilterQuery is not null) queryable = queryable.Where(FilterQuery);

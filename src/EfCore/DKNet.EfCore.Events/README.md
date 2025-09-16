@@ -1,119 +1,415 @@
 # DKNet.EfCore.Events
 
-`DKNet.EfCore.Events` is part of the DKNet suite, designed to enhance Entity Framework Core (EF Core) applications by
-providing event-based functionality. This library enables developers to trigger events based on data changes (e.g.,
-`onCreate`, `onUpdate`, or `onDelete`) and handle them using custom logic.
+[![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Events)](https://www.nuget.org/packages/DKNet.EfCore.Events/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.EfCore.Events)](https://www.nuget.org/packages/DKNet.EfCore.Events/)
+[![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-## Overview
-
-The goal of `DKNet.EfCore.Events` is to simplify the implementation of domain-driven design (DDD) principles in EF Core
-applications. It provides a centralized way to manage events and their handlers, allowing developers to implement
-business rules and validation logic without tightly coupling it with the data access layer.
-
-## Key Concepts
-
-- **EventPublisher**: A central hub for publishing events. All events are routed through this publisher.
-
-- **IEventEntity**: An interface that defines methods for adding domain events to a queue and retrieving/clearing them.
-
-- **Custom Event Handlers**: Developers can implement custom handlers to respond to specific events, such as validating
-  data or triggering external services.
+Enhanced Entity Framework Core event-based functionality for implementing domain-driven design (DDD) patterns. This library provides centralized event management, automatic event publishing during EF Core operations, and seamless integration with domain entities.
 
 ## Features
 
-### 1. **Event Triggers**
+- **Domain Event Management**: Queue and publish domain events from entities
+- **Automatic Event Publishing**: Events fired automatically during EF Core SaveChanges
+- **Event Publisher Abstraction**: Central hub for event routing and handling
+- **EF Core Hooks Integration**: Pre and post-save event triggers
+- **Custom Event Handlers**: Flexible event handling with dependency injection
+- **Entity Event Tracking**: Track and manage events at the entity level
+- **Exception Handling**: Robust error handling for event processing
+- **Performance Optimized**: Efficient event queuing and batch processing
 
-- Automatically fire events in response to changes in your data (e.g., `onCreate`, `onUpdate`, or `onDelete`).
-- Events are queued and published through the `IEventPublisher`.
+## Supported Frameworks
 
-### 2. **Custom Event Handlers**
+- .NET 9.0+
+- Entity Framework Core 9.0+
 
-- Write custom handlers to implement specific business logic for any event.
-- Handlers can be registered as decorators or directly in your application.
+## Installation
 
-### 3. **Pre & Post Save Actions**
+Install via NuGet Package Manager:
 
-- Hook pre-save and post-save actions during database operations.
-- Perform validation, data transformation, or external API calls before or after saving changes.
+```bash
+dotnet add package DKNet.EfCore.Events
+```
 
-### 4. **Integration with EF Core**
+Or via Package Manager Console:
 
-- Seamless integration with Entity Framework Core for event-driven database operations.
-- Supports both domain events and application-specific events.
+```powershell
+Install-Package DKNet.EfCore.Events
+```
 
-## How to Use
+## Quick Start
 
-1. **Add the Package**
+### Setup Event Publisher
 
-   Include `DKNet.EfCore.Events` in your project by adding the following reference to your `.csproj` file:
+```csharp
+using DKNet.EfCore.Events.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
-   ```xml
-   <PackageReference Include="DKNet.EfCore.Events" Version="x.y.z" />
-   ```
+// Register event publisher implementation
+services.AddEventPublisher<AppDbContext, EventPublisher>();
 
-2. **Implement IEventEntity**
+// Or use your custom implementation
+public class CustomEventPublisher : IEventPublisher
+{
+    public async Task PublishAsync(object eventItem, CancellationToken cancellationToken = default)
+    {
+        // Custom event publishing logic
+        await Task.CompletedTask;
+    }
+}
 
-   Use `IEventEntity` to add events to entities:
+services.AddEventPublisher<AppDbContext, CustomEventPublisher>();
+```
 
-   ```csharp
-   public class MyDomainEntity : IEventEntity
-   {
-       // Implement business logic that triggers AddEvent calls.
-   }
-   ```
+### Domain Entity with Events
 
-3. **Register Event Handlers**
+```csharp
+using DKNet.EfCore.Abstractions.Entities;
 
-   Register custom event handlers in your application startup or configuration:
+public class Product : Entity<Guid>
+{
+    public Product(string name, decimal price, string createdBy) 
+        : base(Guid.NewGuid(), createdBy)
+    {
+        Name = name;
+        Price = price;
+        
+        // Add domain event
+        AddEvent(new ProductCreatedEvent(Id, name, price));
+    }
 
-   ```csharp
-   services.AddScoped<IEventHandler<MyCustomEvent>, CustomEventHandler>();
-   ```
+    public string Name { get; private set; }
+    public decimal Price { get; private set; }
+    
+    public void UpdatePrice(decimal newPrice, string updatedBy)
+    {
+        var oldPrice = Price;
+        Price = newPrice;
+        SetUpdatedBy(updatedBy);
+        
+        // Add domain event for price change
+        AddEvent(new ProductPriceChangedEvent(Id, oldPrice, newPrice));
+    }
+}
 
-4. **Publish Events**
+// Domain events
+public record ProductCreatedEvent(Guid ProductId, string Name, decimal Price);
+public record ProductPriceChangedEvent(Guid ProductId, decimal OldPrice, decimal NewPrice);
+```
 
-   Use the `IEventPublisher` to publish events:
+### Event Handlers
 
-   ```csharp
-   await _eventPublisher.PublishAsync(new MyDomainEvent());
-   ```
+```csharp
+using DKNet.EfCore.Events.Handlers;
+
+public class ProductCreatedHandler : INotificationHandler<ProductCreatedEvent>
+{
+    private readonly ILogger<ProductCreatedHandler> _logger;
+    private readonly IEmailService _emailService;
+
+    public ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
+    {
+        _logger = logger;
+        _emailService = emailService;
+    }
+
+    public async Task Handle(ProductCreatedEvent notification, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Product created: {ProductId} - {Name} (${Price})", 
+            notification.ProductId, notification.Name, notification.Price);
+            
+        // Send notification email
+        await _emailService.SendProductCreatedNotificationAsync(notification, cancellationToken);
+    }
+}
+
+public class ProductPriceChangedHandler : INotificationHandler<ProductPriceChangedEvent>
+{
+    private readonly IInventoryService _inventoryService;
+
+    public ProductPriceChangedHandler(IInventoryService inventoryService)
+    {
+        _inventoryService = inventoryService;
+    }
+
+    public async Task Handle(ProductPriceChangedEvent notification, CancellationToken cancellationToken)
+    {
+        // Update inventory records
+        await _inventoryService.UpdatePriceAsync(notification.ProductId, notification.NewPrice, cancellationToken);
+    }
+}
+```
+
+## Configuration
+
+### DbContext Setup
+
+Events are automatically published during SaveChanges when the event hook is registered:
+
+```csharp
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public DbSet<Product> Products { get; set; }
+    public DbSet<Order> Orders { get; set; }
+
+    // Event publishing happens automatically via EventHook
+}
+```
+
+### Event Handler Registration
+
+```csharp
+// Register event handlers
+services.AddScoped<INotificationHandler<ProductCreatedEvent>, ProductCreatedHandler>();
+services.AddScoped<INotificationHandler<ProductPriceChangedEvent>, ProductPriceChangedHandler>();
+
+// Or use MediatR for automatic discovery
+services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ProductCreatedHandler).Assembly));
+```
+
+## API Reference
+
+### Core Interfaces
+
+- `IEventPublisher` - Central event publishing abstraction
+- `IEventEntity` - Interface for entities that can raise domain events (from DKNet.EfCore.Abstractions)
+- `EntityEventItem` - Wrapper for entity events with metadata
+
+### Event Management
+
+- `AddEvent(object)` - Queue domain event on entity
+- `ClearEvents()` - Clear all queued events
+- `GetEvents()` - Retrieve all queued events
+
+### Setup Extensions
+
+- `AddEventPublisher<TDbContext, TImplementation>()` - Register event publisher with EF Core hooks
 
 ## Advanced Usage
 
-### Domain Events vs Application Events
+### Custom Event Publisher
 
-- **Domain Events**: Represent business concepts and are raised by entities (`IEventEntity`).
-- **Application Events**: Used for application-level operations, such as sending emails or notifications.
+```csharp
+public class MediatREventPublisher : IEventPublisher
+{
+    private readonly IMediator _mediator;
+    private readonly ILogger<MediatREventPublisher> _logger;
 
-### Event Handling Location
+    public MediatREventPublisher(IMediator mediator, ILogger<MediatREventPublisher> logger)
+    {
+        _mediator = mediator;
+        _logger = logger;
+    }
 
-- **Decorators**: Implement handlers as decorators around your domain logic.
-- **Registered Services**: Register handlers directly in your dependency injection container.
+    public async Task PublishAsync(object eventItem, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("Publishing event: {EventType}", eventItem.GetType().Name);
+            
+            if (eventItem is INotification notification)
+            {
+                await _mediator.Publish(notification, cancellationToken);
+            }
+            else
+            {
+                _logger.LogWarning("Event {EventType} does not implement INotification", eventItem.GetType().Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish event: {EventType}", eventItem.GetType().Name);
+            throw new EventException($"Failed to publish event of type {eventItem.GetType().Name}", ex);
+        }
+    }
+}
+```
 
-### Best Practices
+### Complex Domain Event Scenarios
 
-- Use events to decouple data changes from the logic that responds to those changes.
-- Keep event handlers focused on a single responsibility (e.g., validation, logging).
-- Handle errors in event handlers using appropriate error handling strategies.
+```csharp
+public class Order : AggregateRoot
+{
+    private readonly List<OrderItem> _items = [];
 
-## Troubleshooting
+    public Order(Guid customerId, string createdBy) : base(createdBy)
+    {
+        CustomerId = customerId;
+        Status = OrderStatus.Pending;
+        
+        AddEvent(new OrderCreatedEvent(Id, customerId));
+    }
 
-If you encounter issues:
+    public Guid CustomerId { get; private set; }
+    public OrderStatus Status { get; private set; }
+    public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
+    public decimal TotalAmount => _items.Sum(i => i.TotalPrice);
 
-1. Check if your entity implements `IEventEntity` and properly triggers events.
-2. Ensure that your event handlers are registered or decorated correctly.
-3. Verify that the `IEventPublisher` is being injected and used appropriately.
+    public void AddItem(Guid productId, int quantity, decimal unitPrice)
+    {
+        var item = new OrderItem(productId, quantity, unitPrice);
+        _items.Add(item);
+        
+        AddEvent(new OrderItemAddedEvent(Id, productId, quantity, unitPrice));
+    }
 
-## Contributions
+    public void Complete(string updatedBy)
+    {
+        if (Status != OrderStatus.Pending)
+            throw new InvalidOperationException("Only pending orders can be completed");
 
-Contributions are welcome! Familiarize yourself with the DKNet design principles before making changes. Submit pull
-requests with detailed explanations of your changes.
+        Status = OrderStatus.Completed;
+        SetUpdatedBy(updatedBy);
+        
+        AddEvent(new OrderCompletedEvent(Id, CustomerId, TotalAmount, Items.Count));
+    }
+
+    public void Cancel(string reason, string updatedBy)
+    {
+        if (Status == OrderStatus.Completed)
+            throw new InvalidOperationException("Completed orders cannot be cancelled");
+
+        Status = OrderStatus.Cancelled;
+        SetUpdatedBy(updatedBy);
+        
+        AddEvent(new OrderCancelledEvent(Id, reason));
+    }
+}
+
+// Domain events
+public record OrderCreatedEvent(Guid OrderId, Guid CustomerId);
+public record OrderItemAddedEvent(Guid OrderId, Guid ProductId, int Quantity, decimal UnitPrice);
+public record OrderCompletedEvent(Guid OrderId, Guid CustomerId, decimal TotalAmount, int ItemCount);
+public record OrderCancelledEvent(Guid OrderId, string Reason);
+```
+
+### Event Handler with Side Effects
+
+```csharp
+public class OrderCompletedHandler : INotificationHandler<OrderCompletedEvent>
+{
+    private readonly IInventoryService _inventoryService;
+    private readonly IPaymentService _paymentService;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<OrderCompletedHandler> _logger;
+
+    public OrderCompletedHandler(
+        IInventoryService inventoryService,
+        IPaymentService paymentService,
+        INotificationService notificationService,
+        ILogger<OrderCompletedHandler> logger)
+    {
+        _inventoryService = inventoryService;
+        _paymentService = paymentService;
+        _notificationService = notificationService;
+        _logger = logger;
+    }
+
+    public async Task Handle(OrderCompletedEvent notification, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Update inventory
+            await _inventoryService.ReserveItemsAsync(notification.OrderId, cancellationToken);
+            
+            // Process payment
+            await _paymentService.ProcessPaymentAsync(notification.OrderId, notification.TotalAmount, cancellationToken);
+            
+            // Send confirmation
+            await _notificationService.SendOrderConfirmationAsync(notification.CustomerId, notification.OrderId, cancellationToken);
+            
+            _logger.LogInformation("Order {OrderId} completed successfully. Total: ${TotalAmount}, Items: {ItemCount}",
+                notification.OrderId, notification.TotalAmount, notification.ItemCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to process order completion for {OrderId}", notification.OrderId);
+            
+            // Could add compensating actions or raise error events
+            throw new EventException($"Failed to process order completion for {notification.OrderId}", ex);
+        }
+    }
+}
+```
+
+## Event Lifecycle
+
+1. **Event Creation**: Domain events are added to entities during business operations
+2. **Event Queuing**: Events are stored in entity's event collection until SaveChanges
+3. **Event Publishing**: Events are automatically published during EF Core SaveChanges via EventHook
+4. **Event Handling**: Registered event handlers process the events asynchronously
+5. **Event Cleanup**: Successfully processed events are cleared from entities
+
+## Error Handling
+
+```csharp
+public class RobustEventPublisher : IEventPublisher
+{
+    private readonly IMediator _mediator;
+    private readonly ILogger<RobustEventPublisher> _logger;
+
+    public async Task PublishAsync(object eventItem, CancellationToken cancellationToken = default)
+    {
+        var maxRetries = 3;
+        var retryDelay = TimeSpan.FromMilliseconds(100);
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                await _mediator.Publish((INotification)eventItem, cancellationToken);
+                return;
+            }
+            catch (Exception ex) when (attempt < maxRetries)
+            {
+                _logger.LogWarning(ex, "Event publishing failed on attempt {Attempt} for {EventType}. Retrying...", 
+                    attempt, eventItem.GetType().Name);
+                    
+                await Task.Delay(retryDelay * attempt, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Event publishing failed after {MaxRetries} attempts for {EventType}", 
+                    maxRetries, eventItem.GetType().Name);
+                throw new EventException($"Failed to publish event after {maxRetries} attempts", ex);
+            }
+        }
+    }
+}
+```
+
+## Performance Considerations
+
+- **Batch Processing**: Events are published in batches during SaveChanges
+- **Async Handlers**: All event handlers should be async for non-blocking execution
+- **Memory Management**: Events are cleared after successful publishing
+- **Transaction Scope**: Events are published within the same transaction as data changes
+
+## Best Practices
+
+- **Single Responsibility**: Keep event handlers focused on one concern
+- **Idempotency**: Design event handlers to be idempotent
+- **Error Isolation**: Don't let event handler failures affect the main transaction
+- **Event Versioning**: Plan for event schema evolution
+- **Testing**: Test event handlers independently from entities
+
+## Contributing
+
+See the main [CONTRIBUTING.md](../../../../CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
 ## License
 
-`DKNet.EfCore.Events` is MIT licensed, allowing you to use, modify, and distribute it freely.
+This project is licensed under the [MIT License](../../../../LICENSE).
 
-## References
+## Related Packages
 
-- **EF Core**: [Microsoft.EntityFrameworkCore](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore)
-- **FluentAssertions**: [FluentAssertions NuGet Package](https://www.nuget.org/packages/FluentAssertions)
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions) - Core abstractions including IEventEntity
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions) - EF Core functionality extensions
+- [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks) - EF Core lifecycle hooks (used internally)
+- [DKNet.SlimBus.Extensions](../../SlimBus/DKNet.SlimBus.Extensions) - Alternative CQRS event handling
+
+---
+
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.

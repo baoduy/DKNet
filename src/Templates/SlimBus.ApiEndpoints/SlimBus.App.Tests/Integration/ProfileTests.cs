@@ -38,8 +38,6 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
 
         ProfileCreatedEventFromMemoryHandler.Called.ShouldBeTrue(
             "ProfileCreatedEventFromMemoryHandler should be called");
-        // ProfileCreatedEmailNotificationHandler.Called.ShouldBeTrue(
-        //     "ProfileCreatedEmailNotificationHandler should be called");
     }
 
     [Fact]

@@ -13,23 +13,22 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        var options = dbContext.GetService<EntityConfigRegisterService>()?.EntityConfig;
-        if (options == null) return;
+        var options = dbContext.GetService<EntityConfigRegisterService>();
 
-        if (options.Registrations.Count <= 0)
-            options.ScanFrom(dbContext.GetType().Assembly);
+        if (options.EntityConfig.Registrations.Count <= 0)
+            options.EntityConfig.ScanFrom(dbContext.GetType().Assembly);
 
         //Register Entities
-        modelBuilder.RegisterEntityMappingFrom(options.Registrations);
+        modelBuilder.RegisterEntityMappingFrom(options.EntityConfig.Registrations);
 
         //Register StaticData Of
-        modelBuilder.RegisterStaticDataFrom(options.Registrations);
+        //modelBuilder.RegisterStaticDataFrom(options.Registrations);
 
         //Register Global Filter
-        modelBuilder.RegisterGlobalFilterFrom(options.Registrations, dbContext);
+        modelBuilder.RegisterGlobalFilterFrom(options.EntityConfig.Registrations, dbContext);
 
         //Register Sequence
-        if (dbContext.Database.IsSequenceSupported())
-            modelBuilder.RegisterSequencesFrom(options.Registrations);
+        if (dbContext.IsSqlServer())
+            modelBuilder.RegisterSequencesFrom(options.EntityConfig.Registrations);
     }
 }

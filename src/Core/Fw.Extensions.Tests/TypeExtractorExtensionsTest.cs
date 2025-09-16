@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using DKNet.Fw.Extensions;
 
 namespace Fw.Extensions.Tests;
 
@@ -298,8 +297,8 @@ public class TestTypeExtractorExtensions
         types.ShouldNotBeEmpty();
         foreach (var type in types)
         {
-            type.IsImplementOf<ITem>().ShouldBeFalse();
-            type.IsImplementOf<IDisposable>().ShouldBeFalse();
+            type.IsAssignableTo(typeof(ITem)).ShouldBeFalse();
+            type.IsAssignableTo(typeof(IDisposable)).ShouldBeFalse();
         }
     }
 

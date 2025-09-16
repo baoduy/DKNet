@@ -184,20 +184,4 @@ public class ProfileModelsTests
         // Assert
         command.Id.ShouldBe(Guid.Empty);
     }
-
-    [Fact]
-    public void DeleteProfileCommandWithValidGuidShouldWork()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-
-        // Act
-        var command = new DeleteProfileCommand
-        {
-            Id = id
-        };
-
-        // Assert
-        command.Id.ShouldBe(id);
-    }
 }

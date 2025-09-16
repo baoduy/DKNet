@@ -31,7 +31,7 @@ public interface ISpecification<TEntity>
 }
 
 /// <summary>
-///     The search specification definition
+///     Base class for search specifications, providing filtering, includes, and ordering.
 /// </summary>
 /// <typeparam name="TEntity">Type of the entity</typeparam>
 public abstract class Specification<TEntity> : ISpecification<TEntity>
@@ -42,7 +42,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
 
     /// <summary>
-    ///     Initializes a new instance of the class
+    ///     Initializes a new instance of the <see cref="Specification{TEntity}"/> class.
     /// </summary>
     protected Specification()
     {

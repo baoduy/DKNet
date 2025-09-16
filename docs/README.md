@@ -2,8 +2,26 @@
 
 Welcome to the comprehensive documentation for the DKNet Framework - a powerful collection of .NET libraries designed to enhance and simplify enterprise application development using Domain-Driven Design (DDD) principles and Onion Architecture patterns.
 
+## 📚 Quick Navigation
 
-## 📚 Documentation Structure
+### 🚀 Getting Started
+- **[Getting Started Guide](Getting-Started.md)** - Installation, setup, and first steps
+- **[Configuration & Setup](Configuration.md)** - Detailed configuration options
+- **[Architecture Guide](Architecture.md)** - Understanding DDD and Onion Architecture
+
+### 📖 Core Documentation
+- **[API Reference](API-Reference.md)** - Complete API documentation
+- **[Examples & Recipes](Examples/README.md)** - Practical implementation examples
+- **[FAQ](FAQ.md)** - Frequently asked questions and troubleshooting
+
+### 📋 Project Information
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[Migration Guide](Migration-Guide.md)** - Upgrading between versions
+- **[Contributing Guide](Contributing.md)** - How to contribute to the project
+- **[Testing Strategy](Testing-Strategy.md)** - Testing approach and coverage goals
+- **[Security Policy](Security.md)** - Security practices and reporting
+
+## 🏗️ Component Documentation
 
 This documentation is organized by functional areas to help you understand how each component contributes to the overall architecture:
 

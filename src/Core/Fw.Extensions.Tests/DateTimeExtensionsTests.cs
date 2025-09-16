@@ -56,15 +56,15 @@ public static class DateTimeExtensionsTests
         [InlineData(12, 4)]
         public void ReturnsCorrectQuarter(int month, int expectedQuarter)
         {
-            var date = new DateTime(2024, month, 1);
-            var result = date.Quarter();
+            var date = new DateTime(2024, month, 1, 0, 0, 0, 0, DateTimeKind.Local);
+            var result = date.InQuarter();
             result.ShouldBe(expectedQuarter);
         }
 
         [Fact]
         public void HandlesDateTimeMinValue()
         {
-            var result = DateTime.MinValue.Quarter();
+            var result = DateTime.MinValue.InQuarter();
             result.ShouldBe(1);
         }
     }

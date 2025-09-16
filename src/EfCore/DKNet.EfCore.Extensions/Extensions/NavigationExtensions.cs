@@ -95,7 +95,7 @@ public static class NavigationExtensions
         if (entry.State is EntityState.Modified or EntityState.Deleted) return false;
 
         var keyValues = entry.GetOriginalKeyValues().ToList();
-        return keyValues.Count <= 0 || keyValues.TrueForAll(kv => kv is null || kv.Equals(default));
+        return keyValues.Count <= 0 || keyValues.TrueForAll(kv => kv is null);
     }
 
     public static IEnumerable<INavigation> GetCollectionNavigations(this DbContext context, Type entityType)

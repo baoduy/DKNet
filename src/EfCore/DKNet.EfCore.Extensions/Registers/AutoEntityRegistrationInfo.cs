@@ -28,7 +28,7 @@ public sealed class AutoEntityRegistrationInfo
     ///     Thrown if any of the provided types are not generic or do not implement
     ///     <see cref="IEntityTypeConfiguration{TEntity}" />.
     /// </exception>
-    public AutoEntityRegistrationInfo WithDefaultMappersType(params Type[] entityMapperTypes)
+    internal AutoEntityRegistrationInfo WithDefaultMappersType(params Type[] entityMapperTypes)
     {
         if (entityMapperTypes == null || entityMapperTypes.Length == 0)
             throw new ArgumentNullException(nameof(entityMapperTypes));

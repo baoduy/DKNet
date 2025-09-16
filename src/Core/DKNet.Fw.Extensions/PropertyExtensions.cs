@@ -23,16 +23,18 @@ public static class PropertyExtensions
     /// <typeparam name="T">The type of the object to get the property from.</typeparam>
     /// <param name="obj">The object to get the property from.</param>
     /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="flags"></param>
     /// <returns>The <see cref="PropertyInfo" /> of the property, or null if not found.</returns>
     [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075",
         Justification = "Everything referenced in the loaded assembly is manually preserved, so it's safe")]
-    public static PropertyInfo? GetProperty<T>(this T? obj, string propertyName) where T : class
+    public static PropertyInfo? GetProperty<T>(this T? obj, string propertyName,
+        BindingFlags flags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic |
+                             BindingFlags.Instance) where T : class
     {
         if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
 
-        var type = obj is Type t ? t : obj.GetType();
-        return type.GetProperty(propertyName,
-            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        var type = obj as Type ?? obj.GetType();
+        return type.GetProperty(propertyName, flags);
     }
 
     /// <summary>
@@ -98,36 +100,6 @@ public static class PropertyExtensions
         }
     }
 
-    /// <summary>
-    ///     Tries to set the value of a property and ignores any exceptions that occur.
-    /// </summary>
-    /// <param name="obj">The object to set the property on.</param>
-    /// <param name="property">The <see cref="PropertyInfo" /> of the property to set.</param>
-    /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentNullException">
-    ///     Thrown when the <paramref name="obj" /> or <paramref name="property" /> is
-    ///     null.
-    /// </exception>
-    public static void TrySetPropertyValue(this object obj, PropertyInfo property, object? value)
-    {
-        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
-
-        if (property == null) throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
-
-        try
-        {
-            // Attempt to set the property value using the SetPropertyValue method
-            obj.SetPropertyValue(property, value);
-        }
-        catch (ArgumentNullException ex)
-        {
-            Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
-        }
-        catch (FormatException ex)
-        {
-            Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
-        }
-    }
 
     /// <summary>
     ///     Sets the value of a property by name, considering all access levels and ignoring case.
@@ -182,6 +154,37 @@ public static class PropertyExtensions
         catch (ArgumentException ex)
         {
             Debug.WriteLine($"Failed to set property {propertyName}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    ///     Tries to set the value of a property and ignores any exceptions that occur.
+    /// </summary>
+    /// <param name="obj">The object to set the property on.</param>
+    /// <param name="property">The <see cref="PropertyInfo" /> of the property to set.</param>
+    /// <param name="value">The value to set.</param>
+    /// <exception cref="ArgumentNullException">
+    ///     Thrown when the <paramref name="obj" /> or <paramref name="property" /> is
+    ///     null.
+    /// </exception>
+    public static void TrySetPropertyValue(this object obj, PropertyInfo property, object? value)
+    {
+        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
+
+        if (property == null) throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
+
+        try
+        {
+            // Attempt to set the property value using the SetPropertyValue method
+            obj.SetPropertyValue(property, value);
+        }
+        catch (ArgumentNullException ex)
+        {
+            Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
+        }
+        catch (FormatException ex)
+        {
+            Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
         }
     }
 }

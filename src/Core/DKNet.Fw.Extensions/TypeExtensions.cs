@@ -47,12 +47,8 @@ public static class TypeExtensions
     /// </returns>
     public static bool IsImplementOf<T>(this Type type) => type.IsImplementOf(typeof(T));
 
-    /// <summary>
-    ///     Checks if the <see cref="object" /> is of a specific <see cref="Type" />,
-    /// </summary>
-    /// <param name="this">The object to check.</param>
-    /// <returns><c>true</c> if the object is not a numeric type; otherwise, <c>false</c>.</returns>
-    public static bool IsNotNumericType(this object @this) => !@this.IsNumericType();
+    public static bool IsAssignableFrom<TType>(this Type type) => type.IsAssignableFrom(typeof(TType));
+    public static bool IsAssignableTo<TType>(this Type type) => type.IsAssignableTo(typeof(TType));
 
     /// <summary>
     ///     Determines whether the specified type is a numeric type.

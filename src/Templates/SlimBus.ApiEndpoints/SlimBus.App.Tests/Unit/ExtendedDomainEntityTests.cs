@@ -34,7 +34,7 @@ public class ExtendedDomainEntityTests
         var avatar = "avatar.jpg";
         var newName = "Updated Name";
         var newPhone = "+2222222222";
-        var birthday = new DateTime(1990, 1, 1);
+        var birthday = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local);
         var userId = "user2";
 
         // Act
@@ -74,13 +74,13 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act
-        profile.Update("avatar.jpg", "", "", new DateTime(1990, 1, 1), "user2");
+        profile.Update("avatar.jpg", "", "", new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local), "user2");
 
         // Assert
         profile.Avatar.ShouldBe("avatar.jpg");
         profile.Name.ShouldBe(originalName); // Should not change with empty string
         profile.Phone.ShouldBe(originalPhone); // Should not change with empty string
-        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1));
+        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local));
     }
 
     [Fact]
@@ -92,13 +92,13 @@ public class ExtendedDomainEntityTests
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
         // Act - string.IsNullOrEmpty() returns false for whitespace strings, so they will update
-        profile.Update("avatar.jpg", "   ", "   ", new DateTime(1990, 1, 1), "user2");
+        profile.Update("avatar.jpg", "   ", "   ", new DateTime(1990, 1, 1,0, 0, 0, DateTimeKind.Local), "user2");
 
         // Assert
         profile.Avatar.ShouldBe("avatar.jpg");
         profile.Name.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
         profile.Phone.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
-        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1));
+        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local));
     }
 
     [Theory]

@@ -1,39 +1,15 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.DataAuthorization.Tests.TestEntities;
 
-public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IEventEntity, IOwnedBy
+public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IOwnedBy
 {
-    [NotMapped] private readonly ICollection<object> _events = [];
-    [NotMapped] private readonly ICollection<Type> _eventTypes = [];
-
     /// <inheritdoc />
     protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null)
         : base(id)
     {
         OwnedBy = ownedBy;
         SetCreatedBy(createdBy, createdOn);
-    }
-
-    public void AddEvent(object eventObj)
-    {
-        _events.Add(eventObj);
-    }
-
-    public void AddEvent<TEvent>() where TEvent : class
-    {
-        _eventTypes.Add(typeof(TEvent));
-    }
-
-    public (object[] events, Type[] eventTypes) GetEventsAndClear()
-    {
-        var events = _events.ToArray();
-        var eventTypes = _eventTypes.ToArray();
-        _events.Clear();
-        _eventTypes.Clear();
-
-        return (events, eventTypes);
     }
 
     public string OwnedBy { get; private set; }

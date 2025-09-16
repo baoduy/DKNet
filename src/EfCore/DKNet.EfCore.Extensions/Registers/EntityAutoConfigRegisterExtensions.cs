@@ -7,6 +7,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
+[SuppressMessage("Major Code Smell",
+    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal static class EntityAutoConfigRegisterExtensions
 {
     private static readonly MethodInfo RegisterMappingMethod = typeof(EntityAutoConfigRegisterExtensions)

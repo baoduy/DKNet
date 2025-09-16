@@ -13,7 +13,6 @@ public class LazyMapperTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixt
         var v = mapper.LazyMap<View>(m);
 
         v.Value.ShouldNotBeNull();
-        //v.Value.ShouldNotBe(m);
         v.Value.Id.ShouldBe(m.Id);
         v.Value.Name.ShouldBe(m.Name);
     }
