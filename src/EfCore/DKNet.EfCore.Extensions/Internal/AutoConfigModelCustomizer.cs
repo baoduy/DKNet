@@ -29,7 +29,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         modelBuilder.RegisterGlobalFilterFrom(options.Registrations, dbContext);
 
         //Register Sequence
-        if (dbContext.Database.IsSequenceSupported())
+        if (dbContext.IsSqlServer())
             modelBuilder.RegisterSequencesFrom(options.Registrations);
     }
 }

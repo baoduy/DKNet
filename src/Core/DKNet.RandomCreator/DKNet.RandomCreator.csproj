@@ -23,11 +23,9 @@
 
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
-        <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
-            <Link>README.md</Link>
-        </Content>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
-    
+
     <ItemGroup>
         <InternalsVisibleTo Include="RandomPerformanceTests"/>
     </ItemGroup>

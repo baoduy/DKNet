@@ -146,7 +146,7 @@ public static class EfCoreExtensions
         return entityMappingType.GetInterfaces().First(a => a.IsGenericType).GetGenericArguments()[0];
     }
 
-    internal static bool IsSequenceSupported(this DatabaseFacade database) =>
-        string.Equals(database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+    public static bool IsSqlServer(this DbContext context) =>
+        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
             StringComparison.OrdinalIgnoreCase);
 }
