@@ -19,7 +19,7 @@ public static class EfCoreDataSeedingExtensions
     private static Type[] GetDataSeedingTypes(this ICollection<Assembly> assemblies) =>
     [
         .. assemblies.Extract().Classes().NotGeneric().NotAbstract().NotInterface()
-            .IsAssignableTo(typeof(IDataSeedingConfiguration<>))
+            .IsInstanceOf(typeof(IDataSeedingConfiguration<>))
     ];
 
     private static Type GetEntityType(this Type instanceType)

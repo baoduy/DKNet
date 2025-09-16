@@ -73,7 +73,9 @@ public sealed class TokenResolver : ITokenResolver
         try
         {
             var prop = data.GetType().GetProperty(propertyName,
-                BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic);
+                           BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public)
+                       ?? data.GetType().GetProperty(propertyName,
+                           BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.NonPublic);
 
             return prop?.GetValue(data);
         }

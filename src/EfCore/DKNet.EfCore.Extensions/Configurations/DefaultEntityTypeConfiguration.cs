@@ -17,7 +17,8 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
             builder.HasKey(nameof(IEntity<dynamic>.Id));
 
             if (idProperty.PropertyType.IsNumericType())
-                builder.Property(nameof(IEntity<dynamic>.Id)).ValueGeneratedOnAdd();
+                builder.Property(nameof(IEntity<dynamic>.Id))
+                    .ValueGeneratedOnAdd();
         }
 
         // Handle audit properties

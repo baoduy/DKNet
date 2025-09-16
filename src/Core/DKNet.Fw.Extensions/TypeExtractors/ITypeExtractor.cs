@@ -69,21 +69,21 @@ public interface ITypeExtractor : IEnumerable<Type>
     /// </summary>
     /// <param name="type">The type to filter by.</param>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor IsAssignableTo(Type? type);
+    ITypeExtractor IsInstanceOf(Type? type);
 
     /// <summary>
     ///     Filters the types to include only those that are instances of the specified type.
     /// </summary>
     /// <typeparam name="T">The type to filter by.</typeparam>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor IsAssignableTo<T>();
+    ITypeExtractor IsInstanceOf<T>();
 
     /// <summary>
     ///     Filters the types to include only those that are instances of any of the specified types.
     /// </summary>
     /// <param name="types">The types to filter by.</param>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor IsIsAssignableToAny(params Type[] types);
+    ITypeExtractor IsInstanceOfAny(params Type[] types);
 
     /// <summary>
     ///     Filters the types to include only nested types.
@@ -120,14 +120,14 @@ public interface ITypeExtractor : IEnumerable<Type>
     /// </summary>
     /// <param name="type">The type to filter by.</param>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor IsNotAssignableTo(Type? type);
+    ITypeExtractor NotInstanceOf(Type? type);
 
     /// <summary>
     ///     Filters the types to exclude those that are instances of the specified type.
     /// </summary>
     /// <typeparam name="T">The type to filter by.</typeparam>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor IsNotAssignableTo<T>();
+    ITypeExtractor NotInstanceOf<T>();
 
     /// <summary>
     ///     Filters the types to exclude interfaces.

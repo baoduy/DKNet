@@ -1,4 +1,5 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
+using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace EfCore.Extensions.Tests;
@@ -22,7 +23,7 @@ public class TypeExtractorExtensionsTests
     [Fact]
     public void TestInterface()
     {
-        typeof(MyDbContext).Assembly.Extract().IsAssignableTo<BaseEntity>()
+        typeof(MyDbContext).Assembly.Extract().IsInstanceOf<BaseEntity>()
             .Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
@@ -60,11 +61,17 @@ public class TypeExtractorExtensionsTests
             .ShouldBeGreaterThanOrEqualTo(3);
     }
 
+    [Fact]
+    public void TestIsImplementOf()
+    {
+        typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
+        typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
+    }
 
     [Fact]
     public void TestExtractNotInstanceOf()
     {
-        var list = typeof(MyDbContext).Assembly.Extract().Classes().IsNotAssignableTo(typeof(IEntity<>)).ToList();
+        var list = typeof(MyDbContext).Assembly.Extract().Classes().NotInstanceOf(typeof(IEntity<>)).ToList();
         list.Contains(typeof(User)).ShouldBeFalse();
         list.Contains(typeof(Address)).ShouldBeFalse();
     }

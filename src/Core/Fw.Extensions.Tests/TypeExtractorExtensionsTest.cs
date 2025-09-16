@@ -19,7 +19,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var assemblies = new[] { typeof(ITypeExtractor).Assembly, typeof(ITypeExtractor).Assembly };
-        var types = assemblies.Extract().IsAssignableTo<ITypeExtractor>().ToList();
+        var types = assemblies.Extract().IsInstanceOf<ITypeExtractor>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -29,7 +29,7 @@ public class TestTypeExtractorExtensions
     public void TestInterface()
     {
         // Arrange
-        var types = typeof(TestEnumObject).Assembly.Extract().IsAssignableTo<ITem>().ToList();
+        var types = typeof(TestEnumObject).Assembly.Extract().IsInstanceOf<ITem>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -89,7 +89,7 @@ public class TestTypeExtractorExtensions
     public void TestExtractNotInstanceOf()
     {
         // Arrange
-        var types = typeof(TestEnumObject).Assembly.Extract().Classes().IsNotAssignableTo<ITem>().ToList();
+        var types = typeof(TestEnumObject).Assembly.Extract().Classes().NotInstanceOf<ITem>().ToList();
 
         // Act & Assert
         types.Contains(typeof(TestItem)).ShouldBeFalse();
@@ -101,7 +101,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var types = typeof(TestEnumObject).Assembly.Extract().Classes()
-            .IsIsAssignableToAny(typeof(ITem), typeof(IConfigItem))
+            .IsInstanceOfAny(typeof(ITem), typeof(IConfigItem))
             .ToList();
 
         // Act & Assert
@@ -194,7 +194,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var assemblies = new List<Assembly> { typeof(ITypeExtractor).Assembly, typeof(TestEnumObject).Assembly };
-        var types = assemblies.Extract().IsAssignableTo<ITypeExtractor>().ToList();
+        var types = assemblies.Extract().IsInstanceOf<ITypeExtractor>().ToList();
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -289,8 +289,8 @@ public class TestTypeExtractorExtensions
         // Arrange
         var types = typeof(TestEnumObject).Assembly.Extract()
             .Classes()
-            .IsNotAssignableTo<ITem>()
-            .IsNotAssignableTo<IDisposable>()
+            .NotInstanceOf<ITem>()
+            .NotInstanceOf<IDisposable>()
             .ToList();
 
         // Act & Assert

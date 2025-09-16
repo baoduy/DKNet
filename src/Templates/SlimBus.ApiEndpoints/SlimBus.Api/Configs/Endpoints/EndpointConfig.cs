@@ -46,7 +46,7 @@ internal static class EndpointConfig
     public static List<RouteGroupBuilder> UseEndpointConfigs(this WebApplication app)
     {
         var groupList = new List<RouteGroupBuilder>();
-        var configs = typeof(EndpointConfig).Assembly.Extract().Classes().IsAssignableTo<IEndpointConfig>();
+        var configs = typeof(EndpointConfig).Assembly.Extract().Classes().IsInstanceOf<IEndpointConfig>();
         var configInstances = configs.Select(c => (IEndpointConfig)Activator.CreateInstance(c)!).ToList();
         var vSets = app.CreateVersionSet(configInstances.Select(c => c.Version));
 

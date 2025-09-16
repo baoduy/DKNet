@@ -95,7 +95,7 @@ public static class NavigationExtensions
         if (entry.State is EntityState.Modified or EntityState.Deleted) return false;
 
         var keyValues = entry.GetOriginalKeyValues().ToList();
-        return keyValues.Count <= 0 || keyValues.TrueForAll(kv => kv is null || kv.Equals(default));
+        return keyValues.Count <= 0 || keyValues.TrueForAll(kv => kv is null);
     }
 
     public static IEnumerable<INavigation> GetCollectionNavigations(this DbContext context, Type entityType)
@@ -121,12 +121,10 @@ public static class NavigationExtensions
     {
         var navigations = context.GetCollectionNavigations(entity.Metadata.ClrType);
         foreach (var nav in navigations)
+        foreach (var i in entity.Entity.GetNavigationValues(nav))
         {
-            foreach (var i in entity.Entity.GetNavigationValues(nav))
-            {
-                var item = context.Entry(i);
-                if (item.IsNewEntity()) yield return i;
-            }
+            var item = context.Entry(i);
+            if (item.IsNewEntity()) yield return i;
         }
     }
 
