@@ -7,7 +7,7 @@ namespace DKNet.EfCore.Events;
 /// </summary>
 /// <param name="status"></param>
 public class EventException(IResultBase status)
-    : Exception(status.Errors.FirstOrDefault()?.Message ?? nameof(EventException))
+    : Exception(status.Errors[0].Message ?? nameof(EventException))
 {
     public IResultBase Status { get; } = status;
 }

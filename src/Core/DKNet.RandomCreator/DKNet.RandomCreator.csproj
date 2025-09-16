@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Authors>Steven Hoang</Authors>
+        <Authors>https://drunkcoding.net</Authors>
+        <Copyright>@2026 drunkcoding</Copyright>
+        <PackageLicense>https://opensource.org/licenses/MIT</PackageLicense>
+        <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>Random,Password,string</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <LangVersion>default</LangVersion>
+        <NeutralLanguage>en</NeutralLanguage>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageIcon>NugetLogo.png</PackageIcon>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>true</ImplicitUsings>
+        <IsTrimmable>false</IsTrimmable>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <Content Include="..\..\..\README.md" Pack="true" PackagePath="\">
+            <Link>README.md</Link>
+        </Content>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <InternalsVisibleTo Include="RandomPerformanceTests"/>
+    </ItemGroup>
+</Project>

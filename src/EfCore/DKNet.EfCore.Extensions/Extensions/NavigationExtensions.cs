@@ -121,10 +121,12 @@ public static class NavigationExtensions
     {
         var navigations = context.GetCollectionNavigations(entity.Metadata.ClrType);
         foreach (var nav in navigations)
-        foreach (var i in entity.Entity.GetNavigationValues(nav))
         {
-            var item = context.Entry(i);
-            if (item.IsNewEntity()) yield return i;
+            foreach (var i in entity.Entity.GetNavigationValues(nav))
+            {
+                var item = context.Entry(i);
+                if (item.IsNewEntity()) yield return i;
+            }
         }
     }
 
