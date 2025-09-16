@@ -1,7 +1,7 @@
 namespace EfCore.Abstractions.Tests;
 
 // Test entities for testing purposes
-public class TestEntity : Entity<int>
+public class TestEntity : Entity<int>, IConcurrencyEntity<byte[]>
 {
     public TestEntity()
     {
@@ -12,6 +12,13 @@ public class TestEntity : Entity<int>
     }
 
     public string Name { get; set; } = string.Empty;
+    
+    public byte[]? RowVersion { get; private set; }
+
+    public void SetRowVersion(byte[] rowVersion)
+    {
+        RowVersion = rowVersion;
+    }
 }
 
 public class TestGuidEntity : Entity
