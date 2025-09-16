@@ -66,6 +66,7 @@ public class TypeExtractorExtensionsTests
     {
         typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
         typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
+        typeof(BaseEntity).IsImplementOf(typeof(IConcurrencyEntity<>)).ShouldBeTrue();
     }
 
     [Fact]

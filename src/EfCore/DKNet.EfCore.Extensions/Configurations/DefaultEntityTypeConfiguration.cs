@@ -11,23 +11,24 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
     {
         var clrType = builder.Metadata.ClrType;
 
+        const string idKey = nameof(IEntity<dynamic>.Id);
         // Handle IEntity<T> to set the primary key
-        var idProperty = clrType.GetProperty(nameof(IEntity<dynamic>.Id));
+        var idProperty = clrType.GetProperty(idKey);
         if (idProperty != null)
         {
-            builder.HasKey(nameof(IEntity<dynamic>.Id));
+            builder.HasKey(idKey);
 
             if (idProperty.PropertyType.IsNumericType())
-                builder.Property(nameof(IEntity<dynamic>.Id))
+                builder.Property(idKey)
                     .ValueGeneratedOnAdd();
             else if (idProperty.PropertyType == typeof(Guid))
-                builder.Property(nameof(IEntity<dynamic>.Id))
+                builder.Property(idKey)
                     .ValueGeneratedOnAdd()
                     .HasValueGenerator<GuidV7ValueGenerator>();
         }
 
         // Handle audit properties
-        if (typeof(IAuditedProperties).IsAssignableFrom(clrType))
+        if (clrType.IsImplementOf<IAuditedProperties>())
         {
             builder.Property(nameof(IAuditedProperties.CreatedBy))
                 .IsRequired()
@@ -41,5 +42,11 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
 
             builder.Property(nameof(IAuditedProperties.UpdatedOn));
         }
+
+        if (clrType.IsImplementOf(typeof(IConcurrencyEntity<>)))
+            builder.Property(nameof(IConcurrencyEntity<dynamic>.RowVersion))
+                .IsConcurrencyToken()
+                .IsRowVersion()
+                .ValueGeneratedOnAdd();
     }
 }
