@@ -37,7 +37,7 @@ public class Tests(ITestOutputHelper output)
     [Fact]
     public void CanGenerateAlphabeticOnlyString()
     {
-        var options = new StringCreatorOptions { AlphabeticOnly = true, MinNumbers = 0, MinSpecials = 0 };
+        var options = new StringCreatorOptions { MinNumbers = 0, MinSpecials = 0 };
         var str = RandomCreators.NewString(50, options);
         output.WriteLine(str);
         Assert.True(str.All(char.IsLetter));
@@ -99,7 +99,7 @@ public class Tests(ITestOutputHelper output)
     [Fact]
     public void CanGenerateAlphabeticOnlyChars()
     {
-        var options = new StringCreatorOptions { AlphabeticOnly = true, MinNumbers = 0, MinSpecials = 0 };
+        var options = new StringCreatorOptions {  MinNumbers = 0, MinSpecials = 0 };
         var chars = RandomCreators.NewChars(20, options);
         output.WriteLine(new string(chars));
         Assert.True(chars.All(char.IsLetter));
@@ -109,7 +109,7 @@ public class Tests(ITestOutputHelper output)
     [Fact]
     public void CanGenerateStringWithAllOptions()
     {
-        var options = new StringCreatorOptions { AlphabeticOnly = false, MinNumbers = 2, MinSpecials = 2 };
+        var options = new StringCreatorOptions { MinNumbers = 2, MinSpecials = 2 };
         var str = RandomCreators.NewString(20, options);
         output.WriteLine(str);
         var numCount = str.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
@@ -123,7 +123,7 @@ public class Tests(ITestOutputHelper output)
     [Fact]
     public void CanGenerateCharsWithAllOptions()
     {
-        var options = new StringCreatorOptions { AlphabeticOnly = false, MinNumbers = 2, MinSpecials = 2 };
+        var options = new StringCreatorOptions {  MinNumbers = 2, MinSpecials = 2 };
         var chars = RandomCreators.NewChars(20, options);
         output.WriteLine(new string(chars));
         var numCount = chars.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
