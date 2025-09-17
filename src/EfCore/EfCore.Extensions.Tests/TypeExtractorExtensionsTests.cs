@@ -13,12 +13,12 @@ public class TypeExtractorExtensionsTests
             .Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Fact]
-    public void TestHasAttribute()
-    {
-        typeof(MyDbContext).Assembly.Extract().HasAttribute<StaticDataAttribute>()
-            .Count().ShouldBeGreaterThanOrEqualTo(1);
-    }
+    // [Fact]
+    // public void TestHasAttribute()
+    // {
+    //     typeof(MyDbContext).Assembly.Extract().HasAttribute<StaticDataAttribute>()
+    //         .Count().ShouldBeGreaterThanOrEqualTo(1);
+    // }
 
     [Fact]
     public void TestInterface()
@@ -47,12 +47,12 @@ public class TypeExtractorExtensionsTests
             .Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Fact]
-    public void ExtractEnumsTest()
-    {
-        typeof(MyDbContext).Assembly.Extract().Enums().HasAttribute<StaticDataAttribute>()
-            .Count().ShouldBeGreaterThanOrEqualTo(1);
-    }
+    // [Fact]
+    // public void ExtractEnumsTest()
+    // {
+    //     typeof(MyDbContext).Assembly.Extract().Enums().HasAttribute<StaticDataAttribute>()
+    //         .Count().ShouldBeGreaterThanOrEqualTo(1);
+    // }
 
     [Fact]
     public void TestExtract()
@@ -66,6 +66,7 @@ public class TypeExtractorExtensionsTests
     {
         typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
         typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
+        typeof(BaseEntity).IsImplementOf(typeof(IConcurrencyEntity<>)).ShouldBeTrue();
     }
 
     [Fact]

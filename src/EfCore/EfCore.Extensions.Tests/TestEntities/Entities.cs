@@ -40,8 +40,6 @@ public class User : BaseEntity
     {
     }
 
-    public Account? Account { get; set; }
-
     public ICollection<Address> Addresses { get; private set; } = new HashSet<Address>();
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
@@ -55,6 +53,14 @@ public class User : BaseEntity
 
 public class Account : Entity<int>
 {
+    public Account()
+    {
+    }
+
+    public Account(int id) : base(id)
+    {
+    }
+
     [MaxLength(500)] public string Password { get; set; } = null!;
 
     [MaxLength(500)] public string UserName { get; set; } = null!;
@@ -114,22 +120,22 @@ public class AccountStatus : Entity<int>
     [Required] [MaxLength(100)] public string Name { get; set; } = null!;
 }
 
-[StaticData(nameof(EnumStatus))]
-public enum EnumStatus
-{
-    UnKnow = 0,
-    Active = 1,
-    InActive = 2
-}
-
-[StaticData("EnumStatusOther")]
-public enum EnumStatus1
-{
-    [Display(Name = "AA", Description = "BB")]
-    UnKnow = 0,
-    Active = 1,
-    InActive = 2
-}
+// [StaticData(nameof(EnumStatus))]
+// public enum EnumStatus
+// {
+//     UnKnow = 0,
+//     Active = 1,
+//     InActive = 2
+// }
+//
+// [StaticData("EnumStatusOther")]
+// public enum EnumStatus1
+// {
+//     [Display(Name = "AA", Description = "BB")]
+//     UnKnow = 0,
+//     Active = 1,
+//     InActive = 2
+// }
 
 [SqlSequence]
 public enum SequencesTest

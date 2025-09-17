@@ -3,19 +3,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Extensions.Tests.TestEntities.Mappers;
 
-internal class BaseEntityMapper<T> : DefaultEntityTypeConfiguration<T> where T : BaseEntity
+internal class BaseEntityMapper<T> : DefaultEntityTypeConfiguration<T> where T : class
 {
     public static bool Called { get; private set; }
 
     public override void Configure(EntityTypeBuilder<T> builder)
     {
         Called = true;
-
         base.Configure(builder);
-        builder.HasIndex(c => c.Id).IsUnique();
-        builder.Property(c => c.Id).UseIdentityColumn().ValueGeneratedOnAdd();
-        builder.Property(c => c.CreatedOn).HasDefaultValueSql("getdate()");
-        builder.Property(c => c.RowVersion).IsRowVersion().IsConcurrencyToken().HasColumnType("rowversion");
     }
 }
 

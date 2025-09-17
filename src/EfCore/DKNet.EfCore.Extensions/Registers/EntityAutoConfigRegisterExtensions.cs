@@ -178,6 +178,9 @@ internal static class EntityAutoConfigRegisterExtensions
 
         // Add remaining to ModelBuilder
         foreach (var type in allDefinedMappers) modelBuilder.RegisterMappingFromType(type);
+
+        //Register HasData from DataSeeding
+        modelBuilder.RegisterDataSeeding(registration);
     }
 
     /// <summary>

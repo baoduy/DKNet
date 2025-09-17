@@ -1,3 +1,5 @@
+using EfCore.Extensions.Tests.TestEntities.Mappers;
+
 namespace EfCore.Extensions.Tests;
 
 public class EfCoreExtensionsAdvancedTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
@@ -90,12 +92,12 @@ public class EfCoreExtensionsAdvancedTests(SqlServerFixture fixture) : IClassFix
     public void GetEntityType_WithValidMappingType_ShouldReturnEntityType()
     {
         // Arrange
-        var mappingType = typeof(UserSeedingConfiguration);
+        var mappingType = typeof(AddressEntityMapper);
 
         // Act
         var entityType = EfCoreExtensions.GetEntityType(mappingType);
 
         // Assert
-        entityType.ShouldBe(typeof(User));
+        entityType.ShouldBe(typeof(Address));
     }
 }
