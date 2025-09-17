@@ -95,7 +95,7 @@ public class InfraTests
         var result = types
             .That()
             .AreClasses()
-            .And().ImplementInterface(typeof(IDataSeedingConfiguration<>))
+            .And().ImplementInterface(typeof(IDataSeedingConfiguration))
             .Should().NotBePublic()
             .And().BeSealed()
             .GetResult();

@@ -3,18 +3,17 @@ using DKNet.EfCore.Extensions.Configurations;
 namespace EfCore.Extensions.Tests;
 
 // Test seeding configuration for testing
-public class UserSeedingConfiguration : IDataSeedingConfiguration<User>
+public class UserSeedingConfiguration : DataSeedingConfiguration<User>
 {
-    public ICollection<User> Data =>
+    protected override ICollection<User> HasData =>
     [
-        new("seeded1")
+        new(1, "seeded1")
         {
-            Account = new Account { UserName = "Steven", Password = "Pass@word1" },
             FirstName = "Seeded", LastName = "User1"
         },
-        new("seeded2")
+        new(2, "seeded2")
         {
-            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Seeded",
+            FirstName = "Seeded",
             LastName = "User2"
         }
     ];

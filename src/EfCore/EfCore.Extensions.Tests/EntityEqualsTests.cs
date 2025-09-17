@@ -21,12 +21,12 @@ public class EntityEqualsTests
     {
         var user1 = new User(1, "Hello")
         {
-            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Steven",
+            FirstName = "Steven",
             LastName = "Smith"
         };
         var user2 = new User(0, "BBB")
         {
-            Account = new Account { UserName = "Steven", Password = "Pass@word1" }, FirstName = "Steven",
+            FirstName = "Steven",
             LastName = "Smith"
         };
 
