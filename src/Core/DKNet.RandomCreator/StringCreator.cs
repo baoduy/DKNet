@@ -1,21 +1,63 @@
-﻿namespace DKNet.RandomCreator;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
-internal sealed class StringCreator(int bufferLength, string? valid = StringCreator.DefaultChars )
-    : IDisposable
+namespace DKNet.RandomCreator;
+
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness")]
+internal sealed class StringCreator(int bufferLength, StringCreatorOptions options) : IDisposable
 {
-    internal const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-    internal const string DefaultCharsWithSymbols = $"{DefaultChars}!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
+    private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private const string DefaultNumbers = "1234567890";
+    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
+    private readonly RandomNumberGenerator _cryptoGen = RandomNumberGenerator.Create();
     private bool _disposed;
 
-    private readonly Lazy<RandomByteProvider> _lazyByteProvider = new(() => new RandomByteProvider(bufferLength));
+    private char[] Generate(string validChars, int length)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, nameof(StringCreator));
 
-    private RandomByteProvider ByteProvider => _lazyByteProvider.Value;
+        var buffer = new byte[length * 8];
+        _cryptoGen.GetBytes(buffer);
+        var result = new char[length];
+        for (var i = 0; i < length; i++)
+        {
+            var rnd = BitConverter.ToUInt64(buffer, i * 8);
+            result[i] = validChars[(int)(rnd % (uint)validChars.Length)];
+        }
+
+        return result;
+    }
+
 
     public char[] ToChars()
     {
-        var v = valid ?? DefaultChars;
-        return ByteProvider.Bytes().Select(b => (char)b).Where(v.Contains).Take(bufferLength).ToArray();
+        // Prepare result list
+        if (bufferLength <= 0)
+            throw new ArgumentException("Length must be greater than zero.", nameof(bufferLength));
+
+        if (options.MinNumbers + options.MinSpecials >= bufferLength)
+            throw new ArgumentException("The sum of MinNumbers and MinSpecials must be less than the total length.",
+                nameof(options));
+
+        var result = new List<char>(bufferLength);
+        // Add minimum numbers
+        result.AddRange(options.MinNumbers <= 0
+            ? []
+            : Generate(DefaultNumbers, options.MinNumbers));
+        // Add minimum specials
+        result.AddRange(options.MinSpecials <= 0
+            ? []
+            : Generate(DefaultSymbols, options.MinSpecials));
+
+        // Fill the rest
+        var remaining = bufferLength - result.Count;
+        result.AddRange(Generate(DefaultChars, remaining));
+
+        var array = result.ToArray();
+        new Random().Shuffle(array);
+        return array;
     }
+
 
     public override string ToString()
     {
@@ -25,19 +67,7 @@ internal sealed class StringCreator(int bufferLength, string? valid = StringCrea
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (!disposing || _disposed) return;
-
-        if (_lazyByteProvider.IsValueCreated)
-        {
-            _lazyByteProvider.Value.Dispose();
-        }
-
+        _cryptoGen.Dispose();
         _disposed = true;
     }
 }
