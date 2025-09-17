@@ -5,9 +5,10 @@ random data needs. Uses cryptographically secure random number generation.
 
 ## Features
 
-- Generate random strings of any length
-- Optionally include symbols for stronger passwords
-- Simple static API
+- Generate random strings or char arrays of any length
+- Enforce minimum numbers and special characters
+- Optionally restrict to alphabetic-only output
+- Simple static API with flexible options
 - .NET 9.0 compatible
 
 ## Installation
@@ -23,20 +24,26 @@ dotnet add package DKNet.RandomCreator
 ```csharp
 using DKNet.RandomCreator;
 
-// Generate a random string (default length 25, no symbols)
-string randomString = RandomCreators.String();
+// Generate a random string (default length 25)
+string randomString = RandomCreators.NewString();
 
-// Generate a random string of length 32, including symbols
-string strongPassword = RandomCreators.String(32, includeSymbols: true);
+// Generate a random string of length 32, with at least 4 numbers and 2 special characters
+var options = new StringCreatorOptions { MinNumbers = 4, MinSpecials = 2 };
+string strongPassword = RandomCreators.NewString(32, options);
 
-// Generate a random char array
-char[] randomChars = RandomCreators.Chars(16);
+// Generate a random alphabetic-only string of length 16
+var alphaOptions = new StringCreatorOptions { AlphabeticOnly = true };
+string alphaString = RandomCreators.NewString(16, alphaOptions);
+
+// Generate a random char array with options
+char[] randomChars = RandomCreators.NewChars(20, options);
 ```
 
 ## API
 
-- `RandomCreators.String(int length = 25, bool includeSymbols = false)`: Returns a random string.
-- `RandomCreators.Chars(int length = 25, bool includeSymbols = false)`: Returns a random char array.
+- `RandomCreators.NewString(int length = 25, StringCreatorOptions? options = null)`: Returns a random string with optional constraints.
+- `RandomCreators.NewChars(int length = 25, StringCreatorOptions? options = null)`: Returns a random char array with optional constraints.
+- `StringCreatorOptions`: Options to control alphabetic-only, minimum numbers, and minimum special characters.
 
 ## License
 
@@ -49,4 +56,3 @@ MIT © 2026 drunkcoding
 ## Contributing
 
 Pull requests and issues are welcome!
-
