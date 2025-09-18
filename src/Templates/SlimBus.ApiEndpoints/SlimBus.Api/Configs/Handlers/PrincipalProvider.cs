@@ -34,7 +34,7 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
     }
 
 
-    public IEnumerable<string> GetAccessibleKeys() => [GetOwnershipKey()];
+    public ICollection<string> GetAccessibleKeys() => [GetOwnershipKey()];
 
 
     public string GetOwnershipKey() => ProfileId.ToString();

@@ -23,7 +23,7 @@ public interface IDataOwnerProvider
     ///     - Restrict access to authorized data only
     ///     - Support multi-tenancy scenarios
     /// </remarks>
-    IEnumerable<string> GetAccessibleKeys();
+    ICollection<string> GetAccessibleKeys();
 
     /// <summary>
     ///     Gets the ownership key for newly created entities.

@@ -6,5 +6,5 @@ internal class TestDataKeyProvider : IDataOwnerProvider
 
     public string GetOwnershipKey() => _ownedKeys[0];
 
-    public IEnumerable<string> GetAccessibleKeys() => _ownedKeys;
+    public ICollection<string> GetAccessibleKeys() => _ownedKeys;
 }
