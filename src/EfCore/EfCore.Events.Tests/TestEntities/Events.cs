@@ -6,11 +6,11 @@ namespace EfCore.Events.Tests.TestEntities;
 
 public class TestEventPublisher : IEventPublisher
 {
-    public static ICollection<object> Events { get; } = [];
+    public static List<object> Events { get; } = [];
 
-    public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
+    public Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
     {
-        Events.Add(eventObj);
+        Events.AddRange(eventObj.Events);
         return Task.CompletedTask;
     }
 }

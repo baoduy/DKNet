@@ -34,5 +34,5 @@ public interface IEventEntity
     ///     The first element of the tuple contains instantiated event objects.
     ///     The second element contains event types that need to be instantiated.
     /// </remarks>
-    (object[]? events, Type[]? eventTypes) GetEventsAndClear();
+    (object[] events, Type[] eventTypes) GetEventsAndClear();
 }

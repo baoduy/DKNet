@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -33,8 +34,8 @@ public interface IEntity<out TKey>
 /// </remarks>
 public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 {
-    private readonly Collection<object> _events = [];
-    private readonly Collection<Type> _eventTypes = [];
+    [NotMapped] private readonly Collection<object> _events = [];
+    [NotMapped] private readonly Collection<Type> _eventTypes = [];
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="Entity{TKey}" /> class.
