@@ -54,7 +54,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             }
 
             if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-                own.SetOwnedBy(dataOwnerProvider.GetOwnershipKey());
+                own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), dataOwnerProvider.GetOwnershipKey());
         }
     }
 }

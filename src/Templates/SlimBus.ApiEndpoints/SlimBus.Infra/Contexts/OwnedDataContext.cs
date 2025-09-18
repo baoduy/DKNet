@@ -10,6 +10,6 @@ internal class OwnedDataContext(DbContextOptions options, IEnumerable<IDataOwner
     // ReSharper disable once InconsistentNaming
     internal readonly IDataOwnerProvider? _dataKeyProvider = dataKeyProviders?.FirstOrDefault();
 
-    public IEnumerable<string> AccessibleKeys =>
+    public ICollection<string> AccessibleKeys =>
         _dataKeyProvider is not null ? _dataKeyProvider.GetAccessibleKeys() : [];
 }

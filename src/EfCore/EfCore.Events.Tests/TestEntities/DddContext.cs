@@ -19,5 +19,5 @@ public class DddContext(
     // ReSharper disable once InconsistentNaming
     internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders?.SingleOrDefault();
 
-    public IEnumerable<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
+    public ICollection<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
 }
