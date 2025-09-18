@@ -11,7 +11,6 @@ internal sealed class EventPublisher(IMessageBus bus) : IEventPublisher
 {
     public async Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
     {
-        foreach (var obj in eventObj.Events)
-            await bus.Publish(obj, cancellationToken: cancellationToken);
+        await bus.Publish(eventObj.Event, cancellationToken: cancellationToken);
     }
 }

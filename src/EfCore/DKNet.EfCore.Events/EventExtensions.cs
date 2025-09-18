@@ -28,11 +28,14 @@ internal static class EventExtensions
             finalEvents.AddRange(events);
 
             if (mapper != null)
-                foreach (var eventType in eventTypes)
-                    finalEvents.Add(mapper.Map(entity, entry.Entry.Metadata.ClrType, eventType));
+                finalEvents.AddRange(eventTypes.Select(eventType =>
+                    mapper.Map(entity, entry.Entry.Metadata.ClrType, eventType)));
 
-            yield return new EventObject(entry.Entry.Metadata.ClrType.FullName!, entry.Entry.GetEntityKeyValues(),
-                [.. finalEvents]);
+            var entityType = entry.Entry.Metadata.ClrType.FullName!;
+            var primaryKey = entry.Entry.GetEntityKeyValues();
+
+            foreach (var e in finalEvents)
+                yield return new EventObject(entityType, primaryKey, e);
         }
     }
 }
