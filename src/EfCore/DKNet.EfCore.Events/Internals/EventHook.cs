@@ -9,7 +9,7 @@ internal sealed class EventHook(
     : IHookAsync
 {
     private readonly IMapper? _autoMapper = autoMappers.FirstOrDefault();
-    private List<EntityEventItem> _eventEntities = [];
+    private List<EventEntityItem> _eventEntities = [];
 
     /// <summary>
     ///     RunBeforeSaveAsync
@@ -46,7 +46,7 @@ internal sealed class EventHook(
                             .Select(d => _autoMapper.Map(entity, e.Entry.Metadata.ClrType, d)));
                     }
 
-                    return new EntityEventItem(entity,
+                    return new EventEntityItem(entity,
                         [.. events.Where(i => i is not null).Select(i => i!).Distinct()]);
                 })
                 .Where(e => e.Events.Count > 0)
