@@ -24,3 +24,12 @@ public interface IAfterSaveHookAsync : IHookBaseAsync
 ///     The interface HookAsync allows to handle the Before Save and After Save async actions of DbContext
 /// </summary>
 public interface IHookAsync : IBeforeSaveHookAsync, IAfterSaveHookAsync;
+
+public abstract class HookAsync : IHookAsync
+{
+    public virtual Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public virtual Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}

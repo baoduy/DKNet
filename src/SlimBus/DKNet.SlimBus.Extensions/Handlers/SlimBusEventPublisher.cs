@@ -1,0 +1,19 @@
+using DKNet.EfCore.Abstractions.Events;
+using SlimMessageBus;
+
+namespace DKNet.SlimBus.Extensions.Handlers;
+
+public class SlimBusEventPublisher(IMessageBus bus) : IEventPublisher
+{
+    public virtual Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
+    {
+        if (eventObj is IEventItem item)
+        {
+            var headers =
+                item.AdditionalData.ToDictionary(i => i.Key, object (v) => v.Value, StringComparer.OrdinalIgnoreCase);
+            return bus.Publish(item, headers: headers, cancellationToken: cancellationToken);
+        }
+
+        return bus.Publish(eventObj, cancellationToken: cancellationToken);
+    }
+}

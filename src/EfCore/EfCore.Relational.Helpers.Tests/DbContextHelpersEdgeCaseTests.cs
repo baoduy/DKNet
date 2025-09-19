@@ -32,7 +32,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Dispose the context to make it invalid

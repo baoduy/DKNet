@@ -1,4 +1,4 @@
-namespace DKNet.EfCore.Events.Handlers;
+namespace DKNet.EfCore.Abstractions.Events;
 
 public interface IEventObject
 {

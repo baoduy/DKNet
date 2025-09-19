@@ -1,4 +1,4 @@
-﻿namespace DKNet.EfCore.Events.Handlers;
+﻿namespace DKNet.EfCore.Abstractions.Events;
 
 /// <summary>
 ///     Centralized event publisher.
@@ -6,5 +6,5 @@
 /// </summary>
 public interface IEventPublisher
 {
-    Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default);
+    Task PublishAsync(object eventObj, CancellationToken cancellationToken = default);
 }

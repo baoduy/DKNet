@@ -1,3 +1,4 @@
+using DKNet.EfCore.Abstractions.Events;
 using DKNet.EfCore.Events.Internals;
 using Microsoft.EntityFrameworkCore;
 

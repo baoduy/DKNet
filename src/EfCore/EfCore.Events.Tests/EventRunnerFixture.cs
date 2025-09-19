@@ -1,4 +1,3 @@
-using DotNet.Testcontainers.Containers;
 using Mapster;
 using MapsterMapper;
 using Testcontainers.MsSql;

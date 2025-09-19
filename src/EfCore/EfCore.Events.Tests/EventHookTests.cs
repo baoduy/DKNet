@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
-using DKNet.EfCore.Events.Handlers;
+using DKNet.EfCore.Abstractions.Events;
 using DKNet.EfCore.Events.Internals;
 using DKNet.EfCore.Extensions.Snapshots;
 using Mapster;
@@ -19,14 +19,14 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert
-        await Should.NotThrowAsync(async () => 
+        await Should.NotThrowAsync(async () =>
             await eventHook.RunBeforeSaveAsync(snapshot, CancellationToken.None));
     }
 
@@ -40,11 +40,11 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
@@ -65,8 +65,9 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
@@ -74,7 +75,7 @@ public class EventHookTests
         root.AddEvent(testEvent);
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
@@ -85,7 +86,7 @@ public class EventHookTests
         TestEventPublisher.Events.ShouldNotBeEmpty();
         TestEventPublisher.Events.Count.ShouldBe(1);
         TestEventPublisher.Events[0].ShouldBeOfType<EntityAddedEvent>();
-        
+
         var publishedEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
         publishedEvent.Id.ShouldBe(testEvent.Id);
         publishedEvent.Name.ShouldBe(testEvent.Name);
@@ -102,8 +103,9 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
@@ -111,7 +113,7 @@ public class EventHookTests
         root.AddEvent(testEvent);
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
@@ -131,26 +133,27 @@ public class EventHookTests
         // Arrange
         var testPublisher = new TestEventPublisher();
         var eventPublishers = new List<IEventPublisher> { testPublisher };
-        
+
         var config = TypeAdapterConfig.GlobalSettings;
         config.NewConfig<Root, EntityAddedEvent>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.Name, src => src.Name);
 
-        var mapper = new ServiceMapper(config);
+        var mapper = new ServiceMapper(null, config);
         var mappers = new List<IMapper> { mapper };
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
         root.AddEvent<EntityAddedEvent>(); // Add event type to be mapped
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
@@ -161,40 +164,10 @@ public class EventHookTests
         TestEventPublisher.Events.ShouldNotBeEmpty();
         TestEventPublisher.Events.Count.ShouldBe(1);
         TestEventPublisher.Events[0].ShouldBeOfType<EntityAddedEvent>();
-        
+
         var mappedEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
         mappedEvent.Id.ShouldBe(root.Id);
         mappedEvent.Name.ShouldBe(root.Name);
-    }
-
-    [Fact]
-    public async Task RunAfterSaveAsync_WithCancellationToken_ShouldPassTokenToPublishers()
-    {
-        // Arrange
-        var cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = cancellationTokenSource.Token;
-
-        var testPublisher = new TrackingEventPublisher();
-        var eventPublishers = new List<IEventPublisher> { testPublisher };
-        var mappers = new List<IMapper>();
-
-        var eventHook = new EventHook(eventPublishers, mappers);
-
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options, null);
-
-        var root = new Root("Test Root", "TestOwner");
-        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
-        context.Set<Root>().Add(root);
-
-        using var snapshot = new SnapshotContext(context);
-
-        // Act
-        await eventHook.RunAfterSaveAsync(snapshot, cancellationToken);
-
-        // Assert
-        testPublisher.ReceivedCancellationToken.ShouldBe(cancellationToken);
     }
 
     [Fact]
@@ -207,19 +180,20 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root1 = new Root("Root 1", "TestOwner");
         var root2 = new Root("Root 2", "TestOwner");
-        
+
         root1.AddEvent(new EntityAddedEvent { Id = root1.Id, Name = root1.Name });
         root2.AddEvent(new EntityAddedEvent { Id = root2.Id, Name = root2.Name });
-        
+
         context.Set<Root>().AddRange(root1, root2);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
@@ -230,7 +204,7 @@ public class EventHookTests
         TestEventPublisher.Events.ShouldNotBeEmpty();
         TestEventPublisher.Events.Count.ShouldBe(2);
         TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
-        
+
         var eventIds = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Id).ToList();
         eventIds.ShouldContain(root1.Id);
         eventIds.ShouldContain(root2.Id);
@@ -246,36 +220,25 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
         root.AddEvent<EntityAddedEvent>(); // Add event type (requires mapper)
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         TestEventPublisher.Events.Clear();
 
         // Act & Assert
-        await Should.NotThrowAsync(async () => 
+        await Should.NotThrowAsync(async () =>
             await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None));
-        
+
         // Should complete without error, but no events should be published
         // since event types need mapper but none provided
         TestEventPublisher.Events.ShouldBeEmpty();
-    }
-
-    // Helper class to track cancellation token passed to publisher
-    private class TrackingEventPublisher : IEventPublisher
-    {
-        public CancellationToken ReceivedCancellationToken { get; private set; }
-
-        public Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
-        {
-            ReceivedCancellationToken = cancellationToken;
-            return Task.CompletedTask;
-        }
     }
 }

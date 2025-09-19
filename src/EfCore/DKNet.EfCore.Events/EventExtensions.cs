@@ -1,3 +1,6 @@
+using System.Text.Json;
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.Fw.Extensions;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.Events;
@@ -18,12 +21,12 @@ internal static class EventExtensions
             , StringComparer.OrdinalIgnoreCase);
     }
 
-    public static IEnumerable<IEventObject> GetEventObjects(this SnapshotContext context, IMapper? mapper)
+    public static IEnumerable<object> GetEventObjects(this SnapshotContext context, IMapper? mapper)
     {
         foreach (var entry in context.SnapshotEntities.Where(entry => entry.Entity is IEventEntity))
         {
             var entity = (IEventEntity)entry.Entity;
-            var finalEvents = new List<object>();
+            var finalEvents = new HashSet<object>();
             var (events, eventTypes) = entity.GetEventsAndClear();
             finalEvents.AddRange(events);
 
@@ -31,11 +34,19 @@ internal static class EventExtensions
                 finalEvents.AddRange(eventTypes.Select(eventType =>
                     mapper.Map(entity, entry.Entry.Metadata.ClrType, eventType)));
 
-            var entityType = entry.Entry.Metadata.ClrType.FullName!;
-            var primaryKey = entry.Entry.GetEntityKeyValues();
+            var sourceType = entry.Entry.Metadata.ClrType.FullName!;
+            var sourceKeys = entry.Entry.GetEntityKeyValues();
 
             foreach (var e in finalEvents)
-                yield return new EventObject(entityType, primaryKey, e);
+            {
+                if (e is IEventItem item)
+                {
+                    item.AdditionalData.Add(nameof(sourceType), sourceType);
+                    item.AdditionalData.Add(nameof(sourceKeys), JsonSerializer.Serialize(sourceKeys));
+                }
+
+                yield return e;
+            }
         }
     }
 }

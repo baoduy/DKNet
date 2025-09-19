@@ -1,4 +1,4 @@
-using DKNet.EfCore.Events.Handlers;
+using DKNet.EfCore.Abstractions.Events;
 using SlimMessageBus;
 
 namespace SlimBus.Infra.Services;
@@ -9,8 +9,8 @@ namespace SlimBus.Infra.Services;
 /// <param name="bus"></param>
 internal sealed class EventPublisher(IMessageBus bus) : IEventPublisher
 {
-    public async Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
+    public async Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
-        await bus.Publish(eventObj.Event, cancellationToken: cancellationToken);
+        await bus.Publish(eventObj, cancellationToken: cancellationToken);
     }
 }

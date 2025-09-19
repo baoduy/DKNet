@@ -1,7 +1,6 @@
-using System.Collections.Generic;
-using DKNet.EfCore.Events.Handlers;
+using System.Threading;
+using DKNet.EfCore.Abstractions.Events;
 using DKNet.EfCore.Events.Internals;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Events.Tests;
 
@@ -13,22 +12,22 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         services.AddEventPublisher<DddContext, TestEventPublisher>();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Should register IEventPublisher
         var eventPublisher = serviceProvider.GetService<IEventPublisher>();
         eventPublisher.ShouldNotBeNull();
         eventPublisher.ShouldBeOfType<TestEventPublisher>();
-        
+
         // Should register the EventHook
-        var hooks = serviceProvider.GetServices<IHookAsync>();
+        var hooks = serviceProvider.GetKeyedServices<IHookBaseAsync>(typeof(DddContext).FullName).ToList();
         hooks.ShouldNotBeEmpty();
         hooks.ShouldContain(h => h is EventHook);
     }
@@ -39,8 +38,8 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         services.AddEventPublisher<DddContext, TestEventPublisher>();
@@ -48,7 +47,7 @@ public class EventSetupTests
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var eventPublishers = serviceProvider.GetServices<IEventPublisher>().ToList();
         eventPublishers.Count.ShouldBe(2);
         eventPublishers.ShouldContain(p => p is TestEventPublisher);
@@ -61,15 +60,15 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         services.AddEventPublisher<DddContext, CustomEventPublisher>();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var eventPublisher = serviceProvider.GetService<IEventPublisher>();
         eventPublisher.ShouldNotBeNull();
         eventPublisher.ShouldBeOfType<CustomEventPublisher>();
@@ -81,28 +80,30 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         services.AddEventPublisher<DddContext, TestEventPublisher>();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Create multiple scopes to test service lifetime
         using var scope1 = serviceProvider.CreateScope();
         using var scope2 = serviceProvider.CreateScope();
-        
+
         var publisher1 = scope1.ServiceProvider.GetService<IEventPublisher>();
         var publisher2 = scope2.ServiceProvider.GetService<IEventPublisher>();
-        
+
         // Should be scoped, so different instances per scope
         publisher1.ShouldNotBeSameAs(publisher2);
-        
-        var hook1 = scope1.ServiceProvider.GetServices<IHookAsync>().FirstOrDefault(h => h is EventHook);
-        var hook2 = scope2.ServiceProvider.GetServices<IHookAsync>().FirstOrDefault(h => h is EventHook);
-        
+
+        var hook1 = scope1.ServiceProvider.GetKeyedServices<IHookBaseAsync>(typeof(DddContext).FullName)
+            .FirstOrDefault(h => h is EventHook);
+        var hook2 = scope2.ServiceProvider.GetKeyedServices<IHookBaseAsync>(typeof(DddContext).FullName)
+            .FirstOrDefault(h => h is EventHook);
+
         // Hooks should also be scoped
         hook1.ShouldNotBeSameAs(hook2);
     }
@@ -113,10 +114,10 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
-        services.AddDbContext<AnotherDbContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+        services.AddDbContext<AnotherDbContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         services.AddEventPublisher<DddContext, TestEventPublisher>();
@@ -124,12 +125,13 @@ public class EventSetupTests
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var eventPublishers = serviceProvider.GetServices<IEventPublisher>().ToList();
         eventPublishers.Count.ShouldBe(2);
-        
-        var hooks = serviceProvider.GetServices<IHookAsync>().OfType<EventHook>().ToList();
-        hooks.Count.ShouldBe(2); // Should have separate hooks for each DbContext
+
+        var hooks = serviceProvider.GetKeyedServices<IHookBaseAsync>(typeof(DddContext).FullName).OfType<EventHook>()
+            .ToList();
+        hooks.Count.ShouldBe(1); // Should have separate hooks for each DbContext
     }
 
     [Fact]
@@ -138,40 +140,34 @@ public class EventSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<DddContext>(options => 
-            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
         var result = services.AddEventPublisher<DddContext, TestEventPublisher>();
 
         // Assert
         result.ShouldBeSameAs(services);
-        
+
         // Should allow method chaining
         var chainedResult = services
             .AddEventPublisher<DddContext, TestEventPublisher>()
             .AddScoped<string>(_ => "test");
-            
+
         chainedResult.ShouldBeSameAs(services);
     }
 
     // Helper classes for testing
     private class AnotherTestEventPublisher : IEventPublisher
     {
-        public Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
+        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private class CustomEventPublisher : IEventPublisher
     {
         public string CustomProperty { get; } = "Custom";
 
-        public Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
+        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private class AnotherDbContext(DbContextOptions<AnotherDbContext> options) : DbContext(options)
