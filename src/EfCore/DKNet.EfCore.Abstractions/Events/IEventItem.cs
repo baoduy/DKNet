@@ -4,6 +4,8 @@ namespace DKNet.EfCore.Abstractions.Events;
 
 public interface IEventItem
 {
+    public string EventType { get; }
+
     /// <summary>
     /// This additional data will be added into the message headers.
     /// This is useful for routing or filtering messages.
@@ -15,5 +17,9 @@ public interface IEventItem
 
 public abstract record EventItem : IEventItem
 {
-    [JsonIgnore] public virtual IDictionary<string, string> AdditionalData { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public string EventType => GetType().FullName ?? nameof(EventItem);
+
+    [JsonIgnore]
+    public virtual IDictionary<string, string> AdditionalData { get; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
