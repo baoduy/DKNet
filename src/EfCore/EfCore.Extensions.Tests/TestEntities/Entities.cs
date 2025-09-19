@@ -32,7 +32,7 @@ public abstract class BaseEntity : AuditedEntity<int>, IConcurrencyEntity<byte[]
 
 public class User : BaseEntity
 {
-    public User(string createdBy) : this(default, createdBy)
+    public User(string createdBy) : base(createdBy)
     {
     }
 

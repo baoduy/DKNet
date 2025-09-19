@@ -153,7 +153,7 @@ public class PageAsyncEnumeratorTests
 
         // Assert
         result.Count.ShouldBe(25); // Half of 50
-        result.All(x => x.Id % 2 == 0).ShouldBeTrue();
+        result.TrueForAll(x => x.Id % 2 == 0).ShouldBeTrue();
     }
 
     private static async Task SeedDataAsync(TestDbContext context, int count)

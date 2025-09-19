@@ -1,3 +1,5 @@
+using Mapster;
+using MapsterMapper;
 using Testcontainers.MsSql;
 
 namespace EfCore.Events.Tests;
@@ -18,8 +20,15 @@ public sealed class EventRunnerFixture : IAsyncLifetime
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(20));
 
+        TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
+        TypeAdapterConfig.GlobalSettings.NewConfig<Root, EntityAddedEvent>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Name, src => src.Name);
+
         Provider = new ServiceCollection()
             .AddLogging()
+            .AddSingleton(TypeAdapterConfig.GlobalSettings)
+            .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(o =>
                 o.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
             .AddEventPublisher<DddContext, TestEventPublisher>()
@@ -35,5 +44,12 @@ public sealed class EventRunnerFixture : IAsyncLifetime
         if (_sqlContainer is null) return;
         await _sqlContainer.StopAsync();
         await _sqlContainer.DisposeAsync();
+    }
+
+    public async Task EnsureSqlReadyAsync()
+    {
+        if (_sqlContainer is null) return;
+        if (_sqlContainer.State == DotNet.Testcontainers.Containers.TestcontainersStates.Running) return;
+        await _sqlContainer.StartAsync();
     }
 }

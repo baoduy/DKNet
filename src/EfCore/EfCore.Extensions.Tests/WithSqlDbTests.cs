@@ -50,7 +50,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
         var users = await _db.Set<User>().ToListAsync();
 
         (users.Count >= 1).ShouldBeTrue();
-        users.All(u => u.RowVersion != null).ShouldBeTrue();
+        users.TrueForAll(u => u.RowVersion != null).ShouldBeTrue();
     }
 
     [Fact]

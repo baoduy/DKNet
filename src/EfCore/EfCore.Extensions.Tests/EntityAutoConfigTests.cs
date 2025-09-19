@@ -25,7 +25,7 @@ public class EntityAutoConfigTests
         var configs = info.GetDefinedMappers().ToList();
 
         configs.ShouldNotBeEmpty();
-        configs.Any(c => c == typeof(NotInheritIEntityConfig)).ShouldBeTrue();
+        configs.Exists(c => c == typeof(NotInheritIEntityConfig)).ShouldBeTrue();
     }
 
     [Fact]

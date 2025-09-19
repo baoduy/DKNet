@@ -1,22 +1,22 @@
 using System.Collections.Generic;
 using System.Threading;
-using DKNet.EfCore.Events.Handlers;
+using DKNet.EfCore.Abstractions.Events;
 
 namespace EfCore.Events.Tests.TestEntities;
 
 public class TestEventPublisher : IEventPublisher
 {
-    public static List<object> Events { get; } = [];
+    public static IList<object> Events { get; } = [];
 
-    public Task PublishAsync(IEventObject eventObj, CancellationToken cancellationToken = default)
+    public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
-        Events.AddRange(eventObj.Events);
+        Events.Add(eventObj);
         return Task.CompletedTask;
     }
 }
 
-public class EntityAddedEvent
+public sealed record EntityAddedEvent
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
 }

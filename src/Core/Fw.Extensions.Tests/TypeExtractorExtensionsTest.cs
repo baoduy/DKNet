@@ -208,7 +208,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.IsClass).ShouldBeTrue();
+        types.TrueForAll(t => t.IsClass).ShouldBeTrue();
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.IsInterface).ShouldBeTrue();
+        types.TrueForAll(t => t.IsInterface).ShouldBeTrue();
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.IsEnum).ShouldBeTrue();
+        types.TrueForAll(t => t.IsEnum).ShouldBeTrue();
         types.Contains(typeof(TestEnumObject)).ShouldBeTrue();
     }
 
@@ -242,7 +242,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => !t.IsGenericType).ShouldBeTrue();
+        types.TrueForAll(t => !t.IsGenericType).ShouldBeTrue();
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.IsClass && t.IsPublic && !t.IsAbstract && !t.IsGenericType).ShouldBeTrue();
+        types.TrueForAll(t => t.IsClass && t.IsPublic && !t.IsAbstract && !t.IsGenericType).ShouldBeTrue();
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.Name.StartsWith("Test", StringComparison.OrdinalIgnoreCase)).ShouldBeTrue();
+        types.TrueForAll(t => t.Name.StartsWith("Test", StringComparison.OrdinalIgnoreCase)).ShouldBeTrue();
     }
 
     [Fact]
@@ -331,7 +331,7 @@ public class TestTypeExtractorExtensions
 
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
-        types.All(t => t.IsAbstract && t.IsSealed).ShouldBeTrue();
+        types.TrueForAll(t => t.IsAbstract && t.IsSealed).ShouldBeTrue();
     }
 
     [Fact]
@@ -343,6 +343,6 @@ public class TestTypeExtractorExtensions
             .ToList();
 
         // Act & Assert - Should find structs
-        types.All(t => t.IsValueType && !t.IsEnum).ShouldBeTrue();
+        types.TrueForAll(t => t.IsValueType && !t.IsEnum).ShouldBeTrue();
     }
 }

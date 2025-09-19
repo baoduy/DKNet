@@ -23,7 +23,7 @@ public class DataKeyTests(DataKeyFixture fixture) : IClassFixture<DataKeyFixture
 
         //Verify Key
         db.Set<Root>().ToList()
-            .All(a => string.Equals(((IOwnedBy)a).OwnedBy, provider.GetOwnershipKey(),
+            .TrueForAll(a => string.Equals(((IOwnedBy)a).OwnedBy, provider.GetOwnershipKey(),
                 StringComparison.OrdinalIgnoreCase))
             .ShouldBeTrue();
     }
