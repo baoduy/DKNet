@@ -47,6 +47,6 @@ public class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<
             builder.Property(nameof(IConcurrencyEntity<dynamic>.RowVersion))
                 .IsConcurrencyToken()
                 .IsRowVersion()
-                .ValueGeneratedOnAdd();
+                .ValueGeneratedOnAddOrUpdate();
     }
 }
