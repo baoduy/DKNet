@@ -2,11 +2,10 @@ using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
 
-public class AzureStorageBlobServiceTest : IClassFixture<AzureStorageBlobServiceFixture>
+public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
+    : IClassFixture<AzureStorageBlobServiceFixture>
 {
-    private readonly IBlobService _adapter;
-
-    public AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture) => _adapter = fixture.Service;
+    private readonly IBlobService _adapter = fixture.Service;
 
     [Fact]
     public async Task SaveNewFile()

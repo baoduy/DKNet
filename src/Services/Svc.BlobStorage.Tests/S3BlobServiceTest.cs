@@ -3,11 +3,9 @@ using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
 
-public class S3BlobServiceTest : IClassFixture<S3BlobServiceFixture>
+public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3BlobServiceFixture>
 {
-    private readonly IBlobService _service;
-
-    public S3BlobServiceTest(S3BlobServiceFixture fixture) => _service = fixture.Service;
+    private readonly IBlobService _service = fixture.Service;
 
     [Fact]
     public async Task SavesFileAndList()

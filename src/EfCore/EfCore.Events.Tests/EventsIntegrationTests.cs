@@ -1,19 +1,17 @@
 using System.Collections.Generic;
+using Xunit.Abstractions;
 
 namespace EfCore.Events.Tests;
 
-public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
+public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture fixture)
+    : IClassFixture<EventRunnerFixture>
 {
-    private readonly EventRunnerFixture _fixture;
-
-    public EventsIntegrationTests(EventRunnerFixture fixture) => _fixture = fixture;
-
     [Fact]
     public async Task FullEventFlow_WithDirectEvents_ShouldPublishCorrectly()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -38,8 +36,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithMappedEvents_ShouldPublishMappedCorrectly()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -64,8 +62,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithMixedEvents_ShouldPublishAllEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -96,8 +94,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithMultipleEntities_ShouldPublishAllEntityEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -130,8 +128,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithEntityUpdate_ShouldPublishUpdateEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         // First, create and save the entity
         var root = new Root("Original Name", "TestOwner");
@@ -158,8 +156,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithNestedEntities_ShouldPublishNestedEntityEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -187,8 +185,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithNoEvents_ShouldNotPublishAnything()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -207,8 +205,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithTransactionRollback_ShouldNotPublishEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
-        var db = _fixture.Provider.GetRequiredService<DddContext>();
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
 
@@ -241,7 +239,7 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
     public async Task FullEventFlow_WithConcurrentSaves_ShouldPublishAllEvents()
     {
         // Arrange
-        await _fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureSqlReadyAsync();
 
         TestEventPublisher.Events.Clear();
 
@@ -252,7 +250,7 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
             var index = i;
             tasks.Add(Task.Run(async () =>
             {
-                using var scope = _fixture.Provider.CreateScope();
+                using var scope = fixture.Provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<DddContext>();
 
                 var root = new Root($"Concurrent Root {index}", "TestOwner");
@@ -270,7 +268,8 @@ public class EventsIntegrationTests : IClassFixture<EventRunnerFixture>
         TestEventPublisher.Events.Count.ShouldBeGreaterThanOrEqualTo(4);
         TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
 
-        var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().ToList();
-        for (var i = 0; i < 5; i++) events.ShouldContain(e => e.Name == $"Concurrent Event {i}");
+        var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Name).ToList();
+        output.WriteLine($"Names: {string.Join('\n', events)}");
+        for (var i = 0; i < 5; i++) events.ShouldContain(e => e == $"Concurrent Event {i}");
     }
 }

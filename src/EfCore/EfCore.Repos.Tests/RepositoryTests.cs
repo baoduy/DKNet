@@ -161,8 +161,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await using var db2 = await fixture.CreateNewDbContext();
         var repo2 = new Repository<UserGuid>(db2);
 
-        var userFromRepo1 = await repo1.Gets().FirstOrDefaultAsync (u => u.Id == user.Id);
-        var userFromRepo2 = await repo2.Gets().FirstOrDefaultAsync(u => u.Id == user.Id);
+        var userFromRepo1 = await repo1.Gets().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+        var userFromRepo2 = await repo2.Gets().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
 
         userFromRepo1.ShouldNotBeNull();
         userFromRepo2.ShouldNotBeNull();

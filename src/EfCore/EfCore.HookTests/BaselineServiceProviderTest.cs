@@ -4,13 +4,10 @@ using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
 
-public class BaselineServiceProviderTest : IAsyncLifetime
+public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private readonly ITestOutputHelper _output;
     private ServiceProvider _provider;
     private MsSqlContainer _sqlContainer;
-
-    public BaselineServiceProviderTest(ITestOutputHelper output) => _output = output;
 
     public async Task InitializeAsync()
     {
@@ -61,10 +58,10 @@ public class BaselineServiceProviderTest : IAsyncLifetime
                 await db.AddAsync(entity);
                 await db.SaveChangesAsync();
 
-                _output.WriteLine($"Baseline Iteration {i + 1}: Completed");
+                output.WriteLine($"Baseline Iteration {i + 1}: Completed");
             }
 
-            _output.WriteLine("Baseline test completed without service provider proliferation issues");
+            output.WriteLine("Baseline test completed without service provider proliferation issues");
         };
 
         await action.ShouldNotThrowAsync();

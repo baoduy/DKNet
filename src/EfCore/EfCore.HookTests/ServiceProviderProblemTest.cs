@@ -4,13 +4,10 @@ using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
 
-public class ServiceProviderProblemTest : IAsyncLifetime
+public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private readonly ITestOutputHelper _output;
     private ServiceProvider _provider;
     private MsSqlContainer _sqlContainer;
-
-    public ServiceProviderProblemTest(ITestOutputHelper output) => _output = output;
 
     public async Task InitializeAsync()
     {
@@ -66,11 +63,11 @@ public class ServiceProviderProblemTest : IAsyncLifetime
                 await db.AddAsync(entity);
                 await db.SaveChangesAsync();
 
-                _output.WriteLine($"Iteration {i + 1}: Hook Before={hook.BeforeCalled}, After={hook.AfterCalled}");
+                output.WriteLine($"Iteration {i + 1}: Hook Before={hook.BeforeCalled}, After={hook.AfterCalled}");
             }
 
             // The test itself may pass but we should see the EF Core warning in logs
-            _output.WriteLine(
+            output.WriteLine(
                 "If you see 'More than twenty IServiceProvider instances' warning above, the issue is reproduced");
         };
         await action.ShouldNotThrowAsync();

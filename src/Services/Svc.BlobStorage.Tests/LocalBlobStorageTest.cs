@@ -2,16 +2,10 @@ using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
 
-public class LocalBlobStorageTest : IClassFixture<LocalBlobServiceFixture>
+public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixture<LocalBlobServiceFixture>
 {
-    private readonly IBlobService _service;
-    private readonly string _testRoot;
-
-    public LocalBlobStorageTest(LocalBlobServiceFixture fixture)
-    {
-        _service = fixture.Service;
-        _testRoot = fixture.TestRoot;
-    }
+    private readonly IBlobService _service = fixture.Service;
+    private readonly string _testRoot = fixture.TestRoot;
 
     [Fact]
     public async Task SaveAsyncSavesFileAndOverwrites()
