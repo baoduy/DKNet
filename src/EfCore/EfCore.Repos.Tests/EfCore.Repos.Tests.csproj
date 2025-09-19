@@ -42,6 +42,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="KubernetesClient" Version="17.0.14" />
         <Using Include="Xunit"/>
     </ItemGroup>
 

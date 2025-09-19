@@ -16,6 +16,7 @@
     <ItemGroup>
         <PackageReference Include="Aspire.Hosting" />
         <PackageReference Include="Aspire.Hosting.SqlServer"/>
+    <PackageReference Include="KubernetesClient" Version="17.0.14" />
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
         <PackageReference Update="Meziantou.Analyzer">
