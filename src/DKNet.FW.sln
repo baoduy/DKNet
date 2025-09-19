@@ -52,9 +52,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203BB-C314-4216-8C48-BC98BFEE7F89}"
 	ProjectSection(SolutionItems) = preProject
 		nuget.config = nuget.config
-		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
 		coverage.runsettings = coverage.runsettings
-		Directory.Build.targets = Directory.Build.targets
 		NugetLogo.png = NugetLogo.png
 		nuget.sh = nuget.sh
 		..\README.md = ..\README.md
