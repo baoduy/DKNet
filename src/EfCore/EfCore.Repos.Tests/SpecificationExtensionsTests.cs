@@ -363,6 +363,51 @@ public class SpecificationExtensionsTests
     }
 
     [Fact]
+    public void WithSpecs_WithOrderByDescendingFirst_ShouldApplyCorrectly()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new("test") { FirstName = "John", LastName = "Wilson" },
+            new("test") { FirstName = "Jane", LastName = "Smith" },
+            new("test") { FirstName = "Bob", LastName = "Doe" }
+        };
+        var queryable = users.AsQueryable();
+        
+        var spec = new TestSpecification();
+        // Start with OrderByDescending (no OrderBy first)
+        spec.AddTestOrderByDescending(u => u.LastName);
+
+        // Act
+        var result = queryable.WithSpecs(spec).ToList();
+
+        // Assert
+        result.Count.ShouldBe(3);
+        result[0].LastName.ShouldBe("Wilson");
+        result[1].LastName.ShouldBe("Smith");
+        result[2].LastName.ShouldBe("Doe");
+    }
+
+    [Fact]
+    public void WithSpecs_WithIncludes_ShouldApplyIncludes()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new("test") { FirstName = "John", LastName = "Doe" }
+        };
+        var queryable = users.AsQueryable();
+        
+        var spec = new TestSpecification();
+        spec.AddTestInclude(u => u.Addresses);
+        spec.AddTestInclude(u => u.FirstName); // Multiple includes
+
+        // Act & Assert
+        // Since we're working with in-memory lists, just ensure it doesn't throw
+        Should.NotThrow(() => queryable.WithSpecs(spec));
+    }
+
+    [Fact]
     public void WithSpecs_WithComplexSpecification_ShouldApplyAllAspects()
     {
         // Arrange

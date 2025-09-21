@@ -1,0 +1,78 @@
+Summary
+  Generated on: 09/21/2025 - 04:46:57
+  Coverage date: 09/21/2025 - 04:46:47
+  Parser: Cobertura
+  Assemblies: 5
+  Classes: 48
+  Files: 45
+  Line coverage: 13.3%
+  Covered lines: 145
+  Uncovered lines: 943
+  Coverable lines: 1088
+  Total lines: 3150
+  Branch coverage: 13% (60 of 460)
+  Covered branches: 60
+  Total branches: 460
+  Method coverage: 14.5% (36 of 248)
+  Full method coverage: 14.1% (35 of 248)
+  Covered methods: 36
+  Fully covered methods: 35
+  Total methods: 248
+
+DKNet.EfCore.Abstractions                                                    18.1%
+  DKNet.EfCore.Abstractions.Attributes.SequenceAttribute                        0%
+  DKNet.EfCore.Abstractions.Attributes.SqlSequenceAttribute                     0%
+  DKNet.EfCore.Abstractions.Entities.AuditedEntity                              0%
+  DKNet.EfCore.Abstractions.Entities.AuditedEntity<T>                        43.4%
+  DKNet.EfCore.Abstractions.Entities.Entity                                     0%
+  DKNet.EfCore.Abstractions.Entities.Entity<T>                               23.5%
+  DKNet.EfCore.Abstractions.Events.EventItem                                    0%
+
+DKNet.EfCore.Extensions                                                       0.6%
+  DKNet.EfCore.Extensions.Configurations.DataSeedingConfiguration<T>            0%
+  DKNet.EfCore.Extensions.Configurations.DefaultEntityTypeConfiguration<T>      0%
+  DKNet.EfCore.Extensions.Convertors.GuidV7ValueGenerator                       0%
+  DKNet.EfCore.Extensions.Extensions.EfCorePageAsyncEnumerator<T>             7.4%
+  DKNet.EfCore.Extensions.Extensions.NavigationExtensions                       0%
+  DKNet.EfCore.Extensions.Extensions.PageAsyncEnumeratorExtensions            100%
+  DKNet.EfCore.Extensions.Internal.AutoConfigModelCustomizer                    0%
+  DKNet.EfCore.Extensions.Internal.EntityConfigExtensionInfo                    0%
+  DKNet.EfCore.Extensions.Internal.EntityConfigRegisterService                  0%
+  DKNet.EfCore.Extensions.Registers.AutoEntityRegistrationInfo                  0%
+  DKNet.EfCore.Extensions.Registers.DataSeedingRegister                         0%
+  DKNet.EfCore.Extensions.Registers.EntityAutoConfigRegister                    0%
+  DKNet.EfCore.Extensions.Registers.SequenceRegister                            0%
+  DKNet.EfCore.Extensions.Snapshots.SnapshotContext                             0%
+  DKNet.EfCore.Extensions.Snapshots.SnapshotEntityEntry                         0%
+  Microsoft.EntityFrameworkCore.EfCoreDataSeedingExtensions                     0%
+  Microsoft.EntityFrameworkCore.EfCoreExtensions                                0%
+  Microsoft.EntityFrameworkCore.EfCoreSetup                                     0%
+  Microsoft.EntityFrameworkCore.EntityAutoConfigRegisterExtensions              0%
+
+DKNet.EfCore.Repos                                                              0%
+  DKNet.EfCore.Repos.ReadRepository<T>                                          0%
+  DKNet.EfCore.Repos.Repository<T>                                              0%
+  DKNet.EfCore.Repos.WriteRepository<T>                                         0%
+  Microsoft.Extensions.DependencyInjection.SetupRepository                      0%
+
+DKNet.EfCore.Specifications                                                  96.9%
+  DKNet.EfCore.Specifications.AndSpecification<T>                             100%
+  DKNet.EfCore.Specifications.OrSpecification<T>                              100%
+  DKNet.EfCore.Specifications.ReplaceExpressionVisitor                        100%
+  DKNet.EfCore.Specifications.Specification<T>                                100%
+  DKNet.EfCore.Specifications.SpecificationExtensions                          90%
+
+DKNet.Fw.Extensions                                                             0%
+  DKNet.Fw.Extensions.AttributeExtensions                                       0%
+  DKNet.Fw.Extensions.CollectionExtensions                                      0%
+  DKNet.Fw.Extensions.DateTimeExtensions                                        0%
+  DKNet.Fw.Extensions.Encryption.Base65StringEncryption                         0%
+  DKNet.Fw.Extensions.Encryption.StringEncryption                               0%
+  DKNet.Fw.Extensions.Encryption.StringHashing                                  0%
+  DKNet.Fw.Extensions.EnumExtensions                                            0%
+  DKNet.Fw.Extensions.PropertyExtensions                                        0%
+  DKNet.Fw.Extensions.StringExtensions                                          0%
+  DKNet.Fw.Extensions.TypeExtensions                                            0%
+  DKNet.Fw.Extensions.TypeExtractors.TypeArrayExtractorExtensions               0%
+  DKNet.Fw.Extensions.TypeExtractors.TypeExtractor                              0%
+  System.Collections.Generic.AsyncEnumerableExtensions                          0%
