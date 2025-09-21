@@ -33,7 +33,8 @@ public static class Fluents
         /// </summary>
         /// <typeparam name="TRequest">The type of the request.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
-        public interface IHandler<in TRequest, TResponse> : IRequestHandler<TRequest, IResult<TResponse>>;
+        public interface IHandler<in TRequest, TResponse> : IRequestHandler<TRequest, IResult<TResponse>>
+            where TRequest : IWitResponse<TResponse>;
     }
 
     public static class Queries
