@@ -32,6 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="KubernetesClient" />
         <None Update="Configs\busConfig.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

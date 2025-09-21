@@ -26,6 +26,7 @@
     <PackageVersion Include="FluentResults" Version="4.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26" />
+    <PackageVersion Include="KubernetesClient" Version="17.0.14" />
     <PackageVersion Include="Mapster" Version="7.4.0" />
     <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1" />
     <PackageVersion Include="Mapster.EFCore" Version="5.1.1" />
