@@ -88,8 +88,10 @@ internal static class EntityAutoConfigRegisterExtensions
     private static void RegisterGlobalFilterFrom(this ModelBuilder modelBuilder, AutoEntityRegistrationInfo info,
         DbContext dbContext)
     {
-        var globalFilters = info.EntityAssemblies.ScanGlobalFilterFrom().Union(EfCoreSetup.GlobalQueryFilters)
+        var globalFilters = info.EntityAssemblies.ScanGlobalFilterFrom()
+            .Union(EfCoreSetup.GlobalQueryFilters)
             .Distinct();
+
         foreach (var filter in globalFilters)
         {
             var filterInstance = Activator.CreateInstance(filter) as IGlobalQueryFilterRegister;
