@@ -7,5 +7,5 @@ public sealed class GuidV7ValueGenerator : ValueGenerator<Guid>
 {
     public override bool GeneratesTemporaryValues => false;
 
-    public override Guid Next(EntityEntry entry) => Guid.NewGuid(); // Replace with compatible method
+    public override Guid Next(EntityEntry entry) => Guid.CreateVersion7();
 }

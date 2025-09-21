@@ -36,7 +36,7 @@ public static class StringHashing
 
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(value));
-        return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        return Convert.ToHexStringLower(hash);
     }
 
     /// <summary>
@@ -54,6 +54,6 @@ public static class StringHashing
         var hashBytes = SHA256.HashData(inputBytes);
 
         // Use built-in .NET framework method for hex conversion
-        return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        return Convert.ToHexStringLower(hashBytes);
     }
 }
