@@ -19,11 +19,11 @@ public static class EfCoreDataSeedingExtensions
     /// <summary>
     /// </summary>
     public static DbContextOptionsBuilder UseAutoDataSeeding(this DbContextOptionsBuilder @this,
-        params ICollection<Assembly> assemblies)
+        params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(@this);
 
-        if (assemblies.Count == 0)
+        if (assemblies.Length == 0)
         {
             var op = @this.GetOrCreateExtension();
             assemblies = [.. op.Registrations.SelectMany(r => r.EntityAssemblies)];

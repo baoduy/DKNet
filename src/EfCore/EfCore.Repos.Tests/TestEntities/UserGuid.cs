@@ -8,7 +8,7 @@ public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<uint>
 {
     private readonly HashSet<AddressGuid> _addresses = [];
 
-    public UserGuid(string createdBy) : this(Guid.CreateVersion7(), createdBy)
+    public UserGuid(string createdBy) : this(Guid.NewGuid(), createdBy)
     {
     }
 
