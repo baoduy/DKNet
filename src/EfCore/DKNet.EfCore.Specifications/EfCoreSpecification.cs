@@ -18,6 +18,9 @@ public sealed class EfCoreSpecification<TEntity>(ISpecification<TEntity> specifi
     /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
     public IQueryable<TEntity> Apply(IQueryable<TEntity> queryable)
     {
+        if (IgnoreQueryFilters)
+            queryable = queryable.IgnoreQueryFilters();
+
         if (FilterQuery is not null) queryable = queryable.Where(FilterQuery);
 
         if (IncludeQueries.Count > 0)

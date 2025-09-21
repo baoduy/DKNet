@@ -66,6 +66,7 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
     private static void ApplyQueryFilter<TEntity>(ModelBuilder modelBuilder, IDataOwnerDbContext context)
         where TEntity : class, IOwnedBy
     {
+        //TODO: convert to named query filter when migrate to EFCore 10
         modelBuilder.Entity<TEntity>()
             .HasQueryFilter(x => context.AccessibleKeys.Any() && context.AccessibleKeys.Contains(x.OwnedBy));
     }
