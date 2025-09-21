@@ -1,4 +1,6 @@
 ﻿using DKNet.SlimBus.Extensions.Behaviors;
+using DKNet.SlimBus.Extensions.Handlers;
+using Microsoft.EntityFrameworkCore;
 using SlimMessageBus.Host;
 using SlimMessageBus.Host.Interceptor;
 
@@ -13,6 +15,14 @@ public static class SlimBusEfCoreSetup
         serviceCollection
             .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>))
             .AddSlimMessageBus(configure);
+        return serviceCollection;
+    }
+
+    public static IServiceCollection AddSlimBusEventPublisher<TDbContext>(this IServiceCollection serviceCollection)
+        where TDbContext : DbContext
+    {
+        serviceCollection
+            .AddEventPublisher<TDbContext, SlimBusEventPublisher>();
         return serviceCollection;
     }
 }

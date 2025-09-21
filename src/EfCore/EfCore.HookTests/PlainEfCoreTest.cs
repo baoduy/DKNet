@@ -4,13 +4,10 @@ using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
 
-public class PlainEfCoreTest : IAsyncLifetime
+public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private readonly ITestOutputHelper _output;
     private ServiceProvider _provider;
     private MsSqlContainer _sqlContainer;
-
-    public PlainEfCoreTest(ITestOutputHelper output) => _output = output;
 
     public async Task InitializeAsync()
     {
@@ -60,10 +57,10 @@ public class PlainEfCoreTest : IAsyncLifetime
                 await db.AddAsync(entity);
                 await db.SaveChangesAsync();
 
-                _output.WriteLine($"Plain Iteration {i + 1}: Completed");
+                output.WriteLine($"Plain Iteration {i + 1}: Completed");
             }
 
-            _output.WriteLine("Plain EF Core test completed without service provider proliferation issues");
+            output.WriteLine("Plain EF Core test completed without service provider proliferation issues");
         };
 
         await action.ShouldNotThrowAsync();

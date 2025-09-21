@@ -28,6 +28,11 @@ public interface ISpecification<TEntity>
     ///     A function that describes how to order entities by descending
     /// </summary>
     IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries { get; }
+
+    /// <summary>
+    /// Ignore the global query filters (e.g., for soft delete or multi-tenancy)
+    /// </summary>
+    bool IgnoreQueryFilters { get; }
 }
 
 /// <summary>
@@ -52,10 +57,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     Initializes a new instance of the class
     /// </summary>
     /// <param name="query">A filtering function to test each element for condition</param>
-    protected Specification(Expression<Func<TEntity, bool>> query)
-    {
-        FilterQuery = query;
-    }
+    protected Specification(Expression<Func<TEntity, bool>> query) => FilterQuery = query;
 
     /// <summary>
     ///     Initializes a new instance of the class
@@ -70,27 +72,21 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         _orderByDescendingQueries = [.. specification.OrderByDescendingQueries];
     }
 
-    /// <summary>
-    ///     A filtering function to test each element for condition
-    /// </summary>
     public Expression<Func<TEntity, bool>>? FilterQuery { get; private set; }
 
-    /// <summary>
-    ///     A collection of functions that describes included entities
-    /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
 
-    /// <summary>
-    ///     A function that describes how to order entities by ascending order
-    /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
 
-    /// <summary>
-    ///     A function that describes how to order entities by descending order
-    /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries =>
         _orderByDescendingQueries;
 
+    public bool IgnoreQueryFilters { get; private set; }
+
+    protected void IgnoreQueryFiltersEnabled()
+    {
+        IgnoreQueryFilters = true;
+    }
 
     /// <summary>
     ///     Adds a filtering function to test each element for condition
@@ -150,10 +146,8 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <returns>
     ///     <see cref="AndSpecification{T}" />
     /// </returns>
-    public Specification<TEntity> And(Specification<TEntity> specification)
-    {
-        return new AndSpecification<TEntity>(this, specification);
-    }
+    public Specification<TEntity> And(Specification<TEntity> specification) =>
+        new AndSpecification<TEntity>(this, specification);
 
     /// <summary>
     ///     Returns an expression that combines two specifications with a logical "or"
@@ -162,18 +156,12 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <returns>
     ///     <see cref="OrSpecification{T}" />
     /// </returns>
-    public Specification<TEntity> Or(Specification<TEntity> specification)
-    {
-        return new OrSpecification<TEntity>(this, specification);
-    }
+    public Specification<TEntity> Or(Specification<TEntity> specification) =>
+        new OrSpecification<TEntity>(this, specification);
 
-    public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right)
-    {
-        return left.And(right);
-    }
+    public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right) =>
+        left.And(right);
 
-    public static Specification<TEntity> operator |(Specification<TEntity> left, Specification<TEntity> right)
-    {
-        return left.Or(right);
-    }
+    public static Specification<TEntity> operator |(Specification<TEntity> left, Specification<TEntity> right) =>
+        left.Or(right);
 }

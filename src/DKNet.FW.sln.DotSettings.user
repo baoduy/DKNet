@@ -242,6 +242,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AWebApplicationFactory_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F255f916e5a2d424ef01b291afc761e049b367614440bf4b216824ec479064b_003FWebApplicationFactory_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AWebApplication_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E2_003Fresharper_002Dhost_003FSourcesCache_003Ff0c16cda8a141e194c9151fd8f6acd0f93ef39e54a2a250baf2e5b2fa1fac6_003FWebApplication_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/dotCover/Editor/HighlightingSourceSnapshotLocation/@EntryValue">/Users/steven/Library/Caches/JetBrains/Rider2025.2/resharper-host/temp/Rider/vAny/CoverageData/_DKNet.FW.-1876822317/Snapshot/snapshot.utdcvr</s:String>
+	
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/1.0.0" Loaded="True" /&gt;
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/1.0.2" Loaded="True" /&gt;
@@ -251,15 +252,12 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a0c8457e_002Dfc05_002D4f06_002Dac40_002D519fd8888178/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Extensions.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Or&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/EfCore/EfCore.Extensions.Tests" Presentation="&amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Extensions.Tests&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/EfCore/EfCore.Events.Tests" Presentation="&amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Events&amp;gt;\&amp;lt;EfCore.Events.Tests&amp;gt;" /&gt;
-  &lt;/Or&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a4bebf8b_002D5ec1_002D4ecc_002D818c_002D9f3cca9d1f28/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b438030a_002D6007_002D4fc1_002Dac15_002De4ad24a31cd2/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;Core&amp;gt;\&amp;lt;RandomCreatorTests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Core/RandomCreatorTests" Presentation="&amp;lt;Core&amp;gt;\&amp;lt;RandomCreatorTests&amp;gt;" /&gt;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
 	
 	
 	
