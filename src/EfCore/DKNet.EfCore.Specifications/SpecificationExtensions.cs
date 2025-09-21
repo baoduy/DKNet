@@ -12,19 +12,60 @@ namespace DKNet.EfCore.Specifications;
 public static class SpecificationExtensions
 {
     /// <summary>
-    ///     Applies a specification to an <see cref="IQueryable{TEntity}"/> query.
+    ///     Applies a specification to an IQueryable and returns the modified queryable.
     /// </summary>
     /// <typeparam name="TEntity">Type of the entity</typeparam>
-    /// <param name="query">The queryable source</param>
+    /// <param name="queryable">The queryable to apply the specification to</param>
     /// <param name="specification">The specification to apply</param>
     /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
-    private static IQueryable<TEntity> WithSpecs<TEntity>(
-        this IQueryable<TEntity> query,
+    public static IQueryable<TEntity> WithSpecs<TEntity>(
+        this IQueryable<TEntity> queryable,
         ISpecification<TEntity> specification) where TEntity : class
     {
         ArgumentNullException.ThrowIfNull(specification);
-        var efCoreSpecification = new EfCoreSpecification<TEntity>(specification);
-        return efCoreSpecification.Apply(query);
+
+        if (specification.IgnoreQueryFilters)
+            queryable = queryable.IgnoreQueryFilters();
+
+        if (specification.FilterQuery is not null) queryable = queryable.Where(specification.FilterQuery);
+
+        if (specification.IncludeQueries.Count > 0)
+            queryable = specification.IncludeQueries.Aggregate(queryable,
+                (current, includeQuery) => current.Include(includeQuery));
+
+        // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
+        var hasOrderBy = specification.OrderByQueries.Count > 0;
+        var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
+        if (hasOrderBy || hasOrderByDesc)
+        {
+            IOrderedQueryable<TEntity>? ordered = null;
+            var orderIndex = 0;
+            // Apply OrderBy queries first
+            if (hasOrderBy)
+                foreach (var expr in specification.OrderByQueries)
+                {
+                    if (orderIndex == 0)
+                        ordered = queryable.OrderBy(expr);
+                    else
+                        ordered = ordered!.ThenBy(expr);
+                    orderIndex++;
+                }
+
+            // Then apply OrderByDescending queries
+            if (hasOrderByDesc)
+                foreach (var expr in specification.OrderByDescendingQueries)
+                {
+                    if (orderIndex == 0)
+                        ordered = queryable.OrderByDescending(expr);
+                    else
+                        ordered = ordered!.ThenByDescending(expr);
+                    orderIndex++;
+                }
+
+            queryable = ordered!;
+        }
+
+        return queryable;
     }
 
     /// <summary>

@@ -66,6 +66,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected Specification(ISpecification<TEntity> specification)
     {
         FilterQuery = specification.FilterQuery;
+        IgnoreQueryFilters = specification.IgnoreQueryFilters;
 
         _includeQueries = [.. specification.IncludeQueries];
         _orderByQueries = [.. specification.OrderByQueries];
