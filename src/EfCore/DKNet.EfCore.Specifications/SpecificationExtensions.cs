@@ -33,18 +33,36 @@ public static class SpecificationExtensions
             queryable = specification.IncludeQueries.Aggregate(queryable,
                 (current, includeQuery) => current.Include(includeQuery));
 
-        // Apply ordering in the exact order and direction they were added to the specification
-        if (specification.OrderedQueries != null && specification.OrderedQueries.Count > 0)
+        // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
+        var hasOrderBy = specification.OrderByQueries != null && specification.OrderByQueries.Count > 0;
+        var hasOrderByDesc = specification.OrderByDescendingQueries != null && specification.OrderByDescendingQueries.Count > 0;
+        if (hasOrderBy || hasOrderByDesc)
         {
-            var orderings = specification.OrderedQueries; // List<(Expression<Func<TEntity, object>> Expr, bool Desc)>
-
             IOrderedQueryable<TEntity>? ordered = null;
-            for (var i = 0; i < orderings.Count; i++)
+            int orderIndex = 0;
+            // Apply OrderBy queries first
+            if (hasOrderBy)
             {
-                var (expr, desc) = orderings[i];
-                ordered = i == 0
-                    ? desc ? queryable.OrderByDescending(expr) : queryable.OrderBy(expr)
-                    : desc ? ordered!.ThenByDescending(expr) : ordered!.ThenBy(expr);
+                foreach (var expr in specification.OrderByQueries)
+                {
+                    if (orderIndex == 0)
+                        ordered = queryable.OrderBy(expr);
+                    else
+                        ordered = ordered!.ThenBy(expr);
+                    orderIndex++;
+                }
+            }
+            // Then apply OrderByDescending queries
+            if (hasOrderByDesc)
+            {
+                foreach (var expr in specification.OrderByDescendingQueries)
+                {
+                    if (orderIndex == 0)
+                        ordered = queryable.OrderByDescending(expr);
+                    else
+                        ordered = ordered!.ThenByDescending(expr);
+                    orderIndex++;
+                }
             }
             queryable = ordered!;
         }
