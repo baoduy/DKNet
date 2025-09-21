@@ -34,15 +34,14 @@ public static class SpecificationExtensions
                 (current, includeQuery) => current.Include(includeQuery));
 
         // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
-        var hasOrderBy = specification.OrderByQueries != null && specification.OrderByQueries.Count > 0;
-        var hasOrderByDesc = specification.OrderByDescendingQueries != null && specification.OrderByDescendingQueries.Count > 0;
+        var hasOrderBy = specification.OrderByQueries.Count > 0;
+        var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
         if (hasOrderBy || hasOrderByDesc)
         {
             IOrderedQueryable<TEntity>? ordered = null;
-            int orderIndex = 0;
+            var orderIndex = 0;
             // Apply OrderBy queries first
             if (hasOrderBy)
-            {
                 foreach (var expr in specification.OrderByQueries)
                 {
                     if (orderIndex == 0)
@@ -51,10 +50,9 @@ public static class SpecificationExtensions
                         ordered = ordered!.ThenBy(expr);
                     orderIndex++;
                 }
-            }
+
             // Then apply OrderByDescending queries
             if (hasOrderByDesc)
-            {
                 foreach (var expr in specification.OrderByDescendingQueries)
                 {
                     if (orderIndex == 0)
@@ -63,7 +61,7 @@ public static class SpecificationExtensions
                         ordered = ordered!.ThenByDescending(expr);
                     orderIndex++;
                 }
-            }
+
             queryable = ordered!;
         }
 

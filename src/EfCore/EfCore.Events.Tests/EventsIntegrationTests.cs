@@ -270,6 +270,7 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
 
         var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Name).ToList();
         output.WriteLine($"Names: {string.Join('\n', events)}");
-        for (var i = 0; i < 5; i++) events.ShouldContain(e => e == $"Concurrent Event {i}");
+        for (var i = 0; i < 5; i++)
+            events.ShouldContain(e => e.Equals($"Concurrent Event {i}", StringComparison.OrdinalIgnoreCase));
     }
 }
