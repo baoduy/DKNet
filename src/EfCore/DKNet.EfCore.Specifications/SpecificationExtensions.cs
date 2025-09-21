@@ -11,6 +11,13 @@ namespace DKNet.EfCore.Specifications;
 /// </summary>
 public static class SpecificationExtensions
 {
+    /// <summary>
+    ///     Applies a specification to an IQueryable and returns the modified queryable.
+    /// </summary>
+    /// <typeparam name="TEntity">Type of the entity</typeparam>
+    /// <param name="queryable">The queryable to apply the specification to</param>
+    /// <param name="specification">The specification to apply</param>
+    /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
     public static IQueryable<TEntity> WithSpecs<TEntity>(
         this IQueryable<TEntity> queryable,
         ISpecification<TEntity> specification) where TEntity : class
@@ -26,20 +33,28 @@ public static class SpecificationExtensions
             queryable = specification.IncludeQueries.Aggregate(queryable,
                 (current, includeQuery) => current.Include(includeQuery));
 
-        if (specification.OrderByQueries.Count > 0)
+        // Combined ordering logic: apply all ascending followed by all descending order expressions
+        if (specification.OrderByQueries.Count > 0 || specification.OrderByDescendingQueries.Count > 0)
         {
-            var orderedQueryable = queryable.OrderBy(specification.OrderByQueries.First());
-            orderedQueryable = specification.OrderByQueries.Skip(1)
-                .Aggregate(orderedQueryable, (current, orderQuery) => current.ThenBy(orderQuery));
-            queryable = orderedQueryable;
-        }
+            IOrderedQueryable<TEntity>? ordered = null;
+            var firstApplied = false;
 
-        if (specification.OrderByDescendingQueries.Count > 0)
-        {
-            var orderedQueryable = queryable.OrderByDescending(specification.OrderByDescendingQueries.First());
-            orderedQueryable = specification.OrderByDescendingQueries.Skip(1).Aggregate(orderedQueryable,
-                (current, orderQuery) => current.ThenByDescending(orderQuery));
-            queryable = orderedQueryable;
+            // Apply ascending order expressions
+            foreach (var expr in specification.OrderByQueries)
+            {
+                ordered = !firstApplied ? queryable.OrderBy(expr) : ordered!.ThenBy(expr);
+                firstApplied = true;
+            }
+
+            // Apply descending order expressions without overwriting previous ordering
+            foreach (var expr in specification.OrderByDescendingQueries)
+            {
+                ordered = !firstApplied ? queryable.OrderByDescending(expr) : ordered!.ThenByDescending(expr);
+                firstApplied = true;
+            }
+
+            if (ordered is not null)
+                queryable = ordered;
         }
 
         return queryable;
