@@ -74,7 +74,7 @@
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="SlimMessageBus" Version="3.0.0" />
-    <PackageVersion Include="SlimMessageBus.Host" Version="3.3.2" />
+    <PackageVersion Include="SlimMessageBus.Host" Version="3.3.3" />
     <PackageVersion Include="SlimMessageBus.Host.AzureServiceBus" Version="3.3.2" />
     <PackageVersion Include="SlimMessageBus.Host.FluentValidation" Version="3.3.2" />
     <PackageVersion Include="SlimMessageBus.Host.Interceptor" Version="3.0.0" />
