@@ -17,7 +17,7 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while executing job");
+            logger.LogError(ex, "An error occurred while executing job `{JobType}`", job.GetType().FullName);
         }
     }
 
