@@ -2,21 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
-        <Authors>Steven Hoang</Authors>
-        <Authors>https://drunkcoding.net</Authors>
-        <Copyright>@2026 drunkcoding</Copyright>
-        <PackageLicense>https://opensource.org/licenses/MIT</PackageLicense>
-        <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>Storage Services</PackageTags>
-        <LangVersion>default</LangVersion>
-        <NeutralLanguage>en</NeutralLanguage>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageIcon>NugetLogo.png</PackageIcon>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>true</ImplicitUsings>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
     <ItemGroup>

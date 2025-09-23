@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading;
 using DKNet.EfCore.Abstractions.Events;
 using DKNet.EfCore.Events.Internals;
 using DKNet.EfCore.Extensions.Snapshots;
