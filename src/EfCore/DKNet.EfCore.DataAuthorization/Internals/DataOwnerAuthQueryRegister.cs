@@ -68,6 +68,6 @@ internal sealed class DataOwnerAuthQueryRegister : IGlobalQueryFilterRegister
     {
         //TODO: convert to named query filter when migrate to EFCore 10
         modelBuilder.Entity<TEntity>()
-            .HasQueryFilter(x => context.AccessibleKeys.Any() && context.AccessibleKeys.Contains(x.OwnedBy));
+            .HasQueryFilter(x => !context.AccessibleKeys.Any() || context.AccessibleKeys.Contains(x.OwnedBy));
     }
 }
