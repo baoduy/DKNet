@@ -17,7 +17,7 @@ public interface IEventItem
 
 public abstract record EventItem : IEventItem
 {
-    public string EventType => GetType().FullName ?? nameof(EventItem);
+    public virtual string EventType => GetType().FullName ?? nameof(EventItem);
 
     [JsonIgnore]
     public virtual IDictionary<string, string> AdditionalData { get; } =
