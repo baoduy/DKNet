@@ -36,34 +36,48 @@ public static class SpecificationExtensions
         // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
         var hasOrderBy = specification.OrderByQueries.Count > 0;
         var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
-        if (hasOrderBy || hasOrderByDesc)
+        IOrderedQueryable<TEntity>? ordered = null;
+        // Apply OrderBy queries first
+        if (hasOrderBy)
         {
-            IOrderedQueryable<TEntity>? ordered = null;
-            var orderIndex = 0;
-            // Apply OrderBy queries first
-            if (hasOrderBy)
-                foreach (var expr in specification.OrderByQueries)
+            var isFirst = true;
+            foreach (var expr in specification.OrderByQueries)
+                if (isFirst)
                 {
-                    if (orderIndex == 0)
-                        ordered = queryable.OrderBy(expr);
-                    else
-                        ordered = ordered!.ThenBy(expr);
-                    orderIndex++;
+                    ordered = queryable.OrderBy(expr);
+                    isFirst = false;
                 }
-
-            // Then apply OrderByDescending queries
-            if (hasOrderByDesc)
-                foreach (var expr in specification.OrderByDescendingQueries)
+                else
                 {
-                    if (orderIndex == 0)
-                        ordered = queryable.OrderByDescending(expr);
-                    else
-                        ordered = ordered!.ThenByDescending(expr);
-                    orderIndex++;
+                    ordered = ordered!.ThenBy(expr);
                 }
-
-            queryable = ordered!;
         }
+
+        // Then apply OrderByDescending queries
+        if (hasOrderByDesc)
+        {
+            if (ordered == null)
+            {
+                var isFirst = true;
+                foreach (var expr in specification.OrderByDescendingQueries)
+                    if (isFirst)
+                    {
+                        ordered = queryable.OrderByDescending(expr);
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        ordered = ordered!.ThenByDescending(expr);
+                    }
+            }
+            else
+            {
+                ordered = specification.OrderByDescendingQueries.Aggregate(ordered,
+                    (current, expr) => current.ThenByDescending(expr));
+            }
+        }
+
+        if (ordered != null) queryable = ordered;
 
         return queryable;
     }
