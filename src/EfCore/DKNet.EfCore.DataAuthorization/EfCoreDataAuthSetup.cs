@@ -28,7 +28,7 @@ public static class EfCoreDataAuthSetup
     ///     - Sets up the data ownership provider
     ///     - Configures necessary dependencies
     /// </remarks>
-    private static IServiceCollection AddDataKeyProvider<TProvider>(this IServiceCollection services)
+    private static IServiceCollection AddDataOwnerProvider<TProvider>(this IServiceCollection services)
         where TProvider : class, IDataOwnerProvider =>
         services
             .AddGlobalModelBuilderRegister<DataOwnerAuthQueryRegister>()
@@ -47,10 +47,10 @@ public static class EfCoreDataAuthSetup
     ///     - Automatic key management through hooks
     ///     - Integration with the specified DbContext
     /// </remarks>
-    public static IServiceCollection AddAutoDataKeyProvider<TDbContext, TProvider>(this IServiceCollection services)
+    public static IServiceCollection AddDataOwnerProvider<TDbContext, TProvider>(this IServiceCollection services)
         where TDbContext : DbContext
         where TProvider : class, IDataOwnerProvider =>
         services
-            .AddDataKeyProvider<TProvider>()
+            .AddDataOwnerProvider<TProvider>()
             .AddHook<TDbContext, DataOwnerHook>();
 }

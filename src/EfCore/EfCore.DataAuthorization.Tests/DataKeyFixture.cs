@@ -23,7 +23,7 @@ public sealed class DataKeyFixture : IAsyncLifetime
 
         Provider = new ServiceCollection()
             .AddLogging()
-            .AddAutoDataKeyProvider<DddContext, TestDataKeyProvider>()
+            .AddDataOwnerProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
                 builder.UseSqlServer(GetConnectionString())
                     .UseAutoConfigModel())
