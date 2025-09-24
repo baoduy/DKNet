@@ -1,11 +1,26 @@
 <Project>
     <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Authors>Steven Hoang</Authors>
+        <Company>https://drunkcoding.net</Company>
+        <Copyright>@2025-2030 drunkcoding</Copyright>
+        <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>Random,Password,string</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <LangVersion>default</LangVersion>
+        <NeutralLanguage>en</NeutralLanguage>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageIcon>NugetLogo.png</PackageIcon>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>true</ImplicitUsings>
+        <IsTrimmable>false</IsTrimmable>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <AnalysisMode>All</AnalysisMode>
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-        <TargetFramework>net9.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
     <ItemGroup>

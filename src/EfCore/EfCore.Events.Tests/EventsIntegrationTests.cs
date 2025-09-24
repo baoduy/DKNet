@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Xunit.Abstractions;
 
 namespace EfCore.Events.Tests;

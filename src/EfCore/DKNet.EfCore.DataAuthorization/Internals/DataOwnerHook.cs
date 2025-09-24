@@ -45,16 +45,19 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             .Where(e => e.OriginalState == EntityState.Added)
             .Select(e => e.Entity);
 
+        var ownerKey = dataOwnerProvider.GetOwnershipKey();
+        if (string.IsNullOrEmpty(ownerKey)) return;
+
         foreach (var entity in dataKeyEntities)
         {
             if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
             {
-                au.SetPropertyValue(nameof(au.CreatedBy), dataOwnerProvider.GetOwnershipKey());
+                au.SetPropertyValue(nameof(au.CreatedBy), ownerKey);
                 au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.Now);
             }
 
             if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-                own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), dataOwnerProvider.GetOwnershipKey());
+                own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
         }
     }
 }

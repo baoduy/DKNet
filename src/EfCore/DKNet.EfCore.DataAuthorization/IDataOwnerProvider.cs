@@ -23,7 +23,12 @@ public interface IDataOwnerProvider
     ///     - Restrict access to authorized data only
     ///     - Support multi-tenancy scenarios
     /// </remarks>
-    ICollection<string> GetAccessibleKeys();
+    public ICollection<string> GetAccessibleKeys()
+    {
+        var key = GetOwnershipKey();
+        if (string.IsNullOrEmpty(key)) return [];
+        return [key];
+    }
 
     /// <summary>
     ///     Gets the ownership key for newly created entities.
@@ -33,5 +38,5 @@ public interface IDataOwnerProvider
     ///     This key is automatically assigned to new entities during creation
     ///     through the <see cref="DataOwnerHook" />.
     /// </remarks>
-    string GetOwnershipKey();
+    string? GetOwnershipKey();
 }
