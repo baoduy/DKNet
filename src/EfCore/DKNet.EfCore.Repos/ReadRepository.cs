@@ -10,7 +10,7 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
     ///     Get ReadOnly (No Tracking) Query for Entity
     /// </summary>
     /// <returns></returns>
-    public virtual IQueryable<TEntity> Gets() => dbContext.Set<TEntity>().AsNoTrackingWithIdentityResolution();
+    public virtual IQueryable<TEntity> Gets() => dbContext.Set<TEntity>().AsNoTracking();
 
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
         => dbContext.Set<TEntity>().FindAsync([keyValue], cancellationToken);
