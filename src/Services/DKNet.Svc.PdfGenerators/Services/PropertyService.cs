@@ -26,7 +26,8 @@ public static class PropertyService
 
         var property = typeof(TContainer).GetProperty(propertyName,
             BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-        
+
+
         object? value;
         Type? memberType;
         if (property != null)
