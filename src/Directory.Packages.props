@@ -7,7 +7,7 @@
         <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>Random,Password,string</PackageTags>
+        <PackageTags>aspnetcore,aws,azure,cloud,ddd,efcore,entityframework,events,extensions,generator,password,pdf,random,storage,string</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <LangVersion>default</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
@@ -15,7 +15,7 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
-        <IsTrimmable>false</IsTrimmable>
+        <IsTrimmable>true</IsTrimmable>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -25,18 +25,18 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Asp.Versioning.Http" Version="8.1.0"/>
-        <PackageVersion Include="Aspire.Hosting" Version="9.4.2"/>
-        <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.2"/>
-        <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.4.2"/>
-        <PackageVersion Include="Aspire.Hosting.Redis" Version="9.4.2"/>
-        <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.4.2"/>
-        <PackageVersion Include="Aspire.Hosting.Testing" Version="9.4.2"/>
+        <PackageVersion Include="Aspire.Hosting" Version="9.5.0"/>
+        <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.5.0"/>
+        <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.5.0"/>
+        <PackageVersion Include="Aspire.Hosting.Redis" Version="9.5.0"/>
+        <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.5.0"/>
+        <PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.0"/>
         <PackageVersion Include="AutoBogus" Version="2.13.1"/>
         <PackageVersion Include="AWSSDK.Core" Version="4.0.0.29"/>
         <PackageVersion Include="AWSSDK.S3" Version="4.0.7.4"/>
         <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0"/>
         <PackageVersion Include="Azure.Storage.Blobs" Version="12.25.1"/>
-        <PackageVersion Include="Bogus" Version="35.6.3"/>
+        <PackageVersion Include="Bogus" Version="35.6.4"/>
         <PackageVersion Include="coverlet.collector" Version="6.0.4"/>
         <PackageVersion Include="FluentResults" Version="4.0.0"/>
         <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0"/>
