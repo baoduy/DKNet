@@ -268,6 +268,9 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a4bebf8b_002D5ec1_002D4ecc_002D818c_002D9f3cca9d1f28/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=dcd49818_002D1426_002D4b92_002Db997_002D78d20a790554/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Services&amp;gt;\&amp;lt;Svc.PdfGenerators.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Services/Svc.PdfGenerators.Tests" Presentation="&amp;lt;Services&amp;gt;\&amp;lt;Svc.PdfGenerators.Tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=dd2bb3e7_002D89a7_002D4f68_002Da165_002D6fb28943a56d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;AspNet&amp;gt;\&amp;lt;DKNet.AspNetCore.BackgroundJobs.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/DKNet.AspNetCore.BackgroundJobs.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;DKNet.AspNetCore.BackgroundJobs.Tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>

@@ -151,7 +151,7 @@ public class EventSetupTests
         // Should allow method chaining
         var chainedResult = services
             .AddEventPublisher<DddContext, TestEventPublisher>()
-            .AddScoped<string>(_ => "test");
+            .AddScoped(_ => "test");
 
         chainedResult.ShouldBeSameAs(services);
     }

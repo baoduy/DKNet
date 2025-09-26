@@ -1,3 +1,4 @@
+using DotNet.Testcontainers.Containers;
 using Mapster;
 using MapsterMapper;
 using Testcontainers.MsSql;
@@ -49,7 +50,7 @@ public sealed class EventRunnerFixture : IAsyncLifetime
     public async Task EnsureSqlReadyAsync()
     {
         if (_sqlContainer is null) return;
-        if (_sqlContainer.State == DotNet.Testcontainers.Containers.TestcontainersStates.Running) return;
+        if (_sqlContainer.State == TestcontainersStates.Running) return;
         await _sqlContainer.StartAsync();
     }
 }

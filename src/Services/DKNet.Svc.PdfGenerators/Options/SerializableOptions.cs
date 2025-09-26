@@ -4,65 +4,65 @@ using PuppeteerSharp.Media;
 namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
-/// The <see cref="Markdown2PdfOptions"/> in a serializable format.
+/// The <see cref="PdfGeneratorOptions"/> in a serializable format.
 /// </summary>
 public class SerializableOptions
 {
-    /// <inheritdoc cref="Markdown2PdfOptions.ModuleOptions"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.ModuleOptions"/>
     public string? ModuleOptions { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.Theme"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.Theme"/>
     public string? Theme { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.CodeHighlightTheme"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.CodeHighlightTheme"/>
     public string? CodeHighlightTheme { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.EnableAutoLanguageDetection"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.EnableAutoLanguageDetection"/>
     public bool? EnableAutoLanguageDetection { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.HeaderHtml"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.HeaderHtml"/>
     public string? HeaderHtml { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.FooterHtml"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.FooterHtml"/>
     public string? FooterHtml { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.DocumentTitle"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.DocumentTitle"/>
     public string? DocumentTitle { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.MetadataTitle"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.MetadataTitle"/>
     public string? MetadataTitle { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.CustomHeadContent"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.CustomHeadContent"/>
     public string? CustomHeadContent { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.ChromePath"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.ChromePath"/>
     public string? ChromePath { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.KeepHtml"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.KeepHtml"/>
     public bool? KeepHtml { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.MarginOptions"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.MarginOptions"/>
     public MarginOptions? MarginOptions { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.IsLandscape"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.IsLandscape"/>
     public bool? IsLandscape { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.Format"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.Format"/>
     public string? Format { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.Scale"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.Scale"/>
     public decimal? Scale { get; set; }
 
-    /// <inheritdoc cref="Markdown2PdfOptions.TableOfContents"/>
+    /// <inheritdoc cref="PdfGeneratorOptions.TableOfContents"/>
     public TableOfContentsOptions? TableOfContents { get; set; } = null;
 
     /// <summary>
-    /// Converts this serializable options into proper <see cref="Markdown2PdfOptions"/>.
+    /// Converts this serializable options into proper <see cref="PdfGeneratorOptions"/>.
     /// </summary>
-    /// <returns>The deserialized <see cref="Markdown2PdfOptions"/>.</returns>
-    public Markdown2PdfOptions ToMarkdown2PdfOptions()
+    /// <returns>The deserialized <see cref="PdfGeneratorOptions"/>.</returns>
+    public PdfGeneratorOptions ToPdfGeneratorOptions()
     {
-        var options = new Markdown2PdfOptions();
+        var options = new PdfGeneratorOptions();
 
         if (ModuleOptions != null)
             options.ModuleOptions =

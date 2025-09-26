@@ -19,16 +19,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.Svc.PdfGenerator\DKNet.Svc.PdfGenerator.csproj"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <None Update="Sample.md">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="Sample.html">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\DKNet.Svc.PdfGenerators\DKNet.Svc.PdfGenerators.csproj"/>
     </ItemGroup>
 
 </Project>

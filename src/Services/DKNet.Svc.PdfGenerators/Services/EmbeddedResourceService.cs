@@ -22,4 +22,6 @@ public class EmbeddedResourceService
 
         using var stream = _currentAssembly.GetManifestResourceStream(resourcePath);
         using var reader = new StreamReader(stream!);
-        return reader.ReadToEnd()
+        return reader.ReadToEnd();
+    }
+}

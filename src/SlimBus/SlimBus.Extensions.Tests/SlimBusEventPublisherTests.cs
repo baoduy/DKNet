@@ -3,7 +3,7 @@ using DKNet.SlimBus.Extensions.Handlers;
 
 namespace SlimBus.Extensions.Tests;
 
-public class SlimBusEventPublisherTests(Fixtures.Fixture fixture) : IClassFixture<Fixtures.Fixture>
+public class SlimBusEventPublisherTests(Fixture fixture) : IClassFixture<Fixture>
 {
     [Fact]
     public async Task PublishAsync_WithEventItem_ShouldHandleAdditionalData()

@@ -1,14 +1,14 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
-using Markdig.Helpers;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
-using UglyToad.PdfPig;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using DKNet.Svc.PdfGenerators.Options;
-using UglyToad.PdfPig.Tokens;
+using Markdig.Helpers;
+using UglyToad.PdfPig;
 using UglyToad.PdfPig.Actions;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
+using UglyToad.PdfPig.Tokens;
 
 namespace DKNet.Svc.PdfGenerators.Services;
 
@@ -208,7 +208,7 @@ internal class TableOfContentsCreator
             while (linkAddresses.Contains(linkAddressUnique))
             {
                 // add an increasing number at the end
-                linkAddressUnique = linkAddress + "-" + counterVal.ToString();
+                linkAddressUnique = linkAddress + "-" + counterVal;
                 counterVal += 1;
                 if (counterVal > 99) break; // limit to 99 in case of error
             }

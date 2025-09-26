@@ -14,7 +14,7 @@ public class PdfGenerator
     /// <summary>
     /// Options for PDF generation.
     /// </summary>
-    public PdfGeneratorOptions GeneratorOptions { get; }
+    public PdfGeneratorOptions Options { get; }
 
     /// <summary>
     /// Template for HTML generation from markdown.
@@ -40,7 +40,7 @@ public class PdfGenerator
     /// <param name="options">Options for PDF generation.</param>
     public PdfGenerator(PdfGeneratorOptions? options = null)
     {
-        GeneratorOptions = options ?? new PdfGeneratorOptions();
+        Options = options ?? new PdfGeneratorOptions();
         ContentTemplate = "<html><body>{{body}}</body></html>";
     }
 
@@ -126,22 +126,22 @@ public class PdfGenerator
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
         {
-            Format = GeneratorOptions.Format,
-            Landscape = GeneratorOptions.IsLandscape,
+            Format = Options.Format,
+            Landscape = Options.IsLandscape,
             PrintBackground = true,
-            MarginOptions = GeneratorOptions.MarginOptions != null
+            MarginOptions = Options.MarginOptions != null
                 ? new MarginOptions
                 {
-                    Top = GeneratorOptions.MarginOptions.Top,
-                    Bottom = GeneratorOptions.MarginOptions.Bottom,
-                    Left = GeneratorOptions.MarginOptions.Left,
-                    Right = GeneratorOptions.MarginOptions.Right
+                    Top = Options.MarginOptions.Top,
+                    Bottom = Options.MarginOptions.Bottom,
+                    Left = Options.MarginOptions.Left,
+                    Right = Options.MarginOptions.Right
                 }
                 : new MarginOptions(),
-            Scale = GeneratorOptions.Scale,
-            DisplayHeaderFooter = GeneratorOptions.HeaderHtml != null || GeneratorOptions.FooterHtml != null,
-            HeaderTemplate = GeneratorOptions.HeaderHtml,
-            FooterTemplate = GeneratorOptions.FooterHtml
+            Scale = Options.Scale,
+            DisplayHeaderFooter = Options.HeaderHtml != null || Options.FooterHtml != null,
+            HeaderTemplate = Options.HeaderHtml,
+            FooterTemplate = Options.FooterHtml
         };
         await page.EmulateMediaTypeAsync(MediaType.Screen);
         await page.PdfAsync(outputFilePath, pdfOptions);

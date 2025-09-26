@@ -26,7 +26,7 @@ public static class InlineOptionsParser
             .Build();
 
         var options = deserializer.Deserialize<SerializableOptions>(yamlContent);
-        return options.ToMarkdown2PdfOptions();
+        return options.ToPdfGeneratorOptions();
     }
 
     private static bool InternalTryReadYamlFrontMatter(string markdownFilePath, out string markdownContent)

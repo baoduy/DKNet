@@ -5,7 +5,7 @@ namespace DKNet.Svc.PdfGenerators.Options;
 /// <summary>
 /// All the options for the conversion.
 /// </summary>
-public class Markdown2PdfOptions
+public class PdfGeneratorOptions
 {
     /// <summary>
     /// Options that decide from where to load additional modules.

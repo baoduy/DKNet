@@ -10,7 +10,7 @@ public class Tests(ITestOutputHelper output)
     [Fact]
     public void CanGenerateA25CharacterString()
     {
-        var randomString = RandomCreators.NewString(25);
+        var randomString = RandomCreators.NewString();
         output.WriteLine(randomString);
 
         Assert.True(randomString.Length == 25);

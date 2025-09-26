@@ -121,7 +121,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspNetCore.Background
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspNetCore.BackgroundJobs.Tests", "DKNet.AspNetCore.BackgroundJobs.Tests\DKNet.AspNetCore.BackgroundJobs.Tests.csproj", "{08854CA7-7311-4058-B784-143F4D2A162A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.PdfGenerator.Tests", "Services\Svc.PdfGenerator.Tests\Svc.PdfGenerator.Tests.csproj", "{7CF65BE7-FCD4-42DD-AA56-4F09BC877023}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.PdfGenerators.Tests", "Services\Svc.PdfGenerators.Tests\Svc.PdfGenerators.Tests.csproj", "{7CF65BE7-FCD4-42DD-AA56-4F09BC877023}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.PdfGenerators", "Services\DKNet.Svc.PdfGenerators\DKNet.Svc.PdfGenerators.csproj", "{A369CD23-45B7-4160-8EC2-27DDA533452A}"
 EndProject
