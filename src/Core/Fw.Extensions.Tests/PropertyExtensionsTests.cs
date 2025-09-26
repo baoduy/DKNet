@@ -11,7 +11,7 @@ public class PropertyExtensionsTests
         var propertyName = "Name";
 
         // Act
-        var property = ((TestItem3)null).GetProperty(propertyName);
+        var property = ((TestItem3)null!).GetProperty(propertyName);
 
         // Assert
         property.ShouldBeNull();
@@ -24,7 +24,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var property1 = item.GetProperty(null);
+        var property1 = item.GetProperty(null!);
         var property2 = item.GetProperty("");
 
         // Assert
@@ -84,7 +84,7 @@ public class PropertyExtensionsTests
         var propertyName = "Name";
 
         // Act
-        var value = ((TestItem3)null).GetPropertyValue(propertyName);
+        var value = ((TestItem3)null!).GetPropertyValue(propertyName);
 
         // Assert
         value.ShouldBeNull();
@@ -97,7 +97,7 @@ public class PropertyExtensionsTests
         using var item = new TestItem3("Duy");
 
         // Act
-        var value1 = item.GetPropertyValue(null);
+        var value1 = item.GetPropertyValue(null!);
         var value2 = item.GetPropertyValue("");
 
         // Assert
@@ -169,7 +169,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((TestItem3)null).SetPropertyValue(propertyName, value));
+            ((TestItem3)null!).SetPropertyValue(propertyName, value));
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class PropertyExtensionsTests
         var value = "Duy";
 
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => item.SetPropertyValue((string)null, value));
+        Should.Throw<ArgumentNullException>(() => item.SetPropertyValue((string)null!, value));
         Should.Throw<ArgumentNullException>(() => item.SetPropertyValue("", value));
     }
 
@@ -251,7 +251,7 @@ public class PropertyExtensionsTests
         var propertyName = "Name";
 
         // Act
-        item.SetPropertyValue(propertyName, null);
+        item.SetPropertyValue(propertyName, null!);
 
         // Assert
         item.Name.ShouldBeNull();
@@ -316,7 +316,7 @@ public class PropertyExtensionsTests
     {
         // Arrange
         using var item = new TestItem3("Duy");
-        item.SetPropertyValue("Name", null); // Set Name to null
+        item.SetPropertyValue("Name", null!); // Set Name to null
 
         // Act
         var value = item.GetPropertyValue("Name.Length"); // This should return null because Name is null
@@ -348,7 +348,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((TestItem3)null).SetPropertyValue(property, value));
+            ((TestItem3)null!).SetPropertyValue(property!, value));
     }
 
     [Fact]
@@ -360,7 +360,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            item.SetPropertyValue((PropertyInfo)null, value));
+            item.SetPropertyValue((PropertyInfo)null!, value));
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((TestItem3)null).TrySetPropertyValue(property, value));
+            ((TestItem3)null!).TrySetPropertyValue(property!, value));
     }
 
     [Fact]
@@ -384,7 +384,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            item.TrySetPropertyValue((PropertyInfo)null, value));
+            item.TrySetPropertyValue((PropertyInfo)null!, value));
     }
 
     [Fact]
@@ -396,7 +396,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((TestItem3)null).TrySetPropertyValue(propertyName, value));
+            ((TestItem3)null!).TrySetPropertyValue(propertyName, value));
     }
 
     [Fact]
@@ -408,7 +408,7 @@ public class PropertyExtensionsTests
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            item.TrySetPropertyValue((string)null, value));
+            item.TrySetPropertyValue((string)null!, value));
         Should.Throw<ArgumentNullException>(() =>
             item.TrySetPropertyValue("", value));
     }
@@ -441,7 +441,7 @@ public class PropertyExtensionsTests
         var property = typeof(TestItem3).GetProperty("IntValue");
 
         // Act - This should not throw, but should catch internal ArgumentNullException
-        item.TrySetPropertyValue(property, "invalid_conversion_value_that_cannot_be_converted_to_int");
+        item.TrySetPropertyValue(property!, "invalid_conversion_value_that_cannot_be_converted_to_int");
 
         // Assert - Value should remain unchanged
         item.GetPropertyValue("IntValue").ShouldBe(0);
@@ -469,7 +469,7 @@ public class PropertyExtensionsTests
         item.GetPropertyValue("NullableIntValue").ShouldBe(123);
 
         // Set to null
-        item.SetPropertyValue("NullableIntValue", null);
+        item.SetPropertyValue("NullableIntValue", null!);
         item.GetPropertyValue("NullableIntValue").ShouldBeNull();
     }
 

@@ -33,7 +33,7 @@ public class TokenResultTests
     [Fact]
     public void CreateTokenResultDefinitionIsNull()
     {
-        var action = () => new TokenResult(null, "[A]", "123 [A]", 1);
+        var action = () => new TokenResult(null!, "[A]", "123 [A]", 1);
         action.ShouldThrow<ArgumentNullException>();
     }
 
@@ -61,14 +61,14 @@ public class TokenResultTests
     [Fact]
     public void CreateTokenResultOriginalStringIsNull()
     {
-        var action = () => new TokenResult(new SquareBracketDefinition(), "[A]", null, 1);
+        var action = () => new TokenResult(new SquareBracketDefinition(), "[A]", null!, 1);
         action.ShouldThrow<ArgumentNullException>();
     }
 
     [Fact]
     public void CreateTokenResultTokenIsNull()
     {
-        var action = () => new TokenResult(new SquareBracketDefinition(), null, "123 [A]", 1);
+        var action = () => new TokenResult(new SquareBracketDefinition(), null!, "123 [A]", 1);
         action.ShouldThrow<ArgumentNullException>();
     }
 }

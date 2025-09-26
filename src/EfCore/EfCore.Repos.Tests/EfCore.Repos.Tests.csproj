@@ -5,7 +5,6 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <LangVersion>default</LangVersion>
-        <Nullable>disable</Nullable>
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
         <AnalysisMode>None</AnalysisMode>
@@ -39,7 +38,7 @@
         <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
-        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj" />
     </ItemGroup>
 
     <ItemGroup>

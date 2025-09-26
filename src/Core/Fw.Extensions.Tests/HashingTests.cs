@@ -50,13 +50,13 @@ public class HashingTests
     public void HashCmd5KeyNullThrowsArgumentNullException()
     {
         var value = "value";
-        Should.Throw<ArgumentNullException>(() => value.ToCmd5(null));
+        Should.Throw<ArgumentNullException>(() => value.ToCmd5(null!));
     }
 
     [Fact]
     public void HashCmd5ValueNullThrowsArgumentNullException()
     {
         var key = "key";
-        Should.Throw<ArgumentNullException>(() => ((string)null).ToCmd5(key));
+        Should.Throw<ArgumentNullException>(() => ((string)null!).ToCmd5(key));
     }
 }

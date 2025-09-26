@@ -12,7 +12,7 @@ public class TokenResolversTests
         var resolver = new TokenResolver();
 
         var val = resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null,
-            new { A = (string)null }, new { A = 123 });
+            new { A = (string)null! }, new { A = 123 });
 
         val.ShouldBe(123);
     }
@@ -23,7 +23,7 @@ public class TokenResolversTests
         var resolver = new TokenResolver();
 
         var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null,
-            new { A = (string)null }, new { A = 123 });
+            new { A = (string)null! }, new { A = 123 });
 
         val.ShouldBe(123);
     }
@@ -60,7 +60,7 @@ public class TokenResolversTests
     }
 
     [Fact]
-    public async Task TestTokenResolverOnlyDictionaryStringObjectIsSupportted()
+    public async Task TestTokenResolverOnlyDictionaryStringObjectIsSupported()
     {
         var resolver = new TokenResolver();
 
@@ -78,7 +78,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var action = () => resolver.Resolve(null, null, new { A = (string)null }, new { A = 123 });
+        var action = () => resolver.Resolve(null!, null, new { A = (string)null! }, new { A = 123 });
 
         action.ShouldThrow<ArgumentNullException>();
     }

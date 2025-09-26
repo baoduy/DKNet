@@ -33,7 +33,7 @@ public class StringExtensionsTests
         "-123.456".IsNumber().ShouldBeTrue();
         "".IsNumber().ShouldBeFalse();
         " ".IsNumber().ShouldBeFalse();
-        ((string)null).IsNumber().ShouldBeFalse();
+        ((string)null!).IsNumber().ShouldBeFalse();
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class StringExtensionsTests
         "abc-123.456xyz".ExtractDigits().ShouldBe("-123.456");
         "".ExtractDigits().ShouldBe("");
         " ".ExtractDigits().ShouldBe("");
-        Action action = () => ((string)null).ExtractDigits();
+        Action action = () => ((string)null!).ExtractDigits();
         action.ShouldThrow<ArgumentException>();
     }
 
@@ -85,8 +85,8 @@ public class StringExtensionsTests
     [Fact]
     public void IsStringOrValueTypeNullTests()
     {
-        ((Type)null).IsStringOrValueType().ShouldBeFalse();
-        ((PropertyInfo)null).IsStringOrValueType().ShouldBeFalse();
+        ((Type)null!).IsStringOrValueType().ShouldBeFalse();
+        ((PropertyInfo)null!).IsStringOrValueType().ShouldBeFalse();
     }
 
     [Fact]

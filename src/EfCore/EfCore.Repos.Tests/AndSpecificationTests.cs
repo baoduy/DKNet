@@ -1,7 +1,3 @@
-using DKNet.EfCore.Specifications;
-using EfCore.Repos.Tests.TestEntities;
-using Shouldly;
-
 namespace EfCore.Repos.Tests;
 
 /// <summary>

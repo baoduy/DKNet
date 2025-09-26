@@ -1,8 +1,5 @@
 using DKNet.EfCore.Repos.Abstractions;
-using DKNet.EfCore.Specifications;
-using EfCore.Repos.Tests.TestEntities;
 using Moq;
-using Shouldly;
 
 namespace EfCore.Repos.Tests;
 

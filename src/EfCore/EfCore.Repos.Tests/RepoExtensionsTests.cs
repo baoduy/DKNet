@@ -1,8 +1,5 @@
 using System.Text.Json;
 using DKNet.EfCore.Extensions.Extensions;
-using EfCore.Repos.Tests.TestEntities;
-using Microsoft.EntityFrameworkCore;
-using Shouldly;
 using Xunit.Abstractions;
 
 namespace EfCore.Repos.Tests;

@@ -1,5 +1,4 @@
 using DKNet.EfCore.Extensions.Configurations;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EfCore.Repos.Tests.TestEntities;

@@ -14,7 +14,7 @@ public class EnumExtensionsTests
     [Fact]
     public void TestGetEnumInfo()
     {
-        HbdTypes.DescriptionEnum.GetEumInfo().Name.ShouldBe("HBD");
+        HbdTypes.DescriptionEnum.GetEumInfo()?.Name.ShouldBe("HBD");
     }
 
     [Fact]

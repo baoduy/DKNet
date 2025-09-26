@@ -14,7 +14,7 @@ public sealed class S3BlobServiceFixture : IDisposable
         _minioContainer.StartAsync().GetAwaiter().GetResult();
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
                 (StringComparer.OrdinalIgnoreCase)
                 {
                     {

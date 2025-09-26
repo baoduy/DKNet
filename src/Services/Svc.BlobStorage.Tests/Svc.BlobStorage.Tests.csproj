@@ -2,7 +2,6 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <LangVersion>default</LangVersion>
-        <Nullable>disable</Nullable>
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
         <AnalysisMode>None</AnalysisMode>

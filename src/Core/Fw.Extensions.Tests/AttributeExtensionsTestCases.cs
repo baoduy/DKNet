@@ -9,9 +9,9 @@ public class AttributeExtensionsTestCases
     [Fact]
     public void GetAttributeWithNullTypeReturnNullTest()
     {
-        Type type = null;
+        Type type = null!;
         Should.Throw<ArgumentNullException>(() => type.GetCustomAttribute<TestingAttribute>());
-        Should.Throw<ArgumentNullException>(() => ((PropertyInfo)null).GetCustomAttribute<TestingAttribute>());
+        Should.Throw<ArgumentNullException>(() => ((PropertyInfo)null!).GetCustomAttribute<TestingAttribute>());
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class AttributeExtensionsTestCases
     [Fact]
     public void NullPropertyInfoHasAttributeReturnsFalseTest()
     {
-        ((PropertyInfo)null).HasAttribute<TestingAttribute>().ShouldBeFalse();
+        ((PropertyInfo)null!).HasAttribute<TestingAttribute>().ShouldBeFalse();
     }
 
     #endregion Methods

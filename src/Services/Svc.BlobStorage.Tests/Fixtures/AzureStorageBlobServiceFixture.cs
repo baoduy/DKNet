@@ -17,7 +17,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
         _azureContainer.StartAsync().GetAwaiter().GetResult();
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
             {
                 { "BlobService:AzureStorage:ConnectionString", "UseDevelopmentStorage=true" },
                 { "BlobService:AzureStorage:ContainerName", "test" }
