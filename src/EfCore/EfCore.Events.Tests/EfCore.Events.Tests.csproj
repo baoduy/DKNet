@@ -3,7 +3,6 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <LangVersion>default</LangVersion>
-        <TargetFramework>net9.0</TargetFramework>
         <Nullable>disable</Nullable>
     </PropertyGroup>
 

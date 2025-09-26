@@ -4,20 +4,19 @@
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <IsTestProject>true</IsTestProject>
-        <IsPackable>false</IsPackable>
-        <!--    <RunAnalyzers>false</RunAnalyzers>-->
-        <!--    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>-->
-        <!--    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>-->
         <LangVersion>default</LangVersion>
-        <Nullable>enable</Nullable>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>true</ImplicitUsings>
+        <Nullable>disable</Nullable>
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <AnalysisMode>None</AnalysisMode>
+        <RunAnalyzers>false</RunAnalyzers>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Aspire.Hosting.AppHost"/>
-        <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+        <PackageReference Include="Aspire.Hosting.PostgreSQL"/>
         <PackageReference Include="Aspire.Hosting.Testing"/>
         <PackageReference Include="Mapster"/>
         <PackageReference Include="Mapster.EFCore"/>
@@ -27,7 +26,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Moq"/>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">

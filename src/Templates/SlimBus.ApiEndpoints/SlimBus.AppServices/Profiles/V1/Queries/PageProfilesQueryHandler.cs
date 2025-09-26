@@ -1,6 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using DKNet.EfCore.Repos.Abstractions;
-using SlimBus.Domains.Features.Profiles.Entities;
 using X.PagedList;
 using X.PagedList.EF;
 

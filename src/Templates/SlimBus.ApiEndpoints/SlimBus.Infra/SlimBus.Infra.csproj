@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
         <LangVersion>default</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -29,7 +28,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj"/>
-        <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Relational.Helpers\DKNet.EfCore.Relational.Helpers.csproj" />
+        <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Relational.Helpers\DKNet.EfCore.Relational.Helpers.csproj"/>
         <ProjectReference Include="..\..\..\EfCore\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
         <ProjectReference Include="..\..\..\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
         <ProjectReference Include="..\SlimBus.AppServices\SlimBus.AppServices.csproj"/>

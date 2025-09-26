@@ -1,5 +1,7 @@
 global using DKNet.SlimBus.Extensions;
 global using System.ComponentModel.DataAnnotations;
+global using System.Text.Json.Serialization;
+global using DKNet.EfCore.Repos.Abstractions;
 global using FluentResults;
 global using SlimBus.AppServices.Profiles.V1.Events;
 global using SlimBus.AppServices.Profiles.V1.Queries;
@@ -10,4 +12,6 @@ global using FluentValidation;
 global using Mapster;
 global using MapsterMapper;
 global using SlimBus.AppServices.Extensions;
+global using SlimBus.AppServices.Extensions.LazyMapper;
 global using SlimBus.AppServices.Share;
+global using SlimBus.Domains.Features.Profiles.Entities;

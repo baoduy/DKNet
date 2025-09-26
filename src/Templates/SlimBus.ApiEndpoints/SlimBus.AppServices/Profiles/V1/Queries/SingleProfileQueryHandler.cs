@@ -1,6 +1,4 @@
-using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using SlimBus.Domains.Features.Profiles.Entities;
 
 namespace SlimBus.AppServices.Profiles.V1.Queries;
 

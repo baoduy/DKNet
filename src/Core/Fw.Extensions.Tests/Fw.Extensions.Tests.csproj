@@ -2,12 +2,14 @@
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <!--    <RunAnalyzers>false</RunAnalyzers>-->
-        <!--    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>-->
-        <!--    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>-->
         <LangVersion>default</LangVersion>
         <Nullable>disable</Nullable>
-        <TargetFramework>net9.0</TargetFramework>
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <AnalysisMode>None</AnalysisMode>
+        <RunAnalyzers>false</RunAnalyzers>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
     </PropertyGroup>
 
     <ItemGroup>
