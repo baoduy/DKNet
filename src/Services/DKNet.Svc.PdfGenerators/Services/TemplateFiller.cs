@@ -1,16 +1,16 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 /// <summary>
 /// Simple templating service.
 /// </summary>
-public class TemplateFiller
+public static class TemplateFiller
 {
     /// <summary>
     /// matches groups like @(myToken).
     /// </summary>
-    private static readonly Regex _tokenRegex = new(@"(?<token>@\(.*?\))",
+    private static readonly Regex TokenRegex = new(@"(?<token>@\(.*?\))",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
     /// <summary>
@@ -21,19 +21,21 @@ public class TemplateFiller
     /// <returns>The filled template.</returns>
     public static string FillTemplate(string template, Dictionary<string, string> model)
     {
-        var matches = _tokenRegex.Matches(template);
+        var matches = TokenRegex.Matches(template);
 
         var filled = template;
 
         foreach (Match match in matches)
         {
             var token = match.Groups["token"].Value;
-            var keyName = token.Replace("@", string.Empty).Replace("(", string.Empty).Replace(")", string.Empty);
+            var keyName = token.Replace("@", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace("(", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace(")", string.Empty, StringComparison.OrdinalIgnoreCase);
 
             if (!model.TryGetValue(keyName, out var value))
                 value = string.Empty;
 
-            filled = filled.Replace(token, value);
+            filled = filled.Replace(token, value, StringComparison.OrdinalIgnoreCase);
         }
 
         return filled;

@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// Load modules from a local <i>node_module</i> directory.

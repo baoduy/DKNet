@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <inheritdoc cref="ModuleOptions.ModuleLocation"/>
 public enum ModuleLocation

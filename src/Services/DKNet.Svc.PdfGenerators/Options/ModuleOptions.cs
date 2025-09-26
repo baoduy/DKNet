@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// Options that decide from where to load additional modules.

@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// Options to create a Table of Contents for the PDF, generated from all headers. 
@@ -35,8 +35,8 @@
 /// </remarks>
 public class TableOfContentsOptions
 {
-    private const int _MIN_DEPTH_LEVEL = 1;
-    private const int _MAX_DEPTH_LEVEL = 6;
+    private const int MIN_DEPTH_LEVEL = 1;
+    private const int MAX_DEPTH_LEVEL = 6;
 
     /// <inheritdoc cref="Options.ListStyle"/>
     public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
@@ -57,16 +57,16 @@ public class TableOfContentsOptions
     /// </summary>
     public int MinDepthLevel
     {
-        get => _minDepthLevel ?? _MIN_DEPTH_LEVEL;
+        get => _minDepthLevel ?? MIN_DEPTH_LEVEL;
         set
         {
-            if (value is < _MIN_DEPTH_LEVEL or > _MAX_DEPTH_LEVEL)
+            if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
                 throw new ArgumentOutOfRangeException(
-                    $"Value must be between {_MIN_DEPTH_LEVEL} and {_MAX_DEPTH_LEVEL}.");
+                    $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
 
-            if (_maxDepthLevel != null && value > _maxDepthLevel)
+            if (value > _maxDepthLevel)
                 throw new ArgumentOutOfRangeException(
-                    $"{nameof(MinDepthLevel)} cannot be greater than {nameof(MaxDepthLevel)}");
+                    $"{nameof(_minDepthLevel)} cannot be greater than {nameof(MaxDepthLevel)}");
 
             _minDepthLevel = value;
         }
@@ -82,14 +82,14 @@ public class TableOfContentsOptions
     /// </summary>
     public int MaxDepthLevel
     {
-        get => _maxDepthLevel ?? _MAX_DEPTH_LEVEL;
+        get => _maxDepthLevel ?? MAX_DEPTH_LEVEL;
         set
         {
-            if (value is < _MIN_DEPTH_LEVEL or > _MAX_DEPTH_LEVEL)
+            if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
                 throw new ArgumentOutOfRangeException(
-                    $"Value must be between {_MIN_DEPTH_LEVEL} and {_MAX_DEPTH_LEVEL}.");
+                    $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
 
-            if (_minDepthLevel != null && value < _minDepthLevel)
+            if (value < _minDepthLevel)
                 throw new ArgumentOutOfRangeException(
                     $"{nameof(MaxDepthLevel)} cannot be less than {nameof(MinDepthLevel)}");
 

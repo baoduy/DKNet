@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// A theme from a CSS file.

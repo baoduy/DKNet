@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator;
+﻿namespace DKNet.Svc.PdfGenerators;
 
 /// <summary>
 /// Interface for events that occur during the conversion process.

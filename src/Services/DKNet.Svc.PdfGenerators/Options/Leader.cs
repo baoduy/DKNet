@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace DKNet.Svc.PdfGenerator.Options;
+namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// The character to use to lead from the TOC title to the page number.

@@ -17,7 +17,7 @@ public class Markdown2PdfConverterTests
     [Fact]
     public void Constructor_WithOptions_SetsOptionsProperty()
     {
-        var options = new Markdown2PdfOptions { DocumentTitle = "Test Title" };
+        var options = new PdfGeneratorOptions { DocumentTitle = "Test Title" };
         var converter = new Markdown2PdfConverter(options);
         Assert.Equal("Test Title", converter.Options.DocumentTitle);
     }
@@ -65,14 +65,14 @@ public class Markdown2PdfConverterTests
     [Fact]
     public async Task ConvertHtml_SampleHtmlString_GeneratesPdf()
     {
-        var converter = new Markdown2PdfConverter();
+        var converter = new PdfGeneratorOptions();
         var htmlContent = "<html><body><h1>Test PDF</h1><p>Generated from HTML string.</p></body></html>";
         var expectedPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "HtmlString.pdf");
 
         if (File.Exists(expectedPdfPath))
             File.Delete(expectedPdfPath);
 
-        var resultPath = await Markdown2PdfConverter.ConvertHtml(htmlContent, expectedPdfPath);
+        var resultPath = await DKNet.Svc.PdfGenerator.PdfGenerator.Con(htmlContent, expectedPdfPath);
 
         Assert.True(File.Exists(resultPath), $"PDF file was not created at {resultPath}");
         var fileInfo = new FileInfo(resultPath);

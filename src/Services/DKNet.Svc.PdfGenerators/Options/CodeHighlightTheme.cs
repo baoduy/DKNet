@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Options;
+﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// The theme to use for styling the markdown code blocks.
@@ -20,7 +20,6 @@ public readonly struct CodeHighlightTheme
     /// </summary>
     public static CodeHighlightTheme None => new();
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public static CodeHighlightTheme OneCLight => new("1c-light.css");
     public static CodeHighlightTheme A11yDark => new("a11y-dark.css");
     public static CodeHighlightTheme A11yLight => new("a11y-light.css");
@@ -95,6 +94,4 @@ public readonly struct CodeHighlightTheme
     public static CodeHighlightTheme Vs2015 => new("vs2015.css");
     public static CodeHighlightTheme Xcode => new("xcode.css");
     public static CodeHighlightTheme Xt256 => new("xt256.css");
-
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

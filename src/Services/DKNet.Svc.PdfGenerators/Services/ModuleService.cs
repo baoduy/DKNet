@@ -1,7 +1,7 @@
-﻿using DKNet.Svc.PdfGenerator.Models;
-using DKNet.Svc.PdfGenerator.Options;
+﻿using DKNet.Svc.PdfGenerators.Models;
+using DKNet.Svc.PdfGenerators.Options;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 internal class ModuleService
 {

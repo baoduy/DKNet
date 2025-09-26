@@ -6,11 +6,11 @@ using UglyToad.PdfPig;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
-using DKNet.Svc.PdfGenerator.Options;
+using DKNet.Svc.PdfGenerators.Options;
 using UglyToad.PdfPig.Tokens;
 using UglyToad.PdfPig.Actions;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 internal class TableOfContentsCreator
 {

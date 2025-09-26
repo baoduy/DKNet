@@ -1,6 +1,6 @@
 ﻿using PuppeteerSharp.Media;
 
-namespace DKNet.Svc.PdfGenerator.Options;
+namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// All the options for the conversion.

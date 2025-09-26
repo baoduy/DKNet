@@ -9,14 +9,14 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
+        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing
         await hook.RunBeforeSaveAsync(snapshot, CancellationToken.None);
-        
+
         // The default implementation should complete successfully
         Assert.True(true);
     }
@@ -26,14 +26,14 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
+        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing
         await hook.RunAfterSaveAsync(snapshot, CancellationToken.None);
-        
+
         // The default implementation should complete successfully
         Assert.True(true);
     }
@@ -43,16 +43,16 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
+        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
         var cancellationToken = new CancellationToken();
 
         // Act & Assert - should complete without throwing
         await hook.RunBeforeSaveAsync(snapshot, cancellationToken);
         await hook.RunAfterSaveAsync(snapshot, cancellationToken);
-        
+
         // The default implementations should handle cancellation tokens properly
         Assert.True(true);
     }

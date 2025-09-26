@@ -1,13 +1,13 @@
 ﻿using System.Reflection;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 /// <summary>
 /// Service for loading the content of embedded resources.
 /// </summary>
 public class EmbeddedResourceService
 {
-    private readonly Assembly _currentAssembly = Assembly.GetAssembly(typeof(Markdown2PdfConverter))!;
+    private readonly Assembly _currentAssembly = Assembly.GetAssembly(typeof(PdfGenerator))!;
 
     /// <summary>
     /// Loads the text content of an embedded resource in this <see cref="Assembly"/>.
@@ -22,6 +22,4 @@ public class EmbeddedResourceService
 
         using var stream = _currentAssembly.GetManifestResourceStream(resourcePath);
         using var reader = new StreamReader(stream!);
-        return reader.ReadToEnd();
-    }
-}
+        return reader.ReadToEnd()

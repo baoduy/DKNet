@@ -1,4 +1,4 @@
-﻿namespace DKNet.Svc.PdfGenerator.Models;
+﻿namespace DKNet.Svc.PdfGenerators.Models;
 
 internal class ModuleInformation(string remotePath, string nodePath)
 {

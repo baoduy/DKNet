@@ -1,11 +1,11 @@
-﻿using DKNet.Svc.PdfGenerator.Models;
-using DKNet.Svc.PdfGenerator.Options;
+﻿using DKNet.Svc.PdfGenerators.Models;
+using DKNet.Svc.PdfGenerators.Options;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 internal class ThemeService
 {
-    private const string _STYLE_KEY = "stylePath";
+    private const string StyleKey = "stylePath";
 
     private readonly IReadOnlyDictionary<ThemeType, ModuleInformation> _themeSourceMapping =
         new Dictionary<ThemeType, ModuleInformation>
@@ -35,22 +35,22 @@ internal class ThemeService
             _themeSourceMapping = ModuleInformation.UpdateDic(_themeSourceMapping, path);
         }
 
-        events.OnTemplateModelCreating += _AddThemeToTemplate;
+        events.OnTemplateModelCreating += InternalAddThemeToTemplate;
     }
 
-    private void _AddThemeToTemplate(object sender, TemplateModelArgs e)
+    private void InternalAddThemeToTemplate(object sender, TemplateModelArgs e)
     {
         switch (_theme)
         {
             case PredefinedTheme predefinedTheme when predefinedTheme.Type != ThemeType.None:
             {
                 var value = _themeSourceMapping[predefinedTheme.Type];
-                e.TemplateModel.Add(_STYLE_KEY, _options.IsRemote ? value.RemotePath : value.NodePath);
+                e.TemplateModel.Add(StyleKey, _options.IsRemote ? value.RemotePath : value.NodePath);
                 break;
             }
 
             case CustomTheme customTheme:
-                e.TemplateModel.Add(_STYLE_KEY, customTheme.CssPath);
+                e.TemplateModel.Add(StyleKey, customTheme.CssPath);
                 break;
         }
     }

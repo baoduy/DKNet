@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace DKNet.Svc.PdfGenerator.Services;
+namespace DKNet.Svc.PdfGenerators.Services;
 
 /// <summary>
 /// Helper service for properties.

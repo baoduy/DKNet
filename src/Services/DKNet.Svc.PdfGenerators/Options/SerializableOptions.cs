@@ -1,7 +1,7 @@
-﻿using DKNet.Svc.PdfGenerator.Services;
+﻿using DKNet.Svc.PdfGenerators.Services;
 using PuppeteerSharp.Media;
 
-namespace DKNet.Svc.PdfGenerator.Options;
+namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
 /// The <see cref="Markdown2PdfOptions"/> in a serializable format.
