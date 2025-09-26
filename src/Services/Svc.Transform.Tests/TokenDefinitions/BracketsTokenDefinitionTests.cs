@@ -1,5 +1,3 @@
-using DKNet.Svc.Transformation.TokenDefinitions;
-
 namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class BracketsTokenDefinitionTests
@@ -7,7 +5,7 @@ public class BracketsTokenDefinitionTests
     [Fact]
     public void BracketsTokenDefinitionTest()
     {
-        var t = new CurlyBracketDefinition();
+        var t = TransformOptions.CurlyBrackets;
 
         t.IsToken("{Duy}")
             .ShouldBeTrue();

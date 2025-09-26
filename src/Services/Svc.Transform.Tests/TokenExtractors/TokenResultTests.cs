@@ -1,6 +1,4 @@
 ﻿using DKNet.Svc.Transformation.Exceptions;
-using DKNet.Svc.Transformation.TokenDefinitions;
-using DKNet.Svc.Transformation.TokenExtractors;
 
 namespace Svc.Transform.Tests.TokenExtractors;
 
@@ -9,9 +7,9 @@ public class TokenResultTests
     [Fact]
     public void CreateTokenResult()
     {
-        var t = new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", 4);
+        var t = new TokenResult(TransformOptions.CurlyBrackets, "{A}", "123 {A}", 4);
 
-        t.Definition.ShouldBeOfType<CurlyBracketDefinition>();
+        t.Definition.ShouldBeOfType<TokenDefinition>();
         t.Key.ShouldBe("A");
         t.Key.ShouldBe("A");
         t.Index.ShouldBe(4);
@@ -40,35 +38,35 @@ public class TokenResultTests
     [Fact]
     public void CreateTokenResultInCorrectIndex()
     {
-        var action = () => new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", -1);
+        var action = () => new TokenResult(TransformOptions.CurlyBrackets, "{A}", "123 {A}", -1);
         action.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Fact]
     public void CreateTokenResultInCorrectIndex2()
     {
-        var action = () => new TokenResult(new CurlyBracketDefinition(), "{A}", "123 {A}", 100);
+        var action = () => new TokenResult(TransformOptions.CurlyBrackets, "{A}", "123 {A}", 100);
         action.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Fact]
     public void CreateTokenResultInCorrectToken()
     {
-        var action = () => new TokenResult(new CurlyBracketDefinition(), "{A", "123 {A}", 1);
+        var action = () => new TokenResult(TransformOptions.CurlyBrackets, "{A", "123 {A}", 1);
         action.ShouldThrow<InvalidTokenException>();
     }
 
     [Fact]
     public void CreateTokenResultOriginalStringIsNull()
     {
-        var action = () => new TokenResult(new SquareBracketDefinition(), "[A]", null!, 1);
+        var action = () => new TokenResult(TransformOptions.SquareBrackets, "[A]", null!, 1);
         action.ShouldThrow<ArgumentNullException>();
     }
 
     [Fact]
     public void CreateTokenResultTokenIsNull()
     {
-        var action = () => new TokenResult(new SquareBracketDefinition(), null!, "123 [A]", 1);
+        var action = () => new TokenResult(TransformOptions.SquareBrackets, null!, "123 [A]", 1);
         action.ShouldThrow<ArgumentNullException>();
     }
 }

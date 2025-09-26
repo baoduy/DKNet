@@ -15,4 +15,9 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Svc.Transform.Tests"/>
+    </ItemGroup>
+
 </Project>

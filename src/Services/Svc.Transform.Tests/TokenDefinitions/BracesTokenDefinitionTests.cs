@@ -1,5 +1,3 @@
-using DKNet.Svc.Transformation.TokenDefinitions;
-
 namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class BracesTokenDefinitionTests
@@ -7,7 +5,7 @@ public class BracesTokenDefinitionTests
     [Fact]
     public void BracesTokenDefinitionTest()
     {
-        var t = new SquareBracketDefinition();
+        var t = TransformOptions.SquareBrackets;
 
         t.IsToken("[Duy]")
             .ShouldBeTrue();

@@ -1,5 +1,3 @@
-using DKNet.Svc.Transformation.TokenDefinitions;
-
 namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class AngledBracketTokenDefinitionTests
@@ -7,7 +5,7 @@ public class AngledBracketTokenDefinitionTests
     [Fact]
     public void AngledBracketTokenDefinitionTest()
     {
-        var t = new AngledBracketDefinition();
+        var t = TransformOptions.AngledBrackets;
 
         t.IsToken("<Duy>")
             .ShouldBeTrue();

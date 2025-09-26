@@ -1,10 +1,8 @@
 ﻿using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using DKNet.Svc.Transformation.TokenExtractors;
 
-namespace DKNet.Svc.Transformation.TokenResolvers;
+namespace DKNet.Svc.Transformation.TokenExtractors;
 
 public interface ITokenResolver
 {
@@ -29,9 +27,7 @@ public interface ITokenResolver
     Task<object?> ResolveAsync(IToken token, params object?[] data);
 }
 
-[SuppressMessage("Major Code Smell",
-    "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
-public sealed class TokenResolver : ITokenResolver
+internal sealed class TokenResolver : ITokenResolver
 {
     /// <summary>
     ///     Get the first not null value of the public property of data.

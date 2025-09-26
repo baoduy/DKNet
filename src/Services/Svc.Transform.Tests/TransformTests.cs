@@ -1,5 +1,4 @@
-﻿using DKNet.Svc.Transformation;
-using DKNet.Svc.Transformation.Exceptions;
+﻿using DKNet.Svc.Transformation.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Svc.Transform.Tests;
@@ -12,29 +11,23 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var t = new TransformerService(new TransformOptions { DisabledLocalCache = true });
+        var t = new TransformerService(new TransformOptions
+        {
+            DefaultDefinitions =
+            [
+                TransformOptions.AngledBrackets,
+                TransformOptions.CurlyBrackets,
+                TransformOptions.SquareBrackets
+            ]
+        });
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
-        s.ShouldContain("Hoang"); // "Hoang", "Bao", "Duy", "DKNet"
+        s.ShouldContain("Hoang");
         s.ShouldNotContain("{");
         s.ShouldNotContain("[");
         s.ShouldNotContain("<");
     }
 
-    [Fact]
-    public async Task TransformHugeTemplateAsyncDataProviderTest()
-    {
-        var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
-        var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
-
-        var t = new TransformerService(new TransformOptions());
-        var s = await t.TransformAsync(template, token => Task.FromResult("Duy" as object));
-
-        s.ShouldContain("Duy");
-        s.ShouldNotContain("{");
-        s.ShouldNotContain("[");
-        s.ShouldNotContain("<");
-    }
 
     [Fact]
     public async Task TransformHugeTemplateAsyncTest()
@@ -42,7 +35,15 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var t = new TransformerService(new TransformOptions());
+        var t = new TransformerService(new TransformOptions
+        {
+            DefaultDefinitions =
+            [
+                TransformOptions.AngledBrackets,
+                TransformOptions.CurlyBrackets,
+                TransformOptions.SquareBrackets
+            ]
+        });
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Bao");
@@ -80,7 +81,7 @@ public class TransformTests
     public async Task TestUnResolvedTokenException()
     {
         var service = new ServiceCollection()
-            .AddTransformerService()
+            .AddTransformerService(o => { o.DefaultDefinitions = [TransformOptions.CurlyBrackets]; })
             .BuildServiceProvider();
 
         var transformer = service.GetRequiredService<ITransformerService>();
@@ -91,5 +92,40 @@ public class TransformTests
                 {
                     { "B", "Duy" }
                 }));
+    }
+
+    [Fact]
+    public async Task DoubleCurlyBrackets_IsToken_And_ExtractToken_Tests()
+    {
+        var story =
+            "In a quiet town nestled between rolling {{A}}, there was a clockmaker named {{B}}. His shop was small, filled with the soft ticking of {{C}} timepieces.";
+        var def = new TokenExtractor(TransformOptions.DoubleCurlyBrackets);
+
+        var tokens = def.Extract(story).ToList();
+        tokens.Count.ShouldBe(3);
+
+        tokens = (await def.ExtractAsync(story)).ToList();
+        tokens.Count.ShouldBe(3);
+    }
+
+    [Fact]
+    public void FillTemplate_WithValidTokens_ReplacesTokensCorrectly()
+    {
+        // Arrange
+        var template = "Hello @(name), welcome to @(location)!";
+        var model = new Dictionary<string, object>
+        {
+            { "name", "John Doe" },
+            { "location", "DKNet" }
+        };
+
+        // Act
+        var service = new TransformerService(new TransformOptions
+            { DefaultDefinitions = [new TokenDefinition("@(", ")")] });
+
+        var rs = service.Transform(template, model);
+
+        // Assert
+        Assert.Equal("Hello John Doe, welcome to DKNet!", rs);
     }
 }

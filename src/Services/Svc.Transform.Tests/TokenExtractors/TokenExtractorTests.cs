@@ -1,6 +1,3 @@
-using DKNet.Svc.Transformation.TokenDefinitions;
-using DKNet.Svc.Transformation.TokenExtractors;
-
 namespace Svc.Transform.Tests.TokenExtractors;
 
 public class TokenExtractorTests
@@ -8,7 +5,7 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorAngledBracketTest()
     {
-        var t = new TokenExtractor(new AngledBracketDefinition());
+        var t = new TokenExtractor(TransformOptions.AngledBrackets);
 
         var list1 = t.Extract("Hoang <Duy> Bao").ToList();
         list1.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -34,7 +31,7 @@ public class TokenExtractorTests
     [Fact]
     public async Task TokenExtractorAsyncTest()
     {
-        var t = new TokenExtractor(new CurlyBracketDefinition());
+        var t = new TokenExtractor(TransformOptions.CurlyBrackets);
 
         (await t.ExtractAsync("Hoang {{Duy} Bao")).ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -43,7 +40,7 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorBracketsTokenTest()
     {
-        var t = new TokenExtractor(new CurlyBracketDefinition());
+        var t = new TokenExtractor(TransformOptions.CurlyBrackets);
 
         var list1 = t.Extract("Hoang {Duy} Bao").ToList();
         list1.Count.ShouldBeGreaterThanOrEqualTo(1);
@@ -69,7 +66,7 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorInCorrectTokenTest()
     {
-        var t = new TokenExtractor(new CurlyBracketDefinition());
+        var t = new TokenExtractor(TransformOptions.CurlyBrackets);
 
         t.Extract("Hoang ]Duy[ Bao").ToList()
             .Count.ShouldBeGreaterThanOrEqualTo(0);
@@ -88,7 +85,7 @@ public class TokenExtractorTests
     [Fact]
     public void TokenExtractorSupportDuplicateOfTokenTest()
     {
-        var t = new TokenExtractor(new CurlyBracketDefinition());
+        var t = new TokenExtractor(TransformOptions.CurlyBrackets);
 
         var list = t.Extract("Hoang [{Duy}] Bao").ToList();
         list.Count.ShouldBeGreaterThanOrEqualTo(1);

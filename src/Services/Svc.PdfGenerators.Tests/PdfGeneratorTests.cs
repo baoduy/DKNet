@@ -1,9 +1,17 @@
 using DKNet.Svc.PdfGenerators;
+using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 
 public class PdfGeneratorTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public PdfGeneratorTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
     [Fact]
     public async Task ConvertMarkdownFileAsync_GeneratesPdfFile()
     {
@@ -13,7 +21,7 @@ public class PdfGeneratorTests
         await File.WriteAllTextAsync(markdownPath, "# Hello World\nThis is a test.");
         var result = await generator.ConvertMarkdownFileAsync(markdownPath);
         Assert.True(File.Exists(result));
-        Console.WriteLine($"PDF generated at: {result}");
+        _testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(markdownPath);
         File.Delete(result);
     }
@@ -26,7 +34,7 @@ public class PdfGeneratorTests
         var pdfPath = Path.GetTempFileName() + ".pdf";
         var result = await generator.ConvertHtmlAsync(html, pdfPath);
         Assert.True(File.Exists(result));
-        Console.WriteLine($"PDF generated at: {result}");
+        _testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(result);
     }
 
@@ -49,7 +57,7 @@ public class PdfGeneratorTests
         var pdfPath = Path.GetTempFileName() + ".pdf";
         var result = await generator.ConvertMultipleMarkdownFilesAsync(new[] { md1, md2 }, pdfPath);
         Assert.True(File.Exists(result));
-        Console.WriteLine($"PDF generated at: {result}");
+        _testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(md1);
         File.Delete(md2);
         File.Delete(result);

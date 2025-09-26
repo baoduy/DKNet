@@ -1,6 +1,4 @@
-﻿using DKNet.Svc.Transformation.TokenDefinitions;
-
-namespace DKNet.Svc.Transformation.TokenExtractors;
+﻿namespace DKNet.Svc.Transformation.TokenExtractors;
 
 public interface IToken
 {

@@ -1,8 +1,4 @@
-﻿using DKNet.Svc.Transformation.TokenDefinitions;
-using DKNet.Svc.Transformation.TokenExtractors;
-using DKNet.Svc.Transformation.TokenResolvers;
-
-namespace Svc.Transform.Tests.TokenResolvers;
+﻿namespace Svc.Transform.Tests.TokenResolvers;
 
 public class TokenResolversTests
 {
@@ -11,7 +7,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null,
+        var val = resolver.Resolve(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0), null,
             new { A = (string)null! }, new { A = 123 });
 
         val.ShouldBe(123);
@@ -22,7 +18,8 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null,
+        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
+            null,
             new { A = (string)null! }, new { A = 123 });
 
         val.ShouldBe(123);
@@ -33,7 +30,7 @@ public class TokenResolversTests
     // {
     //     var resolver = new TokenResolver();
 
-    //     resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), []);
+    //     resolver.Resolve(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0), []);
     // }
 
     // [Fact]
@@ -41,7 +38,7 @@ public class TokenResolversTests
     // {
     //     var resolver = new TokenResolver();
 
-    //     resolver.Resolve(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0), null);
+    //     resolver.Resolve(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0), null);
     // }
 
     [Fact]
@@ -49,7 +46,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0),
+        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
             new Dictionary<string, object>
                 (StringComparer.Ordinal)
                 {
@@ -64,7 +61,7 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(new CurlyBracketDefinition(), "{A}", "{A} 123", 0),
+        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
             {
                 { "A", "Duy" }

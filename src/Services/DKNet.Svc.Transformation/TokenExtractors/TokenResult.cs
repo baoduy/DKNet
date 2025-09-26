@@ -1,9 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using DKNet.Svc.Transformation.Exceptions;
-using DKNet.Svc.Transformation.TokenDefinitions;
-
-[assembly: InternalsVisibleTo("Svc.Transform.Tests")]
 
 namespace DKNet.Svc.Transformation.TokenExtractors;
 
