@@ -1,7 +1,7 @@
+using System.Linq.Expressions;
 using DKNet.EfCore.Specifications;
 using EfCore.Repos.Tests.TestEntities;
 using Shouldly;
-using System.Linq.Expressions;
 
 namespace EfCore.Repos.Tests;
 
@@ -292,7 +292,8 @@ public class SpecificationTests
 /// </summary>
 public class TestSpecification : Specification<User>
 {
-    public TestSpecification() : base() { }
+    public TestSpecification()
+    { }
     
     public TestSpecification(Expression<Func<User, bool>> filter) : base(filter) { }
     

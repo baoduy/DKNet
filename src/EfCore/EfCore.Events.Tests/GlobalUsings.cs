@@ -1,6 +1,3 @@
-global using System;
-global using System.Linq;
-global using System.Threading.Tasks;
 global using EfCore.Events.Tests.TestEntities;
 global using Microsoft.EntityFrameworkCore;
 global using DKNet.EfCore.Hooks;
