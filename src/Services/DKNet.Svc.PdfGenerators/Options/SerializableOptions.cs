@@ -66,17 +66,18 @@ public class SerializableOptions
 
         if (ModuleOptions != null)
             options.ModuleOptions =
-                PropertyService.TryGetPropertyValue<ModuleOptions>(ModuleOptions, out var moduleOptions)
+                PropertyService.TryGetPropertyValue<ModuleOptions, ModuleOptions>(ModuleOptions, out var moduleOptions)
                     ? moduleOptions
                     : Options.ModuleOptions.FromLocalPath(ModuleOptions);
 
         if (Theme != null)
-            options.Theme = PropertyService.TryGetPropertyValue<Theme>(Theme, out var theme)
+            options.Theme = PropertyService.TryGetPropertyValue<Theme, Theme>(Theme, out var theme)
                 ? theme
                 : Options.Theme.Custom(Theme);
 
         if (CodeHighlightTheme != null
-            && PropertyService.TryGetPropertyValue<CodeHighlightTheme>(CodeHighlightTheme, out var codeHighlightTheme))
+            && PropertyService.TryGetPropertyValue<CodeHighlightTheme, CodeHighlightTheme>(CodeHighlightTheme,
+                out var codeHighlightTheme))
             options.CodeHighlightTheme = codeHighlightTheme;
 
         if (EnableAutoLanguageDetection != null)
@@ -109,7 +110,7 @@ public class SerializableOptions
         if (IsLandscape != null)
             options.IsLandscape = IsLandscape.Value;
 
-        if (Format != null && PropertyService.TryGetPropertyValue<PaperFormat>(Format, out var format))
+        if (Format != null && PropertyService.TryGetPropertyValue<PaperFormat, PaperFormat>(Format, out var format))
             options.Format = format;
 
         if (Scale != null)

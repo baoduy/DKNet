@@ -27,7 +27,7 @@ public static class InlineOptionsParser
             .Build();
 
         var options = deserializer.Deserialize<SerializableOptions>(rs.content!);
-        return options.ToPdfGeneratorOptions();
+        return options?.ToPdfGeneratorOptions() ?? new PdfGeneratorOptions();
     }
 
     private static async Task<(bool success, string? content)> InternalTryReadYamlFrontMatter(string markdownFilePath)

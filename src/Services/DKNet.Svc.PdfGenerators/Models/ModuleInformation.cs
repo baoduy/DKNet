@@ -8,6 +8,7 @@ internal class ModuleInformation(string remotePath, string nodePath)
     public static IReadOnlyDictionary<TKey, ModuleInformation> UpdateDic<TKey>(
         IReadOnlyDictionary<TKey, ModuleInformation> dicToUpdate, string path) where TKey : notnull
     {
+        ArgumentNullException.ThrowIfNull(dicToUpdate);
         var updatedLocationMapping = new Dictionary<TKey, ModuleInformation>();
 
         foreach (var kvp in dicToUpdate)
