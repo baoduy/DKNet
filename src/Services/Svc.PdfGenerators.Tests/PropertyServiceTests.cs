@@ -10,7 +10,7 @@ public class PropertyServiceTests
         public static string StringProperty { get; } = "TestValue";
         public static int IntProperty { get; } = 42;
         public static bool BoolProperty { get; } = true;
-        public static string? NullProperty { get; } = null;
+        public static string? NullProperty { get; }
     }
 
     [Fact]
