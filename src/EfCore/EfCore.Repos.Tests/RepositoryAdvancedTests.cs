@@ -1,6 +1,3 @@
-using EfCore.Repos.Tests.TestEntities;
-using Microsoft.EntityFrameworkCore;
-
 namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClassFixture<RepositoryAdvancedFixture>

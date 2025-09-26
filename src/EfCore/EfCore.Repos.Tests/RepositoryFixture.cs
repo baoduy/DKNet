@@ -1,7 +1,5 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
-using EfCore.Repos.Tests.TestEntities;
-using Microsoft.EntityFrameworkCore;
 
 namespace EfCore.Repos.Tests;
 
