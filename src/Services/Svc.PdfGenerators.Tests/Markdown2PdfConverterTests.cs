@@ -140,7 +140,7 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         {
             HeaderHtml = "<div style='font-size:10px'>Header</div>",
             FooterHtml = "<div style='font-size:10px'>Footer</div>",
-            MarginOptions = new DKNet.Svc.PdfGenerators.Options.MarginOptions { Top = "50px", Bottom = "50px" }
+            MarginOptions = new MarginOptions { Top = "50px", Bottom = "50px" }
         };
         var converter = new PdfGenerator(options);
         var htmlContent = "<html><body><h2>Header/Footer Test</h2></body></html>";

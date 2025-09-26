@@ -80,7 +80,8 @@ public class PdfGenerator
     /// <returns>Path to the generated PDF file.</returns>
     public async Task<string> ConvertMultipleMarkdownFilesAsync(string[] markdownFilePaths, string outputFilePath)
     {
-        var markdownContent = string.Join(Environment.NewLine, markdownFilePaths.Select(File.ReadAllText));
+        var markdownContents = await Task.WhenAll(markdownFilePaths.Select(path => File.ReadAllTextAsync(path)));
+        var markdownContent = string.Join(Environment.NewLine, markdownContents);
         var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
         await GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;

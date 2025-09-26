@@ -6,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="Markdown2Pdf.Tests"/>
+        <InternalsVisibleTo Include="Svc.PdfGenerators.Tests"/>
     </ItemGroup>
 
     <ItemGroup>

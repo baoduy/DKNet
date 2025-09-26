@@ -1,14 +1,18 @@
 ﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
-/// The theme to use for styling the markdown code blocks.
+/// The theme to use for styling the Markdown code blocks.
 /// </summary>
 /// <remarks>To view the css of all the themes visit <see href="https://github.com/highlightjs/highlight.js/tree/main/src/styles">highlight.js/src/styles</see>.</remarks>
-public readonly struct CodeHighlightTheme
+public sealed record CodeHighlightTheme
 {
     private readonly string _sheetName = string.Empty;
 
     private CodeHighlightTheme(string theme) => _sheetName = theme;
+
+    private CodeHighlightTheme()
+    {
+    }
 
     /// <summary>
     /// Returns the css file name of the theme.

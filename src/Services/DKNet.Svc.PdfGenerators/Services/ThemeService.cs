@@ -22,7 +22,7 @@ internal class ThemeService
     private readonly Theme _theme;
     private readonly ModuleOptions _options;
 
-    public ThemeService(Theme theme, ModuleOptions options, IConvertionEvents events)
+    public ThemeService(Theme theme, ModuleOptions options, IConversionEvents events)
     {
         _theme = theme;
         _options = options;
@@ -35,10 +35,10 @@ internal class ThemeService
             _themeSourceMapping = ModuleInformation.UpdateDic(_themeSourceMapping, path);
         }
 
-        events.OnTemplateModelCreating += InternalAddThemeToTemplate;
+        events.OnTemplateModelCreatingAsync += InternalAddThemeToTemplateAsync;
     }
 
-    private void InternalAddThemeToTemplate(object sender, TemplateModelArgs e)
+    internal async Task InternalAddThemeToTemplateAsync(object sender, TemplateModelEventArgs e)
     {
         switch (_theme)
         {
@@ -53,5 +53,7 @@ internal class ThemeService
                 e.TemplateModel.Add(StyleKey, customTheme.CssPath);
                 break;
         }
+
+        await Task.CompletedTask;
     }
 }

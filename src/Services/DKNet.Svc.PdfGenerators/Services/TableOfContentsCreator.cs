@@ -67,37 +67,37 @@ internal class TableOfContentsCreator
 
     private static readonly Regex LineBreakRegex = new("\r\n?|\n", RegexOptions.Compiled);
 
-    public TableOfContentsCreator(TableOfContentsOptions options, IConvertionEvents convertionEvents,
+    public TableOfContentsCreator(TableOfContentsOptions options, IConversionEvents conversionEvents,
         EmbeddedResourceService embeddedResourceService)
     {
         _options = options;
         var isOrdered = options.ListStyle == ListStyle.OrderedDefault
-                        || options.ListStyle == ListStyle.Decimal;
+                        || options.ListStyle == ListStyle.Decimals;
         _minDepthLevel = options.MinDepthLevel - 1;
         _maxDepthLevel = options.MaxDepthLevel - 1;
         _embeddedResourceService = embeddedResourceService;
         _openListElement = isOrdered ? "<ol>" : "<ul>";
         _closeListElement = isOrdered ? "</ol>" : "</ul>";
 
-        convertionEvents.BeforeHtmlConversion += InternalAddToMarkdown;
-        convertionEvents.OnTemplateModelCreating += InternalAddStylesToTemplate;
+        conversionEvents.BeforeHtmlConversion += InternalAddToMarkdown;
+        conversionEvents.OnTemplateModelCreatingAsync += InternalAddStylesToTemplateAsync;
 
         if (options.PageNumberOptions != null)
-            convertionEvents.OnTempPdfCreatedEvent += InternalReadPageNumbers;
+            conversionEvents.OnTempPdfCreatedEvent += InternalReadPageNumbers;
     }
 
-    private void InternalAddToMarkdown(object sender, MarkdownArgs e)
+    private void InternalAddToMarkdown(object sender, MarkdownEventArgs e)
     {
         var tocHtml = InternalToHtml(e.MarkdownContent);
         e.MarkdownContent = InternalInsertInto(e.MarkdownContent, tocHtml);
     }
 
-    private void InternalAddStylesToTemplate(object _, TemplateModelArgs e)
+    internal async Task InternalAddStylesToTemplateAsync(object _, TemplateModelEventArgs e)
     {
         var tableOfContentsDecimalStyle = _options.ListStyle switch
         {
             ListStyle.None => ListStyleNone,
-            ListStyle.Decimal => _embeddedResourceService.GetResourceContent(DecimalStyleFileName),
+            ListStyle.Decimals => await _embeddedResourceService.GetResourceContentAsync(DecimalStyleFileName),
             _ => string.Empty
         };
 
@@ -106,12 +106,13 @@ internal class TableOfContentsCreator
 
         if (_options.PageNumberOptions != null)
             tableOfContentsDecimalStyle += Environment.NewLine +
-                                           _embeddedResourceService.GetResourceContent(PageNumberStyleFileName);
+                                           await _embeddedResourceService.GetResourceContentAsync(
+                                               PageNumberStyleFileName);
 
         e.TemplateModel.Add(TocStyleKey, tableOfContentsDecimalStyle);
     }
 
-    private void InternalReadPageNumbers(object _, PdfArgs e)
+    private void InternalReadPageNumbers(object _, PdfEventArgs e)
     {
         // TODO: what if link not found
         if (_links == null)

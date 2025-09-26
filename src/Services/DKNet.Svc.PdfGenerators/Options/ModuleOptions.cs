@@ -15,7 +15,7 @@ public class ModuleOptions
     /// Creates a new instance of <see cref="ModuleOptions"/>.
     /// </summary>
     /// <param name="moduleLocation">Location from where to load the modules.</param>
-    private protected ModuleOptions(ModuleLocation moduleLocation) => ModuleLocation = moduleLocation;
+    protected internal ModuleOptions(ModuleLocation moduleLocation) => ModuleLocation = moduleLocation;
 
     /// <summary>
     /// Don't load any additional modules. With this only basic markdown features are enabled.

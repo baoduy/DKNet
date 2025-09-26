@@ -1,42 +1,36 @@
 ﻿namespace DKNet.Svc.PdfGenerators;
 
 /// <summary>
-/// Interface for events that occur during the conversion process.
+/// Interface for events that occur during the PDF conversion process.
 /// </summary>
-public interface IConvertionEvents
+public interface IConversionEvents
 {
     /// <summary>
     /// Name of the output file.
     /// </summary>
-    public string? OutputFileName { get; }
+    string? OutputFileName { get; }
 
     /// <summary>
-    /// Gets invoked before the markdown to HTML conversion.
+    /// Raised before markdown is converted to HTML.
     /// </summary>
-    public event EventHandler<MarkdownArgs> BeforeHtmlConversion;
+    event EventHandler<MarkdownEventArgs>? BeforeHtmlConversion;
 
     /// <summary>
-    /// Gets invoked when the template model is created.
+    /// Raised when the template model is being created. Allows async modification of the template model.
     /// </summary>
-    /// <remarks>
-    /// This can be used to add custom content to the html template.
-    /// </remarks>
-    public event EventHandler<TemplateModelArgs> OnTemplateModelCreating;
+    event Func<object, TemplateModelEventArgs, Task>? OnTemplateModelCreatingAsync;
 
     /// <summary>
-    /// Gets invoked after a temporary PDF file is created.
+    /// Raised after a temporary PDF file is created.
     /// </summary>
-    /// <remarks>
-    /// This only happens if a parsing of the generated PDF is needed, e.g. for generating page numbers.
-    /// </remarks>
-    public event EventHandler<PdfArgs> OnTempPdfCreatedEvent;
+    event EventHandler<PdfEventArgs>? OnTempPdfCreatedEvent;
 }
 
 /// <summary>
 /// <see cref="EventArgs"/> containing the markdown content before the HTML conversion.
 /// </summary>
 /// <param name="markdownContent">The current markdown content.</param>
-public class MarkdownArgs(string markdownContent) : EventArgs
+public class MarkdownEventArgs(string markdownContent) : EventArgs
 {
     /// <summary>
     /// The current markdown content, available to be modified.
@@ -48,7 +42,7 @@ public class MarkdownArgs(string markdownContent) : EventArgs
 /// <see cref="EventArgs"/> containing the model for the HTML template.
 /// </summary>
 /// <param name="templateModel">The model for the HMTml template.</param>
-public class TemplateModelArgs(Dictionary<string, string> templateModel) : EventArgs
+public class TemplateModelEventArgs(Dictionary<string, string> templateModel) : EventArgs
 {
     /// <summary>
     /// The model for the HTML template.
@@ -60,7 +54,7 @@ public class TemplateModelArgs(Dictionary<string, string> templateModel) : Event
 /// <see cref="EventArgs"/> containing the path to the temporary PDF file.
 /// </summary>
 /// <param name="pdfPath">Path to the temporary PDF.</param>
-public class PdfArgs(string pdfPath) : EventArgs
+public class PdfEventArgs(string pdfPath) : EventArgs
 {
     /// <summary>
     /// Path to the temporary PDF.

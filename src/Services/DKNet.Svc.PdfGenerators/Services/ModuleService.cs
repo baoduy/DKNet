@@ -37,7 +37,7 @@ internal class ModuleService
 
     private readonly ModuleOptions _options;
 
-    public ModuleService(ModuleOptions options, IConvertionEvents events)
+    public ModuleService(ModuleOptions options, IConversionEvents events)
     {
         _options = options;
 
@@ -49,13 +49,14 @@ internal class ModuleService
             _packagelocationMapping = ModuleInformation.UpdateDic(_packagelocationMapping, path);
         }
 
-        events.OnTemplateModelCreating += _AddModulesToTemplate;
+        events.OnTemplateModelCreatingAsync += AddModulesToTemplateAsync;
     }
 
-    private void _AddModulesToTemplate(object sender, TemplateModelArgs e)
+    internal async Task AddModulesToTemplateAsync(object sender, TemplateModelEventArgs e)
     {
         // load correct module paths
         foreach (var kvp in _packagelocationMapping)
             e.TemplateModel.Add(kvp.Key, _options.IsRemote ? kvp.Value.RemotePath : kvp.Value.NodePath);
+        await Task.CompletedTask;
     }
 }

@@ -5,18 +5,19 @@ namespace DKNet.Svc.PdfGenerators.Services;
 internal class MetadataService
 {
     private readonly PdfGeneratorOptions _generatorOptions;
-    private readonly IConvertionEvents _events;
+    private readonly IConversionEvents _events;
 
-    public MetadataService(PdfGeneratorOptions generatorOptions, IConvertionEvents events)
+    public MetadataService(PdfGeneratorOptions generatorOptions, IConversionEvents events)
     {
-        events.OnTemplateModelCreating += _AddTitleToTemplate;
+        events.OnTemplateModelCreatingAsync += AddTitleToTemplateAsync;
         _generatorOptions = generatorOptions;
         _events = events;
     }
 
-    private void _AddTitleToTemplate(object _, TemplateModelArgs e)
+    internal async Task AddTitleToTemplateAsync(object _, TemplateModelEventArgs e)
     {
         var title = _generatorOptions.MetadataTitle ?? _generatorOptions.DocumentTitle ?? _events.OutputFileName!;
         e.TemplateModel.Add("title", title);
+        await Task.CompletedTask;
     }
 }
