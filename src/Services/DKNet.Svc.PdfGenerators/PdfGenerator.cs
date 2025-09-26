@@ -122,7 +122,20 @@ public class PdfGenerator
     private async Task GeneratePdfFromHtmlAsync(string htmlContent, string outputFilePath)
     {
         await new BrowserFetcher().DownloadAsync();
-        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+        var launchOptions = new LaunchOptions 
+        { 
+            Headless = true,
+            ExecutablePath = Options.ChromePath
+        };
+        
+        // Add no-sandbox args for CI/container environments
+        if (Environment.GetEnvironmentVariable("CI") == "true" || 
+            Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+        {
+            launchOptions.Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" };
+        }
+        
+        await using var browser = await Puppeteer.LaunchAsync(launchOptions);
         await using var page = await browser.NewPageAsync();
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
