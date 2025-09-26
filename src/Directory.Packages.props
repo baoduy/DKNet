@@ -15,7 +15,7 @@
         <PackageIcon>NugetLogo.png</PackageIcon>
         <Nullable>enable</Nullable>
         <ImplicitUsings>true</ImplicitUsings>
-        <IsTrimmable>true</IsTrimmable>
+        <IsTrimmable>false</IsTrimmable>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
