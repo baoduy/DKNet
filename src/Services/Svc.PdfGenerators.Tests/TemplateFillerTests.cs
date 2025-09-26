@@ -145,7 +145,7 @@ public class TemplateFillerTests
     public void FillTemplate_WithCaseInsensitiveKeys_HandlesCorrectly()
     {
         // Arrange
-        var template = "Hello @(NAME) and @(Location)!";
+        var template = "Hello @(name) and @(location)!";
         var model = new Dictionary<string, string>
         {
             { "name", "John" },

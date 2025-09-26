@@ -58,8 +58,8 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<string, ModuleInformation>
         {
-            {"module1", new ModuleInformation("https://example.com/module1.js", "module1/index.js")},
-            {"module2", new ModuleInformation("https://example.com/module2.js", "module2/index.js")}
+            { "module1", new ModuleInformation("https://example.com/module1.js", "module1/index.js") },
+            { "module2", new ModuleInformation("https://example.com/module2.js", "module2/index.js") }
         };
         var basePath = "/custom/base/path";
 
@@ -68,11 +68,11 @@ public class ModuleInformationTests
 
         // Assert
         Assert.Equal(2, updatedDictionary.Count);
-        
+
         Assert.True(updatedDictionary.ContainsKey("module1"));
         Assert.Equal("https://example.com/module1.js", updatedDictionary["module1"].RemotePath);
         Assert.Equal(Path.Combine(basePath, "module1/index.js"), updatedDictionary["module1"].NodePath);
-        
+
         Assert.True(updatedDictionary.ContainsKey("module2"));
         Assert.Equal("https://example.com/module2.js", updatedDictionary["module2"].RemotePath);
         Assert.Equal(Path.Combine(basePath, "module2/index.js"), updatedDictionary["module2"].NodePath);
@@ -98,7 +98,7 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<string, ModuleInformation>
         {
-            {"test", new ModuleInformation("https://example.com/test.js", "test/index.js")}
+            { "test", new ModuleInformation("https://example.com/test.js", "test/index.js") }
         };
         var basePath = "";
 
@@ -116,8 +116,8 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<int, ModuleInformation>
         {
-            {1, new ModuleInformation("https://example.com/module1.js", "module1.js")},
-            {2, new ModuleInformation("https://example.com/module2.js", "module2.js")}
+            { 1, new ModuleInformation("https://example.com/module1.js", "module1.js") },
+            { 2, new ModuleInformation("https://example.com/module2.js", "module2.js") }
         };
         var basePath = "/test/path";
 
@@ -138,7 +138,7 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<string, ModuleInformation>
         {
-            {"module", new ModuleInformation("https://original.com/module.js", "original/path.js")}
+            { "module", new ModuleInformation("https://original.com/module.js", "original/path.js") }
         };
         var basePath = "/new/base/path";
 
@@ -157,7 +157,7 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<string, ModuleInformation>
         {
-            {"complex", new ModuleInformation("https://example.com/module.js", "sub/folder/file.js")}
+            { "complex", new ModuleInformation("https://example.com/module.js", "sub/folder/file.js") }
         };
         var basePath = "/complex/base/path";
 
@@ -177,7 +177,7 @@ public class ModuleInformationTests
         var basePath = "/some/path";
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             ModuleInformation.UpdateDic(nullDictionary!, basePath));
     }
 
@@ -190,7 +190,7 @@ public class ModuleInformationTests
         // Arrange
         var originalDictionary = new Dictionary<string, ModuleInformation>
         {
-            {"test", new ModuleInformation("https://example.com/test.js", nodePath)}
+            { "test", new ModuleInformation("https://example.com/test.js", nodePath) }
         };
 
         // Act

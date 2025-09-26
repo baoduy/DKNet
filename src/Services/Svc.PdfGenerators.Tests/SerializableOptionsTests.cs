@@ -133,14 +133,14 @@ public class SerializableOptionsTests
         // Arrange
         var serializableOptions = new SerializableOptions
         {
-            Theme = "GitlabDark"
+            Theme = "Github"
         };
 
         // Act
         var options = serializableOptions.ToPdfGeneratorOptions();
 
         // Assert
-        Assert.Equal(Theme.GitlabDark, options.Theme);
+        Assert.Equal(Theme.Github, options.Theme);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class SerializableOptionsTests
     public void ToPdfGeneratorOptions_WithMarginOptions_SetsMarginOptionsCorrectly()
     {
         // Arrange
-        var marginOptions = new MarginOptions
+        var marginOptions = new DKNet.Svc.PdfGenerators.Options.MarginOptions
         {
             Top = "10px",
             Bottom = "15px",

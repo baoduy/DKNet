@@ -2,7 +2,7 @@ using SlimBus.Infra.Contexts;
 
 namespace SlimBus.App.Tests.Fixtures;
 
-public abstract class ApiFixtureBase(ShareInfraFixture infra) : WebApplicationFactory<Api.Program>, IAsyncLifetime
+public abstract class ApiFixtureBase(ShareInfraFixture infra) : WebApplicationFactory<SlimBus.Api.Program>, IAsyncLifetime
 {
     /**
      * Disposes the resources used by the fixture asynchronously.

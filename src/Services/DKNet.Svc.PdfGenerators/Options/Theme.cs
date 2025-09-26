@@ -3,7 +3,7 @@
 /// <summary>
 /// The theme to use for styling the document.
 /// </summary>
-public abstract class Theme
+public abstract record Theme
 {
     /// <summary>
     /// Don't apply any theme to the document.

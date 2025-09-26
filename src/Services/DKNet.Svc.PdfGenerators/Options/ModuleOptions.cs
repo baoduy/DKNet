@@ -4,7 +4,7 @@
 /// Options that decide from where to load additional modules.
 /// </summary>
 /// <remarks>For the option <see cref="FromLocalPath(string)"/> the <i>npm</i> packages specified in the <i>README</i> need to be installed.</remarks>
-public class ModuleOptions
+public record ModuleOptions
 {
     /// <summary>
     /// Provides information from where to load modules.

@@ -23,10 +23,11 @@ public class ConversionEventsTests
         // Arrange
         var originalContent = "# Original Content";
         var modifiedContent = "# Modified Content";
-        var args = new MarkdownEventArgs(originalContent);
-
-        // Act
-        args.MarkdownContent = modifiedContent;
+        var args = new MarkdownEventArgs(originalContent)
+        {
+            // Act
+            MarkdownContent = modifiedContent
+        };
 
         // Assert
         Assert.Equal(modifiedContent, args.MarkdownContent);
@@ -86,11 +87,15 @@ public class ConversionEventsTests
         {
             {"original", "value"}
         };
-        var args = new TemplateModelEventArgs(templateModel);
-
-        // Act
-        args.TemplateModel["new"] = "newValue";
-        args.TemplateModel["original"] = "modifiedValue";
+        var args = new TemplateModelEventArgs(templateModel)
+        {
+            TemplateModel =
+            {
+                // Act
+                ["new"] = "newValue",
+                ["original"] = "modifiedValue"
+            }
+        };
 
         // Assert
         Assert.Equal(2, args.TemplateModel.Count);

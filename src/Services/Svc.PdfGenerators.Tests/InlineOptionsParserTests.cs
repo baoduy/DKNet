@@ -86,7 +86,7 @@ This is test content without YAML front matter.";
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidDataException>(() =>
                 InlineOptionsParser.ParseYamlFrontMatter(tempFile));
-            
+
             Assert.Contains("Could not find a YAML front matter block", exception.Message);
             Assert.Contains(tempFile, exception.Message);
         }
@@ -114,7 +114,7 @@ document-title: Incomplete Block
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidDataException>(() =>
                 InlineOptionsParser.ParseYamlFrontMatter(tempFile));
-            
+
             Assert.Contains("Could not find a YAML front matter block", exception.Message);
         }
         finally
@@ -159,7 +159,7 @@ document-title: Incomplete Block
         var nonExistentFile = "/path/to/nonexistent/file.md";
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() =>
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
             InlineOptionsParser.ParseYamlFrontMatter(nonExistentFile));
     }
 

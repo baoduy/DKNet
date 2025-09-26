@@ -1,3 +1,5 @@
+using SlimBus.Api.Extensions;
+
 namespace SlimBus.App.Tests.Unit;
 
 public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)

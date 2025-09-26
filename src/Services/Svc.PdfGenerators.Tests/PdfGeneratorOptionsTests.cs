@@ -118,10 +118,11 @@ public class PdfGeneratorOptionsTests
     public void KeepHtml_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.KeepHtml = true;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            KeepHtml = true
+        };
 
         // Assert
         Assert.True(options.KeepHtml);
@@ -131,10 +132,11 @@ public class PdfGeneratorOptionsTests
     public void IsLandscape_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.IsLandscape = true;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            IsLandscape = true
+        };
 
         // Assert
         Assert.True(options.IsLandscape);
@@ -144,10 +146,11 @@ public class PdfGeneratorOptionsTests
     public void EnableAutoLanguageDetection_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.EnableAutoLanguageDetection = true;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            EnableAutoLanguageDetection = true
+        };
 
         // Assert
         Assert.True(options.EnableAutoLanguageDetection);
@@ -157,10 +160,11 @@ public class PdfGeneratorOptionsTests
     public void Format_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.Format = PaperFormat.Letter;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            Format = PaperFormat.Letter
+        };
 
         // Assert
         Assert.Equal(PaperFormat.Letter, options.Format);
@@ -170,10 +174,11 @@ public class PdfGeneratorOptionsTests
     public void Scale_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.Scale = 1.5m;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            Scale = 1.5m
+        };
 
         // Assert
         Assert.Equal(1.5m, options.Scale);
@@ -184,7 +189,7 @@ public class PdfGeneratorOptionsTests
     {
         // Arrange
         var options = new PdfGeneratorOptions();
-        var marginOptions = new MarginOptions
+        var marginOptions = new DKNet.Svc.PdfGenerators.Options.MarginOptions
         {
             Top = "10px",
             Bottom = "10px",
@@ -229,23 +234,25 @@ public class PdfGeneratorOptionsTests
     public void Theme_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.Theme = Theme.GitlabDark;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            Theme = Theme.Github
+        };
 
         // Assert
-        Assert.Equal(Theme.GitlabDark, options.Theme);
+        Assert.Equal(Theme.Github, options.Theme);
     }
 
     [Fact]
     public void CodeHighlightTheme_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.CodeHighlightTheme = CodeHighlightTheme.Monokai;
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            CodeHighlightTheme = CodeHighlightTheme.Monokai
+        };
 
         // Assert
         Assert.Equal(CodeHighlightTheme.Monokai, options.CodeHighlightTheme);
@@ -255,10 +262,11 @@ public class PdfGeneratorOptionsTests
     public void ModuleOptions_CanBeSetAndRetrieved()
     {
         // Arrange
-        var options = new PdfGeneratorOptions();
-
-        // Act
-        options.ModuleOptions = ModuleOptions.FromLocalPath("/custom/path");
+        var options = new PdfGeneratorOptions
+        {
+            // Act
+            ModuleOptions = ModuleOptions.FromLocalPath("/custom/path")
+        };
 
         // Assert
         Assert.NotNull(options.ModuleOptions);
