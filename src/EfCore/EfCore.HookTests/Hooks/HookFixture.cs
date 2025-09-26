@@ -4,8 +4,8 @@ namespace EfCore.HookTests.Hooks;
 
 public sealed class HookFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer;
-    public ServiceProvider Provider { get; private set; }
+    private MsSqlContainer _sqlContainer= null!;
+    public ServiceProvider Provider { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {

@@ -7,8 +7,8 @@ namespace EfCore.Events.Tests;
 
 public sealed class EventRunnerFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer;
-    public ServiceProvider Provider { get; private set; }
+    private MsSqlContainer _sqlContainer= null!;
+    public ServiceProvider Provider { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {

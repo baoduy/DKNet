@@ -11,7 +11,7 @@ public sealed class LocalBlobServiceFixture : IDisposable
         Directory.CreateDirectory(TestRoot);
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
                 (StringComparer.OrdinalIgnoreCase)
                 {
                     { "BlobStorage:LocalFolder:RootFolder", "Test-Folder" }

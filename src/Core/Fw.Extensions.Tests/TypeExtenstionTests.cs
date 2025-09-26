@@ -34,7 +34,7 @@ public class TypeExtensionsTests
     public void IsNumericTypeNullTypeReturnsFalse()
     {
         // Arrange
-        Type type = null;
+        Type type = null!;
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() => type.IsNumericType());
@@ -70,7 +70,7 @@ public class TypeExtensionsTests
     public void IsNumericTypeNullObjectReturnsFalse()
     {
         // Arrange
-        object obj = null;
+        object obj = null!;
 
         // Act
         var result = obj.IsNumericType();

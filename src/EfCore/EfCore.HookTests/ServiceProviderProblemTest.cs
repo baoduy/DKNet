@@ -6,8 +6,8 @@ namespace EfCore.HookTests;
 
 public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private ServiceProvider _provider;
-    private MsSqlContainer _sqlContainer;
+    private ServiceProvider _provider = null!;
+    private MsSqlContainer _sqlContainer= null!;
 
     public async Task InitializeAsync()
     {

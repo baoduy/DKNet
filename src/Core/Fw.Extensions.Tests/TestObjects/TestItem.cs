@@ -18,18 +18,18 @@ public interface ITem
 
 public class TestItem : ITem
 {
-    public string Details { get; set; }
+    public string Details { get; set; }=string.Empty;
 
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; }=string.Empty;
 }
 
 public class TestItem2 : ITem
 {
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; }=string.Empty;
 }
 
 public class TestItem3 : ITem, IDisposable
@@ -44,11 +44,11 @@ public class TestItem3 : ITem, IDisposable
     ///     Summary of the item.
     /// </summary>
 
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     public bool IsDisposed { get; private set; }
 
-    [Column("Summ")] public string Summary { get; set; }
+    [Column("Summ")] public string Summary { get; set; }=string.Empty;
 
     public TestEnumObject Type { get; set; } = TestEnumObject.Enum1;
 
@@ -73,7 +73,7 @@ public class TestItem3 : ITem, IDisposable
 
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; }=string.Empty;
 
     protected virtual void Dispose(bool disposed)
     {

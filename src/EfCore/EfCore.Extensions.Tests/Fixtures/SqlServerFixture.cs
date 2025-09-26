@@ -3,7 +3,7 @@ namespace EfCore.Extensions.Tests.Fixtures;
 public class SqlServerFixture : IAsyncLifetime
 {
     private MsSqlContainer _sql = null!;
-    public MyDbContext Db { get; private set; }
+    public MyDbContext Db { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {

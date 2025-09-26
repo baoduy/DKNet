@@ -22,7 +22,7 @@ public class EventExceptionTests
 
         var exception = new EventException(status);
 
-        Assert.Equal(status.Errors.FirstOrDefault().Message, exception.Message);
+        Assert.Equal(status.Errors[0].Message, exception.Message);
     }
 
     [Theory]
