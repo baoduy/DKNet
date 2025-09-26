@@ -1,5 +1,4 @@
-﻿using DKNet.Svc.BlobStorage.Abstractions;
-using DKNet.Svc.BlobStorage.AzureStorage;
+﻿using DKNet.Svc.BlobStorage.AzureStorage;
 using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace

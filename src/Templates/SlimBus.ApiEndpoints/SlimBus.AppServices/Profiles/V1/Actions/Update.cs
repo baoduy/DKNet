@@ -1,6 +1,4 @@
-﻿using SlimBus.Domains.Features.Profiles.Entities;
-
-namespace SlimBus.AppServices.Profiles.V1.Actions;
+﻿namespace SlimBus.AppServices.Profiles.V1.Actions;
 
 [MapsTo(typeof(CustomerProfile))]
 public record UpdateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<ProfileResult>

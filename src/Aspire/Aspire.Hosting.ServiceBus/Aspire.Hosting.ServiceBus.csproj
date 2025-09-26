@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <LangVersion>default</LangVersion>
-        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsAspireSharedProject>true</IsAspireSharedProject>
@@ -14,7 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting" />
+        <PackageReference Include="Aspire.Hosting"/>
         <PackageReference Include="Aspire.Hosting.SqlServer"/>
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>

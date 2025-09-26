@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Azure.Storage.Blobs.Models;
 
 namespace DKNet.Svc.BlobStorage.AzureStorage;
 
