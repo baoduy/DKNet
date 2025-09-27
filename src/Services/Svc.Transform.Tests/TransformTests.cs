@@ -176,7 +176,6 @@ public class TransformTests
 
         // Act
         var service = new TransformerService(options);
-
         var rs = service.Transform(template, model);
 
         // Assert

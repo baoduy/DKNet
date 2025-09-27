@@ -26,7 +26,7 @@ public static class Fluents
         ///     Represents a handler for a request that does not return a response.
         /// </summary>
         /// <typeparam name="TRequest">The type of the request.</typeparam>
-        public interface IHandler<in TRequest> : IRequestHandler<TRequest, IResultBase>;
+        public interface IHandler<in TRequest> : IRequestHandler<TRequest, IResultBase> where TRequest : INoResponse;
 
         /// <summary>
         ///     Represents a handler for a request that returns a response of type <typeparamref name="TResponse" />.
