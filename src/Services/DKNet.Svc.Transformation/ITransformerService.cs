@@ -1,4 +1,8 @@
-﻿using DKNet.Svc.Transformation.TokenExtractors;
+﻿using System.Collections.Concurrent;
+using System.Text;
+using DKNet.Svc.Transformation.Exceptions;
+using DKNet.Svc.Transformation.TokenExtractors;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.Svc.Transformation;
 
@@ -18,14 +22,103 @@ public interface ITransformerService
     /// </returns>
     Task<string> TransformAsync(string templateString, params object[] parameters);
 
+    string Transform(string templateString, params object[] parameters);
+}
+
+public sealed class TransformerService(IOptions<TransformOptions> options) : ITransformerService
+{
+    private TransformOptions _options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
+
+    private readonly ConcurrentDictionary<string, object> _cacheService = new(StringComparer.Ordinal);
+    private readonly TokenResolver _tokenResolver = new();
+
+    private ITokenExtractor[] GetExtractors() =>
+        [.. _options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
+
+    public string Transform(string templateString, params object[] parameters)
+    {
+        var tokens = GetExtractors().Select(t => t.Extract(templateString));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+    }
+
+    public async Task<string> TransformAsync(string templateString, params object[] parameters)
+    {
+        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+    }
+
+    private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
+    {
+        // Sort tokens by index
+        var orderedTokens = tokens.OrderBy(t => t.Index).ToArray();
+        if (orderedTokens.Length == 0)
+            return template;
+
+        var templateSpan = template.AsSpan();
+        var builder = new StringBuilder(template.Length);
+        var lastIndex = 0;
+
+        foreach (var token in orderedTokens)
+        {
+            var val = TryGetAndCacheValue(token, additionalData) ?? _options.TokenNotFoundBehavior switch
+            {
+                TokenNotFoundBehavior.LeaveAsIs => token.Token,
+                TokenNotFoundBehavior.Remove => string.Empty,
+                TokenNotFoundBehavior.ThrowError => throw new UnResolvedTokenException(token),
+                _ => throw new UnResolvedTokenException(token)
+            };
+
+            var strVal = _options.Formatter.Convert(token, val);
+
+            // Append text before the token
+            if (token.Index > lastIndex)
+                builder.Append(templateSpan[lastIndex..token.Index]);
+
+            // Append replacement value
+            builder.Append(strVal);
+            lastIndex = token.Index + token.Token.Length;
+        }
+
+        // Append any remaining text after the last token
+        if (lastIndex < template.Length)
+            builder.Append(templateSpan[lastIndex..]);
+
+        return builder.ToString();
+    }
+
     /// <summary>
-    ///     Transform template from TransformData and additionalData
+    ///     Try to Get data for <see cref="IToken" /> from additionalData and then TransformData and Cache for later use.
     /// </summary>
-    /// <param name="templateString">the template ex: Hello [Name]. Your {Email} had been [ApprovedStatus]</param>
-    /// <param name="tokenFactory">Dynamic loading data based on Token <see cref="IToken" /></param>
-    /// <returns>
-    ///     "Hello Duy. Your drunkcoding@outlook.net had been Approved" with TransformData or dataProvider is new {Name =
-    ///     "Duy", Email= "drunkcoding@outlook.net", ApprovedStatus = "Approved"}
-    /// </returns>
-    Task<string> TransformAsync(string templateString, Func<IToken, Task<object>> tokenFactory);
+    /// <param name="token"></param>
+    /// <param name="additionalData"></param>
+    /// <returns></returns>
+    private object? TryGetAndCacheValue(IToken token, object[] additionalData)
+    {
+        if (_cacheService.TryGetValue(token.Token, out var value))
+            return value;
+
+        var val = TryGetValue(token, additionalData);
+        if (val is not null)
+            _cacheService.TryAdd(token.Token, val);
+        return val;
+    }
+
+    /// <summary>
+    ///     Try To Get data for <see cref="IToken" /> from additionalData and then TransformData
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="additionalData"></param>
+    /// <returns></returns>
+    private object? TryGetValue(IToken token, object[] additionalData)
+    {
+        object? val = null;
+
+        if (additionalData.Length > 0)
+            val = _tokenResolver.Resolve(token, additionalData);
+
+        if (val is null)
+            val = _tokenResolver.Resolve(token, _options.GlobalParameters);
+
+        return val;
+    }
 }

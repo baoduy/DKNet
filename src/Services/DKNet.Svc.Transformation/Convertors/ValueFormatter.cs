@@ -1,20 +1,22 @@
 ﻿using System.Globalization;
 using DKNet.Svc.Transformation.TokenExtractors;
 
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
+
 namespace DKNet.Svc.Transformation.Convertors;
 
 /// <summary>
 ///     The convertor will be used to convert object to string before replace to the template.
 /// </summary>
-public sealed class ValueFormatter : IValueFormatter
+public class ValueFormatter : IValueFormatter
 {
-    public string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";
+    public virtual string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";
 
-    public string IntegerFormat { get; set; } = "###,##0";
+    public virtual string IntegerFormat { get; set; } = "###,##0";
 
-    public string NumberFormat { get; set; } = "###,##0.00";
+    public virtual string NumberFormat { get; set; } = "###,##0.00";
 
-    public string Convert(IToken token, object? value)
+    public virtual string Convert(IToken token, object? value)
     {
         return value == null
             ? string.Empty

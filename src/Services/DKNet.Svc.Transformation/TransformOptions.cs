@@ -1,8 +1,25 @@
 ﻿using DKNet.Svc.Transformation.Convertors;
 using DKNet.Svc.Transformation.TokenExtractors;
-using DKNet.Svc.Transformation.TokenResolvers;
 
 namespace DKNet.Svc.Transformation;
+
+public enum TokenNotFoundBehavior
+{
+    /// <summary>
+    ///     Leave the token as-is in the output if not found.
+    /// </summary>
+    LeaveAsIs,
+
+    /// <summary>
+    ///     Remove the token from the output if not found.
+    /// </summary>
+    Remove,
+
+    /// <summary>
+    ///     Replace the token with a placeholder text if not found.
+    /// </summary>
+    ThrowError
+}
 
 /// <summary>
 ///     Configuration options for the template transformation service.
@@ -28,17 +45,36 @@ namespace DKNet.Svc.Transformation;
 public class TransformOptions
 {
     /// <summary>
-    ///     Gets or sets a value indicating whether local caching is disabled.
+    /// The SquareBracket <c>[token]</c> definition.
     /// </summary>
-    /// <value>
-    ///     <c>true</c> if local caching is disabled; otherwise, <c>false</c>. Default is <c>true</c>.
-    /// </value>
     /// <remarks>
-    ///     When enabled (false), token values are cached internally for subsequent use, improving performance
-    ///     for repeated transformations with the same tokens. Disable caching when token values change
-    ///     frequently or when memory usage is a concern.
+    /// Use this definition to identify tokens enclosed in square brackets, e.g., <c>[username]</c>.
     /// </remarks>
-    public bool DisabledLocalCache { get; set; } = true;
+    public static readonly ITokenDefinition SquareBrackets = new TokenDefinition("[", "]");
+
+    /// <summary>
+    /// The CurlyBracket <c>{token}</c> definition.
+    /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in single curly brackets, e.g., <c>{date}</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition CurlyBrackets = new TokenDefinition("{", "}");
+
+    /// <summary>
+    /// The AngledBracket <c>&lt;token&gt;</c> definition.
+    /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in angle brackets, e.g., <c>&lt;amount&gt;</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition AngledBrackets = new TokenDefinition("<", ">");
+
+    /// <summary>
+    /// The DoubleCurlyBracket <c>{{token}}</c> definition.
+    /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in double curly brackets, e.g., <c>{{reference}}</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition DoubleCurlyBrackets = new TokenDefinition("{{", "}}");
 
     /// <summary>
     ///     Gets or sets the value formatter used to format token values before applying them to templates.
@@ -65,22 +101,7 @@ public class TransformOptions
     ///     as replaceable tokens in templates. You can add custom extractors to support additional
     ///     token formats or remove default extractors if not needed.
     /// </remarks>
-    public ICollection<ITokenExtractor> TokenExtractors { get; } =
-        [new AngledBracketTokenExtractor(), new SquareBracketExtractor(), new CurlyBracketExtractor()];
-
-    /// <summary>
-    ///     Gets or sets the token resolver used to find values for tokens from provided data sources.
-    /// </summary>
-    /// <value>
-    ///     An <see cref="ITokenResolver" /> instance. Default is <see cref="TokenResolver" />.
-    /// </value>
-    /// <remarks>
-    ///     The token resolver determines how token names are matched against properties or keys
-    ///     in the provided data objects. Custom resolvers can implement different matching
-    ///     strategies such as case-insensitive matching, path-based resolution, or custom
-    ///     property mapping logic.
-    /// </remarks>
-    public ITokenResolver TokenResolver { get; set; } = new TokenResolver();
+    public ICollection<ITokenDefinition> DefaultDefinitions { get; set; } = [SquareBrackets];
 
     /// <summary>
     ///     Gets or sets the global parameters that are shared across all transformation operations.
@@ -96,4 +117,6 @@ public class TransformOptions
     ///     during token resolution.
     /// </remarks>
     public IEnumerable<object> GlobalParameters { get; set; } = [];
+
+    public TokenNotFoundBehavior TokenNotFoundBehavior { get; set; } = TokenNotFoundBehavior.ThrowError;
 }

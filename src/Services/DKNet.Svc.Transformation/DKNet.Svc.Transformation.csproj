@@ -14,5 +14,11 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Options"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Svc.Transform.Tests"/>
+    </ItemGroup>
+
 </Project>

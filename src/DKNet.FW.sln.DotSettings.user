@@ -102,6 +102,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIAsyncLifetime_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Ff37a879c75bf3f9b17985180c72d23a4cd0501ac79ae98ed8e74f9a5d823_003FIAsyncLifetime_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIClassFixture_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Fae7664a35557e6da52239284f9951659c394efee9e9d3754a7747669271fb12_003FIClassFixture_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIConsumer_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F24675f25ddf94ad7cfbb9859b59769c9a6fa778a5d7b72dba2c187cc5a316d1_003FIConsumer_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIDictionary_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003Fbbfc02bba429494893e3c151f56686b7f83200_003F_005Fe933c_003FIDictionary_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIEndpointRouteBuilderExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003F86b426944af04a77a8dd09d73a3bcaf320598_003Faf_003F57462b60_003FIEndpointRouteBuilderExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIEnumerable_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003Fbbfc02bba429494893e3c151f56686b7f83200_003F_005F231dd_003FIEnumerable_002Ecs_002Fz_003A2_002D1/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIEnumerable_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003Fbbfc02bba429494893e3c151f56686b7f83200_003F_005Fec32c_003FIEnumerable_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
@@ -254,26 +255,14 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=1bee7ac7_002D989c_002D4a18_002D92f1_002D0a192021b00f/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Repos.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/EfCore/EfCore.Repos.Tests" Presentation="&amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Repos.Tests&amp;gt;" /&gt;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=2291bf72_002Db7bc_002D409f_002D8a7f_002D0ad8acf793b1/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;Services&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5b619154_002D87c6_002D431b_002D88af_002D99468ca736f3/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Services&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9a66df27_002D07f9_002D4a28_002Dbf37_002D05ad98b06a80/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Services&amp;gt;\&amp;lt;Svc.Transform.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Services/Svc.Transform.Tests" Presentation="&amp;lt;Services&amp;gt;\&amp;lt;Svc.Transform.Tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
 	
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=c7b7a432_002D54a1_002D4cb1_002D8519_002Db4e96af59dba/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Or&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;AspNet&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;EfCore&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Templates&amp;gt;" /&gt;
-  &lt;/Or&gt;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
 	
 	
 	
