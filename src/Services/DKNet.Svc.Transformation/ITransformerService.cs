@@ -2,6 +2,7 @@
 using System.Text;
 using DKNet.Svc.Transformation.Exceptions;
 using DKNet.Svc.Transformation.TokenExtractors;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.Svc.Transformation;
 
@@ -24,13 +25,15 @@ public interface ITransformerService
     string Transform(string templateString, params object[] parameters);
 }
 
-public sealed class TransformerService(TransformOptions options) : ITransformerService
+public sealed class TransformerService(IOptions<TransformOptions> options) : ITransformerService
 {
+    private TransformOptions _options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
+
     private readonly ConcurrentDictionary<string, object> _cacheService = new(StringComparer.Ordinal);
     private readonly TokenResolver _tokenResolver = new();
 
     private ITokenExtractor[] GetExtractors() =>
-        [.. options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
+        [.. _options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
 
     public string Transform(string templateString, params object[] parameters)
     {
@@ -44,23 +47,41 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
         return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
-    private string InternalTransform(string template, IEnumerable<IToken> tokens,
-        object[] additionalData)
+    private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
     {
-        var builder = new StringBuilder(template);
-        var adjustment = 0;
+        // Sort tokens by index
+        var orderedTokens = tokens.OrderBy(t => t.Index).ToArray();
+        if (orderedTokens.Length == 0)
+            return template;
 
-        foreach (var token in tokens.OrderBy(t => t.Index))
+        var templateSpan = template.AsSpan();
+        var builder = new StringBuilder(template.Length);
+        var lastIndex = 0;
+
+        foreach (var token in orderedTokens)
         {
-            var val =
-                TryGetAndCacheValue(token, additionalData)
-                ?? throw new UnResolvedTokenException(token);
+            var val = TryGetAndCacheValue(token, additionalData) ?? _options.TokenNotFoundBehavior switch
+            {
+                TokenNotFoundBehavior.LeaveAsIs => token.Token,
+                TokenNotFoundBehavior.Remove => string.Empty,
+                TokenNotFoundBehavior.ThrowError => throw new UnResolvedTokenException(token),
+                _ => throw new UnResolvedTokenException(token)
+            };
 
-            var strVal = options.Formatter.Convert(token, val);
+            var strVal = _options.Formatter.Convert(token, val);
 
-            builder = builder.Replace(token.Token, strVal, token.Index + adjustment, token.Token.Length);
-            adjustment += strVal.Length - token.Token.Length;
+            // Append text before the token
+            if (token.Index > lastIndex)
+                builder.Append(templateSpan[lastIndex..token.Index]);
+
+            // Append replacement value
+            builder.Append(strVal);
+            lastIndex = token.Index + token.Token.Length;
         }
+
+        // Append any remaining text after the last token
+        if (lastIndex < template.Length)
+            builder.Append(templateSpan[lastIndex..]);
 
         return builder.ToString();
     }
@@ -71,10 +92,15 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     /// <param name="token"></param>
     /// <param name="additionalData"></param>
     /// <returns></returns>
-    private object TryGetAndCacheValue(IToken token, object[] additionalData)
+    private object? TryGetAndCacheValue(IToken token, object[] additionalData)
     {
-        return _cacheService.GetOrAdd(token.Token.ToUpperInvariant(),
-            _ => TryGetValue(token, additionalData));
+        if (_cacheService.TryGetValue(token.Token, out var value))
+            return value;
+
+        var val = TryGetValue(token, additionalData);
+        if (val is not null)
+            _cacheService.TryAdd(token.Token, val);
+        return val;
     }
 
     /// <summary>
@@ -83,7 +109,7 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
     /// <param name="token"></param>
     /// <param name="additionalData"></param>
     /// <returns></returns>
-    private object TryGetValue(IToken token, object[] additionalData)
+    private object? TryGetValue(IToken token, object[] additionalData)
     {
         object? val = null;
 
@@ -91,8 +117,8 @@ public sealed class TransformerService(TransformOptions options) : ITransformerS
             val = _tokenResolver.Resolve(token, additionalData);
 
         if (val is null)
-            val = _tokenResolver.Resolve(token, options.GlobalParameters);
+            val = _tokenResolver.Resolve(token, _options.GlobalParameters);
 
-        return val!;
+        return val;
     }
 }

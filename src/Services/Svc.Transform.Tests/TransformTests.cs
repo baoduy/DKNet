@@ -1,5 +1,6 @@
 ﻿using DKNet.Svc.Transformation.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Svc.Transform.Tests;
 
@@ -11,7 +12,7 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var t = new TransformerService(new TransformOptions
+        var options = Options.Create(new TransformOptions
         {
             DefaultDefinitions =
             [
@@ -20,6 +21,7 @@ public class TransformTests
                 TransformOptions.SquareBrackets
             ]
         });
+        var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Hoang");
@@ -35,7 +37,7 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var t = new TransformerService(new TransformOptions
+        var options = Options.Create(new TransformOptions
         {
             DefaultDefinitions =
             [
@@ -44,6 +46,7 @@ public class TransformTests
                 TransformOptions.SquareBrackets
             ]
         });
+        var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Bao");
@@ -55,7 +58,8 @@ public class TransformTests
     [Fact]
     public async Task TransformAsyncDefaultDataTest()
     {
-        var t = new TransformerService(new TransformOptions { GlobalParameters = [new { A = "Bao" }] });
+        var options = Options.Create(new TransformOptions { GlobalParameters = [new { A = "Bao" }] });
+        var t = new TransformerService(options);
         var s = await t.TransformAsync("Hoang [A] Duy");
         s.ShouldBe("Hoang Bao Duy");
     }
@@ -63,7 +67,8 @@ public class TransformTests
     [Fact]
     public async Task TransformAsyncTest()
     {
-        var t = new TransformerService(new TransformOptions());
+        var options = Options.Create(new TransformOptions());
+        var t = new TransformerService(options);
         var s = await t.TransformAsync("Hoang [A] Duy", new { A = "Bao" });
         s.ShouldBe("Hoang Bao Duy");
     }
@@ -72,22 +77,69 @@ public class TransformTests
     [Fact]
     public async Task TransformAsyncCustomTest()
     {
-        var t = new TransformerService(new TransformOptions());
+        var options = Options.Create(new TransformOptions());
+        var t = new TransformerService(options);
         var s = await t.TransformAsync("Hoang [[A]] Duy", new { A = "Bao" });
         s.ShouldBe("Hoang [Bao] Duy");
+    }
+
+    [Fact]
+    public async Task TestUnResolvedTokenRemove()
+    {
+        var service = new ServiceCollection()
+            .AddTransformerService(o =>
+            {
+                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.TokenNotFoundBehavior = TokenNotFoundBehavior.Remove;
+            })
+            .BuildServiceProvider();
+
+        var transformer = service.GetRequiredService<ITransformerService>();
+
+        var rs = await transformer.TransformAsync("{A}", new Dictionary<string, string>
+            (StringComparer.OrdinalIgnoreCase)
+            {
+                { "B", "Duy" }
+            });
+        rs.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task TestUnResolvedTokenLeaveAsIs()
+    {
+        var service = new ServiceCollection()
+            .AddTransformerService(o =>
+            {
+                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs;
+            })
+            .BuildServiceProvider();
+
+        var transformer = service.GetRequiredService<ITransformerService>();
+
+        var rs = await transformer.TransformAsync("{A}", new Dictionary<string, string>
+            (StringComparer.OrdinalIgnoreCase)
+            {
+                { "B", "Duy" }
+            });
+        rs.ShouldBe("{A}");
     }
 
     [Fact]
     public async Task TestUnResolvedTokenException()
     {
         var service = new ServiceCollection()
-            .AddTransformerService(o => { o.DefaultDefinitions = [TransformOptions.CurlyBrackets]; })
+            .AddTransformerService(o =>
+            {
+                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.TokenNotFoundBehavior = TokenNotFoundBehavior.ThrowError;
+            })
             .BuildServiceProvider();
 
         var transformer = service.GetRequiredService<ITransformerService>();
 
         await Should.ThrowAsync<UnResolvedTokenException>(async () =>
-            await transformer.TransformAsync("{A}", "{A} 123", new Dictionary<string, object>
+            await transformer.TransformAsync("{A}", new Dictionary<string, string>
                 (StringComparer.OrdinalIgnoreCase)
                 {
                     { "B", "Duy" }
@@ -98,14 +150,14 @@ public class TransformTests
     public async Task DoubleCurlyBrackets_IsToken_And_ExtractToken_Tests()
     {
         var story =
-            "In a quiet town nestled between rolling {{A}}, there was a clockmaker named {{B}}. His shop was small, filled with the soft ticking of {{C}} timepieces.";
+            "In a quiet town nestled between rolling {{A}, there was a clockmaker named {{B}}. His shop was small, filled with the soft ticking of {{C}} timepieces.";
         var def = new TokenExtractor(TransformOptions.DoubleCurlyBrackets);
 
         var tokens = def.Extract(story).ToList();
-        tokens.Count.ShouldBe(3);
+        tokens.Count.ShouldBe(2);
 
         tokens = (await def.ExtractAsync(story)).ToList();
-        tokens.Count.ShouldBe(3);
+        tokens.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -113,15 +165,17 @@ public class TransformTests
     {
         // Arrange
         var template = "Hello @(name), welcome to @(location)!";
-        var model = new Dictionary<string, object>
+        var model = new Dictionary<string, string>
         {
             { "name", "John Doe" },
             { "location", "DKNet" }
         };
 
-        // Act
-        var service = new TransformerService(new TransformOptions
+        var options = Options.Create(new TransformOptions
             { DefaultDefinitions = [new TokenDefinition("@(", ")")] });
+
+        // Act
+        var service = new TransformerService(options);
 
         var rs = service.Transform(template, model);
 

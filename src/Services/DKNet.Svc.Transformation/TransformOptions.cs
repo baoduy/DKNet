@@ -3,6 +3,24 @@ using DKNet.Svc.Transformation.TokenExtractors;
 
 namespace DKNet.Svc.Transformation;
 
+public enum TokenNotFoundBehavior
+{
+    /// <summary>
+    ///     Leave the token as-is in the output if not found.
+    /// </summary>
+    LeaveAsIs,
+
+    /// <summary>
+    ///     Remove the token from the output if not found.
+    /// </summary>
+    Remove,
+
+    /// <summary>
+    ///     Replace the token with a placeholder text if not found.
+    /// </summary>
+    ThrowError
+}
+
 /// <summary>
 ///     Configuration options for the template transformation service.
 /// </summary>
@@ -27,17 +45,35 @@ namespace DKNet.Svc.Transformation;
 public class TransformOptions
 {
     /// <summary>
-    ///  The SquareBracket [token] definition
+    /// The SquareBracket <c>[token]</c> definition.
     /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in square brackets, e.g., <c>[username]</c>.
+    /// </remarks>
     public static readonly ITokenDefinition SquareBrackets = new TokenDefinition("[", "]");
 
     /// <summary>
-    ///
+    /// The CurlyBracket <c>{token}</c> definition.
     /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in single curly brackets, e.g., <c>{date}</c>.
+    /// </remarks>
     public static readonly ITokenDefinition CurlyBrackets = new TokenDefinition("{", "}");
 
+    /// <summary>
+    /// The AngledBracket <c>&lt;token&gt;</c> definition.
+    /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in angle brackets, e.g., <c>&lt;amount&gt;</c>.
+    /// </remarks>
     public static readonly ITokenDefinition AngledBrackets = new TokenDefinition("<", ">");
 
+    /// <summary>
+    /// The DoubleCurlyBracket <c>{{token}}</c> definition.
+    /// </summary>
+    /// <remarks>
+    /// Use this definition to identify tokens enclosed in double curly brackets, e.g., <c>{{reference}}</c>.
+    /// </remarks>
     public static readonly ITokenDefinition DoubleCurlyBrackets = new TokenDefinition("{{", "}}");
 
     /// <summary>
@@ -81,4 +117,6 @@ public class TransformOptions
     ///     during token resolution.
     /// </remarks>
     public IEnumerable<object> GlobalParameters { get; set; } = [];
+
+    public TokenNotFoundBehavior TokenNotFoundBehavior { get; set; } = TokenNotFoundBehavior.ThrowError;
 }

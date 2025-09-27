@@ -47,7 +47,7 @@ public class TokenResolversTests
         var resolver = new TokenResolver();
 
         var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
-            new Dictionary<string, object>
+            new Dictionary<string, string>
                 (StringComparer.Ordinal)
                 {
                     { "A", "Duy" }
@@ -62,7 +62,7 @@ public class TokenResolversTests
         var resolver = new TokenResolver();
 
         var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
-            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "A", "Duy" }
             });

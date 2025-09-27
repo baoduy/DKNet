@@ -87,10 +87,10 @@ internal sealed class TokenResolver : ITokenResolver
         }
     }
 
-    private static object? TryGetValueFromDictionary(IDictionary dictionary, string keyName)
+    private static string? TryGetValueFromDictionary(IDictionary dictionary, string keyName)
     {
-        if (dictionary is not IDictionary<string, object> objects)
-            throw new ArgumentException("Only IDictionary[string, object] is supported", nameof(dictionary));
+        if (dictionary is not IDictionary<string, string> objects)
+            throw new ArgumentException("Only IDictionary[string, string] is supported", nameof(dictionary));
 
         var key = objects.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
         return key is not null ? objects[key] : null;

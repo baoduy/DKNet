@@ -1,4 +1,5 @@
 ﻿using DKNet.Svc.Transformation;
+using Microsoft.Extensions.Options;
 
 // ReSharper disable CheckNamespace
 // ReSharper disable UnusedMember.Global
@@ -10,12 +11,10 @@ public static class TransformSetup
     public static IServiceCollection AddTransformerService(this IServiceCollection services,
         Action<TransformOptions>? optionFactory = null)
     {
-        return services.AddTransient<ITransformerService>(p =>
-        {
-            var op = new TransformOptions();
-            optionFactory?.Invoke(op);
+        var op = new TransformOptions();
+        optionFactory?.Invoke(op);
 
-            return new TransformerService(op);
-        });
+        services.AddSingleton(Options.Options.Create(op));
+        return services.AddTransient<ITransformerService, TransformerService>();
     }
 }
