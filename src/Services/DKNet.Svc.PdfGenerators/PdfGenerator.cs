@@ -6,43 +6,69 @@ using MarginOptions = PuppeteerSharp.Media.MarginOptions;
 
 namespace DKNet.Svc.PdfGenerators;
 
+public interface IPdfGenerator
+{
+    /// <summary>
+    /// Converts a markdown file to PDF.
+    /// </summary>
+    /// <param name="markdownFile">The markdown file to convert.</param>
+    /// <returns>The generated PDF file info.</returns>
+    Task<FileInfo> ConvertMarkdownFileAsync(FileInfo markdownFile);
+
+    /// <summary>
+    /// Converts a markdown file to PDF.
+    /// </summary>
+    /// <param name="markdownFilePath">Path to the markdown file.</param>
+    /// <param name="outputFilePath">Optional output PDF file path. If not provided, uses the markdown file name with .pdf extension.</param>
+    /// <returns>Path to the generated PDF file.</returns>
+    Task<string> ConvertMarkdownFileAsync(string markdownFilePath, string? outputFilePath = null);
+
+    /// <summary>
+    /// Converts multiple markdown files to a single PDF.
+    /// </summary>
+    /// <param name="markdownFilePaths">Array of markdown file paths.</param>
+    /// <param name="outputFilePath">Output PDF file path.</param>
+    /// <returns>Path to the generated PDF file.</returns>
+    Task<string> ConvertMultipleMarkdownFilesAsync(string[] markdownFilePaths, string outputFilePath);
+
+    /// <summary>
+    /// Converts HTML content to PDF.
+    /// </summary>
+    /// <param name="htmlContent">HTML content as a string.</param>
+    /// <param name="outputPath">Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current directory.</param>
+    /// <returns>Path to the generated PDF file.</returns>
+    Task<string> ConvertHtmlAsync(string htmlContent, string? outputPath = null);
+
+    /// <summary>
+    /// Converts an HTML file to PDF.
+    /// </summary>
+    /// <param name="htmlFilePath">Path to the HTML file.</param>
+    /// <param name="outputPath">Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current directory.</param>
+    /// <returns>Path to the generated PDF file.</returns>
+    Task<string> ConvertHtmlFileAsync(string htmlFilePath, string? outputPath = null);
+}
+
 /// <summary>
 /// Provides functionality to generate PDF files from Markdown or HTML sources.
 /// </summary>
-public class PdfGenerator
+/// <remarks>
+/// Initializes a new instance of <see cref="PdfGenerator"/>.
+/// </remarks>
+/// <param name="options">Options for PDF generation.</param>
+public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
 {
     /// <summary>
     /// Options for PDF generation.
     /// </summary>
-    public PdfGeneratorOptions Options { get; }
+    private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
 
     /// <summary>
-    /// Template for HTML generation from markdown.
+    /// The Marking pipeline used for markdown to HTML conversion.
     /// </summary>
-    public string ContentTemplate { get; set; }
-
-    /// <summary>
-    /// The PDF file name without extension.
-    /// </summary>
-    public string? OutputFileName { get; private set; }
-
-    /// <summary>
-    /// The Markdig pipeline used for markdown to HTML conversion.
-    /// </summary>
-    public MarkdownPipelineBuilder PipelineBuilder { get; } = new MarkdownPipelineBuilder()
+    private MarkdownPipelineBuilder PipelineBuilder { get; } = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
         .UseEmojiAndSmiley();
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="PdfGenerator"/>.
-    /// </summary>
-    /// <param name="options">Options for PDF generation.</param>
-    public PdfGenerator(PdfGeneratorOptions? options = null)
-    {
-        Options = options ?? new PdfGeneratorOptions();
-        ContentTemplate = "<html><body>{{body}}</body></html>";
-    }
 
     /// <summary>
     /// Converts a markdown file to PDF.
@@ -122,19 +148,17 @@ public class PdfGenerator
     private async Task GeneratePdfFromHtmlAsync(string htmlContent, string outputFilePath)
     {
         await new BrowserFetcher().DownloadAsync();
-        var launchOptions = new LaunchOptions 
-        { 
+        var launchOptions = new LaunchOptions
+        {
             Headless = true,
             ExecutablePath = Options.ChromePath
         };
-        
+
         // Add no-sandbox args for CI/container environments
-        if (Environment.GetEnvironmentVariable("CI") == "true" || 
+        if (Environment.GetEnvironmentVariable("CI") == "true" ||
             Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
-        {
-            launchOptions.Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" };
-        }
-        
+            launchOptions.Args = ["--no-sandbox", "--disable-setuid-sandbox"];
+
         await using var browser = await Puppeteer.LaunchAsync(launchOptions);
         await using var page = await browser.NewPageAsync();
         await page.SetContentAsync(htmlContent);

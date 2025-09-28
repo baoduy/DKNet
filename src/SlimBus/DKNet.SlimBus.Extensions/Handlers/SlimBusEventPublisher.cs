@@ -1,6 +1,8 @@
 using DKNet.EfCore.Abstractions.Events;
 using SlimMessageBus;
 
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
+
 namespace DKNet.SlimBus.Extensions.Handlers;
 
 public class SlimBusEventPublisher(IMessageBus bus) : IEventPublisher
@@ -12,6 +14,5 @@ public class SlimBusEventPublisher(IMessageBus bus) : IEventPublisher
         var headers =
             item.AdditionalData.ToDictionary(i => i.Key, object (v) => v.Value, StringComparer.OrdinalIgnoreCase);
         return bus.Publish(item, headers: headers, cancellationToken: cancellationToken);
-
     }
 }

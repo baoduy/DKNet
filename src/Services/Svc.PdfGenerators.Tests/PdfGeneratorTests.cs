@@ -7,10 +7,7 @@ public class PdfGeneratorTests
 {
     private readonly ITestOutputHelper _testOutputHelper;
 
-    public PdfGeneratorTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
+    public PdfGeneratorTests(ITestOutputHelper testOutputHelper) => _testOutputHelper = testOutputHelper;
 
     [Fact]
     public async Task ConvertMarkdownFileAsync_GeneratesPdfFile()
@@ -55,7 +52,7 @@ public class PdfGeneratorTests
         await File.WriteAllTextAsync(md1, "# First File\nContent");
         await File.WriteAllTextAsync(md2, "# Second File\nContent");
         var pdfPath = Path.GetTempFileName() + ".pdf";
-        var result = await generator.ConvertMultipleMarkdownFilesAsync(new[] { md1, md2 }, pdfPath);
+        var result = await generator.ConvertMultipleMarkdownFilesAsync([md1, md2], pdfPath);
         Assert.True(File.Exists(result));
         _testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(md1);

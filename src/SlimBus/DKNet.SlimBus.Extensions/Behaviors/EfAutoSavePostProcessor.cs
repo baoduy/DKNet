@@ -19,7 +19,7 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
         var response = await next();
 
         if (response is null || request is Fluents.Queries.IWitResponse<TResponse> ||
-            request is Fluents.Queries.IWitPageResponse<TResponse>) return response;
+            request is Fluents.Queries.IWitResponse<TResponse>) return response;
         if (response is IResultBase { IsSuccess: false }) return response;
 
         var dbContexts = serviceProvider.GetServices<DbContext>().ToHashSet();

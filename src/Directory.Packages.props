@@ -43,6 +43,8 @@
         <PackageVersion Include="Mapster" Version="7.4.0"/>
         <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1"/>
         <PackageVersion Include="Mapster.EFCore" Version="5.1.1"/>
+        <PackageVersion Include="Microsoft.AspNetCore.Routing" Version="2.3.0"/>
+        <PackageVersion Include="Microsoft.AspNetCore.Routing.Abstractions" Version="2.3.0"/>
         <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0"/>
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9"/>
         <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.9"/>
