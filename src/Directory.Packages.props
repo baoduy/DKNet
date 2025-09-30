@@ -30,6 +30,7 @@
     <PackageVersion Include="Aspire.Hosting.Redis" Version="9.5.0" />
     <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.5.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.29" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.7.4" />

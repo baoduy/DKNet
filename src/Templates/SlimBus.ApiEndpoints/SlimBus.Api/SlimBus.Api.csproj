@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.Http"/>
+        <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
         <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>

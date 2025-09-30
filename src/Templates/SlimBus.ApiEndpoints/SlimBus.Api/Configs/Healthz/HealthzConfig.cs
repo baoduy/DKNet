@@ -1,3 +1,5 @@
+using HealthChecks.UI.Client;
+
 namespace SlimBus.Api.Configs.Healthz;
 
 [ExcludeFromCodeCoverage]
@@ -10,7 +12,8 @@ internal static class HealthzConfig
         if (!features.EnableHealthCheck) return services;
 
         services.AddHealthChecks()
-            .AddDbContextCheck<DbContext>();
+            .AddDbContextCheck<DbContext>()
+            .AddCheck<HealthCheckHandler>(SharedConsts.ApiName);
         _configAdded = true;
         return services;
     }
@@ -27,7 +30,8 @@ internal static class HealthzConfig
         var options = new HealthCheckOptions
         {
             AllowCachingResponses = false,
-            Predicate = _ => true
+            Predicate = _ => true,
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         };
         endpoints.MapHealthChecks("/healthz", options);
         endpoints.MapHealthChecks("/", options);
