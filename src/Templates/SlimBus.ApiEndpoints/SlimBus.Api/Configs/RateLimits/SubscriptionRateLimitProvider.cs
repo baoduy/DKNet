@@ -1,29 +1,33 @@
 using System.Threading.RateLimiting;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace SlimBus.Api.Configs.RateLimits;
 
 public interface ISubscriptionRateLimitProvider
 {
-    public ValueTask<FixedWindowRateLimiterOptions> GetRateLimiterOptionsAsync(string key);
+    public FixedWindowRateLimiterOptions GetRateLimiterOptions();
+    public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions();
 }
 
-internal sealed class SubscriptionRateLimitProvider(HybridCache cache, IOptions<RateLimitOptions> options)
+internal sealed class SubscriptionRateLimitProvider(IOptions<RateLimitOptions> options)
     : ISubscriptionRateLimitProvider
 {
     private readonly RateLimitOptions _option = options.Value;
 
-    public ValueTask<FixedWindowRateLimiterOptions> GetRateLimiterOptionsAsync(string key)
-    {
-        return cache.GetOrCreateAsync(key, _ =>
+    public FixedWindowRateLimiterOptions GetRateLimiterOptions() =>
+        new()
         {
-            var option = new FixedWindowRateLimiterOptions();
-            // Configure rate limit options from defaults (database loading can be implemented here)
-            option.PermitLimit = _option.DefaultRequestLimit;
-            option.QueueLimit = _option.QueueLimit;
-            option.QueueProcessingOrder = _option.QueueProcessingOrder;
-            option.Window = TimeSpan.FromSeconds(_option.TimeWindowInSeconds);
-            return ValueTask.FromResult(option);
-        });
-    }
+            AutoReplenishment = true,
+            PermitLimit = _option.DefaultRequestLimit,
+            QueueLimit = _option.QueueLimit,
+            QueueProcessingOrder = _option.QueueProcessingOrder,
+            Window = TimeSpan.FromSeconds(_option.TimeWindowInSeconds)
+        };
+
+    public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions() =>
+        new()
+        {
+            PermitLimit = _option.DefaultConcurrentLimit,
+            QueueLimit = 0,
+            QueueProcessingOrder = _option.QueueProcessingOrder
+        };
 }

@@ -15,13 +15,10 @@ internal static class RateLimitConfig
     /// </summary>
     /// <param name="services">The service collection to configure</param>
     /// <param name="configuration">configuration action for rate limit options</param>
-    /// <param name="feature">Feature options to determine if rate limiting is enabled</param>
     /// <returns>The service collection with rate limiting configured</returns>
-    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration,
-        FeatureOptions feature)
+    public static IServiceCollection AddRateLimitConfig(this IServiceCollection services, IConfiguration configuration)
     {
         _configAdded = false;
-        if (!feature.EnableRateLimit) return services;
 
         services.Configure<RateLimitOptions>(configuration.GetSection(RateLimitOptions.Name));
         services.AddSingleton<IRateLimitKeyProvider, RateLimitKeyProvider>();
@@ -33,15 +30,22 @@ internal static class RateLimitConfig
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-            {
-                var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
-                var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
-                var key = keyProvider.GetPartitionKey(httpContext);
-                var rateOptions = resolver.GetRateLimiterOptionsAsync(key).Preserve().GetAwaiter().GetResult();
+            options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+                PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                {
+                    var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
+                    var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
 
-                return RateLimitPartition.GetFixedWindowLimiter(key, _ => rateOptions);
-            });
+                    return RateLimitPartition.GetFixedWindowLimiter(keyProvider.GetPartitionKey(httpContext),
+                        _ => resolver.GetRateLimiterOptions());
+                }), PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                {
+                    var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
+                    var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
+                    return RateLimitPartition.GetConcurrencyLimiter(keyProvider.GetPartitionKey(httpContext),
+                        _ => resolver.GetConcurrencyLimiterOptions());
+                })
+            );
         });
 
         _configAdded = true;
