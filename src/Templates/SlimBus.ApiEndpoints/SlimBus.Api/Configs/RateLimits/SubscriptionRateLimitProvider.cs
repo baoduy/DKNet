@@ -2,14 +2,14 @@ using System.Threading.RateLimiting;
 
 namespace SlimBus.Api.Configs.RateLimits;
 
-public interface ISubscriptionRateLimitProvider
+public interface IRateLimitOptionsProvider
 {
     public FixedWindowRateLimiterOptions GetRateLimiterOptions();
     public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions();
 }
 
-internal sealed class SubscriptionRateLimitProvider(IOptions<RateLimitOptions> options)
-    : ISubscriptionRateLimitProvider
+internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> options)
+    : IRateLimitOptionsProvider
 {
     private readonly RateLimitOptions _option = options.Value;
 
@@ -18,8 +18,8 @@ internal sealed class SubscriptionRateLimitProvider(IOptions<RateLimitOptions> o
         {
             AutoReplenishment = true,
             PermitLimit = _option.DefaultRequestLimit,
-            QueueLimit = _option.QueueLimit,
-            QueueProcessingOrder = _option.QueueProcessingOrder,
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             Window = TimeSpan.FromSeconds(_option.TimeWindowInSeconds)
         };
 
@@ -28,6 +28,6 @@ internal sealed class SubscriptionRateLimitProvider(IOptions<RateLimitOptions> o
         {
             PermitLimit = _option.DefaultConcurrentLimit,
             QueueLimit = 0,
-            QueueProcessingOrder = _option.QueueProcessingOrder
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         };
 }

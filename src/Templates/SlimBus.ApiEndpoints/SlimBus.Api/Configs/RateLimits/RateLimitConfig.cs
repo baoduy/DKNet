@@ -24,7 +24,7 @@ internal static class RateLimitConfig
         services.AddSingleton<IRateLimitKeyProvider, RateLimitKeyProvider>();
 
         // You will implement ISubscriptionRateLimitResolver and register it
-        services.AddScoped<ISubscriptionRateLimitProvider, SubscriptionRateLimitProvider>();
+        services.AddScoped<IRateLimitOptionsProvider, RateLimitOptionsProvider>();
 
         services.AddRateLimiter(options =>
         {
@@ -34,14 +34,14 @@ internal static class RateLimitConfig
                 PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
                 {
                     var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
-                    var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
+                    var resolver = httpContext.RequestServices.GetRequiredService<IRateLimitOptionsProvider>();
 
                     return RateLimitPartition.GetFixedWindowLimiter(keyProvider.GetPartitionKey(httpContext),
                         _ => resolver.GetRateLimiterOptions());
                 }), PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
                 {
                     var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
-                    var resolver = httpContext.RequestServices.GetRequiredService<ISubscriptionRateLimitProvider>();
+                    var resolver = httpContext.RequestServices.GetRequiredService<IRateLimitOptionsProvider>();
                     return RateLimitPartition.GetConcurrencyLimiter(keyProvider.GetPartitionKey(httpContext),
                         _ => resolver.GetConcurrencyLimiterOptions());
                 })

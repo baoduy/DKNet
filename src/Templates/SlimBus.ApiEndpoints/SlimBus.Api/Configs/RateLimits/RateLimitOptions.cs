@@ -23,14 +23,4 @@ internal sealed class RateLimitOptions
     ///     Time window for rate limiting in seconds
     /// </summary>
     public int TimeWindowInSeconds { get; set; } = 1;
-
-    /// <summary>
-    ///     Maximum number of queued requests when the rate limit is reached
-    /// </summary>
-    public int QueueLimit { get; set; }
-
-    /// <summary>
-    ///     Queue processing order
-    /// </summary>
-    public QueueProcessingOrder QueueProcessingOrder { get; set; } = QueueProcessingOrder.OldestFirst;
 }
