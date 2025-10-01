@@ -1,6 +1,10 @@
-using SlimBus.Api.Extensions;
+using System.Net;
+using System.Text.Json;
+using FluentResults;
+using Shouldly;
+using Xunit.Abstractions;
 
-namespace SlimBus.App.Tests.Unit;
+namespace DKNet.AspCore.SlimBus.Tests;
 
 public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
 {

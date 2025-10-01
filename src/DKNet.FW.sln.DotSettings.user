@@ -256,8 +256,17 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8fbe6253_002D8bc8_002D41d9_002Db7e3_002D8bc48d5199fa/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Templates&amp;gt;\&amp;lt;SlimBus.ApiEndpoints&amp;gt;\&amp;lt;SlimBus.App.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Templates/SlimBus.ApiEndpoints/SlimBus.App.Tests" Presentation="&amp;lt;Templates&amp;gt;\&amp;lt;SlimBus.ApiEndpoints&amp;gt;\&amp;lt;SlimBus.App.Tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9a66df27_002D07f9_002D4a28_002Dbf37_002D05ad98b06a80/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Services&amp;gt;\&amp;lt;Svc.Transform.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Services/Svc.Transform.Tests" Presentation="&amp;lt;Services&amp;gt;\&amp;lt;Svc.Transform.Tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a9c4cfc3_002Df4b3_002D427b_002Dac04_002De3adb8f8a9af/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;SlimBus&amp;gt;\&amp;lt;DKNet.AspCore.SlimBus.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Or&gt;
+    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/SlimBus/DKNet.AspCore.SlimBus.Tests" Presentation="&amp;lt;SlimBus&amp;gt;\&amp;lt;DKNet.AspCore.SlimBus.Tests&amp;gt;" /&gt;
+    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/DKNet.AspCore.Tasks.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;DKNet.AspCore.Tasks.Tests&amp;gt;" /&gt;
+  &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
 	
 	

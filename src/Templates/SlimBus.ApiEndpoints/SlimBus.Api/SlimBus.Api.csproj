@@ -9,7 +9,7 @@
 
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.Http"/>
-        <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
+        <PackageReference Include="AspNetCore.HealthChecks.UI.Client"/>
         <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
@@ -35,6 +35,7 @@
         <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints"/>
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\..\..\SlimBus\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj"/>
         <ProjectReference Include="..\SlimBus.AppServices\SlimBus.AppServices.csproj"/>
         <ProjectReference Include="..\SlimBus.Infra\SlimBus.Infra.csproj"/>
     </ItemGroup>

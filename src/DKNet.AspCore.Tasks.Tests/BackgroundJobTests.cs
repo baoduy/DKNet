@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
-using DKNet.AspNetCore.BackgroundJobs.Internals;
+using DKNet.AspCore.Tasks.Internals;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,18 +10,18 @@ using Shouldly;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
-namespace DKNet.AspNetCore.BackgroundJobs.Tests;
+namespace DKNet.AspCore.Tasks.Tests;
 
 public class BackgroundJobTests
 {
     private static void ResetHostAddedFlag()
     {
-        var type = typeof(BackgroundJobSetups);
+        var type = typeof(TaskSetups);
         var field = type.GetField("_added", BindingFlags.Static | BindingFlags.NonPublic);
         field!.SetValue(null, false);
     }
 
-    private sealed class CountingJob(TaskCompletionSource<bool> tcs, Counter counter) : IBackgroundJob
+    private sealed class CountingTask(TaskCompletionSource<bool> tcs, Counter counter) : IBackgroundTask
     {
         public Task RunAsync(CancellationToken cancellationToken = default)
         {
@@ -31,7 +31,7 @@ public class BackgroundJobTests
         }
     }
 
-    private sealed class DelayedJob(Counter counter) : IBackgroundJob
+    private sealed class DelayedTask(Counter counter) : IBackgroundTask
     {
         public async Task RunAsync(CancellationToken cancellationToken = default)
         {
@@ -40,7 +40,7 @@ public class BackgroundJobTests
         }
     }
 
-    private sealed class FailingJob(Counter counter) : IBackgroundJob
+    private sealed class FailingTask(Counter counter) : IBackgroundTask
     {
         public Task RunAsync(CancellationToken cancellationToken = default)
         {
@@ -49,7 +49,7 @@ public class BackgroundJobTests
         }
     }
 
-    private sealed class ScannedJob(Counter counter) : IBackgroundJob
+    private sealed class ScannedTask(Counter counter) : IBackgroundTask
     {
         public Task RunAsync(CancellationToken cancellationToken = default)
         {
@@ -100,7 +100,7 @@ public class BackgroundJobTests
             {
                 services.AddSingleton(tcs);
                 services.AddSingleton(counter);
-                services.AddBackgroundJob<CountingJob>();
+                services.AddBackgroundJob<CountingTask>();
             })
             .Build();
 
@@ -121,8 +121,8 @@ public class BackgroundJobTests
             .ConfigureServices(s =>
             {
                 s.AddSingleton(counter);
-                s.AddBackgroundJob<DelayedJob>();
-                s.AddBackgroundJob<CountingJob>(); // Needs TCS and Counter
+                s.AddBackgroundJob<DelayedTask>();
+                s.AddBackgroundJob<CountingTask>(); // Needs TCS and Counter
                 s.AddSingleton(new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
             })
             .Build();
@@ -145,8 +145,8 @@ public class BackgroundJobTests
             .ConfigureServices(s =>
             {
                 s.AddSingleton(counter);
-                s.AddBackgroundJob<FailingJob>();
-                s.AddBackgroundJob<DelayedJob>();
+                s.AddBackgroundJob<FailingTask>();
+                s.AddBackgroundJob<DelayedTask>();
             })
             .Build();
 
@@ -168,8 +168,8 @@ public class BackgroundJobTests
     {
         ResetHostAddedFlag();
         var services = new ServiceCollection();
-        services.AddBackgroundJob<CountingJob>();
-        services.AddBackgroundJob<DelayedJob>();
+        services.AddBackgroundJob<CountingTask>();
+        services.AddBackgroundJob<DelayedTask>();
         var hostDescriptors = services.Where(d =>
             d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(BackgroundJobHost)).ToList();
         Assert.Single(hostDescriptors);
@@ -185,8 +185,8 @@ public class BackgroundJobTests
         services.AddBackgroundJobFrom([typeof(BackgroundJobTests).Assembly]);
 
         var provider = services.BuildServiceProvider();
-        var jobs = provider.GetServices<IBackgroundJob>().ToList();
+        var jobs = provider.GetServices<IBackgroundTask>().ToList();
         jobs.Count.ShouldBeGreaterThan(1);
-        jobs.Any(j => j is ScannedJob).ShouldBeTrue();
+        jobs.Any(j => j is ScannedTask).ShouldBeTrue();
     }
 }

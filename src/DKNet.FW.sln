@@ -119,13 +119,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomCreatorTests", "Core\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AspNet", "AspNet", "{120F93FD-F47A-4370-9D13-0C33A16786D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspNetCore.BackgroundJobs", "DKNet.AspNetCore.BackgroundJobs\DKNet.AspNetCore.BackgroundJobs.csproj", "{7B01EC2A-2545-4475-91C4-E7CEF9D5976D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Tasks", "DKNet.AspCore.Tasks\DKNet.AspCore.Tasks.csproj", "{7B01EC2A-2545-4475-91C4-E7CEF9D5976D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspNetCore.BackgroundJobs.Tests", "DKNet.AspNetCore.BackgroundJobs.Tests\DKNet.AspNetCore.BackgroundJobs.Tests.csproj", "{08854CA7-7311-4058-B784-143F4D2A162A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Tasks.Tests", "DKNet.AspCore.Tasks.Tests\DKNet.AspCore.Tasks.Tests.csproj", "{08854CA7-7311-4058-B784-143F4D2A162A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.PdfGenerators.Tests", "Services\Svc.PdfGenerators.Tests\Svc.PdfGenerators.Tests.csproj", "{7CF65BE7-FCD4-42DD-AA56-4F09BC877023}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.PdfGenerators", "Services\DKNet.Svc.PdfGenerators\DKNet.Svc.PdfGenerators.csproj", "{A369CD23-45B7-4160-8EC2-27DDA533452A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus", "SlimBus\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj", "{1556498E-1A4B-432C-8A81-1341F5389698}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus.Tests", "SlimBus\DKNet.AspCore.SlimBus.Tests\DKNet.AspCore.SlimBus.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -297,6 +301,14 @@ Global
 		{A369CD23-45B7-4160-8EC2-27DDA533452A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A369CD23-45B7-4160-8EC2-27DDA533452A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A369CD23-45B7-4160-8EC2-27DDA533452A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1556498E-1A4B-432C-8A81-1341F5389698}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1556498E-1A4B-432C-8A81-1341F5389698}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1556498E-1A4B-432C-8A81-1341F5389698}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1556498E-1A4B-432C-8A81-1341F5389698}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23AD2768-B495-42C8-B915-A2D36FF1D508}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23AD2768-B495-42C8-B915-A2D36FF1D508}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23AD2768-B495-42C8-B915-A2D36FF1D508}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23AD2768-B495-42C8-B915-A2D36FF1D508}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -346,5 +358,7 @@ Global
 		{08854CA7-7311-4058-B784-143F4D2A162A} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{7CF65BE7-FCD4-42DD-AA56-4F09BC877023} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{A369CD23-45B7-4160-8EC2-27DDA533452A} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
+		{1556498E-1A4B-432C-8A81-1341F5389698} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
+		{23AD2768-B495-42C8-B915-A2D36FF1D508} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 	EndGlobalSection
 EndGlobal
