@@ -60,7 +60,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		verify_nuget_package.sh = verify_nuget_package.sh
 		..\.github\copilot-instructions.md = ..\.github\copilot-instructions.md
 		..\.gitignore = ..\.gitignore
-		..\.github\workflows\dotnet-publish.yml = ..\.github\workflows\dotnet-publish.yml
 		.aspire\settings.json = .aspire\settings.json
 	EndProjectSection
 EndProject
@@ -132,6 +131,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus.Tests", "SlimBus\DKNet.AspCore.SlimBus.Tests\DKNet.AspCore.SlimBus.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimBus.InterTests", "Templates\SlimBus.ApiEndpoints\SlimBus.InterTests\SlimBus.InterTests.csproj", "{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{4B2C950F-B328-4CB6-B12C-C5AB97705681}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\dotnet-publish.yml = ..\.github\workflows\dotnet-publish.yml
+		..\.github\workflows\collect_warnings.yml = ..\.github\workflows\collect_warnings.yml
+		..\.github\workflows\codeql.yml = ..\.github\workflows\codeql.yml
+		..\.github\workflows\build-test-coverage.yml = ..\.github\workflows\build-test-coverage.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -367,5 +374,6 @@ Global
 		{1556498E-1A4B-432C-8A81-1341F5389698} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{23AD2768-B495-42C8-B915-A2D36FF1D508} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
+		{4B2C950F-B328-4CB6-B12C-C5AB97705681} = {9F7203BB-C314-4216-8C48-BC98BFEE7F89}
 	EndGlobalSection
 EndGlobal
