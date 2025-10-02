@@ -18,11 +18,13 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
         // Handle the actual request
         var response = await next();
 
+        //If request is a quert type, do not save changes
         if (response is null || request is Fluents.Queries.IWitResponse<TResponse> ||
-            request is Fluents.Queries.IWitResponse<TResponse>) return response;
+            request is Fluents.Queries.IWitPageResponse<TResponse>) return response;
+        // If response indicates failure, do not save changes
         if (response is IResultBase { IsSuccess: false }) return response;
 
-        var dbContexts = serviceProvider.GetServices<DbContext>().ToHashSet();
+        var dbContexts = serviceProvider.GetServices<DbContext>();
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
             await db.AddNewEntitiesFromNavigations();
