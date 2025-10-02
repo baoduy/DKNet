@@ -178,6 +178,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ARequestDelegateFactory_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003F8ed35d6c2819e04ca78be5829523271950ff45a84d609a837ef80d86ff592_003FRequestDelegateFactory_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ARequestDelegateFactory_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FUsers_003Fbaoduy2412_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E2_003Fresharper_002Dhost_003FSourcesCache_003Ffb4872fad8d83c63a7613e71c3fae8d61cee98ca9842fc4bad2807ce8dccb_003FRequestDelegateFactory_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AResourceBuilderExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F636a1eee94ab99d47c2b4ab91a66c481628644354fdbadda2e767cc8b71aa98_003FResourceBuilderExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AResourceBuilderExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003F1cf8d2dd4ff5d8ceee6ddab37b23531fbd7ed4942fbb9585f28aff896294e6_003FResourceBuilderExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AResourceNotificationService_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003F64f5de99b6503b35c4bbebaf88abdf1ac2b40e2ee9418a6fdca52411f41cdbb_003FResourceNotificationService_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AResponseOfT_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003Fe1af6873c8c59196425bd6802b73a2cfe1b56952ccc866db4e48529adb687_003FResponseOfT_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AResultBase_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E2_003Fresharper_002Dhost_003FSourcesCache_003F8d27939b9ce678dfc5a85addc74d5d3676b9ccec15b6e4ffa66894482e2_003FResultBase_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
@@ -266,6 +267,16 @@
   &lt;Or&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/SlimBus/DKNet.AspCore.SlimBus.Tests" Presentation="&amp;lt;SlimBus&amp;gt;\&amp;lt;DKNet.AspCore.SlimBus.Tests&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/DKNet.AspCore.Tasks.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;DKNet.AspCore.Tasks.Tests&amp;gt;" /&gt;
+  &lt;/Or&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=d1cb7bc9_002D2844_002D4452_002Da5ec_002D8f5f2316f0b1/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="RateLimitCallsProfile" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Or&gt;
+    &lt;TestAncestor&gt;
+      &lt;TestId&gt;xUnit::ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8::net9.0::SlimBus.InterTests.Integration.RateLimitTests.RateLimitCallsProfile&lt;/TestId&gt;
+      &lt;TestId&gt;xUnit::ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8::net9.0::SlimBus.InterTests.Integration.ProfileTests.DeleteProfile&lt;/TestId&gt;
+    &lt;/TestAncestor&gt;
+    &lt;ProjectFile&gt;ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8/d:Integration/f:RateLimitTests.cs&lt;/ProjectFile&gt;
+    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Templates/SlimBus.ApiEndpoints/SlimBus.App.Tests" Presentation="&amp;lt;Templates&amp;gt;\&amp;lt;SlimBus.ApiEndpoints&amp;gt;\&amp;lt;SlimBus.App.Tests&amp;gt;" /&gt;
   &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
 	

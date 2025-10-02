@@ -38,6 +38,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="SlimBus.App.Tests"/>
+        <InternalsVisibleTo Include="SlimBus.InterTests"/>
     </ItemGroup>
 
     <ItemGroup>

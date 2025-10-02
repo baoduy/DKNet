@@ -3,7 +3,8 @@ using Projects;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("Redis");
-var sql = builder.AddSqlServer("SqlServer");
+var sql = builder.AddSqlServer("SqlServer")
+    .WithImageTag("2022-latest");
 
 var apDb = sql
     .AddDatabase("AppDb");
