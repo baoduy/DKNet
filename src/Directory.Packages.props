@@ -22,6 +22,14 @@
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
+    <PropertyGroup>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <Deterministic>true</Deterministic>
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Asp.Versioning.Http" Version="8.1.0"/>
         <PackageVersion Include="Aspire.Hosting" Version="9.5.0"/>
