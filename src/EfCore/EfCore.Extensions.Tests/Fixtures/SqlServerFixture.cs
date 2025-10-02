@@ -4,6 +4,7 @@ public class SqlServerFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _sql = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        .WithReuse(true)
         .Build();
 
     public MyDbContext? Db { get; private set; }
