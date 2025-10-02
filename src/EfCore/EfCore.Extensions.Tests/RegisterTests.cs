@@ -2,9 +2,9 @@ using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.Extensions.Tests;
 
-public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
 
     [Fact]
@@ -109,7 +109,7 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
+                .UseInMemoryDatabase("TestDb_CustomMapperBad")
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithDefaultMappersType(typeof(Entity<>)))
                 .Options);
@@ -124,7 +124,7 @@ public class RegisterTests(SqlServerFixture fixture) : IClassFixture<SqlServerFi
         var action = async () =>
         {
             await using var db = new MyDbContext(new DbContextOptionsBuilder()
-                .UseSqlServer(fixture.GetConnectionString("EfCoreDb"))
+                .UseInMemoryDatabase("TestDb_CustomMapperNullFilterBad")
                 .UseAutoConfigModel(op =>
                     op.ScanFrom(typeof(MyDbContext).Assembly).WithFilter(null!))
                 .Options);

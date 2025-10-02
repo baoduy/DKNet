@@ -8,7 +8,7 @@ public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper ou
 {
     private async Task CreateUser(int number = 1)
     {
-        var repo = fixture.DbContext;
+        var repo = fixture.DbContext!;
         for (var i = 0; i < number; i++)
         {
             var newGuid = Guid.NewGuid();
@@ -18,14 +18,14 @@ public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper ou
         }
 
         await repo.SaveChangesAsync();
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
     }
 
 
     [Fact]
     public async Task GetPossibleNewNavigationEntitiesTest()
     {
-        var db = fixture.DbContext;
+        var db = fixture.DbContext!;
         db.ChangeTracker.Clear();
 
         // Arrange

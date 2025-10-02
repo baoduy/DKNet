@@ -1,39 +1,23 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
+using Testcontainers.PostgreSql;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryFixture : IAsyncLifetime
 {
-    private readonly DistributedApplication _app;
-    private readonly IResourceBuilder<PostgresServerResource> _db;
-    private string? _dbConn;
+    private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder()
+        .Build();
 
-    public RepositoryFixture()
-    {
-        var options = new DistributedApplicationOptions
-        {
-            AssemblyName = typeof(RepositoryFixture).Assembly.FullName,
-            DisableDashboard = true,
-            AllowUnsecuredTransport = true
-        };
-        var builder = DistributedApplication.CreateBuilder(options);
-
-        _db = builder.AddPostgres("sqlServer");
-
-        _app = builder.Build();
-    }
-
-    public DbContext DbContext { get; set; } = null!;
+    public DbContext? DbContext { get; set; }
     public IRepository<User> Repository { get; set; } = null!;
     public IReadRepository<User> ReadRepository { get; set; } = null!;
 
     public async Task InitializeAsync()
     {
-        await _app.StartAsync();
-        await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
+        await _sqlContainer.StartAsync();
 
-        DbContext = await CreateNewDbContext();
+        DbContext = CreateNewDbContext();
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
 
@@ -43,18 +27,19 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await DbContext.DisposeAsync();
+        if (DbContext != null)
+            await DbContext.DisposeAsync();
 
-        await _app.StopAsync();
-        await _app.DisposeAsync();
+        await _sqlContainer.StopAsync();
+        await _sqlContainer.DisposeAsync();
     }
 
-    public async Task<DbContext> CreateNewDbContext()
+    public DbContext CreateNewDbContext()
     {
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
+        var dbConn = _sqlContainer.GetConnectionString();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseNpgsql(_dbConn)
+            .UseNpgsql(dbConn)
             .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
 
         return new TestDbContext(optionsBuilder.Options);

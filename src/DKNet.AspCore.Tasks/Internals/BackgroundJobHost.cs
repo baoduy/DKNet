@@ -3,21 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace DKNet.AspNetCore.BackgroundJobs.Internals;
+namespace DKNet.AspCore.Tasks.Internals;
 
 internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServiceProvider provider)
     : BackgroundService
 {
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
-    private async Task ExecuteJobAsync(IBackgroundJob job, CancellationToken cancellationToken = default)
+    private async Task ExecuteJobAsync(IBackgroundTask task, CancellationToken cancellationToken = default)
     {
         try
         {
-            await job.RunAsync(cancellationToken);
+            await task.RunAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while executing job `{JobType}`", job.GetType().FullName);
+            logger.LogError(ex, "An error occurred while executing job `{JobType}`", task.GetType().FullName);
         }
     }
 
@@ -25,7 +25,7 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
     {
         logger.LogInformation("Background job host started");
         await using var scope = provider.CreateAsyncScope();
-        var jobs = scope.ServiceProvider.GetServices<IBackgroundJob>();
+        var jobs = scope.ServiceProvider.GetServices<IBackgroundTask>();
         await Task.WhenAll(jobs.Select(j => ExecuteJobAsync(j, stoppingToken)));
         logger.LogInformation("Background job host finished");
     }

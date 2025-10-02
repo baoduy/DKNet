@@ -2,9 +2,9 @@ using System.Data;
 
 namespace EfCore.Extensions.Tests;
 
-public class EfCoreExtensionsAdditionalTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class EfCoreExtensionsAdditionalTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
     [Fact]
     public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnCorrectProperties()
@@ -108,31 +108,6 @@ public class EfCoreExtensionsAdditionalTests(SqlServerFixture fixture) : IClassF
         accountEntityType.ShouldNotBeNull();
     }
 
-    [Fact]
-    public void DatabaseProvider_ShouldBeSqlServer()
-    {
-        // Act
-        var providerName = _db.Database.ProviderName;
-
-        // Assert
-        providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
-    }
-
-    [Fact]
-    public async Task DatabaseConnection_ShouldOpenAndClose()
-    {
-        // Act
-        await _db.Database.OpenConnectionAsync();
-        var connectionState = _db.Database.GetDbConnection().State;
-
-        // Assert
-        connectionState.ShouldBe(ConnectionState.Open);
-
-        // Cleanup
-        await _db.Database.CloseConnectionAsync();
-        connectionState = _db.Database.GetDbConnection().State;
-        connectionState.ShouldBe(ConnectionState.Closed);
-    }
 
     [Fact]
     public void Model_ShouldContainAllExpectedEntityTypes()

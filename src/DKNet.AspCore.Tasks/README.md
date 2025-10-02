@@ -1,6 +1,6 @@
-# DKNet.AspNetCore.BackgroundJobs
+# DKNet.AspCore.Tasks
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.AspNetCore.BackgroundJobs.svg)](https://www.nuget.org/packages/DKNet.AspNetCore.BackgroundJobs/)
+[![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Tasks.svg)](https://www.nuget.org/packages/DKNet.AspCore.Tasks/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A lightweight, easy-to-use library for managing background jobs that need to run when your ASP.NET Core application starts.
@@ -16,7 +16,7 @@ A lightweight, easy-to-use library for managing background jobs that need to run
 ## Installation
 
 ```bash
-dotnet add package DKNet.AspNetCore.BackgroundJobs
+dotnet add package DKNet.AspCore.Tasks
 ```
 
 ## Quick Start

@@ -12,7 +12,7 @@ public class TestGlobalQueryFilterRegister : IGlobalQueryFilterRegister
     }
 }
 
-public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class EfCoreSetupTests
 {
     [Fact]
     public void AddGlobalModelBuilderRegister_ShouldAddToGlobalQueryFilters()
@@ -34,7 +34,7 @@ public class EfCoreSetupTests(SqlServerFixture fixture) : IClassFixture<SqlServe
     {
         // Arrange
         var builder = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(fixture.GetConnectionString("TestDb"));
+            .UseInMemoryDatabase("TestDb2");
 
         // Act
         var result = builder.UseAutoConfigModel();

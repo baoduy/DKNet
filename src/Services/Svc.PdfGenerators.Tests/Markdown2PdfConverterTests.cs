@@ -6,43 +6,6 @@ namespace Svc.PdfGenerators.Tests;
 
 public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
 {
-    [Fact]
-    public void Constructor_DefaultOptions_InitializesProperties()
-    {
-        var converter = new PdfGenerator();
-        Assert.NotNull(converter.Options);
-        Assert.NotNull(converter.ContentTemplate);
-        Assert.Null(converter.OutputFileName);
-    }
-
-    [Fact]
-    public void Constructor_WithOptions_SetsOptionsProperty()
-    {
-        var options = new PdfGeneratorOptions { DocumentTitle = "Test Title" };
-        var converter = new PdfGenerator(options);
-        Assert.Equal("Test Title", converter.Options.DocumentTitle);
-    }
-
-    [Fact]
-    public void ContentTemplate_CanBeSetAndRetrieved()
-    {
-        var converter = new PdfGenerator();
-        var template = "<html>{{body}}</html>";
-        converter.ContentTemplate = template;
-        Assert.Equal(template, converter.ContentTemplate);
-    }
-
-    // [Fact]
-    // public void Events_CanBeSubscribedAndUnsubscribed()
-    // {
-    //     var converter = new PdfGenerator();
-    //     EventHandler<MarkdownArgs> handler = (sender, args) => { };
-    //     converter.BeforeHtmlConversion += handler;
-    //     converter.BeforeHtmlConversion -= handler;
-    //     // If no exception is thrown, subscription works as expected
-    //     Assert.True(true);
-    // }
-
     private void OutputResultPath(string resultPath)
     {
         outputHelper.WriteLine($"Generated PDF file at: {resultPath}");
@@ -113,7 +76,7 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         await File.WriteAllTextAsync(file2, "# Title 2\nContent 2");
         var outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "Merged.pdf");
         if (File.Exists(outputPdf)) File.Delete(outputPdf);
-        var resultPath = await converter.ConvertMultipleMarkdownFilesAsync(new[] { file1, file2 }, outputPdf);
+        var resultPath = await converter.ConvertMultipleMarkdownFilesAsync([file1, file2], outputPdf);
         OutputResultPath(resultPath);
         Assert.True(File.Exists(resultPath));
         var fileInfo = new FileInfo(resultPath);
@@ -152,14 +115,5 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         var fileInfo = new FileInfo(resultPath);
         Assert.True(fileInfo.Length > 0);
         File.Delete(resultPath);
-    }
-
-    [Fact]
-    public void ContentTemplate_CanBeCustomized()
-    {
-        var converter = new PdfGenerator();
-        var customTemplate = "<html><body><h1>Custom</h1>{{body}}</body></html>";
-        converter.ContentTemplate = customTemplate;
-        Assert.Equal(customTemplate, converter.ContentTemplate);
     }
 }

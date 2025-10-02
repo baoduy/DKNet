@@ -1,7 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Sdk Name="Aspire.AppHost.Sdk" Version="9.1.0"/>
-
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <LangVersion>default</LangVersion>
@@ -14,9 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost"/>
-        <PackageReference Include="Aspire.Hosting.PostgreSQL"/>
-        <PackageReference Include="Aspire.Hosting.Testing"/>
         <PackageReference Include="Mapster"/>
         <PackageReference Include="Mapster.EFCore"/>
         <PackageReference Include="coverlet.collector">
@@ -27,6 +22,7 @@
         <PackageReference Include="Moq"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Shouldly"/>
+        <PackageReference Include="Testcontainers.PostgreSql"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <PrivateAssets>all</PrivateAssets>
@@ -38,7 +34,7 @@
         <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
-        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

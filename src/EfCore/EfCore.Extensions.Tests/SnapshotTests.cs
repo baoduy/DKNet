@@ -2,9 +2,9 @@ using DKNet.EfCore.Extensions.Snapshots;
 
 namespace EfCore.Extensions.Tests;
 
-public class SnapshotTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
 
     [Fact]

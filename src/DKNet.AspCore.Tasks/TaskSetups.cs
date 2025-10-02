@@ -1,11 +1,11 @@
 ﻿using System.Reflection;
-using DKNet.AspNetCore.BackgroundJobs;
-using DKNet.AspNetCore.BackgroundJobs.Internals;
+using DKNet.AspCore.Tasks;
+using DKNet.AspCore.Tasks.Internals;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class BackgroundJobSetups
+public static class TaskSetups
 {
     private static bool _added;
 
@@ -18,14 +18,14 @@ public static class BackgroundJobSetups
     }
 
     public static IServiceCollection AddBackgroundJob<TJob>(this IServiceCollection services)
-        where TJob : class, IBackgroundJob
-        => services.AddHost().AddScoped<IBackgroundJob, TJob>();
+        where TJob : class, IBackgroundTask
+        => services.AddHost().AddScoped<IBackgroundTask, TJob>();
 
     public static IServiceCollection AddBackgroundJobFrom(this IServiceCollection services, Assembly[] assemblies)
     {
         services.AddHost().Scan(s =>
             s.FromAssemblies(assemblies)
-                .AddClasses(c => c.AssignableTo<IBackgroundJob>(), false)
+                .AddClasses(c => c.AssignableTo<IBackgroundTask>(), false)
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
         return services;

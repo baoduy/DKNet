@@ -1,13 +1,15 @@
-using SlimBus.App.Tests.Fixtures;
+using System.Net.Http.Json;
+using Shouldly;
 using SlimBus.AppServices.Profiles.V1.Actions;
 using SlimBus.AppServices.Profiles.V1.Events;
 using SlimBus.AppServices.Profiles.V1.Queries;
 using SlimBus.Infra.Features.Profiles.ExternalEvents;
+using SlimBus.InterTests.Extensions;
+using SlimBus.InterTests.Fixtures;
 
-namespace SlimBus.App.Tests.Integration;
+namespace SlimBus.InterTests.Integration;
 
-[Collection(nameof(ShareInfraCollectionFixture))]
-public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
+public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
 {
     [Theory]
     [InlineData("v1")]
@@ -18,7 +20,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
         ProfileCreatedEventFromMemoryHandler.Called = false;
         ProfileCreatedEmailNotificationHandler.Called = false;
 
-        var client = api.CreateClient();
+        using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         var rp = await client.PostAsJsonAsync($"/{v}/Profiles", new CreateProfileCommand
@@ -43,7 +45,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
     [Fact]
     public async Task CreateDuplicateProfile()
     {
-        var client = api.CreateClient();
+        using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         //Create Profile
@@ -71,7 +73,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
     [Fact]
     public async Task UpdateProfile()
     {
-        var client = api.CreateClient();
+        using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
         //Create Profile
         var created = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
@@ -102,7 +104,7 @@ public class ProfileTests(ApiFixture api) : IClassFixture<ApiFixture>
     [Fact]
     public async Task DeleteProfile()
     {
-        var client = api.CreateClient();
+        using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         //Create Profile

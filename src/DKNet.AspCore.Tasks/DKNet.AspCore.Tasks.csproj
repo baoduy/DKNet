@@ -14,6 +14,6 @@
         <PackageReference Include="Scrutor"/>
     </ItemGroup>
     <ItemGroup>
-        <InternalsVisibleTo Include="DKNet.AspNetCore.BackgroundJobs.Tests"/>
+        <InternalsVisibleTo Include="DKNet.AspCore.Tasks.Tests"/>
     </ItemGroup>
 </Project>

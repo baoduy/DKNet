@@ -2,14 +2,16 @@ namespace EfCore.Extensions.Tests.Fixtures;
 
 public class SqlServerFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sql = null!;
-    public MyDbContext Db { get; private set; } = null!;
+    private readonly MsSqlContainer _sql = new MsSqlBuilder()
+        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        .Build();
+
+    public MyDbContext? Db { get; private set; }
 
     public async Task InitializeAsync()
     {
-        _sql = new MsSqlBuilder().WithPassword("a1ckZmGjwV8VqNdBUexV").Build();
-        await _sql.StartAsync(CancellationToken.None);
-        await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
+        await _sql.StartAsync();
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var options = new DbContextOptionsBuilder()
             .LogTo(Console.WriteLine, (eventId, logLevel) => logLevel >= LogLevel.Information
@@ -28,7 +30,8 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await Db.DisposeAsync();
+        if (Db != null)
+            await Db.DisposeAsync();
         await _sql.StopAsync();
         await _sql.DisposeAsync();
     }

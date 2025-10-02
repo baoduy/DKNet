@@ -132,11 +132,17 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     }
 
 
-    public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
-        throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
+    public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+    {
+        logger.LogInformation("Hook only supports Async version of SaveChanges.");
+        return result;
+    }
 
-    public int SavedChanges(SaveChangesCompletedEventData eventData, int result) =>
-        throw new NotSupportedException($"Please use {nameof(SavingChangesAsync)} version");
+    public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
+    {
+        logger.LogInformation("Hook only supports Async version of SaveChanges.");
+        return result;
+    }
 
     public void SaveChangesFailed(DbContextErrorEventData eventData)
     {
