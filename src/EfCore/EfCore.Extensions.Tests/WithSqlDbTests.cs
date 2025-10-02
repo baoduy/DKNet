@@ -1,10 +1,12 @@
-﻿namespace EfCore.Extensions.Tests;
+﻿using System.Data;
+
+namespace EfCore.Extensions.Tests;
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
 
 public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
 
     [Fact]
@@ -122,5 +124,39 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
 
         // Assert
         await act.ShouldThrowAsync<DbUpdateConcurrencyException>();
+    }
+
+    [Fact]
+    public async Task DatabaseConnection_ShouldOpenAndClose()
+    {
+        // Act
+        await _db.Database.OpenConnectionAsync();
+        var connectionState = _db.Database.GetDbConnection().State;
+
+        // Assert
+        connectionState.ShouldBe(ConnectionState.Open);
+
+        // Cleanup
+        await _db.Database.CloseConnectionAsync();
+        connectionState = _db.Database.GetDbConnection().State;
+        connectionState.ShouldBe(ConnectionState.Closed);
+    }
+
+    [Fact]
+    public void DatabaseProvider_ShouldBeSqlServer()
+    {
+        // Act
+        var providerName = _db.Database.ProviderName;
+
+        // Assert
+        providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
+    }
+
+    [Fact]
+    public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
+    {
+        // This test verifies the format processing logic
+        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
+        result.ShouldNotBeNullOrEmpty();
     }
 }

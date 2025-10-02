@@ -1,8 +1,8 @@
 ﻿namespace EfCore.Extensions.Tests;
 
-public class GuidEntityTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
 
     [Fact]

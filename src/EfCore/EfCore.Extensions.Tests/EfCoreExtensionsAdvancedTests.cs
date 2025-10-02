@@ -2,9 +2,9 @@ using EfCore.Extensions.Tests.TestEntities.Mappers;
 
 namespace EfCore.Extensions.Tests;
 
-public class EfCoreExtensionsAdvancedTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
-    private readonly MyDbContext _db = fixture.Db;
+    private readonly MyDbContext _db = fixture.Db!;
 
 
     [Fact]
@@ -80,13 +80,7 @@ public class EfCoreExtensionsAdvancedTests(SqlServerFixture fixture) : IClassFix
         result.ShouldBeNull();
     }
 
-    [Fact]
-    public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
-    {
-        // This test verifies the format processing logic
-        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
-        result.ShouldNotBeNullOrEmpty();
-    }
+
 
     [Fact]
     public void GetEntityType_WithValidMappingType_ShouldReturnEntityType()

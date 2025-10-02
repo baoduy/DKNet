@@ -19,14 +19,14 @@ public class UserSeedingConfiguration : DataSeedingConfiguration<User>
     ];
 }
 
-public class DataSeedingTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class DataSeedingTests
 {
     [Fact]
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()
     {
         // Arrange
         var options = new DbContextOptionsBuilder<MyDbContext>()
-            .UseSqlServer(fixture.GetConnectionString("SeedingDb"))
+            .UseInMemoryDatabase("TestDb_Seeding")
             .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
             .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
             .Options;
