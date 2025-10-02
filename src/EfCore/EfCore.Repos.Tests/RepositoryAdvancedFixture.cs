@@ -2,28 +2,14 @@ using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
 using Mapster;
 using MapsterMapper;
+using Testcontainers.PostgreSql;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedFixture : IAsyncLifetime
 {
-    private readonly DistributedApplication _app;
-    private readonly IResourceBuilder<PostgresServerResource> _db;
-    private string? _dbConn;
-
-    public RepositoryAdvancedFixture()
-    {
-        var options = new DistributedApplicationOptions
-        {
-            AssemblyName = typeof(RepositoryAdvancedFixture).Assembly.FullName,
-            DisableDashboard = true,
-            AllowUnsecuredTransport = true
-        };
-        var builder = DistributedApplication.CreateBuilder(options);
-
-        _db = builder.AddPostgres("sqlServer");
-        _app = builder.Build();
-    }
+    private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder()
+        .Build();
 
     public TestDbContext DbContext { get; set; } = null!;
     public IRepository<User> RepositoryWithMapper { get; set; } = null!;
@@ -33,16 +19,12 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _app.StartAsync();
-        await _app.WaitForResourcesAsync([KnownResourceStates.Running]);
-
-        _dbConn = await _db.Resource.ConnectionStringExpression.GetValueAsync(CancellationToken.None);
+        await _sqlContainer.StartAsync();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseNpgsql(_dbConn);
+            .UseNpgsql(_sqlContainer.GetConnectionString());
 
         DbContext = new TestDbContext(optionsBuilder.Options);
-        DbContext.Database.SetConnectionString(_dbConn);
 
         // Configure Mapster
         var config = new TypeAdapterConfig();
@@ -66,7 +48,7 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await DbContext.DisposeAsync();
-        await _app.StopAsync();
-        await _app.DisposeAsync();
+        await _sqlContainer.StopAsync();
+        await _sqlContainer.DisposeAsync();
     }
 }

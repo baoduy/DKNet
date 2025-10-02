@@ -9,7 +9,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     [Fact]
     public async Task AddAsyncAddsEntityToDatabase()
     {
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
         // Arrange
         var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
@@ -40,7 +40,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await fixture.Repository.SaveChangesAsync();
 
         // Assert
-        var result = await fixture.DbContext.Set<User>()
+        var result = await fixture.DbContext!.Set<User>()
             .Where(e => e.Id == entity.Id)
             .Include(user => user.Addresses)
             .FirstAsync();
@@ -58,7 +58,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         // Act
         await fixture.Repository.AddAsync(entity);
         await fixture.Repository.SaveChangesAsync();
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
 
         // Assert
         var user = await fixture.DbContext.Set<User>()
@@ -107,7 +107,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     [Fact]
     public async Task UpdateAndSaveAsyncUpdatesEntityInDatabase()
     {
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
         // Arrange
         var entity = new User("steven3") { FirstName = "Original", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -137,7 +137,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     [Fact]
     public async Task ConcurrencyGuidWithRepositoryTest()
     {
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
         var repo1 = new Repository<UserGuid>(fixture.DbContext);
 
         // 1. Create a new UserGuid entity
@@ -155,7 +155,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
 
         // 2. Simulate two users/contexts
         fixture.DbContext.ChangeTracker.Clear();
-        await using var db2 = await fixture.CreateNewDbContext();
+        await using var db2 = fixture.CreateNewDbContext();
         var repo2 = new Repository<UserGuid>(db2);
 
         var userFromRepo1 = await repo1.Gets().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
@@ -182,7 +182,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("findtest1") { FirstName = "FindMe", LastName = "Test" };
-        fixture.DbContext.Add(entity);
+        fixture.DbContext!.Add(entity);
         await fixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -209,7 +209,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("findtest2") { FirstName = "FindById", LastName = "Test" };
-        fixture.DbContext.Add(entity);
+        fixture.DbContext!.Add(entity);
         await fixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -257,7 +257,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await fixture.Repository.SaveChangesAsync();
 
         // Assert
-        var results = await fixture.DbContext.Set<User>()
+        var results = await fixture.DbContext!.Set<User>()
             .Where(u => u.CreatedBy.StartsWith("bulk"))
             .ToListAsync();
         Assert.Equal(3, results.Count);
@@ -279,7 +279,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
 
         // Assert
         Assert.Equal(2, affectedRows);
-        var results = await fixture.DbContext.Set<User>()
+        var results = await fixture.DbContext!.Set<User>()
             .Where(u => u.CreatedBy.StartsWith("bulkins"))
             .ToListAsync();
         Assert.Equal(2, results.Count);
@@ -289,7 +289,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     [Fact]
     public void DeleteRemovesEntityFromContext()
     {
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
         // Arrange
         var entity = new User("deltest") { FirstName = "ToDelete", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -312,7 +312,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
             new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
             new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
         };
-        fixture.DbContext.AddRange(entities);
+        fixture.DbContext!.AddRange(entities);
         fixture.DbContext.SaveChanges();
 
         // Act
@@ -331,7 +331,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("updtest") { FirstName = "Original", LastName = "Test" };
-        fixture.DbContext.Add(entity);
+        fixture.DbContext!.Add(entity);
         await fixture.DbContext.SaveChangesAsync();
 
         // Detach the entity to simulate it coming from another context
@@ -349,7 +349,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     [Fact]
     public async Task UpdateRangeMarksMultipleEntitiesAsModified()
     {
-        fixture.DbContext.ChangeTracker.Clear();
+        fixture.DbContext!.ChangeTracker.Clear();
         // Arrange
         var entities = new[]
         {
@@ -382,7 +382,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("detachtest") { FirstName = "DetachTest", LastName = "Test" };
-        fixture.DbContext.Add(entity);
+        fixture.DbContext!.Add(entity);
         await fixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -397,7 +397,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("detachtest2") { FirstName = "DetachTest2", LastName = "Test" };
-        fixture.DbContext.Add(entity);
+        fixture.DbContext!.Add(entity);
         await fixture.DbContext.SaveChangesAsync();
 
         // Act
