@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using DKNet.Svc.Transformation.Exceptions;
 
 namespace DKNet.Svc.Transformation.TokenExtractors;

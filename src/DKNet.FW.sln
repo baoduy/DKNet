@@ -140,6 +140,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		..\.github\workflows\build-test-coverage.yml = ..\.github\workflows\build-test-coverage.yml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Encryption", "Services\DKNet.Svc.Encryption\DKNet.Svc.Encryption.csproj", "{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Encryption.Tests", "Services\DKNet.Svc.Encryption.Tests\DKNet.Svc.Encryption.Tests.csproj", "{887B20CD-EDD9-473C-A7E0-6B0684D250A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -322,6 +326,14 @@ Global
 		{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{887B20CD-EDD9-473C-A7E0-6B0684D250A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{887B20CD-EDD9-473C-A7E0-6B0684D250A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{887B20CD-EDD9-473C-A7E0-6B0684D250A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{887B20CD-EDD9-473C-A7E0-6B0684D250A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -375,5 +387,7 @@ Global
 		{23AD2768-B495-42C8-B915-A2D36FF1D508} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{ADFF9E82-0CFC-4FED-8B8A-BB849CDF9AF8} = {212CE5D7-6FAF-466C-86A6-AA4810ED4F39}
 		{4B2C950F-B328-4CB6-B12C-C5AB97705681} = {9F7203BB-C314-4216-8C48-BC98BFEE7F89}
+		{8B363ED1-AA92-48ED-933A-DB8A9B1122C1} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
+		{887B20CD-EDD9-473C-A7E0-6B0684D250A7} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 	EndGlobalSection
 EndGlobal

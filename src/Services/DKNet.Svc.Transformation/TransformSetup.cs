@@ -1,5 +1,4 @@
 ﻿using DKNet.Svc.Transformation;
-using Microsoft.Extensions.Options;
 
 // ReSharper disable CheckNamespace
 // ReSharper disable UnusedMember.Global

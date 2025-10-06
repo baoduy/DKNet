@@ -29,7 +29,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Wilson" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "John");
 
@@ -50,7 +50,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "John", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.EnableIgnoreQueryFilters();
 
@@ -70,7 +70,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestOrderBy(u => u.LastName);
 
@@ -95,7 +95,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestOrderByDescending(u => u.LastName);
 
@@ -120,7 +120,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestOrderBy(u => u.LastName);
         spec.AddTestOrderBy(u => u.FirstName); // ThenBy
@@ -149,7 +149,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestOrderByDescending(u => u.LastName);
         spec.AddTestOrderByDescending(u => u.FirstName); // ThenByDescending
@@ -178,7 +178,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestOrderBy(u => u.LastName); // OrderBy LastName
         spec.AddTestOrderByDescending(u => u.FirstName); // ThenByDescending FirstName
@@ -206,7 +206,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Jane", LastName = "Smith" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification(); // Empty spec
 
         // Act
@@ -344,10 +344,7 @@ public class SpecificationExtensionsTests
     {
         // Arrange
         var users = new List<User>();
-        for (int i = 1; i <= 10; i++)
-        {
-            users.Add(new User("test") { FirstName = $"User{i}", LastName = "Test" });
-        }
+        for (var i = 1; i <= 10; i++) users.Add(new User("test") { FirstName = $"User{i}", LastName = "Test" });
 
         var mockRepo = new Mock<IReadRepository<User>>();
         mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
@@ -370,7 +367,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Bob", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         // Start with OrderByDescending (no OrderBy first)
         spec.AddTestOrderByDescending(u => u.LastName);
@@ -394,7 +391,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "John", LastName = "Doe" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestInclude(u => u.Addresses);
         spec.AddTestInclude(u => u.FirstName); // Multiple includes
@@ -416,7 +413,7 @@ public class SpecificationExtensionsTests
             new("test") { FirstName = "Alice", LastName = "Johnson" }
         };
         var queryable = users.AsQueryable();
-        
+
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName.Length > 3); // Filter: name length > 3
         spec.AddTestOrderBy(u => u.LastName); // Order by last name
@@ -427,7 +424,7 @@ public class SpecificationExtensionsTests
         // Assert
         result.Count.ShouldBe(3); // John, Jane, Alice (Bob has length 3)
         result[0].LastName.ShouldBe("Johnson"); // Alice
-        result[1].LastName.ShouldBe("Smith");   // Jane
-        result[2].LastName.ShouldBe("Wilson");  // John
+        result[1].LastName.ShouldBe("Smith"); // Jane
+        result[2].LastName.ShouldBe("Wilson"); // John
     }
 }

@@ -1,5 +1,3 @@
-using System.Threading.RateLimiting;
-
 namespace SlimBus.Api.Configs.RateLimits;
 
 /// <summary>

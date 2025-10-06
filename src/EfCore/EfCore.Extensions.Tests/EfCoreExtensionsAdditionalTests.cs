@@ -1,5 +1,3 @@
-using System.Data;
-
 namespace EfCore.Extensions.Tests;
 
 public class EfCoreExtensionsAdditionalTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
