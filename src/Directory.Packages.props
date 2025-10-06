@@ -105,7 +105,7 @@
         <PackageVersion Include="SlimMessageBus" Version="3.0.0"/>
         <PackageVersion Include="SlimMessageBus.Host" Version="3.3.3"/>
         <PackageVersion Include="SlimMessageBus.Host.AzureServiceBus" Version="3.3.3"/>
-        <PackageVersion Include="SlimMessageBus.Host.FluentValidation" Version="3.3.3"/>
+        <PackageVersion Include="SlimMessageBus.Host.FluentValidation" Version="3.3.4"/>
         <PackageVersion Include="SlimMessageBus.Host.Interceptor" Version="3.0.0"/>
         <PackageVersion Include="SlimMessageBus.Host.Memory" Version="3.3.3"/>
         <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.3.3"/>
