@@ -7,46 +7,89 @@ namespace DKNet.Svc.Encryption.Tests;
 public class AdditionalEncryptionServicesTests
 {
     [Fact]
-    public void ShaHashing_Computes_And_Verifies()
+    public void Sha265Hashing_Computes_And_Verifies()
     {
         using IShaHashing hash = new ShaHashing();
         var text = "sample";
-        var h1 = hash.ComputeHash(text, HashAlgorithmKind.Sha256);
+        var h1 = hash.ComputeSha256(text);
         h1.ShouldNotBeNullOrWhiteSpace();
-        hash.VerifyHash(text, h1).ShouldBeTrue();
-        hash.VerifyHash(text + "x", h1).ShouldBeFalse();
+        hash.VerifySha256(text, h1).ShouldBeTrue();
+        hash.VerifySha256(text + "x", h1).ShouldBeFalse();
     }
 
     [Fact]
-    public void ShaHashing_Dispose_Blocks_Further_Use()
+    public void Sha512Hashing_Computes_And_Verifies()
+    {
+        using IShaHashing hash = new ShaHashing();
+        var text = "sample";
+        var h1 = hash.ComputeSha512(text);
+        h1.ShouldNotBeNullOrWhiteSpace();
+        hash.VerifySha512(text, h1).ShouldBeTrue();
+        hash.VerifySha512(text + "x", h1).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Sha256Hashing_Dispose_Blocks_Further_Use()
     {
         var hash = new ShaHashing();
-        var sig = hash.ComputeHash("a");
+        var sig = hash.ComputeSha256("a");
         sig.ShouldNotBeNullOrWhiteSpace();
         hash.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hash.ComputeHash("b"));
-        Should.Throw<ObjectDisposedException>(() => hash.VerifyHash("b", sig));
+        Should.Throw<ObjectDisposedException>(() => hash.ComputeSha256("b"));
+        Should.Throw<ObjectDisposedException>(() => hash.VerifySha512("b", sig));
     }
 
     [Fact]
-    public void HmacHashing_Computes_And_Verifies()
+    public void Sha512Hashing_Dispose_Blocks_Further_Use()
+    {
+        var hash = new ShaHashing();
+        var sig = hash.ComputeSha512("a");
+        sig.ShouldNotBeNullOrWhiteSpace();
+        hash.Dispose();
+        Should.Throw<ObjectDisposedException>(() => hash.ComputeSha512("b"));
+        Should.Throw<ObjectDisposedException>(() => hash.VerifySha512("b", sig));
+    }
+
+    [Fact]
+    public void Hmac256Hashing_Computes_And_Verifies()
     {
         using IHmacHashing hmac = new HmacHashing();
-        var sig = hmac.Compute("message", "secret");
+        var sig = hmac.ComputeSha256("message", "secret");
         sig.ShouldNotBeNullOrWhiteSpace();
-        hmac.Verify("message", "secret", sig).ShouldBeTrue();
-        hmac.Verify("message2", "secret", sig).ShouldBeFalse();
+        hmac.VerifySha256("message", "secret", sig).ShouldBeTrue();
+        hmac.VerifySha256("message2", "secret", sig).ShouldBeFalse();
     }
 
     [Fact]
-    public void HmacHashing_Dispose_Blocks_Further_Use()
+    public void Hmac512Hashing_Computes_And_Verifies()
+    {
+        using IHmacHashing hmac = new HmacHashing();
+        var sig = hmac.ComputeSha512("message", "secret");
+        sig.ShouldNotBeNullOrWhiteSpace();
+        hmac.VerifySha512("message", "secret", sig).ShouldBeTrue();
+        hmac.VerifySha512("message2", "secret", sig).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Hmac256Hashing_Dispose_Blocks_Further_Use()
     {
         var hmac = new HmacHashing();
-        var sig = hmac.Compute("m", "k");
+        var sig = hmac.ComputeSha256("m", "k");
         sig.ShouldNotBeNullOrWhiteSpace();
         hmac.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hmac.Compute("m2", "k"));
-        Should.Throw<ObjectDisposedException>(() => hmac.Verify("m", "k", sig));
+        Should.Throw<ObjectDisposedException>(() => hmac.ComputeSha256("m2", "k"));
+        Should.Throw<ObjectDisposedException>(() => hmac.VerifySha256("m", "k", sig));
+    }
+
+    [Fact]
+    public void Hmac512Hashing_Dispose_Blocks_Further_Use()
+    {
+        var hmac = new HmacHashing();
+        var sig = hmac.ComputeSha512("m", "k");
+        sig.ShouldNotBeNullOrWhiteSpace();
+        hmac.Dispose();
+        Should.Throw<ObjectDisposedException>(() => hmac.ComputeSha512("m2", "k"));
+        Should.Throw<ObjectDisposedException>(() => hmac.VerifySha512("m", "k", sig));
     }
 
     [Fact]

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace DKNet.Svc.Encryption;
 
-public enum HmacAlgorithm
+internal enum HmacAlgorithm
 {
     Sha256,
     Sha512
@@ -11,11 +11,15 @@ public enum HmacAlgorithm
 
 public interface IHmacHashing : IDisposable // now disposable for cached instances
 {
-    string Compute(string message, string secretKey, HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
-        bool asBase64 = true);
+    string ComputeSha256(string message, string secretKey, bool asBase64 = true);
 
-    bool Verify(string message, string secretKey, string expectedSignature,
-        HmacAlgorithm algorithm = HmacAlgorithm.Sha256, bool signatureIsBase64 = true, bool ignoreCase = true);
+    bool VerifySha256(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true,
+        bool ignoreCase = true);
+
+    string ComputeSha512(string message, string secretKey, bool asBase64 = true);
+
+    bool VerifySha512(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true,
+        bool ignoreCase = true);
 }
 
 public sealed class HmacHashing : IHmacHashing
@@ -24,7 +28,7 @@ public sealed class HmacHashing : IHmacHashing
     private readonly Lock _sync = new();
     private bool _disposed;
 
-    public string Compute(string message, string secretKey, HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
+    private string Compute(string message, string secretKey, HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
         bool asBase64 = true)
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
@@ -41,7 +45,7 @@ public sealed class HmacHashing : IHmacHashing
         return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
     }
 
-    public bool Verify(string message, string secretKey, string expectedSignature,
+    private bool Verify(string message, string secretKey, string expectedSignature,
         HmacAlgorithm algorithm = HmacAlgorithm.Sha256, bool signatureIsBase64 = true, bool ignoreCase = true)
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
@@ -83,4 +87,18 @@ public sealed class HmacHashing : IHmacHashing
             _disposed = true;
         }
     }
+
+    public string ComputeSha256(string message, string secretKey, bool asBase64 = true)
+        => Compute(message, secretKey, HmacAlgorithm.Sha256, asBase64);
+
+    public bool VerifySha256(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true,
+        bool ignoreCase = true)
+        => Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha256, signatureIsBase64, ignoreCase);
+
+    public string ComputeSha512(string message, string secretKey, bool asBase64 = true)
+        => Compute(message, secretKey, HmacAlgorithm.Sha512, asBase64);
+
+    public bool VerifySha512(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true,
+        bool ignoreCase = true)
+        => Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha512, signatureIsBase64, ignoreCase);
 }

@@ -38,33 +38,62 @@ public class EdgeCaseTests
 
     // ShaHashing edges
     [Fact]
-    public void ShaHashing_UpperCaseAndVerifyCaseSensitive()
+    public void Sha256Hashing_UpperCaseAndVerifyCaseSensitive()
     {
         using var hg = new ShaHashing();
-        var hashUpper = hg.ComputeHash("abc", HashAlgorithmKind.Sha512, true);
+        var hashUpper = hg.ComputeSha256("abc", true);
         hashUpper.ShouldBe(hashUpper.ToUpperInvariant());
-        hg.VerifyHash("abc", hashUpper, HashAlgorithmKind.Sha512, false).ShouldBeTrue();
-        hg.VerifyHash("Abc", hashUpper, HashAlgorithmKind.Sha512, false).ShouldBeFalse();
+        hg.VerifySha256("abc", hashUpper, false).ShouldBeTrue();
+        hg.VerifySha256("Abc", hashUpper, false).ShouldBeFalse();
     }
 
     [Fact]
-    public void ShaHashing_Verify_Throws_On_EmptyExpected()
+    public void Sha512Hashing_UpperCaseAndVerifyCaseSensitive()
     {
         using var hg = new ShaHashing();
-        Should.Throw<ArgumentException>(() => hg.VerifyHash("abc", " "));
+        var hashUpper = hg.ComputeSha512("abc", true);
+        hashUpper.ShouldBe(hashUpper.ToUpperInvariant());
+        hg.VerifySha512("abc", hashUpper, false).ShouldBeTrue();
+        hg.VerifySha512("Abc", hashUpper, false).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Sha256Hashing_Verify_Throws_On_EmptyExpected()
+    {
+        using var hg = new ShaHashing();
+        Should.Throw<ArgumentException>(() => hg.VerifySha256("abc", " "));
+    }
+
+    [Fact]
+    public void Sha512Hashing_Verify_Throws_On_EmptyExpected()
+    {
+        using var hg = new ShaHashing();
+        Should.Throw<ArgumentException>(() => hg.VerifySha512("abc", " "));
     }
 
     // HmacHashing edges
     [Fact]
-    public void HmacHashing_Hex_Output_And_CaseSensitivity()
+    public void Hmac256Hashing_Hex_Output_And_CaseSensitivity()
     {
         using IHmacHashing hmac = new HmacHashing();
-        var hex = hmac.Compute("msg", "secret", HmacAlgorithm.Sha512, false);
+        var hex = hmac.ComputeSha256("msg", "secret", false);
         hex.ShouldMatch("^[0-9A-F]+$");
-        hmac.Verify("msg", "secret", hex, HmacAlgorithm.Sha512, false, true).ShouldBeTrue();
+        hmac.VerifySha256("msg", "secret", hex, false, true).ShouldBeTrue();
         // Change one char
         var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
-        hmac.Verify("msg", "secret", mutated, HmacAlgorithm.Sha512, false, false).ShouldBeFalse();
+        hmac.VerifySha256("msg", "secret", mutated, false, false).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Hmac512Hashing_Hex_Output_And_CaseSensitivity()
+    {
+        using IHmacHashing hmac = new HmacHashing();
+        var hex = hmac.ComputeSha512("msg", "secret", false);
+        hex.ShouldMatch("^[0-9A-F]+$");
+        hmac.VerifySha512("msg", "secret", hex, false, true).ShouldBeTrue();
+        // Change one char
+        var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
+        hmac.VerifySha512("msg", "secret", mutated, false, false).ShouldBeFalse();
     }
 
     // PasswordAesEncryption edges
