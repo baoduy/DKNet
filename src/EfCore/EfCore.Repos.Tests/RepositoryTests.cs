@@ -148,6 +148,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         };
         user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
         user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
+
         await repo1.AddAsync(user);
         await repo1.SaveChangesAsync();
         var createdVersion = user.RowVersion;
@@ -158,8 +159,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await using var db2 = fixture.CreateNewDbContext();
         var repo2 = new Repository<UserGuid>(db2);
 
-        var userFromRepo1 = await repo1.Gets().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
-        var userFromRepo2 = await repo2.Gets().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+        var userFromRepo1 = await repo1.Gets().AsNoTracking().FirstAsync(u => u.Id == user.Id);
+        var userFromRepo2 = await repo2.Gets().AsNoTracking().FirstAsync(u => u.Id == user.Id);
 
         userFromRepo1.ShouldNotBeNull();
         userFromRepo2.ShouldNotBeNull();

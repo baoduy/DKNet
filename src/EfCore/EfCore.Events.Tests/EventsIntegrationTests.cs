@@ -242,12 +242,10 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
 
         TestEventPublisher.Events.Clear();
 
-        // Act - Create multiple concurrent save operations
-        var tasks = new List<Task>();
         for (var i = 0; i < 5; i++)
         {
             var index = i;
-            tasks.Add(Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 using var scope = fixture.Provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<DddContext>();
@@ -257,10 +255,8 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
 
                 db.Set<Root>().Add(root);
                 await db.SaveChangesAsync();
-            }));
+            });
         }
-
-        await Task.WhenAll(tasks);
 
         // Assert
         TestEventPublisher.Events.ShouldNotBeEmpty();

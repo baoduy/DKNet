@@ -29,7 +29,7 @@ public enum RunningTypes
 internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger)
     : ISaveChangesInterceptor, IDisposable, IAsyncDisposable
 {
-    private readonly ConcurrentQueue<string> _callersQueue = new();
+    //private readonly ConcurrentQueue<string> _callersQueue = new();
     private IEnumerable<IAfterSaveHookAsync> _afterSaveHooks = [];
     private IEnumerable<IBeforeSaveHookAsync> _beforeSaveHooks = [];
     private bool _initialized;
@@ -47,8 +47,8 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     {
         //Init Hook
         EnsureHookInitialized(eventData);
-
         if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
+
         //Run Before Save
         await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken);
         return result;
@@ -61,12 +61,12 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         {
             if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
             //Run After Events and ignore the result even failed.
-            _callersQueue.TryDequeue(out _);
+            //_callersQueue.TryDequeue(out _);
             await RunHooksAsync(RunningTypes.AfterSave, cancellationToken);
         }
         finally
         {
-            if (_callersQueue.IsEmpty && _snapshotContext is not null)
+            if (_snapshotContext is not null)
             {
                 //Dispose the snapshot context if no more callers are left
                 logger.LogDebug("Disposing Snapshot Context");
@@ -74,6 +74,9 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
 
                 await _snapshotContext.DisposeAsync();
                 _snapshotContext = null;
+                _initialized = false;
+                _beforeSaveHooks = [];
+                _afterSaveHooks = [];
             }
         }
 
@@ -91,11 +94,9 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
         if (eventData.Context is null) throw new ArgumentNullException(nameof(eventData));
 
         if (_snapshotContext is null)
-        {
-            _callersQueue.Enqueue(eventData.EventIdCode);
+            //_callersQueue.Enqueue(eventData.EventIdCode);
             //Preparing the hook data and hooks before executing the hook
             _snapshotContext = new SnapshotContext(eventData.Context);
-        }
 
         if (!_initialized)
         {

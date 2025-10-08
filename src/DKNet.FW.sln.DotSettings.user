@@ -262,10 +262,7 @@
   &lt;PhysicalFolder Path="/Users/baoduy2412/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0" Loaded="True" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=50daf7c4_002D4753_002D49ac_002Da36d_002Ddb2cc2168218/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Services&amp;gt;\&amp;lt;DKNet.Svc.Encryption.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/Services/DKNet.Svc.Encryption.Tests" Presentation="&amp;lt;Services&amp;gt;\&amp;lt;DKNet.Svc.Encryption.Tests&amp;gt;" /&gt;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b1ac5abb_002D3ec9_002D450d_002D8f17_002D7d0735894f12/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=16994aa5_002Dc1c2_002D4979_002D9eeb_002D996ba256c165/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Or&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;AspNet&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
@@ -276,16 +273,9 @@
   &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
 	
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=d01a8f17_002Ded8c_002D472f_002D909c_002Db569ef7ec516/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Or&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;AspNet&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;EfCore&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
-    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Templates&amp;gt;" /&gt;
-  &lt;/Or&gt;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
 	
 	
 	

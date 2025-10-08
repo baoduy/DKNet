@@ -41,8 +41,8 @@ public static class SetupEfCoreHook
         services.AddHookRunner<TDbContext>();
 
         return services
-            .AddKeyedScoped<THook>(key)
-            .AddKeyedScoped<IHookBaseAsync>(key, (p, k) => p.GetRequiredKeyedService<THook>(k));
+            .AddKeyedTransient<THook>(key)
+            .AddKeyedTransient<IHookBaseAsync>(key, (p, k) => p.GetRequiredKeyedService<THook>(k));
     }
 
     /// <summary>
@@ -64,8 +64,8 @@ public static class SetupEfCoreHook
         }
 
         return services
-            .AddScoped<HookFactory>()
-            .AddKeyedScoped<HookRunner>(fullName);
+            .AddSingleton<HookFactory>()
+            .AddKeyedSingleton<HookRunner>(fullName);
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public static class SetupEfCoreHook
     public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
         Action<IServiceProvider, DbContextOptionsBuilder> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
-        ServiceLifetime optionLifetime = ServiceLifetime.Scoped) where TDbContext : DbContext
+        ServiceLifetime optionLifetime = ServiceLifetime.Singleton) where TDbContext : DbContext
     {
         services
             .AddHookRunner<TDbContext>()
@@ -105,7 +105,7 @@ public static class SetupEfCoreHook
     public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
         Action<DbContextOptionsBuilder> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
-        ServiceLifetime optionLifetime = ServiceLifetime.Scoped) where TDbContext : DbContext
+        ServiceLifetime optionLifetime = ServiceLifetime.Singleton) where TDbContext : DbContext
     {
         services
             .AddHookRunner<TDbContext>()
