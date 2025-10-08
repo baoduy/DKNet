@@ -8,10 +8,10 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 
 
     [Fact]
-    public void Snapshot_ShouldCreateSnapshotContext()
+    public async Task Snapshot_ShouldCreateSnapshotContext()
     {
         // Act
-        using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(_db);
 
         // Assert
         snapshot.ShouldNotBeNull();
@@ -32,15 +32,15 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     }
 
     [Fact]
-    public void SnapshotEntities_ShouldCaptureChangedEntities()
+    public async Task SnapshotEntities_ShouldCaptureChangedEntities()
     {
         // Arrange
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
 
         // Act
-        using var snapshot = new SnapshotContext(_db);
-        var snapshotEntities = snapshot.SnapshotEntities;
+        await using var snapshot = new SnapshotContext(_db);
+        var snapshotEntities = snapshot.Entities;
 
         // Assert
         snapshotEntities.ShouldNotBeEmpty();
@@ -48,28 +48,28 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     }
 
     [Fact]
-    public void SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
+    public async Task SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
     {
         // Arrange
-        using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(_db);
 
         // Act
-        var firstAccess = snapshot.SnapshotEntities;
-        var secondAccess = snapshot.SnapshotEntities;
+        var firstAccess = snapshot.Entities;
+        var secondAccess = snapshot.Entities;
 
         // Assert
         firstAccess.ShouldBeSameAs(secondAccess);
     }
 
     [Fact]
-    public void SnapshotEntityEntry_ShouldCaptureEntityState()
+    public async Task SnapshotEntityEntry_ShouldCaptureEntityState()
     {
         // Arrange
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
         _db.Set<User>().Add(user);
 
-        using var snapshot = new SnapshotContext(_db);
-        var entry = snapshot.SnapshotEntities[0];
+        await using var snapshot = new SnapshotContext(_db);
+        var entry = snapshot.Entities[0];
 
         // Assert
         entry.Entity.ShouldBeOfType<User>();

@@ -87,15 +87,15 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithNoEventEntities_ShouldReturnEmpty()
+    public async Task GetEventObjects_WithNoEventEntities_ShouldReturnEmpty()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -105,10 +105,10 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithEventEntitiesNoMapper_ShouldReturnEventObjectsWithoutMappedEvents()
+    public async Task GetEventObjects_WithEventEntitiesNoMapper_ShouldReturnEventObjectsWithoutMappedEvents()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
@@ -117,7 +117,7 @@ public class EventExtensionsTests
         root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -137,10 +137,10 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithEventEntitiesAndMapper_ShouldReturnEventObjectsWithMappedEvents()
+    public async Task GetEventObjects_WithEventEntitiesAndMapper_ShouldReturnEventObjectsWithMappedEvents()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
@@ -156,7 +156,7 @@ public class EventExtensionsTests
         root.AddEvent<EntityAddedEvent>(); // Adding event type to be mapped
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(mapper).ToList();
@@ -177,7 +177,7 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithMixedEventsAndEventTypes_ShouldReturnAllEvents()
+    public async Task GetEventObjects_WithMixedEventsAndEventTypes_ShouldReturnAllEvents()
     {
         // Arrange
         using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
@@ -201,7 +201,7 @@ public class EventExtensionsTests
 
         context.Set<Root>().Add(root);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(mapper).ToList();
@@ -218,10 +218,10 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithMultipleEntities_ShouldReturnSeparateEventObjects()
+    public async Task GetEventObjects_WithMultipleEntities_ShouldReturnSeparateEventObjects()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
@@ -234,7 +234,7 @@ public class EventExtensionsTests
 
         context.Set<Root>().AddRange(root1, root2);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -252,10 +252,10 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEventObjects_WithNonEventEntity_ShouldNotIncludeInResults()
+    public async Task GetEventObjects_WithNonEventEntity_ShouldNotIncludeInResults()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
@@ -269,7 +269,7 @@ public class EventExtensionsTests
         var entity = new Entity("Test Entity", root.Id);
         context.Set<Entity>().Add(entity);
 
-        using var snapshot = new SnapshotContext(context);
+        await using var snapshot = new SnapshotContext(context);
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -280,19 +280,19 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public void GetEntityKeyValues_WithEntityWithoutPrimaryKey_ShouldReturnEmptyDictionary()
+    public async Task GetEntityKeyValues_WithEntityWithoutPrimaryKey_ShouldReturnEmptyDictionary()
     {
         // This test is designed to hit the null primaryKey path in GetEntityKeyValues
         // We'll create a mock EntityEntry with no primary key to test this scenario
-        
+
         // Since creating a real scenario with keyless entities is complex in EF Core,
         // we can at least verify the behavior by checking that the method handles the null case
         // The actual test would need a custom EntityEntry mock or a keyless entity setup
-        
+
         // For coverage purposes, we'll test with a valid entity and confirm the happy path
         // The null primary key path would need additional mocking infrastructure to test properly
-        
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
@@ -309,25 +309,25 @@ public class EventExtensionsTests
         keyValues.ShouldNotBeEmpty();
         keyValues.ShouldContainKey("Id");
         keyValues["Id"].ShouldBe(root.Id);
-        
+
         // Note: The null primary key path in GetEntityKeyValues needs a custom test setup
         // that's beyond the scope of this simple test. The coverage gap may require 
         // integration testing or mocking of EntityEntry.Metadata.FindPrimaryKey()
     }
 
     [Fact]
-    public void GetEntityKeyValues_WithEntityWithPrimaryKey_ShouldReturnKeyValues()
+    public async Task GetEntityKeyValues_WithEntityWithPrimaryKey_ShouldReturnKeyValues()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
         context.Set<Root>().Add(root);
-        context.SaveChanges();
-        
+        await context.SaveChangesAsync();
+
         var entry = context.Entry(root);
 
         // Act

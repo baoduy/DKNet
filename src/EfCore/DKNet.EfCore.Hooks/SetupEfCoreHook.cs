@@ -41,8 +41,8 @@ public static class SetupEfCoreHook
         services.AddHookRunner<TDbContext>();
 
         return services
-            .AddKeyedTransient<THook>(key)
-            .AddKeyedTransient<IHookBaseAsync>(key, (p, k) => p.GetRequiredKeyedService<THook>(k));
+            .AddKeyedScoped<THook>(key)
+            .AddKeyedScoped<IHookBaseAsync>(key, (p, k) => p.GetRequiredKeyedService<THook>(k));
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public static class SetupEfCoreHook
         }
 
         return services
-            .AddSingleton<HookFactory>()
+            .AddTransient<HookFactory>()
             .AddKeyedSingleton<HookRunner>(fullName);
     }
 
