@@ -23,7 +23,7 @@ internal static class EventExtensions
 
     public static IEnumerable<object> GetEventObjects(this SnapshotContext context, IMapper? mapper)
     {
-        foreach (var entry in context.SnapshotEntities.Where(entry => entry.Entity is IEventEntity))
+        foreach (var entry in context.Entities.Where(entry => entry.Entity is IEventEntity))
         {
             var entity = (IEventEntity)entry.Entity;
             var finalEvents = new HashSet<object>();

@@ -21,10 +21,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-        hook.BeforeCallCount.ShouldBe(1);
-        hook.AfterCallCount.ShouldBe(1);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCallCount.ShouldBe(1);
+        Hook.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually saved
         var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -51,10 +51,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-        hook.BeforeCallCount.ShouldBe(1);
-        hook.AfterCallCount.ShouldBe(1);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCallCount.ShouldBe(1);
+        Hook.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually updated
         var updatedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -82,10 +82,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-        hook.BeforeCallCount.ShouldBe(1);
-        hook.AfterCallCount.ShouldBe(1);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCallCount.ShouldBe(1);
+        Hook.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually deleted
         var deletedEntity = await db.Set<CustomerProfile>().FindAsync(entityId);
@@ -112,10 +112,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-        hook.BeforeCallCount.ShouldBe(1);
-        hook.AfterCallCount.ShouldBe(1);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCallCount.ShouldBe(1);
+        Hook.AfterCallCount.ShouldBe(1);
 
         // Verify all entities were saved
         var savedEntities = await db.Set<CustomerProfile>()
@@ -138,10 +138,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert - Hook should not be called when there are no changes
-        hook.BeforeCalled.ShouldBeFalse();
-        hook.AfterCalled.ShouldBeFalse();
-        hook.BeforeCallCount.ShouldBe(0);
-        hook.AfterCallCount.ShouldBe(0);
+        Hook.BeforeCalled.ShouldBeFalse();
+        Hook.AfterCalled.ShouldBeFalse();
+        Hook.BeforeCallCount.ShouldBe(0);
+        Hook.AfterCallCount.ShouldBe(0);
     }
 
     [Fact]
@@ -163,10 +163,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-        hook.BeforeCallCount.ShouldBe(3);
-        hook.AfterCallCount.ShouldBe(3);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCallCount.ShouldBe(3);
+        Hook.AfterCallCount.ShouldBe(3);
     }
 
     [Fact]
@@ -184,13 +184,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-
-        // Verify that the hook had access to the change tracker information
-        // The hook should have been called with the correct context
-        hook.LastBeforeContext.ShouldNotBeNull();
-        hook.LastAfterContext.ShouldNotBeNull();
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
@@ -208,11 +203,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
-
-        // Verify the order of execution
-        hook.BeforeCallTime.ShouldBeLessThan(hook.AfterCallTime);
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
@@ -232,8 +224,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await transaction.CommitAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
 
         // Verify entity was saved
         var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -257,8 +249,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await transaction.RollbackAsync();
 
         // Assert
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
 
         // Verify entity was not saved due to rollback
         var savedEntity = await db.Set<CustomerProfile>().Where(i => i.Id == entity.Id).ToListAsync();

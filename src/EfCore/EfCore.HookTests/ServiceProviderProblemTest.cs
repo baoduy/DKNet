@@ -7,7 +7,7 @@ namespace EfCore.HookTests;
 public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifetime
 {
     private ServiceProvider _provider = null!;
-    private MsSqlContainer _sqlContainer= null!;
+    private MsSqlContainer _sqlContainer = null!;
 
     public async Task InitializeAsync()
     {
@@ -63,10 +63,10 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
                 await db.AddAsync(entity);
                 await db.SaveChangesAsync();
 
-                output.WriteLine($"Iteration {i + 1}: Hook Before={hook.BeforeCalled}, After={hook.AfterCalled}");
+                output.WriteLine($"Iteration {i + 1}: Hook Before={Hook.BeforeCalled}, After={Hook.AfterCalled}");
             }
 
-            // The test itself may pass but we should see the EF Core warning in logs
+            // The test itself may pass, but we should see the EF Core warning in logs
             output.WriteLine(
                 "If you see 'More than twenty IServiceProvider instances' warning above, the issue is reproduced");
         };

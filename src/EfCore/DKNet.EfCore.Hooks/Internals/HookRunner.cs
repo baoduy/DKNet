@@ -24,16 +24,21 @@ public enum RunningTypes
 /// <summary>
 ///     Runs hooks before and after save operations.
 /// </summary>
-/// <param name="hookLoader"></param>
 /// <param name="logger"></param>
-internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> logger)
-    : ISaveChangesInterceptor, IDisposable, IAsyncDisposable
+internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : ISaveChangesInterceptor
 {
     //private readonly ConcurrentQueue<string> _callersQueue = new();
-    private IEnumerable<IAfterSaveHookAsync> _afterSaveHooks = [];
-    private IEnumerable<IBeforeSaveHookAsync> _beforeSaveHooks = [];
-    private bool _initialized;
-    private SnapshotContext? _snapshotContext;
+    private readonly ConcurrentDictionary<Guid, HookRunnerContext> _cache = new();
+
+    private HookRunnerContext GetContext(DbContextEventData eventData) =>
+        _cache.GetOrAdd(eventData.Context!.ContextId.InstanceId,
+            _ => new HookRunnerContext(provider, eventData.Context!));
+
+    private async Task RemoveContext(DbContextEventData eventData)
+    {
+        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
+            await context.DisposeAsync();
+    }
 
     /// <summary>
     ///     Run Before Save to prepare the component for the hooks.
@@ -45,12 +50,8 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
         InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        //Init Hook
-        EnsureHookInitialized(eventData);
-        if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
-
-        //Run Before Save
-        await RunHooksAsync(RunningTypes.BeforeSave, cancellationToken);
+        var context = GetContext(eventData);
+        await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
         return result;
     }
 
@@ -59,25 +60,12 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     {
         try
         {
-            if (_snapshotContext is null || _snapshotContext.SnapshotEntities.Count <= 0) return result;
-            //Run After Events and ignore the result even failed.
-            //_callersQueue.TryDequeue(out _);
-            await RunHooksAsync(RunningTypes.AfterSave, cancellationToken);
+            var context = GetContext(eventData);
+            await RunHooksAsync(context, RunningTypes.AfterSave, cancellationToken);
         }
         finally
         {
-            if (_snapshotContext is not null)
-            {
-                //Dispose the snapshot context if no more callers are left
-                logger.LogDebug("Disposing Snapshot Context");
-                //Dispose the snapshot context
-
-                await _snapshotContext.DisposeAsync();
-                _snapshotContext = null;
-                _initialized = false;
-                _beforeSaveHooks = [];
-                _afterSaveHooks = [];
-            }
+            await RemoveContext(eventData);
         }
 
         return result;
@@ -85,51 +73,26 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
 
 
     /// <summary>
-    ///     Initializes the hook by loading the hooks and setting up the context.
-    /// </summary>
-    /// <param name="eventData"></param>
-    private void EnsureHookInitialized(DbContextEventData eventData)
-    {
-        //Validate and Mark the caller queues
-        if (eventData.Context is null) throw new ArgumentNullException(nameof(eventData));
-
-        if (_snapshotContext is null)
-            //_callersQueue.Enqueue(eventData.EventIdCode);
-            //Preparing the hook data and hooks before executing the hook
-            _snapshotContext = new SnapshotContext(eventData.Context);
-
-        if (!_initialized)
-        {
-            var (beforeSaveHooks, afterSaveHooks) = hookLoader.LoadHooks(eventData.Context);
-            _afterSaveHooks = afterSaveHooks;
-            _beforeSaveHooks = beforeSaveHooks;
-            //mark initialized flag
-            _initialized = true;
-        }
-    }
-
-    /// <summary>
     ///     Runs hooks before and after save operations.
     /// </summary>
+    /// <param name="context"></param>
     /// <param name="type"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private async Task RunHooksAsync(RunningTypes type, CancellationToken cancellationToken = default)
+    private async Task RunHooksAsync(HookRunnerContext context, RunningTypes type,
+        CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(_snapshotContext);
-
         logger.LogInformation("Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
-            type, _beforeSaveHooks.Count(), _afterSaveHooks.Count());
+            type, context.BeforeSaveHooks.Count, context.AfterSaveHooks.Count);
 
-        //Run Hooks Async
-        if (type == RunningTypes.BeforeSave)
-            //foreach (var h in _beforeSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
-            foreach (var h in _beforeSaveHooks)
-                await h.RunBeforeSaveAsync(_snapshotContext, cancellationToken);
-        else
-            //foreach (var h in _afterSaveHookAsync.Where(h => !context.DbContext.IsHookDisabled(h)))
-            foreach (var h in _afterSaveHooks)
-                await h.RunAfterSaveAsync(_snapshotContext, cancellationToken);
+        if (context.Snapshot.Entities.Count == 0) return;
+
+        var tasks = new List<Task>();
+        tasks.AddRange(type == RunningTypes.BeforeSave
+            ? context.BeforeSaveHooks.Select(h => h.RunBeforeSaveAsync(context.Snapshot, cancellationToken))
+            : context.AfterSaveHooks.Select(h => h.RunAfterSaveAsync(context.Snapshot, cancellationToken)));
+
+        await Task.WhenAll(tasks);
     }
 
 
@@ -154,14 +117,4 @@ internal sealed class HookRunner(HookFactory hookLoader, ILogger<HookRunner> log
     public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
-
-    public void Dispose()
-    {
-        _snapshotContext?.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_snapshotContext != null) await _snapshotContext.DisposeAsync();
-    }
 }

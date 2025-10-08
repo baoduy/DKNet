@@ -15,8 +15,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
         await db.SaveChangesAsync();
 
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
@@ -30,8 +30,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
         await db.SaveChangesAsync();
 
-        hook.BeforeCalled.ShouldBeTrue();
-        hook.AfterCalled.ShouldBeTrue();
+        Hook.BeforeCalled.ShouldBeTrue();
+        Hook.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]

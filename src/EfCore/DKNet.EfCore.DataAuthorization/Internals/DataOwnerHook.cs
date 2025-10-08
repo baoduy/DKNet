@@ -41,7 +41,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     {
         context.DbContext.ChangeTracker.AutoDetectChangesEnabled = true;
 
-        var dataKeyEntities = context.SnapshotEntities
+        var dataKeyEntities = context.Entities
             .Where(e => e.OriginalState == EntityState.Added)
             .Select(e => e.Entity);
 
