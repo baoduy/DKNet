@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Linq;
-using System.Threading.Tasks;
 using DKNet.EfCore.AuditLogs.Internals; // for EfCoreAuditHook via DI
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;

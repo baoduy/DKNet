@@ -2,7 +2,6 @@ using System.Text.Json;
 using DKNet.EfCore.Abstractions.Events;
 using DKNet.Fw.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.Events;
 

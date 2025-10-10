@@ -20,7 +20,6 @@ internal static class AuditLogExtensions
 
             if (originalState == EntityState.Deleted)
             {
-                // Treat deletion as old value -> null
                 changes.Add(new AuditFieldChange
                 {
                     FieldName = name,
@@ -30,7 +29,6 @@ internal static class AuditLogExtensions
                 continue;
             }
 
-            // Modified: only include if value actually changed or EF marked it modified
             if (prop.IsModified || !Equals(oldVal, newVal))
                 changes.Add(new AuditFieldChange
                 {
@@ -40,6 +38,13 @@ internal static class AuditLogExtensions
                 });
         }
 
+        var action = originalState switch
+        {
+            EntityState.Deleted => AuditLogAction.Deleted,
+            EntityState.Added => AuditLogAction.Created,
+            _ => AuditLogAction.Updated
+        };
+
         return new AuditLogEntry
         {
             Keys = entry.GetEntityKeyValues(),
@@ -48,6 +53,7 @@ internal static class AuditLogExtensions
             UpdatedBy = audited.UpdatedBy,
             UpdatedOn = audited.UpdatedOn,
             EntityName = entry.Entity.GetType().Name,
+            Action = action,
             Changes = changes
         };
     }
