@@ -2,5 +2,5 @@ namespace DKNet.EfCore.AuditLogs;
 
 public interface IAuditLogPublisher
 {
-    Task PublishAsync(IEnumerable<EfCoreAuditLog> logs, CancellationToken cancellationToken = default);
+    Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default);
 }

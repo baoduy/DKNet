@@ -287,6 +287,6 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
 
 internal sealed class FailingPublisher : IAuditLogPublisher
 {
-    public Task PublishAsync(IEnumerable<EfCoreAuditLog> logs, CancellationToken cancellationToken = default)
+    public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
         => throw new InvalidOperationException("Simulated failure");
 }

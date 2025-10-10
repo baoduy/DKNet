@@ -16,8 +16,7 @@ public class ExtensionsTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
     public void TestGetKeyValue()
     {
         var user = new User(1, "Duy") { FirstName = "Steven", LastName = "Smith" };
-        _db.GetPrimaryKeyValues(user).Single()
-            .ShouldBe(1);
+        _db.GetPrimaryKeyValues(user).Single().Value.ShouldBe(1);
     }
 
     [Fact]

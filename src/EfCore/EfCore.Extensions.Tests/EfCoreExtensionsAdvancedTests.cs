@@ -26,7 +26,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
 
         // Assert
         keyValues.ShouldHaveSingleItem();
-        keyValues[0].ShouldBe(1);
+        keyValues[0].Value.ShouldBe(1);
     }
 
     [Fact]
@@ -79,7 +79,6 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         // Assert
         result.ShouldBeNull();
     }
-
 
 
     [Fact]
