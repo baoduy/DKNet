@@ -16,7 +16,6 @@ internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<
     {
         var logs = context.Entities.Where(e => e is
                 { Entity: IAuditedProperties, OriginalState: EntityState.Modified or EntityState.Deleted })
-            .Select(e => new { e.Entry, e.OriginalState })
             .Select(e => e.Entry.BuildAuditLog(e.OriginalState))
             .Where(l => l is not null && l.Changes.Count > 0)
             .OfType<AuditLogEntry>()
