@@ -1,3 +1,4 @@
+using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -9,11 +10,18 @@ internal static class AuditLogExtensions
     public static AuditLogEntry? BuildAuditLog(this EntityEntry entry, EntityState originalState)
     {
         if (entry.Entity is not IAuditedProperties audited) return null;
+        var entityType = entry.Entity.GetType();
+        if (Attribute.IsDefined(entityType, typeof(IgnoreAuditLogAttribute)))
+            return null;
 
         var changes = new List<AuditFieldChange>();
         foreach (var prop in entry.Properties)
         {
-            // Skip navigation and concurrency tokens if desired (extend later)
+            // NEW: skip property-level IgnoreAuditLogAttribute
+            var clrProp = prop.Metadata.PropertyInfo;
+            if (clrProp != null && Attribute.IsDefined(clrProp, typeof(IgnoreAuditLogAttribute)))
+                continue;
+
             var name = prop.Metadata.Name;
             var oldVal = prop.OriginalValue;
             var newVal = prop.CurrentValue;

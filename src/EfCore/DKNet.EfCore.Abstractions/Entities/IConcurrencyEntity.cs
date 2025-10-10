@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using DKNet.EfCore.Abstractions.Attributes;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -16,6 +17,7 @@ public interface IConcurrencyEntity<TType>
     ///     Gets the row version timestamp used for concurrency checking.
     /// </summary>
     /// <value>A byte array containing the row version timestamp.</value>
+    [IgnoreAuditLog]
     [Column(Order = 1000)]
     [Timestamp]
     TType? RowVersion { get; }
