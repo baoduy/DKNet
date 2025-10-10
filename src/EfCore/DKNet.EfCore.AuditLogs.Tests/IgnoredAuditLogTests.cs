@@ -5,7 +5,6 @@ using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using Xunit;
 
 namespace DKNet.EfCore.AuditLogs.Tests;
 
@@ -73,7 +72,15 @@ public class IgnoredAuditLogTests : IAsyncLifetime
     public Task DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
-        try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { /* ignore */ }
+        try
+        {
+            if (File.Exists(_dbPath)) File.Delete(_dbPath);
+        }
+        catch
+        {
+            /* ignore */
+        }
+
         return Task.CompletedTask;
     }
 

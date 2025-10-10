@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using DKNet.EfCore.Abstractions.Attributes;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -15,23 +16,27 @@ public interface IAuditedProperties
     /// <summary>
     ///     Gets the identifier of the user who created the entity.
     /// </summary>
+    [IgnoreAuditLog]
     [MaxLength(500)]
     string CreatedBy { get; }
 
     /// <summary>
     ///     Gets the timestamp when the entity was created.
     /// </summary>
+    [IgnoreAuditLog]
     DateTimeOffset CreatedOn { get; }
 
     /// <summary>
     ///     Gets the identifier of the user who last updated the entity.
     /// </summary>
     [MaxLength(500)]
+    [IgnoreAuditLog]
     string? UpdatedBy { get; }
 
     /// <summary>
     ///     Gets the timestamp when the entity was last updated.
     /// </summary>
+    [IgnoreAuditLog]
     DateTimeOffset? UpdatedOn { get; }
 }
 

@@ -17,7 +17,11 @@ internal static class AuditLogExtensions
         var changes = new List<AuditFieldChange>();
         foreach (var prop in entry.Properties)
         {
-            // Skip navigation and concurrency tokens if desired (extend later)
+            // NEW: skip property-level IgnoreAuditLogAttribute
+            var clrProp = prop.Metadata.PropertyInfo;
+            if (clrProp != null && Attribute.IsDefined(clrProp, typeof(IgnoreAuditLogAttribute)))
+                continue;
+
             var name = prop.Metadata.Name;
             var oldVal = prop.OriginalValue;
             var newVal = prop.CurrentValue;
