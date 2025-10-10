@@ -1,5 +1,7 @@
 ﻿// ReSharper disable CheckNamespace
 
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+
 namespace Microsoft.EntityFrameworkCore;
 
 /// <summary>
@@ -66,14 +68,39 @@ public static class EfCoreExtensions
     /// <param name="context">The database context.</param>
     /// <param name="entity">The entity instance.</param>
     /// <returns>An enumerable of primary key values.</returns>
-    public static IEnumerable<object?> GetPrimaryKeyValues(this DbContext context, object entity)
+    public static IDictionary<string, object?> GetPrimaryKeyValues(this DbContext context, object entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
+        var rs = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         var type = entity.GetType();
         var keys = context.GetPrimaryKeyProperties(type);
         foreach (var key in keys)
-            yield return type.GetProperty(key)?.GetValue(entity);
+        {
+            var value = type.GetProperty(key)?.GetValue(entity);
+            rs.Add(key, value);
+        }
+
+        return rs;
+    }
+
+    /// <summary>
+    ///     Get Primary key value of an Entity
+    /// </summary>
+    /// <param name="entityEntry">The entry of the entity.</param>
+    /// <returns>An enumerable of primary key values.</returns>
+    public static Dictionary<string, object?> GetEntityKeyValues(this EntityEntry entityEntry)
+    {
+        var primaryKey = entityEntry.Metadata.FindPrimaryKey();
+
+        if (primaryKey == null)
+            // Entity does not have a primary key defined
+            return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+
+        return primaryKey.Properties.ToDictionary(
+            p => p.Name,
+            p => p.PropertyInfo!.GetValue(entityEntry.Entity)
+            , StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

@@ -10,7 +10,7 @@ namespace DKNet.EfCore.AuditLogs.Internals;
 
 internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<EfCoreAuditHook> logger) : HookAsync
 {
-    private readonly Dictionary<Guid, List<EfCoreAuditLog>> _cache = [];
+    private readonly Dictionary<Guid, List<AuditLogEntry>> _cache = [];
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
@@ -19,7 +19,7 @@ internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<
             .Select(e => new { e.Entry, e.OriginalState })
             .Select(e => e.Entry.BuildAuditLog(e.OriginalState))
             .Where(l => l is not null && l.Changes.Count > 0)
-            .OfType<EfCoreAuditLog>()
+            .OfType<AuditLogEntry>()
             .ToList();
 
         logger.LogInformation("Found {Count} audit log entries in current save operation of DbContext {DbContextId}",
@@ -30,7 +30,7 @@ internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<
         return base.BeforeSaveAsync(context, cancellationToken);
     }
 
-    private void PublishLogsAsync(DbContext context, IEnumerable<EfCoreAuditLog> logs)
+    private void PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs)
     {
         // Fire & forget: do not await publishers. Each publisher runs independently.
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
@@ -55,39 +55,7 @@ internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<
 
         var logs = _cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
         if (logs is not { Count: > 0 }) return;
+        _cache.Remove(context.DbContext.ContextId.InstanceId);
         PublishLogsAsync(context.DbContext, logs);
-    }
-}
-
-internal static class AuditLogEntryExtensions
-{
-    public static EfCoreAuditLog? BuildAuditLog(this EntityEntry entry, EntityState originalState)
-    {
-        if (entry.Entity is not IAuditedProperties audited) return null;
-        var changes = new List<EfCoreAuditFieldChange>();
-        foreach (var prop in entry.Properties)
-        {
-            var name = prop.Metadata.Name;
-            var oldVal = prop.OriginalValue;
-            var newVal = prop.CurrentValue;
-            if (originalState == EntityState.Deleted)
-            {
-                changes.Add(new EfCoreAuditFieldChange { FieldName = name, OldValue = oldVal, NewValue = null });
-                continue;
-            }
-
-            if (prop.IsModified || !Equals(oldVal, newVal))
-                changes.Add(new EfCoreAuditFieldChange { FieldName = name, OldValue = oldVal, NewValue = newVal });
-        }
-
-        return new EfCoreAuditLog
-        {
-            CreatedBy = audited.CreatedBy,
-            CreatedOn = audited.CreatedOn,
-            UpdatedBy = audited.UpdatedBy,
-            UpdatedOn = audited.UpdatedOn,
-            EntityName = entry.Entity.GetType().Name,
-            Changes = changes
-        };
     }
 }

@@ -49,9 +49,9 @@ internal sealed class CapturingLogger<T> : ILogger<T>
 internal sealed class RecordingPublisher : IAuditLogPublisher
 {
     public static bool Called { get; private set; }
-    public static ConcurrentBag<EfCoreAuditLog> Logs { get; } = [];
+    public static ConcurrentBag<AuditLogEntry> Logs { get; } = [];
 
-    public Task PublishAsync(IEnumerable<EfCoreAuditLog> logs, CancellationToken cancellationToken = default)
+    public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
         Called = true;
         foreach (var log in logs) Logs.Add(log);
@@ -117,7 +117,7 @@ public class AdditionalAuditLogTests
         ctx.Update(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = AuditLogEntryExtensions.BuildAuditLog(entry, EntityState.Modified)!;
+        var log = entry.BuildAuditLog(EntityState.Modified)!;
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Notes) && c.OldValue == null && (string?)c.NewValue == "note");
         log.Changes.ShouldContain(c =>
@@ -136,7 +136,7 @@ public class AdditionalAuditLogTests
         ctx.Remove(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = AuditLogEntryExtensions.BuildAuditLog(entry, EntityState.Deleted)!;
+        var log = entry.BuildAuditLog(EntityState.Deleted)!;
         log.Changes.ShouldAllBe(c => c.NewValue == null);
         log.EntityName.ShouldBe(nameof(TestAuditEntity));
     }
@@ -170,6 +170,7 @@ public class AdditionalAuditLogTests
         //await WaitForCountAsync(() => rec.Logs.Count, 1);
         RecordingPublisher.Called.ShouldBeTrue();
         RecordingPublisher.Logs.Count.ShouldBeGreaterThan(0);
+        RecordingPublisher.Logs.ShouldAllBe(x => x.Keys.Count > 0);
         RecordingPublisher.Logs.ShouldContain(l => l.UpdatedBy == "updater");
     }
 

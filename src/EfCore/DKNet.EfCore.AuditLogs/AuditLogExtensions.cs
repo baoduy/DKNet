@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.AuditLogs;
 
-internal static class Extensions
+internal static class AuditLogExtensions
 {
-    public static EfCoreAuditLog? BuildAuditLog(this EntityEntry entry, EntityState originalState)
+    public static AuditLogEntry? BuildAuditLog(this EntityEntry entry, EntityState originalState)
     {
         if (entry.Entity is not IAuditedProperties audited) return null;
 
-        var changes = new List<EfCoreAuditFieldChange>();
+        var changes = new List<AuditFieldChange>();
         foreach (var prop in entry.Properties)
         {
             // Skip navigation and concurrency tokens if desired (extend later)
@@ -21,7 +21,7 @@ internal static class Extensions
             if (originalState == EntityState.Deleted)
             {
                 // Treat deletion as old value -> null
-                changes.Add(new EfCoreAuditFieldChange
+                changes.Add(new AuditFieldChange
                 {
                     FieldName = name,
                     OldValue = oldVal,
@@ -32,7 +32,7 @@ internal static class Extensions
 
             // Modified: only include if value actually changed or EF marked it modified
             if (prop.IsModified || !Equals(oldVal, newVal))
-                changes.Add(new EfCoreAuditFieldChange
+                changes.Add(new AuditFieldChange
                 {
                     FieldName = name,
                     OldValue = oldVal,
@@ -40,8 +40,9 @@ internal static class Extensions
                 });
         }
 
-        return new EfCoreAuditLog
+        return new AuditLogEntry
         {
+            Keys = entry.GetEntityKeyValues(),
             CreatedBy = audited.CreatedBy,
             CreatedOn = audited.CreatedOn,
             UpdatedBy = audited.UpdatedBy,

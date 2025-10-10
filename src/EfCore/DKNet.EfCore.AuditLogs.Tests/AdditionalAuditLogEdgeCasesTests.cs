@@ -13,7 +13,7 @@ namespace DKNet.EfCore.AuditLogs.Tests;
 public class AdditionalAuditLogEdgeCasesTests
 {
     private static TestAuditDbContext CreateCtx() => new(new DbContextOptionsBuilder<TestAuditDbContext>()
-        .UseSqlite($"Data Source={System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"edge_{Guid.NewGuid():N}.db")}")
+        .UseSqlite($"Data Source={Path.Combine(Path.GetTempPath(), $"edge_{Guid.NewGuid():N}.db")}")
         .EnableSensitiveDataLogging()
         .Options);
 
@@ -57,7 +57,8 @@ public class AdditionalAuditLogEdgeCasesTests
         // Age, Name, Balance, IsActive unchanged -> changes should only include audit fields UpdatedBy / UpdatedOn if tracked
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.UpdatedBy));
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.UpdatedOn));
-        log.Changes.ShouldNotContain(c => c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == 2 && (int?)c.NewValue == 2);
+        log.Changes.ShouldNotContain(c =>
+            c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == 2 && (int?)c.NewValue == 2);
     }
 
     [Fact]
@@ -72,7 +73,8 @@ public class AdditionalAuditLogEdgeCasesTests
         var entry = ctx.Entry(e);
         entry.Property(nameof(TestAuditEntity.Age)).IsModified = true; // value remains 7
         var log = entry.BuildAuditLog(EntityState.Modified)!;
-        log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == 7 && (int?)c.NewValue == 7);
+        log.Changes.ShouldContain(c =>
+            c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == 7 && (int?)c.NewValue == 7);
     }
 
     [Fact]
@@ -89,25 +91,8 @@ public class AdditionalAuditLogEdgeCasesTests
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
         var log = entry.BuildAuditLog(EntityState.Modified)!;
-        log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Notes) && (string?)c.OldValue == "original" && c.NewValue == null);
-    }
-
-    [Fact]
-    public void ManualConstruction_EfCoreAuditLog_ForDirectUsage()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var log = new EfCoreAuditLog
-        {
-            CreatedBy = "creator",
-            CreatedOn = now,
-            UpdatedBy = null,
-            UpdatedOn = null,
-            EntityName = "ManualEntity",
-            Changes = []
-        };
-        log.CreatedBy.ShouldBe("creator");
-        log.EntityName.ShouldBe("ManualEntity");
-        log.Changes.ShouldBeEmpty();
+        log.Changes.ShouldContain(c =>
+            c.FieldName == nameof(TestAuditEntity.Notes) && (string?)c.OldValue == "original" && c.NewValue == null);
     }
 
     [Fact]

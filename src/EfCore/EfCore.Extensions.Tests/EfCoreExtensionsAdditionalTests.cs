@@ -38,7 +38,7 @@ public class EfCoreExtensionsAdditionalTests(MemoryFixture fixture) : IClassFixt
 
         // Assert
         keyValues.ShouldHaveSingleItem();
-        keyValues[0].ShouldBe(123);
+        keyValues[0].Value.ShouldBe(123);
     }
 
     [Fact]
