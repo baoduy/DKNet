@@ -1,11 +1,12 @@
 // Reconstructed comprehensive test suite for EfCoreAuditHook fire-and-forget structured audit logging
 
-using System.Diagnostics;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+
+// added for AuditLogAction
 
 namespace DKNet.EfCore.AuditLogs.Tests;
 
@@ -110,6 +111,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.EntityName.ShouldBe(nameof(TestAuditEntity));
         log.CreatedBy.ShouldBe("creator-2");
         log.UpdatedBy.ShouldBe("updater-2");
+        log.Action.ShouldBe(AuditLogAction.Updated); // assert action
         log.UpdatedOn.ShouldNotBeNull();
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == oldAge && (int?)c.NewValue == 26);
@@ -142,6 +144,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.EntityName.ShouldBe(nameof(TestAuditEntity));
         log.CreatedBy.ShouldBe("creator-3");
         log.UpdatedBy.ShouldBeNull();
+        log.Action.ShouldBe(AuditLogAction.Deleted); // assert action
         log.Changes.Count.ShouldBeGreaterThan(0);
         log.Changes.ShouldAllBe(c => c.NewValue == null);
         // Ensure at least one core property listed
@@ -170,6 +173,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         //await WaitForLogsAsync(publisher, 2);
         var logs = TestPublisher.Received.ToList();
         logs.Count.ShouldBe(2);
+        logs.ShouldAllBe(l => l.Action == AuditLogAction.Updated); // all updated
         logs.ShouldContain(l => l.UpdatedBy == "updater-a");
         logs.ShouldContain(l => l.UpdatedBy == "updater-b");
         logs.First(l => l.UpdatedBy == "updater-a").Changes
@@ -206,6 +210,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         //await WaitForLogsAsync(publisher, 1);
         var logs = TestPublisher.Received.ToList();
         logs.Count.ShouldBe(1); // ensures not duplicated
+        logs[0].Action.ShouldBe(AuditLogAction.Updated); // assert action
         logs[0].Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == oldAge && (int?)c.NewValue == 11);
     }
@@ -251,6 +256,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
 
         //await WaitForLogsAsync(goodPublisher, 1);
         TestPublisher.Received.Count.ShouldBe(1);
+        TestPublisher.Received.First().Action.ShouldBe(AuditLogAction.Updated); // assert action
     }
 
     [Fact]

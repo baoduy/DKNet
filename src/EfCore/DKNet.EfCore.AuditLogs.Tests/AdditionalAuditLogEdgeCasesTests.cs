@@ -1,12 +1,5 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using DKNet.EfCore.AuditLogs;
-using DKNet.EfCore.AuditLogs.Tests;
-using DKNet.EfCore.Abstractions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using Xunit;
 
 namespace DKNet.EfCore.AuditLogs.Tests;
 
