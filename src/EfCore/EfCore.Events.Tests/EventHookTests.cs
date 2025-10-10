@@ -25,7 +25,7 @@ public class EventHookTests
 
         // Act & Assert
         await Should.NotThrowAsync(async () =>
-            await eventHook.RunBeforeSaveAsync(snapshot, CancellationToken.None));
+            await eventHook.BeforeSaveAsync(snapshot, CancellationToken.None));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class EventHookTests
         TestEventPublisher.Events.Clear();
 
         // Act
-        await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // Assert
         TestEventPublisher.Events.ShouldBeEmpty();
@@ -78,7 +78,7 @@ public class EventHookTests
         TestEventPublisher.Events.Clear();
 
         // Act
-        await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // Assert
         TestEventPublisher.Events.ShouldNotBeEmpty();
@@ -116,7 +116,7 @@ public class EventHookTests
         TestEventPublisher.Events.Clear();
 
         // Act
-        await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // Assert
         // Note: Both publishers share the same static Events collection in TestEventPublisher
@@ -156,7 +156,7 @@ public class EventHookTests
         TestEventPublisher.Events.Clear();
 
         // Act
-        await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // Assert
         TestEventPublisher.Events.ShouldNotBeEmpty();
@@ -196,7 +196,7 @@ public class EventHookTests
         TestEventPublisher.Events.Clear();
 
         // Act
-        await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // Assert
         TestEventPublisher.Events.ShouldNotBeEmpty();
@@ -233,7 +233,7 @@ public class EventHookTests
 
         // Act & Assert
         await Should.NotThrowAsync(async () =>
-            await eventHook.RunAfterSaveAsync(snapshot, CancellationToken.None));
+            await eventHook.AfterSaveAsync(snapshot, CancellationToken.None));
 
         // Should complete without error, but no events should be published
         // since event types need mapper but none provided

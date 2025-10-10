@@ -16,7 +16,7 @@ public class PagedResultTests
     [Fact]
     public void Constructor_WithPagedList_ShouldMapProperties()
     {
-        var list = new StaticPagedList<string>(new[] { "a", "b" }, 2, 1, 2);
+        var list = new StaticPagedList<string>(["a", "b"], 2, 1, 2);
         var pagedResult = new PagedResult<string>(list);
         pagedResult.PageNumber.ShouldBe(2);
         pagedResult.PageSize.ShouldBe(1);
@@ -25,4 +25,3 @@ public class PagedResultTests
         pagedResult.Items.SequenceEqual(list).ShouldBeTrue();
     }
 }
-

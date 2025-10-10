@@ -7,7 +7,7 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     [Fact]
     public async Task TestAddHookAsync()
     {
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
 
         var db = _provider.GetRequiredService<HookContext>();
@@ -15,14 +15,14 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
         await db.SaveChangesAsync();
 
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
     public async Task TestCallSaveChangesTwiceAsync()
     {
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -30,8 +30,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
         await db.SaveChangesAsync();
 
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
@@ -51,12 +51,12 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     {
         var services = new ServiceCollection()
             .AddLogging()
-            .AddHook<HookContext, Hook>()
-            .AddHook<HookContext, Hook>();
+            .AddHook<HookContext, HookTest>()
+            .AddHook<HookContext, HookTest>();
 
         services.Count(s =>
                 s.IsKeyedService && ReferenceEquals(s.ServiceKey, typeof(HookContext).FullName) &&
-                s.KeyedImplementationType == typeof(Hook))
+                s.KeyedImplementationType == typeof(HookTest))
             .ShouldBe(1);
     }
 }

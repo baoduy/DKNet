@@ -10,7 +10,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityAdd()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -21,10 +21,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
-        Hook.BeforeCallCount.ShouldBe(1);
-        Hook.AfterCallCount.ShouldBe(1);
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(1);
+        HookTest.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually saved
         var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -36,7 +36,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityUpdate()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -51,10 +51,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
-        Hook.BeforeCallCount.ShouldBe(1);
-        Hook.AfterCallCount.ShouldBe(1);
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(1);
+        HookTest.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually updated
         var updatedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -66,7 +66,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityDelete()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -82,10 +82,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
-        Hook.BeforeCallCount.ShouldBe(1);
-        Hook.AfterCallCount.ShouldBe(1);
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(1);
+        HookTest.AfterCallCount.ShouldBe(1);
 
         // Verify entity was actually deleted
         var deletedEntity = await db.Set<CustomerProfile>().FindAsync(entityId);
@@ -96,7 +96,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnBulkOperations()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -112,10 +112,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
-        Hook.BeforeCallCount.ShouldBe(1);
-        Hook.AfterCallCount.ShouldBe(1);
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(1);
+        HookTest.AfterCallCount.ShouldBe(1);
 
         // Verify all entities were saved
         var savedEntities = await db.Set<CustomerProfile>()
@@ -129,7 +129,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldHandleNoChangesGracefully()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
 
         var db = _provider.GetRequiredService<HookContext>();
@@ -138,17 +138,17 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert - Hook should not be called when there are no changes
-        Hook.BeforeCalled.ShouldBeFalse();
-        Hook.AfterCalled.ShouldBeFalse();
-        Hook.BeforeCallCount.ShouldBe(0);
-        Hook.AfterCallCount.ShouldBe(0);
+        HookTest.BeforeCalled.ShouldBeFalse();
+        HookTest.AfterCalled.ShouldBeFalse();
+        HookTest.BeforeCallCount.ShouldBe(0);
+        HookTest.AfterCallCount.ShouldBe(0);
     }
 
     [Fact]
     public async Task Hook_ShouldExecuteMultipleTimes()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -163,17 +163,17 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
-        Hook.BeforeCallCount.ShouldBe(3);
-        Hook.AfterCallCount.ShouldBe(3);
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(3);
+        HookTest.AfterCallCount.ShouldBe(3);
     }
 
     [Fact]
     public async Task Hook_ShouldProvideCorrectChangeTrackerInfo()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -184,15 +184,15 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
     public async Task Hook_ShouldExecuteInCorrectOrder()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -203,15 +203,15 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
     }
 
     [Fact]
     public async Task Hook_ShouldWorkWithTransactions()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
@@ -224,8 +224,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await transaction.CommitAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
 
         // Verify entity was saved
         var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
@@ -236,7 +236,7 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldHandleTransactionRollback()
     {
         // Arrange
-        var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
 
         var db = _provider.GetRequiredService<HookContext>();
@@ -249,8 +249,8 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         await transaction.RollbackAsync();
 
         // Assert
-        Hook.BeforeCalled.ShouldBeTrue();
-        Hook.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
 
         // Verify entity was not saved due to rollback
         var savedEntity = await db.Set<CustomerProfile>().Where(i => i.Id == entity.Id).ToListAsync();

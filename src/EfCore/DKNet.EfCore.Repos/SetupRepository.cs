@@ -38,10 +38,7 @@ public static class SetupRepository
         return services.AddGenericRepositories();
     }
 
-    public static IServiceCollection AddRepository<TRepo, TEntity>(this IServiceCollection services)
-        where TRepo : class, IRepository<TEntity>
-        where TEntity : class =>
-        services.AddScoped<IRepository<TEntity>, TRepo>()
-            .AddScoped<IReadRepository<TEntity>, TRepo>()
-            .AddScoped<IWriteRepository<TEntity>, TRepo>();
+    public static IServiceCollection AddRepoFactory<TDbContext>(this IServiceCollection services)
+        where TDbContext : DbContext =>
+        services.AddScoped(typeof(IRepositoryFactory<>), typeof(RepositoryFactory<>));
 }

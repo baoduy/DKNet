@@ -27,7 +27,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     /// <param name="context">The snapshot context containing entity changes.</param>
     /// <param name="cancellationToken">A token to observe for cancellation requests.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         UpdatingOwner(context);
         return Task.CompletedTask;

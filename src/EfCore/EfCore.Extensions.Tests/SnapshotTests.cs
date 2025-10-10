@@ -69,7 +69,7 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
         _db.Set<User>().Add(user);
 
         await using var snapshot = new SnapshotContext(_db);
-        var entry = snapshot.Entities[0];
+        var entry = snapshot.Entities.First();
 
         // Assert
         entry.Entity.ShouldBeOfType<User>();

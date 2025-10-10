@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using DKNet.EfCore.Extensions.Snapshots;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -25,9 +24,8 @@ public enum RunningTypes
 ///     Runs hooks before and after save operations.
 /// </summary>
 /// <param name="logger"></param>
-internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : ISaveChangesInterceptor
+internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : SaveChangesInterceptor
 {
-    //private readonly ConcurrentQueue<string> _callersQueue = new();
     private readonly ConcurrentDictionary<Guid, HookRunnerContext> _cache = new();
 
     private HookRunnerContext GetContext(DbContextEventData eventData) =>
@@ -47,17 +45,23 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     /// <param name="result"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
         InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
+        if (eventData.Context == null)
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+
         var context = GetContext(eventData);
         await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
-        return result;
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result,
+    public override async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result,
         CancellationToken cancellationToken = default)
     {
+        if (eventData.Context == null)
+            return await base.SavedChangesAsync(eventData, result, cancellationToken);
+
         try
         {
             var context = GetContext(eventData);
@@ -68,7 +72,7 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
             await RemoveContext(eventData);
         }
 
-        return result;
+        return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
 
@@ -89,32 +93,16 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
 
         var tasks = new List<Task>();
         tasks.AddRange(type == RunningTypes.BeforeSave
-            ? context.BeforeSaveHooks.Select(h => h.RunBeforeSaveAsync(context.Snapshot, cancellationToken))
-            : context.AfterSaveHooks.Select(h => h.RunAfterSaveAsync(context.Snapshot, cancellationToken)));
+            ? context.BeforeSaveHooks.Select(h => h.BeforeSaveAsync(context.Snapshot, cancellationToken))
+            : context.AfterSaveHooks.Select(h => h.AfterSaveAsync(context.Snapshot, cancellationToken)));
 
         await Task.WhenAll(tasks);
     }
 
-
-    public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+    public override async Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
+        CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Hook only supports Async version of SaveChanges.");
-        return result;
+        await RemoveContext(eventData);
+        await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
-
-    public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
-    {
-        logger.LogInformation("Hook only supports Async version of SaveChanges.");
-        return result;
-    }
-
-    public void SaveChangesFailed(DbContextErrorEventData eventData)
-    {
-        logger.LogError(
-            "SaveChanges failed. This method should not be called as only Async recommended to be used in a hook.");
-    }
-
-    public Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
-        CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
 }
