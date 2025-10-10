@@ -22,7 +22,7 @@ internal static class SwaggerConfig
                 if (enableAuthentication)
                     c.AddDocumentTransformer<BearerSecurityTransformer>();
 
-                c.AddDocumentTransformer((doc, ctx, _) =>
+                c.AddDocumentTransformer((doc, _, _) =>
                 {
                     doc.Info.Title = $"{SharedConsts.ApiName} API Version {version}";
                     doc.Servers.Add(new OpenApiServer

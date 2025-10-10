@@ -4,7 +4,7 @@ namespace EfCore.HookTests.Hooks;
 
 public sealed class HookFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer= null!;
+    private MsSqlContainer _sqlContainer = null!;
     public ServiceProvider Provider { get; private set; } = null!;
 
     public async Task InitializeAsync()
@@ -22,7 +22,7 @@ public sealed class HookFixture : IAsyncLifetime
             .AddLogging()
             .AddDbContextWithHook<HookContext>(o =>
                 o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
-            .AddHook<HookContext, Hook>()
+            .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 
         //Ensure Db Created

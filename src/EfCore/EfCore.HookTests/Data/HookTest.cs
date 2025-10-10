@@ -3,7 +3,7 @@ using DKNet.EfCore.Extensions.Snapshots;
 
 namespace EfCore.HookTests.Data;
 
-public class Hook : /*IHook,*/ IHookAsync
+public class HookTest : IHookAsync
 {
     public static bool BeforeCalled { get; private set; }
     public static bool AfterCalled { get; private set; }
@@ -11,7 +11,7 @@ public class Hook : /*IHook,*/ IHookAsync
     public static int AfterCallCount { get; private set; }
     public bool ShouldThrowException { get; set; }
 
-    public Task RunBeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         Trace.WriteLine($"Running BeforeSaveAsync at {DateTime.Now}");
         BeforeCalled = context.Entities.Count > 0;
@@ -19,7 +19,7 @@ public class Hook : /*IHook,*/ IHookAsync
         return Task.CompletedTask;
     }
 
-    public Task RunAfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    public Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         Trace.WriteLine($"Running RunAfterSaveAsync at {DateTime.Now}");
         AfterCalled = context.Entities.Count > 0;

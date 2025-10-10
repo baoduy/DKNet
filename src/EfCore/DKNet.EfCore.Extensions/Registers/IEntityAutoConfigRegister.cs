@@ -31,7 +31,7 @@ internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension, IEn
         _extraServiceProvider?.Invoke(services);
 
         //Add EntityMappingService using a factory to avoid instance-specific registrations
-        services.AddSingleton<EntityConfigRegisterService>(provider => new EntityConfigRegisterService(this));
+        services.AddSingleton<EntityConfigRegisterService>(_ => new EntityConfigRegisterService(this));
 
         //Replace the IModelCustomizer with ExtraModelCustomizer. This only available for Relational Db.
         var originalDescriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IModelCustomizer));

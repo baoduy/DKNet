@@ -22,7 +22,7 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContextWithHook<HookContext>(o =>
                 o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
-            .AddHook<HookContext, Hook>()
+            .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 
         var db = _provider.GetRequiredService<HookContext>();
@@ -49,7 +49,7 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
             // This test simulates multiple API calls that each create entities
             // This should reproduce the "More than twenty IServiceProvider instances" issue
 
-            var hook = _provider.GetRequiredKeyedService<Hook>(typeof(HookContext).FullName);
+            var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
 
             // Simulate 25 consecutive API calls - this should trigger the EF Core warning
             for (var i = 0; i < 25; i++)
@@ -63,7 +63,8 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
                 await db.AddAsync(entity);
                 await db.SaveChangesAsync();
 
-                output.WriteLine($"Iteration {i + 1}: Hook Before={Hook.BeforeCalled}, After={Hook.AfterCalled}");
+                output.WriteLine(
+                    $"Iteration {i + 1}: Hook Before={HookTest.BeforeCalled}, After={HookTest.AfterCalled}");
             }
 
             // The test itself may pass, but we should see the EF Core warning in logs

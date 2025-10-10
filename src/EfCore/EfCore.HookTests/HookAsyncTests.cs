@@ -15,7 +15,7 @@ public class HookAsyncTests
         await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing
-        await hook.RunBeforeSaveAsync(snapshot, CancellationToken.None);
+        await hook.BeforeSaveAsync(snapshot, CancellationToken.None);
 
         // The default implementation should complete successfully
         Assert.True(true);
@@ -32,7 +32,7 @@ public class HookAsyncTests
         await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing
-        await hook.RunAfterSaveAsync(snapshot, CancellationToken.None);
+        await hook.AfterSaveAsync(snapshot, CancellationToken.None);
 
         // The default implementation should complete successfully
         Assert.True(true);
@@ -50,8 +50,8 @@ public class HookAsyncTests
         var cancellationToken = new CancellationToken();
 
         // Act & Assert - should complete without throwing
-        await hook.RunBeforeSaveAsync(snapshot, cancellationToken);
-        await hook.RunAfterSaveAsync(snapshot, cancellationToken);
+        await hook.BeforeSaveAsync(snapshot, cancellationToken);
+        await hook.AfterSaveAsync(snapshot, cancellationToken);
 
         // The default implementations should handle cancellation tokens properly
         Assert.True(true);
