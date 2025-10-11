@@ -4,19 +4,23 @@ using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.EfCore.AuditLogs.Internals;
 
-internal sealed class EfCoreAuditHook(IServiceProvider serviceProvider, ILogger<EfCoreAuditHook> logger) : HookAsync
+internal sealed class EfCoreAuditHook(
+    IServiceProvider serviceProvider,
+    IOptions<AuditLogOptions> option,
+    ILogger<EfCoreAuditHook> logger) : HookAsync
 {
     private readonly Dictionary<Guid, List<AuditLogEntry>> _cache = [];
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        var logs = context.Entities.Where(e => e is
-                { Entity: IAuditedProperties, OriginalState: EntityState.Modified or EntityState.Deleted })
-            .Select(e => e.Entry.BuildAuditLog(e.OriginalState))
-            .Where(l => l is not null && l.Changes.Count > 0)
+        var logs = context.Entities
+            .Where(e => e.OriginalState is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+            .Select(e => e.Entry.BuildAuditLog(e.OriginalState, option.Value.Behaviour))
+            .Where(l => l is not null)
             .OfType<AuditLogEntry>()
             .ToList();
 

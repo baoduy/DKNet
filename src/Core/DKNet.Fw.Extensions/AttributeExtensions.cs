@@ -17,18 +17,18 @@ public static class AttributeExtensions
     /// <returns><c>true</c> if the attribute is found; otherwise, <c>false</c>.</returns>
     public static bool HasAttribute<TAttribute>(this PropertyInfo? @this, bool inherit = true)
         where TAttribute : Attribute =>
-        @this?.GetCustomAttribute<TAttribute>(inherit) != null;
+        @this is not null && Attribute.IsDefined(@this, typeof(TAttribute), inherit);
 
     /// <summary>
     ///     Determines whether the provided type has the specified attribute.
     /// </summary>
     /// <typeparam name="TAttribute">The type of the attribute to check for.</typeparam>
     /// <param name="this">The <see cref="Type" /> to check.</param>
-    /// <param name="inherit">A value indicating whether to search the type's inheritance chain to find the attribute.</param>
+    /// <param name="inherit">A value indicating whether to search the property's inheritance chain to find the attribute.</param>
     /// <returns><c>true</c> if the attribute is found; otherwise, <c>false</c>.</returns>
     public static bool HasAttribute<TAttribute>(this Type? @this, bool inherit = true)
         where TAttribute : Attribute =>
-        @this?.GetCustomAttribute<TAttribute>(inherit) != null;
+        @this is not null && Attribute.IsDefined(@this, typeof(TAttribute), inherit);
 
     /// <summary>
     ///     Determines whether the provided object has the specified attribute on the specified property.
