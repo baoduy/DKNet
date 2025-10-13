@@ -1,4 +1,3 @@
-using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;

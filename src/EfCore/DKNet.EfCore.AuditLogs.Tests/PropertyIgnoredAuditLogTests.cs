@@ -20,7 +20,7 @@ public class PropertyIgnoredAuditEntity : AuditedEntity<Guid>
 // Dedicated publisher for these tests to isolate static state
 internal sealed class DedicatedRecordingPublisher : IAuditLogPublisher
 {
-    public static ConcurrentBag<AuditLogEntry> Logs { get; } = new();
+    public static ConcurrentBag<AuditLogEntry> Logs { get; } = [];
 
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
