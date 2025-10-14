@@ -11,7 +11,4 @@ public partial record PersonSummaryDto
     public string? MiddleName { get; init; }
     public required string LastName { get; init; }
     public int Age { get; init; }
-    public DateTime? UpdatedUtc { get; init; }
-    public required string CreatedBy { get; init; }
-    public string? UpdatedBy { get; init; }
 }
