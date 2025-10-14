@@ -314,10 +314,36 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     private static List<IPropertySymbol> GetEntityProperties(INamedTypeSymbol entitySymbol)
     {
-        return entitySymbol.GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(IsValidEntityProperty)
-            .ToList();
+        var properties = new List<IPropertySymbol>();
+        var seenPropertyNames = new HashSet<string>();
+
+        // Walk up the inheritance chain to collect all properties
+        var currentType = entitySymbol;
+        while (currentType is not null)
+        {
+            // Get properties declared on this type level
+            var declaredProperties = currentType.GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(IsValidEntityProperty);
+
+            // Add properties that haven't been overridden (avoid duplicates)
+            foreach (var property in declaredProperties)
+            {
+                if (seenPropertyNames.Add(property.Name))
+                {
+                    properties.Add(property);
+                }
+            }
+
+            // Move to base type
+            currentType = currentType.BaseType;
+
+            // Stop at System.Object or System.ValueType
+            if (currentType?.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType)
+                break;
+        }
+
+        return properties;
     }
 
     private static bool IsValidEntityProperty(IPropertySymbol property)
@@ -598,10 +624,6 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     private static void AppendPropertyDeclaration(StringBuilder builder, PropertyInfo propertyInfo)
     {
-        builder.Append("    /// <summary>Gets the value mapped from entity property ")
-               .Append(propertyInfo.Name)
-               .AppendLine(".</summary>");
-        
         builder.Append("    public ");
         
         if (propertyInfo.IsNonNullableString)

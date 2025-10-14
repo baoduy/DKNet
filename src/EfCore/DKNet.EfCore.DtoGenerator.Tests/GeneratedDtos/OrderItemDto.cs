@@ -7,12 +7,8 @@ namespace DKNet.EfCore.DtoGenerator.Tests;
 /// </summary>
 public partial record OrderItemDto
 {
-    /// <summary>Gets the value mapped from entity property Id.</summary>
     public int Id { get; init; }
-    /// <summary>Gets the value mapped from entity property Sku.</summary>
     public required string Sku { get; init; }
-    /// <summary>Gets the value mapped from entity property Quantity.</summary>
     public int Quantity { get; init; }
-    /// <summary>Gets the value mapped from entity property Price.</summary>
     public decimal Price { get; init; }
 }

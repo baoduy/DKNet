@@ -80,7 +80,7 @@ public class DtoGenerationTests
         var text = File.ReadAllText(file);
 
         // Should have using statement for entity namespace
-        text.ShouldContain("using Some.Others.Namespaces;");
+        text.ShouldContain("using DKNet.EfCore.DtoEntities;");
         text.ShouldContain("using System.Collections.Generic;");
 
         // Should have properties with clean type names (no global:: prefix)
@@ -89,6 +89,12 @@ public class DtoGenerationTests
         text.ShouldContain("public string? Email { get; init; }");
         text.ShouldContain("public Address? PrimaryAddress { get; init; }");
         text.ShouldContain("public List<Order> Orders { get; init; } = [];");
+
+        // Should have inherited properties from EntityBase
+        text.ShouldContain("public DateTime CreatedUtc { get; init; }");
+        text.ShouldContain("public DateTime? UpdatedUtc { get; init; }");
+        text.ShouldContain("public required string CreatedBy { get; init; }");
+        text.ShouldContain("public string? UpdatedBy { get; init; }");
 
         // Should NOT have global:: prefixes
         text.ShouldNotContain("global::DKNet.EfCore.DtoGenerator.Tests.Order");
@@ -110,9 +116,15 @@ public class DtoGenerationTests
         // Non-nullable collection should have empty initializer
         text.ShouldContain("public List<OrderItem> Items { get; init; } = [];");
 
-        // Should have using statements
-        text.ShouldContain("using Some.Others.Namespaces;");
+        // Should have using statements for entity namespace
+        text.ShouldContain("using DKNet.EfCore.DtoEntities;");
         text.ShouldContain("using System.Collections.Generic;");
+
+        // Should have inherited properties from EntityBase
+        text.ShouldContain("public DateTime CreatedUtc { get; init; }");
+        text.ShouldContain("public DateTime? UpdatedUtc { get; init; }");
+        text.ShouldContain("public required string CreatedBy { get; init; }");
+        text.ShouldContain("public string? UpdatedBy { get; init; }");
 
         // Verify NO constructor
         text.ShouldNotContain("public OrderDto(");

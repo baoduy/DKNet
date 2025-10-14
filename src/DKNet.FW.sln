@@ -152,6 +152,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator.Tests", "EfCore\DKNet.EfCore.DtoGenerator.Tests\DKNet.EfCore.DtoGenerator.Tests.csproj", "{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoEntities", "EfCore\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj", "{BD132A0C-DFD3-492E-A265-BDD230761BD2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -358,6 +360,10 @@ Global
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -417,5 +423,6 @@ Global
 		{DFB15D85-66A8-488A-9F95-80DBA31BB66B} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{6A4087FA-8514-4F23-8649-34871BF22866} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2} = {79AB749C-6325-4718-9BE0-36C750367F00}
 	EndGlobalSection
 EndGlobal
