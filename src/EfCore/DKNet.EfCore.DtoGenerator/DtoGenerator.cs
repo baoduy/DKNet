@@ -330,13 +330,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var dtoSymbol = target.DtoSymbol;
         var entitySymbol = target.EntitySymbol;
         
-        // Only consider properties defined in user source code (not generated files)
-        // to avoid treating previously generated properties as "existing"
-        var existingProperties = new HashSet<string>(
-            dtoSymbol.GetMembers()
-                .OfType<IPropertySymbol>()
-                .Where(p => !IsFromGeneratedCode(p))
-                .Select(p => p.Name));
+        // Only consider properties that are explicitly defined in the user's source files (not generated)
+        // This requires checking the syntax tree location to exclude .g.cs files
+        var existingProperties = new HashSet<string>();
+        
+        foreach (var member in dtoSymbol.GetMembers().OfType<IPropertySymbol>())
+        {
+            if (!IsFromGeneratedCode(member))
+            {
+                existingProperties.Add(member.Name);
+            }
+        }
 
         var namespaceName = dtoSymbol.ContainingNamespace is { IsGlobalNamespace: false } 
             ? dtoSymbol.ContainingNamespace.ToDisplayString() 
@@ -364,9 +368,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
         {
             var filePath = syntaxRef.SyntaxTree.FilePath;
             
-            // Simply check if it ends with .g.cs (the standard convention for generated files)
-            // This is the most reliable way to detect our own generated output
-            if (filePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase))
+            // Check multiple indicators of generated code:
+            // 1. Ends with .g.cs (standard for generated files)
+            // 2. Empty file path (can happen with in-memory generated files)
+            // 3. Contains "/obj/" or "\obj\" (intermediate output folder)
+            if (string.IsNullOrEmpty(filePath) ||
+                filePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) ||
+                filePath.IndexOf("/obj/", StringComparison.Ordinal) >= 0 ||
+                filePath.IndexOf("\\obj\\", StringComparison.Ordinal) >= 0)
             {
                 return true;
             }
