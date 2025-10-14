@@ -40,10 +40,10 @@
         <PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.1"/>
         <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0"/>
         <PackageVersion Include="AutoBogus" Version="2.13.1"/>
-        <PackageVersion Include="AWSSDK.Core" Version="4.0.0.32"/>
-        <PackageVersion Include="AWSSDK.S3" Version="4.0.7.7"/>
+        <PackageVersion Include="AWSSDK.Core" Version="4.0.1"/>
+        <PackageVersion Include="AWSSDK.S3" Version="4.0.7.9"/>
         <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0"/>
-        <PackageVersion Include="Azure.Storage.Blobs" Version="12.25.1"/>
+        <PackageVersion Include="Azure.Storage.Blobs" Version="12.26.0"/>
         <PackageVersion Include="Bogus" Version="35.6.4"/>
         <PackageVersion Include="coverlet.collector" Version="6.0.4"/>
         <PackageVersion Include="FluentResults" Version="4.0.0"/>
@@ -90,18 +90,18 @@
         <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.9"/>
         <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore" Version="4.3.0"/>
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0"/>
-        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" PrivateAssets="all"/>
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all"/>
         <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all"/>
         <PackageVersion Include="Moq" Version="4.20.72"/>
         <PackageVersion Include="NetArchTest.Rules" Version="1.3.2"/>
         <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
-        <PackageVersion Include="OpenTelemetry" Version="1.13.0"/>
-        <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.13.0"/>
-        <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.13.0"/>
-        <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.13.0"/>
+        <PackageVersion Include="OpenTelemetry" Version="1.13.1"/>
+        <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.13.1"/>
+        <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.13.1"/>
+        <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.13.1"/>
         <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0"/>
         <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0"/>
-        <PackageVersion Include="Scalar.AspNetCore" Version="2.8.10"/>
+        <PackageVersion Include="Scalar.AspNetCore" Version="2.8.11"/>
         <PackageVersion Include="Scrutor" Version="6.1.0"/>
         <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0"/>
         <PackageVersion Include="Shouldly" Version="4.3.0"/>
@@ -125,11 +125,11 @@
         <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5"/>
         <PackageVersion Include="Markdig" Version="0.42.0"/>
         <PackageVersion Include="PdfPig" Version="0.1.11"/>
-        <PackageVersion Include="PuppeteerSharp" Version="20.2.2"/>
+        <PackageVersion Include="PuppeteerSharp" Version="20.2.4"/>
         <PackageVersion Include="YamlDotNet" Version="16.3.0"/>
     </ItemGroup>
     <ItemGroup>
-        <PackageVersion Include="Meziantou.Analyzer" Version="2.0.224">
+        <PackageVersion Include="Meziantou.Analyzer" Version="2.0.225">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageVersion>
