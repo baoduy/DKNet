@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace DKNet.EfCore.DtoGenerator;
+
+#nullable enable
 
 /// <summary>
 /// Incremental source generator for DTOs. Generates properties (init-only) for each public instance
@@ -19,206 +22,675 @@ namespace DKNet.EfCore.DtoGenerator;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:This compiler extension should not be implemented in an assembly with target framework", Justification = "Targeting .NET 9+ only")]
 public sealed class DtoGenerator : IIncrementalGenerator
 {
+    #region Constants
+
+    private const string AttributeShortName = "GenerateDto";
+    private const string AttributeFullName = "GenerateDtoAttribute";
+    private const string ExcludeParameterName = "Exclude";
+    private const string DiagnosticId = "DKDTOGEN001";
+    private const string DiagnosticCategory = "DKNet.EfCore.DtoGenerator";
+
+    #endregion
+
+    #region Initialization
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var targets = context.SyntaxProvider.CreateSyntaxProvider(
-                static (node, _) => node is TypeDeclarationSyntax t && t.AttributeLists.Count > 0,
-                static (ctx, _) => GetTarget(ctx))
+        var targets = CreateSyntaxProvider(context);
+        var compilation = context.CompilationProvider.Combine(targets.Collect());
+        RegisterSourceGeneration(context, compilation);
+    }
+
+    private static IncrementalValuesProvider<Target> CreateSyntaxProvider(IncrementalGeneratorInitializationContext context)
+    {
+        return context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => IsTypeDeclarationWithAttributes(node),
+                static (ctx, _) => ExtractGenerationTarget(ctx))
             .Where(static t => t is not null)!;
+    }
 
-        var combo = context.CompilationProvider.Combine(targets.Collect());
-
-        context.RegisterSourceOutput(combo, static (spc, pair) =>
+    private static void RegisterSourceGeneration(
+        IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<(Compilation Left, System.Collections.Immutable.ImmutableArray<Target> Right)> compilation)
+    {
+        context.RegisterSourceOutput(compilation, static (spc, pair) =>
         {
-            var (compilation, collected) = pair;
-            foreach (var target in collected)
+            var (compilation, targets) = pair;
+            foreach (var target in targets)
             {
                 if (target is null) continue;
+
                 try
                 {
-                    EmitForTarget(spc, compilation, target);
+                    GenerateDtoSource(spc, compilation, target);
                 }
                 catch (Exception ex)
                 {
-                    ReportDiagnostic(spc, target.DtoSymbol, ex.Message);
+                    ReportGenerationError(spc, target.DtoSymbol, ex.Message);
                 }
             }
         });
     }
 
-    private static Target GetTarget(GeneratorSyntaxContext ctx)
+    #endregion
+
+    #region Attribute Detection & Parsing
+
+    private static bool IsTypeDeclarationWithAttributes(SyntaxNode node)
     {
-        if (ctx.Node is not TypeDeclarationSyntax tds) return null;
-        foreach (var list in tds.AttributeLists)
+        return node is TypeDeclarationSyntax { AttributeLists.Count: > 0 };
+    }
+
+    private static Target? ExtractGenerationTarget(GeneratorSyntaxContext ctx)
+    {
+        if (ctx.Node is not TypeDeclarationSyntax typeDeclaration) 
+            return null;
+
+        foreach (var attributeList in typeDeclaration.AttributeLists)
         {
-            foreach (var attr in list.Attributes)
+            foreach (var attribute in attributeList.Attributes)
             {
-                var shortName = attr.Name switch
-                {
-                    IdentifierNameSyntax ins => ins.Identifier.Text,
-                    QualifiedNameSyntax qns => qns.Right.Identifier.Text,
-                    _ => null
-                };
-                if (shortName is not ("GenerateDto" or "GenerateDtoAttribute")) continue;
-                if (attr.ArgumentList?.Arguments.Count < 1) return null;
-                if (attr.ArgumentList!.Arguments[0].Expression is not TypeOfExpressionSyntax toe) return null;
-                var entitySymbol = ctx.SemanticModel.GetTypeInfo(toe.Type).Type as INamedTypeSymbol;
-                if (entitySymbol is null) return null;
-                var dtoSymbol = ctx.SemanticModel.GetDeclaredSymbol(tds) as INamedTypeSymbol;
-                if (dtoSymbol is null) return null;
-
-                // Extract Exclude parameter if present
-                HashSet<string> excludedProperties = null;
-                foreach (var arg in attr.ArgumentList.Arguments)
-                {
-                    if (arg.NameEquals?.Name.Identifier.Text == "Exclude")
-                    {
-                        if (arg.Expression is ImplicitArrayCreationExpressionSyntax implicitArray)
-                        {
-                            excludedProperties = ExtractStringLiterals(implicitArray.Initializer);
-                        }
-                        else if (arg.Expression is ArrayCreationExpressionSyntax explicitArray && explicitArray.Initializer is not null)
-                        {
-                            excludedProperties = ExtractStringLiterals(explicitArray.Initializer);
-                        }
-                        else if (arg.Expression is CollectionExpressionSyntax collectionExpr)
-                        {
-                            excludedProperties = new HashSet<string>();
-                            foreach (var element in collectionExpr.Elements)
-                            {
-                                if (element is ExpressionElementSyntax exprElement &&
-                                    exprElement.Expression is LiteralExpressionSyntax literal &&
-                                    ctx.SemanticModel.GetConstantValue(literal).Value is string str)
-                                {
-                                    excludedProperties.Add(str);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return new Target(dtoSymbol, entitySymbol, excludedProperties);
+                var target = TryExtractTargetFromAttribute(ctx, typeDeclaration, attribute);
+                if (target is not null)
+                    return target;
             }
         }
+
         return null;
     }
 
-    private static HashSet<string> ExtractStringLiterals(InitializerExpressionSyntax initializer)
+    private static Target? TryExtractTargetFromAttribute(
+        GeneratorSyntaxContext ctx,
+        TypeDeclarationSyntax typeDeclaration,
+        AttributeSyntax attribute)
     {
-        var result = new HashSet<string>();
-        foreach (var expr in initializer.Expressions)
+        if (!IsGenerateDtoAttribute(attribute))
+            return null;
+
+        if (attribute.ArgumentList?.Arguments.Count < 1)
+            return null;
+
+        var entitySymbol = ExtractEntityTypeFromAttribute(ctx, attribute);
+        if (entitySymbol is null)
+            return null;
+
+        var dtoSymbol = ctx.SemanticModel.GetDeclaredSymbol(typeDeclaration) as INamedTypeSymbol;
+        if (dtoSymbol is null)
+            return null;
+
+        var excludedProperties = ExtractExcludedPropertiesFromAttribute(ctx, attribute);
+        return new Target(dtoSymbol, entitySymbol, excludedProperties);
+    }
+
+    private static bool IsGenerateDtoAttribute(AttributeSyntax attribute)
+    {
+        var shortName = ExtractAttributeShortName(attribute);
+        return shortName is AttributeShortName or AttributeFullName;
+    }
+
+    private static string? ExtractAttributeShortName(AttributeSyntax attribute)
+    {
+        return attribute.Name switch
         {
-            if (expr is LiteralExpressionSyntax literal && literal.Token.Value is string str)
+            IdentifierNameSyntax ins => ins.Identifier.Text,
+            QualifiedNameSyntax qns => qns.Right.Identifier.Text,
+            _ => null
+        };
+    }
+
+    #endregion
+
+    #region Entity Type Extraction
+
+    private static INamedTypeSymbol? ExtractEntityTypeFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    {
+        var firstArg = attribute.ArgumentList!.Arguments[0].Expression;
+        
+        return firstArg switch
+        {
+            TypeOfExpressionSyntax typeOfExpression => ExtractEntityFromTypeOfExpression(ctx, typeOfExpression),
+            LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression)
+                => ResolveEntityByName(ctx.SemanticModel.Compilation, literal.Token.ValueText),
+            _ => null
+        };
+    }
+
+    private static INamedTypeSymbol? ExtractEntityFromTypeOfExpression(GeneratorSyntaxContext ctx, TypeOfExpressionSyntax typeOfExpression)
+    {
+        var entitySymbol = ctx.SemanticModel.GetTypeInfo(typeOfExpression.Type).Type as INamedTypeSymbol;
+        
+        // If resolution failed, try by name as fallback
+        if (entitySymbol is null || entitySymbol is IErrorTypeSymbol)
+        {
+            if (typeOfExpression.Type is IdentifierNameSyntax identifierName)
             {
-                result.Add(str);
+                return ResolveEntityByName(ctx.SemanticModel.Compilation, identifierName.Identifier.Text);
             }
         }
+        
+        return entitySymbol;
+    }
+
+    private static INamedTypeSymbol? ResolveEntityByName(Compilation compilation, string entityName)
+    {
+        var matches = FindTypeSymbolsByName(compilation, entityName);
+        
+        return matches.Count switch
+        {
+            1 => matches[0],
+            > 1 => null, // Ambiguous - skip generation
+            _ => null    // Not found
+        };
+    }
+
+    private static List<INamedTypeSymbol> FindTypeSymbolsByName(Compilation compilation, string typeName)
+    {
+        return compilation
+            .GetSymbolsWithName(name => name.Equals(typeName, StringComparison.Ordinal), SymbolFilter.Type)
+            .OfType<INamedTypeSymbol>()
+            .Where(symbol => symbol.TypeKind is TypeKind.Class or TypeKind.Struct)
+            .ToList();
+    }
+
+    #endregion
+
+    #region Excluded Properties Extraction
+
+    private static HashSet<string>? ExtractExcludedPropertiesFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    {
+        foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
+        {
+            if (arg.NameEquals?.Name.Identifier.Text == ExcludeParameterName)
+            {
+                return ExtractExcludedPropertiesFromExpression(ctx, arg.Expression);
+            }
+        }
+
+        return null;
+    }
+
+    private static HashSet<string>? ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
+    {
+        return expression switch
+        {
+            ImplicitArrayCreationExpressionSyntax implicitArray
+                => ExtractStringLiteralsFromInitializer(implicitArray.Initializer),
+            ArrayCreationExpressionSyntax { Initializer: not null } explicitArray
+                => ExtractStringLiteralsFromInitializer(explicitArray.Initializer),
+            CollectionExpressionSyntax collectionExpr
+                => ExtractStringLiteralsFromCollectionExpression(ctx, collectionExpr),
+            _ => null
+        };
+    }
+
+    private static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
+    {
+        var result = new HashSet<string>();
+        
+        foreach (var expression in initializer.Expressions)
+        {
+            if (expression is LiteralExpressionSyntax literal && literal.Token.Value is string propertyName)
+            {
+                result.Add(propertyName);
+            }
+        }
+        
         return result;
     }
 
-    private static void EmitForTarget(SourceProductionContext context, Compilation compilation, Target target)
+    private static HashSet<string> ExtractStringLiteralsFromCollectionExpression(
+        GeneratorSyntaxContext ctx,
+        CollectionExpressionSyntax collectionExpression)
+    {
+        var excludedProperties = new HashSet<string>();
+
+        foreach (var element in collectionExpression.Elements)
+        {
+            if (element is ExpressionElementSyntax { Expression: LiteralExpressionSyntax literal } &&
+                ctx.SemanticModel.GetConstantValue(literal).Value is string propertyName)
+            {
+                excludedProperties.Add(propertyName);
+            }
+        }
+
+        return excludedProperties;
+    }
+
+    #endregion
+
+    #region DTO Source Generation
+
+    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target)
+    {
+        var dtoMetadata = ExtractDtoMetadata(target);
+        var entityProperties = GetEntityProperties(target.EntitySymbol);
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties);
+        var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
+        var typeDisplayFormat = CreateTypeDisplayFormat();
+        
+        var sourceCode = BuildDtoSourceCode(dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat);
+        
+        context.AddSource($"{dtoMetadata.Name}.cs", sourceCode);
+    }
+
+    private static DtoMetadata ExtractDtoMetadata(Target target)
     {
         var dtoSymbol = target.DtoSymbol;
         var entitySymbol = target.EntitySymbol;
-        var entityMinimal = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        
+        var existingProperties = new HashSet<string>(
+            dtoSymbol.GetMembers()
+                .OfType<IPropertySymbol>()
+                .Select(p => p.Name));
 
-        var entityProps = entitySymbol.GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(p => !p.IsStatic && p.DeclaredAccessibility == Accessibility.Public && p.GetMethod is not null && p.Parameters.Length == 0)
-            .OrderBy(p => p.Name)
-            .ToList();
-
-        var existingDtoProps = new HashSet<string>(dtoSymbol.GetMembers().OfType<IPropertySymbol>().Select(p => p.Name));
-
-        var ns = dtoSymbol.ContainingNamespace is { IsGlobalNamespace: false } ? dtoSymbol.ContainingNamespace.ToDisplayString() : null;
-        var dtoName = dtoSymbol.Name;
-
-        // Custom format that includes nullable annotations
-        var typeDisplayFormat = new SymbolDisplayFormat(
-            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
-                                  SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-
-        var sb = new StringBuilder();
-        sb.AppendLine("// <auto-generated/> Generated by DKNet.EfCore.DtoGenerator");
-        sb.AppendLine("#nullable enable");
-        if (ns is not null)
-        {
-            sb.Append("namespace ").Append(ns).AppendLine(";");
-            sb.AppendLine();
-        }
-        var typeKind = dtoSymbol.IsRecord
-            ? (dtoSymbol.TypeKind == TypeKind.Struct ? "partial record struct" : "partial record")
-            : "partial class";
-
-        sb.AppendLine("/// <summary>");
-        sb.AppendLine($"/// Generated DTO for entity {entityMinimal}.");
-        sb.AppendLine("/// </summary>");
-        sb.AppendLine($"public {typeKind} {dtoName}");
-        sb.AppendLine("{");
-
-        foreach (var p in entityProps)
-        {
-            // Skip if property is in user's existing DTO or in the Exclude list
-            if (existingDtoProps.Contains(p.Name)) continue;
-            if (target.ExcludedProperties?.Contains(p.Name) == true) continue;
-
-            var typeName = p.Type.ToDisplayString(typeDisplayFormat);
-
-            // Manually append ? for nullable reference types since SymbolDisplayFormat doesn't always work
-            if (p.Type.IsReferenceType && p.NullableAnnotation == NullableAnnotation.Annotated && !typeName.EndsWith("?"))
-            {
-                typeName += "?";
-            }
-
-            // Only add 'required' to non-nullable string properties
-            var isNonNullableString = p.Type.SpecialType == SpecialType.System_String &&
-                                      p.NullableAnnotation != NullableAnnotation.Annotated;
-
-            // Check if property is a collection type using more robust metadata name check
-            var isCollection = false;
-            if (p.Type is IArrayTypeSymbol)
-            {
-                isCollection = true;
-            }
-            else if (p.Type is INamedTypeSymbol namedType)
-            {
-                var fullName = namedType.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                isCollection = fullName.StartsWith("global::System.Collections.Generic.List<") ||
-                              fullName.StartsWith("global::System.Collections.Generic.IList<") ||
-                              fullName.StartsWith("global::System.Collections.Generic.ICollection<") ||
-                              fullName.StartsWith("global::System.Collections.Generic.IEnumerable<");
-            }
-
-            sb.Append("    /// <summary>Gets the value mapped from entity property ").Append(p.Name).AppendLine(".</summary>");
-            sb.Append("    public ");
-            if (isNonNullableString) sb.Append("required ");
-            sb.Append(typeName).Append(' ').Append(p.Name).Append(" { get; init; }");
-            if (isCollection && p.NullableAnnotation != NullableAnnotation.Annotated)
-            {
-                sb.Append(" = [];");
-            }
-            sb.AppendLine();
-        }
-        sb.AppendLine("}");
-        context.AddSource(dtoName + ".cs", sb.ToString());
+        var namespaceName = dtoSymbol.ContainingNamespace is { IsGlobalNamespace: false } 
+            ? dtoSymbol.ContainingNamespace.ToDisplayString() 
+            : null;
+        
+        var typeKind = DetermineTypeKind(dtoSymbol);
+        var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        
+        return new DtoMetadata(
+            dtoSymbol.Name,
+            namespaceName,
+            typeKind,
+            entityDisplayName,
+            existingProperties);
     }
 
-    private static void ReportDiagnostic(SourceProductionContext context, INamedTypeSymbol dtoSymbol, string message)
+    private static string DetermineTypeKind(INamedTypeSymbol dtoSymbol)
+    {
+        if (!dtoSymbol.IsRecord)
+            return "partial class";
+
+        return dtoSymbol.TypeKind == TypeKind.Struct
+            ? "partial record struct"
+            : "partial record";
+    }
+
+    #endregion
+
+    #region Property Analysis
+
+    private static List<IPropertySymbol> GetEntityProperties(INamedTypeSymbol entitySymbol)
+    {
+        return entitySymbol.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(IsValidEntityProperty)
+            .ToList();
+    }
+
+    private static bool IsValidEntityProperty(IPropertySymbol property)
+    {
+        return !property.IsStatic && 
+               property.DeclaredAccessibility == Accessibility.Public && 
+               property.GetMethod is not null && 
+               property.GetMethod.DeclaredAccessibility == Accessibility.Public &&
+               property.Parameters.Length == 0;
+    }
+
+    private static List<IPropertySymbol> FilterIncludedProperties(
+        List<IPropertySymbol> entityProperties,
+        HashSet<string>? excludedProperties)
+    {
+        if (excludedProperties is null || excludedProperties.Count == 0)
+            return entityProperties;
+
+        return entityProperties
+            .Where(p => !excludedProperties.Contains(p.Name))
+            .ToList();
+    }
+
+    private static PropertyInfo AnalyzeProperty(IPropertySymbol property, SymbolDisplayFormat typeFormat)
+    {
+        var typeName = GetPropertyTypeName(property, typeFormat);
+        var isNonNullableString = IsNonNullableString(property);
+        var isCollection = IsCollectionType(property);
+
+        return new PropertyInfo(
+            property.Name,
+            typeName,
+            isNonNullableString,
+            isCollection,
+            property.NullableAnnotation);
+    }
+
+    private static string GetPropertyTypeName(IPropertySymbol property, SymbolDisplayFormat typeFormat)
+    {
+        var type = property.Type;
+
+        // Build the complete type name manually to avoid any global:: prefixes
+        var typeName = BuildCleanTypeName(type);
+
+        // Ensure nullable reference types have the ? suffix
+        if (type.IsReferenceType &&
+            property.NullableAnnotation == NullableAnnotation.Annotated &&
+            !typeName.EndsWith("?"))
+        {
+            typeName += "?";
+        }
+
+        return typeName;
+    }
+
+    private static string BuildCleanTypeName(ITypeSymbol type)
+    {
+        // Handle special types (int, string, etc.) using C# keywords
+        if (type.SpecialType != SpecialType.None)
+        {
+            return type.SpecialType switch
+            {
+                SpecialType.System_Object => "object",
+                SpecialType.System_Boolean => "bool",
+                SpecialType.System_Char => "char",
+                SpecialType.System_SByte => "sbyte",
+                SpecialType.System_Byte => "byte",
+                SpecialType.System_Int16 => "short",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_Int32 => "int",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_Int64 => "long",
+                SpecialType.System_UInt64 => "ulong",
+                SpecialType.System_Decimal => "decimal",
+                SpecialType.System_Single => "float",
+                SpecialType.System_Double => "double",
+                SpecialType.System_String => "string",
+                SpecialType.System_Void => "void",
+                _ => type.Name
+            };
+        }
+
+        // Handle array types
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            var elementTypeName = BuildCleanTypeName(arrayType.ElementType);
+            return $"{elementTypeName}[]";
+        }
+
+        // Handle nullable value types
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+        {
+            var underlyingTypeName = BuildCleanTypeName(nullable.TypeArguments[0]);
+            return $"{underlyingTypeName}?";
+        }
+
+        // Handle generic types (like List<T>, IEnumerable<T>, etc.)
+        if (type is INamedTypeSymbol namedType && namedType.TypeArguments.Length > 0)
+        {
+            var genericName = namedType.Name;
+            var typeArgs = string.Join(", ", namedType.TypeArguments.Select(BuildCleanTypeName));
+            return $"{genericName}<{typeArgs}>";
+        }
+
+        // For non-generic types, just use the simple name (no namespace, no global::)
+        return type.Name;
+    }
+
+    private static bool IsNonNullableString(IPropertySymbol property)
+    {
+        return property.Type.SpecialType == SpecialType.System_String &&
+               property.NullableAnnotation != NullableAnnotation.Annotated;
+    }
+
+    private static bool IsCollectionType(IPropertySymbol property)
+    {
+        if (property.Type is IArrayTypeSymbol)
+            return true;
+
+        if (property.Type is not INamedTypeSymbol namedType)
+            return false;
+
+        var fullyQualifiedName = namedType.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+        return IsKnownCollectionInterface(fullyQualifiedName);
+    }
+
+    private static bool IsKnownCollectionInterface(string fullyQualifiedName)
+    {
+        return fullyQualifiedName.StartsWith("global::System.Collections.Generic.List<") ||
+               fullyQualifiedName.StartsWith("global::System.Collections.Generic.IList<") ||
+               fullyQualifiedName.StartsWith("global::System.Collections.Generic.ICollection<") ||
+               fullyQualifiedName.StartsWith("global::System.Collections.Generic.IEnumerable<");
+    }
+
+    #endregion
+
+    #region Namespace Collection
+
+    private static HashSet<string> CollectRequiredNamespaces(List<IPropertySymbol> properties, string? dtoNamespace)
+    {
+        var namespaces = new HashSet<string>();
+        
+        foreach (var property in properties)
+        {
+            CollectNamespacesFromType(property.Type, namespaces, dtoNamespace);
+        }
+        
+        return namespaces;
+    }
+
+    private static void CollectNamespacesFromType(ITypeSymbol type, HashSet<string> namespaces, string? dtoNamespace)
+    {
+        // Skip special types (int, string, etc.)
+        if (type.SpecialType != SpecialType.None)
+            return;
+
+        // Handle nullable value types
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+        {
+            CollectNamespacesFromType(nullable.TypeArguments[0], namespaces, dtoNamespace);
+            return;
+        }
+
+        // Add namespace if it's not the DTO's own namespace and not global
+        if (type.ContainingNamespace is { IsGlobalNamespace: false } ns)
+        {
+            var nsString = ns.ToDisplayString();
+
+            // Skip System namespace (except System.Collections.Generic)
+            // Always include System.Collections.Generic
+            // Always include namespaces different from the DTO's namespace
+            if (nsString == "System.Collections.Generic" ||
+                (nsString != dtoNamespace && nsString != "System"))
+            {
+                namespaces.Add(nsString);
+            }
+        }
+
+        // Recursively handle generic type arguments
+        if (type is INamedTypeSymbol namedType)
+        {
+            foreach (var typeArg in namedType.TypeArguments)
+            {
+                CollectNamespacesFromType(typeArg, namespaces, dtoNamespace);
+            }
+        }
+
+        // Handle array element types
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            CollectNamespacesFromType(arrayType.ElementType, namespaces, dtoNamespace);
+        }
+    }
+
+    private static SymbolDisplayFormat CreateTypeDisplayFormat()
+    {
+        return new SymbolDisplayFormat(
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+    }
+
+    #endregion
+
+    #region Code Building
+
+    private static string BuildDtoSourceCode(
+        DtoMetadata metadata,
+        List<IPropertySymbol> properties,
+        HashSet<string> namespaces,
+        SymbolDisplayFormat typeFormat)
+    {
+        var builder = new StringBuilder();
+        
+        AppendFileHeader(builder);
+        AppendUsingDirectives(builder, namespaces);
+        AppendNamespaceDeclaration(builder, metadata.Namespace);
+        AppendDtoClassDeclaration(builder, metadata);
+        AppendDtoProperties(builder, properties, metadata.ExistingProperties, typeFormat);
+        AppendClassClosing(builder);
+        
+        return builder.ToString();
+    }
+
+    private static void AppendFileHeader(StringBuilder builder)
+    {
+        builder.AppendLine("// <auto-generated/> Generated by DKNet.EfCore.DtoGenerator");
+        builder.AppendLine("#nullable enable");
+    }
+
+    private static void AppendUsingDirectives(StringBuilder builder, HashSet<string> namespaces)
+    {
+        if (namespaces.Count == 0)
+            return;
+
+        foreach (var namespaceName in namespaces.OrderBy(n => n))
+        {
+            builder.Append("using ").Append(namespaceName).AppendLine(";");
+        }
+        
+        builder.AppendLine();
+    }
+
+    private static void AppendNamespaceDeclaration(StringBuilder builder, string? namespaceName)
+    {
+        if (namespaceName is not null)
+        {
+            builder.Append("namespace ").Append(namespaceName).AppendLine(";");
+            builder.AppendLine();
+        }
+    }
+
+    private static void AppendDtoClassDeclaration(StringBuilder builder, DtoMetadata metadata)
+    {
+        builder.AppendLine("/// <summary>");
+        builder.Append("/// Generated DTO for entity ").Append(metadata.EntityDisplayName).AppendLine(".");
+        builder.AppendLine("/// </summary>");
+        builder.Append("public ").Append(metadata.TypeKind).Append(' ').AppendLine(metadata.Name);
+        builder.AppendLine("{");
+    }
+
+    private static void AppendDtoProperties(
+        StringBuilder builder,
+        List<IPropertySymbol> properties,
+        HashSet<string> existingProperties,
+        SymbolDisplayFormat typeFormat)
+    {
+        foreach (var property in properties)
+        {
+            if (existingProperties.Contains(property.Name))
+                continue;
+                
+            var propertyInfo = AnalyzeProperty(property, typeFormat);
+            AppendPropertyDeclaration(builder, propertyInfo);
+        }
+    }
+
+    private static void AppendPropertyDeclaration(StringBuilder builder, PropertyInfo propertyInfo)
+    {
+        builder.Append("    /// <summary>Gets the value mapped from entity property ")
+               .Append(propertyInfo.Name)
+               .AppendLine(".</summary>");
+        
+        builder.Append("    public ");
+        
+        if (propertyInfo.IsNonNullableString)
+            builder.Append("required ");
+            
+        builder.Append(propertyInfo.TypeName)
+               .Append(' ')
+               .Append(propertyInfo.Name)
+               .Append(" { get; init; }");
+        
+        // Initialize non-nullable collections with empty collection
+        if (propertyInfo.IsCollection && propertyInfo.NullableAnnotation != NullableAnnotation.Annotated)
+        {
+            builder.Append(" = [];");
+        }
+        
+        builder.AppendLine();
+    }
+
+    private static void AppendDtoConstructor(
+        StringBuilder builder,
+        string dtoName,
+        List<IPropertySymbol> properties,
+        SymbolDisplayFormat typeFormat)
+    {
+        // Constructor generation is disabled - DTOs can use object initializers or primary constructors
+        return;
+    }
+
+    private static void AppendConstructorDocumentation(StringBuilder builder)
+    {
+        // Not used - constructors are not generated
+    }
+
+    private static void AppendConstructorSignature(
+        StringBuilder builder,
+        string dtoName,
+        List<IPropertySymbol> properties,
+        SymbolDisplayFormat typeFormat)
+    {
+        // Not used - constructors are not generated
+    }
+
+    private static void AppendConstructorBody(StringBuilder builder, List<IPropertySymbol> properties)
+    {
+        // Not used - constructors are not generated
+    }
+
+    private static void AppendClassClosing(StringBuilder builder)
+    {
+        builder.AppendLine("}");
+    }
+
+    private static string CreateParameterName(string propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+            return propertyName;
+
+        var paramName = char.ToLowerInvariant(propertyName[0]) + propertyName.Substring(1);
+        
+        // Escape C# keywords
+        if (SyntaxFacts.GetKeywordKind(paramName) != SyntaxKind.None)
+            paramName = "@" + paramName;
+            
+        return paramName;
+    }
+
+    #endregion
+
+    #region Diagnostics
+
+    private static void ReportGenerationError(SourceProductionContext context, INamedTypeSymbol dtoSymbol, string message)
     {
         var descriptor = new DiagnosticDescriptor(
-            id: "DKDTOGEN001",
+            id: DiagnosticId,
             title: "DTO generation warning",
             messageFormat: "{0}: {1}",
-            category: "DKNet.EfCore.DtoGenerator",
+            category: DiagnosticCategory,
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, Location.None, dtoSymbol.ToDisplayString(), message));
+
+        context.ReportDiagnostic(
+            Diagnostic.Create(descriptor, Location.None, dtoSymbol.ToDisplayString(), message));
     }
 
-#nullable enable
+    #endregion
+
+    #region Data Models
+
     private sealed class Target
     {
         public INamedTypeSymbol DtoSymbol { get; }
@@ -232,5 +704,53 @@ public sealed class DtoGenerator : IIncrementalGenerator
             ExcludedProperties = excludedProperties;
         }
     }
-#nullable restore
+
+    private sealed class DtoMetadata
+    {
+        public string Name { get; }
+        public string? Namespace { get; }
+        public string TypeKind { get; }
+        public string EntityDisplayName { get; }
+        public HashSet<string> ExistingProperties { get; }
+
+        public DtoMetadata(
+            string name,
+            string? namespaceName,
+            string typeKind,
+            string entityDisplayName,
+            HashSet<string> existingProperties)
+        {
+            Name = name;
+            Namespace = namespaceName;
+            TypeKind = typeKind;
+            EntityDisplayName = entityDisplayName;
+            ExistingProperties = existingProperties;
+        }
+    }
+
+    private sealed class PropertyInfo
+    {
+        public string Name { get; }
+        public string TypeName { get; }
+        public bool IsNonNullableString { get; }
+        public bool IsCollection { get; }
+        public NullableAnnotation NullableAnnotation { get; }
+
+        public PropertyInfo(
+            string name,
+            string typeName,
+            bool isNonNullableString,
+            bool isCollection,
+            NullableAnnotation nullableAnnotation)
+        {
+            Name = name;
+            TypeName = typeName;
+            IsNonNullableString = isNonNullableString;
+            IsCollection = isCollection;
+            NullableAnnotation = nullableAnnotation;
+        }
+    }
+
+    #endregion
 }
+

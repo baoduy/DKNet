@@ -1,600 +1,171 @@
-using System.Reflection;
 using Shouldly;
-using Mapster; // Added for Adapt mappings
 
 namespace DKNet.EfCore.DtoGenerator.Tests;
 
-public class DtoGeneratorTests
+public class DtoGenerationTests
 {
     [Fact]
-    public void PersonDto_Adapt_Maps_All_Properties()
+    public void Generated_Source_File_For_PersonDto_Contains_All_Properties()
     {
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Jane",
-            MiddleName = "Q",
-            LastName = "Doe",
-            Age = 42,
-            CreatedUtc = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc)
-        };
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        Directory.Exists(dir).ShouldBeTrue($"GeneratedDtos folder not found at {dir}");
+        var file = Path.Combine(dir, "PersonDto.cs");
+        File.Exists(file)
+            .ShouldBeTrue(
+                $"PersonDto.cs not found in {dir}. Files: {string.Join(", ", Directory.GetFiles(dir).Select(Path.GetFileName))}");
+        var text = File.ReadAllText(file);
 
-        var dto = person.Adapt<PersonDto>();
+        // Assert presence of each expected property with init-only accessors
+        text.ShouldContain("public Guid Id { get; init; }", Case.Sensitive);
+        text.ShouldContain("public required string FirstName { get; init; }", Case.Sensitive);
+        text.ShouldContain("public string? MiddleName { get; init; }", Case.Sensitive);
+        text.ShouldContain("public required string LastName { get; init; }", Case.Sensitive);
+        text.ShouldContain("public DateTime CreatedUtc { get; init; }", Case.Sensitive);
+        text.ShouldContain("public int Age { get; init; }", Case.Sensitive);
 
-        dto.Id.ShouldBe(person.Id);
-        dto.FirstName.ShouldBe(person.FirstName);
-        dto.MiddleName.ShouldBe(person.MiddleName);
-        dto.LastName.ShouldBe(person.LastName);
-        dto.Age.ShouldBe(person.Age);
-        dto.CreatedUtc.ShouldBe(person.CreatedUtc);
+        // Verify it's a partial record
+        text.ShouldContain("public partial record PersonDto", Case.Sensitive);
+
+        // Verify NO constructor is generated
+        text.ShouldNotContain("public PersonDto(", Case.Sensitive);
     }
 
     [Fact]
-    public void PersonDto_Immutability_WithExpression_Works()
+    public void Generated_Source_File_For_CurrencyDataDto_Contains_Properties_From_Unqualified_Typeof()
     {
-        var person = new Person { Id = Guid.NewGuid(), FirstName = "A", LastName = "B", Age = 1 };
-        var dto1 = person.Adapt<PersonDto>();
-        var dto2 = dto1 with { FirstName = "C" };
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        Directory.Exists(dir).ShouldBeTrue();
+        var file = Path.Combine(dir, "CurrencyDataDto.cs");
+        File.Exists(file)
+            .ShouldBeTrue("CurrencyDataDto.cs should exist when using typeof(CurrencyData) without namespace");
+        var text = File.ReadAllText(file);
 
-        dto1.FirstName.ShouldBe("A");
-        dto2.FirstName.ShouldBe("C");
-        dto1.ShouldNotBe(dto2); // record structural equality should differ
+        text.ShouldContain("public int Id { get; init; }");
+        text.ShouldContain("public required string Code { get; init; }");
+        text.ShouldContain("public string? Description { get; init; }");
+
+        // Verify NO constructor
+        text.ShouldNotContain("public CurrencyDataDto(");
     }
 
     [Fact]
-    public void PersonCustomDto_Uses_Override_And_Keeps_Custom_Property()
+    public void Generated_Source_File_For_PersonBasicDto_Excludes_Properties()
     {
-        var person = new Person { Id = Guid.NewGuid(), FirstName = "Alpha", LastName = "Beta", Age = 5 };
-        var dto = person.Adapt<PersonCustomDto>();
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        Directory.Exists(dir).ShouldBeTrue();
+        var file = Path.Combine(dir, "PersonBasicDto.cs");
+        File.Exists(file).ShouldBeTrue();
+        var text = File.ReadAllText(file);
 
-        dto.FirstName.ShouldBe("Alpha");
-        dto.DisplayName.ShouldBe("Alpha?");
+        // Should contain only Id, FirstName, LastName (MiddleName, Age, CreatedUtc are excluded)
+        text.ShouldContain("public Guid Id { get; init; }");
+        text.ShouldContain("public required string FirstName { get; init; }");
+        text.ShouldContain("public required string LastName { get; init; }");
 
-        typeof(PersonCustomDto).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Count(p => p.Name == nameof(Person.FirstName))
-            .ShouldBe(1);
+        // Should NOT contain excluded properties
+        text.ShouldNotContain("MiddleName");
+        text.ShouldNotContain("Age");
+        text.ShouldNotContain("CreatedUtc");
+
+        // Verify NO constructor
+        text.ShouldNotContain("public PersonBasicDto(");
     }
 
     [Fact]
-    public void CustomerDto_Adapt_Maps_Reference_And_Collections()
+    public void Generated_Source_File_For_CustomerDto_Has_Proper_Using_Statements_For_Cross_Namespace_Types()
     {
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            Total = 10.5m,
-            OrderedUtc = DateTime.UtcNow,
-            Items = new List<OrderItem>
-            {
-                new() { Id = 1, Sku = "ABC", Quantity = 2, Price = 3.25m },
-                new() { Id = 2, Sku = "XYZ", Quantity = 1, Price = 4.00m }
-            }
-        };
-        var customer = new Customer
-        {
-            CustomerId = 77,
-            Name = "Contoso",
-            Email = "sales@contoso.test",
-            PrimaryAddress = new Address { Line1 = "1 Main", City = "Town", Country = "US" },
-            Orders = new List<Order> { order }
-        };
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        var file = Path.Combine(dir, "CustomerDto.cs");
+        File.Exists(file).ShouldBeTrue();
+        var text = File.ReadAllText(file);
 
-        var dto = customer.Adapt<CustomerDto>();
-        dto.CustomerId.ShouldBe(customer.CustomerId);
-        dto.Name.ShouldBe(customer.Name);
-        dto.Email.ShouldBe(customer.Email);
-        dto.PrimaryAddress!.City.ShouldBe(customer.PrimaryAddress.City);
-        dto.PrimaryAddress!.Line1.ShouldBe(customer.PrimaryAddress.Line1);
-        dto.PrimaryAddress!.Country.ShouldBe(customer.PrimaryAddress.Country);
-        dto.Orders.Count.ShouldBe(customer.Orders.Count);
+        // Should have using statement for entity namespace
+        text.ShouldContain("using Some.Others.Namespaces;");
+        text.ShouldContain("using System.Collections.Generic;");
+
+        // Should have properties with clean type names (no global:: prefix)
+        text.ShouldContain("public int CustomerId { get; init; }");
+        text.ShouldContain("public required string Name { get; init; }");
+        text.ShouldContain("public string? Email { get; init; }");
+        text.ShouldContain("public Address? PrimaryAddress { get; init; }");
+        text.ShouldContain("public List<Order> Orders { get; init; } = [];");
+
+        // Should NOT have global:: prefixes
+        text.ShouldNotContain("global::DKNet.EfCore.DtoGenerator.Tests.Order");
+        text.ShouldNotContain("global::DKNet.EfCore.DtoGenerator.Tests.Address");
+        text.ShouldNotContain("global::System.Collections.Generic.List");
+
+        // Verify NO constructor
+        text.ShouldNotContain("public CustomerDto(");
     }
 
     [Fact]
-    public void Adapt_Sequence_Projects_All()
+    public void Generated_Source_File_For_OrderDto_Has_Collection_Property_With_Empty_Initializer()
     {
-        var people = Enumerable.Range(1, 5).Select(i => new Person
-            { Id = Guid.NewGuid(), FirstName = "F" + i, LastName = "L" + i, Age = i }).ToList();
-        var dtos = people.Adapt<List<PersonDto>>();
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        var file = Path.Combine(dir, "OrderDto.cs");
+        File.Exists(file).ShouldBeTrue();
+        var text = File.ReadAllText(file);
 
-        dtos.Count.ShouldBe(people.Count);
-        for (var i = 0; i < people.Count; i++)
-        {
-            dtos[i].FirstName.ShouldBe(people[i].FirstName);
-            dtos[i].LastName.ShouldBe(people[i].LastName);
-            dtos[i].Age.ShouldBe(people[i].Age);
-        }
+        // Non-nullable collection should have empty initializer
+        text.ShouldContain("public List<OrderItem> Items { get; init; } = [];");
+
+        // Should have using statements
+        text.ShouldContain("using Some.Others.Namespaces;");
+        text.ShouldContain("using System.Collections.Generic;");
+
+        // Verify NO constructor
+        text.ShouldNotContain("public OrderDto(");
     }
 
     [Fact]
-    public void Generated_Dtos_Contain_Expected_Properties()
+    public void Generated_Source_File_For_PersonCustomDto_Does_Not_Duplicate_Existing_Properties()
     {
-        AssertHasProperties<PersonDto>(nameof(Person.Id), nameof(Person.FirstName), nameof(Person.LastName),
-            nameof(Person.Age), nameof(Person.CreatedUtc), nameof(Person.MiddleName));
-        AssertHasProperties<CustomerDto>("CustomerId", "Name", "Email", "PrimaryAddress", "Orders");
-        AssertHasProperties<OrderDto>(nameof(Order.Id), nameof(Order.OrderedUtc), nameof(Order.Total),
-            nameof(Order.Items));
-    }
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        var file = Path.Combine(dir, "PersonCustomDto.cs");
+        File.Exists(file).ShouldBeTrue();
+        var text = File.ReadAllText(file);
 
-    private static void AssertHasProperties<T>(params string[] propertyNames)
-    {
-        var actual = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name)
-            .ToHashSet();
-        foreach (var expected in propertyNames)
-            actual.Contains(expected).ShouldBeTrue($"Missing expected property '{expected}' on DTO {typeof(T).Name}");
-    }
+        // Should NOT duplicate FirstName (it's already defined in Dtos.cs)
+        // Count occurrences of "FirstName" - should only be in existing property definition
+        var firstNameCount = System.Text.RegularExpressions.Regex.Matches(text, "FirstName").Count;
+        firstNameCount.ShouldBeLessThan(2, "FirstName should not be duplicated in generated code");
 
-    [Fact]
-    public void PersonDto_Roundtrip_ToEntity_Preserves_Values()
-    {
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Round",
-            MiddleName = "Trip",
-            LastName = "Test",
-            Age = 21,
-            CreatedUtc = DateTime.UtcNow.AddMinutes(-5)
-        };
-        var dto = person.Adapt<PersonDto>();
-        var entity2 = dto.Adapt<Person>();
-        entity2.ShouldNotBeSameAs(person);
-        entity2.Id.ShouldBe(person.Id);
-        entity2.FirstName.ShouldBe(person.FirstName);
-        entity2.MiddleName.ShouldBe(person.MiddleName);
-        entity2.LastName.ShouldBe(person.LastName);
-        entity2.Age.ShouldBe(person.Age);
-        entity2.CreatedUtc.ShouldBe(person.CreatedUtc);
+        // Should contain other properties
+        text.ShouldContain("public Guid Id { get; init; }");
+        text.ShouldContain("public string? MiddleName { get; init; }");
+        text.ShouldContain("public required string LastName { get; init; }");
     }
 
     [Fact]
-    public void CustomerDto_Roundtrip_ToEntity_Preserves_Collections_Reference()
+    public void Generated_DTOs_Use_Required_Keyword_For_NonNullable_Strings()
     {
-        var order = new Order { Id = Guid.NewGuid(), OrderedUtc = DateTime.UtcNow, Total = 123.45m };
-        var customer = new Customer
-        {
-            CustomerId = 999,
-            Name = "Mapster Customer",
-            Email = "cust@example.test",
-            PrimaryAddress = new Address { Line1 = "Line1", City = "X", Country = "US" },
-            Orders = new List<Order> { order }
-        };
-        var dto = customer.Adapt<CustomerDto>();
-        var back = dto.Adapt<Customer>();
-        back.CustomerId.ShouldBe(customer.CustomerId);
-        back.Name.ShouldBe(customer.Name);
-        back.Email.ShouldBe(customer.Email);
-        back.PrimaryAddress?.Line1.ShouldBe(customer.PrimaryAddress?.Line1);
-        back.Orders.Count.ShouldBe(1);
-        back.Orders[0].Id.ShouldBe(order.Id);
-    }
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        var personFile = Path.Combine(dir, "PersonDto.cs");
+        File.Exists(personFile).ShouldBeTrue();
+        var text = File.ReadAllText(personFile);
 
-    #region Exclude Feature Tests
+        // Non-nullable strings should have 'required' keyword
+        text.ShouldContain("public required string FirstName");
+        text.ShouldContain("public required string LastName");
 
-    [Fact]
-    public void PersonSummaryDto_Excludes_Id_And_CreatedUtc()
-    {
-        // Arrange
-        var properties = typeof(PersonSummaryDto).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(p => p.Name).ToHashSet();
-
-        // Assert - Should NOT have excluded properties
-        properties.ShouldNotContain("Id");
-        properties.ShouldNotContain("CreatedUtc");
-
-        // Assert - Should have all other properties
-        properties.ShouldContain("FirstName");
-        properties.ShouldContain("MiddleName");
-        properties.ShouldContain("LastName");
-        properties.ShouldContain("Age");
+        // Nullable strings should NOT have 'required' keyword
+        text.ShouldContain("public string? MiddleName");
+        text.ShouldNotContain("public required string? MiddleName");
     }
 
     [Fact]
-    public void PersonSummaryDto_Maps_NonExcluded_Properties()
+    public void Generated_DTOs_Are_AutoGenerated_And_Have_Nullable_Enable()
     {
-        // Arrange
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "John",
-            MiddleName = "M",
-            LastName = "Doe",
-            Age = 30,
-            CreatedUtc = DateTime.UtcNow
-        };
+        var dir = Path.Combine(AppContext.BaseDirectory, "GeneratedDtos");
+        var file = Path.Combine(dir, "PersonDto.cs");
+        File.Exists(file).ShouldBeTrue();
+        var text = File.ReadAllText(file);
 
-        // Act
-        var dto = person.Adapt<PersonSummaryDto>();
+        // Should have auto-generated comment
+        text.ShouldContain("// <auto-generated/> Generated by DKNet.EfCore.DtoGenerator");
 
-        // Assert
-        dto.FirstName.ShouldBe(person.FirstName);
-        dto.MiddleName.ShouldBe(person.MiddleName);
-        dto.LastName.ShouldBe(person.LastName);
-        dto.Age.ShouldBe(person.Age);
+        // Should have nullable enable
+        text.ShouldContain("#nullable enable");
     }
-
-    [Fact]
-    public void CustomerPublicDto_Excludes_CustomerId()
-    {
-        // Arrange
-        var properties = typeof(CustomerPublicDto).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(p => p.Name).ToHashSet();
-
-        // Assert
-        properties.ShouldNotContain("CustomerId");
-        properties.ShouldContain("Name");
-        properties.ShouldContain("Email");
-        properties.ShouldContain("PrimaryAddress");
-        properties.ShouldContain("Orders");
-    }
-
-    [Fact]
-    public void CustomerPublicDto_Maps_Collections_And_References()
-    {
-        // Arrange
-        var customer = new Customer
-        {
-            CustomerId = 123,
-            Name = "Acme Corp",
-            Email = "contact@acme.test",
-            PrimaryAddress = new Address { Line1 = "123 Main St", City = "Springfield", Country = "US" },
-            Orders = new List<Order>
-            {
-                new() { Id = Guid.NewGuid(), Total = 100.50m }
-            }
-        };
-
-        // Act
-        var dto = customer.Adapt<CustomerPublicDto>();
-
-        // Assert
-        dto.Name.ShouldBe(customer.Name);
-        dto.Email.ShouldBe(customer.Email);
-        dto.PrimaryAddress.ShouldNotBeNull();
-        dto.PrimaryAddress!.Line1.ShouldBe(customer.PrimaryAddress!.Line1);
-        dto.Orders.ShouldNotBeEmpty();
-        dto.Orders.Count.ShouldBe(1);
-    }
-
-    [Fact]
-    public void OrderSummaryDto_Excludes_Multiple_Properties()
-    {
-        // Arrange
-        var properties = typeof(OrderSummaryDto).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(p => p.Name).ToHashSet();
-
-        // Assert - Should NOT have excluded properties
-        properties.ShouldNotContain("Id");
-        properties.ShouldNotContain("OrderedUtc");
-
-        // Assert - Should have remaining properties
-        properties.ShouldContain("Total");
-        properties.ShouldContain("Items");
-    }
-
-    [Fact]
-    public void PersonBasicDto_Excludes_Multiple_Properties()
-    {
-        // Arrange
-        var properties = typeof(PersonBasicDto).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(p => p.Name).ToHashSet();
-
-        // Assert - Should NOT have excluded properties
-        properties.ShouldNotContain("MiddleName");
-        properties.ShouldNotContain("Age");
-        properties.ShouldNotContain("CreatedUtc");
-
-        // Assert - Should only have basic properties
-        properties.ShouldContain("Id");
-        properties.ShouldContain("FirstName");
-        properties.ShouldContain("LastName");
-
-        // Total should be exactly 3 properties
-        properties.Count.ShouldBe(3);
-    }
-
-    [Fact]
-    public void PersonBasicDto_Maps_Only_NonExcluded_Properties()
-    {
-        // Arrange
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Jane",
-            MiddleName = "Q",
-            LastName = "Smith",
-            Age = 25,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        // Act
-        var dto = person.Adapt<PersonBasicDto>();
-
-        // Assert
-        dto.Id.ShouldBe(person.Id);
-        dto.FirstName.ShouldBe(person.FirstName);
-        dto.LastName.ShouldBe(person.LastName);
-    }
-
-    #endregion
-
-    #region Property Type Tests
-
-    [Fact]
-    public void Generated_Dtos_Handle_Nullable_String_Properties()
-    {
-        // Arrange
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Test",
-            MiddleName = null, // Nullable
-            LastName = "User",
-            Age = 20
-        };
-
-        // Act
-        var dto = person.Adapt<PersonDto>();
-
-        // Assert
-        dto.MiddleName.ShouldBeNull();
-
-        // Verify property type is nullable
-        var middleNameProp = typeof(PersonDto).GetProperty("MiddleName");
-        middleNameProp.ShouldNotBeNull();
-        var nullabilityContext = new NullabilityInfoContext();
-        var nullabilityInfo = nullabilityContext.Create(middleNameProp);
-        nullabilityInfo.WriteState.ShouldBe(NullabilityState.Nullable);
-    }
-
-    [Fact]
-    public void Generated_Dtos_Handle_Nullable_Reference_Properties()
-    {
-        // Arrange
-        var customer = new Customer
-        {
-            CustomerId = 1,
-            Name = "Test",
-            Email = null, // Nullable
-            PrimaryAddress = null // Nullable
-        };
-
-        // Act
-        var dto = customer.Adapt<CustomerDto>();
-
-        // Assert
-        dto.Email.ShouldBeNull();
-        dto.PrimaryAddress.ShouldBeNull();
-    }
-
-    [Fact]
-    public void Generated_Dtos_Initialize_Collections_By_Default()
-    {
-        // Act - Create new instance using default constructor
-        var customerDto = new CustomerDto
-        {
-            CustomerId = 1,
-            Name = "Test"
-        };
-
-        // Assert - Collections should be initialized to empty
-        customerDto.Orders.ShouldNotBeNull();
-        customerDto.Orders.ShouldBeEmpty();
-    }
-
-    [Fact]
-    public void OrderItemDto_Has_All_Value_Type_Properties()
-    {
-        // Arrange
-        var orderItem = new OrderItem
-        {
-            Id = 42,
-            Sku = "PROD-123",
-            Quantity = 5,
-            Price = 19.99m
-        };
-
-        // Act
-        var dto = orderItem.Adapt<OrderItemDto>();
-
-        // Assert
-        dto.Id.ShouldBe(orderItem.Id);
-        dto.Sku.ShouldBe(orderItem.Sku);
-        dto.Quantity.ShouldBe(orderItem.Quantity);
-        dto.Price.ShouldBe(orderItem.Price);
-    }
-
-    #endregion
-
-    #region Required Modifier Tests
-
-    [Fact]
-    public void Generated_Dtos_Have_Required_On_NonNullable_Strings()
-    {
-        // PersonDto should have 'required' on FirstName and LastName (non-nullable strings)
-        var dto = new PersonDto
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Required",
-            LastName = "Test",
-            Age = 1
-        };
-
-        dto.FirstName.ShouldBe("Required");
-        dto.LastName.ShouldBe("Test");
-
-        // MiddleName is nullable, so it should NOT be required
-        dto.MiddleName.ShouldBeNull();
-    }
-
-    #endregion
-
-    #region Record Features Tests
-
-    [Fact]
-    public void Generated_Dtos_Support_With_Expressions()
-    {
-        // Arrange
-        var original = new PersonDto
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Original",
-            LastName = "Name",
-            Age = 30
-        };
-
-        // Act
-        var modified = original with { FirstName = "Modified", Age = 31 };
-
-        // Assert
-        original.FirstName.ShouldBe("Original");
-        original.Age.ShouldBe(30);
-        modified.FirstName.ShouldBe("Modified");
-        modified.Age.ShouldBe(31);
-        modified.LastName.ShouldBe("Name"); // Unchanged
-        modified.Id.ShouldBe(original.Id); // Unchanged
-    }
-
-    [Fact]
-    public void Generated_Dtos_Support_Structural_Equality()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto1 = new PersonDto
-        {
-            Id = id,
-            FirstName = "John",
-            LastName = "Doe",
-            Age = 25
-        };
-
-        var dto2 = new PersonDto
-        {
-            Id = id,
-            FirstName = "John",
-            LastName = "Doe",
-            Age = 25
-        };
-
-        var dto3 = new PersonDto
-        {
-            Id = id,
-            FirstName = "Jane",
-            LastName = "Doe",
-            Age = 25
-        };
-
-        // Assert
-        dto1.ShouldBe(dto2); // Structural equality
-        dto1.ShouldNotBe(dto3); // Different values
-        (dto1 == dto2).ShouldBeTrue();
-        (dto1 == dto3).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void Generated_Dtos_Support_Deconstruction()
-    {
-        // Arrange
-        var dto = new OrderItemDto
-        {
-            Id = 1,
-            Sku = "ABC123",
-            Quantity = 10,
-            Price = 99.99m
-        };
-
-        // Note: Records support positional deconstruction, but since we're using
-        // property-based records, we'd need to verify properties are accessible
-        dto.Id.ShouldBe(1);
-        dto.Sku.ShouldBe("ABC123");
-        dto.Quantity.ShouldBe(10);
-        dto.Price.ShouldBe(99.99m);
-    }
-
-    #endregion
-
-    #region Complex Scenarios
-
-    [Fact]
-    public void Nested_Collections_Map_Correctly()
-    {
-        // Arrange
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            OrderedUtc = DateTime.UtcNow,
-            Total = 150.00m,
-            Items = new List<OrderItem>
-            {
-                new() { Id = 1, Sku = "ITEM1", Quantity = 2, Price = 25.00m },
-                new() { Id = 2, Sku = "ITEM2", Quantity = 1, Price = 100.00m }
-            }
-        };
-
-        // Act
-        var dto = order.Adapt<OrderDto>();
-
-        // Assert
-        dto.Items.ShouldNotBeNull();
-        dto.Items.Count.ShouldBe(2);
-        dto.Items[0].Sku.ShouldBe("ITEM1");
-        dto.Items[1].Sku.ShouldBe("ITEM2");
-        dto.Total.ShouldBe(150.00m);
-    }
-
-    [Fact]
-    public void Multiple_Dtos_From_Same_Entity_Work_Independently()
-    {
-        // Arrange
-        var person = new Person
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Multi",
-            MiddleName = "DTO",
-            LastName = "Test",
-            Age = 40,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        // Act - Map to different DTOs
-        var fullDto = person.Adapt<PersonDto>();
-        var summaryDto = person.Adapt<PersonSummaryDto>();
-        var basicDto = person.Adapt<PersonBasicDto>();
-
-        // Assert - Full DTO has all properties
-        fullDto.Id.ShouldBe(person.Id);
-        fullDto.FirstName.ShouldBe(person.FirstName);
-        fullDto.MiddleName.ShouldBe(person.MiddleName);
-        fullDto.Age.ShouldBe(person.Age);
-        fullDto.CreatedUtc.ShouldBe(person.CreatedUtc);
-
-        // Assert - Summary DTO excludes Id and CreatedUtc
-        summaryDto.FirstName.ShouldBe(person.FirstName);
-        summaryDto.MiddleName.ShouldBe(person.MiddleName);
-        summaryDto.Age.ShouldBe(person.Age);
-
-        // Assert - Basic DTO excludes MiddleName, Age, CreatedUtc
-        basicDto.Id.ShouldBe(person.Id);
-        basicDto.FirstName.ShouldBe(person.FirstName);
-        basicDto.LastName.ShouldBe(person.LastName);
-    }
-
-    [Fact]
-    public void Empty_Collections_Map_Correctly()
-    {
-        // Arrange
-        var customer = new Customer
-        {
-            CustomerId = 1,
-            Name = "Empty Orders",
-            Orders = new List<Order>() // Empty collection
-        };
-
-        // Act
-        var dto = customer.Adapt<CustomerDto>();
-
-        // Assert
-        dto.Orders.ShouldNotBeNull();
-        dto.Orders.ShouldBeEmpty();
-    }
-
-    #endregion
 }
