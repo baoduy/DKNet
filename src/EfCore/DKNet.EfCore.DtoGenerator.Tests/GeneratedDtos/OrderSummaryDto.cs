@@ -12,4 +12,8 @@ public partial record OrderSummaryDto
 {
     public decimal Total { get; init; }
     public List<OrderItem> Items { get; init; } = [];
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }

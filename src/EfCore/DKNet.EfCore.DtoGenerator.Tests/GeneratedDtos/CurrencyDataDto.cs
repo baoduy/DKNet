@@ -10,4 +10,8 @@ public partial record CurrencyDataDto
     public int Id { get; init; }
     public required string Code { get; init; }
     public string? Description { get; init; }
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }

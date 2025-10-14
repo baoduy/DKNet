@@ -15,4 +15,8 @@ public partial record CustomerDto
     public string? Email { get; init; }
     public Address? PrimaryAddress { get; init; }
     public List<Order> Orders { get; init; } = [];
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }

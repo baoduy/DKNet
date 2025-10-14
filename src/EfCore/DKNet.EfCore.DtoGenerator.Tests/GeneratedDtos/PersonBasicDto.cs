@@ -10,4 +10,7 @@ public partial record PersonBasicDto
     public Guid Id { get; init; }
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }

@@ -10,6 +10,9 @@ public partial record PersonCustomDto
     public Guid Id { get; init; }
     public string? MiddleName { get; init; }
     public required string LastName { get; init; }
-    public DateTime CreatedUtc { get; init; }
     public int Age { get; init; }
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }
