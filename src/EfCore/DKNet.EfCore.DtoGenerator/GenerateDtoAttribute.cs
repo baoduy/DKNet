@@ -32,10 +32,11 @@ public sealed class GenerateDtoAttribute : System.Attribute
     /// </summary>
     public string[] Exclude { get; set; } = [];
 
+    public string EntityFullName => EntityType.FullName ?? EntityType.Name;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="GenerateDtoAttribute"/> class.
     /// </summary>
     /// <param name="entityType">The entity type to generate a DTO for.</param>
     public GenerateDtoAttribute(System.Type entityType) => EntityType = entityType;
 }
-
