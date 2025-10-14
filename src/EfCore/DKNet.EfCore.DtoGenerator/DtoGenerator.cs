@@ -274,24 +274,41 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
         
-        // Debug logging: Report property count
+        // Debug logging: Report property details
+        var diagnosticMessage = $"DTO {target.DtoSymbol.Name}: Found {entityProperties.Count} properties from entity {target.EntitySymbol.ToDisplayString()}";
+        
         if (entityProperties.Count == 0)
         {
             var diagnostic = new DiagnosticDescriptor(
                 id: "DKDTOGEN002",
                 title: "No properties found for entity",
-                messageFormat: "DTO {0}: No properties extracted from entity {1}. This may indicate the entity type wasn't resolved correctly.",
+                messageFormat: diagnosticMessage + ". This may indicate the entity type wasn't resolved correctly.",
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
             
             context.ReportDiagnostic(
-                Diagnostic.Create(diagnostic, Location.None, 
-                    target.DtoSymbol.ToDisplayString(), 
-                    target.EntitySymbol.ToDisplayString()));
+                Diagnostic.Create(diagnostic, Location.None));
         }
         
         var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties);
+        
+        // Additional logging for property filtering
+        if (includedProperties.Count < entityProperties.Count)
+        {
+            var excludedCount = entityProperties.Count - includedProperties.Count;
+            var info = new DiagnosticDescriptor(
+                id: "DKDTOGEN003",
+                title: "Properties excluded from DTO",
+                messageFormat: $"DTO {{0}}: {excludedCount} properties excluded. Excluded: {string.Join(", ", target.ExcludedProperties)}",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true);
+            
+            context.ReportDiagnostic(
+                Diagnostic.Create(info, Location.None, target.DtoSymbol.Name));
+        }
+        
         var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
         var typeDisplayFormat = CreateTypeDisplayFormat();
         var sourceCode = BuildDtoSourceCode(dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat);
@@ -313,9 +330,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var dtoSymbol = target.DtoSymbol;
         var entitySymbol = target.EntitySymbol;
         
+        // Only consider properties defined in user source code (not generated files)
+        // to avoid treating previously generated properties as "existing"
         var existingProperties = new HashSet<string>(
             dtoSymbol.GetMembers()
                 .OfType<IPropertySymbol>()
+                .Where(p => !IsFromGeneratedCode(p))
                 .Select(p => p.Name));
 
         var namespaceName = dtoSymbol.ContainingNamespace is { IsGlobalNamespace: false } 
@@ -331,6 +351,28 @@ public sealed class DtoGenerator : IIncrementalGenerator
             typeKind,
             entityDisplayName,
             existingProperties);
+    }
+    
+    private static bool IsFromGeneratedCode(IPropertySymbol property)
+    {
+        // If the property has no syntax references, it's likely from metadata/generated code
+        if (property.DeclaringSyntaxReferences.Length == 0)
+            return true;
+            
+        // Check ALL syntax references - if ANY come from generated code, consider it generated
+        foreach (var syntaxRef in property.DeclaringSyntaxReferences)
+        {
+            var filePath = syntaxRef.SyntaxTree.FilePath;
+            
+            // Simply check if it ends with .g.cs (the standard convention for generated files)
+            // This is the most reliable way to detect our own generated output
+            if (filePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     private static string DetermineTypeKind(INamedTypeSymbol dtoSymbol)
@@ -754,17 +796,22 @@ public sealed class DtoGenerator : IIncrementalGenerator
         public INamedTypeSymbol EntitySymbol { get; set; } = null!;
         public HashSet<string> ExcludedProperties { get; set; } = new();
 
-        // Must override Equals to use SymbolEqualityComparer for proper symbol comparison
+        // Use string-based comparison for stability across compilations
+        // SymbolEqualityComparer can give inconsistent results with incremental compilation
         public bool Equals(Target? other)
         {
             if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
 
-            // Compare DTO and Entity symbols using SymbolEqualityComparer
-            if (!SymbolEqualityComparer.Default.Equals(DtoSymbol, other.DtoSymbol))
+            // Compare using ToDisplayString for stable comparison across compilations
+            var dtoName1 = DtoSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var dtoName2 = other.DtoSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (dtoName1 != dtoName2)
                 return false;
 
-            if (!SymbolEqualityComparer.Default.Equals(EntitySymbol, other.EntitySymbol))
+            var entityName1 = EntitySymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var entityName2 = other.EntitySymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (entityName1 != entityName2)
                 return false;
 
             // Compare excluded properties count and content
@@ -779,12 +826,18 @@ public sealed class DtoGenerator : IIncrementalGenerator
             unchecked
             {
                 int hash = 17;
-                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(DtoSymbol);
-                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(EntitySymbol);
+                
+                // Use string-based hash for stability
+                var dtoName = DtoSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var entityName = EntitySymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                
+                hash = hash * 31 + StringComparer.Ordinal.GetHashCode(dtoName);
+                hash = hash * 31 + StringComparer.Ordinal.GetHashCode(entityName);
 
-                foreach (var prop in ExcludedProperties.OrderBy(p => p))
+                // Hash excluded properties in a stable order
+                foreach (var prop in ExcludedProperties.OrderBy(p => p, StringComparer.Ordinal))
                 {
-                    hash = hash * 31 + prop.GetHashCode();
+                    hash = hash * 31 + StringComparer.Ordinal.GetHashCode(prop);
                 }
 
                 return hash;

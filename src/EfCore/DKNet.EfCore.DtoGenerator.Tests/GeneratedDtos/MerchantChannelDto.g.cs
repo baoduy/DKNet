@@ -9,16 +9,4 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.Merchants;
 /// </summary>
 public partial record MerchantChannelDto
 {
-    public Guid MerchantId { get; init; }
-    public ChannelCodes Code { get; init; }
-    public decimal? MaxAmount { get; init; }
-    public decimal MinAmount { get; init; }
-    public required string Settlement { get; init; }
-    public required string LastModifiedBy { get; init; }
-    public DateTimeOffset LastModifiedOn { get; init; }
-    public required string CreatedBy { get; init; }
-    public DateTimeOffset CreatedOn { get; init; }
-    public string? UpdatedBy { get; init; }
-    public DateTimeOffset? UpdatedOn { get; init; }
-    public int Id { get; init; }
 }

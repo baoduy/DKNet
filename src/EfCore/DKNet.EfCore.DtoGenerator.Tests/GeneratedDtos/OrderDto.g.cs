@@ -10,4 +10,12 @@ namespace DKNet.EfCore.DtoGenerator.Tests;
 /// </summary>
 public partial record OrderDto
 {
+    public int OrderId { get; init; }
+    public required string OrderNumber { get; init; }
+    public decimal TotalAmount { get; init; }
+    public List<OrderItem> Items { get; init; } = [];
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
+    public required string CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
 }
