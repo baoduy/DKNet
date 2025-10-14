@@ -25,7 +25,14 @@ public partial record PersonCustomDto
 }
 
 // Test DTOs with Exclude feature
-[GenerateDto(typeof(Person), Exclude = ["Id", "CreatedUtc"])]
+[GenerateDto(typeof(Person),
+    Exclude =
+    [
+        nameof(Person.CreatedUtc),
+        nameof(Person.UpdatedUtc),
+        nameof(Person.CreatedBy),
+        nameof(Person.UpdatedBy)
+    ])]
 public partial record PersonSummaryDto;
 
 [GenerateDto(typeof(Customer), Exclude = ["CustomerId"])]

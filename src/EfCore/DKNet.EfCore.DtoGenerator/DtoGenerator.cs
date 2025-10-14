@@ -246,10 +246,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         foreach (var element in collectionExpression.Elements)
         {
-            if (element is ExpressionElementSyntax { Expression: LiteralExpressionSyntax literal } &&
-                ctx.SemanticModel.GetConstantValue(literal).Value is string propertyName)
+            if (element is ExpressionElementSyntax { Expression: var expr })
             {
-                excludedProperties.Add(propertyName);
+                // Try to get the constant value - this handles both string literals and nameof() expressions
+                var constantValue = ctx.SemanticModel.GetConstantValue(expr);
+                if (constantValue.HasValue && constantValue.Value is string propertyName)
+                {
+                    excludedProperties.Add(propertyName);
+                }
             }
         }
 
