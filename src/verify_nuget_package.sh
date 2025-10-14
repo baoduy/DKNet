@@ -3,7 +3,7 @@
 # Verify the package using this website https://nuget.info/packages
 
 # Generate version based on current date: 9.0.YYMMDD
-VERSION="9.0.$(date +%y%m%d)"
+VERSION="9.9.$(date +%y%m%d)"
 
 echo "Generating NuGet packages with version: $VERSION"
 

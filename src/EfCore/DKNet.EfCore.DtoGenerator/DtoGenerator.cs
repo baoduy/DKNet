@@ -119,7 +119,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return null;
 
         var excludedProperties = ExtractExcludedPropertiesFromAttribute(ctx, attribute);
-        return new Target(dtoSymbol, entitySymbol, excludedProperties);
+        return new Target
+        {
+            DtoSymbol = dtoSymbol,
+            EntitySymbol = entitySymbol,
+            ExcludedProperties = excludedProperties
+        };
     }
 
     private static bool IsGenerateDtoAttribute(AttributeSyntax attribute)
@@ -196,7 +201,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Excluded Properties Extraction
 
-    private static HashSet<string>? ExtractExcludedPropertiesFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    private static HashSet<string> ExtractExcludedPropertiesFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
     {
         foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
         {
@@ -206,10 +211,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
             }
         }
 
-        return null;
+        return new HashSet<string>();
     }
 
-    private static HashSet<string>? ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
+    private static HashSet<string> ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
     {
         return expression switch
         {
@@ -219,7 +224,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 => ExtractStringLiteralsFromInitializer(explicitArray.Initializer),
             CollectionExpressionSyntax collectionExpr
                 => ExtractStringLiteralsFromCollectionExpression(ctx, collectionExpr),
-            _ => null
+            _ => new HashSet<string>()
         };
     }
 
@@ -271,10 +276,18 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties);
         var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
         var typeDisplayFormat = CreateTypeDisplayFormat();
-        
         var sourceCode = BuildDtoSourceCode(dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat);
         
-        context.AddSource($"{dtoMetadata.Name}.cs", sourceCode);
+        // Create a unique, stable filename using the full qualified name of the DTO
+        var fileName = CreateUniqueFileName(target.DtoSymbol);
+        context.AddSource(fileName, sourceCode);
+    }
+
+    private static string CreateUniqueFileName(INamedTypeSymbol dtoSymbol)
+    {
+        // Use just the DTO's simple name for a cleaner filename
+        // The namespace scope in the generated code ensures uniqueness
+        return $"{dtoSymbol.Name}.g.cs";
     }
 
     private static DtoMetadata ExtractDtoMetadata(Target target)
@@ -361,9 +374,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     private static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
-        HashSet<string>? excludedProperties)
+        HashSet<string> excludedProperties)
     {
-        if (excludedProperties is null || excludedProperties.Count == 0)
+        if (excludedProperties.Count == 0)
             return entityProperties;
 
         return entityProperties
@@ -647,34 +660,34 @@ public sealed class DtoGenerator : IIncrementalGenerator
         builder.AppendLine();
     }
 
-    private static void AppendDtoConstructor(
-        StringBuilder builder,
-        string dtoName,
-        List<IPropertySymbol> properties,
-        SymbolDisplayFormat typeFormat)
-    {
-        // Constructor generation is disabled - DTOs can use object initializers or primary constructors
-        return;
-    }
+    // private static void AppendDtoConstructor(
+    //     StringBuilder builder,
+    //     string dtoName,
+    //     List<IPropertySymbol> properties,
+    //     SymbolDisplayFormat typeFormat)
+    // {
+    //     // Constructor generation is disabled - DTOs can use object initializers or primary constructors
+    //     return;
+    // }
 
-    private static void AppendConstructorDocumentation(StringBuilder builder)
-    {
-        // Not used - constructors are not generated
-    }
-
-    private static void AppendConstructorSignature(
-        StringBuilder builder,
-        string dtoName,
-        List<IPropertySymbol> properties,
-        SymbolDisplayFormat typeFormat)
-    {
-        // Not used - constructors are not generated
-    }
-
-    private static void AppendConstructorBody(StringBuilder builder, List<IPropertySymbol> properties)
-    {
-        // Not used - constructors are not generated
-    }
+    // private static void AppendConstructorDocumentation(StringBuilder builder)
+    // {
+    //     // Not used - constructors are not generated
+    // }
+    //
+    // private static void AppendConstructorSignature(
+    //     StringBuilder builder,
+    //     string dtoName,
+    //     List<IPropertySymbol> properties,
+    //     SymbolDisplayFormat typeFormat)
+    // {
+    //     // Not used - constructors are not generated
+    // }
+    //
+    // private static void AppendConstructorBody(StringBuilder builder, List<IPropertySymbol> properties)
+    // {
+    //     // Not used - constructors are not generated
+    // }
 
     private static void AppendClassClosing(StringBuilder builder)
     {
@@ -717,17 +730,47 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Data Models
 
-    private sealed class Target
+    private sealed record Target
     {
-        public INamedTypeSymbol DtoSymbol { get; }
-        public INamedTypeSymbol EntitySymbol { get; }
-        public HashSet<string>? ExcludedProperties { get; }
+        public INamedTypeSymbol DtoSymbol { get; set; } = null!;
+        public INamedTypeSymbol EntitySymbol { get; set; } = null!;
+        public HashSet<string> ExcludedProperties { get; set; } = new();
 
-        public Target(INamedTypeSymbol dtoSymbol, INamedTypeSymbol entitySymbol, HashSet<string>? excludedProperties = null)
+        // Must override Equals to use SymbolEqualityComparer for proper symbol comparison
+        public bool Equals(Target? other)
         {
-            DtoSymbol = dtoSymbol;
-            EntitySymbol = entitySymbol;
-            ExcludedProperties = excludedProperties;
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+
+            // Compare DTO and Entity symbols using SymbolEqualityComparer
+            if (!SymbolEqualityComparer.Default.Equals(DtoSymbol, other.DtoSymbol))
+                return false;
+
+            if (!SymbolEqualityComparer.Default.Equals(EntitySymbol, other.EntitySymbol))
+                return false;
+
+            // Compare excluded properties count and content
+            if (ExcludedProperties.Count != other.ExcludedProperties.Count)
+                return false;
+
+            return ExcludedProperties.SetEquals(other.ExcludedProperties);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(DtoSymbol);
+                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(EntitySymbol);
+
+                foreach (var prop in ExcludedProperties.OrderBy(p => p))
+                {
+                    hash = hash * 31 + prop.GetHashCode();
+                }
+
+                return hash;
+            }
         }
     }
 

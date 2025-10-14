@@ -13,7 +13,7 @@
     <!-- Custom target to copy generated DTOs to Dtos folder for easier access (flattened, no subfolders) -->
     <Target Name="CopyGeneratedDtosToProjectFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
-            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.cs"/>
+            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.g.cs"/>
         </ItemGroup>
         <MakeDir Directories="GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
         <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
@@ -26,9 +26,9 @@
     <!-- Target to force complete cleanup of all generated files and caches -->
     <Target Name="CleanGeneratedFiles" BeforeTargets="CoreCompile">
         <ItemGroup>
-            <!--            <GeneratedFilesToDelete Include="GeneratedDtos\*.cs"/>-->
-            <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.cs"/>
-            <GeneratedFilesToDelete Include="$(CompilerGeneratedFilesOutputPath)\**\*.cs"/>
+            <!--            <GeneratedFilesToDelete Include="GeneratedDtos\*.g.cs"/>-->
+            <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.g.cs"/>
+            <GeneratedFilesToDelete Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
         </ItemGroup>
         <Delete Files="@(GeneratedFilesToDelete)" Condition="'@(GeneratedFilesToDelete)' != ''"/>
         <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')"/>
@@ -59,6 +59,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Features\StaticData\Currencies\Queries\" />
         <Folder Include="GeneratedDtos\"/>
     </ItemGroup>
 
