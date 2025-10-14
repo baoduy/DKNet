@@ -391,10 +391,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (filePath.IndexOf(objFolder, StringComparison.Ordinal) >= 0)
             return true;
             
-        // Also check with alternate separator for cross-platform compatibility
-        var altObjFolder = $"{System.IO.Path.AltDirectorySeparatorChar}obj{System.IO.Path.AltDirectorySeparatorChar}";
-        if (filePath.IndexOf(altObjFolder, StringComparison.Ordinal) >= 0)
-            return true;
+        // Also check with alternate separator if it exists (not all platforms have one)
+        if (System.IO.Path.AltDirectorySeparatorChar != System.IO.Path.DirectorySeparatorChar)
+        {
+            var altObjFolder = $"{System.IO.Path.AltDirectorySeparatorChar}obj{System.IO.Path.AltDirectorySeparatorChar}";
+            if (filePath.IndexOf(altObjFolder, StringComparison.Ordinal) >= 0)
+                return true;
+        }
             
         return false;
     }
