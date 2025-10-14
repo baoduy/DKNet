@@ -10,31 +10,37 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
 
-    <!-- Custom target to copy generated DTOs to Dtos folder for easier access (flattened, no subfolders) -->
-    <Target Name="CopyGeneratedDtosToProjectFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
+    <!-- Custom target to copy generated DTOs to output folder for test runtime validation -->
+    <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
             <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.g.cs"/>
         </ItemGroup>
-        <MakeDir Directories="GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
-        <!-- Also copy to output directory for test runtime validation -->
+        <!-- Copy to output directory for test runtime validation, renaming to .cs (remove .g) -->
         <MakeDir Directories="$(OutDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="$(OutDir)GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
-        <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to GeneratedDtos and output folder" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <!-- Copy each file, transforming the filename to remove .g -->
+        <Copy SourceFiles="%(GeneratedDtoFiles.Identity)" 
+              DestinationFiles="$(OutDir)GeneratedDtos\$([System.String]::Copy('%(GeneratedDtoFiles.Filename)').Replace('.g', '')).cs" 
+              SkipUnchangedFiles="false" 
+              OverwriteReadOnlyFiles="true"
+              Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to $(OutDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
     </Target>
 
-    <!-- Target to force complete cleanup of all generated files and caches -->
-    <Target Name="CleanGeneratedFiles" BeforeTargets="CoreCompile">
+    <!-- Target to force complete cleanup of all generated files and caches BEFORE compilation -->
+    <!-- This ensures fresh generation every time and prevents cache-related property duplication issues -->
+    <!-- Runs once per build using property guard to prevent multiple executions -->
+    <Target Name="CleanGeneratedFiles" BeforeTargets="BeforeCompile" Condition="'$(CleanGeneratedFilesExecuted)' != 'true'">
         <ItemGroup>
-            <!--            <GeneratedFilesToDelete Include="GeneratedDtos\*.g.cs"/>-->
-            <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.g.cs"/>
+            <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.cs"/>
             <GeneratedFilesToDelete Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
         </ItemGroup>
         <Delete Files="@(GeneratedFilesToDelete)" Condition="'@(GeneratedFilesToDelete)' != ''"/>
         <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')"/>
-        <!--        <RemoveDir Directories="GeneratedDtos" Condition="Exists('GeneratedDtos')"/>-->
         <RemoveDir Directories="$(OutDir)GeneratedDtos" Condition="Exists('$(OutDir)GeneratedDtos')"/>
-        <Message Text="Cleaned all generated files and caches" Importance="high"/>
+        <PropertyGroup>
+            <CleanGeneratedFilesExecuted>true</CleanGeneratedFilesExecuted>
+        </PropertyGroup>
+        <Message Text="CleanGeneratedFiles: Removed @(GeneratedFilesToDelete->Count()) files from $(CompilerGeneratedFilesOutputPath)" Importance="high"/>
     </Target>
 
     <ItemGroup>
