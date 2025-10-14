@@ -16,11 +16,17 @@
             <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.g.cs"/>
         </ItemGroup>
         <MakeDir Directories="GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <!-- Copy to project folder with .g.cs extension -->
         <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
-        <!-- Also copy to output directory for test runtime validation -->
+        <!-- Also copy to output directory for test runtime validation, renaming to .cs (remove .g) -->
         <MakeDir Directories="$(OutDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="$(OutDir)GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
-        <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to GeneratedDtos and output folder" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <!-- Copy each file, transforming the filename to remove .g -->
+        <Copy SourceFiles="%(GeneratedDtoFiles.Identity)" 
+              DestinationFiles="$(OutDir)GeneratedDtos\$([System.String]::Copy('%(GeneratedDtoFiles.Filename)').Replace('.g', '')).cs" 
+              SkipUnchangedFiles="false" 
+              OverwriteReadOnlyFiles="true"
+              Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to output folder" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
     </Target>
 
     <!-- Target to force complete cleanup of all generated files and caches -->

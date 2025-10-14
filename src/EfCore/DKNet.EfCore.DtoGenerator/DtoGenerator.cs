@@ -273,6 +273,24 @@ public sealed class DtoGenerator : IIncrementalGenerator
     {
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
+        
+        // Debug logging: Report property count
+        if (entityProperties.Count == 0)
+        {
+            var diagnostic = new DiagnosticDescriptor(
+                id: "DKDTOGEN002",
+                title: "No properties found for entity",
+                messageFormat: "DTO {0}: No properties extracted from entity {1}. This may indicate the entity type wasn't resolved correctly.",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+            
+            context.ReportDiagnostic(
+                Diagnostic.Create(diagnostic, Location.None, 
+                    target.DtoSymbol.ToDisplayString(), 
+                    target.EntitySymbol.ToDisplayString()));
+        }
+        
         var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties);
         var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
         var typeDisplayFormat = CreateTypeDisplayFormat();

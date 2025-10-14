@@ -9,4 +9,18 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;
 /// </summary>
 public partial record ChannelDto
 {
+    public required string Country { get; init; }
+    public required string Currency { get; init; }
+    public required string Name { get; init; }
+    public ChannelCodes Code { get; init; }
+    public decimal? MaxAmount { get; init; }
+    public decimal MinAmount { get; init; }
+    public required string Settlement { get; init; }
+    public required string LastModifiedBy { get; init; }
+    public DateTimeOffset LastModifiedOn { get; init; }
+    public required string CreatedBy { get; init; }
+    public DateTimeOffset CreatedOn { get; init; }
+    public string? UpdatedBy { get; init; }
+    public DateTimeOffset? UpdatedOn { get; init; }
+    public int Id { get; init; }
 }
