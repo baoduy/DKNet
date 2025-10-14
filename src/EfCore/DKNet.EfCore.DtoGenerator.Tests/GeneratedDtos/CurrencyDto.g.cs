@@ -7,8 +7,4 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.Currencies;
 /// </summary>
 public partial record CurrencyDto
 {
-    public bool IsCrypto { get; init; }
-    public required string Code { get; init; }
-    public required string Name { get; init; }
-    public int Id { get; init; }
 }
