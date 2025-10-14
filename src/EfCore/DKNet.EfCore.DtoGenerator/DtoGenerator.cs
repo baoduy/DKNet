@@ -391,7 +391,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (filePath.IndexOf(objFolder, StringComparison.Ordinal) >= 0)
             return true;
             
-        // Also check with alternate separator if it exists (not all platforms have one)
+        // Also check with alternate separator for cross-platform compatibility
+        // On Windows, AltDirectorySeparatorChar is '/' while DirectorySeparatorChar is '\'
+        // On Unix, both are typically '/', so this check becomes redundant but harmless
         if (System.IO.Path.AltDirectorySeparatorChar != System.IO.Path.DirectorySeparatorChar)
         {
             var altObjFolder = $"{System.IO.Path.AltDirectorySeparatorChar}obj{System.IO.Path.AltDirectorySeparatorChar}";
