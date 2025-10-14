@@ -1,17 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <LangVersion>preview</LangVersion>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
     </PropertyGroup>
 
     <!-- Custom target to copy generated DTOs to Dtos folder for easier access (flattened, no subfolders) -->
-    <Target Name="CopyGeneratedDtosToProjectFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
+    <Target Name="CopyGeneratedDtosToProjectFolder" BeforeTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
             <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.cs"/>
         </ItemGroup>
@@ -35,6 +33,10 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="GeneratedDtos\"/>
     </ItemGroup>
 
 </Project>
