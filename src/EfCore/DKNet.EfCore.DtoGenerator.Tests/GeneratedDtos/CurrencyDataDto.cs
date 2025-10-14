@@ -7,10 +7,7 @@ namespace DKNet.EfCore.DtoGenerator.Tests;
 /// </summary>
 public partial record CurrencyDataDto
 {
-    /// <summary>Gets the value mapped from entity property Id.</summary>
     public int Id { get; init; }
-    /// <summary>Gets the value mapped from entity property Code.</summary>
     public required string Code { get; init; }
-    /// <summary>Gets the value mapped from entity property Description.</summary>
     public string? Description { get; init; }
 }

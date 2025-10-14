@@ -7,12 +7,8 @@ namespace DKNet.EfCore.DtoGenerator.Tests;
 /// </summary>
 public partial record PersonSummaryDto
 {
-    /// <summary>Gets the value mapped from entity property FirstName.</summary>
     public required string FirstName { get; init; }
-    /// <summary>Gets the value mapped from entity property MiddleName.</summary>
     public string? MiddleName { get; init; }
-    /// <summary>Gets the value mapped from entity property LastName.</summary>
     public required string LastName { get; init; }
-    /// <summary>Gets the value mapped from entity property Age.</summary>
     public int Age { get; init; }
 }

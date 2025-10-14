@@ -6,7 +6,20 @@
         <IsPackable>false</IsPackable>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+        <!-- Force analyzer to reload on every build to avoid caching issues -->
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
+
+    <!-- Clean up generated DTOs before build to avoid stale files -->
+    <Target Name="CleanGeneratedDtos" BeforeTargets="CoreCompile">
+        <ItemGroup>
+<!--            <OldGeneratedDtoFiles Include="GeneratedDtos\*.cs"/>-->
+            <OldGeneratedOutputDtos Include="$(OutDir)GeneratedDtos\*.cs"/>
+        </ItemGroup>
+<!--        <Delete Files="@(OldGeneratedDtoFiles)" Condition="'@(OldGeneratedDtoFiles)' != ''"/>-->
+        <Delete Files="@(OldGeneratedOutputDtos)" Condition="'@(OldGeneratedOutputDtos)' != ''"/>
+        <Message Text="Cleaned old generated DTO files" Importance="normal"/>
+    </Target>
 
     <!-- Custom target to copy generated DTOs to Dtos folder for easier access (flattened, no subfolders) -->
     <Target Name="CopyGeneratedDtosToProjectFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
@@ -14,11 +27,25 @@
             <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.cs"/>
         </ItemGroup>
         <MakeDir Directories="GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="GeneratedDtos" SkipUnchangedFiles="true"/>
+        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
         <!-- Also copy to output directory for test runtime validation -->
         <MakeDir Directories="$(OutDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="$(OutDir)GeneratedDtos" SkipUnchangedFiles="true"/>
+        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFolder="$(OutDir)GeneratedDtos" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"/>
         <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to GeneratedDtos and output folder" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
+    </Target>
+
+    <!-- Target to force complete cleanup of all generated files and caches -->
+    <Target Name="CleanGeneratedFiles">
+        <ItemGroup>
+            <GeneratedFilesToDelete Include="GeneratedDtos\*.cs"/>
+            <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.cs"/>
+            <GeneratedFilesToDelete Include="$(CompilerGeneratedFilesOutputPath)\**\*.cs"/>
+        </ItemGroup>
+        <Delete Files="@(GeneratedFilesToDelete)" Condition="'@(GeneratedFilesToDelete)' != ''"/>
+        <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')"/>
+        <RemoveDir Directories="GeneratedDtos" Condition="Exists('GeneratedDtos')"/>
+        <RemoveDir Directories="$(OutDir)GeneratedDtos" Condition="Exists('$(OutDir)GeneratedDtos')"/>
+        <Message Text="Cleaned all generated files and caches" Importance="high"/>
     </Target>
 
     <ItemGroup>
@@ -36,6 +63,7 @@
 
     <ItemGroup>
         <!-- Reference the generator as an analyzer so it runs during compilation -->
+        <ProjectReference Include="..\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj" />
         <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="true"/>

@@ -598,10 +598,6 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     private static void AppendPropertyDeclaration(StringBuilder builder, PropertyInfo propertyInfo)
     {
-        builder.Append("    /// <summary>Gets the value mapped from entity property ")
-               .Append(propertyInfo.Name)
-               .AppendLine(".</summary>");
-        
         builder.Append("    public ");
         
         if (propertyInfo.IsNonNullableString)

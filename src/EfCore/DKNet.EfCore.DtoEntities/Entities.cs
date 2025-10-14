@@ -1,4 +1,4 @@
-namespace Some.Others.Namespaces;
+namespace DKNet.EfCore.DtoEntities;
 
 public class CurrencyData
 {
