@@ -368,19 +368,34 @@ public sealed class DtoGenerator : IIncrementalGenerator
         {
             var filePath = syntaxRef.SyntaxTree.FilePath;
             
-            // Check multiple indicators of generated code:
-            // 1. Ends with .g.cs (standard for generated files)
-            // 2. Empty file path (can happen with in-memory generated files)
-            // 3. Contains "/obj/" or "\obj\" (intermediate output folder)
-            if (string.IsNullOrEmpty(filePath) ||
-                filePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) ||
-                filePath.IndexOf("/obj/", StringComparison.Ordinal) >= 0 ||
-                filePath.IndexOf("\\obj\\", StringComparison.Ordinal) >= 0)
-            {
+            if (IsGeneratedCodePath(filePath))
                 return true;
-            }
         }
         
+        return false;
+    }
+    
+    private static bool IsGeneratedCodePath(string filePath)
+    {
+        // Check multiple indicators of generated code:
+        // 1. Empty file path (can happen with in-memory generated files)
+        if (string.IsNullOrEmpty(filePath))
+            return true;
+            
+        // 2. Ends with .g.cs (standard convention for generated files)
+        if (filePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase))
+            return true;
+            
+        // 3. Contains intermediate output folder (obj) - use cross-platform approach
+        var objFolder = $"{System.IO.Path.DirectorySeparatorChar}obj{System.IO.Path.DirectorySeparatorChar}";
+        if (filePath.IndexOf(objFolder, StringComparison.Ordinal) >= 0)
+            return true;
+            
+        // Also check with alternate separator for cross-platform compatibility
+        var altObjFolder = $"{System.IO.Path.AltDirectorySeparatorChar}obj{System.IO.Path.AltDirectorySeparatorChar}";
+        if (filePath.IndexOf(altObjFolder, StringComparison.Ordinal) >= 0)
+            return true;
+            
         return false;
     }
 

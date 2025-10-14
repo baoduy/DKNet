@@ -26,10 +26,10 @@
         <Message Text="Copied %(GeneratedDtoFiles.Filename)%(GeneratedDtoFiles.Extension) to $(OutDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
     </Target>
 
-    <!-- Target to force complete cleanup of all generated files and caches BEFORE each compilation -->
+    <!-- Target to force complete cleanup of all generated files and caches BEFORE compilation -->
     <!-- This ensures fresh generation every time and prevents cache-related property duplication issues -->
-    <!-- Use CoreGenerateMSBuildEditorConfigFileShouldRun which runs very early in the build -->
-    <Target Name="CleanGeneratedFiles" BeforeTargets="CoreGenerateMSBuildEditorConfigFileShouldRun;BeforeCompile;CoreCompile">
+    <!-- Runs once per build using property guard to prevent multiple executions -->
+    <Target Name="CleanGeneratedFiles" BeforeTargets="BeforeCompile" Condition="'$(CleanGeneratedFilesExecuted)' != 'true'">
         <ItemGroup>
             <GeneratedFilesToDelete Include="$(OutDir)GeneratedDtos\*.cs"/>
             <GeneratedFilesToDelete Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
@@ -37,6 +37,9 @@
         <Delete Files="@(GeneratedFilesToDelete)" Condition="'@(GeneratedFilesToDelete)' != ''"/>
         <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')"/>
         <RemoveDir Directories="$(OutDir)GeneratedDtos" Condition="Exists('$(OutDir)GeneratedDtos')"/>
+        <PropertyGroup>
+            <CleanGeneratedFilesExecuted>true</CleanGeneratedFilesExecuted>
+        </PropertyGroup>
         <Message Text="CleanGeneratedFiles: Removed @(GeneratedFilesToDelete->Count()) files from $(CompilerGeneratedFilesOutputPath)" Importance="high"/>
     </Target>
 
