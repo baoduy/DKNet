@@ -18,6 +18,9 @@ The EfCore Extensions provide comprehensive enhancements to Entity Framework Cor
 - [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) - Data authorization and access control
 - [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) - EF Core functionality enhancements
 
+### Code Generation & Development Tools
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) - Compile-time DTO generation from entities
+
 ### Database Utilities
 - [DKNet.EfCore.Relational.Helpers](./DKNet.EfCore.Relational.Helpers.md) - Relational database utilities
 
@@ -56,6 +59,7 @@ The EfCore Extensions form the **Infrastructure Layer** in the Onion Architectur
 │  🔒 DKNet.EfCore.DataAuthorization - Access Control           │
 │  ⚡ DKNet.EfCore.Hooks - Lifecycle Management                  │
 │  ⚙️ DKNet.EfCore.Extensions - EF Core Enhancements            │
+│  🏗️ DKNet.EfCore.DtoGenerator - Compile-Time DTO Generation   │
 │  🔧 DKNet.EfCore.Relational.Helpers - DB Utilities            │
 │  📐 DKNet.EfCore.Specifications - Query Specification Pattern │
 └─────────────────────────────────────────────────────────────────┘
