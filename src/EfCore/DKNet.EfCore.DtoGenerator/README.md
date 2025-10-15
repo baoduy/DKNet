@@ -73,6 +73,17 @@ You can exclude specific properties from the generated DTO using the `Exclude` p
 public partial record BalanceSummaryDto;
 ```
 
+### Including Only Specific Properties
+
+Alternatively, you can specify only the properties you want to include using the `Include` parameter. When `Include` is provided, only those properties will be generated:
+
+```csharp
+[GenerateDto(typeof(MerchantBalance), Include = new[] { "MerchantId", "Balance" })]
+public partial record BalanceOnlyDto;
+```
+
+**Note:** `Include` and `Exclude` are mutually exclusive. If you specify `Include`, the `Exclude` parameter will be ignored, and a warning will be generated if both are provided.
+
 ### Customizing DTOs
 
 You can add custom properties or override generated ones by declaring them in your partial DTO:

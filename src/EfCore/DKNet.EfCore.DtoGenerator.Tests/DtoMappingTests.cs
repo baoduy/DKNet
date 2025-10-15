@@ -1,6 +1,8 @@
+using DKNet.EfCore.DtoEntities;
 using DKNet.EfCore.DtoEntities.Features.Merchants;
 using DKNet.EfCore.DtoEntities.Features.StaticData;
 using DKNet.EfCore.DtoEntities.Share;
+using DKNet.EfCore.DtoGenerator.Tests.Features;
 using DKNet.EfCore.DtoGenerator.Tests.Features.Merchants;
 using DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;
 using DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.Currencies;
@@ -255,5 +257,69 @@ public class DtoMappingTests
         dto.Settlement.ShouldBe(settlement);
         dto.MinAmount.ShouldBe(minAmount);
         dto.MaxAmount.ShouldBe(maxAmount);
+    }
+
+    [Fact]
+    public void PersonNameDto_ShouldMapOnlyIncludedProperties_FromPerson()
+    {
+        // Arrange
+        var entity = new Person("John", "Middle", "Doe", 30);
+
+        // Act
+        var dto = entity.Adapt<PersonNameDto>();
+
+        // Assert
+        dto.ShouldNotBeNull();
+        dto.FirstName.ShouldBe(entity.FirstName);
+        dto.LastName.ShouldBe(entity.LastName);
+        
+        // Verify only included properties exist
+        typeof(PersonNameDto).GetProperty("FirstName").ShouldNotBeNull();
+        typeof(PersonNameDto).GetProperty("LastName").ShouldNotBeNull();
+        typeof(PersonNameDto).GetProperty("Id").ShouldBeNull();
+        typeof(PersonNameDto).GetProperty("MiddleName").ShouldBeNull();
+        typeof(PersonNameDto).GetProperty("Age").ShouldBeNull();
+        typeof(PersonNameDto).GetProperty("CreatedUtc").ShouldBeNull();
+    }
+
+    [Fact]
+    public void PersonSummaryDto_ShouldMapOnlyIncludedProperties_FromPerson()
+    {
+        // Arrange
+        var entity = new Person("Jane", "M", "Smith", 25);
+
+        // Act
+        var dto = entity.Adapt<PersonSummaryDto>();
+
+        // Assert
+        dto.ShouldNotBeNull();
+        dto.Id.ShouldBe(entity.Id);
+        dto.FirstName.ShouldBe(entity.FirstName);
+        dto.LastName.ShouldBe(entity.LastName);
+        dto.Age.ShouldBe(entity.Age);
+        
+        // Verify only included properties exist
+        typeof(PersonSummaryDto).GetProperty("Id").ShouldNotBeNull();
+        typeof(PersonSummaryDto).GetProperty("FirstName").ShouldNotBeNull();
+        typeof(PersonSummaryDto).GetProperty("LastName").ShouldNotBeNull();
+        typeof(PersonSummaryDto).GetProperty("Age").ShouldNotBeNull();
+        typeof(PersonSummaryDto).GetProperty("MiddleName").ShouldBeNull();
+        typeof(PersonSummaryDto).GetProperty("CreatedUtc").ShouldBeNull();
+    }
+
+    [Fact]
+    public void PersonNameDto_ShouldNotIncludeExcludedProperties()
+    {
+        // Arrange & Act - Verify excluded properties don't exist at compile time
+        var hasId = typeof(PersonNameDto).GetProperty("Id") != null;
+        var hasMiddleName = typeof(PersonNameDto).GetProperty("MiddleName") != null;
+        var hasAge = typeof(PersonNameDto).GetProperty("Age") != null;
+        var hasCreatedUtc = typeof(PersonNameDto).GetProperty("CreatedUtc") != null;
+        
+        // Assert - None of these properties should exist
+        hasId.ShouldBeFalse();
+        hasMiddleName.ShouldBeFalse();
+        hasAge.ShouldBeFalse();
+        hasCreatedUtc.ShouldBeFalse();
     }
 }
