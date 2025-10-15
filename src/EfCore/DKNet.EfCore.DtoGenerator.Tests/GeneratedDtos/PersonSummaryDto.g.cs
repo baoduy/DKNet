@@ -7,8 +7,20 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 /// </summary>
 public partial record PersonSummaryDto
 {
+    /// <summary>
+    /// Gets or sets the Id.
+    /// </summary>
     public Guid Id { get; init; }
+    /// <summary>
+    /// Gets or sets the FirstName.
+    /// </summary>
     public required string FirstName { get; init; }
+    /// <summary>
+    /// Gets or sets the LastName.
+    /// </summary>
     public required string LastName { get; init; }
+    /// <summary>
+    /// Gets or sets the Age.
+    /// </summary>
     public int Age { get; init; }
 }

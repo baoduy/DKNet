@@ -1018,22 +1018,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="propertyInfo">The property info.</param>
     private static void AppendPropertyDeclaration(StringBuilder builder, PropertyInfo propertyInfo)
     {
+        builder.AppendLine($"    /// <summary>");
+        builder.AppendLine($"    /// Gets or sets the {propertyInfo.Name}.");
+        builder.AppendLine($"    /// </summary>");
         builder.Append("    public ");
-        
         if (propertyInfo.IsNonNullableString)
             builder.Append("required ");
-            
         builder.Append(propertyInfo.TypeName)
                .Append(' ')
                .Append(propertyInfo.Name)
                .Append(" { get; init; }");
-        
-        // Initialize non-nullable collections with empty collection
         if (propertyInfo.IsCollection && propertyInfo.NullableAnnotation != NullableAnnotation.Annotated)
         {
             builder.Append(" = [];");
         }
-        
         builder.AppendLine();
     }
 
