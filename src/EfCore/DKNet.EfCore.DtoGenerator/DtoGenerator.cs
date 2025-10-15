@@ -34,6 +34,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Initialization
 
+    /// <summary>
+    /// Initializes the incremental generator. Registers the syntax provider and source output.
+    /// </summary>
+    /// <param name="context">The generator initialization context.</param>
+    /// <example>
+    /// // Called by the Roslyn infrastructure
+    /// generator.Initialize(context);
+    /// </example>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var targets = CreateSyntaxProvider(context);
@@ -41,6 +49,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         RegisterSourceGeneration(context, compilation);
     }
 
+    /// <summary>
+    /// Creates a syntax provider that finds all type declarations with the [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="context">The generator initialization context.</param>
+    /// <returns>An incremental values provider of Target records.</returns>
     private static IncrementalValuesProvider<Target> CreateSyntaxProvider(IncrementalGeneratorInitializationContext context)
     {
         return context.SyntaxProvider.CreateSyntaxProvider(
@@ -49,6 +62,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
             .Where(static t => t is not null)!;
     }
 
+    /// <summary>
+    /// Registers the source generation step for all collected targets.
+    /// </summary>
+    /// <param name="context">The generator initialization context.</param>
+    /// <param name="compilation">The compilation and collected targets.</param>
     private static void RegisterSourceGeneration(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<(Compilation Left, System.Collections.Immutable.ImmutableArray<Target> Right)> compilation)
@@ -76,11 +94,21 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Attribute Detection & Parsing
 
+    /// <summary>
+    /// Determines if a syntax node is a type declaration with attributes.
+    /// </summary>
+    /// <param name="node">The syntax node.</param>
+    /// <returns>True if the node is a type declaration with attributes.</returns>
     private static bool IsTypeDeclarationWithAttributes(SyntaxNode node)
     {
         return node is TypeDeclarationSyntax { AttributeLists.Count: > 0 };
     }
 
+    /// <summary>
+    /// Extracts a generation target from a type declaration's attributes, if present.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <returns>A Target if found, otherwise null.</returns>
     private static Target? ExtractGenerationTarget(GeneratorSyntaxContext ctx)
     {
         if (ctx.Node is not TypeDeclarationSyntax typeDeclaration) 
@@ -99,6 +127,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return null;
     }
 
+    /// <summary>
+    /// Attempts to extract a Target from a [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="typeDeclaration">The type declaration syntax.</param>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>A Target if extraction is successful, otherwise null.</returns>
     private static Target? TryExtractTargetFromAttribute(
         GeneratorSyntaxContext ctx,
         TypeDeclarationSyntax typeDeclaration,
@@ -127,12 +162,22 @@ public sealed class DtoGenerator : IIncrementalGenerator
         };
     }
 
+    /// <summary>
+    /// Checks if the attribute is a [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>True if the attribute is [GenerateDto].</returns>
     private static bool IsGenerateDtoAttribute(AttributeSyntax attribute)
     {
         var shortName = ExtractAttributeShortName(attribute);
         return shortName is AttributeShortName or AttributeFullName;
     }
 
+    /// <summary>
+    /// Extracts the short name of an attribute (e.g., GenerateDto).
+    /// </summary>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>The short name, or null if not found.</returns>
     private static string? ExtractAttributeShortName(AttributeSyntax attribute)
     {
         return attribute.Name switch
@@ -143,10 +188,15 @@ public sealed class DtoGenerator : IIncrementalGenerator
         };
     }
 
-    #endregion
-
-    #region Entity Type Extraction
-
+    /// <summary>
+    /// Extracts the entity type symbol from the [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>The entity type symbol, or null if not found.</returns>
+    /// <example>
+    /// // [GenerateDto(typeof(User))]
+    /// </example>
     private static INamedTypeSymbol? ExtractEntityTypeFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
     {
         var firstArg = attribute.ArgumentList!.Arguments[0].Expression;
@@ -160,6 +210,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         };
     }
 
+    /// <summary>
+    /// Extracts the entity symbol from a typeof expression.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="typeOfExpression">The typeof expression syntax.</param>
+    /// <returns>The entity type symbol, or null if not found.</returns>
     private static INamedTypeSymbol? ExtractEntityFromTypeOfExpression(GeneratorSyntaxContext ctx, TypeOfExpressionSyntax typeOfExpression)
     {
         var entitySymbol = ctx.SemanticModel.GetTypeInfo(typeOfExpression.Type).Type as INamedTypeSymbol;
@@ -176,6 +232,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return entitySymbol;
     }
 
+    /// <summary>
+    /// Resolves an entity type by its name in the compilation.
+    /// </summary>
+    /// <param name="compilation">The Roslyn compilation.</param>
+    /// <param name="entityName">The entity type name.</param>
+    /// <returns>The entity type symbol, or null if not found or ambiguous.</returns>
     private static INamedTypeSymbol? ResolveEntityByName(Compilation compilation, string entityName)
     {
         var matches = FindTypeSymbolsByName(compilation, entityName);
@@ -188,6 +250,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         };
     }
 
+    /// <summary>
+    /// Finds all type symbols in the compilation matching the given name.
+    /// </summary>
+    /// <param name="compilation">The Roslyn compilation.</param>
+    /// <param name="typeName">The type name.</param>
+    /// <returns>A list of matching type symbols.</returns>
     private static List<INamedTypeSymbol> FindTypeSymbolsByName(Compilation compilation, string typeName)
     {
         return compilation
@@ -197,10 +265,15 @@ public sealed class DtoGenerator : IIncrementalGenerator
             .ToList();
     }
 
-    #endregion
-
-    #region Excluded Properties Extraction
-
+    /// <summary>
+    /// Extracts the set of excluded property names from the [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>A set of excluded property names.</returns>
+    /// <example>
+    /// // [GenerateDto(typeof(User), Exclude = ["Password", nameof(User.Secret)])]
+    /// </example>
     private static HashSet<string> ExtractExcludedPropertiesFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
     {
         foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
@@ -214,6 +287,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return new HashSet<string>();
     }
 
+    /// <summary>
+    /// Extracts excluded property names from an attribute expression.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="expression">The expression syntax.</param>
+    /// <returns>A set of excluded property names.</returns>
     private static HashSet<string> ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
     {
         return expression switch
@@ -228,6 +307,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         };
     }
 
+    /// <summary>
+    /// Extracts string literals from an array initializer.
+    /// </summary>
+    /// <param name="initializer">The initializer expression syntax.</param>
+    /// <returns>A set of string literals.</returns>
     private static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
     {
         var result = new HashSet<string>();
@@ -243,6 +327,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return result;
     }
 
+    /// <summary>
+    /// Extracts string literals from a collection expression (e.g., ["A", nameof(Entity.B)]).
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="collectionExpression">The collection expression syntax.</param>
+    /// <returns>A set of string literals.</returns>
     private static HashSet<string> ExtractStringLiteralsFromCollectionExpression(
         GeneratorSyntaxContext ctx,
         CollectionExpressionSyntax collectionExpression)
@@ -269,6 +359,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region DTO Source Generation
 
+    /// <summary>
+    /// Generates the DTO source code for a given target and adds it to the compilation.
+    /// </summary>
+    /// <param name="context">The source production context.</param>
+    /// <param name="compilation">The Roslyn compilation.</param>
+    /// <param name="target">The DTO generation target.</param>
     private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target)
     {
         var dtoMetadata = ExtractDtoMetadata(target);
@@ -318,6 +414,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         context.AddSource(fileName, sourceCode);
     }
 
+    /// <summary>
+    /// Creates a unique file name for the generated DTO source file.
+    /// </summary>
+    /// <param name="dtoSymbol">The DTO type symbol.</param>
+    /// <returns>A unique file name.</returns>
     private static string CreateUniqueFileName(INamedTypeSymbol dtoSymbol)
     {
         // Use just the DTO's simple name for a cleaner filename
@@ -325,6 +426,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return $"{dtoSymbol.Name}.g.cs";
     }
 
+    /// <summary>
+    /// Extracts metadata for the DTO, including name, namespace, and existing properties.
+    /// </summary>
+    /// <param name="target">The DTO generation target.</param>
+    /// <returns>The DTO metadata.</returns>
     private static DtoMetadata ExtractDtoMetadata(Target target)
     {
         var dtoSymbol = target.DtoSymbol;
@@ -357,6 +463,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
             existingProperties);
     }
     
+    /// <summary>
+    /// Determines if a property is from generated code (e.g., .g.cs or obj folder).
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is from generated code.</returns>
     private static bool IsFromGeneratedCode(IPropertySymbol property)
     {
         // If the property has no syntax references, it's likely from metadata/generated code
@@ -375,6 +486,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return false;
     }
     
+    /// <summary>
+    /// Checks if a file path is from generated code (e.g., .g.cs or obj folder).
+    /// </summary>
+    /// <param name="filePath">The file path.</param>
+    /// <returns>True if the file is generated.</returns>
     private static bool IsGeneratedCodePath(string filePath)
     {
         // Check multiple indicators of generated code:
@@ -404,6 +520,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return false;
     }
 
+    /// <summary>
+    /// Determines the type kind string for the DTO (e.g., "partial class", "partial record").
+    /// </summary>
+    /// <param name="dtoSymbol">The DTO type symbol.</param>
+    /// <returns>The type kind string.</returns>
     private static string DetermineTypeKind(INamedTypeSymbol dtoSymbol)
     {
         if (!dtoSymbol.IsRecord)
@@ -418,6 +539,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Property Analysis
 
+    /// <summary>
+    /// Gets all public instance properties from the entity, including inherited ones.
+    /// </summary>
+    /// <param name="entitySymbol">The entity type symbol.</param>
+    /// <returns>A list of property symbols.</returns>
+    /// <example>
+    /// var props = GetEntityProperties(entitySymbol);
+    /// </example>
     private static List<IPropertySymbol> GetEntityProperties(INamedTypeSymbol entitySymbol)
     {
         var properties = new List<IPropertySymbol>();
@@ -452,6 +581,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return properties;
     }
 
+    /// <summary>
+    /// Determines if a property is a valid entity property for DTO generation.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is valid.</returns>
     private static bool IsValidEntityProperty(IPropertySymbol property)
     {
         return !property.IsStatic && 
@@ -461,6 +595,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
                property.Parameters.Length == 0;
     }
 
+    /// <summary>
+    /// Filters out excluded properties from the entity property list.
+    /// </summary>
+    /// <param name="entityProperties">The entity property list.</param>
+    /// <param name="excludedProperties">The set of excluded property names.</param>
+    /// <returns>The filtered list of included properties.</returns>
     private static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
         HashSet<string> excludedProperties)
@@ -473,6 +613,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
             .ToList();
     }
 
+    /// <summary>
+    /// Analyzes a property and returns its metadata for code generation.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <param name="typeFormat">The symbol display format.</param>
+    /// <returns>The property info.</returns>
     private static PropertyInfo AnalyzeProperty(IPropertySymbol property, SymbolDisplayFormat typeFormat)
     {
         var typeName = GetPropertyTypeName(property, typeFormat);
@@ -487,6 +633,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
             property.NullableAnnotation);
     }
 
+    /// <summary>
+    /// Gets the C# type name for a property, handling nullable and generic types.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <param name="typeFormat">The symbol display format.</param>
+    /// <returns>The C# type name.</returns>
     private static string GetPropertyTypeName(IPropertySymbol property, SymbolDisplayFormat typeFormat)
     {
         var type = property.Type;
@@ -505,6 +657,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return typeName;
     }
 
+    /// <summary>
+    /// Builds a clean C# type name for a symbol, using keywords for primitives and handling generics.
+    /// </summary>
+    /// <param name="type">The type symbol.</param>
+    /// <returns>The C# type name.</returns>
     private static string BuildCleanTypeName(ITypeSymbol type)
     {
         // Handle special types (int, string, etc.) using C# keywords
@@ -558,12 +715,22 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return type.Name;
     }
 
+    /// <summary>
+    /// Determines if a property is a non-nullable string.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is a non-nullable string.</returns>
     private static bool IsNonNullableString(IPropertySymbol property)
     {
         return property.Type.SpecialType == SpecialType.System_String &&
                property.NullableAnnotation != NullableAnnotation.Annotated;
     }
 
+    /// <summary>
+    /// Determines if a property is a collection type (array or generic collection).
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is a collection.</returns>
     private static bool IsCollectionType(IPropertySymbol property)
     {
         if (property.Type is IArrayTypeSymbol)
@@ -577,6 +744,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return IsKnownCollectionInterface(fullyQualifiedName);
     }
 
+    /// <summary>
+    /// Determines if a fully qualified name is a known collection interface.
+    /// </summary>
+    /// <param name="fullyQualifiedName">The fully qualified type name.</param>
+    /// <returns>True if the type is a known collection interface.</returns>
     private static bool IsKnownCollectionInterface(string fullyQualifiedName)
     {
         return fullyQualifiedName.StartsWith("global::System.Collections.Generic.List<") ||
@@ -589,6 +761,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Namespace Collection
 
+    /// <summary>
+    /// Collects all required namespaces for the DTO properties, excluding the DTO's own namespace.
+    /// </summary>
+    /// <param name="properties">The list of property symbols.</param>
+    /// <param name="dtoNamespace">The DTO's namespace.</param>
+    /// <returns>A set of required namespaces.</returns>
     private static HashSet<string> CollectRequiredNamespaces(List<IPropertySymbol> properties, string? dtoNamespace)
     {
         var namespaces = new HashSet<string>();
@@ -601,6 +779,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return namespaces;
     }
 
+    /// <summary>
+    /// Recursively collects namespaces from a type and its generic arguments.
+    /// </summary>
+    /// <param name="type">The type symbol.</param>
+    /// <param name="namespaces">The set of namespaces.</param>
+    /// <param name="dtoNamespace">The DTO's namespace.</param>
     private static void CollectNamespacesFromType(ITypeSymbol type, HashSet<string> namespaces, string? dtoNamespace)
     {
         // Skip special types (int, string, etc.)
@@ -645,6 +829,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Creates a symbol display format for type names (name only, with generics).
+    /// </summary>
+    /// <returns>The symbol display format.</returns>
     private static SymbolDisplayFormat CreateTypeDisplayFormat()
     {
         return new SymbolDisplayFormat(
@@ -657,6 +845,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Code Building
 
+    /// <summary>
+    /// Builds the complete DTO source code as a string.
+    /// </summary>
+    /// <param name="metadata">The DTO metadata.</param>
+    /// <param name="properties">The list of property symbols.</param>
+    /// <param name="namespaces">The set of required namespaces.</param>
+    /// <param name="typeFormat">The symbol display format.</param>
+    /// <returns>The generated source code.</returns>
     private static string BuildDtoSourceCode(
         DtoMetadata metadata,
         List<IPropertySymbol> properties,
@@ -675,12 +871,21 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Appends the file header to the StringBuilder.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
     private static void AppendFileHeader(StringBuilder builder)
     {
         builder.AppendLine("// <auto-generated/> Generated by DKNet.EfCore.DtoGenerator");
         builder.AppendLine("#nullable enable");
     }
 
+    /// <summary>
+    /// Appends using directives for all required namespaces.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
+    /// <param name="namespaces">The set of namespaces.</param>
     private static void AppendUsingDirectives(StringBuilder builder, HashSet<string> namespaces)
     {
         if (namespaces.Count == 0)
@@ -694,6 +899,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         builder.AppendLine();
     }
 
+    /// <summary>
+    /// Appends the namespace declaration if present.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
+    /// <param name="namespaceName">The namespace name.</param>
     private static void AppendNamespaceDeclaration(StringBuilder builder, string? namespaceName)
     {
         if (namespaceName is not null)
@@ -703,6 +913,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Appends the DTO class or record declaration.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
+    /// <param name="metadata">The DTO metadata.</param>
     private static void AppendDtoClassDeclaration(StringBuilder builder, DtoMetadata metadata)
     {
         builder.AppendLine("/// <summary>");
@@ -712,6 +927,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         builder.AppendLine("{");
     }
 
+    /// <summary>
+    /// Appends all DTO properties to the class, skipping existing ones.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
+    /// <param name="properties">The list of property symbols.</param>
+    /// <param name="existingProperties">The set of existing property names.</param>
+    /// <param name="typeFormat">The symbol display format.</param>
     private static void AppendDtoProperties(
         StringBuilder builder,
         List<IPropertySymbol> properties,
@@ -728,6 +950,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Appends a single property declaration to the DTO.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
+    /// <param name="propertyInfo">The property info.</param>
     private static void AppendPropertyDeclaration(StringBuilder builder, PropertyInfo propertyInfo)
     {
         builder.Append("    public ");
@@ -749,40 +976,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
         builder.AppendLine();
     }
 
-    // private static void AppendDtoConstructor(
-    //     StringBuilder builder,
-    //     string dtoName,
-    //     List<IPropertySymbol> properties,
-    //     SymbolDisplayFormat typeFormat)
-    // {
-    //     // Constructor generation is disabled - DTOs can use object initializers or primary constructors
-    //     return;
-    // }
-
-    // private static void AppendConstructorDocumentation(StringBuilder builder)
-    // {
-    //     // Not used - constructors are not generated
-    // }
-    //
-    // private static void AppendConstructorSignature(
-    //     StringBuilder builder,
-    //     string dtoName,
-    //     List<IPropertySymbol> properties,
-    //     SymbolDisplayFormat typeFormat)
-    // {
-    //     // Not used - constructors are not generated
-    // }
-    //
-    // private static void AppendConstructorBody(StringBuilder builder, List<IPropertySymbol> properties)
-    // {
-    //     // Not used - constructors are not generated
-    // }
-
+    /// <summary>
+    /// Appends the closing brace for the class or record.
+    /// </summary>
+    /// <param name="builder">The StringBuilder.</param>
     private static void AppendClassClosing(StringBuilder builder)
     {
         builder.AppendLine("}");
     }
 
+    /// <summary>
+    /// Creates a valid parameter name from a property name, escaping C# keywords.
+    /// </summary>
+    /// <param name="propertyName">The property name.</param>
+    /// <returns>The parameter name.</returns>
     private static string CreateParameterName(string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
@@ -797,10 +1004,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return paramName;
     }
 
-    #endregion
-
-    #region Diagnostics
-
+    /// <summary>
+    /// Reports a generation error as a diagnostic warning.
+    /// </summary>
+    /// <param name="context">The source production context.</param>
+    /// <param name="dtoSymbol">The DTO type symbol.</param>
+    /// <param name="message">The error message.</param>
     private static void ReportGenerationError(SourceProductionContext context, INamedTypeSymbol dtoSymbol, string message)
     {
         var descriptor = new DiagnosticDescriptor(
@@ -819,6 +1028,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #region Data Models
 
+    /// <summary>
+    /// Represents a DTO generation target (DTO type, entity type, and excluded properties).
+    /// </summary>
     private sealed record Target
     {
         public INamedTypeSymbol DtoSymbol { get; set; } = null!;
@@ -874,6 +1086,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Metadata for a DTO, including name, namespace, type kind, and existing properties.
+    /// </summary>
     private sealed class DtoMetadata
     {
         public string Name { get; }
@@ -897,6 +1112,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Metadata for a property to be generated in the DTO.
+    /// </summary>
     private sealed class PropertyInfo
     {
         public string Name { get; }
@@ -922,4 +1140,3 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     #endregion
 }
-
