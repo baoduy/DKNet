@@ -1,26 +1,14 @@
 # DKNet.EfCore.DtoGenerator
 
-A lightweight Roslyn Incremental Source Generator that creates immutable DTO types from your EF Core (or any POCO)
-entity classes.
+## What is DtoGenerator
 
-Apply the `[GenerateDto(typeof(EntityType))]` attribute to an **empty partial record (recommended)** (or class / struct)
-and the generator will:
+DKNet.EfCore.DtoGenerator is a lightweight Roslyn Incremental Source Generator that automatically creates immutable DTO (Data Transfer Object) types from your EF Core entities or any POCO classes at compile time. It eliminates the need to manually write repetitive DTO classes while maintaining type safety and reducing boilerplate code.
 
-- Synthesize matching `public init` properties for every public instance readable property on the entity (excluding
-  indexers & statics)
-- Generate mapping helpers: `FromEntity`, `ToEntity`, and `FromEntities`
-- If the consuming project references **Mapster**, those helpers use `TypeAdapter.Adapt` for mapping
-- If Mapster is **not** referenced, a manual property-by-property initializer fallback is emitted
-- Preserve any properties you manually declare (you can override or add custom ones)
+The generator synthesizes matching `public init` properties for every public instance readable property on the entity (excluding indexers & statics) and provides mapping helpers between entities and DTOs. When Mapster is available, it uses `TypeAdapter.Adapt` for efficient mapping; otherwise, it falls back to property-by-property initialization.
 
-## Package Contents
+## NuGet Package
 
-- `GenerateDtoAttribute` – marks a DTO shell for generation
-- `DtoGenerator` – incremental source generator emitting `*.g.cs` files at compile time
-
-## Quick Start
-
-1. Add the NuGet package (once published):
+Add the NuGet package to your project:
 
 ```xml
 <ItemGroup>
@@ -28,7 +16,7 @@ and the generator will:
 </ItemGroup>
 ```
 
-2. (Optional but recommended) Add Mapster for rich mapping & configuration:
+**Optional but recommended**: Add Mapster for rich mapping capabilities and configuration:
 
 ```xml
 <ItemGroup>
@@ -36,138 +24,210 @@ and the generator will:
 </ItemGroup>
 ```
 
-3. Define your entity:
+## Project Configuration
 
+To enable and configure the source generator, add the following properties to your project file (`.csproj`):
+
+```xml
+<PropertyGroup>
+  <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+  <!-- Force analyzer to reload on every build to avoid caching issues -->
+  <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+</PropertyGroup>
+```
+
+These settings enable the generator to emit generated files in the `obj/Generated` directory and ensure the analyzer runs correctly on every build.
+
+## DTO Declaration
+
+To generate a DTO from an entity, create an empty partial record (recommended) or class/struct and apply the `[GenerateDto]` attribute:
+
+**Example Entity:**
 ```csharp
-public class Person
+public class MerchantBalance
 {
     public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public int Age { get; set; }
-    public DateOnly? BirthDate { get; set; }
+    public string MerchantId { get; set; } = string.Empty;
+    public decimal Balance { get; set; }
+    public DateTime LastUpdated { get; set; }
 }
 ```
 
-4. Add an empty partial record with the attribute:
-
+**DTO Declaration:**
 ```csharp
 using DKNet.EfCore.DtoGenerator;
 
-[GenerateDto(typeof(Person))]
-public partial record PersonDto; // Properties & mapping helpers are auto-generated
+[GenerateDto(typeof(MerchantBalance))]
+public partial record BalanceDto;
 ```
 
-5. Build the project. A generated `PersonDto.g.cs` (visible under `obj/Generated` when
-   `EmitCompilerGeneratedFiles` is enabled) will appear similar to:
+The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping helper methods.
 
-### With Mapster Present
+### Excluding Properties
+
+You can exclude specific properties from the generated DTO using the `Exclude` parameter:
+
 ```csharp
-public partial record PersonDto
-{
-    public System.Guid Id { get; init; }
-    public string Name { get; init; } = default!;
-    public int Age { get; init; }
-    public System.DateOnly? BirthDate { get; init; }
+[GenerateDto(typeof(MerchantBalance), Exclude = new[] { "LastUpdated", "Id" })]
+public partial record BalanceSummaryDto;
+```
 
-    public static PersonDto FromEntity(Person entity) => Mapster.TypeAdapter.Adapt<PersonDto>(entity);
-    public Person ToEntity() => Mapster.TypeAdapter.Adapt<Person>(this);
-    public static IEnumerable<PersonDto> FromEntities(IEnumerable<Person> entities) => Mapster.TypeAdapter.Adapt<IEnumerable<PersonDto>>(entities);
+### Including Only Specific Properties
+
+Alternatively, you can specify only the properties you want to include using the `Include` parameter. When `Include` is provided, only those properties will be generated:
+
+```csharp
+[GenerateDto(typeof(MerchantBalance), Include = new[] { "MerchantId", "Balance" })]
+public partial record BalanceOnlyDto;
+```
+
+**Note:** `Include` and `Exclude` are mutually exclusive. If you specify `Include`, the `Exclude` parameter will be ignored, and a warning will be generated if both are provided.
+
+### Customizing DTOs
+
+You can add custom properties or override generated ones by declaring them in your partial DTO:
+
+```csharp
+[GenerateDto(typeof(MerchantBalance))]
+public partial record BalanceDto
+{
+    // Add custom computed property
+    public string DisplayBalance => $"${Balance:N2}";
+    
+    // Override generated property with custom logic
+    public new string MerchantId { get; init; } = string.Empty;
 }
 ```
 
-### Without Mapster Present (Fallback)
+## Copy Generated DTOs to Project Folder
+
+For verification and debugging purposes, you can copy generated DTOs to your project folder using a custom MSBuild target. Add the following to your project file (`.csproj`):
+
+```xml
+<!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
+<Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
+    <ItemGroup>
+        <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.g.cs"/>
+    </ItemGroup>
+    <MakeDir Directories="$(ProjectDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
+    <Copy SourceFiles="@(GeneratedDtoFiles)"
+          DestinationFiles="$(ProjectDir)GeneratedDtos\%(Filename)%(Extension)"
+          SkipUnchangedFiles="false"
+          OverwriteReadOnlyFiles="true"
+          Condition="'@(GeneratedDtoFiles)' != ''"/>
+    <Message Text="Copied %(Filename)%(Extension) to $(ProjectDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
+</Target>
+
+<!-- Exclude generated DTOs from compilation, but keep them visible in Solution Explorer -->
+<ItemGroup>
+    <Compile Remove="GeneratedDtos\**\*.cs"/>
+    <None Include="GeneratedDtos\**\*.cs"/>
+</ItemGroup>
+```
+
+This MSBuild target will:
+- Copy all generated `*Dto.g.cs` files to a `GeneratedDtos` folder in your project
+- Exclude these files from compilation to avoid duplicates
+- Keep them visible in Solution Explorer for inspection
+- Show a message during build indicating which files were copied
+
+## Generated Code Examples
+
+### With Mapster Present
+
 ```csharp
-public partial record PersonDto
+public partial record BalanceDto
 {
     public System.Guid Id { get; init; }
-    public string Name { get; init; } = default!;
-    public int Age { get; init; }
-    public System.DateOnly? BirthDate { get; init; }
+    public string MerchantId { get; init; } = default!;
+    public decimal Balance { get; init; }
+    public System.DateTime LastUpdated { get; init; }
 
-    public static PersonDto FromEntity(Person entity) => new PersonDto
+    public static BalanceDto FromEntity(MerchantBalance entity) 
+        => Mapster.TypeAdapter.Adapt<BalanceDto>(entity);
+    
+    public MerchantBalance ToEntity() 
+        => Mapster.TypeAdapter.Adapt<MerchantBalance>(this);
+    
+    public static IEnumerable<BalanceDto> FromEntities(IEnumerable<MerchantBalance> entities) 
+        => Mapster.TypeAdapter.Adapt<IEnumerable<BalanceDto>>(entities);
+}
+```
+
+### Without Mapster (Fallback)
+
+```csharp
+public partial record BalanceDto
+{
+    public System.Guid Id { get; init; }
+    public string MerchantId { get; init; } = default!;
+    public decimal Balance { get; init; }
+    public System.DateTime LastUpdated { get; init; }
+
+    public static BalanceDto FromEntity(MerchantBalance entity) => new BalanceDto
     {
         Id = entity.Id,
-        Name = entity.Name,
-        Age = entity.Age,
-        BirthDate = entity.BirthDate
+        MerchantId = entity.MerchantId,
+        Balance = entity.Balance,
+        LastUpdated = entity.LastUpdated
     };
 
-    public Person ToEntity() => new Person
+    public MerchantBalance ToEntity() => new MerchantBalance
     {
         Id = this.Id,
-        Name = this.Name,
-        Age = this.Age,
-        BirthDate = this.BirthDate
+        MerchantId = this.MerchantId,
+        Balance = this.Balance,
+        LastUpdated = this.LastUpdated
     };
 
-    public static IEnumerable<PersonDto> FromEntities(IEnumerable<Person> entities)
+    public static IEnumerable<BalanceDto> FromEntities(IEnumerable<MerchantBalance> entities)
     {
         foreach (var e in entities) yield return FromEntity(e);
     }
 }
 ```
 
-## Overriding / Customizing Properties
-If you declare a property with the same name inside your partial DTO shell, the generator will **not** emit a duplicate.
-This lets you override types, add logic, or augment the DTO.
-
-```csharp
-[GenerateDto(typeof(Person))]
-public partial record PersonDto
-{
-    public string DisplayName => $"{Name} ({Age})"; // Extra computed property
-}
-```
-
 ## Mapster Configuration
-Because generation uses `TypeAdapter.Adapt<T>`, any global or scoped Mapster configuration you define will automatically
-apply:
+
+When using Mapster, you can customize mapping behavior with global or type-specific configurations:
 
 ```csharp
-TypeAdapterConfig<Person, PersonDto>
+TypeAdapterConfig<MerchantBalance, BalanceDto>
     .NewConfig()
-    .Ignore(dest => dest.Age); // Example
+    .Map(dest => dest.DisplayBalance, src => $"${src.Balance:N2}")
+    .Ignore(dest => dest.Id);
 ```
 
-If you need per-DTO customization without affecting entity mappings, you can introduce partial methods in a future
-extension (see planned enhancements) or manually override properties in the DTO shell.
+For EF Core query projections, use Mapster's `.ProjectToType<T>()` extension instead of `FromEntity` to enable database-side translation:
 
-## Project Configuration Tips
-To inspect generated code during development in a consuming project:
-
-```xml
-<PropertyGroup>
-  <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-  <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-</PropertyGroup>
-```
-
-## IQueryable Projection
-For EF Core queries:
 ```csharp
-var projected = db.People.Select(p => PersonDto.FromEntity(p));
+var balances = await dbContext.MerchantBalances
+    .ProjectToType<BalanceDto>()
+    .ToListAsync();
 ```
-When Mapster is present, EF Core may not translate `TypeAdapter.Adapt` inside an expression tree. For translation-safe
-queries, use the fallback initializer pattern or Mapster's `.ProjectToType<PersonDto>()` extension (Mapster EF Core
-package) instead of `FromEntity` inside queryable contexts.
 
-## Edge Cases / Notes
-- Navigation / collection properties are included (shallow copy). Customize via Mapster config or make them nullable & override.
-- Non-nullable reference type properties receive a `= default!;` initializer to satisfy compiler flow analysis.
-- Generic entity support is limited to non-generic DTO shells (matching generic arity would require additional logic).
+## Additional Notes
 
-## Diagnostics
-`DKDTOGEN001` is reported as a warning if generation fails for a target type; build continues.
+- **Navigation Properties**: Navigation and collection properties are included as shallow copies. Customize via Mapster configuration or override in partial DTO.
+- **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy compiler null-state analysis.
+- **Generic Entities**: Limited support for generic entities (non-generic DTO shells only).
+- **Diagnostics**: `DKDTOGEN001` warning is reported if generation fails for a target type; build continues.
 
-## Local Development (This Project)
+## Local Development
+
+Build and pack the source generator:
+
 ```bash
 # Build
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build -c Release
+dotnet build -c Release
+
 # Pack
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet pack -c Release
+dotnet pack -c Release
 ```
 
-Consume locally:
+For local consumption in another project:
+
 ```xml
 <ItemGroup>
   <ProjectReference Include="..\EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"
@@ -175,18 +235,14 @@ Consume locally:
 </ItemGroup>
 ```
 
-## Versioning / Compatibility
-Target framework: `net9.0`. For analyzer distribution best-practice, consider multi-targeting `netstandard2.0` to remove RS1041 warnings.
-
 ## Planned Enhancements
-- `[DtoIgnore]` attribute to skip specific entity properties
-- `[DtoName("...")]` attribute for renaming
-- Partial method hooks `OnAfterFromEntity(ref TEntity entity)` / `OnAfterToEntity(ref TEntity dto)`
-- Optional deep copy of collections / navigation properties
-- Multi-targeting for analyzer compatibility (netstandard2.0)
 
-## License
-(Provide license details here.)
+- `[DtoIgnore]` attribute to skip specific entity properties
+- `[DtoName("...")]` attribute for renaming properties
+- Partial method hooks for custom mapping logic
+- Optional deep copy of collections and navigation properties
+- Multi-targeting for broader analyzer compatibility
 
 ---
-Happy generating! Please report issues or ideas in the project repository.
+
+Happy generating! For more information and complete documentation, visit the [DKNet Framework Documentation](https://github.com/baoduy/DKNet/tree/dev/docs).
