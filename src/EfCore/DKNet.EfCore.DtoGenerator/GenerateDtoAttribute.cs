@@ -17,7 +17,12 @@ namespace DKNet.EfCore.DtoGenerator;
 /// // Exclude specific properties:
 /// [GenerateDto(typeof(Person), Exclude = new[] { "ID", "CreatedAt" })]
 /// public partial record PersonSummaryDto; // Generated without ID and CreatedAt properties.
+///
+/// // Include only specific properties:
+/// [GenerateDto(typeof(Person), Include = new[] { "Name", "Email" })]
+/// public partial record PersonNameDto; // Generated with only Name and Email properties.
 /// </code>
+/// Note: Include and Exclude are mutually exclusive. If Include is provided, only those properties will be generated.
 /// </remarks>
 [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
 public sealed class GenerateDtoAttribute : System.Attribute
@@ -29,8 +34,16 @@ public sealed class GenerateDtoAttribute : System.Attribute
 
     /// <summary>
     /// Gets or sets the names of properties to exclude from DTO generation.
+    /// This property is mutually exclusive with <see cref="Include"/>.
     /// </summary>
     public string[] Exclude { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the names of properties to include in DTO generation.
+    /// When specified, only these properties will be generated.
+    /// This property is mutually exclusive with <see cref="Exclude"/>.
+    /// </summary>
+    public string[] Include { get; set; } = [];
 
     public string EntityFullName => EntityType.FullName ?? EntityType.Name;
 

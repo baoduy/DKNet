@@ -27,6 +27,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     private const string AttributeShortName = "GenerateDto";
     private const string AttributeFullName = "GenerateDtoAttribute";
     private const string ExcludeParameterName = "Exclude";
+    private const string IncludeParameterName = "Include";
     private const string DiagnosticId = "DKDTOGEN001";
     private const string DiagnosticCategory = "DKNet.EfCore.DtoGenerator";
 
@@ -154,11 +155,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return null;
 
         var excludedProperties = ExtractExcludedPropertiesFromAttribute(ctx, attribute);
+        var includedProperties = ExtractIncludedPropertiesFromAttribute(ctx, attribute);
         return new Target
         {
             DtoSymbol = dtoSymbol,
             EntitySymbol = entitySymbol,
-            ExcludedProperties = excludedProperties
+            ExcludedProperties = excludedProperties,
+            IncludedProperties = includedProperties
         };
     }
 
@@ -288,6 +291,28 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Extracts the set of included property names from the [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>A set of included property names.</returns>
+    /// <example>
+    /// // [GenerateDto(typeof(User), Include = ["Name", "Email", nameof(User.Phone)])]
+    /// </example>
+    private static HashSet<string> ExtractIncludedPropertiesFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    {
+        foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
+        {
+            if (arg.NameEquals?.Name.Identifier.Text == IncludeParameterName)
+            {
+                return ExtractExcludedPropertiesFromExpression(ctx, arg.Expression);
+            }
+        }
+
+        return new HashSet<string>();
+    }
+
+    /// <summary>
     /// Extracts excluded property names from an attribute expression.
     /// </summary>
     /// <param name="ctx">The generator syntax context.</param>
@@ -387,16 +412,39 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 Diagnostic.Create(diagnostic, Location.None));
         }
         
-        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties);
+        // Validate that Include and Exclude are not both specified
+        if (target.IncludedProperties.Count > 0 && target.ExcludedProperties.Count > 0)
+        {
+            var diagnostic = new DiagnosticDescriptor(
+                id: "DKDTOGEN004",
+                title: "Include and Exclude are mutually exclusive",
+                messageFormat: "DTO {0}: Cannot specify both Include and Exclude properties. Use one or the other.",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+            
+            context.ReportDiagnostic(
+                Diagnostic.Create(diagnostic, Location.None, target.DtoSymbol.Name));
+            
+            // Skip generation for this DTO
+            return;
+        }
+
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties);
         
         // Additional logging for property filtering
         if (includedProperties.Count < entityProperties.Count)
         {
             var excludedCount = entityProperties.Count - includedProperties.Count;
+            var filterType = target.IncludedProperties.Count > 0 ? "included" : "excluded";
+            var propertyList = target.IncludedProperties.Count > 0 
+                ? string.Join(", ", target.IncludedProperties)
+                : string.Join(", ", target.ExcludedProperties);
+            
             var info = new DiagnosticDescriptor(
                 id: "DKDTOGEN003",
-                title: "Properties excluded from DTO",
-                messageFormat: $"DTO {{0}}: {excludedCount} properties excluded. Excluded: {string.Join(", ", target.ExcludedProperties)}",
+                title: "Properties filtered from DTO",
+                messageFormat: $"DTO {{0}}: {includedProperties.Count} properties {filterType}. {(target.IncludedProperties.Count > 0 ? "Included" : "Excluded")}: {propertyList}",
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
@@ -596,15 +644,28 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Filters out excluded properties from the entity property list.
+    /// Filters properties based on Include/Exclude lists.
+    /// If Include is provided, only those properties are returned.
+    /// Otherwise, properties are filtered by Exclude list.
     /// </summary>
     /// <param name="entityProperties">The entity property list.</param>
     /// <param name="excludedProperties">The set of excluded property names.</param>
+    /// <param name="includedProperties">The set of included property names.</param>
     /// <returns>The filtered list of included properties.</returns>
     private static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
-        HashSet<string> excludedProperties)
+        HashSet<string> excludedProperties,
+        HashSet<string> includedProperties)
     {
+        // If Include is provided, only include those properties
+        if (includedProperties.Count > 0)
+        {
+            return entityProperties
+                .Where(p => includedProperties.Contains(p.Name))
+                .ToList();
+        }
+
+        // Otherwise, exclude properties from the Exclude list
         if (excludedProperties.Count == 0)
             return entityProperties;
 
@@ -1029,13 +1090,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
     #region Data Models
 
     /// <summary>
-    /// Represents a DTO generation target (DTO type, entity type, and excluded properties).
+    /// Represents a DTO generation target (DTO type, entity type, and excluded/included properties).
     /// </summary>
     private sealed record Target
     {
         public INamedTypeSymbol DtoSymbol { get; set; } = null!;
         public INamedTypeSymbol EntitySymbol { get; set; } = null!;
         public HashSet<string> ExcludedProperties { get; set; } = new();
+        public HashSet<string> IncludedProperties { get; set; } = new();
 
         // Use string-based comparison for stability across compilations
         // SymbolEqualityComparer can give inconsistent results with incremental compilation
@@ -1059,7 +1121,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
             if (ExcludedProperties.Count != other.ExcludedProperties.Count)
                 return false;
 
-            return ExcludedProperties.SetEquals(other.ExcludedProperties);
+            if (!ExcludedProperties.SetEquals(other.ExcludedProperties))
+                return false;
+
+            // Compare included properties count and content
+            if (IncludedProperties.Count != other.IncludedProperties.Count)
+                return false;
+
+            return IncludedProperties.SetEquals(other.IncludedProperties);
         }
 
         public override int GetHashCode()
@@ -1077,6 +1146,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
                 // Hash excluded properties in a stable order
                 foreach (var prop in ExcludedProperties.OrderBy(p => p, StringComparer.Ordinal))
+                {
+                    hash = hash * 31 + StringComparer.Ordinal.GetHashCode(prop);
+                }
+
+                // Hash included properties in a stable order
+                foreach (var prop in IncludedProperties.OrderBy(p => p, StringComparer.Ordinal))
                 {
                     hash = hash * 31 + StringComparer.Ordinal.GetHashCode(prop);
                 }
