@@ -50,6 +50,8 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     {
         if (eventData.Context == null)
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        if (HookDisablingContext.IsHookDisabled(eventData.Context!))
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
         var context = GetContext(eventData);
         await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
@@ -60,6 +62,8 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
         CancellationToken cancellationToken = default)
     {
         if (eventData.Context == null)
+            return await base.SavedChangesAsync(eventData, result, cancellationToken);
+        if (HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
         try

@@ -117,4 +117,12 @@ public static class SetupEfCoreHook
 
         return services;
     }
+
+    /// <summary>
+    /// Disable Hooks for the current DbContext scope. It useful when running data migration and Data seeding.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    public static IHookDisablingContext DisableHooks(this DbContext context) =>
+        new HookDisablingContext(context);
 }
