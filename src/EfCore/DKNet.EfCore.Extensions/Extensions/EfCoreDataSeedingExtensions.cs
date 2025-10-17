@@ -31,19 +31,21 @@ public static class EfCoreDataSeedingExtensions
 
         //Get Alls Seeding Types
         var seedingTypes = GetDataSeedingTypes(assemblies);
-        foreach (var seedingType in seedingTypes)
+        var seedingInstances = seedingTypes.Select(s => Activator.CreateInstance(s) as IDataSeedingConfiguration);
+
+        @this.UseSeeding((context, performedStoreOperation) =>
         {
-            if (Activator.CreateInstance(seedingType) is not IDataSeedingConfiguration seedingInstance) continue;
-            if (seedingInstance.SeedAsync is null) continue;
-
-            @this.UseSeeding((context, performedStoreOperation) =>
-            {
-                seedingInstance.SeedAsync.Invoke(context, performedStoreOperation, CancellationToken.None)
+            foreach (var s in seedingInstances.OfType<IDataSeedingConfiguration>())
+                s.SeedAsync?.Invoke(context, performedStoreOperation, CancellationToken.None)
                     .GetAwaiter().GetResult();
-            });
+        });
 
-            @this.UseAsyncSeeding(seedingInstance.SeedAsync);
-        }
+        @this.UseAsyncSeeding(async (context, performedStoreOperation, cancellation) =>
+        {
+            foreach (var s in seedingInstances.OfType<IDataSeedingConfiguration>())
+                if (s.SeedAsync != null)
+                    await s.SeedAsync.Invoke(context, performedStoreOperation, cancellation);
+        });
 
         return @this;
     }
