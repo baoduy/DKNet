@@ -58,7 +58,7 @@
         <PackageVersion Include="Microsoft.AspNetCore.Routing.Abstractions" Version="2.3.0"/>
         <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="9.0.9"/>
         <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0"/>
-        <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9"/>
+        <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.9"/>
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9"/>
         <PackageVersion Include="Microsoft.CSharp" Version="4.7.0"/>
