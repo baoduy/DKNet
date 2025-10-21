@@ -1,4 +1,7 @@
 ﻿using System.Linq.Expressions;
+using LinqKit;
+
+// ReSharper disable UnusedMember.Global
 
 namespace DKNet.EfCore.Specifications;
 
@@ -45,6 +48,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
+
+    protected ExpressionStarter<TEntity> CreatePredicate(Expression<Func<TEntity, bool>>? expression = null) =>
+        expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="Specification{TEntity}"/> class.
@@ -160,9 +166,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     public Specification<TEntity> Or(Specification<TEntity> specification) =>
         new OrSpecification<TEntity>(this, specification);
 
-    public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right) =>
-        left.And(right);
-
-    public static Specification<TEntity> operator |(Specification<TEntity> left, Specification<TEntity> right) =>
-        left.Or(right);
+    // public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right) =>
+    //     left.And(right);
+    //
+    // public static Specification<TEntity> operator |(Specification<TEntity> left, Specification<TEntity> right) =>
+    //     left.Or(right);
 }

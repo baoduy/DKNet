@@ -217,7 +217,7 @@ public class SpecificationTests
         spec2.AddTestFilter(u => u.LastName == "Doe");
 
         // Act
-        var result = spec1 & spec2;
+        var result = spec1.And(spec2);
 
         // Assert
         result.ShouldBeOfType<AndSpecification<User>>();
@@ -234,7 +234,7 @@ public class SpecificationTests
         spec2.AddTestFilter(u => u.FirstName == "Jane");
 
         // Act
-        var result = spec1 | spec2;
+        var result = spec1.Or(spec2);
 
         // Assert
         result.ShouldBeOfType<OrSpecification<User>>();
@@ -290,16 +290,24 @@ public class SpecificationTests
 public class TestSpecification : Specification<User>
 {
     public TestSpecification()
-    { }
-    
-    public TestSpecification(Expression<Func<User, bool>> filter) : base(filter) { }
-    
-    public TestSpecification(ISpecification<User> specification) : base(specification) { }
+    {
+    }
+
+    public TestSpecification(Expression<Func<User, bool>> filter) : base(filter)
+    {
+    }
+
+    public TestSpecification(ISpecification<User> specification) : base(specification)
+    {
+    }
 
     // Expose protected methods for testing
     public void AddTestFilter(Expression<Func<User, bool>> filter) => WithFilter(filter);
     public void AddTestInclude(Expression<Func<User, object?>> include) => AddInclude(include);
     public void AddTestOrderBy(Expression<Func<User, object>> orderBy) => AddOrderBy(orderBy);
-    public void AddTestOrderByDescending(Expression<Func<User, object>> orderByDesc) => AddOrderByDescending(orderByDesc);
+
+    public void AddTestOrderByDescending(Expression<Func<User, object>> orderByDesc) =>
+        AddOrderByDescending(orderByDesc);
+
     public void EnableIgnoreQueryFilters() => IgnoreQueryFiltersEnabled();
 }

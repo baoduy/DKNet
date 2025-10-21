@@ -52,7 +52,9 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
         MxFee = MxFee.Default;
     }
 
-    [MaxLength(100)] public string? ApprovedBy { get; private set; }
+    [Display(Name = "Approved By")]
+    [MaxLength(100)]
+    public string? ApprovedBy { get; private set; }
 
     public DateTimeOffset? ApprovedOn { get; private set; }
     public IReadOnlyCollection<MerchantChannel> Channels => _channels;
