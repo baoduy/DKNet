@@ -685,13 +685,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var typeName = GetPropertyTypeName(property, typeFormat);
         var isNonNullableString = IsNonNullableString(property);
         var isCollection = IsCollectionType(property);
+        var isComplexReferenceType = IsComplexReferenceType(property);
+        var validationAttributes = ExtractValidationAttributes(property);
 
         return new PropertyInfo(
             property.Name,
             typeName,
             isNonNullableString,
             isCollection,
-            property.NullableAnnotation);
+            isComplexReferenceType,
+            property.NullableAnnotation,
+            validationAttributes);
     }
 
     /// <summary>
@@ -818,6 +822,63 @@ public sealed class DtoGenerator : IIncrementalGenerator
                fullyQualifiedName.StartsWith("global::System.Collections.Generic.IEnumerable<");
     }
 
+    /// <summary>
+    /// Determines if a property is a non-nullable complex reference type (not string, not collection, not special type).
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is a non-nullable complex reference type.</returns>
+    private static bool IsComplexReferenceType(IPropertySymbol property)
+    {
+        // Must be a reference type
+        if (!property.Type.IsReferenceType)
+            return false;
+
+        // Must not be nullable
+        if (property.NullableAnnotation == NullableAnnotation.Annotated)
+            return false;
+
+        // Exclude strings (they are handled separately with 'required')
+        if (property.Type.SpecialType == SpecialType.System_String)
+            return false;
+
+        // Exclude collections (they are handled with '= []')
+        if (IsCollectionType(property))
+            return false;
+
+        // Exclude other special types
+        if (property.Type.SpecialType != SpecialType.None)
+            return false;
+
+        // This is a complex reference type (e.g., navigation properties, custom classes)
+        return true;
+    }
+
+    /// <summary>
+    /// Extracts validation attributes from a property symbol.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>A list of attribute data for validation attributes.</returns>
+    private static List<AttributeData> ExtractValidationAttributes(IPropertySymbol property)
+    {
+        var validationAttributes = new List<AttributeData>();
+
+        foreach (var attribute in property.GetAttributes())
+        {
+            if (attribute.AttributeClass is null)
+                continue;
+
+            var attributeNamespace = attribute.AttributeClass.ContainingNamespace.ToDisplayString();
+
+            // Check if this is a System.ComponentModel.DataAnnotations attribute
+            if (attributeNamespace == "System.ComponentModel.DataAnnotations")
+            {
+                validationAttributes.Add(attribute);
+            }
+        }
+
+        return validationAttributes;
+    }
+
     #endregion
 
     #region Namespace Collection
@@ -835,6 +896,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
         foreach (var property in properties)
         {
             CollectNamespacesFromType(property.Type, namespaces, dtoNamespace);
+            
+            // Check if property has validation attributes
+            foreach (var attribute in property.GetAttributes())
+            {
+                if (attribute.AttributeClass is null)
+                    continue;
+
+                var attributeNamespace = attribute.AttributeClass.ContainingNamespace.ToDisplayString();
+                if (attributeNamespace == "System.ComponentModel.DataAnnotations")
+                {
+                    namespaces.Add(attributeNamespace);
+                    break; // Only need to add the namespace once
+                }
+            }
         }
         
         return namespaces;
@@ -1021,6 +1096,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
         builder.AppendLine($"    /// <summary>");
         builder.AppendLine($"    /// Gets or sets the {propertyInfo.Name}.");
         builder.AppendLine($"    /// </summary>");
+        
+        // Append validation attributes
+        foreach (var attribute in propertyInfo.ValidationAttributes)
+        {
+            var attributeString = BuildAttributeString(attribute);
+            if (!string.IsNullOrEmpty(attributeString))
+            {
+                builder.Append("    ").AppendLine(attributeString);
+            }
+        }
+        
         builder.Append("    public ");
         if (propertyInfo.IsNonNullableString)
             builder.Append("required ");
@@ -1032,6 +1118,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
         {
             builder.Append(" = [];");
         }
+        else if (propertyInfo.IsComplexReferenceType)
+        {
+            builder.Append(" = null!;");
+        }
         builder.AppendLine();
     }
 
@@ -1042,6 +1132,131 @@ public sealed class DtoGenerator : IIncrementalGenerator
     private static void AppendClassClosing(StringBuilder builder)
     {
         builder.AppendLine("}");
+    }
+
+    /// <summary>
+    /// Builds an attribute string from AttributeData.
+    /// </summary>
+    /// <param name="attribute">The attribute data.</param>
+    /// <returns>The attribute string, or null if it cannot be built.</returns>
+    private static string? BuildAttributeString(AttributeData attribute)
+    {
+        if (attribute.AttributeClass is null)
+            return null;
+
+        var attributeName = attribute.AttributeClass.Name;
+        
+        // Remove "Attribute" suffix if present
+        if (attributeName.EndsWith("Attribute"))
+        {
+            attributeName = attributeName.Substring(0, attributeName.Length - "Attribute".Length);
+        }
+
+        var builder = new StringBuilder();
+        builder.Append('[').Append(attributeName);
+
+        // Check if we need to add arguments (constructor or named)
+        bool hasArguments = attribute.ConstructorArguments.Length > 0 || attribute.NamedArguments.Length > 0;
+        
+        if (hasArguments)
+        {
+            builder.Append('(');
+            
+            // Add constructor arguments
+            for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
+            {
+                if (i > 0)
+                    builder.Append(", ");
+
+                var arg = attribute.ConstructorArguments[i];
+                builder.Append(FormatAttributeArgument(arg));
+            }
+
+            // Add named arguments
+            if (attribute.NamedArguments.Length > 0)
+            {
+                if (attribute.ConstructorArguments.Length > 0)
+                    builder.Append(", ");
+
+                for (int i = 0; i < attribute.NamedArguments.Length; i++)
+                {
+                    if (i > 0)
+                        builder.Append(", ");
+
+                    var namedArg = attribute.NamedArguments[i];
+                    builder.Append(namedArg.Key)
+                           .Append(" = ")
+                           .Append(FormatAttributeArgument(namedArg.Value));
+                }
+            }
+            
+            builder.Append(')');
+        }
+
+        builder.Append(']');
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Formats an attribute argument value for code generation.
+    /// </summary>
+    /// <param name="arg">The typed constant argument.</param>
+    /// <returns>The formatted argument string.</returns>
+    private static string FormatAttributeArgument(TypedConstant arg)
+    {
+        if (arg.IsNull)
+            return "null";
+
+        if (arg.Kind == TypedConstantKind.Array)
+        {
+            var arrayBuilder = new StringBuilder();
+            arrayBuilder.Append("new[] { ");
+            
+            for (int i = 0; i < arg.Values.Length; i++)
+            {
+                if (i > 0)
+                    arrayBuilder.Append(", ");
+                arrayBuilder.Append(FormatAttributeArgument(arg.Values[i]));
+            }
+            
+            arrayBuilder.Append(" }");
+            return arrayBuilder.ToString();
+        }
+
+        if (arg.Type?.TypeKind == TypeKind.Enum)
+        {
+            // Format enum values
+            var enumTypeName = arg.Type.Name;
+            return $"{enumTypeName}.{arg.Value}";
+        }
+
+        if (arg.Value is string stringValue)
+        {
+            // Escape string literals
+            return $"\"{stringValue.Replace("\"", "\\\"")}\"";
+        }
+
+        if (arg.Value is bool boolValue)
+        {
+            return boolValue ? "true" : "false";
+        }
+
+        if (arg.Value is char charValue)
+        {
+            return $"'{charValue}'";
+        }
+
+        if (arg.Type?.SpecialType == SpecialType.System_Object && arg.Value != null)
+        {
+            // Type argument (typeof)
+            if (arg.Value is ITypeSymbol typeSymbol)
+            {
+                return $"typeof({typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)})";
+            }
+        }
+
+        // Default: ToString
+        return arg.Value?.ToString() ?? "null";
     }
 
     /// <summary>
@@ -1194,20 +1409,26 @@ public sealed class DtoGenerator : IIncrementalGenerator
         public string TypeName { get; }
         public bool IsNonNullableString { get; }
         public bool IsCollection { get; }
+        public bool IsComplexReferenceType { get; }
         public NullableAnnotation NullableAnnotation { get; }
+        public List<AttributeData> ValidationAttributes { get; }
 
         public PropertyInfo(
             string name,
             string typeName,
             bool isNonNullableString,
             bool isCollection,
-            NullableAnnotation nullableAnnotation)
+            bool isComplexReferenceType,
+            NullableAnnotation nullableAnnotation,
+            List<AttributeData> validationAttributes)
         {
             Name = name;
             TypeName = typeName;
             IsNonNullableString = isNonNullableString;
             IsCollection = isCollection;
+            IsComplexReferenceType = isComplexReferenceType;
             NullableAnnotation = nullableAnnotation;
+            ValidationAttributes = validationAttributes;
         }
     }
 

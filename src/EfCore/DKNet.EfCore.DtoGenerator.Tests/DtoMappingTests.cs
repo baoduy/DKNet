@@ -8,6 +8,7 @@ using DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;
 using DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.Currencies;
 using Mapster;
 using Shouldly;
+using System.ComponentModel.DataAnnotations;
 
 namespace DKNet.EfCore.DtoGenerator.Tests;
 
@@ -244,10 +245,11 @@ public class DtoMappingTests
     [InlineData(ChannelCodes.BankTransfer, "T+2", 50.00, null)]
     [InlineData(ChannelCodes.Wallet, "T+0", 1.00, 10000.00)]
     public void MerchantChannelDto_ShouldMapCorrectly_ForDifferentChannelTypes(
-        ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount)
+        ChannelCodes code, string settlement, decimal minAmount, object? maxAmount)
     {
         // Arrange
-        var entity = new MerchantChannel(Guid.NewGuid(), code, settlement, minAmount, maxAmount, "admin");
+        var entity = new MerchantChannel(Guid.NewGuid(), code, settlement, minAmount,
+            maxAmount is not null ? decimal.Parse(maxAmount.ToString()!) : null, "admin");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();
@@ -272,7 +274,7 @@ public class DtoMappingTests
         dto.ShouldNotBeNull();
         dto.FirstName.ShouldBe(entity.FirstName);
         dto.LastName.ShouldBe(entity.LastName);
-        
+
         // Verify only included properties exist
         typeof(PersonNameDto).GetProperty("FirstName").ShouldNotBeNull();
         typeof(PersonNameDto).GetProperty("LastName").ShouldNotBeNull();
@@ -297,7 +299,7 @@ public class DtoMappingTests
         dto.FirstName.ShouldBe(entity.FirstName);
         dto.LastName.ShouldBe(entity.LastName);
         dto.Age.ShouldBe(entity.Age);
-        
+
         // Verify only included properties exist
         typeof(PersonSummaryDto).GetProperty("Id").ShouldNotBeNull();
         typeof(PersonSummaryDto).GetProperty("FirstName").ShouldNotBeNull();
@@ -315,11 +317,223 @@ public class DtoMappingTests
         var hasMiddleName = typeof(PersonNameDto).GetProperty("MiddleName") != null;
         var hasAge = typeof(PersonNameDto).GetProperty("Age") != null;
         var hasCreatedUtc = typeof(PersonNameDto).GetProperty("CreatedUtc") != null;
-        
+
         // Assert - None of these properties should exist
         hasId.ShouldBeFalse();
         hasMiddleName.ShouldBeFalse();
         hasAge.ShouldBeFalse();
         hasCreatedUtc.ShouldBeFalse();
     }
+
+    #region Validation Attribute Tests
+
+    [Fact]
+    public void CurrencyDto_ShouldHaveMaxLengthAttributes_OnStringProperties()
+    {
+        // Arrange & Act
+        var codeProperty = typeof(CurrencyDto).GetProperty("Code");
+        var nameProperty = typeof(CurrencyDto).GetProperty("Name");
+        var descriptionProperty = typeof(CurrencyDto).GetProperty("Description");
+
+        // Assert
+        codeProperty.ShouldNotBeNull();
+        var codeMaxLength = codeProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        codeMaxLength.ShouldNotBeNull();
+        codeMaxLength!.Length.ShouldBe(10);
+
+        nameProperty.ShouldNotBeNull();
+        var nameMaxLength = nameProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        nameMaxLength.ShouldNotBeNull();
+        nameMaxLength!.Length.ShouldBe(50);
+
+        descriptionProperty.ShouldNotBeNull();
+        var descriptionMaxLength = descriptionProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        descriptionMaxLength.ShouldNotBeNull();
+        descriptionMaxLength!.Length.ShouldBe(200);
+    }
+
+    [Fact]
+    public void ChannelDto_ShouldHaveMaxLengthAttributes_OnStringProperties()
+    {
+        // Arrange & Act
+        var countryProperty = typeof(ChannelDto).GetProperty("Country");
+        var currencyProperty = typeof(ChannelDto).GetProperty("Currency");
+        var nameProperty = typeof(ChannelDto).GetProperty("Name");
+        var codeProperty = typeof(ChannelDto).GetProperty("Code");
+
+        // Assert
+        countryProperty.ShouldNotBeNull();
+        var countryMaxLength = countryProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        countryMaxLength.ShouldNotBeNull();
+        countryMaxLength!.Length.ShouldBe(3);
+
+        currencyProperty.ShouldNotBeNull();
+        var currencyMaxLength = currencyProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        currencyMaxLength.ShouldNotBeNull();
+        currencyMaxLength!.Length.ShouldBe(4);
+
+        nameProperty.ShouldNotBeNull();
+        var nameMaxLength = nameProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        nameMaxLength.ShouldNotBeNull();
+        nameMaxLength!.Length.ShouldBe(50);
+
+        codeProperty.ShouldNotBeNull();
+        var codeMaxLength = codeProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        codeMaxLength.ShouldNotBeNull();
+        codeMaxLength!.Length.ShouldBe(10);
+    }
+
+    [Fact]
+    public void TestProductDto_ShouldHaveAllValidationAttributes()
+    {
+        // Test Required attributes
+        var nameProperty = typeof(TestProductDto).GetProperty("Name");
+        nameProperty.ShouldNotBeNull();
+        nameProperty!.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
+
+        var skuProperty = typeof(TestProductDto).GetProperty("Sku");
+        skuProperty.ShouldNotBeNull();
+        skuProperty!.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
+
+        // Test StringLength attribute with MinimumLength
+        var stringLengthAttr = nameProperty.GetCustomAttributes(typeof(StringLengthAttribute), false)
+            .Cast<StringLengthAttribute>()
+            .FirstOrDefault();
+        stringLengthAttr.ShouldNotBeNull();
+        stringLengthAttr!.MaximumLength.ShouldBe(100);
+        stringLengthAttr.MinimumLength.ShouldBe(3);
+
+        // Test MaxLength attribute
+        var maxLengthAttr = skuProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+            .Cast<MaxLengthAttribute>()
+            .FirstOrDefault();
+        maxLengthAttr.ShouldNotBeNull();
+        maxLengthAttr!.Length.ShouldBe(50);
+
+        // Test Range attributes
+        var priceProperty = typeof(TestProductDto).GetProperty("Price");
+        priceProperty.ShouldNotBeNull();
+        var priceRangeAttr = priceProperty!.GetCustomAttributes(typeof(RangeAttribute), false)
+            .Cast<RangeAttribute>()
+            .FirstOrDefault();
+        priceRangeAttr.ShouldNotBeNull();
+        priceRangeAttr!.Minimum.ShouldBe(0.01);
+        priceRangeAttr.Maximum.ShouldBe(999999.99);
+
+        var stockProperty = typeof(TestProductDto).GetProperty("StockQuantity");
+        stockProperty.ShouldNotBeNull();
+        var stockRangeAttr = stockProperty!.GetCustomAttributes(typeof(RangeAttribute), false)
+            .Cast<RangeAttribute>()
+            .FirstOrDefault();
+        stockRangeAttr.ShouldNotBeNull();
+        stockRangeAttr!.Minimum.ShouldBe(0);
+        stockRangeAttr.Maximum.ShouldBe(10000);
+
+        // Test EmailAddress attribute
+        var emailProperty = typeof(TestProductDto).GetProperty("Email");
+        emailProperty.ShouldNotBeNull();
+        emailProperty!.GetCustomAttributes(typeof(EmailAddressAttribute), false).ShouldNotBeEmpty();
+
+        // Test Url attribute
+        var urlProperty = typeof(TestProductDto).GetProperty("WebsiteUrl");
+        urlProperty.ShouldNotBeNull();
+        urlProperty!.GetCustomAttributes(typeof(UrlAttribute), false).ShouldNotBeEmpty();
+
+        // Test Phone attribute
+        var phoneProperty = typeof(TestProductDto).GetProperty("PhoneNumber");
+        phoneProperty.ShouldNotBeNull();
+        phoneProperty!.GetCustomAttributes(typeof(PhoneAttribute), false).ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public void TestProductDto_ValidationAttributes_ShouldValidateCorrectly()
+    {
+        // Arrange
+        var validProduct = new TestProductDto
+        {
+            Id = Guid.NewGuid(),
+            Name = "Valid Product",
+            Sku = "SKU123",
+            Price = 99.99m,
+            StockQuantity = 100,
+            Email = "test@example.com",
+            Description = "A valid product description",
+            WebsiteUrl = "https://example.com",
+            PhoneNumber = "123-456-7890",
+            CreatedDate = DateTime.UtcNow,
+            IsActive = true
+        };
+
+        var validationContext = new ValidationContext(validProduct);
+        var validationResults = new List<ValidationResult>();
+
+        // Act
+        var isValid = Validator.TryValidateObject(validProduct, validationContext, validationResults, true);
+
+        // Assert
+        isValid.ShouldBeTrue();
+        validationResults.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void TestProductDto_ValidationAttributes_ShouldFailForInvalidData()
+    {
+        // Arrange - Create DTO with invalid data
+        var invalidProduct = new TestProductDto
+        {
+            Id = Guid.NewGuid(),
+            Name = "AB", // Too short (MinimumLength = 3)
+            Sku = "", // Required but empty
+            Price = -10.00m, // Out of range (min 0.01)
+            StockQuantity = 20000, // Out of range (max 10000)
+            Email = "invalid-email", // Invalid email format
+            CreatedDate = DateTime.UtcNow,
+            IsActive = true
+        };
+
+        var validationContext = new ValidationContext(invalidProduct);
+        var validationResults = new List<ValidationResult>();
+
+        // Act
+        var isValid = Validator.TryValidateObject(invalidProduct, validationContext, validationResults, true);
+
+        // Assert
+        isValid.ShouldBeFalse();
+        validationResults.ShouldNotBeEmpty();
+
+        // Should have validation errors for Name, Sku, Price, StockQuantity, and Email
+        validationResults.Count.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void MerchantBalanceDto_ShouldHaveComplexReferenceType_WithNullInitializer()
+    {
+        // This test verifies that the generated DTO has the complex reference type property
+        // with the = null!; initializer to avoid CS8618 compiler errors
+        
+        // Act - Verify the property exists with proper type
+        var merchantProperty = typeof(MerchantBalanceDto).GetProperty("Merchant");
+        
+        // Assert
+        merchantProperty.ShouldNotBeNull("Merchant property should be generated in the DTO");
+        merchantProperty.PropertyType.ShouldBe(typeof(Merchant));
+        merchantProperty.CanRead.ShouldBeTrue();
+        merchantProperty.SetMethod.ShouldNotBeNull("Property should have init accessor");
+    }
+
+    #endregion
 }

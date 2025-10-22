@@ -13,7 +13,7 @@
     <!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
     <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
-            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*Dto.g.cs"/>
+            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
         </ItemGroup>
         <MakeDir Directories="$(ProjectDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
         <Copy SourceFiles="@(GeneratedDtoFiles)"
@@ -29,7 +29,7 @@
         <Compile Remove="GeneratedDtos\**\*.cs"/>
         <None Include="GeneratedDtos\**\*.cs"/>
     </ItemGroup>
-    
+
     <ItemGroup>
         <PackageReference Include="coverlet.collector"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>

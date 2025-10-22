@@ -4,7 +4,9 @@
 
 DKNet.EfCore.DtoGenerator is a lightweight Roslyn Incremental Source Generator that automatically creates immutable DTO (Data Transfer Object) types from your EF Core entities or any POCO classes at compile time. It eliminates the need to manually write repetitive DTO classes while maintaining type safety and reducing boilerplate code.
 
-The generator synthesizes matching `public init` properties for every public instance readable property on the entity (excluding indexers & statics) and provides mapping helpers between entities and DTOs. When Mapster is available, it uses `TypeAdapter.Adapt` for efficient mapping; otherwise, it falls back to property-by-property initialization.
+The generator synthesizes matching `public init` properties for every public instance readable property on the entity (excluding indexers & statics). **It also automatically copies validation attributes** from entity properties to DTO properties, ensuring that validation rules are consistently applied across your application layers.
+
+When Mapster is available, it uses `TypeAdapter.Adapt` for efficient mapping; otherwise, it falls back to property-by-property initialization.
 
 ## NuGet Package
 
@@ -63,6 +65,64 @@ public partial record BalanceDto;
 ```
 
 The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping helper methods.
+
+## Validation Attributes
+
+**NEW:** The generator automatically copies all validation attributes from entity properties to DTO properties. This ensures consistent validation rules across your application layers without manual duplication.
+
+**Supported Validation Attributes:**
+- `[MaxLength]`
+- `[StringLength]` (including MinimumLength parameter)
+- `[Required]`
+- `[Range]`
+- `[EmailAddress]`
+- `[Url]`
+- `[Phone]`
+- All other `System.ComponentModel.DataAnnotations` attributes
+
+**Example Entity with Validation:**
+```csharp
+public class Product
+{
+    public Guid Id { get; set; }
+    
+    [Required]
+    [StringLength(100, MinimumLength = 3)]
+    public string Name { get; set; } = string.Empty;
+    
+    [MaxLength(50)]
+    public string Sku { get; set; } = string.Empty;
+    
+    [Range(0.01, 999999.99)]
+    public decimal Price { get; set; }
+    
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+```
+
+**Generated DTO with Copied Attributes:**
+```csharp
+public partial record ProductDto
+{
+    public Guid Id { get; init; }
+    
+    [Required]
+    [StringLength(100, MinimumLength = 3)]
+    public required string Name { get; init; }
+    
+    [MaxLength(50)]
+    public required string Sku { get; init; }
+    
+    [Range(0.01, 999999.99)]
+    public decimal Price { get; init; }
+    
+    [EmailAddress]
+    public required string Email { get; init; }
+}
+```
+
+The copied validation attributes work seamlessly with ASP.NET Core model validation, allowing you to validate DTOs using `ModelState.IsValid` or `Validator.TryValidateObject()`.
 
 ### Excluding Properties
 
@@ -140,7 +200,10 @@ This MSBuild target will:
 public partial record BalanceDto
 {
     public System.Guid Id { get; init; }
+    
+    [MaxLength(100)]
     public string MerchantId { get; init; } = default!;
+    
     public decimal Balance { get; init; }
     public System.DateTime LastUpdated { get; init; }
 
@@ -161,7 +224,10 @@ public partial record BalanceDto
 public partial record BalanceDto
 {
     public System.Guid Id { get; init; }
+    
+    [MaxLength(100)]
     public string MerchantId { get; init; } = default!;
+    
     public decimal Balance { get; init; }
     public System.DateTime LastUpdated { get; init; }
 
@@ -188,6 +254,8 @@ public partial record BalanceDto
 }
 ```
 
+Note: All validation attributes from entity properties are automatically copied to DTO properties in the generated code.
+
 ## Mapster Configuration
 
 When using Mapster, you can customize mapping behavior with global or type-specific configurations:
@@ -213,6 +281,7 @@ var balances = await dbContext.MerchantBalances
 - **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy compiler null-state analysis.
 - **Generic Entities**: Limited support for generic entities (non-generic DTO shells only).
 - **Diagnostics**: `DKDTOGEN001` warning is reported if generation fails for a target type; build continues.
+- **Validation Attributes**: All `System.ComponentModel.DataAnnotations` attributes are automatically copied from entity properties to DTO properties, ensuring consistent validation across layers.
 
 ## Local Development
 

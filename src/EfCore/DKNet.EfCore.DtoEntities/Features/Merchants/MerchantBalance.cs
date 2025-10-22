@@ -11,7 +11,7 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
         string currency,
         string byUser
     )
-        : base( byUser)
+        : base(byUser)
     {
         Currency = currency.ToUpperInvariant();
         MerchantId = merchantId;

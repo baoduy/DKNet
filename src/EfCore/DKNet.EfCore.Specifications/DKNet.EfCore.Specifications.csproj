@@ -10,6 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="X.PagedList.EF"/>
     </ItemGroup>
