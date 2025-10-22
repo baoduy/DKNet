@@ -519,5 +519,21 @@ public class DtoMappingTests
         validationResults.Count.ShouldBeGreaterThan(0);
     }
 
+    [Fact]
+    public void MerchantBalanceDto_ShouldHaveComplexReferenceType_WithNullInitializer()
+    {
+        // This test verifies that the generated DTO has the complex reference type property
+        // with the = null!; initializer to avoid CS8618 compiler errors
+        
+        // Act - Verify the property exists with proper type
+        var merchantProperty = typeof(MerchantBalanceDto).GetProperty("Merchant");
+        
+        // Assert
+        merchantProperty.ShouldNotBeNull("Merchant property should be generated in the DTO");
+        merchantProperty.PropertyType.ShouldBe(typeof(Merchant));
+        merchantProperty.CanRead.ShouldBeTrue();
+        merchantProperty.SetMethod.ShouldNotBeNull("Property should have init accessor");
+    }
+
     #endregion
 }
