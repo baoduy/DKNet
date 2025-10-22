@@ -245,10 +245,11 @@ public class DtoMappingTests
     [InlineData(ChannelCodes.BankTransfer, "T+2", 50.00, null)]
     [InlineData(ChannelCodes.Wallet, "T+0", 1.00, 10000.00)]
     public void MerchantChannelDto_ShouldMapCorrectly_ForDifferentChannelTypes(
-        ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount)
+        ChannelCodes code, string settlement, decimal minAmount, object? maxAmount)
     {
         // Arrange
-        var entity = new MerchantChannel(Guid.NewGuid(), code, settlement, minAmount, maxAmount, "admin");
+        var entity = new MerchantChannel(Guid.NewGuid(), code, settlement, minAmount,
+            maxAmount is not null ? decimal.Parse(maxAmount.ToString()!) : null, "admin");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();
@@ -273,7 +274,7 @@ public class DtoMappingTests
         dto.ShouldNotBeNull();
         dto.FirstName.ShouldBe(entity.FirstName);
         dto.LastName.ShouldBe(entity.LastName);
-        
+
         // Verify only included properties exist
         typeof(PersonNameDto).GetProperty("FirstName").ShouldNotBeNull();
         typeof(PersonNameDto).GetProperty("LastName").ShouldNotBeNull();
@@ -298,7 +299,7 @@ public class DtoMappingTests
         dto.FirstName.ShouldBe(entity.FirstName);
         dto.LastName.ShouldBe(entity.LastName);
         dto.Age.ShouldBe(entity.Age);
-        
+
         // Verify only included properties exist
         typeof(PersonSummaryDto).GetProperty("Id").ShouldNotBeNull();
         typeof(PersonSummaryDto).GetProperty("FirstName").ShouldNotBeNull();
@@ -316,7 +317,7 @@ public class DtoMappingTests
         var hasMiddleName = typeof(PersonNameDto).GetProperty("MiddleName") != null;
         var hasAge = typeof(PersonNameDto).GetProperty("Age") != null;
         var hasCreatedUtc = typeof(PersonNameDto).GetProperty("CreatedUtc") != null;
-        
+
         // Assert - None of these properties should exist
         hasId.ShouldBeFalse();
         hasMiddleName.ShouldBeFalse();
@@ -513,7 +514,7 @@ public class DtoMappingTests
         // Assert
         isValid.ShouldBeFalse();
         validationResults.ShouldNotBeEmpty();
-        
+
         // Should have validation errors for Name, Sku, Price, StockQuantity, and Email
         validationResults.Count.ShouldBeGreaterThan(0);
     }
