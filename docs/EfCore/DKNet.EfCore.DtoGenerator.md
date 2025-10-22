@@ -543,13 +543,39 @@ Check build output for specific error messages.
 ## Limitations and Edge Cases
 
 ### Navigation Properties
-Navigation and collection properties are included as shallow copies. For deep copying:
-- Configure Mapster to handle nested objects
-- Override properties in partial DTO
-- Create separate DTOs for related entities
+Navigation and collection properties are included as shallow copies:
+- **Complex reference types** (e.g., navigation properties like `Customer`, `Order`) are generated with the `= null!;` initializer to satisfy C# nullable reference type requirements
+- **Collections** are initialized with `= [];` for non-nullable collection types
+- For deep copying:
+  - Configure Mapster to handle nested objects
+  - Override properties in partial DTO
+  - Create separate DTOs for related entities
+  - Exclude navigation properties using the `Exclude` parameter if they're not needed
+
+```csharp
+// Entity with navigation property
+public class Order
+{
+    public Guid Id { get; set; }
+    public Customer Customer { get; set; } = null!; // Navigation property
+    public List<OrderItem> Items { get; set; } = new();
+}
+
+// Generated DTO includes navigation property with null! initializer
+[GenerateDto(typeof(Order))]
+public partial record OrderDto;
+// Generated: public Customer Customer { get; init; } = null!;
+// Generated: public List<OrderItem> Items { get; init; } = [];
+
+// Alternative: Exclude navigation properties if not needed
+[GenerateDto(typeof(Order), Exclude = new[] { "Customer", "Items" })]
+public partial record OrderSummaryDto;
+```
 
 ### Nullable Reference Types
-Non-nullable reference type properties receive `= default!;` initializer to satisfy compiler null-state analysis.
+- **Non-nullable strings** receive the `required` modifier
+- **Non-nullable collections** are initialized with `= []`
+- **Non-nullable complex reference types** (navigation properties, custom classes) receive `= null!;` initializer to satisfy compiler null-state analysis
 
 ### Generic Entities
 Limited support for generic entity types. DTO shells must be non-generic.
