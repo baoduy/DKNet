@@ -685,6 +685,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var typeName = GetPropertyTypeName(property, typeFormat);
         var isNonNullableString = IsNonNullableString(property);
         var isCollection = IsCollectionType(property);
+        var isComplexReferenceType = IsComplexReferenceType(property);
         var validationAttributes = ExtractValidationAttributes(property);
 
         return new PropertyInfo(
@@ -692,6 +693,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
             typeName,
             isNonNullableString,
             isCollection,
+            isComplexReferenceType,
             property.NullableAnnotation,
             validationAttributes);
     }
@@ -818,6 +820,37 @@ public sealed class DtoGenerator : IIncrementalGenerator
                fullyQualifiedName.StartsWith("global::System.Collections.Generic.IList<") ||
                fullyQualifiedName.StartsWith("global::System.Collections.Generic.ICollection<") ||
                fullyQualifiedName.StartsWith("global::System.Collections.Generic.IEnumerable<");
+    }
+
+    /// <summary>
+    /// Determines if a property is a non-nullable complex reference type (not string, not collection, not special type).
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <returns>True if the property is a non-nullable complex reference type.</returns>
+    private static bool IsComplexReferenceType(IPropertySymbol property)
+    {
+        // Must be a reference type
+        if (!property.Type.IsReferenceType)
+            return false;
+
+        // Must not be nullable
+        if (property.NullableAnnotation == NullableAnnotation.Annotated)
+            return false;
+
+        // Exclude strings (they are handled separately with 'required')
+        if (property.Type.SpecialType == SpecialType.System_String)
+            return false;
+
+        // Exclude collections (they are handled with '= []')
+        if (IsCollectionType(property))
+            return false;
+
+        // Exclude other special types
+        if (property.Type.SpecialType != SpecialType.None)
+            return false;
+
+        // This is a complex reference type (e.g., navigation properties, custom classes)
+        return true;
     }
 
     /// <summary>
@@ -1084,6 +1117,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (propertyInfo.IsCollection && propertyInfo.NullableAnnotation != NullableAnnotation.Annotated)
         {
             builder.Append(" = [];");
+        }
+        else if (propertyInfo.IsComplexReferenceType)
+        {
+            builder.Append(" = null!;");
         }
         builder.AppendLine();
     }
@@ -1372,6 +1409,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         public string TypeName { get; }
         public bool IsNonNullableString { get; }
         public bool IsCollection { get; }
+        public bool IsComplexReferenceType { get; }
         public NullableAnnotation NullableAnnotation { get; }
         public List<AttributeData> ValidationAttributes { get; }
 
@@ -1380,6 +1418,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
             string typeName,
             bool isNonNullableString,
             bool isCollection,
+            bool isComplexReferenceType,
             NullableAnnotation nullableAnnotation,
             List<AttributeData> validationAttributes)
         {
@@ -1387,6 +1426,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
             TypeName = typeName;
             IsNonNullableString = isNonNullableString;
             IsCollection = isCollection;
+            IsComplexReferenceType = isComplexReferenceType;
             NullableAnnotation = nullableAnnotation;
             ValidationAttributes = validationAttributes;
         }
