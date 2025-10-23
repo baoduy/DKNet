@@ -159,8 +159,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await using var db2 = fixture.CreateNewDbContext();
         var repo2 = new Repository<UserGuid>(db2);
 
-        var userFromRepo1 = await repo1.Gets().AsNoTracking().FirstAsync(u => u.Id == user.Id);
-        var userFromRepo2 = await repo2.Gets().AsNoTracking().FirstAsync(u => u.Id == user.Id);
+        var userFromRepo1 = await repo1.Query().AsNoTracking().FirstAsync(u => u.Id == user.Id);
+        var userFromRepo2 = await repo2.Query().AsNoTracking().FirstAsync(u => u.Id == user.Id);
 
         userFromRepo1.ShouldNotBeNull();
         userFromRepo2.ShouldNotBeNull();
@@ -235,7 +235,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public void GetsReturnsNoTrackingQueryable()
     {
         // Act
-        var query = fixture.ReadRepository.Gets();
+        var query = fixture.ReadRepository.Query();
 
         // Assert
         Assert.NotNull(query);
@@ -414,7 +414,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => fixture.ReadRepository.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() =>
+            fixture.ReadRepository.Query<UserDto>(u => u.FirstName == "ProjectMe"));
     }
 
     [Fact]

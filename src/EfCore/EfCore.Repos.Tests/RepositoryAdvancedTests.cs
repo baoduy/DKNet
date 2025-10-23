@@ -13,8 +13,8 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = _fixture.RepositoryWithMapper.GetDto<UserDto>();
-        var result = await projection.Where(u => u.FirstName == "ProjectMe").FirstOrDefaultAsync();
+        var projection = _fixture.RepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ProjectMe");
+        var result = await projection.FirstOrDefaultAsync();
 
         // Assert
         Assert.NotNull(result);
@@ -26,7 +26,8 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void GetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.RepositoryWithoutMapper.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() =>
+            _fixture.RepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
     }
 
     [Fact]
@@ -36,10 +37,16 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("readprojtest1") { FirstName = "ReadProjectMe", LastName = "Test" };
         _fixture.DbContext.Add(entity);
         await _fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Act
-        var projection = _fixture.ReadRepositoryWithMapper.GetDto<UserDto>();
-        var result = await projection.Where(u => u.FirstName == "ReadProjectMe").FirstOrDefaultAsync();
+        var p1 = _fixture.ReadRepositoryWithMapper.Query(u => u.Id == entity.Id);
+        var r1 = await p1.FirstOrDefaultAsync();
+        Assert.NotNull(r1);
+
+        // Act
+        var projection = _fixture.ReadRepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ReadProjectMe");
+        var result = await projection.FirstOrDefaultAsync();
 
         // Assert
         Assert.NotNull(result);
@@ -51,7 +58,8 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public void ReadRepositoryGetProjectionThrowsWhenMapperNotRegistered()
     {
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => _fixture.ReadRepositoryWithoutMapper.GetDto<UserDto>());
+        Assert.Throws<InvalidOperationException>(() =>
+            _fixture.ReadRepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
     }
 
     [Fact]
@@ -63,7 +71,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var query = _fixture.ReadRepositoryWithMapper.Gets();
+        var query = _fixture.ReadRepositoryWithMapper.Query();
         var result = await query.Where(u => u.FirstName == "TrackMe").FirstOrDefaultAsync();
 
         // Assert
@@ -81,7 +89,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var query = _fixture.RepositoryWithMapper.Gets();
+        var query = _fixture.RepositoryWithMapper.Query();
         var result = await query.Where(u => u.FirstName == "TrackMe2").FirstOrDefaultAsync();
 
         // Assert

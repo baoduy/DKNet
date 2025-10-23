@@ -1,16 +1,9 @@
 namespace DKNet.EfCore.Repos;
 
-public interface IRepositoryFactory<TDbContext> : IDisposable, IAsyncDisposable where TDbContext : DbContext
-{
-    IRepository<TEntity> Create<TEntity>() where TEntity : class;
-    IReadRepository<TEntity> CreateRead<TEntity>() where TEntity : class;
-    IWriteRepository<TEntity> CreateWrite<TEntity>() where TEntity : class;
-}
-
 public sealed class RepositoryFactory<TDbContext>(
     IDbContextFactory<TDbContext> dbFactory,
     IEnumerable<IMapper>? mappers = null)
-    : IRepositoryFactory<TDbContext> where TDbContext : DbContext
+    : IRepositoryFactory where TDbContext : DbContext
 {
     private readonly TDbContext _db = dbFactory.CreateDbContext();
 

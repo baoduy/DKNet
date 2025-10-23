@@ -40,5 +40,5 @@ public static class SetupRepository
 
     public static IServiceCollection AddRepoFactory<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext =>
-        services.AddScoped(typeof(IRepositoryFactory<>), typeof(RepositoryFactory<>));
+        services.AddScoped<IRepositoryFactory, RepositoryFactory<TDbContext>>();
 }
