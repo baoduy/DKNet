@@ -18,7 +18,7 @@ public static class SpecificationExtensions
     /// <param name="queryable">The queryable to apply the specification to</param>
     /// <param name="specification">The specification to apply</param>
     /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
-    public static IQueryable<TEntity> WithSpecs<TEntity>(
+    public static IQueryable<TEntity> QuerySpecs<TEntity>(
         this IQueryable<TEntity> queryable,
         ISpecification<TEntity> specification) where TEntity : class
     {
@@ -89,10 +89,10 @@ public static class SpecificationExtensions
     /// <param name="repo">The repository</param>
     /// <param name="specification">The specification to apply</param>
     /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
-    public static IQueryable<TEntity> WithSpecs<TEntity>(
+    public static IQueryable<TEntity> QuerySpecs<TEntity>(
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification) where TEntity : class =>
-        repo.Query().WithSpecs(specification);
+        repo.Query().QuerySpecs(specification);
 
     /// <summary>
     ///     Asynchronously returns a list of entities matching the specification.
@@ -101,11 +101,10 @@ public static class SpecificationExtensions
     /// <param name="repo">The repository</param>
     /// <param name="specification">The specification to apply</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>A list of entities</returns>
     public static async Task<IList<TEntity>> SpecsListAsync<TEntity>(
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification, CancellationToken cancellationToken = default) where TEntity : class =>
-        await repo.WithSpecs(specification).ToListAsync(cancellationToken);
+        await repo.QuerySpecs(specification).ToListAsync(cancellationToken);
 
     /// <summary>
     ///     Asynchronously returns the first entity matching the specification, or null if none found.
@@ -114,11 +113,46 @@ public static class SpecificationExtensions
     /// <param name="repo">The repository</param>
     /// <param name="specification">The specification to apply</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The first entity or null</returns>
     public static Task<TEntity?> SpecsFirstOrDefaultAsync<TEntity>(
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification, CancellationToken cancellationToken = default) where TEntity : class =>
-        repo.WithSpecs(specification).FirstOrDefaultAsync(cancellationToken);
+        repo.QuerySpecs(specification).FirstOrDefaultAsync(cancellationToken);
+
+    /// <summary>
+    ///     Asynchronously returns the first entity matching the specification.
+    /// </summary>
+    /// <typeparam name="TEntity">Type of the entity</typeparam>
+    /// <param name="repo">The repository</param>
+    /// <param name="specification">The specification to apply</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public static Task<TEntity> SpecsFirstAsync<TEntity>(
+        this IReadRepository<TEntity> repo,
+        ISpecification<TEntity> specification, CancellationToken cancellationToken = default) where TEntity : class =>
+        repo.QuerySpecs(specification).FirstAsync(cancellationToken);
+
+    /// <summary>
+    /// Asynchronously returns the number of elements in a sequence.
+    /// </summary>
+    /// <typeparam name="TEntity">Type of the entity</typeparam>
+    /// <param name="repo">The repository</param>
+    /// <param name="specification">The specification to apply</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public static Task<int> SpecsCountAsync<TEntity>(
+        this IReadRepository<TEntity> repo,
+        ISpecification<TEntity> specification, CancellationToken cancellationToken = default) where TEntity : class =>
+        repo.QuerySpecs(specification).CountAsync(cancellationToken);
+
+    /// <summary>
+    /// Asynchronously determines whether a sequence contains any elements.
+    /// </summary>
+    /// <typeparam name="TEntity">Type of the entity</typeparam>
+    /// <param name="repo">The repository</param>
+    /// <param name="specification">The specification to apply</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public static Task<bool> SpecsAnyAsync<TEntity>(
+        this IReadRepository<TEntity> repo,
+        ISpecification<TEntity> specification, CancellationToken cancellationToken = default) where TEntity : class =>
+        repo.QuerySpecs(specification).AnyAsync(cancellationToken);
 
     /// <summary>
     ///     Returns an async enumerable of entities matching the specification, paged.
@@ -130,7 +164,7 @@ public static class SpecificationExtensions
     public static IAsyncEnumerable<TEntity> SpecsToPageEnumerable<TEntity>(
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification) where TEntity : class =>
-        repo.WithSpecs(specification).ToPageEnumerable();
+        repo.QuerySpecs(specification).ToPageEnumerable();
 
     /// <summary>
     ///     Asynchronously returns a paged list of entities matching the specification.
@@ -145,6 +179,6 @@ public static class SpecificationExtensions
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification, int pageNumber,
         int pageSize) where TEntity : class =>
-        repo.WithSpecs(specification)
+        repo.QuerySpecs(specification)
             .ToPagedListAsync(pageNumber, pageSize);
 }
