@@ -9,6 +9,15 @@
         <!-- Force analyzer to reload on every build to avoid caching issues -->
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
+    
+    <!-- Configure global exclusions for DTO generator -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+        <DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+    </PropertyGroup>
 
     <!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
     <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">

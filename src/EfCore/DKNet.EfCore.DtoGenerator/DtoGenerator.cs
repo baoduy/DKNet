@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace DKNet.EfCore.DtoGenerator;
 
@@ -72,16 +73,23 @@ public sealed class DtoGenerator : IIncrementalGenerator
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<(Compilation Left, System.Collections.Immutable.ImmutableArray<Target> Right)> compilation)
     {
-        context.RegisterSourceOutput(compilation, static (spc, pair) =>
+        // Combine compilation with analyzer config options to access global exclusions
+        var compilationWithOptions = compilation.Combine(context.AnalyzerConfigOptionsProvider);
+        
+        context.RegisterSourceOutput(compilationWithOptions, static (spc, pair) =>
         {
-            var (compilation, targets) = pair;
+            var ((compilation, targets), optionsProvider) = pair;
+            
+            // Extract global exclusions from analyzer config
+            var globalExclusions = ExtractGlobalExclusionsFromConfig(optionsProvider);
+            
             foreach (var target in targets)
             {
                 if (target is null) continue;
 
                 try
                 {
-                    GenerateDtoSource(spc, compilation, target);
+                    GenerateDtoSource(spc, compilation, target, globalExclusions);
                 }
                 catch (Exception ex)
                 {
@@ -89,6 +97,35 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 }
             }
         });
+    }
+    
+    /// <summary>
+    /// Extracts global exclusion list from analyzer configuration options.
+    /// </summary>
+    /// <param name="optionsProvider">The analyzer config options provider.</param>
+    /// <returns>A set of globally excluded property names.</returns>
+    private static HashSet<string> ExtractGlobalExclusionsFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
+    {
+        var globalExclusions = new HashSet<string>();
+        
+        // Try to read from global options
+        var globalOptions = optionsProvider.GlobalOptions;
+        if (globalOptions.TryGetValue("build_property.DtoGenerator_GlobalExclusions", out var exclusionsValue) &&
+            !string.IsNullOrWhiteSpace(exclusionsValue))
+        {
+            // Split by comma or semicolon
+            var properties = exclusionsValue.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var prop in properties)
+            {
+                var trimmed = prop.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    globalExclusions.Add(trimmed);
+                }
+            }
+        }
+        
+        return globalExclusions;
     }
 
     #endregion
@@ -390,7 +427,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="context">The source production context.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
     /// <param name="target">The DTO generation target.</param>
-    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target)
+    /// <param name="globalExclusions">The set of globally excluded property names.</param>
+    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target, HashSet<string> globalExclusions)
     {
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
@@ -430,7 +468,22 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return;
         }
 
-        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties);
+        // Inform if Include is used with global exclusions (global exclusions are ignored in this case)
+        if (target.IncludedProperties.Count > 0 && globalExclusions.Count > 0)
+        {
+            var diagnostic = new DiagnosticDescriptor(
+                id: "DKDTOGEN005",
+                title: "Include parameter ignores global exclusions",
+                messageFormat: "DTO {0}: Using Include parameter ignores the {1} global exclusion(s). Only specified properties will be included.",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true);
+            
+            context.ReportDiagnostic(
+                Diagnostic.Create(diagnostic, Location.None, target.DtoSymbol.Name, globalExclusions.Count));
+        }
+
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions);
         
         // Additional logging for property filtering
         if (includedProperties.Count < entityProperties.Count)
@@ -644,20 +697,22 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Filters properties based on Include/Exclude lists.
-    /// If Include is provided, only those properties are returned.
-    /// Otherwise, properties are filtered by Exclude list.
+    /// Filters properties based on Include/Exclude lists and global exclusions.
+    /// If Include is provided, only those properties are returned (global exclusions are ignored).
+    /// Otherwise, properties are filtered by combined global and local Exclude lists.
     /// </summary>
     /// <param name="entityProperties">The entity property list.</param>
-    /// <param name="excludedProperties">The set of excluded property names.</param>
+    /// <param name="excludedProperties">The set of locally excluded property names.</param>
     /// <param name="includedProperties">The set of included property names.</param>
+    /// <param name="globalExclusions">The set of globally excluded property names.</param>
     /// <returns>The filtered list of included properties.</returns>
     private static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
         HashSet<string> excludedProperties,
-        HashSet<string> includedProperties)
+        HashSet<string> includedProperties,
+        HashSet<string> globalExclusions)
     {
-        // If Include is provided, only include those properties
+        // If Include is provided, only include those properties (ignores global exclusions)
         if (includedProperties.Count > 0)
         {
             return entityProperties
@@ -665,12 +720,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 .ToList();
         }
 
-        // Otherwise, exclude properties from the Exclude list
-        if (excludedProperties.Count == 0)
+        // Combine global and local exclusions
+        var combinedExcludedProperties = new HashSet<string>(excludedProperties);
+        combinedExcludedProperties.UnionWith(globalExclusions);
+
+        // If no exclusions at all, return all properties
+        if (combinedExcludedProperties.Count == 0)
             return entityProperties;
 
+        // Exclude properties from the combined exclusion list
         return entityProperties
-            .Where(p => !excludedProperties.Contains(p.Name))
+            .Where(p => !combinedExcludedProperties.Contains(p.Name))
             .ToList();
     }
 
