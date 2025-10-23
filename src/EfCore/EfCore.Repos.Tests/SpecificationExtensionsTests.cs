@@ -228,7 +228,7 @@ public class SpecificationExtensionsTests
         };
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "John");
@@ -237,7 +237,7 @@ public class SpecificationExtensionsTests
         var result = mockRepo.Object.WithSpecs(spec).ToList();
 
         // Assert
-        mockRepo.Verify(r => r.Gets(), Times.Once);
+        mockRepo.Verify(r => r.Query(), Times.Once);
         result.Count.ShouldBe(1);
         result[0].FirstName.ShouldBe("John");
     }
@@ -253,7 +253,7 @@ public class SpecificationExtensionsTests
         };
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "John");
@@ -278,7 +278,7 @@ public class SpecificationExtensionsTests
         };
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "John");
@@ -303,7 +303,7 @@ public class SpecificationExtensionsTests
         };
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "Bob");
@@ -327,7 +327,7 @@ public class SpecificationExtensionsTests
         };
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
         spec.AddTestFilter(u => u.FirstName == "John");
@@ -347,13 +347,13 @@ public class SpecificationExtensionsTests
         for (var i = 1; i <= 10; i++) users.Add(new User("test") { FirstName = $"User{i}", LastName = "Test" });
 
         var mockRepo = new Mock<IReadRepository<User>>();
-        mockRepo.Setup(r => r.Gets()).Returns(users.AsQueryable());
+        mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
 
         var spec = new TestSpecification();
 
         // Act & Assert - Just verify the setup works without throwing
         Should.NotThrow(() => mockRepo.Object.WithSpecs(spec));
-        mockRepo.Verify(r => r.Gets(), Times.Once);
+        mockRepo.Verify(r => r.Query(), Times.Once);
     }
 
     [Fact]

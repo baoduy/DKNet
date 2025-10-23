@@ -14,7 +14,7 @@ internal sealed class SingleProfileQueryHandler(
 {
     public async Task<ProfileResult?> OnHandle(ProfileQuery request, CancellationToken cancellationToken)
     {
-        return await repo.GetDto<ProfileResult>()
-            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        return await repo.Query<ProfileResult>(p => p.Id == request.Id)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -12,17 +12,19 @@ public interface IReadRepository<TEntity> where TEntity : class
     ///     Get IQueryable of entity.
     /// </summary>
     /// <returns></returns>
-    IQueryable<TEntity> Gets();
+    IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
+
+    IQueryable<TEntity> Query();
 
     /// <summary>
     ///     Get Projection of Entity
     /// </summary>
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
-    IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null) where TModel : class;
+    IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter) where TModel : class;
 
     /// <summary>
-    ///     Find Entity by Id
+    ///     Find Entity by ID
     /// </summary>
     /// <param name="keyValue"></param>
     /// <param name="cancellationToken"></param>
@@ -30,7 +32,7 @@ public interface IReadRepository<TEntity> where TEntity : class
     ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Find Entity by Id
+    ///     Find Entity by ID
     /// </summary>
     /// <param name="keyValues"></param>
     /// <param name="cancellationToken"></param>
@@ -43,7 +45,15 @@ public interface IReadRepository<TEntity> where TEntity : class
     /// <param name="filter"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> FindAsync(
-        Expression<Func<TEntity, bool>> filter,
-        CancellationToken cancellationToken = default);
+    Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Check if entity exists
+    /// </summary>
+    Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Get count of entities
+    /// </summary>
+    Task<int> CountAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
 }

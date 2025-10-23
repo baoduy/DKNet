@@ -6,26 +6,33 @@ public class Repository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mapp
 {
     private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
+
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
-        => dbContext.Set<TEntity>().FindAsync([keyValue], cancellationToken);
+        => FindAsync([keyValue], cancellationToken);
 
     public ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default)
         => dbContext.Set<TEntity>().FindAsync(keyValues, cancellationToken);
 
     public Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter,
         CancellationToken cancellationToken = default) =>
-        dbContext.Set<TEntity>().Where(filter).FirstOrDefaultAsync(cancellationToken);
+        Query(filter).FirstOrDefaultAsync(cancellationToken);
 
-    public IQueryable<TModel> GetDto<TModel>(Expression<Func<TEntity, bool>>? filter = null)
+    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
+        => Query(filter).AnyAsync(cancellationToken);
+
+    public Task<int> CountAsync(Expression<Func<TEntity, bool>> filter,
+        CancellationToken cancellationToken = default) =>
+        Query(filter).CountAsync(cancellationToken);
+
+    public IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
     {
         if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
 
-        var query = Gets();
-        if (filter is not null)
-            query = query.Where(filter);
+        var query = Query(filter);
         return query.ProjectToType<TModel>(_mapper.Config);
     }
 
-    public virtual IQueryable<TEntity> Gets() => dbContext.Set<TEntity>();
+    public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>();
+    public virtual IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
 }

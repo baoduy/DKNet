@@ -27,7 +27,7 @@ internal sealed class PageProfilesQueryHandler(
     public async Task<IPagedList<ProfileResult>> OnHandle(PageProfilePageQuery request,
         CancellationToken cancellationToken)
     {
-        return await repo.Gets()
+        return await repo.Query()
             .ProjectToType<ProfileResult>(mapper.Config)
             .OrderBy(p => p.Name)
             .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);

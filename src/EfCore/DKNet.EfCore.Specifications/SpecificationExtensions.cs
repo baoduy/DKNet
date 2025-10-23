@@ -92,7 +92,7 @@ public static class SpecificationExtensions
     public static IQueryable<TEntity> WithSpecs<TEntity>(
         this IReadRepository<TEntity> repo,
         ISpecification<TEntity> specification) where TEntity : class =>
-        repo.Gets().WithSpecs(specification);
+        repo.Query().WithSpecs(specification);
 
     /// <summary>
     ///     Asynchronously returns a list of entities matching the specification.
