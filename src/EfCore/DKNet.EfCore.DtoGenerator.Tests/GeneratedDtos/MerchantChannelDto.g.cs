@@ -49,15 +49,6 @@ public partial record MerchantChannelDto
     /// </summary>
     public DateTimeOffset CreatedOn { get; init; }
     /// <summary>
-    /// Gets or sets the UpdatedBy.
-    /// </summary>
-    [MaxLength(500)]
-    public string? UpdatedBy { get; init; }
-    /// <summary>
-    /// Gets or sets the UpdatedOn.
-    /// </summary>
-    public DateTimeOffset? UpdatedOn { get; init; }
-    /// <summary>
     /// Gets or sets the Id.
     /// </summary>
     public int Id { get; init; }

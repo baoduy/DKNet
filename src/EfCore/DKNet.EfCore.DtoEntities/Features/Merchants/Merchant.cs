@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.DtoEntities.Share;
-using FluentResults;
 
 namespace DKNet.EfCore.DtoEntities.Features.Merchants;
 

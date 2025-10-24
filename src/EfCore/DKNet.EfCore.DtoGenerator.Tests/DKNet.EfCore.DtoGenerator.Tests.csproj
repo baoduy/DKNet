@@ -10,6 +10,13 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
 
+    <!-- Configure global exclusions for DTO generator -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="DtoGeneratorExclusions"/>
+    </ItemGroup>
+    <PropertyGroup>
+        <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
+    </PropertyGroup>
     <!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
     <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
