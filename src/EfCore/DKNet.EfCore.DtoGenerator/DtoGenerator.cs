@@ -110,7 +110,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         
         // Try to read from global options
         var globalOptions = optionsProvider.GlobalOptions;
-        if (globalOptions.TryGetValue("build_property.DtoGenerator_GlobalExclusions", out var exclusionsValue) &&
+        if (globalOptions.TryGetValue("build_property.DtoGeneratorExclusions", out var exclusionsValue) &&
             !string.IsNullOrWhiteSpace(exclusionsValue))
         {
             // Split by comma or semicolon

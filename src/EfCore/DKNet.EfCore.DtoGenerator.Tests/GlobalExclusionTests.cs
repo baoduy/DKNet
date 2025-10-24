@@ -1,4 +1,3 @@
-using DKNet.EfCore.DtoEntities;
 using DKNet.EfCore.DtoGenerator.Tests.Features;
 using Shouldly;
 
@@ -10,7 +9,6 @@ namespace DKNet.EfCore.DtoGenerator.Tests;
 /// </summary>
 public class GlobalExclusionTests
 {
-
     [Fact]
     public void GlobalExclusionTestDto_ShouldExcludeGlobalProperties()
     {
@@ -19,7 +17,7 @@ public class GlobalExclusionTests
         var hasName = typeof(GlobalExclusionTestDto).GetProperty("Name") != null;
         var hasDescription = typeof(GlobalExclusionTestDto).GetProperty("Description") != null;
         var hasIsActive = typeof(GlobalExclusionTestDto).GetProperty("IsActive") != null;
-        
+
         // These should be excluded by global configuration
         var hasCreatedBy = typeof(GlobalExclusionTestDto).GetProperty("CreatedBy") != null;
         var hasUpdatedBy = typeof(GlobalExclusionTestDto).GetProperty("UpdatedBy") != null;
@@ -46,7 +44,7 @@ public class GlobalExclusionTests
         var hasId = typeof(GlobalAndLocalExclusionTestDto).GetProperty("Id") != null;
         var hasName = typeof(GlobalAndLocalExclusionTestDto).GetProperty("Name") != null;
         var hasDescription = typeof(GlobalAndLocalExclusionTestDto).GetProperty("Description") != null;
-        
+
         // These should be excluded (global + local)
         var hasCreatedBy = typeof(GlobalAndLocalExclusionTestDto).GetProperty("CreatedBy") != null;
         var hasUpdatedBy = typeof(GlobalAndLocalExclusionTestDto).GetProperty("UpdatedBy") != null;
@@ -76,7 +74,7 @@ public class GlobalExclusionTests
         var hasId = typeof(IncludeOverridesGlobalExclusionTestDto).GetProperty("Id") != null;
         var hasName = typeof(IncludeOverridesGlobalExclusionTestDto).GetProperty("Name") != null;
         var hasCreatedAt = typeof(IncludeOverridesGlobalExclusionTestDto).GetProperty("CreatedAt") != null;
-        
+
         // These should not be included
         var hasDescription = typeof(IncludeOverridesGlobalExclusionTestDto).GetProperty("Description") != null;
         var hasIsActive = typeof(IncludeOverridesGlobalExclusionTestDto).GetProperty("IsActive") != null;
@@ -105,6 +103,4 @@ public class GlobalExclusionTests
         configurationType.ShouldNotBeNull();
         configurationType.Name.ShouldBe("GlobalDtoConfiguration");
     }
-
-
 }

@@ -1,5 +1,3 @@
-using EfCore.HookTests.Hooks;
-
 namespace EfCore.HookTests.Hooks;
 
 public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture>
@@ -62,6 +60,7 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
                 db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Nested1" });
                 await db.SaveChangesAsync();
             }
+
             // Still inside outer disabling scope
             db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Nested2" });
             await db.SaveChangesAsync();
@@ -102,4 +101,3 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
         HookTest.AfterCallCount.ShouldBe(0);
     }
 }
-
