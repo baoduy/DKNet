@@ -60,19 +60,9 @@ public partial record MerchantBalanceDto
     /// </summary>
     public DateTimeOffset LastModifiedOn { get; init; }
     /// <summary>
-    /// Gets or sets the CreatedBy.
-    /// </summary>
-    [MaxLength(500)]
-    public required string CreatedBy { get; init; }
-    /// <summary>
     /// Gets or sets the CreatedOn.
     /// </summary>
     public DateTimeOffset CreatedOn { get; init; }
-    /// <summary>
-    /// Gets or sets the UpdatedBy.
-    /// </summary>
-    [MaxLength(500)]
-    public string? UpdatedBy { get; init; }
     /// <summary>
     /// Gets or sets the UpdatedOn.
     /// </summary>

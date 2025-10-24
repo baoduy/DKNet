@@ -208,6 +208,28 @@ Add these properties to your `.csproj` file:
 </PropertyGroup>
 ```
 
+### Global Exclusion Configuration (Optional)
+
+Configure properties to exclude globally across all DTOs:
+
+```xml
+<!-- Define global exclusions (comma or semicolon separated) -->
+<PropertyGroup>
+  <DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+</PropertyGroup>
+
+<!-- Make the property visible to the source generator -->
+<ItemGroup>
+  <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
+</ItemGroup>
+```
+
+This is particularly useful for:
+- Audit properties (CreatedBy, UpdatedBy, CreatedAt, UpdatedAt)
+- Internal tracking fields
+- Properties that should never be exposed in DTOs
+- Reducing boilerplate in DTO attribute declarations
+
 ### Copy Generated Files for Inspection (Optional)
 
 For debugging and verification, copy generated DTOs to your project:
@@ -271,6 +293,44 @@ public partial record ProductSummaryDto;
 
 // Generated DTO will only include: Id, Name, Description, Price
 ```
+
+### Global Exclusions
+
+Configure global exclusions via MSBuild properties to exclude common audit or internal properties across all DTOs:
+
+```xml
+<!-- In your .csproj file -->
+<PropertyGroup>
+  <DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+</PropertyGroup>
+
+<!-- Make the property visible to the source generator -->
+<ItemGroup>
+  <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
+</ItemGroup>
+```
+
+Global exclusions are applied to all DTOs by default:
+
+```csharp
+// This DTO will automatically exclude CreatedBy, UpdatedBy, CreatedAt, UpdatedAt
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+
+// Local exclusions are combined with global exclusions
+[GenerateDto(typeof(Product), Exclude = ["InternalNotes"])]
+public partial record ProductSummaryDto; // Excludes global properties + InternalNotes
+
+// Include parameter overrides global exclusions
+[GenerateDto(typeof(Product), Include = ["Id", "Name", "CreatedAt"])]
+public partial record ProductNameDto; // Only includes these 3 properties, ignoring global exclusions
+```
+
+**Benefits of Global Exclusions:**
+- Centralized configuration for common exclusions
+- Reduces boilerplate in DTO declarations
+- Consistent exclusion of audit/internal properties
+- Easy to maintain across large projects
 
 ### Custom Properties
 
@@ -530,15 +590,53 @@ Ensure Mapster package reference is added:
 
 Generator checks for Mapster at compile time.
 
+### Global Exclusions Not Working
+
+If global exclusions aren't being applied:
+
+1. Verify the MSBuild property is correctly set in your `.csproj`:
+   ```xml
+   <PropertyGroup>
+     <DtoGenerator_GlobalExclusions>Property1,Property2</DtoGenerator_GlobalExclusions>
+   </PropertyGroup>
+   ```
+
+2. Ensure `CompilerVisibleProperty` is configured:
+   ```xml
+   <ItemGroup>
+     <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
+   </ItemGroup>
+   ```
+
+3. Clean and rebuild to regenerate all DTOs
+
+4. Check generated files in `obj/Generated` or your configured output folder
+
 ## Diagnostics
 
-The generator reports `DKDTOGEN001` as a warning if generation fails for a target type. Common causes:
+The generator reports several diagnostic codes:
 
-- Entity type not found or not accessible
-- Generic entity types (limited support)
-- Circular references in entity properties
+- **DKDTOGEN001**: DTO generation warning - entity type issues
+  - Entity type not found or not accessible
+  - Generic entity types (limited support)
+  - Circular references in entity properties
 
-Check build output for specific error messages.
+- **DKDTOGEN002**: No properties found for entity
+  - Entity type wasn't resolved correctly
+  - Entity has no public readable properties
+
+- **DKDTOGEN003**: Properties filtered from DTO (informational)
+  - Shows how many properties were included/excluded
+
+- **DKDTOGEN004**: Include and Exclude are mutually exclusive
+  - Cannot use both Include and Exclude on the same DTO
+  - Choose one approach or the other
+
+- **DKDTOGEN005**: Include parameter ignores global exclusions (informational)
+  - When using Include, global exclusions are not applied
+  - Only specified properties will be included
+
+Check build output for specific diagnostic messages.
 
 ## Limitations and Edge Cases
 
