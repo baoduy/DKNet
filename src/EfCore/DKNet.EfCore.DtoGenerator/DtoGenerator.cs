@@ -970,17 +970,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var propertyType = property.Type;
 
         // Handle collections - check the element type
-        if (propertyType is IArrayTypeSymbol arrayType)
+        var isCollection = IsCollectionType(property);
+        if (isCollection)
         {
-            propertyType = arrayType.ElementType;
-        }
-        else if (propertyType is INamedTypeSymbol namedType && namedType.TypeArguments.Length > 0)
-        {
-            // Check if it's a generic collection type
-            var fullyQualifiedName = namedType.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (IsKnownCollectionInterface(fullyQualifiedName))
+            // For collections, we need to check the element type
+            if (propertyType is IArrayTypeSymbol arrayType)
             {
-                // Get the element type from the generic argument
+                propertyType = arrayType.ElementType;
+            }
+            else if (propertyType is INamedTypeSymbol namedType && namedType.TypeArguments.Length > 0)
+            {
+                // Get the element type from the generic argument (List<T>, IEnumerable<T>, etc.)
                 propertyType = namedType.TypeArguments[0];
             }
         }
@@ -1004,8 +1004,18 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // Check if the type has the [Owned] attribute - if so, it's NOT a navigation property
         foreach (var attribute in typeSymbol.GetAttributes())
         {
-            if (attribute.AttributeClass?.Name == "OwnedAttribute" ||
-                attribute.AttributeClass?.Name == "Owned")
+            if (attribute.AttributeClass is null)
+                continue;
+
+            // Check for OwnedAttribute by name and namespace
+            var attributeName = attribute.AttributeClass.Name;
+            var attributeFullName = attribute.AttributeClass.ToDisplayString();
+            
+            // Match both short name and full name variations
+            if (attributeName == "OwnedAttribute" || 
+                attributeName == "Owned" ||
+                attributeFullName.EndsWith(".OwnedAttribute") ||
+                attributeFullName.EndsWith(".Owned"))
             {
                 return false; // This is an owned type, not a navigation property
             }
