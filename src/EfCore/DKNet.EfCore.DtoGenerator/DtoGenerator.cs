@@ -959,8 +959,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Determines if a property is a complex navigation type that should be excluded when IgnoreComplexType is true.
-    /// Complex navigation types are entity references (classes without [Owned] attribute) including both single 
-    /// entity properties and collection properties.
+    /// Complex navigation types are entity references (classes without [Owned] attribute, excluding records) including 
+    /// both single entity properties and collection properties.
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
@@ -1021,8 +1021,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
             }
         }
 
-        // If it's a class or struct and not owned, it's a complex navigation type
-        return typeSymbol.TypeKind is TypeKind.Class or TypeKind.Struct;
+        // If it's a class (but not a record) and not owned, it's a complex navigation type
+        // Records are excluded because they're typically used as DTOs/value objects, not entities
+        return typeSymbol.TypeKind == TypeKind.Class && !typeSymbol.IsRecord;
     }
 
     /// <summary>
