@@ -144,6 +144,39 @@ public partial record BalanceOnlyDto;
 
 **Note:** `Include` and `Exclude` are mutually exclusive. If you specify `Include`, the `Exclude` parameter will be ignored, and a warning will be generated if both are provided.
 
+### Ignoring Complex Types (Entity Navigation Properties)
+
+Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This is useful for creating simple DTOs that only contain primitive and value type properties:
+
+```csharp
+// Assuming Customer has Orders (List<Order>) and PrimaryAddress (Address) navigation properties
+[GenerateDto(typeof(Customer), IgnoreComplexType = true)]
+public partial record CustomerSimpleDto;
+```
+
+When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
+- Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
+- Collection properties of entities (e.g., `public List<Order> Orders { get; set; }`)
+
+**Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered part of the entity, not navigation properties.
+
+You can combine `IgnoreComplexType` with `Exclude` to exclude additional properties:
+
+```csharp
+[GenerateDto(typeof(Customer), IgnoreComplexType = true, Exclude = new[] { "Email" })]
+public partial record CustomerBasicDto;
+// Generated DTO will exclude Orders, PrimaryAddress (complex types) AND Email
+```
+
+However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation properties if needed:
+
+```csharp
+// Orders navigation property will be included even though IgnoreComplexType = true
+// because Include parameter takes precedence
+[GenerateDto(typeof(Customer), IgnoreComplexType = true, Include = new[] { "CustomerId", "Name", "Orders" })]
+public partial record CustomerWithOrdersDto;
+```
+
 ### Customizing DTOs
 
 You can add custom properties or override generated ones by declaring them in your partial DTO:
@@ -277,7 +310,11 @@ var balances = await dbContext.MerchantBalances
 
 ## Additional Notes
 
-- **Navigation Properties**: Navigation and collection properties are included as shallow copies. Customize via Mapster configuration or override in partial DTO.
+- **Navigation Properties**: 
+  - By default, navigation and collection properties are included as shallow copies in DTOs.
+  - Use `IgnoreComplexType = true` to automatically exclude all entity navigation properties (both single and collection).
+  - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned types, not navigations.
+  - Customize via Mapster configuration or override in partial DTO for more control.
 - **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy compiler null-state analysis.
 - **Generic Entities**: Limited support for generic entities (non-generic DTO shells only).
 - **Diagnostics**: `DKDTOGEN001` warning is reported if generation fails for a target type; build continues.
