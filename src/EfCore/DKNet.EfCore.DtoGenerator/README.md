@@ -149,12 +149,13 @@ public partial record BalanceOnlyDto;
 Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This is useful for creating simple DTOs that only contain primitive and value type properties:
 
 ```csharp
+// Assuming Customer has Orders (List<Order>) and PrimaryAddress (Address) navigation properties
 [GenerateDto(typeof(Customer), IgnoreComplexType = true)]
 public partial record CustomerSimpleDto;
 ```
 
 When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
-- Single entity properties (e.g., `public Address PrimaryAddress { get; set; }`)
+- Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
 - Collection properties of entities (e.g., `public List<Order> Orders { get; set; }`)
 
 **Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered part of the entity, not navigation properties.
@@ -164,12 +165,14 @@ You can combine `IgnoreComplexType` with `Exclude` to exclude additional propert
 ```csharp
 [GenerateDto(typeof(Customer), IgnoreComplexType = true, Exclude = new[] { "Email" })]
 public partial record CustomerBasicDto;
+// Generated DTO will exclude Orders, PrimaryAddress (complex types) AND Email
 ```
 
 However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation properties if needed:
 
 ```csharp
-// Orders will be included even though IgnoreComplexType = true
+// Orders navigation property will be included even though IgnoreComplexType = true
+// because Include parameter takes precedence
 [GenerateDto(typeof(Customer), IgnoreComplexType = true, Include = new[] { "CustomerId", "Name", "Orders" })]
 public partial record CustomerWithOrdersDto;
 ```
