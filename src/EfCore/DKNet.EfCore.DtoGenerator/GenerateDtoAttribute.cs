@@ -21,8 +21,18 @@ namespace DKNet.EfCore.DtoGenerator;
 /// // Include only specific properties:
 /// [GenerateDto(typeof(Person), Include = new[] { "Name", "Email" })]
 /// public partial record PersonNameDto; // Generated with only Name and Email properties.
+///
+/// // Ignore complex types (entity navigation properties):
+/// [GenerateDto(typeof(Customer), IgnoreComplexType = true)]
+/// public partial record CustomerSimpleDto; // Generated without navigation properties (e.g., Orders, Address).
+///
+/// // Combine IgnoreComplexType with Exclude:
+/// [GenerateDto(typeof(Customer), IgnoreComplexType = true, Exclude = new[] { "Email" })]
+/// public partial record CustomerBasicDto; // Generated without complex types and Email property.
 /// </code>
 /// Note: Include and Exclude are mutually exclusive. If Include is provided, only those properties will be generated.
+/// When IgnoreComplexType is true, properties that link to other entities (classes without [Owned] attribute) 
+/// are automatically excluded, including both single entity properties and collection properties.
 /// </remarks>
 [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
 public sealed class GenerateDtoAttribute : System.Attribute
@@ -44,6 +54,13 @@ public sealed class GenerateDtoAttribute : System.Attribute
     /// This property is mutually exclusive with <see cref="Exclude"/>.
     /// </summary>
     public string[] Include { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to automatically ignore complex types during DTO generation.
+    /// When set to true, properties that link to other entities (classes without the Owned attribute) 
+    /// will be automatically excluded, including both single entity properties and collection properties.
+    /// </summary>
+    public bool IgnoreComplexType { get; set; }
 
     public string EntityFullName => EntityType.FullName ?? EntityType.Name;
 
