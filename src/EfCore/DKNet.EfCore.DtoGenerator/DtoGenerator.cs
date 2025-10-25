@@ -29,6 +29,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     private const string AttributeFullName = "GenerateDtoAttribute";
     private const string ExcludeParameterName = "Exclude";
     private const string IncludeParameterName = "Include";
+    private const string IgnoreComplexTypeParameterName = "IgnoreComplexType";
     private const string DiagnosticId = "DKDTOGEN001";
     private const string DiagnosticCategory = "DKNet.EfCore.DtoGenerator";
 
@@ -193,12 +194,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         var excludedProperties = ExtractExcludedPropertiesFromAttribute(ctx, attribute);
         var includedProperties = ExtractIncludedPropertiesFromAttribute(ctx, attribute);
+        var ignoreComplexType = ExtractIgnoreComplexTypeFromAttribute(ctx, attribute);
         return new Target
         {
             DtoSymbol = dtoSymbol,
             EntitySymbol = entitySymbol,
             ExcludedProperties = excludedProperties,
-            IncludedProperties = includedProperties
+            IncludedProperties = includedProperties,
+            IgnoreComplexType = ignoreComplexType
         };
     }
 
@@ -350,6 +353,36 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Extracts the IgnoreComplexType flag from the [GenerateDto] attribute.
+    /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
+    /// <param name="attribute">The attribute syntax.</param>
+    /// <returns>True if IgnoreComplexType is set to true, false otherwise.</returns>
+    /// <example>
+    /// // [GenerateDto(typeof(User), IgnoreComplexType = true)]
+    /// </example>
+    private static bool ExtractIgnoreComplexTypeFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    {
+        foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
+        {
+            if (arg.NameEquals?.Name.Identifier.Text == IgnoreComplexTypeParameterName)
+            {
+                // Try to get the constant value
+                if (arg.Expression != null)
+                {
+                    var constantValue = ctx.SemanticModel.GetConstantValue(arg.Expression);
+                    if (constantValue.HasValue && constantValue.Value is bool boolValue)
+                    {
+                        return boolValue;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Extracts excluded property names from an attribute expression.
     /// </summary>
     /// <param name="ctx">The generator syntax context.</param>
@@ -483,7 +516,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 Diagnostic.Create(diagnostic, Location.None, target.DtoSymbol.Name, globalExclusions.Count));
         }
 
-        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions);
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions, target.IgnoreComplexType, compilation);
         
         // Additional logging for property filtering
         if (includedProperties.Count < entityProperties.Count)
@@ -697,22 +730,27 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Filters properties based on Include/Exclude lists and global exclusions.
+    /// Filters properties based on Include/Exclude lists, global exclusions, and IgnoreComplexType flag.
     /// If Include is provided, only those properties are returned (global exclusions are ignored).
+    /// If IgnoreComplexType is true, complex types (entity navigation properties) are automatically excluded.
     /// Otherwise, properties are filtered by combined global and local Exclude lists.
     /// </summary>
     /// <param name="entityProperties">The entity property list.</param>
     /// <param name="excludedProperties">The set of locally excluded property names.</param>
     /// <param name="includedProperties">The set of included property names.</param>
     /// <param name="globalExclusions">The set of globally excluded property names.</param>
+    /// <param name="ignoreComplexType">Whether to automatically exclude complex types.</param>
+    /// <param name="compilation">The Roslyn compilation.</param>
     /// <returns>The filtered list of included properties.</returns>
     private static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
         HashSet<string> excludedProperties,
         HashSet<string> includedProperties,
-        HashSet<string> globalExclusions)
+        HashSet<string> globalExclusions,
+        bool ignoreComplexType,
+        Compilation compilation)
     {
-        // If Include is provided, only include those properties (ignores global exclusions)
+        // If Include is provided, only include those properties (ignores global exclusions and IgnoreComplexType)
         if (includedProperties.Count > 0)
         {
             return entityProperties
@@ -724,14 +762,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var combinedExcludedProperties = new HashSet<string>(excludedProperties);
         combinedExcludedProperties.UnionWith(globalExclusions);
 
-        // If no exclusions at all, return all properties
-        if (combinedExcludedProperties.Count == 0)
-            return entityProperties;
-
-        // Exclude properties from the combined exclusion list
-        return entityProperties
+        // Start with properties not in the exclusion list
+        var filteredProperties = entityProperties
             .Where(p => !combinedExcludedProperties.Contains(p.Name))
             .ToList();
+
+        // If IgnoreComplexType is true, filter out complex types
+        if (ignoreComplexType)
+        {
+            filteredProperties = filteredProperties
+                .Where(p => !IsComplexNavigationType(p, compilation))
+                .ToList();
+        }
+
+        return filteredProperties;
     }
 
     /// <summary>
@@ -911,6 +955,64 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         // This is a complex reference type (e.g., navigation properties, custom classes)
         return true;
+    }
+
+    /// <summary>
+    /// Determines if a property is a complex navigation type that should be excluded when IgnoreComplexType is true.
+    /// Complex navigation types are entity references (classes without [Owned] attribute) including both single 
+    /// entity properties and collection properties.
+    /// </summary>
+    /// <param name="property">The property symbol.</param>
+    /// <param name="compilation">The Roslyn compilation.</param>
+    /// <returns>True if the property is a complex navigation type.</returns>
+    private static bool IsComplexNavigationType(IPropertySymbol property, Compilation compilation)
+    {
+        var propertyType = property.Type;
+
+        // Handle collections - check the element type
+        if (propertyType is IArrayTypeSymbol arrayType)
+        {
+            propertyType = arrayType.ElementType;
+        }
+        else if (propertyType is INamedTypeSymbol namedType && namedType.TypeArguments.Length > 0)
+        {
+            // Check if it's a generic collection type
+            var fullyQualifiedName = namedType.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (IsKnownCollectionInterface(fullyQualifiedName))
+            {
+                // Get the element type from the generic argument
+                propertyType = namedType.TypeArguments[0];
+            }
+        }
+
+        // Must be a reference type
+        if (!propertyType.IsReferenceType)
+            return false;
+
+        // Exclude strings
+        if (propertyType.SpecialType == SpecialType.System_String)
+            return false;
+
+        // Exclude other special types
+        if (propertyType.SpecialType != SpecialType.None)
+            return false;
+
+        // Check if the type is a named type (class/struct)
+        if (propertyType is not INamedTypeSymbol typeSymbol)
+            return false;
+
+        // Check if the type has the [Owned] attribute - if so, it's NOT a navigation property
+        foreach (var attribute in typeSymbol.GetAttributes())
+        {
+            if (attribute.AttributeClass?.Name == "OwnedAttribute" ||
+                attribute.AttributeClass?.Name == "Owned")
+            {
+                return false; // This is an owned type, not a navigation property
+            }
+        }
+
+        // If it's a class or struct and not owned, it's a complex navigation type
+        return typeSymbol.TypeKind is TypeKind.Class or TypeKind.Struct;
     }
 
     /// <summary>
@@ -1371,6 +1473,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         public INamedTypeSymbol EntitySymbol { get; set; } = null!;
         public HashSet<string> ExcludedProperties { get; set; } = new();
         public HashSet<string> IncludedProperties { get; set; } = new();
+        public bool IgnoreComplexType { get; set; }
 
         // Use string-based comparison for stability across compilations
         // SymbolEqualityComparer can give inconsistent results with incremental compilation
@@ -1401,7 +1504,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
             if (IncludedProperties.Count != other.IncludedProperties.Count)
                 return false;
 
-            return IncludedProperties.SetEquals(other.IncludedProperties);
+            if (!IncludedProperties.SetEquals(other.IncludedProperties))
+                return false;
+
+            // Compare IgnoreComplexType flag
+            if (IgnoreComplexType != other.IgnoreComplexType)
+                return false;
+
+            return true;
         }
 
         public override int GetHashCode()
@@ -1428,6 +1538,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 {
                     hash = hash * 31 + StringComparer.Ordinal.GetHashCode(prop);
                 }
+
+                // Hash IgnoreComplexType flag
+                hash = hash * 31 + IgnoreComplexType.GetHashCode();
 
                 return hash;
             }
