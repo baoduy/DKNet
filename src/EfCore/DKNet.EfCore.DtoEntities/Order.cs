@@ -5,7 +5,7 @@ public sealed class Order : EntityBase
     public Order()
     {
         OrderNumber = string.Empty;
-        Items = new List<OrderItem>();
+        Items = [];
     }
 
     public int OrderId { get; set; }
@@ -16,10 +16,7 @@ public sealed class Order : EntityBase
 
 public sealed class OrderItem
 {
-    public OrderItem()
-    {
-        ProductName = string.Empty;
-    }
+    public OrderItem() => ProductName = string.Empty;
 
     public int OrderItemId { get; set; }
     public string ProductName { get; set; }

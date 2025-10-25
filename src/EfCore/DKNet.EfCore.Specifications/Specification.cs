@@ -146,25 +146,25 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         return predicate(entity);
     }
 
-    /// <summary>
-    ///     Returns an expression that combines two specifications with a logical "and"
-    /// </summary>
-    /// <param name="specification">Specification to combine with</param>
-    /// <returns>
-    ///     <see cref="AndSpecification{T}" />
-    /// </returns>
-    public Specification<TEntity> And(Specification<TEntity> specification) =>
-        new AndSpecification<TEntity>(this, specification);
-
-    /// <summary>
-    ///     Returns an expression that combines two specifications with a logical "or"
-    /// </summary>
-    /// <param name="specification">Specification to combine with</param>
-    /// <returns>
-    ///     <see cref="OrSpecification{T}" />
-    /// </returns>
-    public Specification<TEntity> Or(Specification<TEntity> specification) =>
-        new OrSpecification<TEntity>(this, specification);
+    // /// <summary>
+    // ///     Returns an expression that combines two specifications with a logical "and"
+    // /// </summary>
+    // /// <param name="specification">Specification to combine with</param>
+    // /// <returns>
+    // ///     <see cref="AndSpecification{T}" />
+    // /// </returns>
+    // public Specification<TEntity> And(Specification<TEntity> specification) =>
+    //     new AndSpecification<TEntity>(this, specification);
+    //
+    // /// <summary>
+    // ///     Returns an expression that combines two specifications with a logical "or"
+    // /// </summary>
+    // /// <param name="specification">Specification to combine with</param>
+    // /// <returns>
+    // ///     <see cref="OrSpecification{T}" />
+    // /// </returns>
+    // public Specification<TEntity> Or(Specification<TEntity> specification) =>
+    //     new OrSpecification<TEntity>(this, specification);
 
     // public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right) =>
     //     left.And(right);

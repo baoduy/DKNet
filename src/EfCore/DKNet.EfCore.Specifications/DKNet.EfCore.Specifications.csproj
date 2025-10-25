@@ -18,5 +18,7 @@
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
     </ItemGroup>
-
+    <ItemGroup>
+        <InternalsVisibleTo Include="EfCore.Repos.Tests"/>
+    </ItemGroup>
 </Project>

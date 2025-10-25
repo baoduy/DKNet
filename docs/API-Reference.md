@@ -8,6 +8,10 @@ Comprehensive API reference for all DKNet Framework components.
 - [Entity Framework Core](#entity-framework-core)
 - [Messaging & CQRS](#messaging--cqrs)
 - [Blob Storage Services](#blob-storage-services)
+- [Security & Encryption](#-security--encryption)
+- [PDF Generation](#-pdf-generation)
+- [ASP.NET Core Utilities](#-aspnet-core-utilities)
+- [Aspire Integrations](#-aspire-integrations)
 - [Common Interfaces](#common-interfaces)
 - [Configuration Options](#configuration-options)
 
@@ -684,6 +688,163 @@ public record BlobInfo
     public required DateTime LastModified { get; init; }
     public string? ContentType { get; init; }
     public string? ETag { get; init; }
+}
+```
+
+---
+
+## 🔐 Security & Encryption
+
+### DKNet.Svc.Encryption
+
+#### Authenticated Encryption
+
+```csharp
+namespace DKNet.Svc.Encryption;
+
+public interface IAesGcmEncryption : IDisposable
+{
+    string Key { get; }
+
+    string EncryptString(string plainText, byte[]? associatedData = null);
+    string DecryptString(string cipherPackage, byte[]? associatedData = null);
+
+    string Encrypt(string plainText, string base64Key, byte[]? associatedData = null);
+    string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null);
+}
+```
+
+#### Password-Based Encryption
+
+```csharp
+public interface IPasswordAesEncryption
+{
+    string Encrypt(string plainText, string password);
+    string Decrypt(string cipherText, string password);
+}
+```
+
+#### RSA Encryption & Signatures
+
+```csharp
+public interface IRsaEncryption : IDisposable
+{
+    string PublicKey { get; }
+    string? PrivateKey { get; }
+
+    string Encrypt(string plainText);
+    string Decrypt(string cipherText);
+
+    string Sign(string plainText);
+    bool Verify(string plainText, string signature);
+}
+```
+
+#### Hashing & HMAC
+
+```csharp
+public interface IHmacHashing : IDisposable
+{
+    string Compute(string content, string secret, HmacAlgorithm algorithm = HmacAlgorithm.Sha256, bool asBase64 = true);
+    bool Verify(string content, string secret, string signature, HmacAlgorithm algorithm = HmacAlgorithm.Sha256);
+}
+
+public interface IShaHashing : IDisposable
+{
+    string ComputeHash(string content, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256, bool upperCase = true);
+    bool VerifyHash(string content, string expectedHash, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256);
+}
+```
+
+---
+
+## 📝 PDF Generation
+
+### DKNet.Svc.PdfGenerators
+
+#### Core Facade
+
+```csharp
+namespace DKNet.Svc.PdfGenerators;
+
+public class PdfGenerator
+{
+    public PdfGenerator(PdfGeneratorOptions options, ILogger<PdfGenerator>? logger = null);
+
+    public Task GenerateFromMarkdownAsync(string markdownPath, string outputPdfPath, CancellationToken cancellationToken = default);
+    public Task GenerateFromHtmlAsync(string html, string outputPdfPath, CancellationToken cancellationToken = default);
+    public Task GenerateFromTemplateAsync<TModel>(TModel model, string outputPdfPath, CancellationToken cancellationToken = default);
+}
+```
+
+#### Options Snapshot
+
+```csharp
+public sealed class PdfGeneratorOptions
+{
+    public string? Title { get; set; }
+    public PdfTheme Theme { get; set; } = PdfTheme.Default;
+    public TableOfContentsOptions TableOfContents { get; set; } = new();
+    public HeaderFooterOptions Header { get; set; } = new();
+    public HeaderFooterOptions Footer { get; set; } = new();
+    public ModuleInformation Module { get; set; } = new();
+    public List<ResourceDefinition> AdditionalResources { get; } = new();
+}
+```
+
+---
+
+## 🌐 ASP.NET Core Utilities
+
+### DKNet.AspCore.Tasks
+
+#### Background Task Contract
+
+```csharp
+namespace DKNet.AspCore.Tasks;
+
+public interface IBackgroundTask
+{
+    Task RunAsync(CancellationToken cancellationToken = default);
+}
+```
+
+#### Registration Extensions
+
+```csharp
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class TaskSetups
+{
+    public static IServiceCollection AddBackgroundJob<TTask>(this IServiceCollection services)
+        where TTask : class, IBackgroundTask;
+
+    public static IServiceCollection AddBackgroundJobFrom(this IServiceCollection services, Assembly[] assemblies);
+}
+```
+
+---
+
+## ☁️ Aspire Integrations
+
+### Aspire.Hosting.ServiceBus
+
+```csharp
+namespace Aspire.Hosting.ServiceBus;
+
+public sealed class ServiceBusResource : IResourceWithConnectionString
+{
+    public string Name { get; }
+
+    public ServiceBusResource WithNamespace(string namespaceName);
+    public ServiceBusResource WithQueue(string queueName, Action<ServiceBusQueueOptions>? configure = null);
+    public ServiceBusResource WithTopic(string topicName, Action<ServiceBusTopicOptions>? configure = null);
+    public ServiceBusResource WithSecretsFrom(string parameterName);
+}
+
+public static class ServiceBusExtensions
+{
+    public static ServiceBusResource AddServiceBus(this IDistributedApplicationBuilder builder, string name, Action<ServiceBusResource>? configure = null);
 }
 ```
 

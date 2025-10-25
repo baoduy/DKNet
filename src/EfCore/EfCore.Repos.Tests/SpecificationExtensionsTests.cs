@@ -15,7 +15,7 @@ public class SpecificationExtensionsTests
         var queryable = new List<User>().AsQueryable();
 
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => queryable.QuerySpecs<User>(null!));
+        Should.Throw<ArgumentNullException>(() => queryable.ApplySpecs(null!));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class SpecificationExtensionsTests
         spec.AddTestFilter(u => u.FirstName == "John");
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -56,7 +56,7 @@ public class SpecificationExtensionsTests
 
         // Act & Assert
         // For the basic test, we just ensure it doesn't throw since IgnoreQueryFilters is EF Core specific
-        Should.NotThrow(() => queryable.QuerySpecs(spec));
+        Should.NotThrow(() => queryable.ApplySpecs(spec));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderBy(u => u.LastName);
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -100,7 +100,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderByDescending(u => u.LastName);
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -126,7 +126,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderBy(u => u.FirstName); // ThenBy
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -155,7 +155,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderByDescending(u => u.FirstName); // ThenByDescending
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -184,7 +184,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderByDescending(u => u.FirstName); // ThenByDescending FirstName
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -210,7 +210,7 @@ public class SpecificationExtensionsTests
         var spec = new TestSpecification(); // Empty spec
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(2);
@@ -373,7 +373,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderByDescending(u => u.LastName);
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -398,7 +398,7 @@ public class SpecificationExtensionsTests
 
         // Act & Assert
         // Since we're working with in-memory lists, just ensure it doesn't throw
-        Should.NotThrow(() => queryable.QuerySpecs(spec));
+        Should.NotThrow(() => queryable.ApplySpecs(spec));
     }
 
     [Fact]
@@ -419,7 +419,7 @@ public class SpecificationExtensionsTests
         spec.AddTestOrderBy(u => u.LastName); // Order by last name
 
         // Act
-        var result = queryable.QuerySpecs(spec).ToList();
+        var result = queryable.ApplySpecs(spec).ToList();
 
         // Assert
         result.Count.ShouldBe(3); // John, Jane, Alice (Bob has length 3)
