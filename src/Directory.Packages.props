@@ -3,7 +3,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <Authors>Steven Hoang</Authors>
         <Company>https://drunkcoding.net</Company>
-        <Copyright>@2025-2030 drunkcoding</Copyright>
+        <Copyright>Copyright @ $([System.DateTime]::Now. Year)</Copyright>
         <PackageProjectUrl>https://github.com/baoduy/DKNet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/baoduy/DKNet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>

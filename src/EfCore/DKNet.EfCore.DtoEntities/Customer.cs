@@ -5,7 +5,7 @@ public sealed class Customer : EntityBase
     public Customer()
     {
         Name = string.Empty;
-        Orders = new List<Order>();
+        Orders = [];
     }
 
     public int CustomerId { get; set; }

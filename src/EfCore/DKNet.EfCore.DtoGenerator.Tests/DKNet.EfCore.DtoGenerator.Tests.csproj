@@ -10,14 +10,15 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
 
-    <!-- Configure global exclusions for DTO generator -->
+    <!-- 1. Configure global exclusions for DTO generator -->
     <ItemGroup>
         <CompilerVisibleProperty Include="DtoGeneratorExclusions"/>
     </ItemGroup>
     <PropertyGroup>
         <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
     </PropertyGroup>
-    <!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
+
+    <!-- 2. Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
     <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
             <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
@@ -31,7 +32,7 @@
         <Message Text="Copied %(Filename)%(Extension) to $(ProjectDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
     </Target>
 
-    <!-- Exclude generated DTOs from compilation, but keep them visible in Solution Explorer -->
+    <!-- 3. Exclude generated DTOs from compilation, but keep them visible in Solution Explorer -->
     <ItemGroup>
         <Compile Remove="GeneratedDtos\**\*.cs"/>
         <None Include="GeneratedDtos\**\*.cs"/>

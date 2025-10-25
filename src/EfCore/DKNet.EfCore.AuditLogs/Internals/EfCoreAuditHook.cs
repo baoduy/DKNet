@@ -43,7 +43,7 @@ internal sealed class EfCoreAuditHook(
                     // Ignore cancellation for fire-and-forget to ensure attempt
                     await publisher.PublishAsync(logs, CancellationToken.None);
                 }
-                catch (Exception ex)
+                catch (DbUpdateException ex)
                 {
                     logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
                 }
