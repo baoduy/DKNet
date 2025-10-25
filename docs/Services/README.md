@@ -12,6 +12,10 @@ The Service Layer provides application services and cross-cutting concerns that 
 
 ### Data Processing Services
 - [DKNet.Svc.Transformation](./DKNet.Svc.Transformation.md) - Data transformation services
+- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) - Documentation-grade PDF generation toolkit
+
+### Security & Cryptography
+- [DKNet.Svc.Encryption](./DKNet.Svc.Encryption.md) - Cryptographic helpers (AES, RSA, HMAC, hashing)
 
 ## Architecture Role in DDD & Onion Architecture
 

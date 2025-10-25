@@ -55,6 +55,18 @@ Application services including blob storage abstractions and data transformation
 - [DKNet.Svc.BlobStorage.AzureStorage](./Services/DKNet.Svc.BlobStorage.AzureStorage.md) - Azure Blob storage adapter
 - [DKNet.Svc.BlobStorage.Local](./Services/DKNet.Svc.BlobStorage.Local.md) - Local file system storage
 - [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) - Data transformation services
+- [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) - Documentation-grade PDF generation toolkit
+- [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) - Cryptographic helpers (AES, RSA, HMAC, hashing)
+
+### ☁️ [Aspire Integrations](./Aspire/README.md)
+Infrastructure orchestration helpers for .NET Aspire AppHost projects.
+
+- [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) - Azure Service Bus resource builder extensions
+
+### ⚙️ [ASP.NET Core Utilities](./AspNetCore/README.md)
+Startup orchestration utilities for web/API workloads.
+
+- [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) - Application start-up background job orchestration
 
 ## 🏗️ Architecture Overview
 
