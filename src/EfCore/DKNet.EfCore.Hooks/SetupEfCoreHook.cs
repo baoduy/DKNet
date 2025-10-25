@@ -13,7 +13,7 @@ public static class SetupEfCoreHook
     /// <param name="options"></param>
     /// <param name="provider"></param>
     /// <returns></returns>
-    public static DbContextOptionsBuilder AddHookInterceptor<TDbContext>(
+    public static DbContextOptionsBuilder UseHooks<TDbContext>(
         this DbContextOptionsBuilder options,
         IServiceProvider provider) where TDbContext : DbContext =>
         options.AddInterceptors(provider.GetRequiredKeyedService<HookRunner>(typeof(TDbContext).FullName));
@@ -87,7 +87,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(provider, options);
-                options.AddHookInterceptor<TDbContext>(provider);
+                options.UseHooks<TDbContext>(provider);
             }, contextLifetime, optionLifetime);
 
         return services;
@@ -112,7 +112,7 @@ public static class SetupEfCoreHook
             .AddDbContext<TDbContext>((provider, options) =>
             {
                 builder(options);
-                options.AddHookInterceptor<TDbContext>(provider);
+                options.UseHooks<TDbContext>(provider);
             }, contextLifetime, optionLifetime);
 
         return services;
