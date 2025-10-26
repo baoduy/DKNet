@@ -160,7 +160,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         var repo2 = new Repository<UserGuid>(db2);
 
         var userFromRepo1 = await repo1.Query().AsNoTracking().FirstAsync(u => u.Id == user.Id);
-        db2.ChangeTracker.Clear();
         var userFromRepo2 = await repo2.Query().AsNoTracking().FirstAsync(u => u.Id == user.Id);
 
         userFromRepo1.ShouldNotBeNull();

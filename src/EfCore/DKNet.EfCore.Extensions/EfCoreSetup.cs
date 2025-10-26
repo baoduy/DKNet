@@ -1,4 +1,5 @@
 ﻿using DKNet.EfCore.Extensions.Configurations;
+using DKNet.EfCore.Extensions.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
 // ReSharper disable CheckNamespace
@@ -14,8 +15,8 @@ public static class EfCoreSetup
     /// <typeparam name="TImplementation"></typeparam>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddGlobalModelBuilderRegister<TImplementation>(this IServiceCollection services)
-        where TImplementation : class, IGlobalQueryFilterRegister
+    public static IServiceCollection AddGlobalQueryFilter<TImplementation>(this IServiceCollection services)
+        where TImplementation : class, IGlobalQueryFilter
     {
         GlobalQueryFilters.Add(typeof(TImplementation));
         return services;
@@ -26,29 +27,23 @@ public static class EfCoreSetup
     /// </summary>
     /// <typeparam name="TContext"></typeparam>
     /// <param name="this"></param>
-    /// <param name="options"></param>
     /// <returns></returns>
     public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
-        this DbContextOptionsBuilder<TContext> @this, Action<IEntityAutoConfigRegister>? options = null)
+        this DbContextOptionsBuilder<TContext> @this)
         where TContext : DbContext =>
         (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
-        .UseAutoConfigModel(options);
+        .UseAutoConfigModel();
 
     /// <summary>
     ///     Scan and register all Entities from assemblies to DbContext.
     /// </summary>
     /// <param name="this"></param>
-    /// <param name="options"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this,
-        Action<IEntityAutoConfigRegister>? options = null)
+    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this)
     {
         ArgumentNullException.ThrowIfNull(@this);
-
-        var op = @this.GetOrCreateExtension();
-        options?.Invoke(op);
-
+        @this.GetOrCreateExtension();
         return @this;
     }
 

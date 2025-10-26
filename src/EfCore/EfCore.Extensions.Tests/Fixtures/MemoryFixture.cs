@@ -14,7 +14,7 @@ public class MemoryFixture : IAsyncLifetime
             .EnableSensitiveDataLogging()
             .EnableDetailedErrors()
             .UseInMemoryDatabase("testDb")
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
+            .UseAutoConfigModel()
             //DONOT use auto seeding here as there are a dedicated test for it
             //.UseAutoDataSeeding()
             .Options;

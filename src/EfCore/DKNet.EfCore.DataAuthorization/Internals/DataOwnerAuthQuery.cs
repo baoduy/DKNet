@@ -19,7 +19,7 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 /// </remarks>
 [SuppressMessage("Major Code Smell",
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
-internal sealed class DataOwnerAuthQueryRegister : GlobalQueryFilterRegister
+internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 {
     protected override void HasQueryFilter<TEntity>(EntityTypeBuilder<TEntity> builder, DbContext context)
     {

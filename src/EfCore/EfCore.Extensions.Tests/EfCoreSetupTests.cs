@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EfCore.Extensions.Tests;
 
 // Test global query filter register
-public class TestGlobalQueryFilterRegister : IGlobalQueryFilterRegister
+public class TestGlobalQueryFilter : IGlobalQueryFilter
 {
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
@@ -22,11 +22,11 @@ public class EfCoreSetupTests
         var initialCount = EfCoreSetup.GlobalQueryFilters.Count;
 
         // Act
-        services.AddGlobalModelBuilderRegister<TestGlobalQueryFilterRegister>();
+        services.AddGlobalQueryFilter<TestGlobalQueryFilter>();
 
         // Assert
         EfCoreSetup.GlobalQueryFilters.Count.ShouldBe(initialCount + 1);
-        EfCoreSetup.GlobalQueryFilters.ShouldContain(typeof(TestGlobalQueryFilterRegister));
+        EfCoreSetup.GlobalQueryFilters.ShouldContain(typeof(TestGlobalQueryFilter));
     }
 
     [Fact]
@@ -52,25 +52,6 @@ public class EfCoreSetupTests
             ((DbContextOptionsBuilder)null!).UseAutoConfigModel());
     }
 
-    [Fact]
-    public void UseAutoConfigModel_WithAction_ShouldInvokeAction()
-    {
-        // Arrange
-        var builder = new DbContextOptionsBuilder()
-            .UseSqlServer("Server=localhost;Database=TestDb;Integrated Security=true;");
-
-        var actionInvoked = false;
-
-        // Act
-        builder.UseAutoConfigModel(op =>
-        {
-            actionInvoked = true;
-            op.ShouldNotBeNull();
-        });
-
-        // Assert
-        actionInvoked.ShouldBeTrue();
-    }
 
     [Fact]
     public void GetOrCreateExtension_ShouldReturnExtension()

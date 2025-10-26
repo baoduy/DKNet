@@ -1,9 +1,9 @@
 ﻿using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.TypeExtractors;
 
-namespace DKNet.EfCore.Extensions.Registers;
+namespace DKNet.EfCore.Extensions.Extensions;
 
-internal static class SequenceRegister
+internal static class SequenceExtensions
 {
     internal static SqlSequenceAttribute? GetAttribute(Type enumType) =>
         enumType.GetCustomAttribute<SqlSequenceAttribute>();
@@ -12,19 +12,18 @@ internal static class SequenceRegister
         enumType.GetMember(field.ToString()!)[0].GetCustomAttribute<SequenceAttribute>() ??
         new SequenceAttribute();
 
-    internal static string GetSequenceName(object field) => $"Sequence_{field}";
+    internal static string GetSequenceName(object field) => $"Seq_{field}";
 
     /// <summary>
     ///     Register Sequence from Enums
     /// </summary>
     /// <param name="modelBuilder"></param>
-    /// <param name="registrations"></param>
-    internal static void RegisterSequencesFrom(this ModelBuilder modelBuilder,
-        IEnumerable<AutoEntityRegistrationInfo> registrations)
+    /// <param name="assemblies"></param>
+    internal static void RegisterSequencesFrom(this ModelBuilder modelBuilder, params Assembly[] assemblies)
     {
-        var enumTypes = registrations.SelectMany(r =>
-            r.EntityAssemblies.Extract().Enums().ToList());
-        var sequenceEnums = enumTypes.Where(e => e.HasAttribute<SqlSequenceAttribute>());
+        var sequenceEnums = assemblies.SelectMany(a => a.Extract().Enums()).ToList()
+            .Where(e => e.HasAttribute<SqlSequenceAttribute>())
+            .ToList();
 
         foreach (var type in sequenceEnums)
             modelBuilder.RegisterSequencesFromEnumType(type);

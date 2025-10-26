@@ -81,7 +81,7 @@ public sealed class Address : Entity<int>
     [MaxLength(256)] public required string City { get; set; } = null!;
 
     public User User { get; set; } = null!;
-    [ForeignKey("Address_User")] public long UserId { get; set; }
+    [ForeignKey("Address_User")] public int UserId { get; set; }
 }
 
 [Owned]

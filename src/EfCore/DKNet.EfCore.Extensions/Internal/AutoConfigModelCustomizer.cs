@@ -1,4 +1,6 @@
-﻿namespace DKNet.EfCore.Extensions.Internal;
+﻿using DKNet.EfCore.Extensions.Extensions;
+
+namespace DKNet.EfCore.Extensions.Internal;
 
 internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IModelCustomizer
 {
@@ -13,22 +15,19 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        var options = dbContext.GetService<EntityConfigRegisterService>();
-
-        if (options.EntityConfig.Registrations.Count <= 0)
-            options.EntityConfig.ScanFrom(dbContext.GetType().Assembly);
+        var assemblies = dbContext.GetType().Assembly;
 
         //Register Entities
-        modelBuilder.RegisterEntityMappingFrom(options.EntityConfig.Registrations);
+        modelBuilder.ApplyConfigurationsFromAssembly(assemblies);
 
         //Register StaticData Of
-        //modelBuilder.RegisterStaticDataFrom(options.Registrations);
+        modelBuilder.RegisterDataSeedingFrom(assemblies);
 
         //Register Global Filter
-        modelBuilder.RegisterGlobalFilterFrom(options.EntityConfig.Registrations, dbContext);
+        modelBuilder.RegisterGlobalFilters(assemblies, dbContext);
 
         //Register Sequence
         if (dbContext.IsSqlServer())
-            modelBuilder.RegisterSequencesFrom(options.EntityConfig.Registrations);
+            modelBuilder.RegisterSequencesFrom(assemblies);
     }
 }

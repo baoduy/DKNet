@@ -1,5 +1,6 @@
 ﻿// ReSharper disable CheckNamespace
 
+using DKNet.EfCore.Extensions.Extensions;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Microsoft.EntityFrameworkCore;
@@ -131,11 +132,11 @@ public static class EfCoreExtensions
         ArgumentNullException.ThrowIfNull(dbContext);
 
         var type = typeof(TEnum);
-        var att = SequenceRegister.GetAttribute(type);
+        var att = SequenceExtensions.GetAttribute(type);
         if (att == null) return null;
 
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
-        command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceRegister.GetSequenceName(name)}";
+        command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceExtensions.GetSequenceName(name)}";
 
         await dbContext.Database.OpenConnectionAsync();
         await using var result = await command.ExecuteReaderAsync();
@@ -158,7 +159,7 @@ public static class EfCoreExtensions
     public static async ValueTask<string> NextSeqValueWithFormat<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
     {
-        var att = SequenceRegister.GetFieldAttributeOrDefault(typeof(TEnum), name);
+        var att = SequenceExtensions.GetFieldAttributeOrDefault(typeof(TEnum), name);
         var value = await dbContext.NextSeqValue(name);
 
         if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";

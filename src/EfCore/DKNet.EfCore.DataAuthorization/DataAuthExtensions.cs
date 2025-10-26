@@ -5,5 +5,5 @@ namespace DKNet.EfCore.DataAuthorization;
 internal static class DataAuthExtensions
 {
     public static string GetQueryFilterKey<TEntity>() =>
-        $"{typeof(TEntity).FullName}_{nameof(DataOwnerAuthQueryRegister)}";
+        $"{typeof(TEntity).FullName}_{nameof(DataOwnerAuthQuery)}";
 }

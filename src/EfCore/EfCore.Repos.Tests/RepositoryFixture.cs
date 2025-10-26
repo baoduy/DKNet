@@ -40,7 +40,7 @@ public class RepositoryFixture : IAsyncLifetime
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
             .UseNpgsql(dbConn)
-            .UseAutoConfigModel(c => c.ScanFrom(typeof(RepositoryFixture).Assembly));
+            .UseAutoConfigModel();
 
         return new TestDbContext(optionsBuilder.Options);
     }
