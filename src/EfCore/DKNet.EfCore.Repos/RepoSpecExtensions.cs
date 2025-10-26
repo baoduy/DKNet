@@ -1,10 +1,9 @@
 using DKNet.EfCore.Extensions.Extensions;
-using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
+using DKNet.EfCore.Specifications;
 using X.PagedList;
 using X.PagedList.EF;
 
-namespace DKNet.EfCore.Specifications;
+namespace DKNet.EfCore.Repos;
 
 /// <summary>
 ///     Provides extension methods for applying specifications to repositories and queries.

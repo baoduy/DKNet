@@ -11,14 +11,15 @@
 
     <ItemGroup>
         <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore"/>
+        <PackageReference Include="Mapster"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="X.PagedList.EF"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
-    </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.Repos.Tests"/>
+        <InternalsVisibleTo Include="DKNet.EfCore.Repos"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
     </ItemGroup>
 </Project>
