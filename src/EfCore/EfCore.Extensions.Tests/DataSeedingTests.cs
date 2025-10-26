@@ -27,7 +27,7 @@ public class DataSeedingTests
         // Arrange
         var options = new DbContextOptionsBuilder<MyDbContext>()
             .UseInMemoryDatabase("TestDb_Seeding")
-            .UseAutoConfigModel(op => op.ScanFrom(typeof(MyDbContext).Assembly))
+            .UseAutoConfigModel()
             .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
             .Options;
 

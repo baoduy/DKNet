@@ -1,8 +1,4 @@
-using DKNet.EfCore.Extensions.Extensions;
-using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using X.PagedList;
-using X.PagedList.EF;
 
 namespace DKNet.EfCore.Specifications;
 

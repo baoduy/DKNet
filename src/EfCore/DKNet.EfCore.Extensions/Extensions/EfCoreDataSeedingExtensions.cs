@@ -15,6 +15,19 @@ public static class EfCoreDataSeedingExtensions
             .IsInstanceOf<IDataSeedingConfiguration>()
     ];
 
+    internal static void RegisterDataSeedingFrom(this ModelBuilder modelBuilder, params Assembly[] assemblies)
+    {
+        var seedingTypes = assemblies.GetDataSeedingTypes();
+        foreach (var seedingType in seedingTypes)
+        {
+            if (Activator.CreateInstance(seedingType) is not IDataSeedingConfiguration seedingInstance) continue;
+            var data = seedingInstance.HasData.ToList();
+            if (data.Count == 0) continue;
+
+            var entityType = seedingInstance.EntityType;
+            modelBuilder.Entity(entityType).HasData(data);
+        }
+    }
 
     /// <summary>
     /// </summary>
@@ -22,12 +35,6 @@ public static class EfCoreDataSeedingExtensions
         params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(@this);
-
-        if (assemblies.Length == 0)
-        {
-            var op = @this.GetOrCreateExtension();
-            assemblies = [.. op.Registrations.SelectMany(r => r.EntityAssemblies)];
-        }
 
         //Get Alls Seeding Types
         var seedingTypes = GetDataSeedingTypes(assemblies);

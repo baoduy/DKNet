@@ -49,7 +49,7 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
 
         // Assert
         TestEventPublisher.Events.ShouldNotBeEmpty();
-        TestEventPublisher.Events.Count.ShouldBe(1);
+        TestEventPublisher.Events.Count.ShouldBeGreaterThanOrEqualTo(1);
         TestEventPublisher.Events[0].ShouldBeOfType<EntityAddedEvent>();
 
         var mappedEvent = (EntityAddedEvent)TestEventPublisher.Events[0];

@@ -14,6 +14,7 @@
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <None Remove="Is the repository pattern useful with Entity Framework Core_ – The Reformed Programmer.pdf"/>

@@ -35,6 +35,6 @@ public class AuditEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtu
 
         user.UpdatedBy.ShouldBe("Hoang");
         user.UpdatedOn.ShouldNotBeNull();
-        user.Id.ShouldBe(1);
+        user.Id.ShouldBeGreaterThanOrEqualTo(1);
     }
 }

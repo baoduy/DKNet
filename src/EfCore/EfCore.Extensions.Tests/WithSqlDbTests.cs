@@ -105,7 +105,6 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
         await _db.SaveChangesAsync();
 
         // Create new contexts with same configuration
-#pragma warning disable EF1001 // Internal EF Core API usage.
         var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
 
         await using var db1 = new MyDbContext(dbOptions);

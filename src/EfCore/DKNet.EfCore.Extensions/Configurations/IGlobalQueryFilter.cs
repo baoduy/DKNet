@@ -7,14 +7,14 @@ namespace DKNet.EfCore.Extensions.Configurations;
 ///     This will be scans from the Assemblies when registering the services.
 ///     Use this to apply the global filter for entity or add custom entities into DbContext.
 /// </summary>
-public interface IGlobalQueryFilterRegister
+public interface IGlobalQueryFilter
 {
     void Apply(ModelBuilder modelBuilder, DbContext context);
 }
 
-public abstract class GlobalQueryFilterRegister : IGlobalQueryFilterRegister
+public abstract class GlobalQueryFilter : IGlobalQueryFilter
 {
-    private readonly MethodInfo _method = typeof(GlobalQueryFilterRegister)
+    private readonly MethodInfo _method = typeof(GlobalQueryFilter)
         .GetMethod(nameof(ApplyQueryFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     public void Apply(ModelBuilder modelBuilder, DbContext context)
