@@ -14,12 +14,12 @@ public class DddContext(
 {
     #region Properties
 
-    public ICollection<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
+    public IEnumerable<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
 
     #endregion
 
     //Internal fields will be available in unit test project.
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once InconsistentNaming
-    internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders?.First();
+    internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders.First();
 }

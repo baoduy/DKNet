@@ -7,7 +7,7 @@ internal class OwnedDataContext(DbContextOptions options, IEnumerable<IDataOwner
 {
     #region Properties
 
-    public ICollection<string> AccessibleKeys =>
+    public IEnumerable<string> AccessibleKeys =>
         _dataKeyProvider is not null ? _dataKeyProvider.GetAccessibleKeys() : [];
 
     #endregion

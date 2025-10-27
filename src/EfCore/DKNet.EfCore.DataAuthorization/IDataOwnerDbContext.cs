@@ -25,7 +25,7 @@ public interface IDataOwnerDbContext
     ///     - Filter query results automatically
     ///     - Enforce data isolation
     /// </remarks>
-    ICollection<string> AccessibleKeys { get; }
+    IEnumerable<string> AccessibleKeys { get; }
 
     #endregion
 }

@@ -29,6 +29,7 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
             .Where(t => t.GetDiscriminatorValue() == null);
 
     protected override Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
+        where TEntity : class
     {
         if (context is not IDataOwnerDbContext dataOwnerContext)
         {
@@ -36,8 +37,14 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
             return null;
         }
 
-        var keys = dataOwnerContext.AccessibleKeys;
-        return x => keys.Count == 0 || keys.Contains(((IOwnedBy)x).OwnedBy);
+        // Capture the context in the closure so EF Core can evaluate AccessibleKeys per query
+        // Use !Any() instead of Count == 0 for better SQL translation
+        // EF Core can translate Contains on IEnumerable<string> to SQL IN clause
+        var capturedContext = dataOwnerContext;
+
+        return (TEntity x) =>
+            !capturedContext.AccessibleKeys.Any()
+            || capturedContext.AccessibleKeys.Contains(((IOwnedBy)(object)x).OwnedBy);
     }
 
     #endregion

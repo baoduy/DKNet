@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -19,6 +20,7 @@ namespace DKNet.EfCore.DtoGenerator;
 /// readable property of the entity (adds 'required' for non-nullable reference types).
 /// No mapping helper methods are generated (entity to DTO mapping can be handled externally e.g. via Mapster Adapt).
 /// </summary>
+[ExcludeFromCodeCoverage]
 [Generator]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:This compiler extension should not be implemented in an assembly with target framework", Justification = "Targeting .NET 9+ only")]
 public sealed class DtoGenerator : IIncrementalGenerator

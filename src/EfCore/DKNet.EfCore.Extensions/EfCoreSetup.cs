@@ -1,4 +1,5 @@
-﻿using DKNet.EfCore.Extensions.Configurations;
+﻿using System.Collections.Concurrent;
+using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Extensions.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -69,5 +70,5 @@ public static class EfCoreSetup
 
     #endregion
 
-    internal static readonly HashSet<Type> GlobalQueryFilters = [];
+    internal static readonly ConcurrentBag<Type> GlobalQueryFilters = [];
 }
