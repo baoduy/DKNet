@@ -1,6 +1,6 @@
 using DKNet.EfCore.Hooks;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.MsSql;
 
 namespace EfCore.DataAuthorization.Tests;
 
@@ -8,7 +8,7 @@ public sealed class DataKeyAdvancedFixture : IAsyncLifetime
 {
     #region Fields
 
-    private MsSqlContainer? _sqlContainer;
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -22,31 +22,22 @@ public sealed class DataKeyAdvancedFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_sqlContainer != null) await _sqlContainer.DisposeAsync();
+        if (_connection != null)
+            await _connection.DisposeAsync();
         await Provider.DisposeAsync();
     }
 
-    public string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=DataKeyAdvancedDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
-
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .Build();
-
-        await _sqlContainer!.StartAsync();
-        // Wait for SQL Server to be ready
-        await Task.Delay(TimeSpan.FromSeconds(20));
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         Provider = new ServiceCollection()
             .AddLogging()
             .AddDataOwnerProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqlServer(GetConnectionString())
+                builder.UseSqlite(_connection)
                     .UseAutoConfigModel())
             .BuildServiceProvider();
 

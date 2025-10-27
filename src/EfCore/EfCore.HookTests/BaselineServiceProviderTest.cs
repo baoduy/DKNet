@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Testcontainers.MsSql;
 using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
@@ -9,7 +8,6 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
     #region Fields
 
     private ServiceProvider? _provider;
-    private MsSqlContainer? _sqlContainer;
 
     #endregion
 
@@ -46,29 +44,16 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
     {
         if (_provider != null)
             await _provider.DisposeAsync();
-        if (_sqlContainer != null)
-            await _sqlContainer.DisposeAsync();
     }
 
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=BaselineTestDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .Build();
-
-        await _sqlContainer.StartAsync();
-        await Task.Delay(TimeSpan.FromSeconds(20));
-
         _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContext<HookContext>(o =>
                 o.UseAutoConfigModel([typeof(HookContext).Assembly])
-                    .UseSqlServer(GetConnectionString())
+                    .UseSqlite("Data Source=sqlite_baseline_hooks.db")
             )
             .BuildServiceProvider();
 

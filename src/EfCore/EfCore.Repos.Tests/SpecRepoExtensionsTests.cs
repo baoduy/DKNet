@@ -1,6 +1,6 @@
 using Mapster;
 using MapsterMapper;
-using Testcontainers.PostgreSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Repos.Tests;
 
@@ -11,10 +11,10 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
 {
     #region Fields
 
+    private SqliteConnection? _connection;
     private TestDbContext _context = null!;
     private IMapper _mapper = null!;
     private IRepositorySpec _repository = null!;
-    private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder().Build();
 
     #endregion
 
@@ -106,7 +106,8 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     {
         //await _context.Database.EnsureDeletedAsync();
         await _context.DisposeAsync();
-        await _sqlContainer.DisposeAsync();
+        if (_connection != null)
+            await _connection.DisposeAsync();
     }
 
     [Fact]
@@ -194,14 +195,15 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _sqlContainer.StartAsync();
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseNpgsql(_sqlContainer.GetConnectionString())
+            .UseSqlite(_connection)
             .Options;
 
         _context = new TestDbContext(options);
-        await Task.Delay(TimeSpan.FromSeconds(5));
         await _context.Database.EnsureCreatedAsync();
 
         // Setup Mapster

@@ -62,8 +62,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
         await db.SaveChangesAsync();
 
-        HookTest.BeforeCalled.ShouldBeTrue();
         HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.AfterCallCount.ShouldBeGreaterThan(1);
     }
 
     #endregion
