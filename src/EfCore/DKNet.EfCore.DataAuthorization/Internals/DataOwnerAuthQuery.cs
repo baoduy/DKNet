@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using DKNet.EfCore.Extensions.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -21,17 +22,16 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 {
-    protected override void HasQueryFilter<TEntity>(EntityTypeBuilder<TEntity> builder, DbContext context)
+    protected override Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
     {
         if (context is not IDataOwnerDbContext dataOwnerContext)
         {
             Debug.Fail("The DbContext must implement IDataOwnerDbContext to use DataOwnerAuthQueryRegister.");
-            return;
+            return null;
         }
 
-        builder.HasQueryFilter(x =>
-            dataOwnerContext.AccessibleKeys.Count == 0 ||
-            dataOwnerContext.AccessibleKeys.Contains(((IOwnedBy)x).OwnedBy));
+        var keys = dataOwnerContext.AccessibleKeys;
+        return x => keys.Count == 0 || keys.Contains(((IOwnedBy)x).OwnedBy);
     }
 
     protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder) =>

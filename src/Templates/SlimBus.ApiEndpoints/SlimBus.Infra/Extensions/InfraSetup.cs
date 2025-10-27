@@ -21,8 +21,8 @@ public static class InfraSetup
                 var conn = config.GetConnectionString(SharedConsts.DbConnectionString)!;
 
                 builder.UseSqlWithMigration(conn)
-                    .UseAutoConfigModel()
-                    .UseAutoDataSeeding(typeof(InfraSetup).Assembly);
+                    .UseAutoConfigModel([typeof(CoreDbContext).Assembly])
+                    .UseAutoDataSeeding([typeof(InfraSetup).Assembly]);
             });
 
         return service;

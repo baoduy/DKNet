@@ -16,7 +16,7 @@ public static class EfCoreSetup
     /// <param name="services"></param>
     /// <returns></returns>
     public static IServiceCollection AddGlobalQueryFilter<TImplementation>(this IServiceCollection services)
-        where TImplementation : class, IGlobalQueryFilter
+        where TImplementation : class, IGlobalModelBuilder
     {
         GlobalQueryFilters.Add(typeof(TImplementation));
         return services;
@@ -27,23 +27,25 @@ public static class EfCoreSetup
     /// </summary>
     /// <typeparam name="TContext"></typeparam>
     /// <param name="this"></param>
+    /// <param name="assemblies"></param>
     /// <returns></returns>
     public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
-        this DbContextOptionsBuilder<TContext> @this)
+        this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies)
         where TContext : DbContext =>
         (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
-        .UseAutoConfigModel();
+        .UseAutoConfigModel(assemblies is null || assemblies.Length <= 0 ? [typeof(TContext).Assembly] : assemblies);
 
     /// <summary>
     ///     Scan and register all Entities from assemblies to DbContext.
     /// </summary>
     /// <param name="this"></param>
+    /// <param name="assemblies"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this)
+    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this, Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(@this);
-        @this.GetOrCreateExtension();
+        @this.GetOrCreateExtension(assemblies);
         return @this;
     }
 
@@ -51,13 +53,15 @@ public static class EfCoreSetup
     ///     Get or Create the EntityMappingRegister from the DbContextOptionsBuilder.
     /// </summary>
     /// <param name="optionsBuilder"></param>
+    /// <param name="assemblies"></param>
     /// <returns></returns>
-    internal static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder)
+    private static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder,
+        Assembly[] assemblies)
     {
         var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
         if (op != null) return op;
 
-        op = new EntityAutoConfigRegister();
+        op = new EntityAutoConfigRegister(assemblies);
         ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);
 
         return op;

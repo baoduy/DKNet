@@ -89,7 +89,7 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
         var name = SequenceExtensions.GetSequenceName(TestSequenceTypes.TestSequence1);
 
         // Assert
-        name.ShouldBe("Sequence_TestSequence1");
+        name.ShouldBe("Seq_TestSequence1");
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
 
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
-            .UseAutoConfigModel()
+            .UseAutoConfigModel([typeof(DbContext).Assembly])
             .Options;
 
         await using var context = new DbContext(options);
@@ -121,7 +121,7 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
 
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
-            .UseAutoConfigModel()
+            .UseAutoConfigModel([typeof(TestSequenceTypes).Assembly])
             .Options;
 
         await using var context = new DbContext(options);

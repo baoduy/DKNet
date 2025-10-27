@@ -15,7 +15,7 @@ public static class EfCoreDataSeedingExtensions
             .IsInstanceOf<IDataSeedingConfiguration>()
     ];
 
-    internal static void RegisterDataSeedingFrom(this ModelBuilder modelBuilder, params Assembly[] assemblies)
+    internal static void RegisterDataSeeding(this ModelBuilder modelBuilder, params Assembly[] assemblies)
     {
         var seedingTypes = assemblies.GetDataSeedingTypes();
         foreach (var seedingType in seedingTypes)
@@ -31,8 +31,7 @@ public static class EfCoreDataSeedingExtensions
 
     /// <summary>
     /// </summary>
-    public static DbContextOptionsBuilder UseAutoDataSeeding(this DbContextOptionsBuilder @this,
-        params Assembly[] assemblies)
+    public static DbContextOptionsBuilder UseAutoDataSeeding(this DbContextOptionsBuilder @this, Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(@this);
 

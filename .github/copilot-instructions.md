@@ -1,5 +1,11 @@
 # DKNet – GitHub Copilot Instructions
 
+- 🧠 Read `/memory-bank/memory-bank-instructions.md` first.
+- 🗂 Load all `/memory-bank/*.md` before any task.
+- 🚦 Use the Kiro-Lite workflow: PRD → Design → Tasks → Code.
+- 🔒 Follow security & style rules in `copilot-rules.md`.
+- 📝 On "/update memory bank", refresh activeContext.md & progress.md.
+
 This document provides guidance for GitHub Copilot when generating code for the DKNet project. Follow these guidelines
 to ensure that generated code aligns with the project's coding standards, architecture, and best practices.
 
@@ -154,7 +160,8 @@ follows a pattern from a different context. Do not rely solely on names; always 
 
 ## DKNet Overview
 
-DKNet is a comprehensive .NET framework providing extensions, templates, and tools for building modern, scalable applications using Domain-Driven Design (DDD) principles and CQRS patterns.
+DKNet is a comprehensive .NET framework providing extensions, templates, and tools for building modern, scalable
+applications using Domain-Driven Design (DDD) principles and CQRS patterns.
 
 ### Main Concepts
 
@@ -167,7 +174,7 @@ DKNet is a comprehensive .NET framework providing extensions, templates, and too
 ### Architecture Layers
 
 - **API Layer**: Minimal API endpoints with versioning and documentation
-- **Application Services**: Command/Query handlers, validation, and business orchestration  
+- **Application Services**: Command/Query handlers, validation, and business orchestration
 - **Domain Layer**: Entities, value objects, domain events, and business rules
 - **Infrastructure Layer**: Data access, external services, and cross-cutting concerns
 
@@ -184,11 +191,13 @@ DKNet is a comprehensive .NET framework providing extensions, templates, and too
 
 ## SlimBus Template CRUD Conventions
 
-When generating CRUD operations for the SlimBus template, follow these established patterns and conventions. All examples are based on the Profile feature implementation in `src/Templates/SlimBus.ApiEndpoints/`.
+When generating CRUD operations for the SlimBus template, follow these established patterns and conventions. All
+examples are based on the Profile feature implementation in `src/Templates/SlimBus.ApiEndpoints/`.
 
 ### File Organization Structure
 
 Organize CRUD components using this feature-based structure:
+
 ```
 SlimBus.Api/ApiEndpoints/{Feature}Endpoints.cs
 SlimBus.AppServices/{Feature}/V1/
@@ -211,6 +220,7 @@ SlimBus.Infra/Features/{Feature}/
 ```
 
 **Schema Organization:**
+
 - Define database schemas in `SlimBus.Domains/Share/DomainSchemas.cs`
 - Use short, meaningful schema names (e.g., "pro" for Profile, "ord" for Orders)
 - Group related entities under the same schema
@@ -245,6 +255,7 @@ internal sealed class {Feature}V1Endpoint : IEndpointConfig
 ```
 
 **Key Patterns:**
+
 - Use lowercase plural endpoint paths
 - Always include descriptive documentation
 - Add idempotency filter for creation operations using `.AddIdempotencyFilter()`
@@ -485,6 +496,7 @@ public class {Feature} : AggregateRoot
 ```
 
 **Key Patterns:**
+
 - Private setters for all properties
 - Constructor overloads (public with Guid.Empty, internal with explicit ID)
 - Update methods that call `SetUpdatedBy(userId)`
@@ -547,6 +559,7 @@ internal sealed class {Feature}Mapper : DefaultEntityTypeConfiguration<{Feature}
 Always include these common using statements based on the layer:
 
 **Actions:**
+
 ```csharp
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -555,6 +568,7 @@ using SlimBus.Domains.Features.{Feature}.Entities;
 ```
 
 **Queries:**
+
 ```csharp
 using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -563,6 +577,7 @@ using X.PagedList.EF;
 ```
 
 **Repositories:**
+
 ```csharp
 using DKNet.EfCore.Repos;
 using SlimBus.Domains.Features.{Feature}.Entities;

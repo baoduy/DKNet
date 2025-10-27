@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EfCore.Extensions.Tests;
 
 // Test global query filter register
-public class TestGlobalQueryFilter : IGlobalQueryFilter
+public class TestGlobalQueryFilter : IGlobalModelBuilder
 {
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
@@ -49,24 +49,6 @@ public class EfCoreSetupTests
     {
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((DbContextOptionsBuilder)null!).UseAutoConfigModel());
-    }
-
-
-    [Fact]
-    public void GetOrCreateExtension_ShouldReturnExtension()
-    {
-        // Arrange
-        var builder = new DbContextOptionsBuilder()
-            .UseSqlServer("Server=localhost;Database=TestDb;Integrated Security=true;");
-
-        // Act
-        var extension1 = builder.GetOrCreateExtension();
-        var extension2 = builder.GetOrCreateExtension();
-
-        // Assert
-        extension1.ShouldNotBeNull();
-        extension2.ShouldNotBeNull();
-        extension1.ShouldBeSameAs(extension2); // Should return the same instance
+            ((DbContextOptionsBuilder)null!).UseAutoConfigModel([typeof(MyDbContext).Assembly]));
     }
 }

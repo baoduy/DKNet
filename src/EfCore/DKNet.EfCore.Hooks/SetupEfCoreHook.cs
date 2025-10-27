@@ -103,7 +103,7 @@ public static class SetupEfCoreHook
     /// <param name="optionLifetime"></param>
     /// <returns></returns>
     public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
-        Action<DbContextOptionsBuilder> builder,
+        Action<DbContextOptionsBuilder<TDbContext>> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
         ServiceLifetime optionLifetime = ServiceLifetime.Singleton) where TDbContext : DbContext
     {
@@ -111,7 +111,7 @@ public static class SetupEfCoreHook
             .AddHookRunner<TDbContext>()
             .AddDbContext<TDbContext>((provider, options) =>
             {
-                builder(options);
+                builder((DbContextOptionsBuilder<TDbContext>)options);
                 options.UseHooks<TDbContext>(provider);
             }, contextLifetime, optionLifetime);
 
