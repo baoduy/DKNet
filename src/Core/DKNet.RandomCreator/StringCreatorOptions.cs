@@ -7,10 +7,11 @@ public sealed class StringCreatorOptions
 {
     #region Properties
 
-    /// <summary>
-    /// If true, only alphabetic characters will be used.
-    /// </summary>
-    //public bool AlphabeticOnly { get; set; }
+    // Commented out for future use
+    // /// <summary>
+    // /// If true, only alphabetic characters will be used.
+    // /// </summary>
+    // public bool AlphabeticOnly { get; set; }
 
     /// <summary>
     ///     Minimum number of numeric characters required.

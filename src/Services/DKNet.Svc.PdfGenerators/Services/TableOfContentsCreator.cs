@@ -58,18 +58,18 @@ internal class TableOfContentsCreator
         _openListElement = isOrdered ? "<ol>" : "<ul>";
         _closeListElement = isOrdered ? "</ol>" : "</ul>";
 
-        conversionEvents.BeforeHtmlConversion += InternalAddToMarkdown;
-        conversionEvents.OnTemplateModelCreatingAsync += InternalAddStylesToTemplateAsync;
+        conversionEvents.HtmlConverting += InternalAddToMarkdown;
+        conversionEvents.TemplateModelCreating += InternalAddStylesToTemplateAsync;
 
         if (options.PageNumberOptions != null)
-            conversionEvents.OnTempPdfCreatedEvent += InternalReadPageNumbers;
+            conversionEvents.TempPdfCreated += InternalReadPageNumbers;
     }
 
     #endregion
 
     #region Methods
 
-    internal async Task InternalAddStylesToTemplateAsync(object _, TemplateModelEventArgs e)
+    internal async Task InternalAddStylesToTemplateAsync(object? _, TemplateModelEventArgs e)
     {
         var tableOfContentsDecimalStyle = _options.ListStyle switch
         {
@@ -89,7 +89,7 @@ internal class TableOfContentsCreator
         e.TemplateModel.Add(TocStyleKey, tableOfContentsDecimalStyle);
     }
 
-    private void InternalAddToMarkdown(object sender, MarkdownEventArgs e)
+    private void InternalAddToMarkdown(object? sender, MarkdownEventArgs e)
     {
         var tocHtml = InternalToHtml(e.MarkdownContent);
         e.MarkdownContent = InternalInsertInto(e.MarkdownContent, tocHtml);
@@ -239,7 +239,7 @@ internal class TableOfContentsCreator
         return linkPages;
     }
 
-    private void InternalReadPageNumbers(object _, PdfEventArgs e)
+    private void InternalReadPageNumbers(object? _, PdfEventArgs e)
     {
         // TODO: what if link not found
         if (_links == null)

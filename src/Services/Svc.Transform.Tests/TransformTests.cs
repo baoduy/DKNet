@@ -33,11 +33,13 @@ public class TransformTests
             { "location", "DKNet" }
         };
 
-        var options = Options.Create(new TransformOptions
-            { DefaultDefinitions = [new TokenDefinition("@(", ")")] });
+        var options = new TransformOptions();
+        options.DefaultDefinitions.Clear();
+        options.DefaultDefinitions.Add(new TokenDefinition("@(", ")"));
+        var optionsWrapper = Options.Create(options);
 
         // Act
-        var service = new TransformerService(options);
+        var service = new TransformerService(optionsWrapper);
         var rs = service.Transform(template, model);
 
         // Assert
@@ -50,7 +52,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.ThrowError;
             })
             .BuildServiceProvider();
@@ -71,7 +74,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs;
             })
             .BuildServiceProvider();
@@ -92,7 +96,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.Remove;
             })
             .BuildServiceProvider();
@@ -141,16 +146,14 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = Options.Create(new TransformOptions
-        {
-            DefaultDefinitions =
-            [
-                TransformOptions.AngledBrackets,
-                TransformOptions.CurlyBrackets,
-                TransformOptions.SquareBrackets
-            ]
-        });
-        var t = new TransformerService(options);
+        var options = new TransformOptions();
+        options.DefaultDefinitions.Clear();
+        options.DefaultDefinitions.Add(TransformOptions.AngledBrackets);
+        options.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
+        options.DefaultDefinitions.Add(TransformOptions.SquareBrackets);
+        var optionsWrapper = Options.Create(options);
+        
+        var t = new TransformerService(optionsWrapper);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Hoang");
@@ -166,16 +169,14 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = Options.Create(new TransformOptions
-        {
-            DefaultDefinitions =
-            [
-                TransformOptions.AngledBrackets,
-                TransformOptions.CurlyBrackets,
-                TransformOptions.SquareBrackets
-            ]
-        });
-        var t = new TransformerService(options);
+        var options = new TransformOptions();
+        options.DefaultDefinitions.Clear();
+        options.DefaultDefinitions.Add(TransformOptions.AngledBrackets);
+        options.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
+        options.DefaultDefinitions.Add(TransformOptions.SquareBrackets);
+        var optionsWrapper = Options.Create(options);
+        
+        var t = new TransformerService(optionsWrapper);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Bao");

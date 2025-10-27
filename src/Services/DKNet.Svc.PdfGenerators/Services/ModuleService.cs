@@ -55,14 +55,14 @@ internal class ModuleService
             _packagelocationMapping = ModuleInformation.UpdateDic(_packagelocationMapping, path);
         }
 
-        events.OnTemplateModelCreatingAsync += AddModulesToTemplateAsync;
+        events.TemplateModelCreating += AddModulesToTemplateAsync;
     }
 
     #endregion
 
     #region Methods
 
-    internal async Task AddModulesToTemplateAsync(object sender, TemplateModelEventArgs e)
+    internal async Task AddModulesToTemplateAsync(object? sender, TemplateModelEventArgs e)
     {
         // load correct module paths
         foreach (var kvp in _packagelocationMapping)

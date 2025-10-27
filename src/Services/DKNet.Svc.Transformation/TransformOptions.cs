@@ -57,8 +57,9 @@ public class TransformOptions
     ///     Token extractors define the syntax patterns that the transformation service recognizes
     ///     as replaceable tokens in templates. You can add custom extractors to support additional
     ///     token formats or remove default extractors if not needed.
+    ///     To replace the default definitions, clear the collection first and then add new definitions.
     /// </remarks>
-    public ICollection<ITokenDefinition> DefaultDefinitions { get; set; } = [SquareBrackets];
+    public ICollection<ITokenDefinition> DefaultDefinitions { get; } = [SquareBrackets];
 
     /// <summary>
     ///     Gets or sets the value formatter used to format token values before applying them to templates.
