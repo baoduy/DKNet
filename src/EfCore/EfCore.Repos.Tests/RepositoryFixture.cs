@@ -47,12 +47,12 @@ public class RepositoryFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection = new SqliteConnection("DataSource=sqlite_repo_tests.db");
         await _connection.OpenAsync();
 
         DbContext = CreateNewDbContext();
         await DbContext.Database.EnsureCreatedAsync();
-        
+
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
     }

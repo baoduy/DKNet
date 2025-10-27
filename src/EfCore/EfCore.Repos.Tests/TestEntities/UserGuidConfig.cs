@@ -18,7 +18,8 @@ internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
         // Use a simple byte array concurrency token
         builder.Property(u => u.RowVersion)
             .IsRowVersion()
-            .IsConcurrencyToken();
+            .IsConcurrencyToken()
+            .ValueGeneratedOnAddOrUpdate();
 
         builder.HasMany(u => u.Addresses)
             .WithOne(a => a.User)
