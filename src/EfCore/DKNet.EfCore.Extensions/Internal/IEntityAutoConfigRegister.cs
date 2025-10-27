@@ -8,9 +8,20 @@ namespace DKNet.EfCore.Extensions.Internal;
 /// </summary>
 internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbContextOptionsExtension
 {
-    public Assembly[] Assemblies { get; } = assemblies;
+    #region Fields
+
     private DbContextOptionsExtensionInfo? _info;
+
+    #endregion
+
+    #region Properties
+
+    public Assembly[] Assemblies { get; } = assemblies;
     public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
+
+    #endregion
+
+    #region Methods
 
     public void ApplyServices(IServiceCollection services)
     {
@@ -37,4 +48,6 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
     public void Validate(IDbContextOptions options)
     {
     }
+
+    #endregion
 }

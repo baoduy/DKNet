@@ -2,20 +2,23 @@ namespace DKNet.Svc.BlobStorage.AzureStorage;
 
 public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> options) : BlobService(options.Value)
 {
-    private readonly AzureStorageOptions _options =
-        options.Value ?? throw new ArgumentNullException(nameof(options));
+    #region Fields
 
     private BlobContainerClient? _containerClient;
 
-    private async Task<BlobContainerClient> GetClient()
+    private readonly AzureStorageOptions _options =
+        options.Value ?? throw new ArgumentNullException(nameof(options));
+
+    #endregion
+
+    #region Methods
+
+    public override async Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        if (_containerClient != null) return _containerClient;
-
-        var blobClient = new BlobServiceClient(_options.ConnectionString);
-        _containerClient = blobClient.GetBlobContainerClient(_options.ContainerName);
-        await _containerClient.CreateIfNotExistsAsync();
-
-        return _containerClient;
+        var client = await GetClient();
+        var location = GetBlobLocation(blob);
+        var rs = await client.GetBlobClient(location).ExistsAsync(cancellationToken);
+        return rs.Value;
     }
 
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
@@ -62,14 +65,6 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return true;
     }
 
-    public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
-    {
-        var client = await GetClient();
-        var location = GetBlobLocation(blob);
-        await client.GetBlobClient(location).UploadAsync(blob.Data, blob.Overwrite, cancellationToken);
-        return blob.Name;
-    }
-
     public override async Task<BlobDataResult?> GetAsync(BlobRequest blob,
         CancellationToken cancellationToken = default)
     {
@@ -94,36 +89,15 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         };
     }
 
-    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private async Task<BlobContainerClient> GetClient()
     {
-        var client = await GetClient();
-        var location = GetBlobLocation(blob).RemoveHeadingSlash();
-        var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
+        if (_containerClient != null) return _containerClient;
 
-        await foreach (var b in resultSegment)
-            yield return new BlobResult(blob.Name)
-            {
-                Name = blob.Name,
-                Details = b.IsDirectory()
-                    ? null
-                    : new BlobDetails
-                    {
-                        ContentType = b.Properties.ContentType,
-                        ContentLength = b.Properties.ContentLength!.Value,
-                        CreatedOn = b.Properties.CreatedOn!.Value.LocalDateTime,
-                        LastModified = b.Properties.LastModified!.Value.LocalDateTime
-                    }
-            };
-    }
+        var blobClient = new BlobServiceClient(_options.ConnectionString);
+        _containerClient = blobClient.GetBlobContainerClient(_options.ContainerName);
+        await _containerClient.CreateIfNotExistsAsync();
 
-
-    public override async Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
-    {
-        var client = await GetClient();
-        var location = GetBlobLocation(blob);
-        var rs = await client.GetBlobClient(location).ExistsAsync(cancellationToken);
-        return rs.Value;
+        return _containerClient;
     }
 
     public override async Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
@@ -149,4 +123,37 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         sasBuilder.SetPermissions(BlobContainerSasPermissions.Read);
         return blobClient.GenerateSasUri(sasBuilder);
     }
+
+    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = await GetClient();
+        var location = GetBlobLocation(blob).RemoveHeadingSlash();
+        var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
+
+        await foreach (var b in resultSegment)
+            yield return new BlobResult(blob.Name)
+            {
+                Name = blob.Name,
+                Details = b.IsDirectory()
+                    ? null
+                    : new BlobDetails
+                    {
+                        ContentType = b.Properties.ContentType,
+                        ContentLength = b.Properties.ContentLength!.Value,
+                        CreatedOn = b.Properties.CreatedOn!.Value.LocalDateTime,
+                        LastModified = b.Properties.LastModified!.Value.LocalDateTime
+                    }
+            };
+    }
+
+    public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
+    {
+        var client = await GetClient();
+        var location = GetBlobLocation(blob);
+        await client.GetBlobClient(location).UploadAsync(blob.Data, blob.Overwrite, cancellationToken);
+        return blob.Name;
+    }
+
+    #endregion
 }

@@ -2,6 +2,8 @@ namespace SlimBus.Share.Extensions;
 
 public static class SanitizeForLoggingExtensions
 {
+    #region Methods
+
     public static string SanitizeForLogging(this string value) =>
         value.Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("\t", string.Empty, StringComparison.OrdinalIgnoreCase)
@@ -9,5 +11,8 @@ public static class SanitizeForLoggingExtensions
             .Replace('\0', ' ') // Replace null characters
             .Replace('\f', ' ') // Replace form feed characters
             .Replace('\r', ' ');
+
+    #endregion
+
     // Sanitize user input
 }

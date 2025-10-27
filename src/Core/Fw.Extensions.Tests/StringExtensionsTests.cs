@@ -4,6 +4,30 @@ namespace Fw.Extensions.Tests;
 
 public class StringExtensionsTests
 {
+    #region Methods
+
+    [Fact]
+    public void ExtractNumberTests()
+    {
+        "123abc".ExtractDigits().ShouldBe("123");
+        "abc123.456xyz".ExtractDigits().ShouldBe("123.456");
+        "abc123,456xyz".ExtractDigits().ShouldBe("123,456");
+        "abc-123.456xyz".ExtractDigits().ShouldBe("-123.456");
+        "abc123,456-789xyz".ExtractDigits().ShouldBe("123,456-789");
+        "abc123.456,789xyz".ExtractDigits().ShouldBe("123.456,789");
+        "abc123,456.789xyz".ExtractDigits().ShouldBe("123,456.789");
+        "abc123.456.789xyz".ExtractDigits().ShouldBe("123.456.789");
+        "abc123,456,789xyz".ExtractDigits().ShouldBe("123,456,789");
+        "abc123,456-789xyz".ExtractDigits().ShouldBe("123,456-789");
+        "abc123.456-789xyz".ExtractDigits().ShouldBe("123.456-789");
+        "abc-123,456,789xyz".ExtractDigits().ShouldBe("-123,456,789");
+        "abc-123.456xyz".ExtractDigits().ShouldBe("-123.456");
+        "".ExtractDigits().ShouldBe("");
+        " ".ExtractDigits().ShouldBe("");
+        Action action = () => ((string)null!).ExtractDigits();
+        action.ShouldThrow<ArgumentException>();
+    }
+
     [Fact]
     public void IsNumberTests()
     {
@@ -37,25 +61,20 @@ public class StringExtensionsTests
     }
 
     [Fact]
-    public void ExtractNumberTests()
+    public void IsStringOrValueTypeNullableTypesTests()
     {
-        "123abc".ExtractDigits().ShouldBe("123");
-        "abc123.456xyz".ExtractDigits().ShouldBe("123.456");
-        "abc123,456xyz".ExtractDigits().ShouldBe("123,456");
-        "abc-123.456xyz".ExtractDigits().ShouldBe("-123.456");
-        "abc123,456-789xyz".ExtractDigits().ShouldBe("123,456-789");
-        "abc123.456,789xyz".ExtractDigits().ShouldBe("123.456,789");
-        "abc123,456.789xyz".ExtractDigits().ShouldBe("123,456.789");
-        "abc123.456.789xyz".ExtractDigits().ShouldBe("123.456.789");
-        "abc123,456,789xyz".ExtractDigits().ShouldBe("123,456,789");
-        "abc123,456-789xyz".ExtractDigits().ShouldBe("123,456-789");
-        "abc123.456-789xyz".ExtractDigits().ShouldBe("123.456-789");
-        "abc-123,456,789xyz".ExtractDigits().ShouldBe("-123,456,789");
-        "abc-123.456xyz".ExtractDigits().ShouldBe("-123.456");
-        "".ExtractDigits().ShouldBe("");
-        " ".ExtractDigits().ShouldBe("");
-        Action action = () => ((string)null!).ExtractDigits();
-        action.ShouldThrow<ArgumentException>();
+        typeof(int?).IsStringOrValueType().ShouldBeTrue();
+        typeof(long?).IsStringOrValueType().ShouldBeTrue();
+        typeof(double?).IsStringOrValueType().ShouldBeTrue();
+        typeof(decimal?).IsStringOrValueType().ShouldBeTrue();
+        typeof(byte?).IsStringOrValueType().ShouldBeTrue();
+    }
+
+    [Fact]
+    public void IsStringOrValueTypeNullTests()
+    {
+        ((Type)null!).IsStringOrValueType().ShouldBeFalse();
+        ((PropertyInfo)null!).IsStringOrValueType().ShouldBeFalse();
     }
 
     [Fact]
@@ -82,20 +101,5 @@ public class StringExtensionsTests
         typeof(Dictionary<string, int>).IsStringOrValueType().ShouldBeFalse();
     }
 
-    [Fact]
-    public void IsStringOrValueTypeNullTests()
-    {
-        ((Type)null!).IsStringOrValueType().ShouldBeFalse();
-        ((PropertyInfo)null!).IsStringOrValueType().ShouldBeFalse();
-    }
-
-    [Fact]
-    public void IsStringOrValueTypeNullableTypesTests()
-    {
-        typeof(int?).IsStringOrValueType().ShouldBeTrue();
-        typeof(long?).IsStringOrValueType().ShouldBeTrue();
-        typeof(double?).IsStringOrValueType().ShouldBeTrue();
-        typeof(decimal?).IsStringOrValueType().ShouldBeTrue();
-        typeof(byte?).IsStringOrValueType().ShouldBeTrue();
-    }
+    #endregion
 }

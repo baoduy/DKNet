@@ -5,7 +5,13 @@ namespace EfCore.Repos.Tests.TestEntities;
 
 public class User : AuditedEntity<int>
 {
+    #region Fields
+
     private readonly HashSet<Address> _addresses = [];
+
+    #endregion
+
+    #region Constructors
 
     public User(string createdBy) : this(0, createdBy)
     {
@@ -16,16 +22,26 @@ public class User : AuditedEntity<int>
         SetCreatedBy(createdBy);
     }
 
-    [Required] [MaxLength(256)] public required string FirstName { get; set; }
+    #endregion
 
-    [Required] [MaxLength(256)] public required string LastName { get; set; }
+    #region Properties
 
     [BackingField(nameof(_addresses))] public IReadOnlyCollection<Address> Addresses => _addresses;
 
+    [Required] [MaxLength(256)] public required string FirstName { get; set; }
+
     public string FullName => $"{FirstName} {LastName}";
+
+    [Required] [MaxLength(256)] public required string LastName { get; set; }
+
+    #endregion
+
+    #region Methods
 
     public void AddAddress(Address address)
     {
         _addresses.Add(address);
     }
+
+    #endregion
 }

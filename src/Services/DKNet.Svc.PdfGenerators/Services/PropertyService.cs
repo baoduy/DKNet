@@ -3,15 +3,17 @@
 namespace DKNet.Svc.PdfGenerators.Services;
 
 /// <summary>
-/// Helper service for properties.
+///     Helper service for properties.
 /// </summary>
 public static class PropertyService
 {
+    #region Methods
+
     public static bool TryGetPropertyValue<TContainer>(string propertyName, out object propertyValue)
         => TryGetPropertyValue<TContainer, object>(propertyName, out propertyValue);
 
     /// <summary>
-    /// Gets a static property from a type by name.
+    ///     Gets a static property from a type by name.
     /// </summary>
     /// <typeparam name="TContainer">Type that contains the static property.</typeparam>
     /// <typeparam name="TProperty">Type of the property value.</typeparam>
@@ -68,4 +70,6 @@ public static class PropertyService
         propertyValue = (TProperty)value;
         return true;
     }
+
+    #endregion
 }

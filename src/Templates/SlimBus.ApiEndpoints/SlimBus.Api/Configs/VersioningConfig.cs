@@ -3,6 +3,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class VersioningConfig
 {
+    #region Methods
+
     public static IServiceCollection AddAppVersioning(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer()
@@ -16,4 +18,6 @@ internal static class VersioningConfig
             .EnableApiVersionBinding();
         return services;
     }
+
+    #endregion
 }

@@ -6,5 +6,9 @@
 /// </summary>
 public interface IGlobalModelBuilder
 {
+    #region Methods
+
     void Apply(ModelBuilder modelBuilder, DbContext context);
+
+    #endregion
 }

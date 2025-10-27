@@ -6,6 +6,8 @@ namespace DKNet.Svc.Transformation.TokenExtractors;
 
 public interface ITokenResolver
 {
+    #region Methods
+
     /// <summary>
     ///     Get value from data based on toke <see cref="IToken" />
     /// </summary>
@@ -25,10 +27,14 @@ public interface ITokenResolver
     /// <param name="data"> data object or IDictionary[string, object]</param>
     /// <returns>value found from data or NULL</returns>
     Task<object?> ResolveAsync(IToken token, params object?[] data);
+
+    #endregion
 }
 
 internal sealed class TokenResolver : ITokenResolver
 {
+    #region Methods
+
     /// <summary>
     ///     Get the first not null value of the public property of data.
     /// </summary>
@@ -64,6 +70,38 @@ internal sealed class TokenResolver : ITokenResolver
         return Task.Run(() => Resolve(token, data));
     }
 
+    private static object? TryGetValueFromCollection(IEnumerable<object?> collection, string keyName)
+    {
+        foreach (var item in collection)
+            switch (item)
+            {
+                case null: continue;
+                case IEnumerable<object?> objArray:
+                {
+                    var value = TryGetValueFromCollection(objArray, keyName);
+                    if (value is not null) return value;
+                    break;
+                }
+                default:
+                {
+                    var value = TryGetValueFromObject(item, keyName);
+                    if (value is not null) return value;
+                    break;
+                }
+            }
+
+        return null;
+    }
+
+    private static string? TryGetValueFromDictionary(IDictionary dictionary, string keyName)
+    {
+        if (dictionary is not IDictionary<string, string> objects)
+            throw new ArgumentException("Only IDictionary[string, string] is supported", nameof(dictionary));
+
+        var key = objects.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
+        return key is not null ? objects[key] : null;
+    }
+
     private static object? TryGetValueFromObject(object data, string propertyName)
     {
         try
@@ -87,35 +125,5 @@ internal sealed class TokenResolver : ITokenResolver
         }
     }
 
-    private static string? TryGetValueFromDictionary(IDictionary dictionary, string keyName)
-    {
-        if (dictionary is not IDictionary<string, string> objects)
-            throw new ArgumentException("Only IDictionary[string, string] is supported", nameof(dictionary));
-
-        var key = objects.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
-        return key is not null ? objects[key] : null;
-    }
-
-    private static object? TryGetValueFromCollection(IEnumerable<object?> collection, string keyName)
-    {
-        foreach (var item in collection)
-            switch (item)
-            {
-                case null: continue;
-                case IEnumerable<object?> objArray:
-                {
-                    var value = TryGetValueFromCollection(objArray, keyName);
-                    if (value is not null) return value;
-                    break;
-                }
-                default:
-                {
-                    var value = TryGetValueFromObject(item, keyName);
-                    if (value is not null) return value;
-                    break;
-                }
-            }
-
-        return null;
-    }
+    #endregion
 }

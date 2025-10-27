@@ -3,14 +3,20 @@
 namespace DKNet.Svc.PdfGenerators.Services;
 
 /// <summary>
-/// Service for loading the content of embedded resources.
+///     Service for loading the content of embedded resources.
 /// </summary>
 public class EmbeddedResourceService
 {
+    #region Fields
+
     private readonly Assembly _currentAssembly = Assembly.GetAssembly(typeof(PdfGenerator))!;
 
+    #endregion
+
+    #region Methods
+
     /// <summary>
-    /// Loads the text content of an embedded resource in this <see cref="Assembly"/> asynchronously.
+    ///     Loads the text content of an embedded resource in this <see cref="Assembly" /> asynchronously.
     /// </summary>
     /// <param name="resourceName">The filename of the resource to load.</param>
     /// <returns>The text content of the resource.</returns>
@@ -24,4 +30,6 @@ public class EmbeddedResourceService
         using var reader = new StreamReader(stream!);
         return await reader.ReadToEndAsync();
     }
+
+    #endregion
 }

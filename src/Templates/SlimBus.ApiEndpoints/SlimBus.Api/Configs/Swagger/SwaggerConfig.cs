@@ -6,7 +6,22 @@ namespace SlimBus.Api.Configs.Swagger;
 [ExcludeFromCodeCoverage]
 internal static class SwaggerConfig
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
+
+    public static IServiceCollection AddOpenApiDoc(this IServiceCollection services, FeatureOptions features)
+    {
+        services.AddOpenApiDocVersion(1, features.RequireAuthorization)
+            .AddOpenApiDocVersion(2, features.RequireAuthorization);
+
+        _configAdded = true;
+        return services;
+    }
 
     private static IServiceCollection AddOpenApiDocVersion(this IServiceCollection services, int version,
         bool enableAuthentication)
@@ -45,15 +60,6 @@ internal static class SwaggerConfig
             });
     }
 
-    public static IServiceCollection AddOpenApiDoc(this IServiceCollection services, FeatureOptions features)
-    {
-        services.AddOpenApiDocVersion(1, features.RequireAuthorization)
-            .AddOpenApiDocVersion(2, features.RequireAuthorization);
-
-        _configAdded = true;
-        return services;
-    }
-
     public static WebApplication UseOpenApiDoc(this WebApplication app)
     {
         if (!_configAdded) return app;
@@ -70,4 +76,6 @@ internal static class SwaggerConfig
         Console.WriteLine("Swagger enabled.");
         return app;
     }
+
+    #endregion
 }

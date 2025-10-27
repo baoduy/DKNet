@@ -24,8 +24,14 @@ namespace DKNet.Fw.Extensions.TypeExtractors;
 /// </remarks>
 internal class TypeExtractor : ITypeExtractor
 {
+    #region Fields
+
     private readonly Assembly[] _assemblies;
     private readonly List<Expression<Func<Type, bool>>> _predicates = [];
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="TypeExtractor" /> class.
@@ -39,6 +45,10 @@ internal class TypeExtractor : ITypeExtractor
 
         _assemblies = [.. assemblies.Distinct()];
     }
+
+    #endregion
+
+    #region Methods
 
     /// <inheritdoc />
     public ITypeExtractor Abstract()
@@ -58,11 +68,30 @@ internal class TypeExtractor : ITypeExtractor
         return FilterBy(t => t.IsEnum);
     }
 
+    private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
+    {
+        if (predicate != null)
+            _predicates.Add(predicate);
+        return this;
+    }
+
     /// <inheritdoc />
     public ITypeExtractor Generic()
     {
         return FilterBy(t => t.IsGenericType);
     }
+
+    /// <inheritdoc />
+    public IEnumerator<Type> GetEnumerator()
+    {
+        var query = _assemblies.SelectMany(a => a.GetTypes()).AsQueryable();
+        foreach (var predicate in _predicates)
+            query = query.Where(predicate);
+        return query.GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute
@@ -163,22 +192,5 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     public ITypeExtractor Where(Expression<Func<Type, bool>>? predicate) => FilterBy(predicate);
 
-    /// <inheritdoc />
-    public IEnumerator<Type> GetEnumerator()
-    {
-        var query = _assemblies.SelectMany(a => a.GetTypes()).AsQueryable();
-        foreach (var predicate in _predicates)
-            query = query.Where(predicate);
-        return query.GetEnumerator();
-    }
-
-    /// <inheritdoc />
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
-    {
-        if (predicate != null)
-            _predicates.Add(predicate);
-        return this;
-    }
+    #endregion
 }

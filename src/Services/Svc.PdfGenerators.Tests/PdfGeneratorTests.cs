@@ -5,23 +5,19 @@ namespace Svc.PdfGenerators.Tests;
 
 public class PdfGeneratorTests
 {
+    #region Fields
+
     private readonly ITestOutputHelper _testOutputHelper;
+
+    #endregion
+
+    #region Constructors
 
     public PdfGeneratorTests(ITestOutputHelper testOutputHelper) => _testOutputHelper = testOutputHelper;
 
-    [Fact]
-    public async Task ConvertMarkdownFileAsync_GeneratesPdfFile()
-    {
-        var generator = new PdfGenerator();
-        var markdownPath = Path.GetTempFileName() + ".md";
-        var pdfPath = Path.ChangeExtension(markdownPath, ".pdf");
-        await File.WriteAllTextAsync(markdownPath, "# Hello World\nThis is a test.");
-        var result = await generator.ConvertMarkdownFileAsync(markdownPath);
-        Assert.True(File.Exists(result));
-        _testOutputHelper.WriteLine($"PDF generated at: {result}");
-        File.Delete(markdownPath);
-        File.Delete(result);
-    }
+    #endregion
+
+    #region Methods
 
     [Fact]
     public async Task ConvertHtmlAsync_GeneratesPdfFile()
@@ -44,6 +40,20 @@ public class PdfGeneratorTests
     }
 
     [Fact]
+    public async Task ConvertMarkdownFileAsync_GeneratesPdfFile()
+    {
+        var generator = new PdfGenerator();
+        var markdownPath = Path.GetTempFileName() + ".md";
+        var pdfPath = Path.ChangeExtension(markdownPath, ".pdf");
+        await File.WriteAllTextAsync(markdownPath, "# Hello World\nThis is a test.");
+        var result = await generator.ConvertMarkdownFileAsync(markdownPath);
+        Assert.True(File.Exists(result));
+        _testOutputHelper.WriteLine($"PDF generated at: {result}");
+        File.Delete(markdownPath);
+        File.Delete(result);
+    }
+
+    [Fact]
     public async Task ConvertMultipleMarkdownFilesAsync_GeneratesPdfFile()
     {
         var generator = new PdfGenerator();
@@ -59,4 +69,6 @@ public class PdfGeneratorTests
         File.Delete(md2);
         File.Delete(result);
     }
+
+    #endregion
 }

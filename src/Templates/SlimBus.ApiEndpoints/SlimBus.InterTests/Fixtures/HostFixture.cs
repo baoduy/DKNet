@@ -6,8 +6,32 @@ namespace SlimBus.InterTests.Fixtures;
 
 public class HostFixture : IAsyncLifetime
 {
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+    #region Fields
+
     private DistributedApplication? _app;
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+
+    #endregion
+
+    #region Methods
+
+    public async Task<HttpClient> CreateHttpClient(string resourceName)
+    {
+        if (_app is null) throw new InvalidOperationException("Application is not initialized.");
+
+        var client = _app.CreateHttpClient(resourceName);
+        await _app.ResourceNotifications.WaitForResourceHealthyAsync(resourceName)
+            .WaitAsync(DefaultTimeout);
+        return client;
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (_app is null) return;
+        await _app.StopAsync();
+        await _app.DisposeAsync();
+        _app = null;
+    }
 
     public async Task InitializeAsync()
     {
@@ -40,23 +64,7 @@ public class HostFixture : IAsyncLifetime
         await _app.StartAsync().WaitAsync(DefaultTimeout);
     }
 
-    public async Task DisposeAsync()
-    {
-        if (_app is null) return;
-        await _app.StopAsync();
-        await _app.DisposeAsync();
-        _app = null;
-    }
-
     protected virtual IDictionary<string, string> SetupEnvironments() => new Dictionary<string, string>();
 
-    public async Task<HttpClient> CreateHttpClient(string resourceName)
-    {
-        if (_app is null) throw new InvalidOperationException("Application is not initialized.");
-
-        var client = _app.CreateHttpClient(resourceName);
-        await _app.ResourceNotifications.WaitForResourceHealthyAsync(resourceName)
-            .WaitAsync(DefaultTimeout);
-        return client;
-    }
+    #endregion
 }

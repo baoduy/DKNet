@@ -6,13 +6,16 @@ namespace SlimBus.Api.Configs.Auth;
 [ExcludeFromCodeCoverage]
 internal static class AuthConfig
 {
-    // NOTE: Switch this one off if we are not using MS Graph token
-    private const bool ValidateMsGraphJwtToken = true;
+    #region Properties
 
     /// <summary>
     ///     Indicates whether the authentication configuration has been added to the services.
     /// </summary>
     public static bool IsAuthConfigAdded { get; private set; }
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Adds authentication and authorization services to the specified <see cref="IServiceCollection" />.
@@ -62,4 +65,9 @@ internal static class AuthConfig
 
         return app;
     }
+
+    #endregion
+
+    // NOTE: Switch this one off if we are not using MS Graph token
+    private const bool ValidateMsGraphJwtToken = true;
 }

@@ -2,6 +2,33 @@ namespace Svc.BlobStorage.Tests;
 
 public class BlobExtensionsTests
 {
+    #region Methods
+
+    [Theory]
+    [InlineData("TEST.TXT", "text/plain")]
+    [InlineData("TEST.PNG", "image/png")]
+    [InlineData("TEST.PDF", "application/pdf")]
+    public void GetContentTypeByExtension_ShouldBeCaseInsensitive(string fileName, string expectedContentType)
+    {
+        // Act
+        var result = fileName.GetContentTypeByExtension();
+
+        // Assert
+        result.ShouldBe(expectedContentType);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetContentTypeByExtension_ShouldHandleInvalidInput(string fileName)
+    {
+        // Act
+        var result = fileName.GetContentTypeByExtension();
+
+        // Assert
+        result.ShouldBe("application/octet-stream");
+    }
+
     [Theory]
     [InlineData("test.txt", "text/plain")]
     [InlineData("test.csv", "text/csv")]
@@ -30,34 +57,9 @@ public class BlobExtensionsTests
     {
         // Act
         var result = fileName.GetContentTypeByExtension();
-        
+
         // Assert
         result.ShouldBe(expectedContentType);
-    }
-
-    [Theory]
-    [InlineData("TEST.TXT", "text/plain")]
-    [InlineData("TEST.PNG", "image/png")]
-    [InlineData("TEST.PDF", "application/pdf")]
-    public void GetContentTypeByExtension_ShouldBeCaseInsensitive(string fileName, string expectedContentType)
-    {
-        // Act
-        var result = fileName.GetContentTypeByExtension();
-        
-        // Assert
-        result.ShouldBe(expectedContentType);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void GetContentTypeByExtension_ShouldHandleInvalidInput(string fileName)
-    {
-        // Act
-        var result = fileName.GetContentTypeByExtension();
-        
-        // Assert
-        result.ShouldBe("application/octet-stream");
     }
 
     [Fact]
@@ -65,8 +67,10 @@ public class BlobExtensionsTests
     {
         // Arrange
         string fileName = null!;
-        
+
         // Act & Assert
         Should.Throw<NullReferenceException>(() => fileName.GetContentTypeByExtension());
     }
+
+    #endregion
 }

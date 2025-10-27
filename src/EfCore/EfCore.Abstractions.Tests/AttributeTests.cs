@@ -2,6 +2,8 @@ namespace EfCore.Abstractions.Tests;
 
 public class AttributeTests
 {
+    #region Methods
+
     [Fact]
     public void IgnoreEntityMapperAttribute_ShouldBeApplicableToClass()
     {
@@ -40,16 +42,6 @@ public class AttributeTests
     }
 
     [Fact]
-    public void SqlSequenceAttribute_DefaultConstructor_ShouldUseDefaultSchema()
-    {
-        // Act
-        var attribute = new SqlSequenceAttribute();
-
-        // Assert
-        attribute.Schema.ShouldBe("seq");
-    }
-
-    [Fact]
     public void SqlSequenceAttribute_ConstructorWithSchema_ShouldSetSchema()
     {
         // Arrange
@@ -60,6 +52,16 @@ public class AttributeTests
 
         // Assert
         attribute.Schema.ShouldBe(expectedSchema);
+    }
+
+    [Fact]
+    public void SqlSequenceAttribute_DefaultConstructor_ShouldUseDefaultSchema()
+    {
+        // Act
+        var attribute = new SqlSequenceAttribute();
+
+        // Assert
+        attribute.Schema.ShouldBe("seq");
     }
 
     [Fact]
@@ -87,6 +89,8 @@ public class AttributeTests
         // Assert
         attributeType.IsSealed.ShouldBeTrue();
     }
+
+    #endregion
 
     // [Fact]
     // public void StaticDataAttribute_ConstructorWithName_ShouldSetName()

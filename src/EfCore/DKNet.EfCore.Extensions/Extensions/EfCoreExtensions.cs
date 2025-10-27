@@ -27,18 +27,31 @@ namespace Microsoft.EntityFrameworkCore;
 /// </remarks>
 public static class EfCoreExtensions
 {
+    #region Methods
+
     /// <summary>
-    ///     Gets the qualified table name for the specified entity type.
+    ///     Get Primary key value of an Entity
     /// </summary>
-    /// <param name="context">The database context.</param>
-    /// <param name="entityType">The entity type to get the table name for.</param>
-    /// <returns>The schema-qualified table name.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
-    internal static string GetTableName(this DbContext context, Type entityType)
+    /// <param name="entityEntry">The entry of the entity.</param>
+    /// <returns>An enumerable of primary key values.</returns>
+    public static Dictionary<string, object?> GetEntityKeyValues(this EntityEntry entityEntry)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        var entity = context.Model.FindEntityType(entityType)!;
-        return entity.GetSchemaQualifiedTableName()!;
+        var primaryKey = entityEntry.Metadata.FindPrimaryKey();
+
+        if (primaryKey == null)
+            // Entity does not have a primary key defined
+            return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+
+        return primaryKey.Properties.ToDictionary(
+            p => p.Name,
+            p => p.PropertyInfo!.GetValue(entityEntry.Entity)
+            , StringComparer.OrdinalIgnoreCase);
+    }
+
+
+    internal static Type GetEntityType(Type entityMappingType)
+    {
+        return entityMappingType.GetInterfaces().First(a => a.IsGenericType).GetGenericArguments()[0];
     }
 
     /// <summary>
@@ -86,23 +99,22 @@ public static class EfCoreExtensions
     }
 
     /// <summary>
-    ///     Get Primary key value of an Entity
+    ///     Gets the qualified table name for the specified entity type.
     /// </summary>
-    /// <param name="entityEntry">The entry of the entity.</param>
-    /// <returns>An enumerable of primary key values.</returns>
-    public static Dictionary<string, object?> GetEntityKeyValues(this EntityEntry entityEntry)
+    /// <param name="context">The database context.</param>
+    /// <param name="entityType">The entity type to get the table name for.</param>
+    /// <returns>The schema-qualified table name.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when context is null.</exception>
+    internal static string GetTableName(this DbContext context, Type entityType)
     {
-        var primaryKey = entityEntry.Metadata.FindPrimaryKey();
-
-        if (primaryKey == null)
-            // Entity does not have a primary key defined
-            return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-
-        return primaryKey.Properties.ToDictionary(
-            p => p.Name,
-            p => p.PropertyInfo!.GetValue(entityEntry.Entity)
-            , StringComparer.OrdinalIgnoreCase);
+        ArgumentNullException.ThrowIfNull(context);
+        var entity = context.Model.FindEntityType(entityType)!;
+        return entity.GetSchemaQualifiedTableName()!;
     }
+
+    public static bool IsSqlServer(this DbContext context) =>
+        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+            StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     ///     Get the Next Sequence value
@@ -168,13 +180,5 @@ public static class EfCoreExtensions
         return string.Format(CultureInfo.CurrentCulture, f, DateTime.Now, value);
     }
 
-
-    internal static Type GetEntityType(Type entityMappingType)
-    {
-        return entityMappingType.GetInterfaces().First(a => a.IsGenericType).GetGenericArguments()[0];
-    }
-
-    public static bool IsSqlServer(this DbContext context) =>
-        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
-            StringComparison.OrdinalIgnoreCase);
+    #endregion
 }

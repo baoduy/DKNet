@@ -8,6 +8,8 @@ namespace DKNet.EfCore.AuditLogs;
 
 internal static class AuditLogExtensions
 {
+    #region Methods
+
     public static AuditLogEntry? BuildAuditLog(this EntityEntry entry, EntityState originalState,
         AuditLogBehaviour behaviour)
     {
@@ -78,4 +80,6 @@ internal static class AuditLogExtensions
             Changes = changes
         };
     }
+
+    #endregion
 }

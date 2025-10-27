@@ -4,7 +4,13 @@ namespace Svc.BlobStorage.Tests.Fixtures;
 
 public sealed class AzureStorageBlobServiceFixture : IDisposable
 {
+    #region Fields
+
     private readonly AzuriteContainer _azureContainer;
+
+    #endregion
+
+    #region Constructors
 
     public AzureStorageBlobServiceFixture()
     {
@@ -33,11 +39,21 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
         Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
+    #endregion
+
+    #region Properties
+
     public IBlobService Service { get; }
+
+    #endregion
+
+    #region Methods
 
     public void Dispose()
     {
         _azureContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
+
+    #endregion
 }

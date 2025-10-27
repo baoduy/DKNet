@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../../LICENSE)
 
-Local file system implementation of the DKNet blob storage abstractions, providing file storage capabilities using the local file system. This package is ideal for development, testing, and scenarios where local storage is preferred over cloud storage solutions.
+Local file system implementation of the DKNet blob storage abstractions, providing file storage capabilities using the
+local file system. This package is ideal for development, testing, and scenarios where local storage is preferred over
+cloud storage solutions.
 
 ## Features
 
@@ -628,11 +630,13 @@ public interface IFileEventProcessor
 ## Platform Considerations
 
 ### Windows
+
 - Supports extended attributes for metadata
 - File paths limited to 260 characters (unless long path support enabled)
 - Case-insensitive file names
 
 ### Linux/macOS
+
 - Supports extended attributes (xattr) for metadata
 - Case-sensitive file names
 - Better support for long file paths
@@ -661,4 +665,5 @@ This project is licensed under the [MIT License](../../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

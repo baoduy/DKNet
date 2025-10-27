@@ -1,17 +1,11 @@
-using X.PagedList;
 using Shouldly;
+using X.PagedList;
 
 namespace DKNet.AspCore.SlimBus.Tests;
 
 public class PagedResultTests
 {
-    [Fact]
-    public void DefaultConstructor_ShouldInitializeEmptyItems()
-    {
-        var pagedResult = new PagedResult<string>();
-        pagedResult.Items.ShouldNotBeNull();
-        pagedResult.Items.Count.ShouldBe(0);
-    }
+    #region Methods
 
     [Fact]
     public void Constructor_WithPagedList_ShouldMapProperties()
@@ -24,4 +18,14 @@ public class PagedResultTests
         pagedResult.TotalItemCount.ShouldBe(2);
         pagedResult.Items.SequenceEqual(list).ShouldBeTrue();
     }
+
+    [Fact]
+    public void DefaultConstructor_ShouldInitializeEmptyItems()
+    {
+        var pagedResult = new PagedResult<string>();
+        pagedResult.Items.ShouldNotBeNull();
+        pagedResult.Items.Count.ShouldBe(0);
+    }
+
+    #endregion
 }

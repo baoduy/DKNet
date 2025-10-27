@@ -6,10 +6,7 @@ namespace SlimBus.Api.Configs.AzureAppConfig;
 [ExcludeFromCodeCoverage]
 internal sealed class AzureAppConfigOptions
 {
-    /// <summary>
-    ///     Configuration section name
-    /// </summary>
-    public static string Name => "AzureAppConfig";
+    #region Properties
 
     /// <summary>
     ///     Connection string for Azure App Configuration
@@ -17,14 +14,14 @@ internal sealed class AzureAppConfigOptions
     public string ConnectionStringName { get; set; } = Name;
 
     /// <summary>
+    ///     Feature flag prefix to filter feature flags (optional)
+    /// </summary>
+    public string FeatureFlagPrefix { get; set; } = string.Empty;
+
+    /// <summary>
     ///     Label to filter configuration values (optional)
     /// </summary>
     public string? Label { get; set; }
-
-    /// <summary>
-    ///     Cache expiration time for configuration values in Minutes
-    /// </summary>
-    public int RefreshIntervalInMinutes { get; set; } = 300;
 
     /// <summary>
     ///     Whether to load feature flags from Azure App Configuration
@@ -32,7 +29,14 @@ internal sealed class AzureAppConfigOptions
     public bool LoadFeatureFlags { get; set; } = true;
 
     /// <summary>
-    ///     Feature flag prefix to filter feature flags (optional)
+    ///     Configuration section name
     /// </summary>
-    public string FeatureFlagPrefix { get; set; } = string.Empty;
+    public static string Name => "AzureAppConfig";
+
+    /// <summary>
+    ///     Cache expiration time for configuration values in Minutes
+    /// </summary>
+    public int RefreshIntervalInMinutes { get; set; } = 300;
+
+    #endregion
 }

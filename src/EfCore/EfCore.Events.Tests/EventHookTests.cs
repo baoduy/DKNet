@@ -8,50 +8,7 @@ namespace EfCore.Events.Tests;
 
 public class EventHookTests
 {
-    [Fact]
-    public async Task RunBeforeSaveAsync_ShouldCompleteSuccessfully()
-    {
-        // Arrange
-        var eventPublishers = new List<IEventPublisher> { new TestEventPublisher() };
-        var mappers = new List<IMapper>();
-
-        var eventHook = new EventHook(eventPublishers, mappers);
-
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        await using var snapshot = new SnapshotContext(context);
-
-        // Act & Assert
-        await Should.NotThrowAsync(async () =>
-            await eventHook.BeforeSaveAsync(snapshot, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task RunAfterSaveAsync_WithNoEventEntities_ShouldCompleteWithoutError()
-    {
-        // Arrange
-        var testPublisher = new TestEventPublisher();
-        var eventPublishers = new List<IEventPublisher> { testPublisher };
-        var mappers = new List<IMapper>();
-
-        var eventHook = new EventHook(eventPublishers, mappers);
-
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        await using var snapshot = new SnapshotContext(context);
-
-        TestEventPublisher.Events.Clear();
-
-        // Act
-        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
-
-        // Assert
-        TestEventPublisher.Events.ShouldBeEmpty();
-    }
+    #region Methods
 
     [Fact]
     public async Task RunAfterSaveAsync_WithEventEntities_ShouldPublishEvents()
@@ -88,41 +45,6 @@ public class EventHookTests
         var publishedEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
         publishedEvent.Id.ShouldBe(testEvent.Id);
         publishedEvent.Name.ShouldBe(testEvent.Name);
-    }
-
-    [Fact]
-    public async Task RunAfterSaveAsync_WithMultiplePublishers_ShouldPublishToAllPublishers()
-    {
-        // Arrange
-        var testPublisher1 = new TestEventPublisher();
-        var testPublisher2 = new TestEventPublisher();
-        var eventPublishers = new List<IEventPublisher> { testPublisher1, testPublisher2 };
-        var mappers = new List<IMapper>();
-
-        var eventHook = new EventHook(eventPublishers, mappers);
-
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        var root = new Root("Test Root", "TestOwner");
-        var testEvent = new EntityAddedEvent { Id = root.Id, Name = root.Name };
-        root.AddEvent(testEvent);
-        context.Set<Root>().Add(root);
-
-        await using var snapshot = new SnapshotContext(context);
-
-        TestEventPublisher.Events.Clear();
-
-        // Act
-        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
-
-        // Assert
-        // Note: Both publishers share the same static Events collection in TestEventPublisher
-        // So we should see the event published twice (once per publisher)
-        TestEventPublisher.Events.Count.ShouldBe(2);
-        TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
     }
 
     [Fact]
@@ -209,6 +131,66 @@ public class EventHookTests
     }
 
     [Fact]
+    public async Task RunAfterSaveAsync_WithMultiplePublishers_ShouldPublishToAllPublishers()
+    {
+        // Arrange
+        var testPublisher1 = new TestEventPublisher();
+        var testPublisher2 = new TestEventPublisher();
+        var eventPublishers = new List<IEventPublisher> { testPublisher1, testPublisher2 };
+        var mappers = new List<IMapper>();
+
+        var eventHook = new EventHook(eventPublishers, mappers);
+
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        var root = new Root("Test Root", "TestOwner");
+        var testEvent = new EntityAddedEvent { Id = root.Id, Name = root.Name };
+        root.AddEvent(testEvent);
+        context.Set<Root>().Add(root);
+
+        await using var snapshot = new SnapshotContext(context);
+
+        TestEventPublisher.Events.Clear();
+
+        // Act
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
+
+        // Assert
+        // Note: Both publishers share the same static Events collection in TestEventPublisher
+        // So we should see the event published twice (once per publisher)
+        TestEventPublisher.Events.Count.ShouldBe(2);
+        TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
+    }
+
+    [Fact]
+    public async Task RunAfterSaveAsync_WithNoEventEntities_ShouldCompleteWithoutError()
+    {
+        // Arrange
+        var testPublisher = new TestEventPublisher();
+        var eventPublishers = new List<IEventPublisher> { testPublisher };
+        var mappers = new List<IMapper>();
+
+        var eventHook = new EventHook(eventPublishers, mappers);
+
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        await using var snapshot = new SnapshotContext(context);
+
+        TestEventPublisher.Events.Clear();
+
+        // Act
+        await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
+
+        // Assert
+        TestEventPublisher.Events.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task RunAfterSaveAsync_WithNoMappers_ShouldHandleGracefully()
     {
         // Arrange
@@ -239,4 +221,26 @@ public class EventHookTests
         // since event types need mapper but none provided
         TestEventPublisher.Events.ShouldBeEmpty();
     }
+
+    [Fact]
+    public async Task RunBeforeSaveAsync_ShouldCompleteSuccessfully()
+    {
+        // Arrange
+        var eventPublishers = new List<IEventPublisher> { new TestEventPublisher() };
+        var mappers = new List<IMapper>();
+
+        var eventHook = new EventHook(eventPublishers, mappers);
+
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        await using var snapshot = new SnapshotContext(context);
+
+        // Act & Assert
+        await Should.NotThrowAsync(async () =>
+            await eventHook.BeforeSaveAsync(snapshot, CancellationToken.None));
+    }
+
+    #endregion
 }

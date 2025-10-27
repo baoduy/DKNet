@@ -16,8 +16,14 @@ public enum MerchantStatus
 [AuditLog]
 public sealed class Merchant : AggregateRoot, ICodeEntity
 {
+    #region Fields
+
     private readonly HashSet<MerchantChannel> _channels = [];
     private readonly HashSet<MerchantBalance> _merchantBalances = [];
+
+    #endregion
+
+    #region Constructors
 
     public Merchant(string name, string email, string? description, string countryCode,
         string defaultCurrency,
@@ -51,6 +57,10 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
         MxFee = MxFee.Default;
     }
 
+    #endregion
+
+    #region Properties
+
     [Display(Name = "Approved By")]
     [MaxLength(100)]
     public string? ApprovedBy { get; private set; }
@@ -59,6 +69,9 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
     public IReadOnlyCollection<MerchantChannel> Channels => _channels;
 
     public ClientAppInfo? ClientAppInfo { get; private set; }
+
+
+    public string Code { get; private set; }
 
     [MaxLength(3)] public string CountryCode { get; private set; }
 
@@ -80,18 +93,46 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
 
     public WebHookInfo? WebHook { get; private set; }
 
+    #endregion
 
-    public string Code { get; private set; }
+    #region Methods
 
-    public void UpdateFee(MxFee mxFee, string byUser)
+    public void Approve(string byUser)
     {
-        MxFee = mxFee;
+        Status = MerchantStatus.Active;
+        ApprovedBy = byUser;
+        ApprovedOn = DateTimeOffset.Now;
         SetUpdatedBy(byUser);
     }
 
-    public void UpdateWebHook(WebHookInfo webHookInfo, string byUser)
+    private MerchantBalance GetOrCreateBalance(string currency, string byUser)
     {
-        WebHook = webHookInfo;
+        var balance =
+            _merchantBalances.FirstOrDefault(b =>
+                string.Equals(b.Currency, currency, StringComparison.OrdinalIgnoreCase));
+        if (balance is not null) return balance;
+
+        balance = MerchantBalance.Create(Id, this, currency, byUser);
+        _merchantBalances.Add(balance);
+
+        return balance;
+    }
+
+    public void LinkClientAppInfo(ClientAppInfo info, string byUser)
+    {
+        ClientAppInfo = info;
+        SetUpdatedBy(byUser);
+    }
+
+    public void LinkLoginInfo(LoginInfo loginInfo, string byUser)
+    {
+        LoginInfo = loginInfo;
+        SetUpdatedBy(byUser);
+    }
+
+    public void SetActivationStatus(bool disabled, string byUser)
+    {
+        Status = disabled ? MerchantStatus.Inactive : MerchantStatus.Active;
         SetUpdatedBy(byUser);
     }
 
@@ -112,42 +153,17 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
         SetUpdatedBy(byUser);
     }
 
-    public void Approve(string byUser)
+    public void UpdateFee(MxFee mxFee, string byUser)
     {
-        Status = MerchantStatus.Active;
-        ApprovedBy = byUser;
-        ApprovedOn = DateTimeOffset.Now;
+        MxFee = mxFee;
         SetUpdatedBy(byUser);
     }
 
-    public void LinkLoginInfo(LoginInfo loginInfo, string byUser)
+    public void UpdateWebHook(WebHookInfo webHookInfo, string byUser)
     {
-        LoginInfo = loginInfo;
+        WebHook = webHookInfo;
         SetUpdatedBy(byUser);
     }
 
-    public void LinkClientAppInfo(ClientAppInfo info, string byUser)
-    {
-        ClientAppInfo = info;
-        SetUpdatedBy(byUser);
-    }
-
-    public void SetActivationStatus(bool disabled, string byUser)
-    {
-        Status = disabled ? MerchantStatus.Inactive : MerchantStatus.Active;
-        SetUpdatedBy(byUser);
-    }
-
-    private MerchantBalance GetOrCreateBalance(string currency, string byUser)
-    {
-        var balance =
-            _merchantBalances.FirstOrDefault(b =>
-                string.Equals(b.Currency, currency, StringComparison.OrdinalIgnoreCase));
-        if (balance is not null) return balance;
-
-        balance = MerchantBalance.Create(Id, this, currency, byUser);
-        _merchantBalances.Add(balance);
-
-        return balance;
-    }
+    #endregion
 }

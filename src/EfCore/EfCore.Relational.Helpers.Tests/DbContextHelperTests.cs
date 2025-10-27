@@ -4,29 +4,7 @@ namespace EfCore.Relational.Helpers.Tests;
 
 public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    [Fact]
-    public async Task GetTableName()
-    {
-        await fixture.EnsureSqlReadyAsync();
-
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
-        await db.Database.EnsureCreatedAsync();
-        var (_, tableName) = db.GetTableName<TestEntity>();
-        tableName.ShouldBe(nameof(TestEntity));
-    }
-
-    [Fact]
-    public async Task GetTableNameNotMapped()
-    {
-        await fixture.EnsureSqlReadyAsync();
-
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
-        await db.Database.EnsureCreatedAsync();
-        var (_, tableName) = db.GetTableName<NotMappedTestEntity>();
-        tableName.ShouldBeNullOrEmpty();
-    }
+    #region Methods
 
     [Fact]
     public async Task CheckTableExistsFailed()
@@ -54,4 +32,30 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
         var check = await db.TableExistsAsync<TestEntity>();
         check.ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task GetTableName()
+    {
+        await fixture.EnsureSqlReadyAsync();
+
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await db.Database.EnsureCreatedAsync();
+        var (_, tableName) = db.GetTableName<TestEntity>();
+        tableName.ShouldBe(nameof(TestEntity));
+    }
+
+    [Fact]
+    public async Task GetTableNameNotMapped()
+    {
+        await fixture.EnsureSqlReadyAsync();
+
+        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await db.Database.EnsureCreatedAsync();
+        var (_, tableName) = db.GetTableName<NotMappedTestEntity>();
+        tableName.ShouldBeNullOrEmpty();
+    }
+
+    #endregion
 }

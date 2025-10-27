@@ -4,6 +4,8 @@ namespace EfCore.Extensions.Tests;
 
 public class EntityTypesTests
 {
+    #region Methods
+
     [Fact]
     public void TestEntityAudit()
     {
@@ -67,4 +69,6 @@ public class EntityTypesTests
         typeof(IEntity<int>).IsAssignableFrom(typeof(IEntity<int>))
             .ShouldBeTrue();
     }
+
+    #endregion
 }

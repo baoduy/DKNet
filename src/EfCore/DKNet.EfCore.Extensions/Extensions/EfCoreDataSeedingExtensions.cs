@@ -9,6 +9,8 @@ namespace Microsoft.EntityFrameworkCore;
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 public static class EfCoreDataSeedingExtensions
 {
+    #region Methods
+
     internal static Type[] GetDataSeedingTypes(this ICollection<Assembly> assemblies) =>
     [
         .. assemblies.Extract().Classes()
@@ -55,4 +57,6 @@ public static class EfCoreDataSeedingExtensions
 
         return @this;
     }
+
+    #endregion
 }

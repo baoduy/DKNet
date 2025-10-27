@@ -1,12 +1,21 @@
 ﻿namespace DKNet.Svc.PdfGenerators.Options;
 
 /// <summary>
-/// The theme to use for styling the Markdown code blocks.
+///     The theme to use for styling the Markdown code blocks.
 /// </summary>
-/// <remarks>To view the css of all the themes visit <see href="https://github.com/highlightjs/highlight.js/tree/main/src/styles">highlight.js/src/styles</see>.</remarks>
+/// <remarks>
+///     To view the css of all the themes visit
+///     <see href="https://github.com/highlightjs/highlight.js/tree/main/src/styles">highlight.js/src/styles</see>.
+/// </remarks>
 public sealed record CodeHighlightTheme
 {
+    #region Fields
+
     private readonly string _sheetName = string.Empty;
+
+    #endregion
+
+    #region Constructors
 
     private CodeHighlightTheme(string theme) => _sheetName = theme;
 
@@ -14,27 +23,20 @@ public sealed record CodeHighlightTheme
     {
     }
 
-    /// <summary>
-    /// Returns the css file name of the theme.
-    /// </summary>
-    public override string ToString() => _sheetName;
+    #endregion
 
-    /// <summary>
-    /// Apply no theme.
-    /// </summary>
-    public static CodeHighlightTheme None => new();
+    #region Properties
 
-    public static CodeHighlightTheme OneCLight => new("1c-light.css");
     public static CodeHighlightTheme A11yDark => new("a11y-dark.css");
     public static CodeHighlightTheme A11yLight => new("a11y-light.css");
     public static CodeHighlightTheme Agate => new("agate.css");
-    public static CodeHighlightTheme AnOldHope => new("an-old-hope.css");
     public static CodeHighlightTheme AndroidStudio => new("androidstudio.css");
+    public static CodeHighlightTheme AnOldHope => new("an-old-hope.css");
     public static CodeHighlightTheme ArduinoLight => new("arduino-light.css");
     public static CodeHighlightTheme Arta => new("arta.css");
     public static CodeHighlightTheme Ascetic => new("ascetic.css");
-    public static CodeHighlightTheme AtomOneDarkReasonable => new("atom-one-dark-reasonable.css");
     public static CodeHighlightTheme AtomOneDark => new("atom-one-dark.css");
+    public static CodeHighlightTheme AtomOneDarkReasonable => new("atom-one-dark-reasonable.css");
     public static CodeHighlightTheme AtomOneLight => new("atom-one-light.css");
     public static CodeHighlightTheme BrownPaper => new("brown-paper.css");
     public static CodeHighlightTheme BrownPaperSqPng => new("brown-papersq.png");
@@ -47,9 +49,9 @@ public sealed record CodeHighlightTheme
     public static CodeHighlightTheme Far => new("far.css");
     public static CodeHighlightTheme Felipec => new("felipec.css");
     public static CodeHighlightTheme Foundation => new("foundation.css");
-    public static CodeHighlightTheme GithubDarkDimmed => new("github-dark-dimmed.css");
-    public static CodeHighlightTheme GithubDark => new("github-dark.css");
     public static CodeHighlightTheme Github => new("github.css");
+    public static CodeHighlightTheme GithubDark => new("github-dark.css");
+    public static CodeHighlightTheme GithubDarkDimmed => new("github-dark-dimmed.css");
     public static CodeHighlightTheme Gml => new("gml.css");
     public static CodeHighlightTheme Googlecode => new("googlecode.css");
     public static CodeHighlightTheme GradientDark => new("gradient-dark.css");
@@ -67,13 +69,21 @@ public sealed record CodeHighlightTheme
     public static CodeHighlightTheme Lioshi => new("lioshi.css");
     public static CodeHighlightTheme Magula => new("magula.css");
     public static CodeHighlightTheme MonoBlue => new("mono-blue.css");
-    public static CodeHighlightTheme MonokaiSublime => new("monokai-sublime.css");
     public static CodeHighlightTheme Monokai => new("monokai.css");
+    public static CodeHighlightTheme MonokaiSublime => new("monokai-sublime.css");
     public static CodeHighlightTheme NightOwl => new("night-owl.css");
     public static CodeHighlightTheme NnfxDark => new("nnfx-dark.css");
     public static CodeHighlightTheme NnfxLight => new("nnfx-light.css");
+
+    /// <summary>
+    ///     Apply no theme.
+    /// </summary>
+    public static CodeHighlightTheme None => new();
+
     public static CodeHighlightTheme Nord => new("nord.css");
     public static CodeHighlightTheme Obsidian => new("obsidian.css");
+
+    public static CodeHighlightTheme OneCLight => new("1c-light.css");
     public static CodeHighlightTheme PandaSyntaxDark => new("panda-syntax-dark.css");
     public static CodeHighlightTheme PandaSyntaxLight => new("panda-syntax-light.css");
     public static CodeHighlightTheme ParaisoDark => new("paraiso-dark.css");
@@ -98,4 +108,15 @@ public sealed record CodeHighlightTheme
     public static CodeHighlightTheme Vs2015 => new("vs2015.css");
     public static CodeHighlightTheme Xcode => new("xcode.css");
     public static CodeHighlightTheme Xt256 => new("xt256.css");
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>
+    ///     Returns the css file name of the theme.
+    /// </summary>
+    public override string ToString() => _sheetName;
+
+    #endregion
 }

@@ -7,7 +7,13 @@ internal sealed class EventHook(
     IEnumerable<IMapper> mappers)
     : HookAsync
 {
+    #region Fields
+
     private readonly IMapper? _mapper = mappers.FirstOrDefault();
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Run RunAfterSaveAsync Events and ignore the result even failed.
@@ -23,4 +29,6 @@ internal sealed class EventHook(
 
         await Task.WhenAll(publishers);
     }
+
+    #endregion
 }

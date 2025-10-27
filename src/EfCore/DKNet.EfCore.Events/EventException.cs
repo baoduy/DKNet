@@ -9,5 +9,9 @@ namespace DKNet.EfCore.Events;
 public sealed class EventException(IResultBase status)
     : Exception(status.Errors.Any() ? status.Errors[0].Message : "An error occurred during event processing.")
 {
+    #region Properties
+
     public IResultBase Status => status;
+
+    #endregion
 }

@@ -7,18 +7,23 @@ namespace EfCore.Repos.Tests.TestEntities;
 
 public class Address : Entity<int>
 {
-    public int UserId { get; set; }
-    public User User { get; set; } = null!;
-
-    [MaxLength(100)] public required string Street { get; set; }
+    #region Properties
 
     [MaxLength(100)] public required string City { get; set; }
 
     [MaxLength(100)] public required string Country { get; set; }
+
+    [MaxLength(100)] public required string Street { get; set; }
+    public User User { get; set; } = null!;
+    public int UserId { get; set; }
+
+    #endregion
 }
 
 internal sealed class AddressEfConfig : DefaultEntityTypeConfiguration<Address>
 {
+    #region Methods
+
     public override void Configure(EntityTypeBuilder<Address> builder)
     {
         base.Configure(builder);
@@ -27,4 +32,6 @@ internal sealed class AddressEfConfig : DefaultEntityTypeConfiguration<Address>
         builder.Property(x => x.City).HasMaxLength(100);
         builder.Property(x => x.Country).HasMaxLength(100);
     }
+
+    #endregion
 }

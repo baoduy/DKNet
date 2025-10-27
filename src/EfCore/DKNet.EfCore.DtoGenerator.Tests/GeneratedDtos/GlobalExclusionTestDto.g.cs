@@ -8,19 +8,19 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 public partial record GlobalExclusionTestDto
 {
     /// <summary>
-    /// Gets or sets the Id.
-    /// </summary>
-    public Guid Id { get; init; }
-    /// <summary>
-    /// Gets or sets the Name.
-    /// </summary>
-    public required string Name { get; init; }
-    /// <summary>
     /// Gets or sets the Description.
     /// </summary>
     public required string Description { get; init; }
     /// <summary>
+    /// Gets or sets the Id.
+    /// </summary>
+    public Guid Id { get; init; }
+    /// <summary>
     /// Gets or sets the IsActive.
     /// </summary>
     public bool IsActive { get; init; }
+    /// <summary>
+    /// Gets or sets the Name.
+    /// </summary>
+    public required string Name { get; init; }
 }

@@ -2,7 +2,13 @@ namespace SlimBus.Api.Configs.Handlers;
 
 internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndpointFilter
 {
+    #region Fields
+
     private readonly FeatureOptions _options = options.Value;
+
+    #endregion
+
+    #region Methods
 
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
@@ -27,4 +33,6 @@ internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndp
 
         return await next(context);
     }
+
+    #endregion
 }

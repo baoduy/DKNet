@@ -2,7 +2,32 @@ namespace EfCore.HookTests.Hooks;
 
 public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture>
 {
+    #region Fields
+
     private readonly ServiceProvider _provider = fixture.Provider;
+
+    #endregion
+
+    #region Methods
+
+    [Fact]
+    public async Task DisableHooks_Async_Disposal_Should_Work()
+    {
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        hook.Reset();
+        var db = _provider.GetRequiredService<HookContext>();
+
+        await using (db.DisableHooks())
+        {
+            db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "AsyncSuppressed" });
+            await db.SaveChangesAsync();
+        }
+
+        HookTest.BeforeCalled.ShouldBeFalse();
+        HookTest.AfterCalled.ShouldBeFalse();
+        HookTest.BeforeCallCount.ShouldBe(0);
+        HookTest.AfterCallCount.ShouldBe(0);
+    }
 
     [Fact]
     public async Task DisableHooks_Should_Suppress_Hook_Calls()
@@ -82,22 +107,5 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
         HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Fact]
-    public async Task DisableHooks_Async_Disposal_Should_Work()
-    {
-        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
-
-        await using (db.DisableHooks())
-        {
-            db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "AsyncSuppressed" });
-            await db.SaveChangesAsync();
-        }
-
-        HookTest.BeforeCalled.ShouldBeFalse();
-        HookTest.AfterCalled.ShouldBeFalse();
-        HookTest.BeforeCallCount.ShouldBe(0);
-        HookTest.AfterCallCount.ShouldBe(0);
-    }
+    #endregion
 }

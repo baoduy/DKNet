@@ -2,11 +2,33 @@ namespace EfCore.Extensions.Tests.Fixtures;
 
 public class SqlServerFixture : IAsyncLifetime
 {
+    #region Fields
+
     private readonly MsSqlContainer _sql = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
+    #endregion
+
+    #region Properties
+
     public MyDbContext? Db { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        if (Db != null)
+            await Db.DisposeAsync();
+        await _sql.StopAsync();
+        await _sql.DisposeAsync();
+    }
+
+    public string GetConnectionString(string dbName) =>
+        _sql.GetConnectionString()
+            .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
 
     public async Task InitializeAsync()
     {
@@ -28,15 +50,5 @@ public class SqlServerFixture : IAsyncLifetime
         await Db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (Db != null)
-            await Db.DisposeAsync();
-        await _sql.StopAsync();
-        await _sql.DisposeAsync();
-    }
-
-    public string GetConnectionString(string dbName) =>
-        _sql.GetConnectionString()
-            .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
+    #endregion
 }

@@ -9,7 +9,11 @@ public interface IHookBaseAsync;
 /// </summary>
 public interface IBeforeSaveHookAsync : IHookBaseAsync
 {
+    #region Methods
+
     Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default);
+
+    #endregion
 }
 
 /// <summary>
@@ -17,7 +21,11 @@ public interface IBeforeSaveHookAsync : IHookBaseAsync
 /// </summary>
 public interface IAfterSaveHookAsync : IHookBaseAsync
 {
+    #region Methods
+
     Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default);
+
+    #endregion
 }
 
 /// <summary>
@@ -27,9 +35,13 @@ public interface IHookAsync : IBeforeSaveHookAsync, IAfterSaveHookAsync;
 
 public abstract class HookAsync : IHookAsync
 {
-    public virtual Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+    #region Methods
 
     public virtual Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+
+    public virtual Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    #endregion
 }

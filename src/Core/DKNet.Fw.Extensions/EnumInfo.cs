@@ -5,6 +5,8 @@ namespace DKNet.Fw.Extensions;
 [ExcludeFromCodeCoverage]
 public sealed record EnumInfo
 {
+    #region Properties
+
     public string? Description { get; init; }
 
     public string? GroupName { get; init; }
@@ -12,4 +14,6 @@ public sealed record EnumInfo
     public required string Key { get; init; }
 
     public required string Name { get; init; }
+
+    #endregion
 }

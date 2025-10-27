@@ -2,8 +2,13 @@
 
 public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
+
+    #region Methods
 
     [Fact]
     public async Task TestCreateAsync()
@@ -51,4 +56,6 @@ public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
 
         entity.Id.ToString().ShouldBe(oldId);
     }
+
+    #endregion
 }

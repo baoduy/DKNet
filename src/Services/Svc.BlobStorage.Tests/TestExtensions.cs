@@ -2,6 +2,8 @@ namespace Svc.BlobStorage.Tests;
 
 public static class TestExtensions
 {
+    #region Methods
+
     public static void DeleteAll(this string path)
     {
         var di = new DirectoryInfo(path);
@@ -13,4 +15,6 @@ public static class TestExtensions
         foreach (var dir in di.GetDirectories())
             dir.Delete(true);
     }
+
+    #endregion
 }

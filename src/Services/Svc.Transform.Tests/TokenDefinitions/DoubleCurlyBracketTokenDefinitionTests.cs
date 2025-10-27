@@ -2,6 +2,8 @@ namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class DoubleCurlyBracketTokenDefinitionTests
 {
+    #region Methods
+
     [Fact]
     public void BeginTag_ShouldBeDoubleCurlyBraces()
     {
@@ -17,16 +19,6 @@ public class DoubleCurlyBracketTokenDefinitionTests
     }
 
     [Theory]
-    [InlineData("{{token}}")]
-    [InlineData("{{TOKEN}}")]
-    [InlineData("{{123}}")]
-    public void IsToken_ShouldReturnTrue_ForValidTokens(string value)
-    {
-        var def = TransformOptions.DoubleCurlyBrackets;
-        Assert.True(def.IsToken(value));
-    }
-
-    [Theory]
     [InlineData("")]
     [InlineData("{token}")]
     [InlineData("{{token}")]
@@ -39,4 +31,16 @@ public class DoubleCurlyBracketTokenDefinitionTests
         var def = TransformOptions.DoubleCurlyBrackets;
         def.IsToken(value).ShouldBeFalse(value);
     }
+
+    [Theory]
+    [InlineData("{{token}}")]
+    [InlineData("{{TOKEN}}")]
+    [InlineData("{{123}}")]
+    public void IsToken_ShouldReturnTrue_ForValidTokens(string value)
+    {
+        var def = TransformOptions.DoubleCurlyBrackets;
+        Assert.True(def.IsToken(value));
+    }
+
+    #endregion
 }

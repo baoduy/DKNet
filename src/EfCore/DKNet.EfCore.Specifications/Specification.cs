@@ -12,10 +12,17 @@ namespace DKNet.EfCore.Specifications;
 public interface ISpecification<TEntity>
     where TEntity : class
 {
+    #region Properties
+
     /// <summary>
     ///     A filtering function to test each element for condition
     /// </summary>
     Expression<Func<TEntity, bool>>? FilterQuery { get; }
+
+    /// <summary>
+    ///     Ignore the global query filters (e.g., for soft delete or multi-tenancy)
+    /// </summary>
+    bool IgnoreQueryFilters { get; }
 
     /// <summary>
     ///     A collection of functions that describes included entities
@@ -23,19 +30,16 @@ public interface ISpecification<TEntity>
     IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries { get; }
 
     /// <summary>
-    ///     A function that describes how to order entities by ascending
-    /// </summary>
-    IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries { get; }
-
-    /// <summary>
     ///     A function that describes how to order entities by descending
     /// </summary>
     IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries { get; }
 
     /// <summary>
-    /// Ignore the global query filters (e.g., for soft delete or multi-tenancy)
+    ///     A function that describes how to order entities by ascending
     /// </summary>
-    bool IgnoreQueryFilters { get; }
+    IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries { get; }
+
+    #endregion
 }
 
 /// <summary>
@@ -45,15 +49,18 @@ public interface ISpecification<TEntity>
 public abstract class Specification<TEntity> : ISpecification<TEntity>
     where TEntity : class
 {
+    #region Fields
+
     private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
 
-    protected ExpressionStarter<TEntity> CreatePredicate(Expression<Func<TEntity, bool>>? expression = null) =>
-        expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
+    #endregion
+
+    #region Constructors
 
     /// <summary>
-    ///     Initializes a new instance of the <see cref="Specification{TEntity}"/> class.
+    ///     Initializes a new instance of the <see cref="Specification{TEntity}" /> class.
     /// </summary>
     protected Specification()
     {
@@ -79,30 +86,24 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         _orderByDescendingQueries = [.. specification.OrderByDescendingQueries];
     }
 
+    #endregion
+
+    #region Properties
+
     public Expression<Func<TEntity, bool>>? FilterQuery { get; private set; }
 
-    public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
+    public bool IgnoreQueryFilters { get; private set; }
 
-    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
+    public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
 
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries =>
         _orderByDescendingQueries;
 
-    public bool IgnoreQueryFilters { get; private set; }
+    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
 
-    protected void IgnoreQueryFiltersEnabled()
-    {
-        IgnoreQueryFilters = true;
-    }
+    #endregion
 
-    /// <summary>
-    ///     Adds a filtering function to test each element for condition
-    /// </summary>
-    /// <param name="query">A filtering function that describes how to test each element for condition</param>
-    protected void WithFilter(Expression<Func<TEntity, bool>> query)
-    {
-        FilterQuery = query;
-    }
+    #region Methods
 
     /// <summary>
     ///     Adds an query that describes included entities
@@ -131,6 +132,14 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         _orderByDescendingQueries.Add(query);
     }
 
+    protected ExpressionStarter<TEntity> CreatePredicate(Expression<Func<TEntity, bool>>? expression = null) =>
+        expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
+
+    protected void IgnoreQueryFiltersEnabled()
+    {
+        IgnoreQueryFilters = true;
+    }
+
     /// <summary>
     ///     Returns an indication whether an entity matches the current specification
     /// </summary>
@@ -145,6 +154,17 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         var predicate = FilterQuery.Compile();
         return predicate(entity);
     }
+
+    /// <summary>
+    ///     Adds a filtering function to test each element for condition
+    /// </summary>
+    /// <param name="query">A filtering function that describes how to test each element for condition</param>
+    protected void WithFilter(Expression<Func<TEntity, bool>> query)
+    {
+        FilterQuery = query;
+    }
+
+    #endregion
 
     // /// <summary>
     // ///     Returns an expression that combines two specifications with a logical "and"

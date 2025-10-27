@@ -44,50 +44,7 @@ public enum TokenNotFoundBehavior
 /// </remarks>
 public class TransformOptions
 {
-    /// <summary>
-    /// The SquareBracket <c>[token]</c> definition.
-    /// </summary>
-    /// <remarks>
-    /// Use this definition to identify tokens enclosed in square brackets, e.g., <c>[username]</c>.
-    /// </remarks>
-    public static readonly ITokenDefinition SquareBrackets = new TokenDefinition("[", "]");
-
-    /// <summary>
-    /// The CurlyBracket <c>{token}</c> definition.
-    /// </summary>
-    /// <remarks>
-    /// Use this definition to identify tokens enclosed in single curly brackets, e.g., <c>{date}</c>.
-    /// </remarks>
-    public static readonly ITokenDefinition CurlyBrackets = new TokenDefinition("{", "}");
-
-    /// <summary>
-    /// The AngledBracket <c>&lt;token&gt;</c> definition.
-    /// </summary>
-    /// <remarks>
-    /// Use this definition to identify tokens enclosed in angle brackets, e.g., <c>&lt;amount&gt;</c>.
-    /// </remarks>
-    public static readonly ITokenDefinition AngledBrackets = new TokenDefinition("<", ">");
-
-    /// <summary>
-    /// The DoubleCurlyBracket <c>{{token}}</c> definition.
-    /// </summary>
-    /// <remarks>
-    /// Use this definition to identify tokens enclosed in double curly brackets, e.g., <c>{{reference}}</c>.
-    /// </remarks>
-    public static readonly ITokenDefinition DoubleCurlyBrackets = new TokenDefinition("{{", "}}");
-
-    /// <summary>
-    ///     Gets or sets the value formatter used to format token values before applying them to templates.
-    /// </summary>
-    /// <value>
-    ///     An <see cref="IValueFormatter" /> instance. Default is <see cref="ValueFormatter" />.
-    /// </value>
-    /// <remarks>
-    ///     The formatter controls how token values are converted to strings in the final template output.
-    ///     Custom formatters can be provided to handle specific formatting requirements such as
-    ///     date formats, number formatting, or custom object serialization.
-    /// </remarks>
-    public IValueFormatter Formatter { get; set; } = new ValueFormatter();
+    #region Properties
 
     /// <summary>
     ///     Gets the collection of token extractors used to identify and extract tokens from templates.
@@ -102,6 +59,19 @@ public class TransformOptions
     ///     token formats or remove default extractors if not needed.
     /// </remarks>
     public ICollection<ITokenDefinition> DefaultDefinitions { get; set; } = [SquareBrackets];
+
+    /// <summary>
+    ///     Gets or sets the value formatter used to format token values before applying them to templates.
+    /// </summary>
+    /// <value>
+    ///     An <see cref="IValueFormatter" /> instance. Default is <see cref="ValueFormatter" />.
+    /// </value>
+    /// <remarks>
+    ///     The formatter controls how token values are converted to strings in the final template output.
+    ///     Custom formatters can be provided to handle specific formatting requirements such as
+    ///     date formats, number formatting, or custom object serialization.
+    /// </remarks>
+    public IValueFormatter Formatter { get; set; } = new ValueFormatter();
 
     /// <summary>
     ///     Gets or sets the global parameters that are shared across all transformation operations.
@@ -119,4 +89,38 @@ public class TransformOptions
     public IEnumerable<object> GlobalParameters { get; set; } = [];
 
     public TokenNotFoundBehavior TokenNotFoundBehavior { get; set; } = TokenNotFoundBehavior.ThrowError;
+
+    #endregion
+
+    /// <summary>
+    ///     The SquareBracket <c>[token]</c> definition.
+    /// </summary>
+    /// <remarks>
+    ///     Use this definition to identify tokens enclosed in square brackets, e.g., <c>[username]</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition SquareBrackets = new TokenDefinition("[", "]");
+
+    /// <summary>
+    ///     The CurlyBracket <c>{token}</c> definition.
+    /// </summary>
+    /// <remarks>
+    ///     Use this definition to identify tokens enclosed in single curly brackets, e.g., <c>{date}</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition CurlyBrackets = new TokenDefinition("{", "}");
+
+    /// <summary>
+    ///     The AngledBracket <c>&lt;token&gt;</c> definition.
+    /// </summary>
+    /// <remarks>
+    ///     Use this definition to identify tokens enclosed in angle brackets, e.g., <c>&lt;amount&gt;</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition AngledBrackets = new TokenDefinition("<", ">");
+
+    /// <summary>
+    ///     The DoubleCurlyBracket <c>{{token}}</c> definition.
+    /// </summary>
+    /// <remarks>
+    ///     Use this definition to identify tokens enclosed in double curly brackets, e.g., <c>{{reference}}</c>.
+    /// </remarks>
+    public static readonly ITokenDefinition DoubleCurlyBrackets = new TokenDefinition("{{", "}}");
 }

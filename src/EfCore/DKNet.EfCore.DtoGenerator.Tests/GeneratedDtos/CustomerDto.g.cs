@@ -15,21 +15,21 @@ public partial record CustomerDto
     /// </summary>
     public int CustomerId { get; init; }
     /// <summary>
-    /// Gets or sets the Name.
-    /// </summary>
-    public required string Name { get; init; }
-    /// <summary>
     /// Gets or sets the Email.
     /// </summary>
     public string? Email { get; init; }
     /// <summary>
-    /// Gets or sets the PrimaryAddress.
+    /// Gets or sets the Name.
     /// </summary>
-    public Address? PrimaryAddress { get; init; }
+    public required string Name { get; init; }
     /// <summary>
     /// Gets or sets the Orders.
     /// </summary>
     public List<Order> Orders { get; init; } = [];
+    /// <summary>
+    /// Gets or sets the PrimaryAddress.
+    /// </summary>
+    public Address? PrimaryAddress { get; init; }
     /// <summary>
     /// Gets or sets the CreatedUtc.
     /// </summary>

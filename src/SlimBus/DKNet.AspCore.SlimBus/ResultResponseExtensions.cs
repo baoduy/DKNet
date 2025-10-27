@@ -5,6 +5,8 @@ namespace DKNet.AspCore.SlimBus;
 
 public static class ResultResponseExtensions
 {
+    #region Methods
+
     public static IResult Response<TObject>(this IResult<TObject> result, bool isCreated = false) =>
         !result.IsSuccess
             ? TypedResults.Problem(result.ToProblemDetails()!)
@@ -18,4 +20,6 @@ public static class ResultResponseExtensions
         result.IsSuccess
             ? isCreated ? TypedResults.Created() : TypedResults.Ok()
             : TypedResults.Problem(result.ToProblemDetails()!);
+
+    #endregion
 }

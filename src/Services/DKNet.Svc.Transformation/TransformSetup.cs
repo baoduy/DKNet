@@ -7,6 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class TransformSetup
 {
+    #region Methods
+
     public static IServiceCollection AddTransformerService(this IServiceCollection services,
         Action<TransformOptions>? optionFactory = null)
     {
@@ -16,4 +18,6 @@ public static class TransformSetup
         services.AddSingleton(Options.Options.Create(op));
         return services.AddTransient<ITransformerService, TransformerService>();
     }
+
+    #endregion
 }

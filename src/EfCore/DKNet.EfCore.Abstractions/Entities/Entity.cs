@@ -13,11 +13,15 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public interface IEntity<out TKey>
 {
+    #region Properties
+
     /// <summary>
     ///     Gets the unique identifier for the entity.
     /// </summary>
     /// <value>The entity's primary key value.</value>
     TKey Id { get; }
+
+    #endregion
 }
 
 /// <summary>
@@ -34,8 +38,14 @@ public interface IEntity<out TKey>
 /// </remarks>
 public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 {
+    #region Fields
+
     [NotMapped] private readonly Collection<object> _events = [];
     [NotMapped] private readonly Collection<Type> _eventTypes = [];
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="Entity{TKey}" /> class.
@@ -53,6 +63,10 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// </remarks>
     protected Entity(TKey id) => Id = id;
 
+    #endregion
+
+    #region Properties
+
     /// <summary>
     ///     Gets the unique identifier for this entity.
     /// </summary>
@@ -60,6 +74,10 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     ///     The entity's unique identifier of type <typeparamref name="TKey" />.
     /// </value>
     public virtual TKey Id { get; private set; } = default!;
+
+    #endregion
+
+    #region Methods
 
     public void AddEvent(object eventObj) => _events.Add(eventObj);
 
@@ -80,6 +98,8 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// </summary>
     /// <returns>A string in the format "EntityTypeName 'Id'".</returns>
     public override string ToString() => $"{GetType().Name} '{Id}'";
+
+    #endregion
 }
 
 /// <summary>
@@ -94,6 +114,8 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 /// </remarks>
 public abstract class Entity : Entity<Guid>
 {
+    #region Constructors
+
     /// <summary>
     ///     Initializes a new instance of the <see cref="Entity" /> class.
     /// </summary>
@@ -111,4 +133,6 @@ public abstract class Entity : Entity<Guid>
     protected Entity(Guid id) : base(id)
     {
     }
+
+    #endregion
 }

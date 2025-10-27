@@ -5,6 +5,8 @@ namespace EfCore.Extensions.Tests;
 // Test seeding configuration for testing
 public class UserSeedingConfiguration : DataSeedingConfiguration<User>
 {
+    #region Properties
+
     protected override ICollection<User> HasData =>
     [
         new(1, "seeded1")
@@ -17,10 +19,14 @@ public class UserSeedingConfiguration : DataSeedingConfiguration<User>
             LastName = "User2"
         }
     ];
+
+    #endregion
 }
 
 public class DataSeedingTests
 {
+    #region Methods
+
     [Fact]
     public async Task UseAutoDataSeeding_ShouldSeedDataFromConfigurations()
     {
@@ -50,4 +56,6 @@ public class DataSeedingTests
         Should.Throw<ArgumentNullException>(() =>
             ((DbContextOptionsBuilder)null!).UseAutoDataSeeding([typeof(UserSeedingConfiguration).Assembly]));
     }
+
+    #endregion
 }

@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using DKNet.EfCore.Extensions.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
@@ -22,7 +21,15 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 {
+    #region Methods
+
+    protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder) =>
+        modelBuilder.Model.GetEntityTypes()
+            .Where(t => typeof(IOwnedBy).IsAssignableFrom(t.ClrType))
+            .Where(t => t.GetDiscriminatorValue() == null);
+
     protected override Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
+        where TEntity : class
     {
         if (context is not IDataOwnerDbContext dataOwnerContext)
         {
@@ -30,12 +37,15 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
             return null;
         }
 
-        var keys = dataOwnerContext.AccessibleKeys;
-        return x => keys.Count == 0 || keys.Contains(((IOwnedBy)x).OwnedBy);
+        // Capture the context in the closure so EF Core can evaluate AccessibleKeys per query
+        // Use !Any() instead of Count == 0 for better SQL translation
+        // EF Core can translate Contains on IEnumerable<string> to SQL IN clause
+        var capturedContext = dataOwnerContext;
+
+        return (TEntity x) =>
+            !capturedContext.AccessibleKeys.Any()
+            || capturedContext.AccessibleKeys.Contains(((IOwnedBy)(object)x).OwnedBy);
     }
 
-    protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder) =>
-        modelBuilder.Model.GetEntityTypes()
-            .Where(t => typeof(IOwnedBy).IsAssignableFrom(t.ClrType))
-            .Where(t => t.GetDiscriminatorValue() == null);
+    #endregion
 }

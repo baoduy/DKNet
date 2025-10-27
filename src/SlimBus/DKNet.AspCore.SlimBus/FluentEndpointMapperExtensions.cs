@@ -1,24 +1,37 @@
 using DKNet.AspCore.SlimBus;
 using DKNet.SlimBus.Extensions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using SlimMessageBus;
-using Microsoft.AspNetCore.Http;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.AspNetCore.Builder;
 
 public static class FluentsEndpointMapperExtensions
 {
-    public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder) =>
-        routeBuilder
-            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status409Conflict)
-            .Produces(StatusCodes.Status429TooManyRequests);
+    #region Methods
+
+    public static RouteHandlerBuilder MapDelete<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
+        where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
+    {
+        return app.MapDelete(endpoint, async (IMessageBus bus, TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response();
+            }).Produces<TResponse>()
+            .ProducesCommons();
+    }
+
+    public static RouteHandlerBuilder MapDelete<TCommand>(this RouteGroupBuilder app, string endpoint)
+        where TCommand : class, Fluents.Requests.INoResponse
+    {
+        return app.MapDelete(endpoint, async (IMessageBus bus, [AsParameters] TCommand request) =>
+        {
+            var rs = await bus.Send(request);
+            return rs.Response();
+        }).ProducesCommons();
+    }
 
     public static RouteHandlerBuilder MapGet<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Queries.IWitResponse<TResponse>
@@ -44,6 +57,27 @@ public static class FluentsEndpointMapperExtensions
                 })
             .Produces<PagedResult<TResponse>>()
             .ProducesCommons();
+    }
+
+    public static RouteHandlerBuilder MapPatch<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
+        where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
+    {
+        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response();
+            }).Produces<TResponse>()
+            .ProducesCommons();
+    }
+
+    public static RouteHandlerBuilder MapPatch<TCommand>(this RouteGroupBuilder app, string endpoint)
+        where TCommand : class, Fluents.Requests.INoResponse
+    {
+        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
+        {
+            var rs = await bus.Send(request);
+            return rs.Response();
+        }).ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPost<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
@@ -88,46 +122,15 @@ public static class FluentsEndpointMapperExtensions
         }).ProducesCommons();
     }
 
-    public static RouteHandlerBuilder MapPatch<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
-        where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
-    {
-        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response();
-            }).Produces<TResponse>()
-            .ProducesCommons();
-    }
+    public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder) =>
+        routeBuilder
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
-    public static RouteHandlerBuilder MapPatch<TCommand>(this RouteGroupBuilder app, string endpoint)
-        where TCommand : class, Fluents.Requests.INoResponse
-    {
-        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response();
-        }).ProducesCommons();
-    }
-
-
-    public static RouteHandlerBuilder MapDelete<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
-        where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
-    {
-        return app.MapDelete(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response();
-            }).Produces<TResponse>()
-            .ProducesCommons();
-    }
-
-    public static RouteHandlerBuilder MapDelete<TCommand>(this RouteGroupBuilder app, string endpoint)
-        where TCommand : class, Fluents.Requests.INoResponse
-    {
-        return app.MapDelete(endpoint, async (IMessageBus bus, [AsParameters] TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response();
-        }).ProducesCommons();
-    }
+    #endregion
 }

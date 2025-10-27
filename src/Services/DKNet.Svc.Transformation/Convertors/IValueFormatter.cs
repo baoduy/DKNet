@@ -17,5 +17,5 @@ public interface IValueFormatter
     /// <returns></returns>
     string Convert(IToken token, object value);
 
-    #endregion Methods
+    #endregion
 }

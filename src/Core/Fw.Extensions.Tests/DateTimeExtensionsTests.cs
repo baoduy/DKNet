@@ -6,29 +6,7 @@ public static class DateTimeExtensionsTests
 {
     public class LastDayOfMonth
     {
-        [Fact]
-        public void ReturnsLastDayForNonNullDate()
-        {
-            var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
-            var result = date.LastDayOfMonth();
-            result.ShouldBe(new DateTime(new DateOnly(2024, 2, 29), TimeOnly.MinValue, DateTimeKind.Local));
-        }
-
-        [Fact]
-        public void HandlesLeapYearCorrectly()
-        {
-            var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
-            var result = date.LastDayOfMonth();
-            result.Day.ShouldBe(29);
-        }
-
-        [Fact]
-        public void ReturnsNullForNullableNullInput()
-        {
-            DateTime? date = null;
-            var result = date.LastDayOfMonth();
-            result.ShouldBeNull();
-        }
+        #region Methods
 
         [Theory]
         [InlineData(1, 31)]
@@ -41,10 +19,45 @@ public static class DateTimeExtensionsTests
             var result = date.LastDayOfMonth();
             result.Day.ShouldBe(expectedDay);
         }
+
+        [Fact]
+        public void HandlesLeapYearCorrectly()
+        {
+            var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
+            var result = date.LastDayOfMonth();
+            result.Day.ShouldBe(29);
+        }
+
+        [Fact]
+        public void ReturnsLastDayForNonNullDate()
+        {
+            var date = new DateTime(new DateOnly(2024, 2, 15), TimeOnly.MinValue, DateTimeKind.Local);
+            var result = date.LastDayOfMonth();
+            result.ShouldBe(new DateTime(new DateOnly(2024, 2, 29), TimeOnly.MinValue, DateTimeKind.Local));
+        }
+
+        [Fact]
+        public void ReturnsNullForNullableNullInput()
+        {
+            DateTime? date = null;
+            var result = date.LastDayOfMonth();
+            result.ShouldBeNull();
+        }
+
+        #endregion
     }
 
     public class Quarter
     {
+        #region Methods
+
+        [Fact]
+        public void HandlesDateTimeMinValue()
+        {
+            var result = DateTime.MinValue.InQuarter();
+            result.ShouldBe(1);
+        }
+
         [Theory]
         [InlineData(1, 1)]
         [InlineData(3, 1)]
@@ -61,11 +74,6 @@ public static class DateTimeExtensionsTests
             result.ShouldBe(expectedQuarter);
         }
 
-        [Fact]
-        public void HandlesDateTimeMinValue()
-        {
-            var result = DateTime.MinValue.InQuarter();
-            result.ShouldBe(1);
-        }
+        #endregion
     }
 }

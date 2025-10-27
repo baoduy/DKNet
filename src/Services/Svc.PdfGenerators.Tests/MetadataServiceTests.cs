@@ -6,6 +6,8 @@ namespace Svc.PdfGenerators.Tests;
 
 public class MetadataServiceTests
 {
+    #region Methods
+
     [Fact]
     public async Task AddTitleToTemplateAsync_AddsTitleToModel()
     {
@@ -19,9 +21,16 @@ public class MetadataServiceTests
         Assert.Equal("MetaTitle", templateModel["title"]);
     }
 
+    #endregion
+
     private class TestConversionEvents : IConversionEvents
     {
+        #region Properties
+
         public string? OutputFileName => "output.pdf";
+
+        #endregion
+
         public event EventHandler<MarkdownEventArgs>? BeforeHtmlConversion;
         public event Func<object, TemplateModelEventArgs, Task>? OnTemplateModelCreatingAsync;
         public event EventHandler<PdfEventArgs>? OnTempPdfCreatedEvent;

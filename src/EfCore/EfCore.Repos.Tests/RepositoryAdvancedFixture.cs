@@ -8,14 +8,31 @@ namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedFixture : IAsyncLifetime
 {
+    #region Fields
+
     private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder()
         .Build();
 
+    #endregion
+
+    #region Properties
+
     public TestDbContext DbContext { get; set; } = null!;
-    public IRepository<User> RepositoryWithMapper { get; set; } = null!;
-    public IRepository<User> RepositoryWithoutMapper { get; set; } = null!;
     public IReadRepository<User> ReadRepositoryWithMapper { get; set; } = null!;
     public IReadRepository<User> ReadRepositoryWithoutMapper { get; set; } = null!;
+    public IRepository<User> RepositoryWithMapper { get; set; } = null!;
+    public IRepository<User> RepositoryWithoutMapper { get; set; } = null!;
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        await DbContext.DisposeAsync();
+        await _sqlContainer.StopAsync();
+        await _sqlContainer.DisposeAsync();
+    }
 
     public async Task InitializeAsync()
     {
@@ -45,10 +62,5 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         await DbContext.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        await DbContext.DisposeAsync();
-        await _sqlContainer.StopAsync();
-        await _sqlContainer.DisposeAsync();
-    }
+    #endregion
 }

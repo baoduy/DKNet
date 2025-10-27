@@ -5,11 +5,13 @@ public sealed class RepositoryFactory<TDbContext>(
     IEnumerable<IMapper>? mappers = null)
     : IRepositoryFactory where TDbContext : DbContext
 {
+    #region Fields
+
     private readonly TDbContext _db = dbFactory.CreateDbContext();
 
-    public void Dispose() => _db.Dispose();
+    #endregion
 
-    public ValueTask DisposeAsync() => _db.DisposeAsync();
+    #region Methods
 
     public IRepository<TEntity> Create<TEntity>() where TEntity : class => new Repository<TEntity>(_db, mappers);
 
@@ -18,4 +20,10 @@ public sealed class RepositoryFactory<TDbContext>(
 
     public IWriteRepository<TEntity> CreateWrite<TEntity>() where TEntity : class =>
         new WriteRepository<TEntity>(_db);
+
+    public void Dispose() => _db.Dispose();
+
+    public ValueTask DisposeAsync() => _db.DisposeAsync();
+
+    #endregion
 }

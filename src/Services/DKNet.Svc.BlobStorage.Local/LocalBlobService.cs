@@ -33,13 +33,18 @@ namespace DKNet.Svc.BlobStorage.Local;
 public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<LocalBlobService> logger)
     : BlobService(options.Value)
 {
+    #region Fields
+
     private readonly string _rootFolder = options.Value.RootFolder ?? $"{Directory.GetCurrentDirectory()}/LocalStore";
 
-    private string GetFinalPath(BlobRequest blob)
+    #endregion
+
+    #region Methods
+
+    public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var name = blob.Name;
-        if (name.StartsWith('/')) name = name[1..];
-        return Path.GetFullPath(Path.Combine(_rootFolder, name));
+        var finalFile = GetFinalPath(blob);
+        return Task.FromResult(blob.Type == BlobTypes.File ? File.Exists(finalFile) : Directory.Exists(finalFile));
     }
 
     private static BlobDetails CreateBlobDetails(FileInfo file) =>
@@ -51,22 +56,33 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             LastModified = file.LastWriteTime
         };
 
-    private string GetRelativePath(string fullPath) =>
-        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
-
-    public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
+    public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        if (await CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
-            throw new InvalidOperationException("File already existed");
+        var path = GetFinalPath(blob);
+        return blob.Type == BlobTypes.File
+            ? DeleteFileAsync(path, cancellationToken)
+            : DeleteFolderAsync(path, cancellationToken);
+    }
 
-        var finalFile = GetFinalPath(blob);
-        var directory = Path.GetDirectoryName(finalFile);
+    private static Task<bool> DeleteFileAsync(string fileLocation, CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
+        if (!File.Exists(fileLocation)) return Task.FromResult(false);
+        File.Delete(fileLocation);
+        return Task.FromResult(true);
+    }
 
-        if (!Directory.Exists(directory))
-            Directory.CreateDirectory(directory!);
+    private Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(folderLocation))
+        {
+            logger.LogError("The directory {FolderLocation} was not found", nameof(folderLocation));
+            return Task.FromResult(false);
+        }
 
-        await File.WriteAllBytesAsync(finalFile, blob.Data.ToArray(), cancellationToken);
-        return blob.Name;
+        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
+        Directory.Delete(folderLocation, true);
+        return Task.FromResult(true);
     }
 
     public override async Task<BlobDataResult?> GetAsync(BlobRequest blob,
@@ -86,6 +102,23 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             Details = CreateBlobDetails(file)
         };
     }
+
+    private string GetFinalPath(BlobRequest blob)
+    {
+        var name = blob.Name;
+        if (name.StartsWith('/')) name = name[1..];
+        return Path.GetFullPath(Path.Combine(_rootFolder, name));
+    }
+
+    public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException(
+            $"Public access URLs are not supported in {nameof(LocalBlobService)}. " +
+            "This service is designed for local file system storage only. " +
+            "Consider using a cloud-based blob storage service if you require public access functionality.");
+
+    private string GetRelativePath(string fullPath) =>
+        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
 
     public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -125,46 +158,20 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         }
     }
 
-    public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
     {
-        var path = GetFinalPath(blob);
-        return blob.Type == BlobTypes.File
-            ? DeleteFileAsync(path, cancellationToken)
-            : DeleteFolderAsync(path, cancellationToken);
-    }
+        if (await CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
+            throw new InvalidOperationException("File already existed");
 
-    private static Task<bool> DeleteFileAsync(string fileLocation, CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
-        if (!File.Exists(fileLocation)) return Task.FromResult(false);
-        File.Delete(fileLocation);
-        return Task.FromResult(true);
-    }
-
-    private Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
-    {
-        if (!Directory.Exists(folderLocation))
-        {
-            logger.LogError("The directory {FolderLocation} was not found", nameof(folderLocation));
-            return Task.FromResult(false);
-        }
-
-        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
-        Directory.Delete(folderLocation, true);
-        return Task.FromResult(true);
-    }
-
-
-    public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
-    {
         var finalFile = GetFinalPath(blob);
-        return Task.FromResult(blob.Type == BlobTypes.File ? File.Exists(finalFile) : Directory.Exists(finalFile));
+        var directory = Path.GetDirectoryName(finalFile);
+
+        if (!Directory.Exists(directory))
+            Directory.CreateDirectory(directory!);
+
+        await File.WriteAllBytesAsync(finalFile, blob.Data.ToArray(), cancellationToken);
+        return blob.Name;
     }
 
-    public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
-        CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException(
-            $"Public access URLs are not supported in {nameof(LocalBlobService)}. " +
-            "This service is designed for local file system storage only. " +
-            "Consider using a cloud-based blob storage service if you require public access functionality.");
+    #endregion
 }

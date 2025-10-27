@@ -4,8 +4,10 @@ namespace EfCore.HookTests;
 
 public class HookAsyncTests
 {
+    #region Methods
+
     [Fact]
-    public async Task HookAsync_RunBeforeSaveAsync_ShouldCompleteWithoutAction()
+    public async Task HookAsync_BothMethods_ShouldCompleteWithCancellationToken()
     {
         // Arrange
         var hook = new TestHookAsync();
@@ -13,11 +15,13 @@ public class HookAsyncTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
         await using var snapshot = new SnapshotContext(context);
+        var cancellationToken = new CancellationToken();
 
         // Act & Assert - should complete without throwing
-        await hook.BeforeSaveAsync(snapshot, CancellationToken.None);
+        await hook.BeforeSaveAsync(snapshot, cancellationToken);
+        await hook.AfterSaveAsync(snapshot, cancellationToken);
 
-        // The default implementation should complete successfully
+        // The default implementations should handle cancellation tokens properly
         Assert.True(true);
     }
 
@@ -39,7 +43,7 @@ public class HookAsyncTests
     }
 
     [Fact]
-    public async Task HookAsync_BothMethods_ShouldCompleteWithCancellationToken()
+    public async Task HookAsync_RunBeforeSaveAsync_ShouldCompleteWithoutAction()
     {
         // Arrange
         var hook = new TestHookAsync();
@@ -47,15 +51,15 @@ public class HookAsyncTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
         await using var snapshot = new SnapshotContext(context);
-        var cancellationToken = new CancellationToken();
 
         // Act & Assert - should complete without throwing
-        await hook.BeforeSaveAsync(snapshot, cancellationToken);
-        await hook.AfterSaveAsync(snapshot, cancellationToken);
+        await hook.BeforeSaveAsync(snapshot, CancellationToken.None);
 
-        // The default implementations should handle cancellation tokens properly
+        // The default implementation should complete successfully
         Assert.True(true);
     }
+
+    #endregion
 
     // Test implementation of HookAsync base class
     private class TestHookAsync : HookAsync

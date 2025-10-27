@@ -12,43 +12,32 @@ namespace DKNet.EfCore.AuditLogs.Tests;
 
 public class EfCoreAuditHookStructuredTests : IAsyncLifetime
 {
+    #region Fields
+
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"auditlogs_structured_{Guid.NewGuid():N}.db");
     private ServiceProvider _provider = null!;
 
-    public async Task InitializeAsync()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddEfCoreAuditHook<TestAuditDbContext>(); // register hook
-        services
-            .AddEfCoreAuditLogs<TestAuditDbContext,
-                TestPublisher>(); // singleton publisher so fire-and-forget scope shares instance
-        services.AddDbContextWithHook<TestAuditDbContext>((_, options) =>
-        {
-            options.UseSqlite($"Data Source={_dbPath}");
-            options.EnableSensitiveDataLogging();
-        });
+    #endregion
 
-        _provider = services.BuildServiceProvider();
-        await using var scope = _provider.CreateAsyncScope();
-        var ctx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
-        await ctx.Database.EnsureDeletedAsync();
-        await ctx.Database.EnsureCreatedAsync();
+    #region Methods
+
+    [Fact]
+    public void AuditedEntity_SetCreatedBy_Is_Idempotent()
+    {
+        var entity = new TestAuditEntity { Name = "Idem", Age = 1, IsActive = true, Balance = 0m };
+        entity.SetCreatedBy("first");
+        var firstOn = entity.CreatedOn;
+        entity.SetCreatedBy("second", DateTimeOffset.UtcNow.AddDays(-1));
+        entity.CreatedBy.ShouldBe("first");
+        entity.CreatedOn.ShouldBe(firstOn);
     }
 
-    public async Task DisposeAsync()
+    [Fact]
+    public void AuditedEntity_SetUpdatedBy_Throws_On_Empty()
     {
-        if (_provider is IDisposable d) d.Dispose();
-        try
-        {
-            if (File.Exists(_dbPath)) File.Delete(_dbPath);
-        }
-        catch
-        {
-            /* ignore */
-        }
-
-        await Task.CompletedTask;
+        var entity = new TestAuditEntity { Name = "Err", Age = 1, IsActive = true, Balance = 0m };
+        entity.SetCreatedBy("creator");
+        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(""));
     }
 
     private Task<(TestAuditDbContext ctx, TestPublisher publisher)> CreateScopeAsync()
@@ -82,6 +71,171 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         await ctx.SaveChangesAsync();
         TestPublisher.Received.Count(c => c.Action == AuditLogAction.Created && c.Keys.Values.Contains(entity.Id))
             .ShouldBeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Delete_Produces_Audit_Log()
+    {
+        TestPublisher.Clear();
+        var (ctx, _) = await CreateScopeAsync();
+        var entity = new TestAuditEntity { Name = "User3", Age = 40, IsActive = false, Balance = 0m };
+        entity.SetCreatedBy("creator-3");
+        ctx.AuditEntities.Add(entity);
+        await ctx.SaveChangesAsync();
+        TestPublisher.Clear();
+
+        ctx.AuditEntities.Remove(entity);
+        await ctx.SaveChangesAsync();
+        await Task.Delay(1000);
+
+        //await WaitForLogsAsync(publisher, 1);
+        var logs = TestPublisher.Received.ToList();
+        logs.Count.ShouldBeGreaterThanOrEqualTo(1);
+        var log = logs[0];
+        log.EntityName.ShouldBe(nameof(TestAuditEntity));
+        log.CreatedBy.ShouldBe("creator-3");
+        log.UpdatedBy.ShouldBeNull();
+        log.Action.ShouldBe(AuditLogAction.Deleted); // assert action
+        log.Changes.Count.ShouldBeGreaterThan(0);
+        log.Changes.ShouldAllBe(c => c.NewValue == null);
+        // Ensure at least one core property listed
+        log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Name));
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (_provider is IDisposable d) d.Dispose();
+        try
+        {
+            if (File.Exists(_dbPath)) File.Delete(_dbPath);
+        }
+        catch
+        {
+            /* ignore */
+        }
+
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Duplicate_Hook_Registration_Does_Not_Duplicate_Logs()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
+        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
+        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
+        var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var publishers = scope.ServiceProvider.GetAuditLogPublishers<TestAuditDbContext>().ToList();
+        publishers.Count.ShouldBeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task Exception_In_Publisher_Is_Swallowed()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
+        services.AddEfCoreAuditLogs<TestAuditDbContext, FailingPublisher>();
+        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
+        var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
+        await ctx.Database.EnsureCreatedAsync();
+
+        var entity = new TestAuditEntity { Name = "UserEX", Age = 10, IsActive = true, Balance = 1m };
+        entity.SetCreatedBy("creator-ex");
+        ctx.Add(entity);
+        await ctx.SaveChangesAsync();
+        TestPublisher.Clear();
+
+        entity.Age = 11;
+        entity.UpdateProfile("updater-ex");
+        await ctx.SaveChangesAsync(); // should not throw
+        await Task.Delay(200);
+
+        //await WaitForLogsAsync(goodPublisher, 1);
+        TestPublisher.Received.Count.ShouldBe(1);
+        TestPublisher.Received.First().Action.ShouldBe(AuditLogAction.Updated); // assert action
+    }
+
+    public async Task InitializeAsync()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddEfCoreAuditHook<TestAuditDbContext>(); // register hook
+        services
+            .AddEfCoreAuditLogs<TestAuditDbContext,
+                TestPublisher>(); // singleton publisher so fire-and-forget scope shares instance
+        services.AddDbContextWithHook<TestAuditDbContext>((_, options) =>
+        {
+            options.UseSqlite($"Data Source={_dbPath}");
+            options.EnableSensitiveDataLogging();
+        });
+
+        _provider = services.BuildServiceProvider();
+        await using var scope = _provider.CreateAsyncScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
+        await ctx.Database.EnsureDeletedAsync();
+        await ctx.Database.EnsureCreatedAsync();
+    }
+
+    [Fact]
+    public void LastModified_Properties_Reflect_Created_Then_Updated()
+    {
+        var entity = new TestAuditEntity { Name = "LM", Age = 2, IsActive = true, Balance = 0m };
+        entity.SetCreatedBy("creator");
+        entity.LastModifiedBy.ShouldBe("creator");
+        entity.LastModifiedOn.ShouldBe(entity.CreatedOn);
+        entity.SetUpdatedBy("updater");
+        entity.LastModifiedBy.ShouldBe("updater");
+        entity.LastModifiedOn.ShouldBe(entity.UpdatedOn.Value);
+    }
+
+    [Fact]
+    public async Task Multiple_Modified_Entities_Produce_Multiple_Logs()
+    {
+        var (ctx, _) = await CreateScopeAsync();
+        var e1 = new TestAuditEntity { Name = "UserA", Age = 20, IsActive = true, Balance = 10m };
+        var e2 = new TestAuditEntity { Name = "UserB", Age = 21, IsActive = true, Balance = 11m };
+        e1.SetCreatedBy("creator-a");
+        e2.SetCreatedBy("creator-b");
+        ctx.AddRange(e1, e2);
+        await ctx.SaveChangesAsync();
+        TestPublisher.Clear();
+
+        e1.UpdateProfile("updater-a", "note-a");
+        e2.UpdateProfile("updater-b", "note-b");
+        e1.Age = 21;
+        e2.Balance = 15m;
+        await ctx.SaveChangesAsync();
+        await Task.Delay(1000);
+
+        //await WaitForLogsAsync(publisher, 2);
+        var logs = TestPublisher.Received.ToList();
+        logs.Count(e => e.Action == AuditLogAction.Updated).ShouldBeGreaterThanOrEqualTo(2);
+        logs.Where(e => e.Action == AuditLogAction.Updated).ShouldContain(l => l.UpdatedBy == "updater-a");
+        logs.Where(e => e.Action == AuditLogAction.Updated).ShouldContain(l => l.UpdatedBy == "updater-b");
+        logs.Where(e => e.Action == AuditLogAction.Updated).First(l => l.UpdatedBy == "updater-a").Changes
+            .ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Age));
+        logs.Where(e => e.Action == AuditLogAction.Updated).First(l => l.UpdatedBy == "updater-b").Changes
+            .ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Balance));
+    }
+
+    [Fact]
+    public async Task NoChange_Does_Not_Create_Log()
+    {
+        var (ctx, _) = await CreateScopeAsync();
+        var entity = new TestAuditEntity { Name = "UserNC", Age = 10, IsActive = true, Balance = 1m };
+        entity.SetCreatedBy("creator-nc");
+        ctx.AuditEntities.Add(entity);
+        await ctx.SaveChangesAsync();
+        TestPublisher.Clear();
+
+        // Save without modifications
+        await ctx.SaveChangesAsync();
+        TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(0);
     }
 
     [Fact]
@@ -121,157 +275,15 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.Changes.ShouldContain(c => c.FieldName == nameof(AuditedEntity<Guid>.UpdatedOn));
     }
 
-    [Fact]
-    public async Task Delete_Produces_Audit_Log()
-    {
-        TestPublisher.Clear();
-        var (ctx, _) = await CreateScopeAsync();
-        var entity = new TestAuditEntity { Name = "User3", Age = 40, IsActive = false, Balance = 0m };
-        entity.SetCreatedBy("creator-3");
-        ctx.AuditEntities.Add(entity);
-        await ctx.SaveChangesAsync();
-        TestPublisher.Clear();
-
-        ctx.AuditEntities.Remove(entity);
-        await ctx.SaveChangesAsync();
-        await Task.Delay(1000);
-
-        //await WaitForLogsAsync(publisher, 1);
-        var logs = TestPublisher.Received.ToList();
-        logs.Count.ShouldBeGreaterThanOrEqualTo(1);
-        var log = logs[0];
-        log.EntityName.ShouldBe(nameof(TestAuditEntity));
-        log.CreatedBy.ShouldBe("creator-3");
-        log.UpdatedBy.ShouldBeNull();
-        log.Action.ShouldBe(AuditLogAction.Deleted); // assert action
-        log.Changes.Count.ShouldBeGreaterThan(0);
-        log.Changes.ShouldAllBe(c => c.NewValue == null);
-        // Ensure at least one core property listed
-        log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Name));
-    }
-
-    [Fact]
-    public async Task Multiple_Modified_Entities_Produce_Multiple_Logs()
-    {
-        var (ctx, _) = await CreateScopeAsync();
-        var e1 = new TestAuditEntity { Name = "UserA", Age = 20, IsActive = true, Balance = 10m };
-        var e2 = new TestAuditEntity { Name = "UserB", Age = 21, IsActive = true, Balance = 11m };
-        e1.SetCreatedBy("creator-a");
-        e2.SetCreatedBy("creator-b");
-        ctx.AddRange(e1, e2);
-        await ctx.SaveChangesAsync();
-        TestPublisher.Clear();
-
-        e1.UpdateProfile("updater-a", "note-a");
-        e2.UpdateProfile("updater-b", "note-b");
-        e1.Age = 21;
-        e2.Balance = 15m;
-        await ctx.SaveChangesAsync();
-        await Task.Delay(1000);
-
-        //await WaitForLogsAsync(publisher, 2);
-        var logs = TestPublisher.Received.ToList();
-        logs.Count(e => e.Action == AuditLogAction.Updated).ShouldBeGreaterThanOrEqualTo(2);
-        logs.Where(e => e.Action == AuditLogAction.Updated).ShouldContain(l => l.UpdatedBy == "updater-a");
-        logs.Where(e => e.Action == AuditLogAction.Updated).ShouldContain(l => l.UpdatedBy == "updater-b");
-        logs.Where(e => e.Action == AuditLogAction.Updated).First(l => l.UpdatedBy == "updater-a").Changes
-            .ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Age));
-        logs.Where(e => e.Action == AuditLogAction.Updated).First(l => l.UpdatedBy == "updater-b").Changes
-            .ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Balance));
-    }
-
-    [Fact]
-    public async Task Duplicate_Hook_Registration_Does_Not_Duplicate_Logs()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
-        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
-        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
-        var provider = services.BuildServiceProvider();
-        await using var scope = provider.CreateAsyncScope();
-        var publishers = scope.ServiceProvider.GetAuditLogPublishers<TestAuditDbContext>().ToList();
-        publishers.Count.ShouldBeGreaterThanOrEqualTo(1);
-    }
-
-    [Fact]
-    public async Task NoChange_Does_Not_Create_Log()
-    {
-        var (ctx, _) = await CreateScopeAsync();
-        var entity = new TestAuditEntity { Name = "UserNC", Age = 10, IsActive = true, Balance = 1m };
-        entity.SetCreatedBy("creator-nc");
-        ctx.AuditEntities.Add(entity);
-        await ctx.SaveChangesAsync();
-        TestPublisher.Clear();
-
-        // Save without modifications
-        await ctx.SaveChangesAsync();
-        TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(0);
-    }
-
-    [Fact]
-    public async Task Exception_In_Publisher_Is_Swallowed()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
-        services.AddEfCoreAuditLogs<TestAuditDbContext, FailingPublisher>();
-        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
-        var provider = services.BuildServiceProvider();
-        await using var scope = provider.CreateAsyncScope();
-        var ctx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
-        await ctx.Database.EnsureCreatedAsync();
-
-        var entity = new TestAuditEntity { Name = "UserEX", Age = 10, IsActive = true, Balance = 1m };
-        entity.SetCreatedBy("creator-ex");
-        ctx.Add(entity);
-        await ctx.SaveChangesAsync();
-        TestPublisher.Clear();
-
-        entity.Age = 11;
-        entity.UpdateProfile("updater-ex");
-        await ctx.SaveChangesAsync(); // should not throw
-        await Task.Delay(200);
-
-        //await WaitForLogsAsync(goodPublisher, 1);
-        TestPublisher.Received.Count.ShouldBe(1);
-        TestPublisher.Received.First().Action.ShouldBe(AuditLogAction.Updated); // assert action
-    }
-
-    [Fact]
-    public void AuditedEntity_SetCreatedBy_Is_Idempotent()
-    {
-        var entity = new TestAuditEntity { Name = "Idem", Age = 1, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("first");
-        var firstOn = entity.CreatedOn;
-        entity.SetCreatedBy("second", DateTimeOffset.UtcNow.AddDays(-1));
-        entity.CreatedBy.ShouldBe("first");
-        entity.CreatedOn.ShouldBe(firstOn);
-    }
-
-    [Fact]
-    public void AuditedEntity_SetUpdatedBy_Throws_On_Empty()
-    {
-        var entity = new TestAuditEntity { Name = "Err", Age = 1, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("creator");
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(""));
-    }
-
-    [Fact]
-    public void LastModified_Properties_Reflect_Created_Then_Updated()
-    {
-        var entity = new TestAuditEntity { Name = "LM", Age = 2, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("creator");
-        entity.LastModifiedBy.ShouldBe("creator");
-        entity.LastModifiedOn.ShouldBe(entity.CreatedOn);
-        entity.SetUpdatedBy("updater");
-        entity.LastModifiedBy.ShouldBe("updater");
-        entity.LastModifiedOn.ShouldBe(entity.UpdatedOn.Value);
-    }
+    #endregion
 }
 
 internal sealed class FailingPublisher : IAuditLogPublisher
 {
+    #region Methods
+
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
         => throw new InvalidOperationException("Simulated failure");
+
+    #endregion
 }

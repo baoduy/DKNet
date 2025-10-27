@@ -5,6 +5,92 @@ namespace SlimBus.App.Tests.Unit;
 
 public class ProfileModelsTests
 {
+    #region Methods
+
+    [Fact]
+    public void CreateProfileCommandPropertiesShouldSetCorrectly()
+    {
+        // Arrange
+        var command = new CreateProfileCommand();
+        var email = "test@example.com";
+        var phone = "+1234567890";
+        var name = "Test User";
+
+        // Act
+        command.Email = email;
+        command.Phone = phone;
+        command.Name = name;
+
+        // Assert
+        command.Email.ShouldBe(email);
+        command.Phone.ShouldBe(phone);
+        command.Name.ShouldBe(name);
+    }
+
+    [Theory]
+    [InlineData("test@example.com", "+1234567890", "Test User")]
+    [InlineData("another@example.com", "+0987654321", "Another User")]
+    public void CreateProfileCommandWithDifferentValuesShouldWork(string email, string phone, string name)
+    {
+        // Act
+        var command = new CreateProfileCommand
+        {
+            Email = email,
+            Phone = phone,
+            Name = name
+        };
+
+        // Assert
+        command.Email.ShouldBe(email);
+        command.Phone.ShouldBe(phone);
+        command.Name.ShouldBe(name);
+    }
+
+    [Fact]
+    public void DeleteProfileCommandPropertiesShouldSetCorrectly()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        // Act
+        var command = new DeleteProfileCommand
+        {
+            Id = id
+        };
+
+        // Assert
+        command.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void DeleteProfileCommandWithGuidEmptyShouldWork()
+    {
+        // Act
+        var command = new DeleteProfileCommand
+        {
+            Id = Guid.Empty
+        };
+
+        // Assert
+        command.Id.ShouldBe(Guid.Empty);
+    }
+
+    [Fact]
+    public void ProfileResultPhoneCanBeNull()
+    {
+        // Arrange & Act
+        var result = new ProfileResult
+        {
+            Id = Guid.NewGuid(),
+            Name = "Jane Doe",
+            Email = "jane.doe@example.com",
+            Phone = null
+        };
+
+        // Assert
+        result.Phone.ShouldBeNull();
+    }
+
     [Fact]
     public void ProfileResultPropertiesShouldSetCorrectly()
     {
@@ -31,67 +117,6 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void ProfileResultPhoneCanBeNull()
-    {
-        // Arrange & Act
-        var result = new ProfileResult
-        {
-            Id = Guid.NewGuid(),
-            Name = "Jane Doe",
-            Email = "jane.doe@example.com",
-            Phone = null
-        };
-
-        // Assert
-        result.Phone.ShouldBeNull();
-    }
-
-    [Fact]
-    public void CreateProfileCommandPropertiesShouldSetCorrectly()
-    {
-        // Arrange
-        var command = new CreateProfileCommand();
-        var email = "test@example.com";
-        var phone = "+1234567890";
-        var name = "Test User";
-
-        // Act
-        command.Email = email;
-        command.Phone = phone;
-        command.Name = name;
-
-        // Assert
-        command.Email.ShouldBe(email);
-        command.Phone.ShouldBe(phone);
-        command.Name.ShouldBe(name);
-    }
-
-    [Fact]
-    public void UpdateProfileCommandPropertiesShouldSetCorrectly()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var email = "updated@example.com";
-        var phone = "+0987654321";
-        var name = "Updated User";
-
-        // Act
-        var command = new UpdateProfileCommand
-        {
-            Id = id,
-            Email = email,
-            Phone = phone,
-            Name = name
-        };
-
-        // Assert
-        command.Id.ShouldBe(id);
-        command.Email.ShouldBe(email);
-        command.Phone.ShouldBe(phone);
-        command.Name.ShouldBe(name);
-    }
-
-    [Fact]
     public void UpdateProfileCommandOptionalPropertiesCanBeNull()
     {
         // Arrange
@@ -114,35 +139,25 @@ public class ProfileModelsTests
     }
 
     [Fact]
-    public void DeleteProfileCommandPropertiesShouldSetCorrectly()
+    public void UpdateProfileCommandPropertiesShouldSetCorrectly()
     {
         // Arrange
         var id = Guid.NewGuid();
+        var email = "updated@example.com";
+        var phone = "+0987654321";
+        var name = "Updated User";
 
         // Act
-        var command = new DeleteProfileCommand
+        var command = new UpdateProfileCommand
         {
-            Id = id
-        };
-
-        // Assert
-        command.Id.ShouldBe(id);
-    }
-
-    [Theory]
-    [InlineData("test@example.com", "+1234567890", "Test User")]
-    [InlineData("another@example.com", "+0987654321", "Another User")]
-    public void CreateProfileCommandWithDifferentValuesShouldWork(string email, string phone, string name)
-    {
-        // Act
-        var command = new CreateProfileCommand
-        {
+            Id = id,
             Email = email,
             Phone = phone,
             Name = name
         };
 
         // Assert
+        command.Id.ShouldBe(id);
         command.Email.ShouldBe(email);
         command.Phone.ShouldBe(phone);
         command.Name.ShouldBe(name);
@@ -172,16 +187,5 @@ public class ProfileModelsTests
         command.Name.ShouldBe(name);
     }
 
-    [Fact]
-    public void DeleteProfileCommandWithGuidEmptyShouldWork()
-    {
-        // Act
-        var command = new DeleteProfileCommand
-        {
-            Id = Guid.Empty
-        };
-
-        // Assert
-        command.Id.ShouldBe(Guid.Empty);
-    }
+    #endregion
 }

@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../../LICENSE)
 
-Azure Blob Storage implementation of the DKNet blob storage abstractions, providing seamless integration with Azure Storage services. This package offers production-ready blob storage capabilities with Azure-specific optimizations and features.
+Azure Blob Storage implementation of the DKNet blob storage abstractions, providing seamless integration with Azure
+Storage services. This package offers production-ready blob storage capabilities with Azure-specific optimizations and
+features.
 
 ## Features
 
@@ -618,4 +620,5 @@ This project is licensed under the [MIT License](../../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

@@ -8,16 +8,16 @@
         <Nullable>enable</Nullable>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
-        
+
         <!-- Don't include the generator DLL in the lib folder -->
         <IncludeBuildOutput>false</IncludeBuildOutput>
-        
+
         <!-- This is a development dependency -->
         <DevelopmentDependency>true</DevelopmentDependency>
-        
+
         <!-- Disable symbols package for source generators -->
         <IncludeSymbols>false</IncludeSymbols>
-        
+
         <!-- Suppress warnings about netstandard2.0 -->
         <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
@@ -29,11 +29,11 @@
 
     <ItemGroup>
         <!-- Pack the generator DLL as an analyzer -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+
         <!-- Include the attribute file in consuming projects -->
-        <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile" />
-        
+        <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
+
         <!-- Standard package files -->
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>

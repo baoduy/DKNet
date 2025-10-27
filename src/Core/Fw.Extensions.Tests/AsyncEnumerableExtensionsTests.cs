@@ -64,7 +64,8 @@ public class AsyncEnumerableExtensionsTests
         items.ShouldBeEquivalentTo(result.ToArray());
     }
 
-#nullable enable
+    #region Methods
+
     [Fact]
     public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
     {
@@ -82,6 +83,9 @@ public class AsyncEnumerableExtensionsTests
         result[1].ShouldBeNull();
         result[2].ShouldBe("world");
     }
+
+    #endregion
+
 #nullable disable
 
     private static async IAsyncEnumerable<T> CreateAsyncEnumerable<T>(IEnumerable<T> items)

@@ -10,6 +10,8 @@ namespace DKNet.Fw.Extensions;
 /// </summary>
 public static class EnumExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Gets the display attribute of the provided enum.
     /// </summary>
@@ -71,4 +73,6 @@ public static class EnumExtensions
             };
         }
     }
+
+    #endregion
 }

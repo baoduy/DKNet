@@ -2,6 +2,8 @@
 
 public class DefaultKeyTests
 {
+    #region Methods
+
     [Fact]
     public void DefaultKey()
     {
@@ -14,4 +16,6 @@ public class DefaultKeyTests
             Street = "HBD"
         }.Id.ShouldBe(0);
     }
+
+    #endregion
 }

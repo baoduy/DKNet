@@ -2,37 +2,22 @@
 
 public class EntityEqualsTests
 {
-    // [Fact]
-    // public void TestGetHashCode()
-    // {
-    //     var user1 = new User(0, "Hello") { FirstName = "Steven", LastName = "Smith" };
-    //     var user2 = new User(-10, "BBB"){ FirstName = "Steven", LastName = "Smith" };
-
-    //     //user1.GetHashCode().ShouldNotBe(user2.GetHashCode());
-
-    //     var user3 = new User(1, "Hello"){ FirstName = "Steven", LastName = "Smith" };
-    //     var user4 = new User(1, "Hello"){ FirstName = "Steven", LastName = "Smith" };
-
-    //     //user3.GetHashCode().ShouldBe(user4.GetHashCode());
-    // }
+    #region Methods
 
     [Fact]
-    public void TestReferenceEquals()
+    public void CanRemoveItemFromHashSet()
     {
-        var user1 = new User(1, "Hello")
+        var set = new HashSet<User>
         {
-            FirstName = "Steven",
-            LastName = "Smith"
-        };
-        var user2 = new User(0, "BBB")
-        {
-            FirstName = "Steven",
-            LastName = "Smith"
+            new(1, "Hoang")
+                { FirstName = "Steven", LastName = "Smith" },
+            new(2, "Duy")
+                { FirstName = "Steven", LastName = "Smith" }
         };
 
-        user1.Equals(user2).ShouldBeFalse();
-        user1.Equals(user1).ShouldBeTrue();
-        user2.Equals(user2).ShouldBeTrue();
+        set.Remove(set.First());
+
+        set.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
     //[Fact]
@@ -80,20 +65,38 @@ public class EntityEqualsTests
 
         set.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
+    // [Fact]
+    // public void TestGetHashCode()
+    // {
+    //     var user1 = new User(0, "Hello") { FirstName = "Steven", LastName = "Smith" };
+    //     var user2 = new User(-10, "BBB"){ FirstName = "Steven", LastName = "Smith" };
+
+    //     //user1.GetHashCode().ShouldNotBe(user2.GetHashCode());
+
+    //     var user3 = new User(1, "Hello"){ FirstName = "Steven", LastName = "Smith" };
+    //     var user4 = new User(1, "Hello"){ FirstName = "Steven", LastName = "Smith" };
+
+    //     //user3.GetHashCode().ShouldBe(user4.GetHashCode());
+    // }
 
     [Fact]
-    public void CanRemoveItemFromHashSet()
+    public void TestReferenceEquals()
     {
-        var set = new HashSet<User>
+        var user1 = new User(1, "Hello")
         {
-            new(1, "Hoang")
-                { FirstName = "Steven", LastName = "Smith" },
-            new(2, "Duy")
-                { FirstName = "Steven", LastName = "Smith" }
+            FirstName = "Steven",
+            LastName = "Smith"
+        };
+        var user2 = new User(0, "BBB")
+        {
+            FirstName = "Steven",
+            LastName = "Smith"
         };
 
-        set.Remove(set.First());
-
-        set.Count.ShouldBeGreaterThanOrEqualTo(1);
+        user1.Equals(user2).ShouldBeFalse();
+        user1.Equals(user1).ShouldBeTrue();
+        user2.Equals(user2).ShouldBeTrue();
     }
+
+    #endregion
 }

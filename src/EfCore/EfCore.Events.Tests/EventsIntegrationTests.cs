@@ -5,6 +5,43 @@ namespace EfCore.Events.Tests;
 public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture fixture)
     : IClassFixture<EventRunnerFixture>
 {
+    #region Methods
+
+    [Fact]
+    public async Task FullEventFlow_WithConcurrentSaves_ShouldPublishAllEvents()
+    {
+        // Arrange
+        await fixture.EnsureSqlReadyAsync();
+
+        TestEventPublisher.Events.Clear();
+
+        for (var i = 0; i < 5; i++)
+        {
+            var index = i;
+            await Task.Run(async () =>
+            {
+                using var scope = fixture.Provider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<DddContext>();
+
+                var root = new Root($"Concurrent Root {index}", "TestOwner");
+                root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = $"Concurrent Event {index}" });
+
+                db.Set<Root>().Add(root);
+                await db.SaveChangesAsync();
+            });
+        }
+
+        // Assert
+        TestEventPublisher.Events.ShouldNotBeEmpty();
+        TestEventPublisher.Events.Count.ShouldBeGreaterThanOrEqualTo(4);
+        TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
+
+        var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Name).ToList();
+        output.WriteLine($"Names: {string.Join('\n', events)}");
+        for (var i = 0; i < 5; i++)
+            events.ShouldContain(e => e.Equals($"Concurrent Event {i}", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public async Task FullEventFlow_WithDirectEvents_ShouldPublishCorrectly()
     {
@@ -29,6 +66,34 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
         var publishedEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
         publishedEvent.Id.ShouldBe(root.Id);
         publishedEvent.Name.ShouldBe("Integration Test Root");
+    }
+
+    [Fact]
+    public async Task FullEventFlow_WithEntityUpdate_ShouldPublishUpdateEvents()
+    {
+        // Arrange
+        await fixture.EnsureSqlReadyAsync();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+
+        // First, create and save the entity
+        var root = new Root("Original Name", "TestOwner");
+        db.Set<Root>().Add(root);
+        await db.SaveChangesAsync();
+
+        TestEventPublisher.Events.Clear();
+
+        // Act - Update the entity and add an event
+        root.UpdateName("Updated Name");
+        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = "Entity Updated" });
+        await db.SaveChangesAsync();
+
+        // Assert
+        TestEventPublisher.Events.ShouldNotBeEmpty();
+        TestEventPublisher.Events.Count.ShouldBe(1);
+        TestEventPublisher.Events[0].ShouldBeOfType<EntityAddedEvent>();
+
+        var updateEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
+        updateEvent.Name.ShouldBe("Entity Updated");
     }
 
     [Fact]
@@ -124,34 +189,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     }
 
     [Fact]
-    public async Task FullEventFlow_WithEntityUpdate_ShouldPublishUpdateEvents()
-    {
-        // Arrange
-        await fixture.EnsureSqlReadyAsync();
-        var db = fixture.Provider.GetRequiredService<DddContext>();
-
-        // First, create and save the entity
-        var root = new Root("Original Name", "TestOwner");
-        db.Set<Root>().Add(root);
-        await db.SaveChangesAsync();
-
-        TestEventPublisher.Events.Clear();
-
-        // Act - Update the entity and add an event
-        root.UpdateName("Updated Name");
-        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = "Entity Updated" });
-        await db.SaveChangesAsync();
-
-        // Assert
-        TestEventPublisher.Events.ShouldNotBeEmpty();
-        TestEventPublisher.Events.Count.ShouldBe(1);
-        TestEventPublisher.Events[0].ShouldBeOfType<EntityAddedEvent>();
-
-        var updateEvent = (EntityAddedEvent)TestEventPublisher.Events[0];
-        updateEvent.Name.ShouldBe("Entity Updated");
-    }
-
-    [Fact]
     public async Task FullEventFlow_WithNestedEntities_ShouldPublishNestedEntityEvents()
     {
         // Arrange
@@ -234,38 +271,5 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
         TestEventPublisher.Events.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    [Fact]
-    public async Task FullEventFlow_WithConcurrentSaves_ShouldPublishAllEvents()
-    {
-        // Arrange
-        await fixture.EnsureSqlReadyAsync();
-
-        TestEventPublisher.Events.Clear();
-
-        for (var i = 0; i < 5; i++)
-        {
-            var index = i;
-            await Task.Run(async () =>
-            {
-                using var scope = fixture.Provider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<DddContext>();
-
-                var root = new Root($"Concurrent Root {index}", "TestOwner");
-                root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = $"Concurrent Event {index}" });
-
-                db.Set<Root>().Add(root);
-                await db.SaveChangesAsync();
-            });
-        }
-
-        // Assert
-        TestEventPublisher.Events.ShouldNotBeEmpty();
-        TestEventPublisher.Events.Count.ShouldBeGreaterThanOrEqualTo(4);
-        TestEventPublisher.Events.ShouldAllBe(e => e is EntityAddedEvent);
-
-        var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Name).ToList();
-        output.WriteLine($"Names: {string.Join('\n', events)}");
-        for (var i = 0; i < 5; i++)
-            events.ShouldContain(e => e.Equals($"Concurrent Event {i}", StringComparison.OrdinalIgnoreCase));
-    }
+    #endregion
 }

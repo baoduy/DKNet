@@ -13,6 +13,8 @@ namespace DKNet.EfCore.DataAuthorization;
 /// </remarks>
 public interface IDataOwnerProvider
 {
+    #region Methods
+
     /// <summary>
     ///     Gets the collection of data keys that the current context can access.
     /// </summary>
@@ -39,4 +41,6 @@ public interface IDataOwnerProvider
     ///     through the <see cref="DataOwnerHook" />.
     /// </remarks>
     string? GetOwnershipKey();
+
+    #endregion
 }

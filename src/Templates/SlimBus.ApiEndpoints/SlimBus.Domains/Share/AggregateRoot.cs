@@ -22,5 +22,5 @@ public abstract class AggregateRoot : AuditedEntity<Guid>
     {
     }
 
-    #endregion Constructors
+    #endregion
 }

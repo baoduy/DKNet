@@ -6,46 +6,7 @@ namespace SlimBus.App.Tests.Unit;
 
 public class ComprehensiveModelTests
 {
-    [Fact]
-    public void ProfileResultRequiredPropertiesMustBeProvided()
-    {
-        // Arrange & Act - Records with required properties will allow creation with required values
-        var result = new ProfileResult
-        {
-            Id = Guid.NewGuid(),
-            Name = "Valid Name",
-            Email = "test@example.com"
-        };
-
-        // Assert
-        result.Name.ShouldNotBeNull();
-        result.Email.ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void ProfileResultAllPropertiesSetShouldWork()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var name = "Complete User";
-        var email = "complete@example.com";
-        var phone = "+1234567890";
-
-        // Act
-        var result = new ProfileResult
-        {
-            Id = id,
-            Name = name,
-            Email = email,
-            Phone = phone
-        };
-
-        // Assert
-        result.Id.ShouldBe(id);
-        result.Name.ShouldBe(name);
-        result.Email.ShouldBe(email);
-        result.Phone.ShouldBe(phone);
-    }
+    #region Methods
 
     [Fact]
     public void CreateProfileCommandDefaultConstructorShouldInitializeProperties()
@@ -117,6 +78,172 @@ public class ComprehensiveModelTests
     }
 
     [Fact]
+    public void DeleteProfileCommandWithEmptyGuidShouldStillWork()
+    {
+        // Act
+        var command = new DeleteProfileCommand { Id = Guid.Empty };
+
+        // Assert
+        command.Id.ShouldBe(Guid.Empty);
+    }
+
+    [Fact]
+    public void DeleteProfileCommandWithValidIdShouldWork()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        // Act
+        var command = new DeleteProfileCommand { Id = id };
+
+        // Assert
+        command.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void PageableQuerySetToLargeValuesShouldWork()
+    {
+        // Act
+        var query = new PageableQuery
+        {
+            PageIndex = int.MaxValue,
+            PageSize = int.MaxValue
+        };
+
+        // Assert
+        query.PageIndex.ShouldBe(int.MaxValue);
+        query.PageSize.ShouldBe(int.MaxValue);
+    }
+
+    [Fact]
+    public void PageableQuerySetToNegativeValuesShouldStillSet()
+    {
+        // Act
+        var query = new PageableQuery
+        {
+            PageIndex = -1,
+            PageSize = -10
+        };
+
+        // Assert - The class itself doesn't validate, validation happens elsewhere
+        query.PageIndex.ShouldBe(-1);
+        query.PageSize.ShouldBe(-10);
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 10)]
+    [InlineData(10, 100)]
+    [InlineData(50, 1000)]
+    public void PageableQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
+    {
+        // Act
+        var query = new PageableQuery
+        {
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
+
+        // Assert
+        query.PageIndex.ShouldBe(pageIndex);
+        query.PageSize.ShouldBe(pageSize);
+    }
+
+    [Fact]
+    public void PageProfilePageQueryDefaultValuesShouldBeCorrect()
+    {
+        // Act
+        var query = new PageProfilePageQuery();
+
+        // Assert
+        query.PageSize.ShouldBe(100);
+        query.PageIndex.ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(5, 50)]
+    [InlineData(10, 200)]
+    [InlineData(1000, 1000)]
+    public void PageProfilePageQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
+    {
+        // Act
+        var query = new PageProfilePageQuery
+        {
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
+
+        // Assert
+        query.PageIndex.ShouldBe(pageIndex);
+        query.PageSize.ShouldBe(pageSize);
+    }
+
+    [Fact]
+    public void ProfileQueryWithEmptyGuidShouldWork()
+    {
+        // Act
+        var query = new ProfileQuery { Id = Guid.Empty };
+
+        // Assert
+        query.Id.ShouldBe(Guid.Empty);
+    }
+
+    [Fact]
+    public void ProfileQueryWithValidIdShouldWork()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        // Act
+        var query = new ProfileQuery { Id = id };
+
+        // Assert
+        query.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void ProfileResultAllPropertiesSetShouldWork()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var name = "Complete User";
+        var email = "complete@example.com";
+        var phone = "+1234567890";
+
+        // Act
+        var result = new ProfileResult
+        {
+            Id = id,
+            Name = name,
+            Email = email,
+            Phone = phone
+        };
+
+        // Assert
+        result.Id.ShouldBe(id);
+        result.Name.ShouldBe(name);
+        result.Email.ShouldBe(email);
+        result.Phone.ShouldBe(phone);
+    }
+
+    [Fact]
+    public void ProfileResultRequiredPropertiesMustBeProvided()
+    {
+        // Arrange & Act - Records with required properties will allow creation with required values
+        var result = new ProfileResult
+        {
+            Id = Guid.NewGuid(),
+            Name = "Valid Name",
+            Email = "test@example.com"
+        };
+
+        // Assert
+        result.Name.ShouldNotBeNull();
+        result.Email.ShouldNotBeNull();
+    }
+
+    [Fact]
     public void UpdateProfileCommandAllOptionalPropertiesCanBeNull()
     {
         // Arrange
@@ -160,128 +287,5 @@ public class ComprehensiveModelTests
         command.Name.ShouldBeNull();
     }
 
-    [Fact]
-    public void DeleteProfileCommandWithValidIdShouldWork()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-
-        // Act
-        var command = new DeleteProfileCommand { Id = id };
-
-        // Assert
-        command.Id.ShouldBe(id);
-    }
-
-    [Fact]
-    public void DeleteProfileCommandWithEmptyGuidShouldStillWork()
-    {
-        // Act
-        var command = new DeleteProfileCommand { Id = Guid.Empty };
-
-        // Assert
-        command.Id.ShouldBe(Guid.Empty);
-    }
-
-    [Theory]
-    [InlineData(0, 1)]
-    [InlineData(1, 10)]
-    [InlineData(10, 100)]
-    [InlineData(50, 1000)]
-    public void PageableQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
-    {
-        // Act
-        var query = new PageableQuery
-        {
-            PageIndex = pageIndex,
-            PageSize = pageSize
-        };
-
-        // Assert
-        query.PageIndex.ShouldBe(pageIndex);
-        query.PageSize.ShouldBe(pageSize);
-    }
-
-    [Fact]
-    public void PageableQuerySetToNegativeValuesShouldStillSet()
-    {
-        // Act
-        var query = new PageableQuery
-        {
-            PageIndex = -1,
-            PageSize = -10
-        };
-
-        // Assert - The class itself doesn't validate, validation happens elsewhere
-        query.PageIndex.ShouldBe(-1);
-        query.PageSize.ShouldBe(-10);
-    }
-
-    [Fact]
-    public void PageableQuerySetToLargeValuesShouldWork()
-    {
-        // Act
-        var query = new PageableQuery
-        {
-            PageIndex = int.MaxValue,
-            PageSize = int.MaxValue
-        };
-
-        // Assert
-        query.PageIndex.ShouldBe(int.MaxValue);
-        query.PageSize.ShouldBe(int.MaxValue);
-    }
-
-    [Fact]
-    public void ProfileQueryWithValidIdShouldWork()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-
-        // Act
-        var query = new ProfileQuery { Id = id };
-
-        // Assert
-        query.Id.ShouldBe(id);
-    }
-
-    [Fact]
-    public void ProfileQueryWithEmptyGuidShouldWork()
-    {
-        // Act
-        var query = new ProfileQuery { Id = Guid.Empty };
-
-        // Assert
-        query.Id.ShouldBe(Guid.Empty);
-    }
-
-    [Fact]
-    public void PageProfilePageQueryDefaultValuesShouldBeCorrect()
-    {
-        // Act
-        var query = new PageProfilePageQuery();
-
-        // Assert
-        query.PageSize.ShouldBe(100);
-        query.PageIndex.ShouldBe(0);
-    }
-
-    [Theory]
-    [InlineData(0, 1)]
-    [InlineData(5, 50)]
-    [InlineData(10, 200)]
-    [InlineData(1000, 1000)]
-    public void PageProfilePageQueryWithValidValuesShouldWork(int pageIndex, int pageSize)
-    {
-        // Act
-        var query = new PageProfilePageQuery
-        {
-            PageIndex = pageIndex,
-            PageSize = pageSize
-        };
-
-        // Assert
-        query.PageIndex.ShouldBe(pageIndex);
-        query.PageSize.ShouldBe(pageSize);
-    }
+    #endregion
 }

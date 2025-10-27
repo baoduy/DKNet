@@ -4,6 +4,8 @@ namespace Svc.PdfGenerators.Tests;
 
 public class TableOfContentsOptionsTests
 {
+    #region Methods
+
     [Fact]
     public void Constructor_SetsDefaultValues()
     {
@@ -18,45 +20,57 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void MinDepthLevel_ValidValue_SetsCorrectly()
+    public void DepthLevels_SettingEqualValues_WorksCorrectly()
     {
         // Arrange
         var options = new TableOfContentsOptions
         {
             // Act
-            MinDepthLevel = 3
+            MinDepthLevel = 3,
+            MaxDepthLevel = 3
         };
 
         // Assert
         Assert.Equal(3, options.MinDepthLevel);
+        Assert.Equal(3, options.MaxDepthLevel);
     }
 
     [Fact]
-    public void MaxDepthLevel_ValidValue_SetsCorrectly()
+    public void HasColoredLinks_CanBeSetAndRetrieved()
     {
         // Arrange
         var options = new TableOfContentsOptions
         {
             // Act
-            MaxDepthLevel = 4
+            HasColoredLinks = true
         };
 
         // Assert
-        Assert.Equal(4, options.MaxDepthLevel);
+        Assert.True(options.HasColoredLinks);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(7)]
-    [InlineData(-1)]
-    [InlineData(10)]
-    public void MinDepthLevel_InvalidValue_ThrowsArgumentOutOfRangeException(int invalidValue)
+    [Fact]
+    public void ListStyle_CanBeSetAndRetrieved()
+    {
+        // Arrange
+        var options = new TableOfContentsOptions
+        {
+            // Act
+            ListStyle = ListStyle.Decimals
+        };
+
+        // Assert
+        Assert.Equal(ListStyle.Decimals, options.ListStyle);
+    }
+
+    [Fact]
+    public void MaxDepthLevel_DefaultValue_ReturnsSix()
     {
         // Arrange
         var options = new TableOfContentsOptions();
 
         // Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => options.MinDepthLevel = invalidValue);
+        Assert.Equal(6, options.MaxDepthLevel);
     }
 
     [Theory]
@@ -74,19 +88,6 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void MinDepthLevel_GreaterThanMaxDepthLevel_ThrowsArgumentOutOfRangeException()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            MaxDepthLevel = 3
-        };
-
-        // Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => options.MinDepthLevel = 4);
-    }
-
-    [Fact]
     public void MaxDepthLevel_LessThanMinDepthLevel_ThrowsArgumentOutOfRangeException()
     {
         // Arrange
@@ -97,6 +98,36 @@ public class TableOfContentsOptionsTests
 
         // Act & Assert
         Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepthLevel = 2);
+    }
+
+    [Fact]
+    public void MaxDepthLevel_SetToSameAsMinDepthLevel_DoesNotThrow()
+    {
+        // Arrange
+        var options = new TableOfContentsOptions
+        {
+            MinDepthLevel = 4,
+            // Act
+            MaxDepthLevel = 4
+        };
+
+        // Assert
+        Assert.Equal(4, options.MinDepthLevel);
+        Assert.Equal(4, options.MaxDepthLevel);
+    }
+
+    [Fact]
+    public void MaxDepthLevel_ValidValue_SetsCorrectly()
+    {
+        // Arrange
+        var options = new TableOfContentsOptions
+        {
+            // Act
+            MaxDepthLevel = 4
+        };
+
+        // Assert
+        Assert.Equal(4, options.MaxDepthLevel);
     }
 
     [Theory]
@@ -121,50 +152,6 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void SetMaxDepthLevelFirst_ThenMinDepthLevel_WorksCorrectly()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            // Act
-            MaxDepthLevel = 4,
-            MinDepthLevel = 2
-        };
-
-        // Assert
-        Assert.Equal(2, options.MinDepthLevel);
-        Assert.Equal(4, options.MaxDepthLevel);
-    }
-
-    [Fact]
-    public void ListStyle_CanBeSetAndRetrieved()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            // Act
-            ListStyle = ListStyle.Decimals
-        };
-
-        // Assert
-        Assert.Equal(ListStyle.Decimals, options.ListStyle);
-    }
-
-    [Fact]
-    public void HasColoredLinks_CanBeSetAndRetrieved()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            // Act
-            HasColoredLinks = true
-        };
-
-        // Assert
-        Assert.True(options.HasColoredLinks);
-    }
-
-    [Fact]
     public void MinDepthLevel_DefaultValue_ReturnsOne()
     {
         // Arrange
@@ -175,29 +162,30 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void MaxDepthLevel_DefaultValue_ReturnsSix()
+    public void MinDepthLevel_GreaterThanMaxDepthLevel_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var options = new TableOfContentsOptions
+        {
+            MaxDepthLevel = 3
+        };
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.MinDepthLevel = 4);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(7)]
+    [InlineData(-1)]
+    [InlineData(10)]
+    public void MinDepthLevel_InvalidValue_ThrowsArgumentOutOfRangeException(int invalidValue)
     {
         // Arrange
         var options = new TableOfContentsOptions();
 
         // Act & Assert
-        Assert.Equal(6, options.MaxDepthLevel);
-    }
-
-    [Fact]
-    public void DepthLevels_SettingEqualValues_WorksCorrectly()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            // Act
-            MinDepthLevel = 3,
-            MaxDepthLevel = 3
-        };
-
-        // Assert
-        Assert.Equal(3, options.MinDepthLevel);
-        Assert.Equal(3, options.MaxDepthLevel);
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.MinDepthLevel = invalidValue);
     }
 
     [Fact]
@@ -217,18 +205,34 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void MaxDepthLevel_SetToSameAsMinDepthLevel_DoesNotThrow()
+    public void MinDepthLevel_ValidValue_SetsCorrectly()
     {
         // Arrange
         var options = new TableOfContentsOptions
         {
-            MinDepthLevel = 4,
             // Act
-            MaxDepthLevel = 4
+            MinDepthLevel = 3
         };
 
         // Assert
-        Assert.Equal(4, options.MinDepthLevel);
+        Assert.Equal(3, options.MinDepthLevel);
+    }
+
+    [Fact]
+    public void SetMaxDepthLevelFirst_ThenMinDepthLevel_WorksCorrectly()
+    {
+        // Arrange
+        var options = new TableOfContentsOptions
+        {
+            // Act
+            MaxDepthLevel = 4,
+            MinDepthLevel = 2
+        };
+
+        // Assert
+        Assert.Equal(2, options.MinDepthLevel);
         Assert.Equal(4, options.MaxDepthLevel);
     }
+
+    #endregion
 }

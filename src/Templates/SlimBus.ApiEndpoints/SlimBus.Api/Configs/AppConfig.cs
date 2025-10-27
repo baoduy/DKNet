@@ -9,6 +9,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class AppConfig
 {
+    #region Methods
+
     public static IServiceCollection AddAppConfig(this IServiceCollection services, FeatureOptions features,
         IConfiguration configuration)
     {
@@ -61,4 +63,6 @@ internal static class AppConfig
 
         return app.RunAsync();
     }
+
+    #endregion
 }

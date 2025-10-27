@@ -2,6 +2,8 @@
 
 public class TokenResolversTests
 {
+    #region Methods
+
     [Fact]
     public void TestTokenResolver()
     {
@@ -79,4 +81,6 @@ public class TokenResolversTests
 
         action.ShouldThrow<ArgumentNullException>();
     }
+
+    #endregion
 }

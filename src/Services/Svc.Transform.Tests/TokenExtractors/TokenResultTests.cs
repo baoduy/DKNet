@@ -4,17 +4,7 @@ namespace Svc.Transform.Tests.TokenExtractors;
 
 public class TokenResultTests
 {
-    [Fact]
-    public void CreateTokenResult()
-    {
-        var t = new TokenResult(TransformOptions.CurlyBrackets, "{A}", "123 {A}", 4);
-
-        t.Definition.ShouldBeOfType<TokenDefinition>();
-        t.Key.ShouldBe("A");
-        t.Key.ShouldBe("A");
-        t.Index.ShouldBe(4);
-        t.OriginalString.ShouldBe("123 {A}");
-    }
+    #region Methods
 
     [Fact]
     public void CreateCustomTokenResult()
@@ -26,6 +16,18 @@ public class TokenResultTests
         t.Key.ShouldBe("A");
         t.Index.ShouldBe(4);
         t.OriginalString.ShouldBe("123 {{A}}");
+    }
+
+    [Fact]
+    public void CreateTokenResult()
+    {
+        var t = new TokenResult(TransformOptions.CurlyBrackets, "{A}", "123 {A}", 4);
+
+        t.Definition.ShouldBeOfType<TokenDefinition>();
+        t.Key.ShouldBe("A");
+        t.Key.ShouldBe("A");
+        t.Index.ShouldBe(4);
+        t.OriginalString.ShouldBe("123 {A}");
     }
 
     [Fact]
@@ -69,4 +71,6 @@ public class TokenResultTests
         var action = () => new TokenResult(TransformOptions.SquareBrackets, null!, "123 [A]", 1);
         action.ShouldThrow<ArgumentNullException>();
     }
+
+    #endregion
 }

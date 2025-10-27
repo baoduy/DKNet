@@ -11,6 +11,23 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.Merchants;
 public partial record MerchantBalanceDto
 {
     /// <summary>
+    /// Gets or sets the AvailableAmount.
+    /// </summary>
+    public decimal AvailableAmount { get; init; }
+    /// <summary>
+    /// Gets or sets the AvailableCount.
+    /// </summary>
+    public int AvailableCount { get; init; }
+    /// <summary>
+    /// Gets or sets the Currency.
+    /// </summary>
+    [MaxLength(3)]
+    public required string Currency { get; init; }
+    /// <summary>
+    /// Gets or sets the FeeAmount.
+    /// </summary>
+    public decimal FeeAmount { get; init; }
+    /// <summary>
     /// Gets or sets the Merchant.
     /// </summary>
     public Merchant Merchant { get; init; } = null!;
@@ -19,38 +36,25 @@ public partial record MerchantBalanceDto
     /// </summary>
     public Guid MerchantId { get; init; }
     /// <summary>
-    /// Gets or sets the ReservedAmount.
-    /// </summary>
-    public decimal ReservedAmount { get; init; }
-    /// <summary>
-    /// Gets or sets the AvailableAmount.
-    /// </summary>
-    public decimal AvailableAmount { get; init; }
-    /// <summary>
-    /// Gets or sets the FeeAmount.
-    /// </summary>
-    public decimal FeeAmount { get; init; }
-    /// <summary>
     /// Gets or sets the PendingAmount.
     /// </summary>
     public decimal PendingAmount { get; init; }
-    /// <summary>
-    /// Gets or sets the AvailableCount.
-    /// </summary>
-    public int AvailableCount { get; init; }
     /// <summary>
     /// Gets or sets the PendingCount.
     /// </summary>
     public int PendingCount { get; init; }
     /// <summary>
-    /// Gets or sets the Currency.
+    /// Gets or sets the ReservedAmount.
     /// </summary>
-    [MaxLength(3)]
-    public required string Currency { get; init; }
+    public decimal ReservedAmount { get; init; }
     /// <summary>
     /// Gets or sets the RowVersion.
     /// </summary>
     public byte[]? RowVersion { get; init; }
+    /// <summary>
+    /// Gets or sets the CreatedOn.
+    /// </summary>
+    public DateTimeOffset CreatedOn { get; init; }
     /// <summary>
     /// Gets or sets the LastModifiedBy.
     /// </summary>
@@ -59,10 +63,6 @@ public partial record MerchantBalanceDto
     /// Gets or sets the LastModifiedOn.
     /// </summary>
     public DateTimeOffset LastModifiedOn { get; init; }
-    /// <summary>
-    /// Gets or sets the CreatedOn.
-    /// </summary>
-    public DateTimeOffset CreatedOn { get; init; }
     /// <summary>
     /// Gets or sets the UpdatedOn.
     /// </summary>

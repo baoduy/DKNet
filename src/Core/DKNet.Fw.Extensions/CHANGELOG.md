@@ -8,23 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README documentation with usage examples
 - Standardized changelog following Keep a Changelog format
 - Enhanced API documentation for all public methods
 
 ### Changed
+
 - N/A
 
 ### Deprecated
+
 - N/A
 
 ### Removed
+
 - N/A
 
 ### Fixed
+
 - N/A
 
 ### Security
+
 - N/A
 
 ## Migration Guide
@@ -36,12 +42,15 @@ This section will be updated as breaking changes are introduced in future versio
 Currently, all APIs are stable and no migration is required.
 
 #### String Extensions
+
 All string extension methods maintain backward compatibility.
 
-#### DateTime Extensions  
+#### DateTime Extensions
+
 All DateTime extension methods maintain backward compatibility.
 
 #### Enum Extensions
+
 All enum extension methods maintain backward compatibility.
 
 ---

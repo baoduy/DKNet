@@ -8,30 +8,7 @@ namespace EfCore.Events.Tests;
 
 public class EventExtensionsTests
 {
-    [Fact]
-    public void GetEntityKeyValues_WithSinglePrimaryKey_ShouldReturnCorrectValues()
-    {
-        // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        var root = new Root("Test Root", "TestOwner");
-        context.Set<Root>().Add(root);
-        context.ChangeTracker.DetectChanges();
-
-        var entry = context.Entry(root);
-
-        // Act
-        var keyValues = entry.GetEntityKeyValues();
-
-        // Assert
-        keyValues.ShouldNotBeNull();
-        keyValues.ShouldNotBeEmpty();
-        keyValues.ShouldContainKey("Id");
-        keyValues["Id"].ShouldBe(root.Id);
-    }
+    #region Methods
 
     [Fact]
     public void GetEntityKeyValues_WithCompositePrimaryKey_ShouldReturnAllKeys()
@@ -57,6 +34,67 @@ public class EventExtensionsTests
         keyValues.ShouldNotBeEmpty();
         keyValues.ShouldContainKey("Id");
         keyValues["Id"].ShouldBe(entity.Id);
+    }
+
+    [Fact]
+    public async Task GetEntityKeyValues_WithEntityWithoutPrimaryKey_ShouldReturnEmptyDictionary()
+    {
+        // This test is designed to hit the null primaryKey path in GetEntityKeyValues
+        // We'll create a mock EntityEntry with no primary key to test this scenario
+
+        // Since creating a real scenario with keyless entities is complex in EF Core,
+        // we can at least verify the behavior by checking that the method handles the null case
+        // The actual test would need a custom EntityEntry mock or a keyless entity setup
+
+        // For coverage purposes, we'll test with a valid entity and confirm the happy path
+        // The null primary key path would need additional mocking infrastructure to test properly
+
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        var root = new Root("Test Root", "TestOwner");
+        context.Set<Root>().Add(root);
+        var entry = context.Entry(root);
+
+        // Act
+        var keyValues = entry.GetEntityKeyValues();
+
+        // Assert - This tests the normal path, but the null path would require more complex setup
+        keyValues.ShouldNotBeNull();
+        keyValues.ShouldNotBeEmpty();
+        keyValues.ShouldContainKey("Id");
+        keyValues["Id"].ShouldBe(root.Id);
+
+        // Note: The null primary key path in GetEntityKeyValues needs a custom test setup
+        // that's beyond the scope of this simple test. The coverage gap may require 
+        // integration testing or mocking of EntityEntry.Metadata.FindPrimaryKey()
+    }
+
+    [Fact]
+    public async Task GetEntityKeyValues_WithEntityWithPrimaryKey_ShouldReturnKeyValues()
+    {
+        // Arrange
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        var root = new Root("Test Root", "TestOwner");
+        context.Set<Root>().Add(root);
+        await context.SaveChangesAsync();
+
+        var entry = context.Entry(root);
+
+        // Act
+        var keyValues = entry.GetEntityKeyValues();
+
+        // Assert
+        keyValues.ShouldNotBeNull();
+        keyValues.ShouldNotBeEmpty();
+        keyValues.ShouldContainKey("Id");
+        keyValues["Id"].ShouldBe(root.Id);
     }
 
     [Fact]
@@ -87,53 +125,28 @@ public class EventExtensionsTests
     }
 
     [Fact]
-    public async Task GetEventObjects_WithNoEventEntities_ShouldReturnEmpty()
+    public void GetEntityKeyValues_WithSinglePrimaryKey_ShouldReturnCorrectValues()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        await using var snapshot = new SnapshotContext(context);
-
-        // Act
-        var eventObjects = snapshot.GetEventObjects(null).ToList();
-
-        // Assert
-        eventObjects.ShouldBeEmpty();
-    }
-
-    [Fact]
-    public async Task GetEventObjects_WithEventEntitiesNoMapper_ShouldReturnEventObjectsWithoutMappedEvents()
-    {
-        // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
             .UseAutoConfigModel()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options, null);
 
         var root = new Root("Test Root", "TestOwner");
-        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
         context.Set<Root>().Add(root);
+        context.ChangeTracker.DetectChanges();
 
-        await using var snapshot = new SnapshotContext(context);
+        var entry = context.Entry(root);
 
         // Act
-        var eventObjects = snapshot.GetEventObjects(null).ToList();
+        var keyValues = entry.GetEntityKeyValues();
 
         // Assert
-        eventObjects.ShouldNotBeEmpty();
-        eventObjects.Count.ShouldBe(1);
-
-        var eventObject = eventObjects.First();
-        eventObject.ShouldNotBeAssignableTo<IEventItem>();
-        // eventObject.EntityType.ShouldBe(typeof(Root).FullName);
-        // eventObject.PrimaryKey.ShouldContainKey("Id");
-        // eventObject.PrimaryKey["Id"].ShouldBe(root.Id);
-        // eventObject.Events.ShouldNotBeEmpty();
-        // eventObject.Events.Length.ShouldBe(1);
-        // eventObject.Events[0].ShouldBeOfType<EntityAddedEvent>();
+        keyValues.ShouldNotBeNull();
+        keyValues.ShouldNotBeEmpty();
+        keyValues.ShouldContainKey("Id");
+        keyValues["Id"].ShouldBe(root.Id);
     }
 
     [Fact]
@@ -174,6 +187,38 @@ public class EventExtensionsTests
         // eventObject.Events[0].ShouldBeOfType<EntityAddedEvent>();
 
         //var mappedEvent = (EntityAddedEvent)eventObject.Events[0];
+    }
+
+    [Fact]
+    public async Task GetEventObjects_WithEventEntitiesNoMapper_ShouldReturnEventObjectsWithoutMappedEvents()
+    {
+        // Arrange
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        var root = new Root("Test Root", "TestOwner");
+        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
+        context.Set<Root>().Add(root);
+
+        await using var snapshot = new SnapshotContext(context);
+
+        // Act
+        var eventObjects = snapshot.GetEventObjects(null).ToList();
+
+        // Assert
+        eventObjects.ShouldNotBeEmpty();
+        eventObjects.Count.ShouldBe(1);
+
+        var eventObject = eventObjects.First();
+        eventObject.ShouldNotBeAssignableTo<IEventItem>();
+        // eventObject.EntityType.ShouldBe(typeof(Root).FullName);
+        // eventObject.PrimaryKey.ShouldContainKey("Id");
+        // eventObject.PrimaryKey["Id"].ShouldBe(root.Id);
+        // eventObject.Events.ShouldNotBeEmpty();
+        // eventObject.Events.Length.ShouldBe(1);
+        // eventObject.Events[0].ShouldBeOfType<EntityAddedEvent>();
     }
 
     [Fact]
@@ -252,6 +297,24 @@ public class EventExtensionsTests
     }
 
     [Fact]
+    public async Task GetEventObjects_WithNoEventEntities_ShouldReturnEmpty()
+    {
+        // Arrange
+        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
+            .UseAutoConfigModel()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options, null);
+
+        await using var snapshot = new SnapshotContext(context);
+
+        // Act
+        var eventObjects = snapshot.GetEventObjects(null).ToList();
+
+        // Assert
+        eventObjects.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task GetEventObjects_WithNonEventEntity_ShouldNotIncludeInResults()
     {
         // Arrange
@@ -279,64 +342,5 @@ public class EventExtensionsTests
         eventObjects.ShouldBeEmpty();
     }
 
-    [Fact]
-    public async Task GetEntityKeyValues_WithEntityWithoutPrimaryKey_ShouldReturnEmptyDictionary()
-    {
-        // This test is designed to hit the null primaryKey path in GetEntityKeyValues
-        // We'll create a mock EntityEntry with no primary key to test this scenario
-
-        // Since creating a real scenario with keyless entities is complex in EF Core,
-        // we can at least verify the behavior by checking that the method handles the null case
-        // The actual test would need a custom EntityEntry mock or a keyless entity setup
-
-        // For coverage purposes, we'll test with a valid entity and confirm the happy path
-        // The null primary key path would need additional mocking infrastructure to test properly
-
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        var root = new Root("Test Root", "TestOwner");
-        context.Set<Root>().Add(root);
-        var entry = context.Entry(root);
-
-        // Act
-        var keyValues = entry.GetEntityKeyValues();
-
-        // Assert - This tests the normal path, but the null path would require more complex setup
-        keyValues.ShouldNotBeNull();
-        keyValues.ShouldNotBeEmpty();
-        keyValues.ShouldContainKey("Id");
-        keyValues["Id"].ShouldBe(root.Id);
-
-        // Note: The null primary key path in GetEntityKeyValues needs a custom test setup
-        // that's beyond the scope of this simple test. The coverage gap may require 
-        // integration testing or mocking of EntityEntry.Metadata.FindPrimaryKey()
-    }
-
-    [Fact]
-    public async Task GetEntityKeyValues_WithEntityWithPrimaryKey_ShouldReturnKeyValues()
-    {
-        // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
-
-        var root = new Root("Test Root", "TestOwner");
-        context.Set<Root>().Add(root);
-        await context.SaveChangesAsync();
-
-        var entry = context.Entry(root);
-
-        // Act
-        var keyValues = entry.GetEntityKeyValues();
-
-        // Assert
-        keyValues.ShouldNotBeNull();
-        keyValues.ShouldNotBeEmpty();
-        keyValues.ShouldContainKey("Id");
-        keyValues["Id"].ShouldBe(root.Id);
-    }
+    #endregion
 }

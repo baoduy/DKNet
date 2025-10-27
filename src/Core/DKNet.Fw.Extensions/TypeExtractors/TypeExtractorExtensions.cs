@@ -21,6 +21,8 @@ namespace DKNet.Fw.Extensions.TypeExtractors;
 /// </remarks>
 public static class TypeArrayExtractorExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Extracts types from the specified assembly.
     /// </summary>
@@ -44,4 +46,6 @@ public static class TypeArrayExtractorExtensions
     /// <param name="assemblies">The collection of assemblies to extract types from.</param>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
     public static ITypeExtractor Extract(this ICollection<Assembly> assemblies) => new TypeExtractor([.. assemblies]);
+
+    #endregion
 }

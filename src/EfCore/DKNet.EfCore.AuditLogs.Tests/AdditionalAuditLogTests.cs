@@ -1,23 +1,35 @@
 using System.Collections.Concurrent;
-using DKNet.EfCore.AuditLogs.Internals; // for EfCoreAuditHook via DI
+using DKNet.EfCore.AuditLogs.Internals;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
+// for EfCoreAuditHook via DI
 
 namespace DKNet.EfCore.AuditLogs.Tests;
 
 // Non audited entity for negative test
 public class PlainEntity
 {
+    #region Properties
+
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+
+    #endregion
 }
 
 internal sealed class CapturingLogger<T> : ILogger<T>
 {
+    #region Properties
+
     public ConcurrentBag<string> Messages { get; } = [];
+
+    #endregion
+
+    #region Methods
+
     public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
     public bool IsEnabled(LogLevel logLevel) => true;
 
@@ -27,13 +39,19 @@ internal sealed class CapturingLogger<T> : ILogger<T>
         Messages.Add(formatter(state, exception));
     }
 
+    #endregion
+
     private sealed class NullScope : IDisposable
     {
-        public static readonly NullScope Instance = new();
+        #region Methods
 
         public void Dispose()
         {
         }
+
+        #endregion
+
+        public static readonly NullScope Instance = new();
     }
 }
 
@@ -45,8 +63,14 @@ internal sealed class CapturingLogger<T> : ILogger<T>
 
 internal sealed class RecordingPublisher : IAuditLogPublisher
 {
+    #region Properties
+
     public static bool Called { get; private set; }
     public static ConcurrentBag<AuditLogEntry> Logs { get; } = [];
+
+    #endregion
+
+    #region Methods
 
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
@@ -62,42 +86,13 @@ internal sealed class RecordingPublisher : IAuditLogPublisher
         {
         }
     }
+
+    #endregion
 }
 
 public class AdditionalAuditLogTests
 {
-    // Helper to poll for expected count in fire-and-forget publishing
-    // private static async Task WaitForCountAsync(Func<int> currentCount, int expected, int timeoutMs = 1000)
-    // {
-    //     var sw = System.Diagnostics.Stopwatch.StartNew();
-    //     while (sw.ElapsedMilliseconds < timeoutMs)
-    //     {
-    //         if (currentCount() >= expected) return;
-    //         await Task.Delay(25);
-    //     }
-    // }
-
-    private static DbContextOptions<TestAuditDbContext> BuildInMemoryOpts() =>
-        new DbContextOptionsBuilder<TestAuditDbContext>()
-            .UseSqlite(
-                $"Data Source={Path.Combine(Path.GetTempPath(), $"audit_mem_{Guid.NewGuid():N}.db")};Cache=Shared")
-            .EnableSensitiveDataLogging()
-            .Options;
-
-    [Fact]
-    public async Task BuildAuditLog_Returns_Null_For_NonAudited_Entity()
-    {
-        await using var ctx = new TestAuditDbContext(BuildInMemoryOpts());
-        await ctx.Database.EnsureCreatedAsync();
-        var plain = new PlainEntity { Id = 1, Name = "P" };
-        await ctx.AddAsync(plain);
-        await ctx.SaveChangesAsync();
-        ctx.ChangeTracker.DetectChanges();
-        var entry = ctx.Entry(plain);
-        entry.State = EntityState.Modified;
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities);
-        log.ShouldBeNull();
-    }
+    #region Methods
 
     [Fact]
     public async Task BuildAuditLog_Captures_Modified_Properties_Including_Nulls()
@@ -136,6 +131,84 @@ public class AdditionalAuditLogTests
         var log = entry.BuildAuditLog(EntityState.Deleted, AuditLogBehaviour.IncludeAllAuditedEntities)!;
         log.Changes.ShouldAllBe(c => c.NewValue == null);
         log.EntityName.ShouldBe(nameof(TestAuditEntity));
+    }
+
+    [Fact]
+    public async Task BuildAuditLog_Returns_Null_For_NonAudited_Entity()
+    {
+        await using var ctx = new TestAuditDbContext(BuildInMemoryOpts());
+        await ctx.Database.EnsureCreatedAsync();
+        var plain = new PlainEntity { Id = 1, Name = "P" };
+        await ctx.AddAsync(plain);
+        await ctx.SaveChangesAsync();
+        ctx.ChangeTracker.DetectChanges();
+        var entry = ctx.Entry(plain);
+        entry.State = EntityState.Modified;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities);
+        log.ShouldBeNull();
+    }
+    // Helper to poll for expected count in fire-and-forget publishing
+    // private static async Task WaitForCountAsync(Func<int> currentCount, int expected, int timeoutMs = 1000)
+    // {
+    //     var sw = System.Diagnostics.Stopwatch.StartNew();
+    //     while (sw.ElapsedMilliseconds < timeoutMs)
+    //     {
+    //         if (currentCount() >= expected) return;
+    //         await Task.Delay(25);
+    //     }
+    // }
+
+    private static DbContextOptions<TestAuditDbContext> BuildInMemoryOpts() =>
+        new DbContextOptionsBuilder<TestAuditDbContext>()
+            .UseSqlite(
+                $"Data Source={Path.Combine(Path.GetTempPath(), $"audit_mem_{Guid.NewGuid():N}.db")};Cache=Shared")
+            .EnableSensitiveDataLogging()
+            .Options;
+
+    [Fact]
+    public async Task Concurrent_Saves_Produce_All_Logs()
+    {
+        var services = new ServiceCollection().AddLogging();
+        var dbName = Path.Combine(Path.GetTempPath(), $"mem_conc_{Guid.NewGuid():N}.db");
+        services.AddEfCoreAuditLogs<TestAuditDbContext, RecordingPublisher>();
+        services.AddDbContextWithHook<TestAuditDbContext>((_, o) => o.UseSqlite($"Data Source={dbName};Cache=Shared"));
+        var sp = services.BuildServiceProvider();
+        await using var scope = sp.CreateAsyncScope();
+        var seedCtx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
+        await seedCtx.Database.EnsureCreatedAsync();
+
+        RecordingPublisher.Reset();
+
+        for (var i = 0; i < 10; i++)
+        {
+            var e = new TestAuditEntity { Name = $"CC{i}", Age = i, IsActive = true, Balance = i };
+            e.SetCreatedBy("seed");
+            await seedCtx.AddAsync(e);
+        }
+
+        await seedCtx.SaveChangesAsync();
+        RecordingPublisher.Reset();
+
+        var ids = seedCtx.AuditEntities.Select(e => e.Id).ToList();
+
+        var tasks = ids.Select(id => Task.Run(async () =>
+        {
+            using var updateScope = sp.CreateScope();
+            var ctx = updateScope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
+            await ctx.Database.EnsureCreatedAsync();
+
+            var entity = ctx.AuditEntities.First(e => e.Id == id);
+            entity.Age += 1;
+            entity.UpdateProfile("bulk-updater");
+            await ctx.SaveChangesAsync();
+        })).ToList();
+
+        await Task.WhenAll(tasks);
+        await Task.Delay(1000);
+        //await WaitForCountAsync(() => rec.Logs.Count, 10); // replaced fixed delay
+
+        RecordingPublisher.Logs.Count.ShouldBeGreaterThanOrEqualTo(10);
+        //RecordingPublisher.Logs.Count.ShouldBe(seedCtx.AuditEntities.Count(e => e.UpdatedBy == "bulk-updater"));
     }
 
     [Fact]
@@ -200,49 +273,5 @@ public class AdditionalAuditLogTests
         RecordingPublisher.Logs.Count.ShouldBeGreaterThan(0);
     }
 
-    [Fact]
-    public async Task Concurrent_Saves_Produce_All_Logs()
-    {
-        var services = new ServiceCollection().AddLogging();
-        var dbName = Path.Combine(Path.GetTempPath(), $"mem_conc_{Guid.NewGuid():N}.db");
-        services.AddEfCoreAuditLogs<TestAuditDbContext, RecordingPublisher>();
-        services.AddDbContextWithHook<TestAuditDbContext>((_, o) => o.UseSqlite($"Data Source={dbName};Cache=Shared"));
-        var sp = services.BuildServiceProvider();
-        await using var scope = sp.CreateAsyncScope();
-        var seedCtx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
-        await seedCtx.Database.EnsureCreatedAsync();
-
-        RecordingPublisher.Reset();
-
-        for (var i = 0; i < 10; i++)
-        {
-            var e = new TestAuditEntity { Name = $"CC{i}", Age = i, IsActive = true, Balance = i };
-            e.SetCreatedBy("seed");
-            await seedCtx.AddAsync(e);
-        }
-
-        await seedCtx.SaveChangesAsync();
-        RecordingPublisher.Reset();
-
-        var ids = seedCtx.AuditEntities.Select(e => e.Id).ToList();
-
-        var tasks = ids.Select(id => Task.Run(async () =>
-        {
-            using var updateScope = sp.CreateScope();
-            var ctx = updateScope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
-            await ctx.Database.EnsureCreatedAsync();
-
-            var entity = ctx.AuditEntities.First(e => e.Id == id);
-            entity.Age += 1;
-            entity.UpdateProfile("bulk-updater");
-            await ctx.SaveChangesAsync();
-        })).ToList();
-
-        await Task.WhenAll(tasks);
-        await Task.Delay(1000);
-        //await WaitForCountAsync(() => rec.Logs.Count, 10); // replaced fixed delay
-
-        RecordingPublisher.Logs.Count.ShouldBeGreaterThanOrEqualTo(10);
-        //RecordingPublisher.Logs.Count.ShouldBe(seedCtx.AuditEntities.Count(e => e.UpdatedBy == "bulk-updater"));
-    }
+    #endregion
 }

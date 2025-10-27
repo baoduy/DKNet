@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../../LICENSE)
 
-AWS S3 implementation of the DKNet blob storage abstractions, providing seamless integration with Amazon S3 and S3-compatible services including Cloudflare R2 and MinIO. This package offers production-ready blob storage capabilities with AWS-specific optimizations and features.
+AWS S3 implementation of the DKNet blob storage abstractions, providing seamless integration with Amazon S3 and
+S3-compatible services including Cloudflare R2 and MinIO. This package offers production-ready blob storage capabilities
+with AWS-specific optimizations and features.
 
 ## Features
 
@@ -157,6 +159,7 @@ public class S3Options : BlobServiceOptions
 ### AWS Authentication Methods
 
 #### Access Keys (Development)
+
 ```csharp
 services.Configure<S3Options>(options =>
 {
@@ -168,6 +171,7 @@ services.Configure<S3Options>(options =>
 ```
 
 #### IAM Roles (Production)
+
 ```csharp
 // No explicit credentials needed - uses IAM role
 services.Configure<S3Options>(options =>
@@ -179,6 +183,7 @@ services.Configure<S3Options>(options =>
 ```
 
 #### Environment Variables
+
 ```bash
 export AWS_ACCESS_KEY_ID=your-access-key
 export AWS_SECRET_ACCESS_KEY=your-secret-key
@@ -188,6 +193,7 @@ export AWS_DEFAULT_REGION=us-east-1
 ### S3-Compatible Services
 
 #### Cloudflare R2
+
 ```csharp
 services.Configure<S3Options>(options =>
 {
@@ -204,6 +210,7 @@ services.Configure<S3Options>(options =>
 ```
 
 #### MinIO
+
 ```csharp
 services.Configure<S3Options>(options =>
 {
@@ -709,4 +716,5 @@ This project is licensed under the [MIT License](../../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

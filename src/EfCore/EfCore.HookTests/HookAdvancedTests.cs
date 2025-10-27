@@ -4,20 +4,49 @@ namespace EfCore.HookTests;
 
 public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
 {
+    #region Fields
+
     private readonly ServiceProvider _provider = fixture.Provider;
 
+    #endregion
+
+    #region Methods
+
     [Fact]
-    public async Task Hook_ShouldExecuteOnEntityAdd()
+    public async Task Hook_ShouldExecuteInCorrectOrder()
     {
         // Arrange
         var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
         var db = _provider.GetRequiredService<HookContext>();
 
-        var entity = new CustomerProfile { Name = "Test Add" };
+        var entity = new CustomerProfile { Name = "Order Test" };
 
         // Act
         await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        // Assert
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Hook_ShouldExecuteMultipleTimes()
+    {
+        // Arrange
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        hook.Reset();
+        var db = _provider.GetRequiredService<HookContext>();
+
+        // Act - Multiple save operations
+        await db.AddAsync(new CustomerProfile { Name = "Multiple 1" });
+        await db.SaveChangesAsync();
+
+        await db.AddAsync(new CustomerProfile { Name = "Multiple 2" });
+        await db.SaveChangesAsync();
+
+        await db.AddAsync(new CustomerProfile { Name = "Multiple 3" });
         await db.SaveChangesAsync();
 
         // Assert
@@ -25,71 +54,6 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         HookTest.AfterCalled.ShouldBeTrue();
         HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
         HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
-
-        // Verify entity was actually saved
-        var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
-        savedEntity.ShouldNotBeNull();
-        savedEntity.Name.ShouldBe("Test Add");
-    }
-
-    [Fact]
-    public async Task Hook_ShouldExecuteOnEntityUpdate()
-    {
-        // Arrange
-        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
-
-        var entity = new CustomerProfile { Name = "Test Update Original" };
-        await db.AddAsync(entity);
-        await db.SaveChangesAsync();
-
-        hook.Reset(); // Reset hook counters after initial add
-
-        // Act
-        entity.Name = "Test Update Modified";
-        await db.SaveChangesAsync();
-
-        // Assert
-        HookTest.BeforeCalled.ShouldBeTrue();
-        HookTest.AfterCalled.ShouldBeTrue();
-        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
-        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
-
-        // Verify entity was actually updated
-        var updatedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
-        updatedEntity.ShouldNotBeNull();
-        updatedEntity.Name.ShouldBe("Test Update Modified");
-    }
-
-    [Fact]
-    public async Task Hook_ShouldExecuteOnEntityDelete()
-    {
-        // Arrange
-        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
-
-        var entity = new CustomerProfile { Name = "Test Delete" };
-        await db.AddAsync(entity);
-        await db.SaveChangesAsync();
-
-        var entityId = entity.Id;
-        hook.Reset(); // Reset hook counters after initial add
-
-        // Act
-        db.Remove(entity);
-        await db.SaveChangesAsync();
-
-        // Assert
-        HookTest.BeforeCalled.ShouldBeTrue();
-        HookTest.AfterCalled.ShouldBeTrue();
-        HookTest.BeforeCallCount.ShouldBe(1);
-        HookTest.AfterCallCount.ShouldBe(1);
-
-        // Verify entity was actually deleted
-        var deletedEntity = await db.Set<CustomerProfile>().FindAsync(entityId);
-        deletedEntity.ShouldBeNull();
     }
 
     [Fact]
@@ -126,6 +90,92 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     }
 
     [Fact]
+    public async Task Hook_ShouldExecuteOnEntityAdd()
+    {
+        // Arrange
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        hook.Reset();
+        var db = _provider.GetRequiredService<HookContext>();
+
+        var entity = new CustomerProfile { Name = "Test Add" };
+
+        // Act
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        // Assert
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
+        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
+
+        // Verify entity was actually saved
+        var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
+        savedEntity.ShouldNotBeNull();
+        savedEntity.Name.ShouldBe("Test Add");
+    }
+
+    [Fact]
+    public async Task Hook_ShouldExecuteOnEntityDelete()
+    {
+        // Arrange
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        hook.Reset();
+        var db = _provider.GetRequiredService<HookContext>();
+
+        var entity = new CustomerProfile { Name = "Test Delete" };
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        var entityId = entity.Id;
+        hook.Reset(); // Reset hook counters after initial add
+
+        // Act
+        db.Remove(entity);
+        await db.SaveChangesAsync();
+
+        // Assert
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBe(1);
+        HookTest.AfterCallCount.ShouldBe(1);
+
+        // Verify entity was actually deleted
+        var deletedEntity = await db.Set<CustomerProfile>().FindAsync(entityId);
+        deletedEntity.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Hook_ShouldExecuteOnEntityUpdate()
+    {
+        // Arrange
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        hook.Reset();
+        var db = _provider.GetRequiredService<HookContext>();
+
+        var entity = new CustomerProfile { Name = "Test Update Original" };
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        hook.Reset(); // Reset hook counters after initial add
+
+        // Act
+        entity.Name = "Test Update Modified";
+        await db.SaveChangesAsync();
+
+        // Assert
+        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
+        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
+
+        // Verify entity was actually updated
+        var updatedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
+        updatedEntity.ShouldNotBeNull();
+        updatedEntity.Name.ShouldBe("Test Update Modified");
+    }
+
+    [Fact]
     public async Task Hook_ShouldHandleNoChangesGracefully()
     {
         // Arrange
@@ -145,31 +195,6 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     }
 
     [Fact]
-    public async Task Hook_ShouldExecuteMultipleTimes()
-    {
-        // Arrange
-        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
-
-        // Act - Multiple save operations
-        await db.AddAsync(new CustomerProfile { Name = "Multiple 1" });
-        await db.SaveChangesAsync();
-
-        await db.AddAsync(new CustomerProfile { Name = "Multiple 2" });
-        await db.SaveChangesAsync();
-
-        await db.AddAsync(new CustomerProfile { Name = "Multiple 3" });
-        await db.SaveChangesAsync();
-
-        // Assert
-        HookTest.BeforeCalled.ShouldBeTrue();
-        HookTest.AfterCalled.ShouldBeTrue();
-        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
-        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
-    }
-
-    [Fact]
     public async Task Hook_ShouldProvideCorrectChangeTrackerInfo()
     {
         // Arrange
@@ -178,25 +203,6 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Change Tracker Test" };
-
-        // Act
-        await db.AddAsync(entity);
-        await db.SaveChangesAsync();
-
-        // Assert
-        HookTest.BeforeCalled.ShouldBeTrue();
-        HookTest.AfterCalled.ShouldBeTrue();
-    }
-
-    [Fact]
-    public async Task Hook_ShouldExecuteInCorrectOrder()
-    {
-        // Arrange
-        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
-        var db = _provider.GetRequiredService<HookContext>();
-
-        var entity = new CustomerProfile { Name = "Order Test" };
 
         // Act
         await db.AddAsync(entity);
@@ -231,4 +237,6 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
         var savedEntity = await db.Set<CustomerProfile>().FindAsync(entity.Id);
         savedEntity.ShouldNotBeNull();
     }
+
+    #endregion
 }

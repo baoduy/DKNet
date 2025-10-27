@@ -5,7 +5,13 @@ internal class AntiforgeryCookieMiddleware(
     IAntiforgery antiforgery,
     IOptions<AntiforgeryOptions> options)
 {
+    #region Fields
+
     private readonly string[] _validateMethods = ["POST", "PUT", "PATCH", "DELETE"];
+
+    #endregion
+
+    #region Methods
 
     private AntiforgeryTokenSet GetCookieToken(HttpContext context)
     {
@@ -44,4 +50,6 @@ internal class AntiforgeryCookieMiddleware(
 
         await next(context);
     }
+
+    #endregion
 }

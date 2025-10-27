@@ -5,8 +5,14 @@ namespace SlimBus.InterTests.Extensions;
 
 public static class JsonExtensions
 {
+    #region Fields
+
     private static readonly JsonSerializerOptions?
         Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    #endregion
+
+    #region Methods
 
     public static async Task<(bool success, TValue? result, ProblemDetails? error, string content)> As<TValue>(
         this HttpResponseMessage message) where TValue : class
@@ -26,4 +32,6 @@ public static class JsonExtensions
 
         return (success, result, error, str);
     }
+
+    #endregion
 }

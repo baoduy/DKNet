@@ -5,6 +5,8 @@ namespace EfCore.Repos.Tests.TestEntities;
 
 internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
 {
+    #region Methods
+
     public override void Configure(EntityTypeBuilder<UserGuid> builder)
     {
         base.Configure(builder);
@@ -23,4 +25,6 @@ internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
+
+    #endregion
 }

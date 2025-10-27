@@ -13,6 +13,8 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public interface IConcurrencyEntity<TType>
 {
+    #region Properties
+
     /// <summary>
     ///     Gets the row version timestamp used for concurrency checking.
     /// </summary>
@@ -22,9 +24,15 @@ public interface IConcurrencyEntity<TType>
     [Timestamp]
     TType? RowVersion { get; }
 
+    #endregion
+
+    #region Methods
+
     /// <summary>
     ///     Sets the row version timestamp for the entity.
     /// </summary>
     /// <param name="rowVersion">The new row version timestamp.</param>
     void SetRowVersion(TType rowVersion);
+
+    #endregion
 }

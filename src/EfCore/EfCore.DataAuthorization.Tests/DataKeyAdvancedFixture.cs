@@ -1,4 +1,3 @@
-#nullable enable
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
@@ -7,8 +6,31 @@ namespace EfCore.DataAuthorization.Tests;
 
 public sealed class DataKeyAdvancedFixture : IAsyncLifetime
 {
+    #region Fields
+
     private MsSqlContainer? _sqlContainer;
+
+    #endregion
+
+    #region Properties
+
     public ServiceProvider Provider { get; private set; } = null!;
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        if (_sqlContainer != null) await _sqlContainer.DisposeAsync();
+        await Provider.DisposeAsync();
+    }
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=DataKeyAdvancedDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
@@ -32,15 +54,5 @@ public sealed class DataKeyAdvancedFixture : IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (_sqlContainer != null) await _sqlContainer.DisposeAsync();
-        await Provider.DisposeAsync();
-    }
-
-    public string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=DataKeyAdvancedDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
+    #endregion
 }

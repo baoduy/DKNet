@@ -5,6 +5,28 @@ namespace EfCore.Events.Tests;
 
 public class EventSetupTests
 {
+    #region Methods
+
+    [Fact]
+    public void AddEventPublisher_ShouldAllowCustomEventPublisherImplementation()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+
+        // Act
+        services.AddEventPublisher<DddContext, CustomEventPublisher>();
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+
+        var eventPublisher = serviceProvider.GetService<IEventPublisher>();
+        eventPublisher.ShouldNotBeNull();
+        eventPublisher.ShouldBeOfType<CustomEventPublisher>();
+    }
+
     [Fact]
     public void AddEventPublisher_ShouldRegisterEventPublisherAndHook()
     {
@@ -29,48 +51,6 @@ public class EventSetupTests
         var hooks = serviceProvider.GetKeyedServices<IHookBaseAsync>(typeof(DddContext).FullName).ToList();
         hooks.ShouldNotBeEmpty();
         hooks.ShouldContain(h => h is EventHook);
-    }
-
-    [Fact]
-    public void AddEventPublisher_WithMultipleCalls_ShouldRegisterMultiplePublishers()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddDbContext<DddContext>(options =>
-            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-
-        // Act
-        services.AddEventPublisher<DddContext, TestEventPublisher>();
-        services.AddEventPublisher<DddContext, AnotherTestEventPublisher>();
-
-        // Assert
-        var serviceProvider = services.BuildServiceProvider();
-
-        var eventPublishers = serviceProvider.GetServices<IEventPublisher>().ToList();
-        eventPublishers.Count.ShouldBe(2);
-        eventPublishers.ShouldContain(p => p is TestEventPublisher);
-        eventPublishers.ShouldContain(p => p is AnotherTestEventPublisher);
-    }
-
-    [Fact]
-    public void AddEventPublisher_ShouldAllowCustomEventPublisherImplementation()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddDbContext<DddContext>(options =>
-            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-
-        // Act
-        services.AddEventPublisher<DddContext, CustomEventPublisher>();
-
-        // Assert
-        var serviceProvider = services.BuildServiceProvider();
-
-        var eventPublisher = serviceProvider.GetService<IEventPublisher>();
-        eventPublisher.ShouldNotBeNull();
-        eventPublisher.ShouldBeOfType<CustomEventPublisher>();
     }
 
     [Fact]
@@ -108,6 +88,29 @@ public class EventSetupTests
     }
 
     [Fact]
+    public void AddEventPublisher_ShouldReturnServiceCollection_ForChaining()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDbContext<DddContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+
+        // Act
+        var result = services.AddEventPublisher<DddContext, TestEventPublisher>();
+
+        // Assert
+        result.ShouldBeSameAs(services);
+
+        // Should allow method chaining
+        var chainedResult = services
+            .AddEventPublisher<DddContext, TestEventPublisher>()
+            .AddScoped(_ => "test");
+
+        chainedResult.ShouldBeSameAs(services);
+    }
+
+    [Fact]
     public void AddEventPublisher_WithDifferentDbContexts_ShouldRegisterSeparateHooks()
     {
         // Arrange
@@ -134,7 +137,7 @@ public class EventSetupTests
     }
 
     [Fact]
-    public void AddEventPublisher_ShouldReturnServiceCollection_ForChaining()
+    public void AddEventPublisher_WithMultipleCalls_ShouldRegisterMultiplePublishers()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -143,34 +146,47 @@ public class EventSetupTests
             options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
         // Act
-        var result = services.AddEventPublisher<DddContext, TestEventPublisher>();
+        services.AddEventPublisher<DddContext, TestEventPublisher>();
+        services.AddEventPublisher<DddContext, AnotherTestEventPublisher>();
 
         // Assert
-        result.ShouldBeSameAs(services);
+        var serviceProvider = services.BuildServiceProvider();
 
-        // Should allow method chaining
-        var chainedResult = services
-            .AddEventPublisher<DddContext, TestEventPublisher>()
-            .AddScoped(_ => "test");
+        var eventPublishers = serviceProvider.GetServices<IEventPublisher>().ToList();
+        eventPublishers.Count.ShouldBe(2);
+        eventPublishers.ShouldContain(p => p is TestEventPublisher);
+        eventPublishers.ShouldContain(p => p is AnotherTestEventPublisher);
+    }
 
-        chainedResult.ShouldBeSameAs(services);
+    #endregion
+
+    private class AnotherDbContext(DbContextOptions<AnotherDbContext> options) : DbContext(options)
+    {
+        // Empty DbContext for testing different contexts
     }
 
     // Helper classes for testing
     private class AnotherTestEventPublisher : IEventPublisher
     {
+        #region Methods
+
         public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        #endregion
     }
 
     private class CustomEventPublisher : IEventPublisher
     {
+        #region Properties
+
         public string CustomProperty { get; } = "Custom";
 
-        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
+        #endregion
 
-    private class AnotherDbContext(DbContextOptions<AnotherDbContext> options) : DbContext(options)
-    {
-        // Empty DbContext for testing different contexts
+        #region Methods
+
+        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        #endregion
     }
 }

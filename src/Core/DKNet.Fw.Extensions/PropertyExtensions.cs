@@ -10,12 +10,7 @@ namespace DKNet.Fw.Extensions;
 /// </summary>
 public static class PropertyExtensions
 {
-    public static bool IsNullableType(this Type type)
-    {
-        ArgumentNullException.ThrowIfNull(type);
-        // Check if the type is a generic type and is Nullable<>
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-    }
+    #region Methods
 
     /// <summary>
     ///     Gets a property by name, considering all access levels and ignoring case.
@@ -63,6 +58,13 @@ public static class PropertyExtensions
         }
 
         return current;
+    }
+
+    public static bool IsNullableType(this Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        // Check if the type is a generic type and is Nullable<>
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
 
     /// <summary>
@@ -187,4 +189,6 @@ public static class PropertyExtensions
             Debug.WriteLine($"Failed to set property {property.Name}: {ex.Message}");
         }
     }
+
+    #endregion
 }

@@ -10,6 +10,8 @@ namespace SlimBus.Api.Configs.AzureAppConfig;
 [ExcludeFromCodeCoverage]
 internal static class AzureAppConfigSetup
 {
+    #region Methods
+
     /// <summary>
     ///     Adds Azure App Configuration as a configuration source
     /// </summary>
@@ -28,7 +30,7 @@ internal static class AzureAppConfigSetup
         {
             op.Connect(new Uri(conn), new DefaultAzureCredential())
                 .UseFeatureFlags()
-                .ConfigureRefresh(c=>c.RegisterAll().SetRefreshInterval(TimeSpan.FromMinutes(30)));
+                .ConfigureRefresh(c => c.RegisterAll().SetRefreshInterval(TimeSpan.FromMinutes(30)));
 
             var label = options.Label ?? SharedConsts.ApiName;
             op.Select(KeyFilter.Any, label);
@@ -39,4 +41,6 @@ internal static class AzureAppConfigSetup
 
         return builder;
     }
+
+    #endregion
 }

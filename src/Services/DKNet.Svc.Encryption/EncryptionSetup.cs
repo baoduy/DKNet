@@ -4,6 +4,8 @@ namespace DKNet.Svc.Encryption;
 
 public static class EncryptionSetup
 {
+    #region Methods
+
     public static IServiceCollection AddEncryptionServices(this IServiceCollection services)
     {
         services.AddTransient<IAesEncryption, AesEncryption>();
@@ -14,4 +16,6 @@ public static class EncryptionSetup
         services.AddTransient<IAesGcmEncryption, AesGcmEncryption>();
         return services;
     }
+
+    #endregion
 }

@@ -2,6 +2,8 @@ namespace Svc.Transform.Tests.TokenExtractors;
 
 public class TokenExtractorTests
 {
+    #region Methods
+
     [Fact]
     public void TokenExtractorAngledBracketTest()
     {
@@ -91,4 +93,6 @@ public class TokenExtractorTests
         list.Count.ShouldBeGreaterThanOrEqualTo(1);
         list[0].Token.ShouldBe("{Duy}");
     }
+
+    #endregion
 }

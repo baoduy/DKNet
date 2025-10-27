@@ -2,6 +2,8 @@
 
 public interface IToken
 {
+    #region Properties
+
     /// <summary>
     ///     The token definition
     /// </summary>
@@ -23,4 +25,6 @@ public interface IToken
     ///     The token value. Ex: [key]
     /// </summary>
     string Token { get; }
+
+    #endregion
 }

@@ -9,6 +9,16 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class SlimBusEfCoreSetup
 {
+    #region Methods
+
+    public static IServiceCollection AddSlimBusEventPublisher<TDbContext>(this IServiceCollection serviceCollection)
+        where TDbContext : DbContext
+    {
+        serviceCollection
+            .AddEventPublisher<TDbContext, SlimBusEventPublisher>();
+        return serviceCollection;
+    }
+
     public static IServiceCollection AddSlimBusForEfCore(this IServiceCollection serviceCollection,
         Action<MessageBusBuilder> configure)
     {
@@ -18,11 +28,5 @@ public static class SlimBusEfCoreSetup
         return serviceCollection;
     }
 
-    public static IServiceCollection AddSlimBusEventPublisher<TDbContext>(this IServiceCollection serviceCollection)
-        where TDbContext : DbContext
-    {
-        serviceCollection
-            .AddEventPublisher<TDbContext, SlimBusEventPublisher>();
-        return serviceCollection;
-    }
+    #endregion
 }

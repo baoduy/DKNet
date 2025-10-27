@@ -2,6 +2,8 @@ namespace SlimBus.InterTests.Fixtures;
 
 public sealed class RateLimitFixture : HostFixture
 {
+    #region Methods
+
     protected override IDictionary<string, string> SetupEnvironments()
     {
         var envs = base.SetupEnvironments();
@@ -11,4 +13,6 @@ public sealed class RateLimitFixture : HostFixture
         envs.Add("FeatureManagement__TimeWindowInSeconds", "10");
         return envs;
     }
+
+    #endregion
 }

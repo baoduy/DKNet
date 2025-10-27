@@ -7,6 +7,22 @@ namespace DKNet.AspCore.SlimBus;
 
 public static class ProblemDetailsExtensions
 {
+    #region Methods
+
+    private static ProblemDetails CreateProblemDetails(HttpStatusCode statusCode, string detail,
+        IEnumerable<string> errors) =>
+        new()
+        {
+            Status = (int)statusCode,
+            Type = statusCode.ToString(),
+            Title = "Error",
+            Detail = detail,
+            Extensions =
+            {
+                ["errors"] = errors
+            }
+        };
+
     public static ProblemDetails? ToProblemDetails(this IResultBase result,
         HttpStatusCode statusCode = HttpStatusCode.BadRequest)
     {
@@ -32,17 +48,5 @@ public static class ProblemDetailsExtensions
         return CreateProblemDetails(HttpStatusCode.BadRequest, firstMessage, errors);
     }
 
-    private static ProblemDetails CreateProblemDetails(HttpStatusCode statusCode, string detail,
-        IEnumerable<string> errors) =>
-        new()
-        {
-            Status = (int)statusCode,
-            Type = statusCode.ToString(),
-            Title = "Error",
-            Detail = detail,
-            Extensions =
-            {
-                ["errors"] = errors
-            }
-        };
+    #endregion
 }

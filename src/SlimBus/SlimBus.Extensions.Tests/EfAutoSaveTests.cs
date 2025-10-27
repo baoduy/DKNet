@@ -4,6 +4,8 @@ namespace SlimBus.Extensions.Tests;
 
 public class EfAutoSaveTests(Fixture fixture) : IClassFixture<Fixture>
 {
+    #region Methods
+
     [Fact]
     public async Task SaveChangeShouldBeCalled()
     {
@@ -28,4 +30,6 @@ public class EfAutoSaveTests(Fixture fixture) : IClassFixture<Fixture>
         rs.ShouldNotBeNull();
         TestDbContext.Called.ShouldBeFalse();
     }
+
+    #endregion
 }

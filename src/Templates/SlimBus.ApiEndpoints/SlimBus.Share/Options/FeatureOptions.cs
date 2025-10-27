@@ -2,17 +2,18 @@ namespace SlimBus.Share.Options;
 
 public class FeatureOptions
 {
-    public static string Name => "FeatureManagement";
+    #region Properties
 
-    public bool EnableHttps { get; set; }
-    public bool EnableSwagger { get; set; }
     public bool EnableAntiforgery { get; set; }
 
-    public bool EnableServiceBus { get; set; }
-    public bool RequireAuthorization { get; set; }
-    public bool RunDbMigrationWhenAppStart { get; set; }
+    /// <summary>
+    ///     Enable Azure App Configuration for remote configuration and feature management
+    /// </summary>
+    public bool EnableAzureAppConfig { get; set; }
 
     public bool EnableHealthCheck { get; set; } = true;
+
+    public bool EnableHttps { get; set; }
 
     /// <summary>
     ///     Enable Graph token validation
@@ -26,8 +27,11 @@ public class FeatureOptions
     /// </summary>
     public bool EnableRateLimit { get; set; } = true;
 
-    /// <summary>
-    ///     Enable Azure App Configuration for remote configuration and feature management
-    /// </summary>
-    public bool EnableAzureAppConfig { get; set; }
+    public bool EnableServiceBus { get; set; }
+    public bool EnableSwagger { get; set; }
+    public static string Name => "FeatureManagement";
+    public bool RequireAuthorization { get; set; }
+    public bool RunDbMigrationWhenAppStart { get; set; }
+
+    #endregion
 }

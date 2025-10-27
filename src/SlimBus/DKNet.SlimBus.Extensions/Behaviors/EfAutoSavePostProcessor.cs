@@ -11,7 +11,13 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
     IServiceProvider serviceProvider)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
 {
+    #region Properties
+
     public int Order => int.MaxValue;
+
+    #endregion
+
+    #region Methods
 
     public async Task<TResponse> OnHandle(TRequest request, Func<Task<TResponse>> next, IConsumerContext context)
     {
@@ -36,4 +42,6 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
 
         return response;
     }
+
+    #endregion
 }

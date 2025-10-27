@@ -5,10 +5,38 @@ using Shouldly;
 namespace DKNet.EfCore.DtoGenerator.Tests;
 
 /// <summary>
-/// Tests for IgnoreComplexType functionality in the DtoGenerator.
+///     Tests for IgnoreComplexType functionality in the DtoGenerator.
 /// </summary>
 public class IgnoreComplexTypeTests
 {
+    #region Methods
+
+    [Fact]
+    public void CustomerDto_PropertyTypes_ShouldBeCorrect()
+    {
+        // Verify the property types are as expected
+        var customerIdProperty = typeof(CustomerDto).GetProperty("CustomerId");
+        var nameProperty = typeof(CustomerDto).GetProperty("Name");
+        var emailProperty = typeof(CustomerDto).GetProperty("Email");
+        var primaryAddressProperty = typeof(CustomerDto).GetProperty("PrimaryAddress");
+        var ordersProperty = typeof(CustomerDto).GetProperty("Orders");
+
+        customerIdProperty.ShouldNotBeNull();
+        customerIdProperty!.PropertyType.ShouldBe(typeof(int));
+
+        nameProperty.ShouldNotBeNull();
+        nameProperty!.PropertyType.ShouldBe(typeof(string));
+
+        emailProperty.ShouldNotBeNull();
+        emailProperty!.PropertyType.ShouldBe(typeof(string));
+
+        primaryAddressProperty.ShouldNotBeNull();
+        primaryAddressProperty!.PropertyType.ShouldBe(typeof(Address));
+
+        ordersProperty.ShouldNotBeNull();
+        ordersProperty!.PropertyType.ShouldBe(typeof(List<Order>));
+    }
+
     [Fact]
     public void CustomerDto_WithoutIgnoreComplexType_ShouldIncludeAllProperties()
     {
@@ -29,6 +57,21 @@ public class IgnoreComplexTypeTests
         hasOrders.ShouldBeTrue("Orders should be included (complex collection type)");
         hasCreatedUtc.ShouldBeTrue("CreatedUtc should be included");
         hasUpdatedUtc.ShouldBeTrue("UpdatedUtc should be included");
+    }
+
+    [Fact]
+    public void CustomerSimpleDto_ShouldExcludeBothSingleAndCollectionComplexTypes()
+    {
+        // This test specifically verifies that both single entity properties (PrimaryAddress)
+        // and collection properties (Orders) are excluded when IgnoreComplexType is true
+
+        // Assert - Verify single entity complex type is excluded
+        var hasPrimaryAddress = typeof(CustomerSimpleDto).GetProperty("PrimaryAddress") != null;
+        hasPrimaryAddress.ShouldBeFalse("PrimaryAddress (single entity) should be excluded");
+
+        // Assert - Verify collection complex type is excluded
+        var hasOrders = typeof(CustomerSimpleDto).GetProperty("Orders") != null;
+        hasOrders.ShouldBeFalse("Orders (collection) should be excluded");
     }
 
     [Fact]
@@ -107,44 +150,5 @@ public class IgnoreComplexTypeTests
         hasUpdatedUtc.ShouldBeFalse("UpdatedUtc should not be included");
     }
 
-    [Fact]
-    public void CustomerSimpleDto_ShouldExcludeBothSingleAndCollectionComplexTypes()
-    {
-        // This test specifically verifies that both single entity properties (PrimaryAddress)
-        // and collection properties (Orders) are excluded when IgnoreComplexType is true
-
-        // Assert - Verify single entity complex type is excluded
-        var hasPrimaryAddress = typeof(CustomerSimpleDto).GetProperty("PrimaryAddress") != null;
-        hasPrimaryAddress.ShouldBeFalse("PrimaryAddress (single entity) should be excluded");
-
-        // Assert - Verify collection complex type is excluded
-        var hasOrders = typeof(CustomerSimpleDto).GetProperty("Orders") != null;
-        hasOrders.ShouldBeFalse("Orders (collection) should be excluded");
-    }
-
-    [Fact]
-    public void CustomerDto_PropertyTypes_ShouldBeCorrect()
-    {
-        // Verify the property types are as expected
-        var customerIdProperty = typeof(CustomerDto).GetProperty("CustomerId");
-        var nameProperty = typeof(CustomerDto).GetProperty("Name");
-        var emailProperty = typeof(CustomerDto).GetProperty("Email");
-        var primaryAddressProperty = typeof(CustomerDto).GetProperty("PrimaryAddress");
-        var ordersProperty = typeof(CustomerDto).GetProperty("Orders");
-
-        customerIdProperty.ShouldNotBeNull();
-        customerIdProperty!.PropertyType.ShouldBe(typeof(int));
-
-        nameProperty.ShouldNotBeNull();
-        nameProperty!.PropertyType.ShouldBe(typeof(string));
-
-        emailProperty.ShouldNotBeNull();
-        emailProperty!.PropertyType.ShouldBe(typeof(string));
-
-        primaryAddressProperty.ShouldNotBeNull();
-        primaryAddressProperty!.PropertyType.ShouldBe(typeof(Address));
-
-        ordersProperty.ShouldNotBeNull();
-        ordersProperty!.PropertyType.ShouldBe(typeof(List<Order>));
-    }
+    #endregion
 }

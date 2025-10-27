@@ -2,8 +2,14 @@
 
 internal class ModuleInformation(string remotePath, string nodePath)
 {
+    #region Properties
+
     public string NodePath { get; } = nodePath;
     public string RemotePath { get; } = remotePath;
+
+    #endregion
+
+    #region Methods
 
     public static IReadOnlyDictionary<TKey, ModuleInformation> UpdateDic<TKey>(
         IReadOnlyDictionary<TKey, ModuleInformation> dicToUpdate, string path) where TKey : notnull
@@ -20,4 +26,6 @@ internal class ModuleInformation(string remotePath, string nodePath)
 
         return updatedLocationMapping;
     }
+
+    #endregion
 }

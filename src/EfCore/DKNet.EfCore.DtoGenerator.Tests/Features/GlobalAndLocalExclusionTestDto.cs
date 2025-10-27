@@ -3,8 +3,8 @@ using DKNet.EfCore.DtoEntities;
 namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 
 /// <summary>
-/// DTO that combines global exclusions with local Exclude parameter.
-/// Both global and local exclusions should be applied.
+///     DTO that combines global exclusions with local Exclude parameter.
+///     Both global and local exclusions should be applied.
 /// </summary>
 [GenerateDto(typeof(GlobalExclusionTestEntity), Exclude = [nameof(GlobalExclusionTestEntity.IsActive)])]
 public partial record GlobalAndLocalExclusionTestDto;

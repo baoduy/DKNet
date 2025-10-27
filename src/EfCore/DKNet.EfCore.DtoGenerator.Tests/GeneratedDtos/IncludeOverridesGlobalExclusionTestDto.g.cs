@@ -8,6 +8,10 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 public partial record IncludeOverridesGlobalExclusionTestDto
 {
     /// <summary>
+    /// Gets or sets the CreatedAt.
+    /// </summary>
+    public DateTime CreatedAt { get; init; }
+    /// <summary>
     /// Gets or sets the Id.
     /// </summary>
     public Guid Id { get; init; }
@@ -15,8 +19,4 @@ public partial record IncludeOverridesGlobalExclusionTestDto
     /// Gets or sets the Name.
     /// </summary>
     public required string Name { get; init; }
-    /// <summary>
-    /// Gets or sets the CreatedAt.
-    /// </summary>
-    public DateTime CreatedAt { get; init; }
 }

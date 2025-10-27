@@ -7,13 +7,15 @@ namespace DKNet.EfCore.Specifications;
 /// </summary>
 internal static class SpecificationExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Applies a specification to an IQueryable and returns the modified queryable.
     /// </summary>
     /// <typeparam name="TEntity">Type of the entity</typeparam>
     /// <param name="queryable">The queryable to apply the specification to</param>
     /// <param name="specification">The specification to apply</param>
-    /// <returns>An <see cref="IQueryable{TEntity}"/> with the specification applied</returns>
+    /// <returns>An <see cref="IQueryable{TEntity}" /> with the specification applied</returns>
     public static IQueryable<TEntity> ApplySpecs<TEntity>(
         this IQueryable<TEntity> queryable,
         ISpecification<TEntity> specification) where TEntity : class
@@ -77,4 +79,6 @@ internal static class SpecificationExtensions
 
         return queryable;
     }
+
+    #endregion
 }

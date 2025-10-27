@@ -5,9 +5,11 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Minimal API integration helpers for [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) + `FluentResults`, enabling terse, consistent, and well-documented REST endpoints over a CQRS-ish message bus abstraction.
+Minimal API integration helpers for [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) + `FluentResults`,
+enabling terse, consistent, and well-documented REST endpoints over a CQRS-ish message bus abstraction.
 
-This package focuses on the ASP.NET Core surface (endpoint mapping & HTTP translation). Core CQRS contracts and EF Core behaviors live in `DKNet.SlimBus.Extensions`.
+This package focuses on the ASP.NET Core surface (endpoint mapping & HTTP translation). Core CQRS contracts and EF Core
+behaviors live in `DKNet.SlimBus.Extensions`.
 
 ## Key Features
 
@@ -32,12 +34,12 @@ dotnet add package DKNet.SlimBus.Extensions
 
 ## When To Use
 
-| Scenario | Use This Extension |
-|----------|--------------------|
-| You have SlimMessageBus handlers and want quick HTTP Minimal API exposure | ✅ |
-| You use `FluentResults` for domain outcomes | ✅ |
-| You want consistent OpenAPI metadata for common error codes | ✅ |
-| You need multi-endpoint CRUD for a resource without hand-writing boilerplate | ✅ |
+| Scenario                                                                     | Use This Extension |
+|------------------------------------------------------------------------------|--------------------|
+| You have SlimMessageBus handlers and want quick HTTP Minimal API exposure    | ✅                  |
+| You use `FluentResults` for domain outcomes                                  | ✅                  |
+| You want consistent OpenAPI metadata for common error codes                  | ✅                  |
+| You need multi-endpoint CRUD for a resource without hand-writing boilerplate | ✅                  |
 
 ## Quick Start
 
@@ -83,24 +85,25 @@ app.Run();
 
 All methods extend `RouteGroupBuilder` and infer OpenAPI metadata.
 
-| Method | Generic Constraints | Behavior |
-|--------|---------------------|----------|
-| `MapGet<TQuery,TResponse>` | `TQuery : Fluents.Queries.IWitResponse<TResponse>` | Sends query, returns 200 + body or 404 if null |
-| `MapGetPage<TQuery,TItem>` | `TQuery : Fluents.Queries.IWitPageResponse<TItem>` | Wraps `IPagedList<TItem>` in `PagedResult<TItem>` |
-| `MapPost<TCommand,TResponse>` | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | Sends command, 201 Created (location "/") on success |
-| `MapPost<TCommand>` | `TCommand : Fluents.Requests.INoResponse` | 200 OK / Problem |
-| `MapPut<TCommand,TResponse>` | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | 200 OK with value or Problem |
-| `MapPut<TCommand>` | `TCommand : Fluents.Requests.INoResponse` | 200 OK / Problem |
-| `MapPatch<TCommand,TResponse>` | same as Put | Partial update semantics |
-| `MapPatch<TCommand>` | same as Put | Partial update no response |
-| `MapDelete<TCommand,TResponse>` | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | 200 OK with value / Problem |
-| `MapDelete<TCommand>` | `TCommand : Fluents.Requests.INoResponse` | 200 OK / Problem |
+| Method                          | Generic Constraints                                   | Behavior                                             |
+|---------------------------------|-------------------------------------------------------|------------------------------------------------------|
+| `MapGet<TQuery,TResponse>`      | `TQuery : Fluents.Queries.IWitResponse<TResponse>`    | Sends query, returns 200 + body or 404 if null       |
+| `MapGetPage<TQuery,TItem>`      | `TQuery : Fluents.Queries.IWitPageResponse<TItem>`    | Wraps `IPagedList<TItem>` in `PagedResult<TItem>`    |
+| `MapPost<TCommand,TResponse>`   | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | Sends command, 201 Created (location "/") on success |
+| `MapPost<TCommand>`             | `TCommand : Fluents.Requests.INoResponse`             | 200 OK / Problem                                     |
+| `MapPut<TCommand,TResponse>`    | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | 200 OK with value or Problem                         |
+| `MapPut<TCommand>`              | `TCommand : Fluents.Requests.INoResponse`             | 200 OK / Problem                                     |
+| `MapPatch<TCommand,TResponse>`  | same as Put                                           | Partial update semantics                             |
+| `MapPatch<TCommand>`            | same as Put                                           | Partial update no response                           |
+| `MapDelete<TCommand,TResponse>` | `TCommand : Fluents.Requests.IWitResponse<TResponse>` | 200 OK with value / Problem                          |
+| `MapDelete<TCommand>`           | `TCommand : Fluents.Requests.INoResponse`             | 200 OK / Problem                                     |
 
 All return a `RouteHandlerBuilder` enabling further customization (e.g., `.RequireAuthorization()`).
 
 ## Common Response Metadata
 
-Call `.ProducesCommons()` automatically (already applied internally by the mapping helpers) to register standardized error codes:
+Call `.ProducesCommons()` automatically (already applied internally by the mapping helpers) to register standardized
+error codes:
 
 - 400 (ProblemDetails) validation / domain errors
 - 401 / 403 auth/authz
@@ -119,6 +122,7 @@ public static IResult Response(this IResultBase result, bool isCreated = false);
 ```
 
 Rules:
+
 - Failure → `ProblemDetails` (400 by default)
 - Success + `isCreated` → `201 Created` with payload
 - Success + null value → `200 Ok` (no body)
@@ -134,6 +138,7 @@ modelState.ToProblemDetails();          // From ModelStateDictionary
 Aggregates distinct error messages into `extensions.errors`.
 
 Example output:
+
 ```json
 {
   "status": 400,
@@ -182,7 +187,8 @@ public class GetProductHandler : Fluents.Queries.IHandler<GetProduct, ProductDto
 
 ## Binding With `[AsParameters]`
 
-For GET endpoints the query object is bound via `[AsParameters]` automatically when using the helpers, enabling clean record definitions:
+For GET endpoints the query object is bound via `[AsParameters]` automatically when using the helpers, enabling clean
+record definitions:
 
 ```csharp
 public record GetProductsPage(int PageIndex = 0, int PageSize = 20) : Fluents.Queries.IWitPageResponse<ProductDto>;
@@ -199,13 +205,13 @@ products
 
 ## Error Scenarios & Status Codes
 
-| Situation | Result Pattern | HTTP | Body |
-|-----------|----------------|------|------|
-| Domain validation fails | `Result.Fail("msg")` | 400 | ProblemDetails |
-| Query returns null | `null` | 404 | ProblemDetails (none) |
-| Command succeeds (create) | `Result.Ok(value)` + created flag | 201 | JSON |
-| Command succeeds (no value) | `Result.Ok()` | 200 | (empty) |
-| Unhandled exception | n/a | 500 | (standard) |
+| Situation                   | Result Pattern                    | HTTP | Body                  |
+|-----------------------------|-----------------------------------|------|-----------------------|
+| Domain validation fails     | `Result.Fail("msg")`              | 400  | ProblemDetails        |
+| Query returns null          | `null`                            | 404  | ProblemDetails (none) |
+| Command succeeds (create)   | `Result.Ok(value)` + created flag | 201  | JSON                  |
+| Command succeeds (no value) | `Result.Ok()`                     | 200  | (empty)               |
+| Unhandled exception         | n/a                               | 500  | (standard)            |
 
 ## Extending
 
@@ -226,7 +232,8 @@ public static class ProductEndpointGroup
 
 ## Testing Patterns
 
-Because the endpoint methods only orchestrate bus + translation, prefer unit testing handlers and a minimal integration test asserting mapping correctness:
+Because the endpoint methods only orchestrate bus + translation, prefer unit testing handlers and a minimal integration
+test asserting mapping correctness:
 
 ```csharp
 // Arrange: host with in-memory bus stub
@@ -236,9 +243,9 @@ Because the endpoint methods only orchestrate bus + translation, prefer unit tes
 
 ## Versioning & Compatibility
 
-| Package | Purpose |
-|---------|---------|
-| DKNet.AspCore.SlimBus | HTTP layer & endpoint helpers |
+| Package                  | Purpose                              |
+|--------------------------|--------------------------------------|
+| DKNet.AspCore.SlimBus    | HTTP layer & endpoint helpers        |
 | DKNet.SlimBus.Extensions | Core CQRS abstractions, EF behaviors |
 
 Targets .NET 9+. Uses ASP.NET Core Minimal APIs.
@@ -252,7 +259,8 @@ Targets .NET 9+. Uses ASP.NET Core Minimal APIs.
 
 ## Contributing
 
-PRs welcome. Keep helpers minimal and side-effect free. Larger concerns (transactions, persistence, events) belong in the core extensions library.
+PRs welcome. Keep helpers minimal and side-effect free. Larger concerns (transactions, persistence, events) belong in
+the core extensions library.
 
 ## License
 

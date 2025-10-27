@@ -6,5 +6,9 @@
 /// </summary>
 public interface IEventPublisher
 {
+    #region Methods
+
     Task PublishAsync(object eventObj, CancellationToken cancellationToken = default);
+
+    #endregion
 }

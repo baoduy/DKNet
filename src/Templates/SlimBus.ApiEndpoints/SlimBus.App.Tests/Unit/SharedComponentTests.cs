@@ -5,6 +5,26 @@ namespace SlimBus.App.Tests.Unit;
 
 public class SharedComponentTests
 {
+    #region Methods
+
+    [Fact]
+    public void BaseCommandByUserShouldBeSettable()
+    {
+        // Arrange
+        var command = new TestCommand();
+        var expectedUserId = "new-user-456";
+
+        // Act
+        var byUserProp = typeof(TestCommand).GetProperty(nameof(TestCommand.ByUser),
+            BindingFlags.Public | BindingFlags.Instance)!;
+
+        byUserProp.SetValue(command, expectedUserId);
+        var result = byUserProp.GetValue(command);
+
+        // Assert
+        result.ShouldBe(expectedUserId);
+    }
+
     [Fact]
     public void PageableQueryDefaultValuesShouldBeCorrect()
     {
@@ -34,24 +54,7 @@ public class SharedComponentTests
         query.PageSize.ShouldBe(pageSize);
     }
 
-
-    [Fact]
-    public void BaseCommandByUserShouldBeSettable()
-    {
-        // Arrange
-        var command = new TestCommand();
-        var expectedUserId = "new-user-456";
-
-        // Act
-        var byUserProp = typeof(TestCommand).GetProperty(nameof(TestCommand.ByUser),
-            BindingFlags.Public | BindingFlags.Instance)!;
-
-        byUserProp.SetValue(command, expectedUserId);
-        var result = byUserProp.GetValue(command);
-
-        // Assert
-        result.ShouldBe(expectedUserId);
-    }
+    #endregion
 
     private record TestCommand : BaseCommand
     {

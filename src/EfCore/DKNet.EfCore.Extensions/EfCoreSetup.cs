@@ -1,4 +1,5 @@
-﻿using DKNet.EfCore.Extensions.Configurations;
+﻿using System.Collections.Concurrent;
+using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Extensions.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,7 +8,7 @@ namespace Microsoft.EntityFrameworkCore;
 
 public static class EfCoreSetup
 {
-    internal static readonly HashSet<Type> GlobalQueryFilters = [];
+    #region Methods
 
     /// <summary>
     ///     Register the GlobalModelBuilderRegister to the service collection.
@@ -20,33 +21,6 @@ public static class EfCoreSetup
     {
         GlobalQueryFilters.Add(typeof(TImplementation));
         return services;
-    }
-
-    /// <summary>
-    ///     Scan and register all Entities from assemblies to DbContext.
-    /// </summary>
-    /// <typeparam name="TContext"></typeparam>
-    /// <param name="this"></param>
-    /// <param name="assemblies"></param>
-    /// <returns></returns>
-    public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
-        this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies)
-        where TContext : DbContext =>
-        (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
-        .UseAutoConfigModel(assemblies is null || assemblies.Length <= 0 ? [typeof(TContext).Assembly] : assemblies);
-
-    /// <summary>
-    ///     Scan and register all Entities from assemblies to DbContext.
-    /// </summary>
-    /// <param name="this"></param>
-    /// <param name="assemblies"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this, Assembly[] assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(@this);
-        @this.GetOrCreateExtension(assemblies);
-        return @this;
     }
 
     /// <summary>
@@ -66,4 +40,35 @@ public static class EfCoreSetup
 
         return op;
     }
+
+    /// <summary>
+    ///     Scan and register all Entities from assemblies to DbContext.
+    /// </summary>
+    /// <typeparam name="TContext"></typeparam>
+    /// <param name="this"></param>
+    /// <param name="assemblies"></param>
+    /// <returns></returns>
+    public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
+        this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies)
+        where TContext : DbContext =>
+        (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
+        .UseAutoConfigModel(assemblies is { Length: > 0 } ? assemblies : [typeof(TContext).Assembly]);
+
+    /// <summary>
+    ///     Scan and register all Entities from assemblies to DbContext.
+    /// </summary>
+    /// <param name="this"></param>
+    /// <param name="assemblies"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this, Assembly[] assemblies)
+    {
+        ArgumentNullException.ThrowIfNull(@this);
+        @this.GetOrCreateExtension(assemblies);
+        return @this;
+    }
+
+    #endregion
+
+    internal static readonly ConcurrentBag<Type> GlobalQueryFilters = [];
 }

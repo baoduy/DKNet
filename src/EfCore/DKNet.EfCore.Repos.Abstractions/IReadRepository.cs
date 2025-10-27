@@ -8,20 +8,17 @@ namespace DKNet.EfCore.Repos.Abstractions;
 /// <typeparam name="TEntity"></typeparam>
 public interface IReadRepository<TEntity> where TEntity : class
 {
-    /// <summary>
-    ///     Get IQueryable of entity.
-    /// </summary>
-    /// <returns></returns>
-    IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
-
-    IQueryable<TEntity> Query();
+    #region Methods
 
     /// <summary>
-    ///     Get Projection of Entity
+    ///     Get count of entities
     /// </summary>
-    /// <typeparam name="TModel"></typeparam>
-    /// <returns></returns>
-    IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter) where TModel : class;
+    Task<int> CountAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Check if entity exists
+    /// </summary>
+    Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Find Entity by ID
@@ -48,12 +45,19 @@ public interface IReadRepository<TEntity> where TEntity : class
     Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Check if entity exists
+    ///     Get IQueryable of entity.
     /// </summary>
-    Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+    /// <returns></returns>
+    IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
+
+    IQueryable<TEntity> Query();
 
     /// <summary>
-    ///     Get count of entities
+    ///     Get Projection of Entity
     /// </summary>
-    Task<int> CountAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+    /// <typeparam name="TModel"></typeparam>
+    /// <returns></returns>
+    IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter) where TModel : class;
+
+    #endregion
 }

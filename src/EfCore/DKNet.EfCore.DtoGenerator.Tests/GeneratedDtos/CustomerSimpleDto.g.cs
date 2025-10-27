@@ -12,13 +12,13 @@ public partial record CustomerSimpleDto
     /// </summary>
     public int CustomerId { get; init; }
     /// <summary>
-    /// Gets or sets the Name.
-    /// </summary>
-    public required string Name { get; init; }
-    /// <summary>
     /// Gets or sets the Email.
     /// </summary>
     public string? Email { get; init; }
+    /// <summary>
+    /// Gets or sets the Name.
+    /// </summary>
+    public required string Name { get; init; }
     /// <summary>
     /// Gets or sets the CreatedUtc.
     /// </summary>

@@ -2,7 +2,105 @@ namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClassFixture<RepositoryAdvancedFixture>
 {
+    #region Fields
+
     private readonly RepositoryAdvancedFixture _fixture = fixture;
+
+    #endregion
+
+    #region Methods
+
+    [Fact]
+    public async Task ConcurrentUpdatesHandledCorrectly()
+    {
+        // Arrange
+        var entity = new User("concurtest") { FirstName = "Concurrent", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Simulate concurrent update
+        var context2 = new TestDbContext(_fixture.DbContext.Options);
+        var entity2 = await context2.Set<User>().FindAsync(entity.Id);
+        entity2!.FirstName = "Updated by context2";
+        await context2.SaveChangesAsync();
+        await context2.DisposeAsync();
+
+        // Act & Assert
+        entity.FirstName = "Updated by context1";
+        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
+
+        // This should succeed since we're not using row versioning in this simple test
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
+        Assert.Equal(1, affectedRows);
+    }
+
+    [Fact]
+    public async Task DeleteAndSaveChangesRemovesEntity()
+    {
+        // Arrange
+        var entity = new User("deletetest") { FirstName = "ToDelete", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        _fixture.RepositoryWithMapper.Delete(entity);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
+
+        // Assert
+        Assert.Equal(1, affectedRows);
+        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DeleteRangeAndSaveChangesRemovesMultipleEntities()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
+            new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
+        };
+        _fixture.DbContext.AddRange(entities);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        _fixture.RepositoryWithMapper.DeleteRange(entities);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
+
+        // Assert
+        Assert.Equal(2, affectedRows);
+        var results = await _fixture.DbContext.Set<User>()
+            .Where(u => u.CreatedBy.StartsWith("delrange"))
+            .ToListAsync();
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithParamsReturnsNullWhenNotFound()
+    {
+        // Act
+        var result = await _fixture.RepositoryWithMapper.FindAsync(999999);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task FindAsyncWithParamsWorksCorrectly()
+    {
+        // Arrange
+        var entity = new User("findparams1") { FirstName = "FindByParams", LastName = "Test" };
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _fixture.RepositoryWithMapper.FindAsync(entity.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("FindByParams", result.FirstName);
+    }
 
     [Fact]
     public async Task GetProjectionReturnsCorrectProjection()
@@ -28,6 +126,31 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
             _fixture.RepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
+    }
+
+    [Fact]
+    public async Task MultipleEntitiesCanBeAddedAndRetrieved()
+    {
+        // Arrange
+        var entities = new[]
+        {
+            new User("multi1") { FirstName = "Multi1", LastName = "Test" },
+            new User("multi2") { FirstName = "Multi2", LastName = "Test" },
+            new User("multi3") { FirstName = "Multi3", LastName = "Test" }
+        };
+
+        // Act
+        await _fixture.RepositoryWithMapper.AddRangeAsync(entities);
+        await _fixture.RepositoryWithMapper.SaveChangesAsync();
+
+        // Assert
+        var results = await _fixture.DbContext.Set<User>()
+            .Where(u => u.CreatedBy.StartsWith("multi"))
+            .ToListAsync();
+        Assert.Equal(3, results.Count);
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi1", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi2", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi3", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -99,6 +222,24 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     }
 
     [Fact]
+    public async Task TransactionCommitWorksCorrectly()
+    {
+        // Arrange
+        var entity = new User("transtest2") { FirstName = "TransactionCommit", LastName = "Test" };
+
+        // Act
+        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
+        await _fixture.RepositoryWithMapper.AddAsync(entity);
+        await _fixture.RepositoryWithMapper.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        // Assert
+        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        Assert.NotNull(result);
+        Assert.Equal("TransactionCommit", result.FirstName);
+    }
+
+    [Fact]
     public async Task TransactionRollbackWorksCorrectly()
     {
         // Arrange
@@ -123,75 +264,6 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     }
 
     [Fact]
-    public async Task TransactionCommitWorksCorrectly()
-    {
-        // Arrange
-        var entity = new User("transtest2") { FirstName = "TransactionCommit", LastName = "Test" };
-
-        // Act
-        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
-        await _fixture.RepositoryWithMapper.AddAsync(entity);
-        await _fixture.RepositoryWithMapper.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        // Assert
-        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
-        Assert.NotNull(result);
-        Assert.Equal("TransactionCommit", result.FirstName);
-    }
-
-    [Fact]
-    public async Task FindAsyncWithParamsWorksCorrectly()
-    {
-        // Arrange
-        var entity = new User("findparams1") { FirstName = "FindByParams", LastName = "Test" };
-        _fixture.DbContext.Add(entity);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var result = await _fixture.RepositoryWithMapper.FindAsync(entity.Id);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("FindByParams", result.FirstName);
-    }
-
-    [Fact]
-    public async Task FindAsyncWithParamsReturnsNullWhenNotFound()
-    {
-        // Act
-        var result = await _fixture.RepositoryWithMapper.FindAsync(999999);
-
-        // Assert
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task MultipleEntitiesCanBeAddedAndRetrieved()
-    {
-        // Arrange
-        var entities = new[]
-        {
-            new User("multi1") { FirstName = "Multi1", LastName = "Test" },
-            new User("multi2") { FirstName = "Multi2", LastName = "Test" },
-            new User("multi3") { FirstName = "Multi3", LastName = "Test" }
-        };
-
-        // Act
-        await _fixture.RepositoryWithMapper.AddRangeAsync(entities);
-        await _fixture.RepositoryWithMapper.SaveChangesAsync();
-
-        // Assert
-        var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.CreatedBy.StartsWith("multi"))
-            .ToListAsync();
-        Assert.Equal(3, results.Count);
-        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi1", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi2", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(results, r => string.Equals(r.FirstName, "Multi3", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
     public async Task UpdateAndSaveChangesUpdatesEntity()
     {
         // Arrange
@@ -211,48 +283,6 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         Assert.Equal(1, affectedRows);
         var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.Equal("Updated", result?.FirstName);
-    }
-
-    [Fact]
-    public async Task DeleteAndSaveChangesRemovesEntity()
-    {
-        // Arrange
-        var entity = new User("deletetest") { FirstName = "ToDelete", LastName = "Test" };
-        _fixture.DbContext.Add(entity);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        _fixture.RepositoryWithMapper.Delete(entity);
-        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
-
-        // Assert
-        Assert.Equal(1, affectedRows);
-        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task DeleteRangeAndSaveChangesRemovesMultipleEntities()
-    {
-        // Arrange
-        var entities = new[]
-        {
-            new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
-            new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
-        };
-        _fixture.DbContext.AddRange(entities);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        _fixture.RepositoryWithMapper.DeleteRange(entities);
-        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
-
-        // Assert
-        Assert.Equal(2, affectedRows);
-        var results = await _fixture.DbContext.Set<User>()
-            .Where(u => u.CreatedBy.StartsWith("delrange"))
-            .ToListAsync();
-        Assert.Empty(results);
     }
 
     [Fact]
@@ -286,33 +316,15 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         Assert.All(results, r => Assert.Equal("Updated", r.LastName));
     }
 
-    [Fact]
-    public async Task ConcurrentUpdatesHandledCorrectly()
-    {
-        // Arrange
-        var entity = new User("concurtest") { FirstName = "Concurrent", LastName = "Test" };
-        _fixture.DbContext.Add(entity);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Simulate concurrent update
-        var context2 = new TestDbContext(_fixture.DbContext.Options);
-        var entity2 = await context2.Set<User>().FindAsync(entity.Id);
-        entity2!.FirstName = "Updated by context2";
-        await context2.SaveChangesAsync();
-        await context2.DisposeAsync();
-
-        // Act & Assert
-        entity.FirstName = "Updated by context1";
-        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
-
-        // This should succeed since we're not using row versioning in this simple test
-        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
-        Assert.Equal(1, affectedRows);
-    }
+    #endregion
 }
 
 public class UserDto
 {
+    #region Properties
+
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+
+    #endregion
 }

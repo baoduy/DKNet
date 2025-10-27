@@ -7,9 +7,34 @@ namespace EfCore.Events.Tests.EventPublisherTests;
 
 public sealed class EvenPublisherFixture : IAsyncLifetime
 {
+    #region Fields
+
     private MsSqlContainer? _sqlContainer;
 
+    #endregion
+
+    #region Properties
+
     public ServiceProvider Provider { get; private set; } = null!;
+
+    #endregion
+
+    #region Methods
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    public async Task EnsureSqlReadyAsync()
+    {
+        if (_sqlContainer is null) return;
+        if (_sqlContainer.State == TestcontainersStates.Running) return;
+        await _sqlContainer.StartAsync();
+    }
+
+    private string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
@@ -30,7 +55,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseAutoConfigModel([typeof(DddContext).Assembly])
+                builder.UseAutoConfigModel(typeof(DddContext).Assembly)
                     .UseSqlServer(GetConnectionString()))
             .BuildServiceProvider();
 
@@ -43,18 +68,5 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
         await db.SaveChangesAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
-
-    public async Task EnsureSqlReadyAsync()
-    {
-        if (_sqlContainer is null) return;
-        if (_sqlContainer.State == TestcontainersStates.Running) return;
-        await _sqlContainer.StartAsync();
-    }
+    #endregion
 }

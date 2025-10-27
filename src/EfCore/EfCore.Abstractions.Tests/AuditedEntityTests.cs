@@ -3,6 +3,8 @@ namespace EfCore.Abstractions.Tests;
 // Test entities for testing purposes
 public class TestAuditedEntity : AuditedEntity<int>
 {
+    #region Constructors
+
     public TestAuditedEntity()
     {
     }
@@ -16,11 +18,19 @@ public class TestAuditedEntity : AuditedEntity<int>
         SetCreatedBy(createdBy, createdOn);
     }
 
+    #endregion
+
+    #region Properties
+
     public string Name { get; set; } = string.Empty;
+
+    #endregion
 }
 
 public class TestAuditedGuidEntity : AuditedEntity
 {
+    #region Constructors
+
     public TestAuditedGuidEntity()
     {
     }
@@ -34,24 +44,18 @@ public class TestAuditedGuidEntity : AuditedEntity
         SetCreatedBy(createdBy, createdOn);
     }
 
+    #endregion
+
+    #region Properties
+
     public string Name { get; set; } = string.Empty;
+
+    #endregion
 }
 
 public class AuditedEntityTests
 {
-    [Fact]
-    public void AuditedEntity_DefaultConstructor_ShouldInitializeCorrectly()
-    {
-        // Arrange & Act
-        var entity = new TestAuditedEntity();
-
-        // Assert
-        entity.Id.ShouldBe(0);
-        entity.CreatedBy.ShouldBeNull();
-        entity.CreatedOn.ShouldBe(default);
-        entity.UpdatedBy.ShouldBeNull();
-        entity.UpdatedOn.ShouldBeNull();
-    }
+    #region Methods
 
     [Fact]
     public void AuditedEntity_ConstructorWithId_ShouldSetId()
@@ -85,112 +89,81 @@ public class AuditedEntityTests
     }
 
     [Fact]
-    public void SetCreatedBy_WithUserName_ShouldSetCreatedByAndCreatedOn()
+    public void AuditedEntity_DefaultConstructor_ShouldInitializeCorrectly()
     {
-        // Arrange
+        // Arrange & Act
         var entity = new TestAuditedEntity();
-        const string userName = "testuser";
-        var beforeCall = DateTimeOffset.UtcNow;
-
-        // Act
-        entity.SetCreatedBy(userName);
-        var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
-        entity.CreatedBy.ShouldBe(userName);
-        entity.CreatedOn.ShouldBeGreaterThanOrEqualTo(beforeCall);
-        entity.CreatedOn.ShouldBeLessThanOrEqualTo(afterCall);
+        entity.Id.ShouldBe(0);
+        entity.CreatedBy.ShouldBeNull();
+        entity.CreatedOn.ShouldBe(default);
+        entity.UpdatedBy.ShouldBeNull();
+        entity.UpdatedOn.ShouldBeNull();
     }
 
     [Fact]
-    public void SetCreatedBy_WithUserNameAndTimestamp_ShouldSetBoth()
+    public void AuditedEntity_ShouldImplementRequiredInterfaces()
     {
-        // Arrange
+        // Arrange & Act
         var entity = new TestAuditedEntity();
-        const string userName = "testuser";
-        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
-
-        // Act
-        entity.SetCreatedBy(userName, timestamp);
 
         // Assert
-        entity.CreatedBy.ShouldBe(userName);
-        entity.CreatedOn.ShouldBe(timestamp);
+        entity.ShouldBeAssignableTo<IAuditedEntity<int>>();
+        entity.ShouldBeAssignableTo<IAuditedProperties>();
+        entity.ShouldBeAssignableTo<IEntity<int>>();
     }
 
     [Fact]
-    public void SetCreatedBy_WhenAlreadySet_ShouldNotChange()
+    public void AuditedGuidEntity_ConstructorWithId_ShouldSetId()
     {
         // Arrange
-        var entity = new TestAuditedEntity();
-        const string originalUser = "originaluser";
-        const string newUser = "newuser";
-        var originalTimestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
-
-        entity.SetCreatedBy(originalUser, originalTimestamp);
+        var expectedId = Guid.NewGuid();
 
         // Act
-        entity.SetCreatedBy(newUser);
+        var entity = new TestAuditedGuidEntity(expectedId);
 
         // Assert
-        entity.CreatedBy.ShouldBe(originalUser);
-        entity.CreatedOn.ShouldBe(originalTimestamp);
+        entity.Id.ShouldBe(expectedId);
     }
 
     [Fact]
-    public void SetCreatedBy_WithNullUserName_ShouldThrowArgumentNullException()
+    public void AuditedGuidEntity_ConstructorWithIdAndCreatedBy_ShouldSetBoth()
     {
         // Arrange
-        var entity = new TestAuditedEntity();
-
-        // Act & Assert
-        Should.Throw<ArgumentNullException>(() => entity.SetCreatedBy(null!));
-    }
-
-    [Fact]
-    public void SetUpdatedBy_WithUserName_ShouldSetUpdatedByAndUpdatedOn()
-    {
-        // Arrange
-        var entity = new TestAuditedEntity();
-        const string userName = "testuser";
-        var beforeCall = DateTimeOffset.UtcNow;
+        var expectedId = Guid.NewGuid();
+        const string expectedCreatedBy = "testuser";
+        var expectedCreatedOn = DateTimeOffset.UtcNow.AddMinutes(-5);
 
         // Act
-        entity.SetUpdatedBy(userName);
-        var afterCall = DateTimeOffset.UtcNow;
+        var entity = new TestAuditedGuidEntity(expectedId, expectedCreatedBy, expectedCreatedOn);
 
         // Assert
-        entity.UpdatedBy.ShouldBe(userName);
-        entity.UpdatedOn.ShouldNotBeNull();
-        entity.UpdatedOn.Value.ShouldBeGreaterThanOrEqualTo(beforeCall);
-        entity.UpdatedOn.Value.ShouldBeLessThanOrEqualTo(afterCall);
+        entity.Id.ShouldBe(expectedId);
+        entity.CreatedBy.ShouldBe(expectedCreatedBy);
+        entity.CreatedOn.ShouldBe(expectedCreatedOn);
     }
 
     [Fact]
-    public void SetUpdatedBy_WithUserNameAndTimestamp_ShouldSetBoth()
+    public void AuditedGuidEntity_DefaultConstructor_ShouldInitializeCorrectly()
     {
-        // Arrange
-        var entity = new TestAuditedEntity();
-        const string userName = "testuser";
-        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-5);
-
-        // Act
-        entity.SetUpdatedBy(userName, timestamp);
+        // Arrange & Act
+        var entity = new TestAuditedGuidEntity();
 
         // Assert
-        entity.UpdatedBy.ShouldBe(userName);
-        entity.UpdatedOn.ShouldBe(timestamp);
+        entity.Id.ShouldBe(Guid.Empty);
+        entity.CreatedBy.ShouldBeNull();
     }
 
     [Fact]
-    public void SetUpdatedBy_WithNullOrEmptyUserName_ShouldThrowArgumentNullException()
+    public void AuditedGuidEntity_ShouldInheritFromCorrectBaseClass()
     {
-        // Arrange
-        var entity = new TestAuditedEntity();
+        // Arrange & Act
+        var entity = new TestAuditedGuidEntity();
 
-        // Act & Assert
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(null!));
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(string.Empty));
+        // Assert
+        entity.ShouldBeAssignableTo<AuditedEntity<Guid>>();
+        entity.ShouldBeAssignableTo<IAuditedEntity<Guid>>();
     }
 
     [Fact]
@@ -248,66 +221,113 @@ public class AuditedEntityTests
     }
 
     [Fact]
-    public void AuditedEntity_ShouldImplementRequiredInterfaces()
+    public void SetCreatedBy_WhenAlreadySet_ShouldNotChange()
     {
-        // Arrange & Act
+        // Arrange
+        var entity = new TestAuditedEntity();
+        const string originalUser = "originaluser";
+        const string newUser = "newuser";
+        var originalTimestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
+
+        entity.SetCreatedBy(originalUser, originalTimestamp);
+
+        // Act
+        entity.SetCreatedBy(newUser);
+
+        // Assert
+        entity.CreatedBy.ShouldBe(originalUser);
+        entity.CreatedOn.ShouldBe(originalTimestamp);
+    }
+
+    [Fact]
+    public void SetCreatedBy_WithNullUserName_ShouldThrowArgumentNullException()
+    {
+        // Arrange
         var entity = new TestAuditedEntity();
 
-        // Assert
-        entity.ShouldBeAssignableTo<IAuditedEntity<int>>();
-        entity.ShouldBeAssignableTo<IAuditedProperties>();
-        entity.ShouldBeAssignableTo<IEntity<int>>();
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => entity.SetCreatedBy(null!));
     }
 
     [Fact]
-    public void AuditedGuidEntity_DefaultConstructor_ShouldInitializeCorrectly()
-    {
-        // Arrange & Act
-        var entity = new TestAuditedGuidEntity();
-
-        // Assert
-        entity.Id.ShouldBe(Guid.Empty);
-        entity.CreatedBy.ShouldBeNull();
-    }
-
-    [Fact]
-    public void AuditedGuidEntity_ConstructorWithId_ShouldSetId()
+    public void SetCreatedBy_WithUserName_ShouldSetCreatedByAndCreatedOn()
     {
         // Arrange
-        var expectedId = Guid.NewGuid();
+        var entity = new TestAuditedEntity();
+        const string userName = "testuser";
+        var beforeCall = DateTimeOffset.UtcNow;
 
         // Act
-        var entity = new TestAuditedGuidEntity(expectedId);
+        entity.SetCreatedBy(userName);
+        var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
-        entity.Id.ShouldBe(expectedId);
+        entity.CreatedBy.ShouldBe(userName);
+        entity.CreatedOn.ShouldBeGreaterThanOrEqualTo(beforeCall);
+        entity.CreatedOn.ShouldBeLessThanOrEqualTo(afterCall);
     }
 
     [Fact]
-    public void AuditedGuidEntity_ConstructorWithIdAndCreatedBy_ShouldSetBoth()
+    public void SetCreatedBy_WithUserNameAndTimestamp_ShouldSetBoth()
     {
         // Arrange
-        var expectedId = Guid.NewGuid();
-        const string expectedCreatedBy = "testuser";
-        var expectedCreatedOn = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var entity = new TestAuditedEntity();
+        const string userName = "testuser";
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
 
         // Act
-        var entity = new TestAuditedGuidEntity(expectedId, expectedCreatedBy, expectedCreatedOn);
+        entity.SetCreatedBy(userName, timestamp);
 
         // Assert
-        entity.Id.ShouldBe(expectedId);
-        entity.CreatedBy.ShouldBe(expectedCreatedBy);
-        entity.CreatedOn.ShouldBe(expectedCreatedOn);
+        entity.CreatedBy.ShouldBe(userName);
+        entity.CreatedOn.ShouldBe(timestamp);
     }
 
     [Fact]
-    public void AuditedGuidEntity_ShouldInheritFromCorrectBaseClass()
+    public void SetUpdatedBy_WithNullOrEmptyUserName_ShouldThrowArgumentNullException()
     {
-        // Arrange & Act
-        var entity = new TestAuditedGuidEntity();
+        // Arrange
+        var entity = new TestAuditedEntity();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(null!));
+        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(string.Empty));
+    }
+
+    [Fact]
+    public void SetUpdatedBy_WithUserName_ShouldSetUpdatedByAndUpdatedOn()
+    {
+        // Arrange
+        var entity = new TestAuditedEntity();
+        const string userName = "testuser";
+        var beforeCall = DateTimeOffset.UtcNow;
+
+        // Act
+        entity.SetUpdatedBy(userName);
+        var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
-        entity.ShouldBeAssignableTo<AuditedEntity<Guid>>();
-        entity.ShouldBeAssignableTo<IAuditedEntity<Guid>>();
+        entity.UpdatedBy.ShouldBe(userName);
+        entity.UpdatedOn.ShouldNotBeNull();
+        entity.UpdatedOn.Value.ShouldBeGreaterThanOrEqualTo(beforeCall);
+        entity.UpdatedOn.Value.ShouldBeLessThanOrEqualTo(afterCall);
     }
+
+    [Fact]
+    public void SetUpdatedBy_WithUserNameAndTimestamp_ShouldSetBoth()
+    {
+        // Arrange
+        var entity = new TestAuditedEntity();
+        const string userName = "testuser";
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-5);
+
+        // Act
+        entity.SetUpdatedBy(userName, timestamp);
+
+        // Assert
+        entity.UpdatedBy.ShouldBe(userName);
+        entity.UpdatedOn.ShouldBe(timestamp);
+    }
+
+    #endregion
 }

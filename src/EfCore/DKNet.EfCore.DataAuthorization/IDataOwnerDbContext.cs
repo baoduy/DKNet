@@ -11,6 +11,8 @@ namespace DKNet.EfCore.DataAuthorization;
 /// </remarks>
 public interface IDataOwnerDbContext
 {
+    #region Properties
+
     /// <summary>
     ///     Gets the collection of data keys accessible to the current context.
     /// </summary>
@@ -23,5 +25,7 @@ public interface IDataOwnerDbContext
     ///     - Filter query results automatically
     ///     - Enforce data isolation
     /// </remarks>
-    ICollection<string> AccessibleKeys { get; }
+    IEnumerable<string> AccessibleKeys { get; }
+
+    #endregion
 }

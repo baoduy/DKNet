@@ -6,6 +6,8 @@ namespace Svc.PdfGenerators.Tests;
 
 public class ModuleServiceTests
 {
+    #region Methods
+
     [Fact]
     public async Task AddModulesToTemplateAsync_AddsModulePathsToModel()
     {
@@ -22,9 +24,16 @@ public class ModuleServiceTests
         Assert.Contains("fontawesome", templateModel.Keys);
     }
 
+    #endregion
+
     private class TestConversionEvents : IConversionEvents
     {
+        #region Properties
+
         public string? OutputFileName => "output.pdf";
+
+        #endregion
+
         public event EventHandler<MarkdownEventArgs>? BeforeHtmlConversion;
         public event Func<object, TemplateModelEventArgs, Task>? OnTemplateModelCreatingAsync;
         public event EventHandler<PdfEventArgs>? OnTempPdfCreatedEvent;

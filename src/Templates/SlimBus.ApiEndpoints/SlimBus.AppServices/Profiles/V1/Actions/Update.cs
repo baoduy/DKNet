@@ -3,17 +3,22 @@
 [MapsTo(typeof(CustomerProfile))]
 public record UpdateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<ProfileResult>
 {
-    public required Guid Id { get; init; }
+    #region Properties
 
     public string? Email { get; init; }
-    public string? Phone { get; init; }
+    public required Guid Id { get; init; }
     public string? Name { get; init; }
+    public string? Phone { get; init; }
+
+    #endregion
 }
 
 internal sealed class UpdateProfileCommandHandler(
     IMapper mapper,
     ICustomerProfileRepo repo) : Fluents.Requests.IHandler<UpdateProfileCommand, ProfileResult>
 {
+    #region Methods
+
     public async Task<IResult<ProfileResult>> OnHandle(UpdateProfileCommand request,
         CancellationToken cancellationToken)
     {
@@ -33,4 +38,6 @@ internal sealed class UpdateProfileCommandHandler(
         //Return result
         return Result.Ok(mapper.Map<ProfileResult>(profile));
     }
+
+    #endregion
 }

@@ -5,6 +5,10 @@ namespace DKNet.Svc.PdfGenerators.Services;
 
 internal class ModuleService
 {
+    #region Fields
+
+    private readonly ModuleOptions _options;
+
     private readonly IReadOnlyDictionary<string, ModuleInformation> _packagelocationMapping =
         new Dictionary<string, ModuleInformation>
         {
@@ -35,7 +39,9 @@ internal class ModuleService
             }
         };
 
-    private readonly ModuleOptions _options;
+    #endregion
+
+    #region Constructors
 
     public ModuleService(ModuleOptions options, IConversionEvents events)
     {
@@ -52,6 +58,10 @@ internal class ModuleService
         events.OnTemplateModelCreatingAsync += AddModulesToTemplateAsync;
     }
 
+    #endregion
+
+    #region Methods
+
     internal async Task AddModulesToTemplateAsync(object sender, TemplateModelEventArgs e)
     {
         // load correct module paths
@@ -59,4 +69,6 @@ internal class ModuleService
             e.TemplateModel.Add(kvp.Key, _options.IsRemote ? kvp.Value.RemotePath : kvp.Value.NodePath);
         await Task.CompletedTask;
     }
+
+    #endregion
 }

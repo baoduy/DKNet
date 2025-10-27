@@ -6,8 +6,26 @@ namespace EfCore.HookTests;
 
 public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private ServiceProvider _provider= null!;
-    private MsSqlContainer _sqlContainer= null!;
+    #region Fields
+
+    private ServiceProvider _provider = null!;
+    private MsSqlContainer _sqlContainer = null!;
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        await _provider.DisposeAsync();
+        if (_sqlContainer != null)
+            await _sqlContainer.DisposeAsync();
+    }
+
+    private string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=PlainTestDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
@@ -27,18 +45,6 @@ public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
         var db = _provider.GetRequiredService<PlainHookContext>();
         await db.Database.EnsureCreatedAsync();
     }
-
-    public async Task DisposeAsync()
-    {
-        await _provider.DisposeAsync();
-        if (_sqlContainer != null)
-            await _sqlContainer.DisposeAsync();
-    }
-
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=PlainTestDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     [Fact]
     public async Task PlainEfCore_MultipleApiCalls_ShouldNotCreateTooManyServiceProviders()
@@ -65,10 +71,16 @@ public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
 
         await action.ShouldNotThrowAsync();
     }
+
+    #endregion
 }
 
 // Simple DbContext without any extensions
 public class PlainHookContext(DbContextOptions<PlainHookContext> options) : DbContext(options)
 {
+    #region Properties
+
     public DbSet<CustomerProfile> CustomerProfiles { get; set; }
+
+    #endregion
 }

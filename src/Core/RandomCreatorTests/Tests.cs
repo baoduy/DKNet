@@ -7,13 +7,24 @@ namespace RandomCreatorTests;
 
 public class Tests(ITestOutputHelper output)
 {
-    [Fact]
-    public void CanGenerateA25CharacterString()
-    {
-        var randomString = RandomCreators.NewString();
-        output.WriteLine(randomString);
+    #region Methods
 
-        Assert.True(randomString.Length == 25);
+    [Fact]
+    public void CanDisposeStringCreatorSafely()
+    {
+        // Disposal of internal class cannot be tested directly; test via public API
+        var options = new StringCreatorOptions { MinNumbers = 2, MinSpecials = 2 };
+        var chars = RandomCreators.NewChars(10, options);
+        Assert.Equal(10, chars.Length); // If no exception, disposal is safe
+    }
+
+    [Fact]
+    public void CanGenerateA128Characters()
+    {
+        var randomString = RandomCreators.NewChars(128);
+        output.WriteLine(new string(randomString));
+
+        Assert.True(randomString.Length == 128);
     }
 
     [Fact]
@@ -26,12 +37,22 @@ public class Tests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void CanGenerateA128Characters()
+    public void CanGenerateA25CharacterString()
     {
-        var randomString = RandomCreators.NewChars(128);
-        output.WriteLine(new string(randomString));
+        var randomString = RandomCreators.NewString();
+        output.WriteLine(randomString);
 
-        Assert.True(randomString.Length == 128);
+        Assert.True(randomString.Length == 25);
+    }
+
+    [Fact]
+    public void CanGenerateAlphabeticOnlyChars()
+    {
+        var options = new StringCreatorOptions { MinNumbers = 0, MinSpecials = 0 };
+        var chars = RandomCreators.NewChars(20, options);
+        output.WriteLine(new string(chars));
+        Assert.True(chars.All(char.IsLetter));
+        Assert.Equal(20, chars.Length);
     }
 
     [Fact]
@@ -45,46 +66,17 @@ public class Tests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void CanGenerateStringWithMinNumbersAndSpecials()
+    public void CanGenerateCharsWithAllOptions()
     {
-        var options = new StringCreatorOptions { MinNumbers = 5, MinSpecials = 3 };
-        var str = RandomCreators.NewString(30, options);
-        output.WriteLine(str);
-        var numCount = str.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
-        var specCount = str.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
-        Assert.True(numCount >= 5);
-        Assert.True(specCount >= 3);
-        Assert.Equal(30, str.Length);
-    }
-
-    [Fact]
-    public void CanGenerateStringWithExcessiveMinNumbersAndSpecials()
-    {
-        var options = new StringCreatorOptions { MinNumbers = 5, MinSpecials = 20 };
-        var str = RandomCreators.NewString(30, options);
-        output.WriteLine(str);
-        var numCount = str.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
-        var specCount = str.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
-
-        Assert.True(numCount == 5);
-        Assert.True(specCount == 20);
-        Assert.Equal(30, str.Length);
-    }
-
-    [Fact]
-    public void CanGenerateZeroLengthString()
-    {
-        Action a = () => RandomCreators.NewString(0);
-        a.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
-    public void CanDisposeStringCreatorSafely()
-    {
-        // Disposal of internal class cannot be tested directly; test via public API
         var options = new StringCreatorOptions { MinNumbers = 2, MinSpecials = 2 };
-        var chars = RandomCreators.NewChars(10, options);
-        Assert.Equal(10, chars.Length); // If no exception, disposal is safe
+        var chars = RandomCreators.NewChars(20, options);
+        output.WriteLine(new string(chars));
+        var numCount = chars.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
+        var specCount = chars.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
+        var alphaCount = chars.Count(char.IsLetter);
+        Assert.True(numCount >= 2);
+        Assert.True(specCount >= 2);
+        Assert.True(alphaCount + numCount + specCount == 20);
     }
 
     [Fact]
@@ -93,16 +85,6 @@ public class Tests(ITestOutputHelper output)
         var options = new StringCreatorOptions { MinNumbers = 2, MinSpecials = 2 };
         var chars = RandomCreators.NewChars(20, options);
         output.WriteLine(new string(chars));
-        Assert.Equal(20, chars.Length);
-    }
-
-    [Fact]
-    public void CanGenerateAlphabeticOnlyChars()
-    {
-        var options = new StringCreatorOptions {  MinNumbers = 0, MinSpecials = 0 };
-        var chars = RandomCreators.NewChars(20, options);
-        output.WriteLine(new string(chars));
-        Assert.True(chars.All(char.IsLetter));
         Assert.Equal(20, chars.Length);
     }
 
@@ -121,16 +103,38 @@ public class Tests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void CanGenerateCharsWithAllOptions()
+    public void CanGenerateStringWithExcessiveMinNumbersAndSpecials()
     {
-        var options = new StringCreatorOptions {  MinNumbers = 2, MinSpecials = 2 };
-        var chars = RandomCreators.NewChars(20, options);
-        output.WriteLine(new string(chars));
-        var numCount = chars.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
-        var specCount = chars.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
-        var alphaCount = chars.Count(char.IsLetter);
-        Assert.True(numCount >= 2);
-        Assert.True(specCount >= 2);
-        Assert.True(alphaCount + numCount + specCount == 20);
+        var options = new StringCreatorOptions { MinNumbers = 5, MinSpecials = 20 };
+        var str = RandomCreators.NewString(30, options);
+        output.WriteLine(str);
+        var numCount = str.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
+        var specCount = str.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
+
+        Assert.True(numCount == 5);
+        Assert.True(specCount == 20);
+        Assert.Equal(30, str.Length);
     }
+
+    [Fact]
+    public void CanGenerateStringWithMinNumbersAndSpecials()
+    {
+        var options = new StringCreatorOptions { MinNumbers = 5, MinSpecials = 3 };
+        var str = RandomCreators.NewString(30, options);
+        output.WriteLine(str);
+        var numCount = str.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
+        var specCount = str.Count(c => "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
+        Assert.True(numCount >= 5);
+        Assert.True(specCount >= 3);
+        Assert.Equal(30, str.Length);
+    }
+
+    [Fact]
+    public void CanGenerateZeroLengthString()
+    {
+        Action a = () => RandomCreators.NewString(0);
+        a.ShouldThrow<ArgumentException>();
+    }
+
+    #endregion
 }

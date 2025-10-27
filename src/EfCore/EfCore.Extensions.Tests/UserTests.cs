@@ -2,16 +2,13 @@
 
 public class UserTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
 
-    [Fact]
-    public void CreatedUserIdShouldBeZero()
-    {
-        var user = new User("Duy")
-            { FirstName = "Steven", LastName = "Smith" };
-        user.Id.ShouldBe(0);
-    }
+    #region Methods
 
     [Fact]
     public async Task AddUserAndAddress()
@@ -52,4 +49,15 @@ public class UserTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 
         _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
     }
+
+
+    [Fact]
+    public void CreatedUserIdShouldBeZero()
+    {
+        var user = new User("Duy")
+            { FirstName = "Steven", LastName = "Smith" };
+        user.Id.ShouldBe(0);
+    }
+
+    #endregion
 }

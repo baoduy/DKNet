@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Enhanced Entity Framework Core functionality with automatic entity configuration, global query filters, data seeding, and advanced extension methods. This package streamlines EF Core setup and provides powerful utilities for entity management, pagination, and database operations.
+Enhanced Entity Framework Core functionality with automatic entity configuration, global query filters, data seeding,
+and advanced extension methods. This package streamlines EF Core setup and provides powerful utilities for entity
+management, pagination, and database operations.
 
 ## Features
 
@@ -348,4 +350,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

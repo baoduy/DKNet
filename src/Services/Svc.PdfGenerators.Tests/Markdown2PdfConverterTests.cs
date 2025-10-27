@@ -6,10 +6,7 @@ namespace Svc.PdfGenerators.Tests;
 
 public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
 {
-    private void OutputResultPath(string resultPath)
-    {
-        outputHelper.WriteLine($"Generated PDF file at: {resultPath}");
-    }
+    #region Methods
 
     [Fact]
     public async Task Convert_SampleMarkdownFile_GeneratesPdf()
@@ -53,6 +50,27 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
     }
 
     [Fact]
+    public async Task ConvertHtmlAsync_WithCustomOptions_GeneratesPdfWithHeaderFooter()
+    {
+        var options = new PdfGeneratorOptions
+        {
+            HeaderHtml = "<div style='font-size:10px'>Header</div>",
+            FooterHtml = "<div style='font-size:10px'>Footer</div>",
+            MarginOptions = new MarginOptions { Top = "50px", Bottom = "50px" }
+        };
+        var converter = new PdfGenerator(options);
+        var htmlContent = "<html><body><h2>Header/Footer Test</h2></body></html>";
+        var outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "HeaderFooter.pdf");
+        if (File.Exists(outputPdf)) File.Delete(outputPdf);
+        var resultPath = await converter.ConvertHtmlAsync(htmlContent, outputPdf);
+        OutputResultPath(resultPath);
+        Assert.True(File.Exists(resultPath));
+        var fileInfo = new FileInfo(resultPath);
+        Assert.True(fileInfo.Length > 0);
+        File.Delete(resultPath);
+    }
+
+    [Fact]
     public async Task ConvertHtmlFile_SampleHtmlFile_GeneratesPdf()
     {
         var converter = new PdfGenerator();
@@ -64,6 +82,16 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
 
         var resultPath = await converter.ConvertHtmlFileAsync(htmlFilePath, expectedPdfPath);
         OutputResultPath(resultPath);
+    }
+
+    [Fact]
+    public async Task ConvertHtmlFileAsync_FileNotFound_ThrowsException()
+    {
+        var converter = new PdfGenerator();
+        var missingFile = "missing.html";
+        var ex = await Assert.ThrowsAsync<FileNotFoundException>(async () =>
+            await converter.ConvertHtmlFileAsync(missingFile));
+        Assert.Contains("HTML file not found", ex.Message);
     }
 
     [Fact]
@@ -86,34 +114,10 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         File.Delete(resultPath);
     }
 
-    [Fact]
-    public async Task ConvertHtmlFileAsync_FileNotFound_ThrowsException()
+    private void OutputResultPath(string resultPath)
     {
-        var converter = new PdfGenerator();
-        var missingFile = "missing.html";
-        var ex = await Assert.ThrowsAsync<FileNotFoundException>(async () =>
-            await converter.ConvertHtmlFileAsync(missingFile));
-        Assert.Contains("HTML file not found", ex.Message);
+        outputHelper.WriteLine($"Generated PDF file at: {resultPath}");
     }
 
-    [Fact]
-    public async Task ConvertHtmlAsync_WithCustomOptions_GeneratesPdfWithHeaderFooter()
-    {
-        var options = new PdfGeneratorOptions
-        {
-            HeaderHtml = "<div style='font-size:10px'>Header</div>",
-            FooterHtml = "<div style='font-size:10px'>Footer</div>",
-            MarginOptions = new MarginOptions { Top = "50px", Bottom = "50px" }
-        };
-        var converter = new PdfGenerator(options);
-        var htmlContent = "<html><body><h2>Header/Footer Test</h2></body></html>";
-        var outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "HeaderFooter.pdf");
-        if (File.Exists(outputPdf)) File.Delete(outputPdf);
-        var resultPath = await converter.ConvertHtmlAsync(htmlContent, outputPdf);
-        OutputResultPath(resultPath);
-        Assert.True(File.Exists(resultPath));
-        var fileInfo = new FileInfo(resultPath);
-        Assert.True(fileInfo.Length > 0);
-        File.Delete(resultPath);
-    }
+    #endregion
 }

@@ -5,6 +5,25 @@ namespace SlimBus.App.Tests.Unit.LazyMapper;
 
 public class LazyMapperTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixture>
 {
+    #region Methods
+
+    [Fact]
+    public void LazyMapNullValueTest()
+    {
+        var mapper = fixture.ServiceProvider.GetRequiredService<IMapper>();
+        var v = mapper.LazyMap<TestDataModel>(null!);
+        v.ValueOrDefault.ShouldBeNull();
+    }
+
+    [Fact]
+    public void LazyMapNullValueThrowExceptionTest()
+    {
+        var mapper = fixture.ServiceProvider.GetRequiredService<IMapper>();
+        var v = mapper.LazyMap<TestDataModel>(null!);
+        Func<object> a = () => v.Value;
+        a.ShouldThrow<Exception>();
+    }
+
     [Fact]
     public void LazyMapTest()
     {
@@ -28,20 +47,5 @@ public class LazyMapperTests(LazyMapFixture fixture) : IClassFixture<LazyMapFixt
         v.Value.ShouldBe(m);
     }
 
-    [Fact]
-    public void LazyMapNullValueTest()
-    {
-        var mapper = fixture.ServiceProvider.GetRequiredService<IMapper>();
-        var v = mapper.LazyMap<TestDataModel>(null!);
-        v.ValueOrDefault.ShouldBeNull();
-    }
-
-    [Fact]
-    public void LazyMapNullValueThrowExceptionTest()
-    {
-        var mapper = fixture.ServiceProvider.GetRequiredService<IMapper>();
-        var v = mapper.LazyMap<TestDataModel>(null!);
-        Func<object> a = () => v.Value;
-        a.ShouldThrow<Exception>();
-    }
+    #endregion
 }

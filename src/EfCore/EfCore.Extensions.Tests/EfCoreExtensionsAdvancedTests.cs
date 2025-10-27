@@ -4,15 +4,36 @@ namespace EfCore.Extensions.Tests;
 
 public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
+
+    #region Methods
 
     [Fact]
-    public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
+    public void GetEntityType_WithValidMappingType_ShouldReturnEntityType()
     {
-        var action = () => _db.GetPrimaryKeyValues(null!).ToList();
-        // Act & Assert
-        action.ShouldThrow<ArgumentNullException>();
+        // Arrange
+        var mappingType = typeof(AddressEntityMapper);
+
+        // Act
+        var entityType = EfCoreExtensions.GetEntityType(mappingType);
+
+        // Assert
+        entityType.ShouldBe(typeof(Address));
+    }
+
+    [Fact]
+    public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnPropertyNames()
+    {
+        // Act
+        var properties = _db.GetPrimaryKeyProperties<User>().ToList();
+
+        // Assert
+        properties.ShouldHaveSingleItem();
+        properties[0].ShouldBe("Id");
     }
 
     [Fact]
@@ -29,15 +50,21 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         keyValues[0].Value.ShouldBe(1);
     }
 
-    [Fact]
-    public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnPropertyNames()
-    {
-        // Act
-        var properties = _db.GetPrimaryKeyProperties<User>().ToList();
 
-        // Assert
-        properties.ShouldHaveSingleItem();
-        properties[0].ShouldBe("Id");
+    [Fact]
+    public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
+    {
+        var action = () => _db.GetPrimaryKeyValues(null!).ToList();
+        // Act & Assert
+        action.ShouldThrow<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void GetTableName_WithNullContext_ShouldThrowArgumentNullException()
+    {
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() =>
+            ((DbContext)null!).GetTableName(typeof(User)));
     }
 
     [Fact]
@@ -49,14 +76,6 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         // Assert
         tableName.ShouldNotBeNullOrEmpty();
         tableName.ShouldContain("User"); // Should contain the entity name
-    }
-
-    [Fact]
-    public void GetTableName_WithNullContext_ShouldThrowArgumentNullException()
-    {
-        // Act & Assert
-        Should.Throw<ArgumentNullException>(() =>
-            ((DbContext)null!).GetTableName(typeof(User)));
     }
 
     [Fact]
@@ -80,17 +99,5 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         result.ShouldBeNull();
     }
 
-
-    [Fact]
-    public void GetEntityType_WithValidMappingType_ShouldReturnEntityType()
-    {
-        // Arrange
-        var mappingType = typeof(AddressEntityMapper);
-
-        // Act
-        var entityType = EfCoreExtensions.GetEntityType(mappingType);
-
-        // Assert
-        entityType.ShouldBe(typeof(Address));
-    }
+    #endregion
 }

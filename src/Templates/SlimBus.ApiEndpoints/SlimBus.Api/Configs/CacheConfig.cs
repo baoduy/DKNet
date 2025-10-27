@@ -3,6 +3,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class CacheConfigs
 {
+    #region Methods
+
     public static IServiceCollection CacheConfig(this IServiceCollection services, IConfiguration configuration)
     {
         var conn = configuration.GetConnectionString("Redis");
@@ -20,4 +22,6 @@ internal static class CacheConfigs
 
         return services;
     }
+
+    #endregion
 }

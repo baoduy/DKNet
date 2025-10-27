@@ -3,7 +3,8 @@
 [![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Tasks.svg)](https://www.nuget.org/packages/DKNet.AspCore.Tasks/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight, easy-to-use library for managing background jobs that need to run when your ASP.NET Core application starts.
+A lightweight, easy-to-use library for managing background jobs that need to run when your ASP.NET Core application
+starts.
 
 ## Features
 
@@ -109,7 +110,8 @@ services.AddBackgroundJobFrom(new[] {
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for
+details.
 
 ## About
 

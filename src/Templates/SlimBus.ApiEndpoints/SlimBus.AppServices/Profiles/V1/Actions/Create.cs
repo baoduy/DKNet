@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Data;
+
 // ReSharper disable UnusedType.Global
 
 namespace SlimBus.AppServices.Profiles.V1.Actions;
@@ -7,8 +8,9 @@ namespace SlimBus.AppServices.Profiles.V1.Actions;
 [MapsTo(typeof(CustomerProfile))]
 public sealed record CreateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<ProfileResult>
 {
+    #region Properties
+
     [Required] public string Email { get; set; } = null!;
-    [Phone] public string Phone { get; set; } = null!;
 
     [JsonIgnore]
     [Description(
@@ -16,16 +18,23 @@ public sealed record CreateProfileCommand : BaseCommand, Fluents.Requests.IWitRe
     public string MembershipNo { get; set; } = null!;
 
     [StringLength(150)] [Required] public string Name { get; set; } = null!;
+    [Phone] public string Phone { get; set; } = null!;
+
+    #endregion
 }
 
 internal sealed class CreateProfileCommandValidator : AbstractValidator<CreateProfileCommand>
 {
+    #region Constructors
+
     public CreateProfileCommandValidator()
     {
         RuleFor(a => a.Email).NotEmpty().EmailAddress().Length(1, 1000);
         RuleFor(a => a.Phone).NotEmpty().Length(6, 50);
         RuleFor(a => a.Name).NotEmpty().Length(6, 100);
     }
+
+    #endregion
 }
 
 internal sealed class CreateProfileCommandHandler(
@@ -34,6 +43,8 @@ internal sealed class CreateProfileCommandHandler(
     IMapper mapper)
     : Fluents.Requests.IHandler<CreateProfileCommand, ProfileResult>
 {
+    #region Methods
+
     public async Task<IResult<ProfileResult>> OnHandle(CreateProfileCommand request,
         CancellationToken cancellationToken)
     {
@@ -58,4 +69,6 @@ internal sealed class CreateProfileCommandHandler(
         //NOTE this will return a lazy mapping result and only map profile to ProfileBasicView after SaveChanges is called.
         return mapper.ResultOf<ProfileResult>(profile);
     }
+
+    #endregion
 }

@@ -8,6 +8,17 @@ namespace DKNet.AspCore.Tasks.Internals;
 internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServiceProvider provider)
     : BackgroundService
 {
+    #region Methods
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        logger.LogInformation("Background job host started");
+        await using var scope = provider.CreateAsyncScope();
+        var jobs = scope.ServiceProvider.GetServices<IBackgroundTask>();
+        await Task.WhenAll(jobs.Select(j => ExecuteJobAsync(j, stoppingToken)));
+        logger.LogInformation("Background job host finished");
+    }
+
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
     private async Task ExecuteJobAsync(IBackgroundTask task, CancellationToken cancellationToken = default)
     {
@@ -21,12 +32,5 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
         }
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        logger.LogInformation("Background job host started");
-        await using var scope = provider.CreateAsyncScope();
-        var jobs = scope.ServiceProvider.GetServices<IBackgroundTask>();
-        await Task.WhenAll(jobs.Select(j => ExecuteJobAsync(j, stoppingToken)));
-        logger.LogInformation("Background job host finished");
-    }
+    #endregion
 }

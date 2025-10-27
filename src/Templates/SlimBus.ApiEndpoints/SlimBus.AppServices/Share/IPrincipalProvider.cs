@@ -21,5 +21,5 @@ public interface IPrincipalProvider : IDataOwnerProvider
     /// </summary>
     string UserName { get; }
 
-    #endregion Properties
+    #endregion
 }

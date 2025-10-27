@@ -13,6 +13,8 @@ namespace DKNet.EfCore.Abstractions.Attributes;
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class SequenceAttribute : Attribute
 {
+    #region Fields
+
     private static readonly IReadOnlyCollection<Type> SupportedTypes = new List<Type>
     {
         typeof(byte),
@@ -20,6 +22,10 @@ public sealed class SequenceAttribute : Attribute
         typeof(int),
         typeof(long)
     }.AsReadOnly();
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="SequenceAttribute" /> class.
@@ -32,6 +38,10 @@ public sealed class SequenceAttribute : Attribute
         if (!SupportedTypes.Contains(Type))
             throw new NotSupportedException(Type.Name);
     }
+
+    #endregion
+
+    #region Properties
 
     /// <summary>
     ///     Gets or sets a value indicating whether the sequence cycles back to minimum after reaching maximum.
@@ -81,4 +91,6 @@ public sealed class SequenceAttribute : Attribute
     /// <value>The Type object representing the sequence's data type.</value>
     [Description("The data type")]
     public Type Type { get; }
+
+    #endregion
 }

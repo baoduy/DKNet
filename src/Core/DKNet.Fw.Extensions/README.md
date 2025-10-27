@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../LICENSE)
 
-A comprehensive collection of framework-level extensions and utilities for .NET applications. This package provides essential extension methods for common types, encryption utilities, and type manipulation tools to enhance productivity and code readability.
+A comprehensive collection of framework-level extensions and utilities for .NET applications. This package provides
+essential extension methods for common types, encryption utilities, and type manipulation tools to enhance productivity
+and code readability.
 
 ## Features
 
@@ -106,23 +108,28 @@ using System.Collections.Generic;   // Async extensions
 ## API Reference
 
 ### StringExtensions
+
 - `ExtractDigits(string)` - Extracts numeric characters from a string
 - `IsNumber(string)` - Validates if a string represents a valid number
 - `IsStringOrValueType(PropertyInfo)` - Checks if property can store string or value types
 
-### DateTimeExtensions  
+### DateTimeExtensions
+
 - `LastDayOfMonth(DateTime)` - Returns the last day of the month
 - `Quarter(DateTime)` - Determines the quarter of the year (1-4)
 
 ### EnumExtensions
+
 - `GetAttribute<T>(Enum)` - Retrieves custom attributes from enum values
 - `GetEnumInfo(Enum)` - Gets comprehensive enum information including display attributes
 
 ### TypeExtensions
+
 - `IsStringOrValueType(Type)` - Determines if type is string or value type
 - Various generic type checking utilities
 
 ### AsyncEnumerableExtensions
+
 - `ToListAsync<T>(IAsyncEnumerable<T>)` - Converts async enumerable to list
 
 ## Advanced Usage
@@ -197,4 +204,5 @@ This project is licensed under the [MIT License](../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

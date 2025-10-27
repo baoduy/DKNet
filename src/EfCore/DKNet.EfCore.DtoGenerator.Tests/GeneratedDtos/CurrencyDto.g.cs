@@ -10,19 +10,10 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.Currencies;
 public partial record CurrencyDto
 {
     /// <summary>
-    /// Gets or sets the IsCrypto.
-    /// </summary>
-    public bool IsCrypto { get; init; }
-    /// <summary>
     /// Gets or sets the Code.
     /// </summary>
     [MaxLength(10)]
     public required string Code { get; init; }
-    /// <summary>
-    /// Gets or sets the Name.
-    /// </summary>
-    [MaxLength(50)]
-    public required string Name { get; init; }
     /// <summary>
     /// Gets or sets the Description.
     /// </summary>
@@ -32,4 +23,13 @@ public partial record CurrencyDto
     /// Gets or sets the Id.
     /// </summary>
     public int Id { get; init; }
+    /// <summary>
+    /// Gets or sets the IsCrypto.
+    /// </summary>
+    public bool IsCrypto { get; init; }
+    /// <summary>
+    /// Gets or sets the Name.
+    /// </summary>
+    [MaxLength(50)]
+    public required string Name { get; init; }
 }

@@ -5,6 +5,8 @@ namespace DKNet.EfCore.DtoEntities.Features.StaticData;
 
 public sealed class CurrencyData : IEntity<int>
 {
+    #region Constructors
+
     public CurrencyData(string code, string name, bool isCrypto, string? description = null) :
         this(0, code, name, isCrypto, description)
     {
@@ -26,16 +28,26 @@ public sealed class CurrencyData : IEntity<int>
         Name = string.Empty;
     }
 
-    public bool IsCrypto { get; set; }
+    #endregion
+
+    #region Properties
 
     [MaxLength(10)] public string Code { get; private set; }
 
-    [MaxLength(50)] public string Name { get; private set; }
-    
     [MaxLength(200)] public string? Description { get; private set; }
-    
+
     public int Id { get; private set; }
+
+    public bool IsCrypto { get; set; }
+
+    [MaxLength(50)] public string Name { get; private set; }
+
+    #endregion
+
+    #region Methods
 
     public static CurrencyData CreateForSeed(int id, string code, string name, bool isCrypto) =>
         new(id, code, name, isCrypto);
+
+    #endregion
 }

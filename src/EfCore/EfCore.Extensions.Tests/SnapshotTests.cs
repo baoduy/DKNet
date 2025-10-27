@@ -4,8 +4,13 @@ namespace EfCore.Extensions.Tests;
 
 public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
+
+    #region Methods
 
     [Fact]
     public async Task Snapshot_ShouldCreateSnapshotContext()
@@ -32,6 +37,20 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     }
 
     [Fact]
+    public async Task SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
+    {
+        // Arrange
+        await using var snapshot = new SnapshotContext(_db);
+
+        // Act
+        var firstAccess = snapshot.Entities;
+        var secondAccess = snapshot.Entities;
+
+        // Assert
+        firstAccess.ShouldBeSameAs(secondAccess);
+    }
+
+    [Fact]
     public async Task SnapshotEntities_ShouldCaptureChangedEntities()
     {
         // Arrange
@@ -48,20 +67,6 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     }
 
     [Fact]
-    public async Task SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
-    {
-        // Arrange
-        await using var snapshot = new SnapshotContext(_db);
-
-        // Act
-        var firstAccess = snapshot.Entities;
-        var secondAccess = snapshot.Entities;
-
-        // Assert
-        firstAccess.ShouldBeSameAs(secondAccess);
-    }
-
-    [Fact]
     public async Task SnapshotEntityEntry_ShouldCaptureEntityState()
     {
         // Arrange
@@ -75,4 +80,6 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
         entry.Entity.ShouldBeOfType<User>();
         entry.OriginalState.ShouldBe(EntityState.Added);
     }
+
+    #endregion
 }

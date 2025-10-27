@@ -3,7 +3,13 @@ namespace SlimBus.Api.Configs.Antiforgery;
 [ExcludeFromCodeCoverage]
 internal static class AntiforgeryConfig
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     public static IServiceCollection AddAntiforgeryConfig(this IServiceCollection services,
         string cookieName = "x-csrf-cookie",
@@ -36,4 +42,6 @@ internal static class AntiforgeryConfig
 
         return app;
     }
+
+    #endregion
 }

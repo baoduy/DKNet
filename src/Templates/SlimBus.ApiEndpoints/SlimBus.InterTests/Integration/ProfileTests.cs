@@ -10,6 +10,36 @@ namespace SlimBus.InterTests.Integration;
 
 public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
 {
+    #region Methods
+
+    [Fact]
+    public async Task CreateDuplicateProfile()
+    {
+        using var client = await api.CreateHttpClient("Api");
+        client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
+
+        //Create Profile
+        await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
+        {
+            Email = "abc1@hbd.com",
+            Name = "HBD",
+            Phone = "+6512345678"
+        });
+
+        //And create other with the same email
+        client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
+        var rp = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
+        {
+            Email = "abc1@hbd.com",
+            Name = "HBD",
+            Phone = "+6512345678"
+        });
+        var (success, _, error, _) = await rp.As<ProfileResult>();
+
+        success.ShouldBeFalse();
+        error.ShouldNotBeNull();
+    }
+
     [Theory]
     [InlineData("v1")]
     [InlineData("v2")]
@@ -42,31 +72,27 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
     }
 
     [Fact]
-    public async Task CreateDuplicateProfile()
+    public async Task DeleteProfile()
     {
         using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         //Create Profile
-        await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
+        var created = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
         {
-            Email = "abc1@hbd.com",
-            Name = "HBD",
+            Email = "delete_test@hbd.com",
+            Name = "Steven Hoang",
             Phone = "+6512345678"
         });
 
-        //And create other with the same email
-        client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
-        var rp = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "abc1@hbd.com",
-            Name = "HBD",
-            Phone = "+6512345678"
-        });
+        var (_, createdResult, createdError, _) = await created.As<ProfileResult>();
+        createdResult.ShouldNotBeNull(createdError?.Detail);
+
+        //Delete
+        var rp = await client.DeleteAsync($"/v1/Profiles/{createdResult.Id}");
+
         var (success, _, error, _) = await rp.As<ProfileResult>();
-
-        success.ShouldBeFalse();
-        error.ShouldNotBeNull();
+        success.ShouldBeTrue(error?.Detail);
     }
 
     [Fact]
@@ -100,27 +126,5 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
         result.Id.ShouldNotBe(Guid.Empty);
     }
 
-    [Fact]
-    public async Task DeleteProfile()
-    {
-        using var client = await api.CreateHttpClient("Api");
-        client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
-
-        //Create Profile
-        var created = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "delete_test@hbd.com",
-            Name = "Steven Hoang",
-            Phone = "+6512345678"
-        });
-
-        var (_, createdResult, createdError, _) = await created.As<ProfileResult>();
-        createdResult.ShouldNotBeNull(createdError?.Detail);
-
-        //Delete
-        var rp = await client.DeleteAsync($"/v1/Profiles/{createdResult.Id}");
-
-        var (success, _, error, _) = await rp.As<ProfileResult>();
-        success.ShouldBeTrue(error?.Detail);
-    }
+    #endregion
 }

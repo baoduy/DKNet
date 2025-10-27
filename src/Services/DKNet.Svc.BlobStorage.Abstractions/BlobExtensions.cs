@@ -4,6 +4,8 @@ namespace DKNet.Svc.BlobStorage.Abstractions;
 
 public static class BlobExtensions
 {
+    #region Methods
+
     public static string GetContentTypeByExtension(this string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLower(CultureInfo.CurrentCulture);
@@ -33,4 +35,6 @@ public static class BlobExtensions
             _ => "application/octet-stream"
         };
     }
+
+    #endregion
 }

@@ -4,43 +4,60 @@ namespace Svc.BlobStorage.Tests;
 
 public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixture<LocalBlobServiceFixture>
 {
+    #region Fields
+
     private readonly IBlobService _service = fixture.Service;
     private readonly string _testRoot = fixture.TestRoot;
 
+    #endregion
+
+    #region Methods
+
     [Fact]
-    public async Task SaveAsyncSavesFileAndOverwrites()
+    public async Task CheckExistsAsyncReturnsCorrectly()
     {
-        var fileName = $"test-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
-        {
-            Overwrite = false,
-            Type = BlobTypes.File
-        };
+        var file = Path.Combine(_testRoot, "exists-check.txt");
+        await File.WriteAllTextAsync(file, "exists");
+        var blob = new BlobRequest("exists-check.txt") { Type = BlobTypes.File };
+        (await _service.CheckExistsAsync(blob)).ShouldBeTrue();
 
-        var name = await _service.SaveAsync(blob);
-        name.ShouldBe(fileName);
+        var dir = Path.Combine(_testRoot, "exists-dir");
+        Directory.CreateDirectory(dir);
+        var dirBlob = new BlobRequest("exists-dir") { Type = BlobTypes.Directory };
+        (await _service.CheckExistsAsync(dirBlob)).ShouldBeTrue();
 
-        var newBlob = blob with { Overwrite = true, Data = new BinaryData("hello"u8.ToArray()) };
-
-        await _service.SaveAsync(newBlob);
-        var content = await File.ReadAllTextAsync(Path.Combine(_testRoot, fileName));
-        content.ShouldBe("hello");
+        var missingBlob = new BlobRequest("missing.txt") { Type = BlobTypes.File };
+        (await _service.CheckExistsAsync(missingBlob)).ShouldBeFalse();
     }
 
     [Fact]
-    public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
+    public async Task DeleteAsyncDeletesFileAndDirectory()
     {
-        var filePath = Path.Combine(_testRoot, "exists.txt");
-        await File.WriteAllTextAsync(filePath, "abc");
+        var file = Path.Combine(_testRoot, "delete-me.txt");
+        await File.WriteAllTextAsync(file, "bye");
+        var blob = new BlobRequest("delete-me.txt") { Type = BlobTypes.File };
+        var deleted = await _service.DeleteAsync(blob);
+        deleted.ShouldBeTrue();
+        File.Exists(file).ShouldBeFalse();
 
-        var blob = new BlobData("exists.txt", new BinaryData("data"u8.ToArray()))
-        {
-            Overwrite = false,
-            Type = BlobTypes.File
-        };
+        var dir = Path.Combine(_testRoot, "delete-dir");
+        Directory.CreateDirectory(dir);
+        var dirBlob = new BlobRequest("delete-dir") { Type = BlobTypes.Directory };
+        var dirDeleted = await _service.DeleteAsync(dirBlob);
+        dirDeleted.ShouldBeTrue();
+        Directory.Exists(dir).ShouldBeFalse();
+    }
 
-        var action = () => _service.SaveAsync(blob);
-        await action.ShouldThrowAsync<InvalidOperationException>();
+    [Fact]
+    public async Task DeleteAsyncReturnsFalseForNonExistentFileOrDirectory()
+    {
+        var blob = new BlobRequest("no-file.txt") { Type = BlobTypes.File };
+        var deleted = await _service.DeleteAsync(blob);
+        deleted.ShouldBeFalse();
+
+        var dirBlob = new BlobRequest("no-dir") { Type = BlobTypes.Directory };
+        var dirDeleted = await _service.DeleteAsync(dirBlob);
+        dirDeleted.ShouldBeFalse();
     }
 
     [Fact]
@@ -60,6 +77,13 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
     {
         var blob = new BlobRequest("notfound.txt") { Type = BlobTypes.File };
         await Should.ThrowAsync<FileNotFoundException>(async () => await _service.GetAsync(blob));
+    }
+
+    [Fact]
+    public void GetPublicAccessUrlThrowsNotSupportedException()
+    {
+        var blob = new BlobRequest("any.txt") { Type = BlobTypes.File };
+        Should.Throw<NotSupportedException>(() => _service.GetPublicAccessUrl(blob));
     }
 
     [Fact]
@@ -97,56 +121,40 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
     }
 
     [Fact]
-    public async Task DeleteAsyncDeletesFileAndDirectory()
+    public async Task SaveAsyncSavesFileAndOverwrites()
     {
-        var file = Path.Combine(_testRoot, "delete-me.txt");
-        await File.WriteAllTextAsync(file, "bye");
-        var blob = new BlobRequest("delete-me.txt") { Type = BlobTypes.File };
-        var deleted = await _service.DeleteAsync(blob);
-        deleted.ShouldBeTrue();
-        File.Exists(file).ShouldBeFalse();
+        var fileName = $"test-{Guid.NewGuid()}.txt";
+        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        {
+            Overwrite = false,
+            Type = BlobTypes.File
+        };
 
-        var dir = Path.Combine(_testRoot, "delete-dir");
-        Directory.CreateDirectory(dir);
-        var dirBlob = new BlobRequest("delete-dir") { Type = BlobTypes.Directory };
-        var dirDeleted = await _service.DeleteAsync(dirBlob);
-        dirDeleted.ShouldBeTrue();
-        Directory.Exists(dir).ShouldBeFalse();
+        var name = await _service.SaveAsync(blob);
+        name.ShouldBe(fileName);
+
+        var newBlob = blob with { Overwrite = true, Data = new BinaryData("hello"u8.ToArray()) };
+
+        await _service.SaveAsync(newBlob);
+        var content = await File.ReadAllTextAsync(Path.Combine(_testRoot, fileName));
+        content.ShouldBe("hello");
     }
 
     [Fact]
-    public async Task DeleteAsyncReturnsFalseForNonExistentFileOrDirectory()
+    public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
     {
-        var blob = new BlobRequest("no-file.txt") { Type = BlobTypes.File };
-        var deleted = await _service.DeleteAsync(blob);
-        deleted.ShouldBeFalse();
+        var filePath = Path.Combine(_testRoot, "exists.txt");
+        await File.WriteAllTextAsync(filePath, "abc");
 
-        var dirBlob = new BlobRequest("no-dir") { Type = BlobTypes.Directory };
-        var dirDeleted = await _service.DeleteAsync(dirBlob);
-        dirDeleted.ShouldBeFalse();
+        var blob = new BlobData("exists.txt", new BinaryData("data"u8.ToArray()))
+        {
+            Overwrite = false,
+            Type = BlobTypes.File
+        };
+
+        var action = () => _service.SaveAsync(blob);
+        await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    [Fact]
-    public async Task CheckExistsAsyncReturnsCorrectly()
-    {
-        var file = Path.Combine(_testRoot, "exists-check.txt");
-        await File.WriteAllTextAsync(file, "exists");
-        var blob = new BlobRequest("exists-check.txt") { Type = BlobTypes.File };
-        (await _service.CheckExistsAsync(blob)).ShouldBeTrue();
-
-        var dir = Path.Combine(_testRoot, "exists-dir");
-        Directory.CreateDirectory(dir);
-        var dirBlob = new BlobRequest("exists-dir") { Type = BlobTypes.Directory };
-        (await _service.CheckExistsAsync(dirBlob)).ShouldBeTrue();
-
-        var missingBlob = new BlobRequest("missing.txt") { Type = BlobTypes.File };
-        (await _service.CheckExistsAsync(missingBlob)).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void GetPublicAccessUrlThrowsNotSupportedException()
-    {
-        var blob = new BlobRequest("any.txt") { Type = BlobTypes.File };
-        Should.Throw<NotSupportedException>(() => _service.GetPublicAccessUrl(blob));
-    }
+    #endregion
 }

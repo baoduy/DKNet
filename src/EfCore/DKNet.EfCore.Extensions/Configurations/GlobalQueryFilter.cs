@@ -1,13 +1,18 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DKNet.EfCore.Extensions.Configurations;
 
 public abstract class GlobalQueryFilter : IGlobalModelBuilder
 {
+    #region Fields
+
     private readonly MethodInfo _method = typeof(GlobalQueryFilter)
         .GetMethod(nameof(ApplyQueryFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    #endregion
+
+    #region Methods
 
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
@@ -20,9 +25,6 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
         }
     }
 
-    protected abstract Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
-        where TEntity : class;
-
     private void ApplyQueryFilter<TEntity>(ModelBuilder modelBuilder, DbContext context)
         where TEntity : class
     {
@@ -32,4 +34,9 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     }
 
     protected abstract IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder);
+
+    protected abstract Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
+        where TEntity : class;
+
+    #endregion
 }

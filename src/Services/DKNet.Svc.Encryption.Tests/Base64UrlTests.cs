@@ -1,25 +1,12 @@
-using Shouldly;
 using System.Text;
+using Shouldly;
 using Xunit.Abstractions;
 
 namespace DKNet.Svc.Encryption.Tests;
 
 public class Base64UrlTests(ITestOutputHelper output)
 {
-    [Theory]
-    [InlineData("")]
-    [InlineData("a")]
-    [InlineData("ab")]
-    [InlineData("abc")]
-    [InlineData("test")]
-    [InlineData("Base64URL-Token_123")] // includes chars that will appear as-is
-    [InlineData("🔥 unicode 😀")] // multi-byte
-    public void RoundTrip_ReturnsOriginal(string plain)
-    {
-        var encoded = plain.ToBase64UrlString();
-        var decoded = encoded.FromBase64UrlString();
-        decoded.ShouldBe(plain);
-    }
+    #region Methods
 
     [Fact]
     public void Decode_JWT()
@@ -32,29 +19,6 @@ public class Base64UrlTests(ITestOutputHelper output)
             str.ShouldNotBeNullOrEmpty();
             output.WriteLine("Decode_JWT: {0}", str);
         }
-    }
-
-    [Fact]
-    public void UrlVersion_Differs_From_Standard_When_Padding_Or_SpecialChars()
-    {
-        var input = "any+value/with+slashes"; // contains + and /
-        var std = input.ToBase64String();
-        var url = input.ToBase64UrlString();
-        std.ShouldNotContain("+");
-        std.ShouldNotContain("/");
-        // URL version must not contain + or /
-        url.IndexOf('+').ShouldBe(-1);
-        url.IndexOf('/').ShouldBe(-1);
-        // Usually std ends with '=' padding; url variant should not (unless length 0)
-        if (std.EndsWith('=')) url.EndsWith('=').ShouldBeFalse();
-        url.FromBase64UrlString().ShouldBe(input);
-    }
-
-    [Fact]
-    public void Whitespace_Returns_Empty()
-    {
-        "  ".FromBase64UrlString().ShouldBe(string.Empty);
-        ((string)null!).FromBase64UrlString().ShouldBe(string.Empty);
     }
 
     [Fact]
@@ -84,4 +48,44 @@ public class Base64UrlTests(ITestOutputHelper output)
         var bytes = Convert.FromBase64String(paddedStandardLike);
         Encoding.UTF8.GetString(bytes).ShouldBe(plain);
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("ab")]
+    [InlineData("abc")]
+    [InlineData("test")]
+    [InlineData("Base64URL-Token_123")] // includes chars that will appear as-is
+    [InlineData("🔥 unicode 😀")] // multi-byte
+    public void RoundTrip_ReturnsOriginal(string plain)
+    {
+        var encoded = plain.ToBase64UrlString();
+        var decoded = encoded.FromBase64UrlString();
+        decoded.ShouldBe(plain);
+    }
+
+    [Fact]
+    public void UrlVersion_Differs_From_Standard_When_Padding_Or_SpecialChars()
+    {
+        var input = "any+value/with+slashes"; // contains + and /
+        var std = input.ToBase64String();
+        var url = input.ToBase64UrlString();
+        std.ShouldNotContain("+");
+        std.ShouldNotContain("/");
+        // URL version must not contain + or /
+        url.IndexOf('+').ShouldBe(-1);
+        url.IndexOf('/').ShouldBe(-1);
+        // Usually std ends with '=' padding; url variant should not (unless length 0)
+        if (std.EndsWith('=')) url.EndsWith('=').ShouldBeFalse();
+        url.FromBase64UrlString().ShouldBe(input);
+    }
+
+    [Fact]
+    public void Whitespace_Returns_Empty()
+    {
+        "  ".FromBase64UrlString().ShouldBe(string.Empty);
+        ((string)null!).FromBase64UrlString().ShouldBe(string.Empty);
+    }
+
+    #endregion
 }

@@ -10,25 +10,31 @@ namespace DKNet.EfCore.AuditLogs;
 public enum AuditLogBehaviour
 {
     /// <summary>
-    /// All entities implementing IAuditedProperties are included in audit logs, unless they have
-    /// the <see cref="IgnoreAuditLogAttribute"/> applied at class level.
+    ///     All entities implementing IAuditedProperties are included in audit logs, unless they have
+    ///     the <see cref="IgnoreAuditLogAttribute" /> applied at class level.
     /// </summary>
     IncludeAllAuditedEntities,
 
     /// <summary>
-    /// Only entities explicitly marked with the <see cref="AuditLogAttribute"/> and implementing
-    /// IAuditedProperties are included in audit logs. All other entities are ignored.
+    ///     Only entities explicitly marked with the <see cref="AuditLogAttribute" /> and implementing
+    ///     IAuditedProperties are included in audit logs. All other entities are ignored.
     /// </summary>
     OnlyAttributedAuditedEntities
 }
 
 internal sealed class AuditLogOptions
 {
+    #region Properties
+
     public required AuditLogBehaviour Behaviour { get; init; }
+
+    #endregion
 }
 
 public static class EfCoreAuditLogSetup
 {
+    #region Methods
+
     public static IServiceCollection AddEfCoreAuditHook<TDbContext>(this IServiceCollection services,
         AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities)
         where TDbContext : DbContext =>
@@ -54,4 +60,6 @@ public static class EfCoreAuditLogSetup
 
     public static IEnumerable<IAuditLogPublisher> GetAuditLogPublishers<TDbContext>(this IServiceProvider provider)
         where TDbContext : DbContext => provider.GetKeyedServices<IAuditLogPublisher>(typeof(TDbContext).FullName);
+
+    #endregion
 }
