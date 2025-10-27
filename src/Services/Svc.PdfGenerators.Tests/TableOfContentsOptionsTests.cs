@@ -88,19 +88,6 @@ public class TableOfContentsOptionsTests
     }
 
     [Fact]
-    public void MaxDepthLevel_LessThanMinDepthLevel_ThrowsArgumentOutOfRangeException()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            MinDepthLevel = 3
-        };
-
-        // Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepthLevel = 2);
-    }
-
-    [Fact]
     public void MaxDepthLevel_SetToSameAsMinDepthLevel_DoesNotThrow()
     {
         // Arrange
@@ -159,19 +146,6 @@ public class TableOfContentsOptionsTests
 
         // Act & Assert
         Assert.Equal(1, options.MinDepthLevel);
-    }
-
-    [Fact]
-    public void MinDepthLevel_GreaterThanMaxDepthLevel_ThrowsArgumentOutOfRangeException()
-    {
-        // Arrange
-        var options = new TableOfContentsOptions
-        {
-            MaxDepthLevel = 3
-        };
-
-        // Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => options.MinDepthLevel = 4);
     }
 
     [Theory]

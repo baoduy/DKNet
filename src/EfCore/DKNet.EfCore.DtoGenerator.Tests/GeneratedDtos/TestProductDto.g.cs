@@ -62,6 +62,5 @@ public partial record TestProductDto
     /// <summary>
     /// Gets or sets the WebsiteUrl.
     /// </summary>
-    [Url]
     public Uri? WebsiteUrl { get; init; }
 }

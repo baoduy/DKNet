@@ -56,7 +56,7 @@ public sealed class TestProduct : IEntity<Guid>
 
     [Range(0, 10000)] public int StockQuantity { get; private set; }
 
-    [Url] public Uri? WebsiteUrl { get; private set; }
+    public Uri? WebsiteUrl { get; private set; }
 
     #endregion
 }

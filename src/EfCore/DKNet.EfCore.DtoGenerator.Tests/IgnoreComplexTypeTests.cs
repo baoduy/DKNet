@@ -34,7 +34,7 @@ public class IgnoreComplexTypeTests
         primaryAddressProperty!.PropertyType.ShouldBe(typeof(Address));
 
         ordersProperty.ShouldNotBeNull();
-        ordersProperty!.PropertyType.ShouldBe(typeof(List<Order>));
+        ordersProperty!.PropertyType.ShouldBe(typeof(ICollection<Order>));
     }
 
     [Fact]

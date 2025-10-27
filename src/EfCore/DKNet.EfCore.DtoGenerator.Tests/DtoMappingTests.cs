@@ -531,7 +531,7 @@ public class DtoMappingTests
 
         // Assert
         isValid.ShouldBeTrue();
-        validationResults.ShouldBeEmpty();
+        validationResults.Count.ShouldBe(0);
     }
 
     #endregion

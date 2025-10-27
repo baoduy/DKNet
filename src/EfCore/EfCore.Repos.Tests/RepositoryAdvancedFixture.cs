@@ -29,16 +29,13 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await DbContext.DisposeAsync();
-        if (_connection != null)
-        {
-            await _connection.DisposeAsync();
-        }
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection = new SqliteConnection("DataSource=sqllite_repo.db");
         await _connection.OpenAsync();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
