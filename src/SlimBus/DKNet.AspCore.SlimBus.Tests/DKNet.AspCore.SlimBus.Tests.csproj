@@ -21,6 +21,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj"/>
+        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
     </ItemGroup>
 
 </Project>
