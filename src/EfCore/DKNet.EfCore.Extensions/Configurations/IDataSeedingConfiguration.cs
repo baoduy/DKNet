@@ -21,7 +21,7 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     #region Properties
 
     public Type EntityType => typeof(TEntity);
-    protected new virtual ICollection<TEntity> HasData { get; } = [];
+    protected virtual ICollection<TEntity> HasData { get; } = [];
 
     IEnumerable<dynamic> IDataSeedingConfiguration.HasData => HasData;
     public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync { get; } = null!;

@@ -47,8 +47,8 @@ public class ThemeServiceTests
 
         #endregion
 
-        public event EventHandler<MarkdownEventArgs>? BeforeHtmlConversion;
-        public event Func<object, TemplateModelEventArgs, Task>? OnTemplateModelCreatingAsync;
-        public event EventHandler<PdfEventArgs>? OnTempPdfCreatedEvent;
+        public event EventHandler<MarkdownEventArgs>? HtmlConverting;
+        public event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
+        public event EventHandler<PdfEventArgs>? TempPdfCreated;
     }
 }
