@@ -1,4 +1,4 @@
-using Testcontainers.MsSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.HookTests.Hooks;
 
@@ -6,7 +6,7 @@ public sealed class HookFixture : IAsyncLifetime
 {
     #region Fields
 
-    private MsSqlContainer _sqlContainer = null!;
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -18,29 +18,22 @@ public sealed class HookFixture : IAsyncLifetime
 
     #region Methods
 
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    public string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
+    public async Task DisposeAsync()
+    {
+        if (_connection != null)
+            await _connection.DisposeAsync();
+    }
 
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            //.WithReuse(true)
-            .Build();
-
-        await _sqlContainer.StartAsync();
-        // Wait for SQL Server to be ready
-        await Task.Delay(TimeSpan.FromSeconds(20));
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         Provider = new ServiceCollection()
             .AddLogging()
             .AddDbContextWithHook<HookContext>(o =>
-                o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
+                o.UseSqlite(_connection).UseAutoConfigModel())
             .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 

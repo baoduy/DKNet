@@ -1,7 +1,6 @@
-using DotNet.Testcontainers.Containers;
 using Mapster;
 using MapsterMapper;
-using Testcontainers.MsSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Events.Tests;
 
@@ -9,7 +8,7 @@ public sealed class EventRunnerFixture : IAsyncLifetime
 {
     #region Fields
 
-    private MsSqlContainer _sqlContainer = null!;
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -23,28 +22,15 @@ public sealed class EventRunnerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_sqlContainer is null) return;
-        await _sqlContainer.StopAsync();
-        await _sqlContainer.DisposeAsync();
-    }
-
-    public async Task EnsureSqlReadyAsync()
-    {
-        if (_sqlContainer is null) return;
-        if (_sqlContainer.State == TestcontainersStates.Running) return;
-        await _sqlContainer.StartAsync();
+        if (_connection != null)
+            await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            //.WithReuse(true)
-            .Build();
-
-        await _sqlContainer.StartAsync();
-        // Wait for SQL Server to be ready
-        await Task.Delay(TimeSpan.FromSeconds(20));
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
         TypeAdapterConfig.GlobalSettings.NewConfig<Root, EntityAddedEvent>()
@@ -56,7 +42,7 @@ public sealed class EventRunnerFixture : IAsyncLifetime
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(o =>
-                o.UseSqlServer(_sqlContainer.GetConnectionString()).UseAutoConfigModel())
+                o.UseSqlite(_connection).UseAutoConfigModel())
             .AddEventPublisher<DddContext, TestEventPublisher>()
             .BuildServiceProvider();
 

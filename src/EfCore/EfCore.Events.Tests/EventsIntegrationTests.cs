@@ -11,7 +11,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithConcurrentSaves_ShouldPublishAllEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
 
         TestEventPublisher.Events.Clear();
 
@@ -46,7 +45,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithDirectEvents_ShouldPublishCorrectly()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -72,7 +70,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithEntityUpdate_ShouldPublishUpdateEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         // First, create and save the entity
@@ -100,7 +97,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithMappedEvents_ShouldPublishMappedCorrectly()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -126,7 +122,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithMixedEvents_ShouldPublishAllEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -158,7 +153,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithMultipleEntities_ShouldPublishAllEntityEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -192,7 +186,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithNestedEntities_ShouldPublishNestedEntityEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -221,7 +214,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithNoEvents_ShouldNotPublishAnything()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
@@ -241,7 +233,6 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
     public async Task FullEventFlow_WithTransactionRollback_ShouldNotPublishEvents()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         TestEventPublisher.Events.Clear();
