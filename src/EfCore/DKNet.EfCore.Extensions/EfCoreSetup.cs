@@ -33,7 +33,7 @@ public static class EfCoreSetup
         this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies)
         where TContext : DbContext =>
         (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
-        .UseAutoConfigModel(assemblies is null || assemblies.Length <= 0 ? [typeof(TContext).Assembly] : assemblies);
+        .UseAutoConfigModel(assemblies is { Length: > 0 } ? assemblies : [typeof(TContext).Assembly]);
 
     /// <summary>
     ///     Scan and register all Entities from assemblies to DbContext.
