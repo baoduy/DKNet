@@ -33,7 +33,7 @@ public static class EfCoreDataAuthSetup
     private static IServiceCollection AddDataOwnerProvider<TProvider>(this IServiceCollection services)
         where TProvider : class, IDataOwnerProvider =>
         services
-            .AddGlobalQueryFilter<DataOwnerAuthQuery>()
+            .AddGlobalModelBuilder<DataOwnerAuthQuery>()
             .AddScoped<IDataOwnerProvider, TProvider>();
 
     /// <summary>

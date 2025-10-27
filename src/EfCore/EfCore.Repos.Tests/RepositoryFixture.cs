@@ -1,6 +1,6 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
-using Testcontainers.PostgreSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Repos.Tests;
 
@@ -8,8 +8,7 @@ public class RepositoryFixture : IAsyncLifetime
 {
     #region Fields
 
-    private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder()
-        .Build();
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -25,13 +24,15 @@ public class RepositoryFixture : IAsyncLifetime
 
     public DbContext CreateNewDbContext()
     {
-        var dbConn = _sqlContainer.GetConnectionString();
+        if (_connection == null)
+            throw new InvalidOperationException("Connection not initialized");
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseNpgsql(dbConn)
+            .UseSqlite(_connection)
             .UseAutoConfigModel();
 
-        return new TestDbContext(optionsBuilder.Options);
+        var context = new TestDbContext(optionsBuilder.Options);
+        return context;
     }
 
     public async Task DisposeAsync()
@@ -39,20 +40,21 @@ public class RepositoryFixture : IAsyncLifetime
         if (DbContext != null)
             await DbContext.DisposeAsync();
 
-        await _sqlContainer.StopAsync();
-        await _sqlContainer.DisposeAsync();
+        if (_connection != null)
+            await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        await _sqlContainer.StartAsync();
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=sqlite_repo_tests.db");
+        await _connection.OpenAsync();
 
         DbContext = CreateNewDbContext();
+        await DbContext.Database.EnsureCreatedAsync();
+
         ReadRepository = new ReadRepository<User>(DbContext);
         Repository = new Repository<User>(DbContext);
-
-        await Task.Delay(TimeSpan.FromSeconds(15));
-        await DbContext.Database.EnsureCreatedAsync();
     }
 
     #endregion

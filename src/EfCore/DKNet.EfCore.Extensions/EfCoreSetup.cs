@@ -16,10 +16,10 @@ public static class EfCoreSetup
     /// <typeparam name="TImplementation"></typeparam>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddGlobalQueryFilter<TImplementation>(this IServiceCollection services)
+    public static IServiceCollection AddGlobalModelBuilder<TImplementation>(this IServiceCollection services)
         where TImplementation : class, IGlobalModelBuilder
     {
-        GlobalQueryFilters.Add(typeof(TImplementation));
+        GlobalModelBuilders.Add(typeof(TImplementation));
         return services;
     }
 
@@ -70,5 +70,5 @@ public static class EfCoreSetup
 
     #endregion
 
-    internal static readonly ConcurrentBag<Type> GlobalQueryFilters = [];
+    internal static readonly ConcurrentBag<Type> GlobalModelBuilders = [];
 }

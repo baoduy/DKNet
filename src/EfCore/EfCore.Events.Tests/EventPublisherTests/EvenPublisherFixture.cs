@@ -1,7 +1,6 @@
-using DotNet.Testcontainers.Containers;
 using Mapster;
 using MapsterMapper;
-using Testcontainers.MsSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Events.Tests.EventPublisherTests;
 
@@ -9,7 +8,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
 {
     #region Fields
 
-    private MsSqlContainer? _sqlContainer;
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -21,31 +20,17 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
 
     #region Methods
 
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    public async Task EnsureSqlReadyAsync()
+    public async Task DisposeAsync()
     {
-        if (_sqlContainer is null) return;
-        if (_sqlContainer.State == TestcontainersStates.Running) return;
-        await _sqlContainer.StartAsync();
+        if (_connection != null)
+            await _connection.DisposeAsync();
     }
-
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=EvenPubDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            //.WithReuse(true)
-            .Build();
-
-        await _sqlContainer.StartAsync();
-        // Wait for SQL Server to be ready
-        await Task.Delay(TimeSpan.FromSeconds(20));
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
 
@@ -56,7 +41,7 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(builder =>
                 builder.UseAutoConfigModel(typeof(DddContext).Assembly)
-                    .UseSqlServer(GetConnectionString()))
+                    .UseSqlite(_connection))
             .BuildServiceProvider();
 
         var db = Provider.GetRequiredService<DddContext>();

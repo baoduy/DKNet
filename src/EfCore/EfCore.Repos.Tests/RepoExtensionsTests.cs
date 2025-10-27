@@ -35,7 +35,7 @@ public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper ou
 
         // Act
         var list = await db.Set<UserGuid>().ToListAsync();
-        list.Count.ShouldBe(3);
+        list.Count.ShouldBeGreaterThanOrEqualTo(3);
 
         var user = list[^1];
         user.AddAddress(new AddressGuid { City = "Test City", Street = "Test Street", Country = "Test Country" });

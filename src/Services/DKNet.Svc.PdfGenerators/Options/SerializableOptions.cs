@@ -53,7 +53,7 @@ public class SerializableOptions
     public decimal? Scale { get; set; }
 
     /// <inheritdoc cref="PdfGeneratorOptions.TableOfContents" />
-    public TableOfContentsOptions? TableOfContents { get; set; } = null;
+    public TableOfContentsOptions? TableOfContents { get; set; }
 
     /// <inheritdoc cref="PdfGeneratorOptions.Theme" />
     public string? Theme { get; set; }

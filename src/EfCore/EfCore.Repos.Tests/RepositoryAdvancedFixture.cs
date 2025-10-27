@@ -2,7 +2,7 @@ using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
 using Mapster;
 using MapsterMapper;
-using Testcontainers.PostgreSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Repos.Tests;
 
@@ -10,8 +10,7 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
 {
     #region Fields
 
-    private readonly PostgreSqlContainer _sqlContainer = new PostgreSqlBuilder()
-        .Build();
+    private SqliteConnection? _connection;
 
     #endregion
 
@@ -30,18 +29,20 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await DbContext.DisposeAsync();
-        await _sqlContainer.StopAsync();
-        await _sqlContainer.DisposeAsync();
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        await _sqlContainer.StartAsync();
+        // Use a shared connection for SQLite in-memory database
+        _connection = new SqliteConnection("DataSource=sqllite_repo.db");
+        await _connection.OpenAsync();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseNpgsql(_sqlContainer.GetConnectionString());
+            .UseSqlite(_connection);
 
         DbContext = new TestDbContext(optionsBuilder.Options);
+        await DbContext.Database.EnsureCreatedAsync();
 
         // Configure Mapster
         var config = new TypeAdapterConfig();
@@ -57,9 +58,6 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         ReadRepositoryWithoutMapper = new ReadRepository<User>(DbContext);
         RepositoryWithMapper = new Repository<User>(DbContext, mappers);
         RepositoryWithoutMapper = new Repository<User>(DbContext);
-
-        await Task.Delay(TimeSpan.FromSeconds(15));
-        await DbContext.Database.EnsureCreatedAsync();
     }
 
     #endregion

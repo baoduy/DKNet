@@ -3,7 +3,7 @@ using DKNet.EfCore.Abstractions.Entities;
 
 namespace EfCore.Repos.Tests.TestEntities;
 
-public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<uint>
+public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<byte[]>
 {
     #region Fields
 
@@ -34,7 +34,7 @@ public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<uint>
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
-    public uint RowVersion { get; private set; }
+    public byte[]? RowVersion { get; private set; }
 
     #endregion
 
@@ -42,7 +42,7 @@ public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<uint>
 
     public void AddAddress(AddressGuid address) => _addresses.Add(address);
 
-    public void SetRowVersion(uint rowVersion)
+    public void SetRowVersion(byte[] rowVersion)
     {
         RowVersion = rowVersion;
     }

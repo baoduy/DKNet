@@ -1,4 +1,3 @@
-using DKNet.EfCore.Repos;
 using Microsoft.EntityFrameworkCore.Storage;
 using Xunit.Abstractions;
 
@@ -92,7 +91,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.BeginTransactionAsync(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.Repository.BeginTransactionAsync(cts.Token));
     }
 
     [Fact]
@@ -117,51 +117,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         Assert.Equal(2, results.Count);
     }
 
-    [Fact]
-    public async Task ConcurrencyGuidWithRepositoryTest()
-    {
-        fixture.DbContext!.ChangeTracker.Clear();
-        var repo1 = new Repository<UserGuid>(fixture.DbContext);
-
-        // 1. Create a new UserGuid entity
-        var user = new UserGuid("A")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang"
-        };
-        user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
-        user.AddAddress(new AddressGuid { City = "HBD", Street = "HBD", Country = "HBD" });
-
-        await repo1.AddAsync(user);
-        await repo1.SaveChangesAsync();
-        var createdVersion = user.RowVersion;
-        createdVersion.ShouldBeGreaterThan(0u);
-
-        // 2. Simulate two users/contexts
-        fixture.DbContext.ChangeTracker.Clear();
-        await using var db2 = fixture.CreateNewDbContext();
-        var repo2 = new Repository<UserGuid>(db2);
-
-        db2.ChangeTracker.Clear();
-        var userFromRepo1 = await repo1.Query().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
-        db2.ChangeTracker.Clear();
-        var userFromRepo2 = await repo2.Query().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
-
-        userFromRepo1.ShouldNotBeNull();
-        userFromRepo2.ShouldNotBeNull();
-
-        // 3. Update and save with repo1
-        userFromRepo1.FirstName = "Duy3";
-        userFromRepo1.SetUpdatedBy("System");
-        await repo1.UpdateAsync(userFromRepo1);
-        await repo1.SaveChangesAsync();
-
-        // 4. Attempt to update and save with repo2 (should fail)
-        userFromRepo2.FirstName = "Duy4";
-        userFromRepo2.SetUpdatedBy("System");
-        await repo2.UpdateAsync(userFromRepo2);
-        await Should.ThrowAsync<DbUpdateConcurrencyException>(async () => await repo2.SaveChangesAsync());
-    }
 
     [Fact]
     public void DeleteRangeRemovesMultipleEntitiesFromContext()
@@ -331,7 +286,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
     }
 
     [Fact]

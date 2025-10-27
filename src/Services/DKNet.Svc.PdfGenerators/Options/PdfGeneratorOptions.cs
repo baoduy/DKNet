@@ -106,7 +106,7 @@ public class PdfGeneratorOptions
 
     /// <inheritdoc cref="TableOfContentsOptions" />
     /// <value>Default: <see langword="null" />.</value>
-    public TableOfContentsOptions? TableOfContents { get; set; } = null;
+    public TableOfContentsOptions? TableOfContents { get; set; }
 
     /// <summary>
     ///     The styling to apply to the document. Default: <see cref="Theme.Github" />.

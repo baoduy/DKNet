@@ -13,6 +13,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task ConcurrentUpdatesHandledCorrectly()
     {
+        _fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("concurtest") { FirstName = "Concurrent", LastName = "Test" };
         _fixture.DbContext.Add(entity);
@@ -37,6 +38,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task DeleteAndSaveChangesRemovesEntity()
     {
+        _fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("deletetest") { FirstName = "ToDelete", LastName = "Test" };
         _fixture.DbContext.Add(entity);
@@ -55,6 +57,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task DeleteRangeAndSaveChangesRemovesMultipleEntities()
     {
+        _fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entities = new[]
         {
@@ -89,9 +92,13 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task FindAsyncWithParamsWorksCorrectly()
     {
+        _fixture.DbContext.ChangeTracker.Clear();
         // Arrange
         var entity = new User("findparams1") { FirstName = "FindByParams", LastName = "Test" };
         _fixture.DbContext.Add(entity);
+
+        var entity2 = new User("findparams2") { FirstName = "FindByParams2", LastName = "Test2" };
+        _fixture.DbContext.Add(entity2);
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act

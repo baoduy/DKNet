@@ -61,6 +61,11 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
             await db.SaveChangesAsync();
         }
 
+        HookTest.BeforeCalled.ShouldBeFalse();
+        HookTest.AfterCalled.ShouldBeFalse();
+
+        db.ChangeTracker.Clear();
+        hook.Reset();
         // After disposal hooks should run again
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "ActiveAgain" });
         await db.SaveChangesAsync();

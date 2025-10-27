@@ -40,14 +40,14 @@ internal class ThemeService
             _themeSourceMapping = ModuleInformation.UpdateDic(_themeSourceMapping, path);
         }
 
-        events.OnTemplateModelCreatingAsync += InternalAddThemeToTemplateAsync;
+        events.TemplateModelCreating += InternalAddThemeToTemplateAsync;
     }
 
     #endregion
 
     #region Methods
 
-    internal async Task InternalAddThemeToTemplateAsync(object sender, TemplateModelEventArgs e)
+    internal async Task InternalAddThemeToTemplateAsync(object? sender, TemplateModelEventArgs e)
     {
         switch (_theme)
         {

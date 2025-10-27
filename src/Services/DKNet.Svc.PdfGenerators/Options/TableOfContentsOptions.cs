@@ -71,10 +71,6 @@ public class TableOfContentsOptions
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
 
-            if (value < _minDepthLevel)
-                throw new ArgumentOutOfRangeException(
-                    $"{nameof(MaxDepthLevel)} cannot be less than {nameof(MinDepthLevel)}");
-
             _maxDepthLevel = value;
         }
     }
@@ -93,10 +89,6 @@ public class TableOfContentsOptions
             if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
-
-            if (value > _maxDepthLevel)
-                throw new ArgumentOutOfRangeException(
-                    $"{nameof(_minDepthLevel)} cannot be greater than {nameof(MaxDepthLevel)}");
 
             _minDepthLevel = value;
         }

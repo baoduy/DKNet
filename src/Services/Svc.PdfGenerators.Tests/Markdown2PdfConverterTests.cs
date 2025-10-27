@@ -80,8 +80,15 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         if (File.Exists(expectedPdfPath))
             File.Delete(expectedPdfPath);
 
+        // Act
         var resultPath = await converter.ConvertHtmlFileAsync(htmlFilePath, expectedPdfPath);
         OutputResultPath(resultPath);
+
+        // Assert
+        Assert.True(File.Exists(resultPath));
+        var fileInfo = new FileInfo(resultPath);
+        Assert.True(fileInfo.Length > 0);
+        File.Delete(resultPath);
     }
 
     [Fact]

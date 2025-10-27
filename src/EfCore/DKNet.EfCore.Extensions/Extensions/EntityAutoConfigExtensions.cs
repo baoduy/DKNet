@@ -28,7 +28,7 @@ internal static class EntityAutoConfigExtensions
         DbContext dbContext)
     {
         var globalFilters = assemblies.GetGlobalFilters()
-            .Union(EfCoreSetup.GlobalQueryFilters)
+            .Union(EfCoreSetup.GlobalModelBuilders)
             .Distinct();
 
         foreach (var filter in globalFilters)

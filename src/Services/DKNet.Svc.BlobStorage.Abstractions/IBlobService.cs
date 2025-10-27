@@ -55,7 +55,7 @@ public interface IBlobService
     ///     Lists blob items based on blob arguments.
     /// </summary>
     /// <param name="blob">The blob arguments specifying which blobs to list.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>An async enumerable of blob items.</returns>
     IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob, CancellationToken cancellationToken = default);
 

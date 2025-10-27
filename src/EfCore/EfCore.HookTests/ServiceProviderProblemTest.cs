@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Testcontainers.MsSql;
 using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
@@ -9,7 +8,6 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
     #region Fields
 
     private ServiceProvider _provider = null!;
-    private MsSqlContainer _sqlContainer = null!;
 
     #endregion
 
@@ -18,28 +16,15 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
     public async Task DisposeAsync()
     {
         await _provider.DisposeAsync();
-        if (_sqlContainer != null)
-            await _sqlContainer.DisposeAsync();
     }
 
-    private string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=ServiceProviderTestDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
-        _sqlContainer = new MsSqlBuilder()
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
-            .Build();
-
-        await _sqlContainer.StartAsync();
-        await Task.Delay(TimeSpan.FromSeconds(20));
-
         _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContextWithHook<HookContext>(o =>
-                o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
+                o.UseSqlite("Data Source=sqlite.db").UseAutoConfigModel())
             .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 

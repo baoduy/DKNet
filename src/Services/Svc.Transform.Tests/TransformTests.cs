@@ -8,6 +8,18 @@ public class TransformTests
 {
     #region Methods
 
+    /// <summary>
+    ///     Helper method to create TransformOptions with specific token definitions.
+    /// </summary>
+    private static IOptions<TransformOptions> CreateOptionsWithDefinitions(params ITokenDefinition[] definitions)
+    {
+        var options = new TransformOptions();
+        options.DefaultDefinitions.Clear();
+        foreach (var definition in definitions)
+            options.DefaultDefinitions.Add(definition);
+        return Options.Create(options);
+    }
+
     [Fact]
     public async Task DoubleCurlyBrackets_IsToken_And_ExtractToken_Tests()
     {
@@ -33,8 +45,7 @@ public class TransformTests
             { "location", "DKNet" }
         };
 
-        var options = Options.Create(new TransformOptions
-            { DefaultDefinitions = [new TokenDefinition("@(", ")")] });
+        var options = CreateOptionsWithDefinitions(new TokenDefinition("@(", ")"));
 
         // Act
         var service = new TransformerService(options);
@@ -50,7 +61,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.ThrowError;
             })
             .BuildServiceProvider();
@@ -71,7 +83,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs;
             })
             .BuildServiceProvider();
@@ -92,7 +105,8 @@ public class TransformTests
         var service = new ServiceCollection()
             .AddTransformerService(o =>
             {
-                o.DefaultDefinitions = [TransformOptions.CurlyBrackets];
+                o.DefaultDefinitions.Clear();
+                o.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
                 o.TokenNotFoundBehavior = TokenNotFoundBehavior.Remove;
             })
             .BuildServiceProvider();
@@ -141,15 +155,11 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = Options.Create(new TransformOptions
-        {
-            DefaultDefinitions =
-            [
-                TransformOptions.AngledBrackets,
-                TransformOptions.CurlyBrackets,
-                TransformOptions.SquareBrackets
-            ]
-        });
+        var options = CreateOptionsWithDefinitions(
+            TransformOptions.AngledBrackets,
+            TransformOptions.CurlyBrackets,
+            TransformOptions.SquareBrackets);
+        
         var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
@@ -166,15 +176,11 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = Options.Create(new TransformOptions
-        {
-            DefaultDefinitions =
-            [
-                TransformOptions.AngledBrackets,
-                TransformOptions.CurlyBrackets,
-                TransformOptions.SquareBrackets
-            ]
-        });
+        var options = CreateOptionsWithDefinitions(
+            TransformOptions.AngledBrackets,
+            TransformOptions.CurlyBrackets,
+            TransformOptions.SquareBrackets);
+        
         var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
