@@ -58,6 +58,14 @@ public class TransformOptions
     ///     as replaceable tokens in templates. You can add custom extractors to support additional
     ///     token formats or remove default extractors if not needed.
     ///     To replace the default definitions, clear the collection first and then add new definitions.
+    ///     <example>
+    ///         <code>
+    /// var options = new TransformOptions();
+    /// options.DefaultDefinitions.Clear();
+    /// options.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
+    /// options.DefaultDefinitions.Add(new TokenDefinition("@(", ")"));
+    ///         </code>
+    ///     </example>
     /// </remarks>
     public ICollection<ITokenDefinition> DefaultDefinitions { get; } = [SquareBrackets];
 

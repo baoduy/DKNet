@@ -8,6 +8,18 @@ public class TransformTests
 {
     #region Methods
 
+    /// <summary>
+    ///     Helper method to create TransformOptions with specific token definitions.
+    /// </summary>
+    private static IOptions<TransformOptions> CreateOptionsWithDefinitions(params ITokenDefinition[] definitions)
+    {
+        var options = new TransformOptions();
+        options.DefaultDefinitions.Clear();
+        foreach (var definition in definitions)
+            options.DefaultDefinitions.Add(definition);
+        return Options.Create(options);
+    }
+
     [Fact]
     public async Task DoubleCurlyBrackets_IsToken_And_ExtractToken_Tests()
     {
@@ -33,13 +45,10 @@ public class TransformTests
             { "location", "DKNet" }
         };
 
-        var options = new TransformOptions();
-        options.DefaultDefinitions.Clear();
-        options.DefaultDefinitions.Add(new TokenDefinition("@(", ")"));
-        var optionsWrapper = Options.Create(options);
+        var options = CreateOptionsWithDefinitions(new TokenDefinition("@(", ")"));
 
         // Act
-        var service = new TransformerService(optionsWrapper);
+        var service = new TransformerService(options);
         var rs = service.Transform(template, model);
 
         // Assert
@@ -146,14 +155,12 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = new TransformOptions();
-        options.DefaultDefinitions.Clear();
-        options.DefaultDefinitions.Add(TransformOptions.AngledBrackets);
-        options.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
-        options.DefaultDefinitions.Add(TransformOptions.SquareBrackets);
-        var optionsWrapper = Options.Create(options);
+        var options = CreateOptionsWithDefinitions(
+            TransformOptions.AngledBrackets,
+            TransformOptions.CurlyBrackets,
+            TransformOptions.SquareBrackets);
         
-        var t = new TransformerService(optionsWrapper);
+        var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Hoang");
@@ -169,14 +176,12 @@ public class TransformTests
         var d = Path.GetDirectoryName(typeof(TransformTests).Assembly.Location);
         var template = await File.ReadAllTextAsync(d + "/TestData/Data.txt");
 
-        var options = new TransformOptions();
-        options.DefaultDefinitions.Clear();
-        options.DefaultDefinitions.Add(TransformOptions.AngledBrackets);
-        options.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
-        options.DefaultDefinitions.Add(TransformOptions.SquareBrackets);
-        var optionsWrapper = Options.Create(options);
+        var options = CreateOptionsWithDefinitions(
+            TransformOptions.AngledBrackets,
+            TransformOptions.CurlyBrackets,
+            TransformOptions.SquareBrackets);
         
-        var t = new TransformerService(optionsWrapper);
+        var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
         s.ShouldContain("Bao");
