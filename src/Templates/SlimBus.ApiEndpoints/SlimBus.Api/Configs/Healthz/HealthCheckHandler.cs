@@ -3,6 +3,8 @@
 [ExcludeFromCodeCoverage]
 internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : IHealthCheck
 {
+    #region Methods
+
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
@@ -24,4 +26,6 @@ internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : I
         return Task.FromResult(
             HealthCheckResult.Unhealthy(ms));
     }
+
+    #endregion
 }

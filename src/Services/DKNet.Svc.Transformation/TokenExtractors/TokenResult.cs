@@ -6,7 +6,13 @@ namespace DKNet.Svc.Transformation.TokenExtractors;
 [DebuggerDisplay("Token = {" + nameof(Token) + "}")]
 internal sealed class TokenResult : IToken
 {
+    #region Fields
+
     private string? _key;
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     ///     The Token result
@@ -29,6 +35,10 @@ internal sealed class TokenResult : IToken
             throw new ArgumentOutOfRangeException(nameof(index));
     }
 
+    #endregion
+
+    #region Properties
+
     public ITokenDefinition Definition { get; }
 
     public int Index { get; }
@@ -47,4 +57,6 @@ internal sealed class TokenResult : IToken
     public string OriginalString { get; }
 
     public string Token { get; }
+
+    #endregion
 }

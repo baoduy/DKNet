@@ -6,6 +6,8 @@ namespace Aspire.Hosting.ServiceBus;
 
 public static class ServiceBusExtensions
 {
+    #region Methods
+
     public static IResourceBuilder<ServiceBusResource> AddServiceBus(this IDistributedApplicationBuilder builder,
         IResourceBuilder<SqlServerServerResource> sqlServer, string configFilePath, string name = "AzureBusSimulator")
     {
@@ -40,4 +42,6 @@ public static class ServiceBusExtensions
                 name: ServiceBusResource.SecondaryEndpointName)
             .WaitFor(sqlServer);
     }
+
+    #endregion
 }

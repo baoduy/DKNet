@@ -5,6 +5,8 @@ namespace SlimBus.AppServices.Extensions;
 
 internal static class MapsToExtensions
 {
+    #region Methods
+
     public static void ScanMapsTo(this TypeAdapterConfig config)
     {
         var mapsToTypes = typeof(MapsToExtensions).Assembly
@@ -20,4 +22,6 @@ internal static class MapsToExtensions
                 .Settings.MapToConstructor = ctor;
         }
     }
+
+    #endregion
 }

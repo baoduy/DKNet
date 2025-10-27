@@ -6,6 +6,8 @@ namespace SlimBus.Domains.Features.Profiles.Entities;
 [Table("CustomerProfiles", Schema = DomainSchemas.Profile)]
 public class CustomerProfile : AggregateRoot
 {
+    #region Constructors
+
     public CustomerProfile(string name, string membershipNo, string email, string phone,
         string byUser)
         : this(Guid.Empty, name, membershipNo, email, phone, byUser)
@@ -27,6 +29,10 @@ public class CustomerProfile : AggregateRoot
         Update(null, name, phone, null, createdBy);
     }
 
+    #endregion
+
+    #region Properties
+
     public string? Avatar { get; private set; }
 
     public DateTime? BirthDay { get; private set; }
@@ -38,6 +44,10 @@ public class CustomerProfile : AggregateRoot
     public string Name { get; private set; }
 
     public string? Phone { get; private set; }
+
+    #endregion
+
+    #region Methods
 
     public void Update(string? avatar, string? name, string? phoneNumber, DateTime? birthday, string userId)
     {
@@ -51,4 +61,6 @@ public class CustomerProfile : AggregateRoot
 
         SetUpdatedBy(userId);
     }
+
+    #endregion
 }

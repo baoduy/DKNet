@@ -6,7 +6,47 @@ namespace EfCore.Extensions.Tests;
 
 public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
+
+    #endregion
+
+    #region Methods
+
+    [Fact]
+    public async Task DatabaseConnection_ShouldOpenAndClose()
+    {
+        // Act
+        await _db.Database.OpenConnectionAsync();
+        var connectionState = _db.Database.GetDbConnection().State;
+
+        // Assert
+        connectionState.ShouldBe(ConnectionState.Open);
+
+        // Cleanup
+        await _db.Database.CloseConnectionAsync();
+        connectionState = _db.Database.GetDbConnection().State;
+        connectionState.ShouldBe(ConnectionState.Closed);
+    }
+
+    [Fact]
+    public void DatabaseProvider_ShouldBeSqlServer()
+    {
+        // Act
+        var providerName = _db.Database.ProviderName;
+
+        // Assert
+        providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
+    }
+
+    [Fact]
+    public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
+    {
+        // This test verifies the format processing logic
+        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
+        result.ShouldNotBeNullOrEmpty();
+    }
 
 
     [Fact]
@@ -24,6 +64,39 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     {
         var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
+    }
+
+    [Fact]
+    public async Task TestConcurrentUpdateThrowsExceptionAsync()
+    {
+        // Arrange
+        var user = new User("ConcurrencyTest")
+        {
+            FirstName = "Test",
+            LastName = "User"
+        };
+        _db.Set<User>().Add(user);
+        await _db.SaveChangesAsync();
+
+        // Create new contexts with same configuration
+        var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
+
+        await using var db1 = new MyDbContext(dbOptions);
+        await using var db2 = new MyDbContext(dbOptions);
+
+        var user1 = await db1.Set<User>().FindAsync(user.Id);
+        var user2 = await db2.Set<User>().FindAsync(user.Id);
+
+        // Act - First update
+        user1!.FirstName = "Updated1";
+        await db1.SaveChangesAsync();
+
+        // Second update should conflict
+        user2!.FirstName = "Updated2";
+        Func<Task> act = async () => await db2.SaveChangesAsync();
+
+        // Assert
+        await act.ShouldThrowAsync<DbUpdateConcurrencyException>();
     }
 
     [Fact]
@@ -92,70 +165,5 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
         string.Equals(user.Addresses.Last().Street, "Steven Street", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
     }
 
-    [Fact]
-    public async Task TestConcurrentUpdateThrowsExceptionAsync()
-    {
-        // Arrange
-        var user = new User("ConcurrencyTest")
-        {
-            FirstName = "Test",
-            LastName = "User"
-        };
-        _db.Set<User>().Add(user);
-        await _db.SaveChangesAsync();
-
-        // Create new contexts with same configuration
-        var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
-
-        await using var db1 = new MyDbContext(dbOptions);
-        await using var db2 = new MyDbContext(dbOptions);
-
-        var user1 = await db1.Set<User>().FindAsync(user.Id);
-        var user2 = await db2.Set<User>().FindAsync(user.Id);
-
-        // Act - First update
-        user1!.FirstName = "Updated1";
-        await db1.SaveChangesAsync();
-
-        // Second update should conflict
-        user2!.FirstName = "Updated2";
-        Func<Task> act = async () => await db2.SaveChangesAsync();
-
-        // Assert
-        await act.ShouldThrowAsync<DbUpdateConcurrencyException>();
-    }
-
-    [Fact]
-    public async Task DatabaseConnection_ShouldOpenAndClose()
-    {
-        // Act
-        await _db.Database.OpenConnectionAsync();
-        var connectionState = _db.Database.GetDbConnection().State;
-
-        // Assert
-        connectionState.ShouldBe(ConnectionState.Open);
-
-        // Cleanup
-        await _db.Database.CloseConnectionAsync();
-        connectionState = _db.Database.GetDbConnection().State;
-        connectionState.ShouldBe(ConnectionState.Closed);
-    }
-
-    [Fact]
-    public void DatabaseProvider_ShouldBeSqlServer()
-    {
-        // Act
-        var providerName = _db.Database.ProviderName;
-
-        // Assert
-        providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
-    }
-
-    [Fact]
-    public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
-    {
-        // This test verifies the format processing logic
-        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
-        result.ShouldNotBeNullOrEmpty();
-    }
+    #endregion
 }

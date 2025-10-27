@@ -3,6 +3,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class DbMigration
 {
+    #region Methods
+
     public static async Task RunMigrationAsync(this WebApplicationBuilder builder, FeatureOptions features,
         params string[] args)
     {
@@ -23,4 +25,6 @@ internal static class DbMigration
 #endif
         }
     }
+
+    #endregion
 }

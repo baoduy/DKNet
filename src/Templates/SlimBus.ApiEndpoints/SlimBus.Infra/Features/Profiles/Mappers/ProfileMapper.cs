@@ -4,6 +4,8 @@ namespace SlimBus.Infra.Features.Profiles.Mappers;
 
 internal sealed class ProfileMapper : DefaultEntityTypeConfiguration<CustomerProfile>
 {
+    #region Methods
+
     public override void Configure(EntityTypeBuilder<CustomerProfile> builder)
     {
         base.Configure(builder);
@@ -18,4 +20,6 @@ internal sealed class ProfileMapper : DefaultEntityTypeConfiguration<CustomerPro
         builder.Property(p => p.Phone).HasMaxLength(50).IsRequired(false);
         builder.ToTable("CustomerProfiles", DomainSchemas.Profile);
     }
+
+    #endregion
 }

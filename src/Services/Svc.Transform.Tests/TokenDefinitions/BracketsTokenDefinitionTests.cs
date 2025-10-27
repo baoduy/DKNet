@@ -2,6 +2,8 @@ namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class BracketsTokenDefinitionTests
 {
+    #region Methods
+
     [Fact]
     public void BracketsTokenDefinitionTest()
     {
@@ -19,4 +21,6 @@ public class BracketsTokenDefinitionTests
         t.IsToken("Duy>")
             .ShouldBeFalse();
     }
+
+    #endregion
 }

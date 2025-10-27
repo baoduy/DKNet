@@ -12,7 +12,13 @@ internal sealed class IdempotencyEndpointFilter(
     IOptions<IdempotencyOptions> options,
     ILogger<IdempotencyEndpointFilter> logger) : IEndpointFilter
 {
+    #region Fields
+
     private readonly IdempotencyOptions _options = options.Value;
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Invokes the endpoint filter to handle idempotency.
@@ -68,4 +74,6 @@ internal sealed class IdempotencyEndpointFilter(
         logger.LogDebug("Returning result to the client");
         return result;
     }
+
+    #endregion
 }

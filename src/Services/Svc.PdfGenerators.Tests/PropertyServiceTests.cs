@@ -4,70 +4,7 @@ namespace Svc.PdfGenerators.Tests;
 
 public class PropertyServiceTests
 {
-    // Test class with static properties
-    public class TestStaticClass
-    {
-        public static string StringProperty { get; } = "TestValue";
-        public static int IntProperty { get; } = 42;
-        public static bool BoolProperty { get; } = true;
-        public static string? NullProperty { get; }
-    }
-
-    [Fact]
-    public void TryGetPropertyValue_WithValidStringProperty_ReturnsTrue()
-    {
-        // Act
-        var success = PropertyService.TryGetPropertyValue<TestStaticClass, string>("StringProperty", out var value);
-
-        // Assert
-        Assert.True(success);
-        Assert.Equal("TestValue", value);
-    }
-
-    [Fact]
-    public void TryGetPropertyValue_WithValidIntProperty_ReturnsTrue()
-    {
-        // Act
-        var success = PropertyService.TryGetPropertyValue<TestStaticClass, int>("IntProperty", out var value);
-
-        // Assert
-        Assert.True(success);
-        Assert.Equal(42, value);
-    }
-
-    [Fact]
-    public void TryGetPropertyValue_WithValidBoolProperty_ReturnsTrue()
-    {
-        // Act
-        var success = PropertyService.TryGetPropertyValue<TestStaticClass, bool>("BoolProperty", out var value);
-
-        // Assert
-        Assert.True(success);
-        Assert.True(value);
-    }
-
-    [Fact]
-    public void TryGetPropertyValue_WithNullProperty_ReturnsTrue()
-    {
-        // Act
-        var success = PropertyService.TryGetPropertyValue<TestStaticClass, string?>("NullProperty", out var value);
-
-        // Assert
-        Assert.True(success);
-        Assert.Null(value);
-    }
-
-    [Fact]
-    public void TryGetPropertyValue_WithNonExistentProperty_ReturnsFalse()
-    {
-        // Act
-        var success =
-            PropertyService.TryGetPropertyValue<TestStaticClass, string>("NonExistentProperty", out var value);
-
-        // Assert
-        Assert.False(success);
-        Assert.Null(value);
-    }
+    #region Methods
 
     [Fact]
     public void TryGetPropertyValue_WithCaseInsensitivePropertyName_ReturnsTrue()
@@ -92,11 +29,15 @@ public class PropertyServiceTests
     }
 
     [Fact]
-    public void TryGetPropertyValue_WithTypeMismatch_ThrowsException()
+    public void TryGetPropertyValue_WithEnumProperty_ReturnsCorrectValue()
     {
-        // Act & Assert
-        Assert.Throws<InvalidCastException>(() =>
-            PropertyService.TryGetPropertyValue<TestStaticClass, int>("StringProperty", out _));
+        // Act
+        var success =
+            PropertyService.TryGetPropertyValue<TestEnumClass, TestEnumeration>("DefaultValue", out var value);
+
+        // Assert
+        Assert.True(success);
+        Assert.Equal(TestEnumeration.Value1, value);
     }
 
     // Test with a real type from the framework
@@ -111,6 +52,81 @@ public class PropertyServiceTests
         Assert.Equal(DateTime.MinValue, value);
     }
 
+    [Fact]
+    public void TryGetPropertyValue_WithNonExistentProperty_ReturnsFalse()
+    {
+        // Act
+        var success =
+            PropertyService.TryGetPropertyValue<TestStaticClass, string>("NonExistentProperty", out var value);
+
+        // Assert
+        Assert.False(success);
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetPropertyValue_WithNullProperty_ReturnsTrue()
+    {
+        // Act
+        var success = PropertyService.TryGetPropertyValue<TestStaticClass, string?>("NullProperty", out var value);
+
+        // Assert
+        Assert.True(success);
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetPropertyValue_WithTypeMismatch_ThrowsException()
+    {
+        // Act & Assert
+        Assert.Throws<InvalidCastException>(() =>
+            PropertyService.TryGetPropertyValue<TestStaticClass, int>("StringProperty", out _));
+    }
+
+    [Fact]
+    public void TryGetPropertyValue_WithValidBoolProperty_ReturnsTrue()
+    {
+        // Act
+        var success = PropertyService.TryGetPropertyValue<TestStaticClass, bool>("BoolProperty", out var value);
+
+        // Assert
+        Assert.True(success);
+        Assert.True(value);
+    }
+
+    [Fact]
+    public void TryGetPropertyValue_WithValidIntProperty_ReturnsTrue()
+    {
+        // Act
+        var success = PropertyService.TryGetPropertyValue<TestStaticClass, int>("IntProperty", out var value);
+
+        // Assert
+        Assert.True(success);
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
+    public void TryGetPropertyValue_WithValidStringProperty_ReturnsTrue()
+    {
+        // Act
+        var success = PropertyService.TryGetPropertyValue<TestStaticClass, string>("StringProperty", out var value);
+
+        // Assert
+        Assert.True(success);
+        Assert.Equal("TestValue", value);
+    }
+
+    #endregion
+
+    public class TestEnumClass
+    {
+        #region Properties
+
+        public static TestEnumeration DefaultValue { get; } = TestEnumeration.Value1;
+
+        #endregion
+    }
+
     // Test with enum type
     public enum TestEnumeration
     {
@@ -118,20 +134,16 @@ public class PropertyServiceTests
         Value2
     }
 
-    public class TestEnumClass
+    // Test class with static properties
+    public class TestStaticClass
     {
-        public static TestEnumeration DefaultValue { get; } = TestEnumeration.Value1;
-    }
+        #region Properties
 
-    [Fact]
-    public void TryGetPropertyValue_WithEnumProperty_ReturnsCorrectValue()
-    {
-        // Act
-        var success =
-            PropertyService.TryGetPropertyValue<TestEnumClass, TestEnumeration>("DefaultValue", out var value);
+        public static bool BoolProperty { get; } = true;
+        public static int IntProperty { get; } = 42;
+        public static string? NullProperty { get; }
+        public static string StringProperty { get; } = "TestValue";
 
-        // Assert
-        Assert.True(success);
-        Assert.Equal(TestEnumeration.Value1, value);
+        #endregion
     }
 }

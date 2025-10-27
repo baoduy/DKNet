@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Enhanced Entity Framework Core event-based functionality for implementing domain-driven design (DDD) patterns. This library provides centralized event management, automatic event publishing during EF Core operations, and seamless integration with domain entities.
+Enhanced Entity Framework Core event-based functionality for implementing domain-driven design (DDD) patterns. This
+library provides centralized event management, automatic event publishing during EF Core operations, and seamless
+integration with domain entities.
 
 ## Features
 
@@ -412,4 +414,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

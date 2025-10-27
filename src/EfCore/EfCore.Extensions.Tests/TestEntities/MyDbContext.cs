@@ -5,6 +5,10 @@ namespace EfCore.Extensions.Tests.TestEntities;
 [ExcludeFromCodeCoverage]
 public class MyDbContext(DbContextOptions options) : DbContext(options)
 {
-    public DbSet<User> Users { get; set; }
+    #region Properties
+
     public DbSet<Account> Accounts { get; set; }
+    public DbSet<User> Users { get; set; }
+
+    #endregion
 }

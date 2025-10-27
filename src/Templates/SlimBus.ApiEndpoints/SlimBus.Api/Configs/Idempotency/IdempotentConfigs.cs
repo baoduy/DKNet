@@ -3,7 +3,13 @@ namespace SlimBus.Api.Configs.Idempotency;
 [ExcludeFromCodeCoverage]
 internal static class IdempotentConfigs
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     public static IServiceCollection AddIdempotency(this IServiceCollection services,
         Action<IdempotencyOptions>? config = null)
@@ -25,4 +31,6 @@ internal static class IdempotentConfigs
             builder.AddEndpointFilter<IdempotencyEndpointFilter>();
         return builder;
     }
+
+    #endregion
 }

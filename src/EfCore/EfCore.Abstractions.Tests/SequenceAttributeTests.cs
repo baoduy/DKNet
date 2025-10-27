@@ -2,6 +2,34 @@ namespace EfCore.Abstractions.Tests;
 
 public class SequenceAttributeTests
 {
+    #region Methods
+
+    [Fact]
+    public void SequenceAttribute_AllSupportedTypes_ShouldBeAccepted()
+    {
+        // Arrange & Act & Assert
+        Should.NotThrow(() => new SequenceAttribute(typeof(byte)));
+        Should.NotThrow(() => new SequenceAttribute(typeof(short)));
+        Should.NotThrow(() => new SequenceAttribute(typeof(int)));
+        Should.NotThrow(() => new SequenceAttribute(typeof(long)));
+    }
+
+    [Fact]
+    public void SequenceAttribute_AttributeUsage_ShouldBeField()
+    {
+        // Arrange
+        var attributeType = typeof(SequenceAttribute);
+
+        // Act
+        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
+            .Cast<AttributeUsageAttribute>()
+            .FirstOrDefault();
+
+        // Assert
+        attributeUsage.ShouldNotBeNull();
+        attributeUsage.ValidOn.ShouldBe(AttributeTargets.Field);
+    }
+
     [Fact]
     public void SequenceAttribute_DefaultConstructor_ShouldUseIntType()
     {
@@ -19,54 +47,40 @@ public class SequenceAttributeTests
     }
 
     [Fact]
-    public void SequenceAttribute_WithByteType_ShouldSetCorrectType()
+    public void SequenceAttribute_DefaultValues_ShouldMatchSpecification()
     {
         // Act
-        var attribute = new SequenceAttribute(typeof(byte));
+        var attribute = new SequenceAttribute();
 
         // Assert
-        attribute.Type.ShouldBe(typeof(byte));
+        attribute.Cyclic.ShouldBeTrue();
+        attribute.IncrementsBy.ShouldBe(-1);
+        attribute.Max.ShouldBe(-1);
+        attribute.Min.ShouldBe(-1);
+        attribute.StartAt.ShouldBe(-1);
     }
 
     [Fact]
-    public void SequenceAttribute_WithShortType_ShouldSetCorrectType()
+    public void SequenceAttribute_FormatString_ShouldAcceptNullValue()
     {
+        // Arrange
+        var attribute = new SequenceAttribute();
+
         // Act
-        var attribute = new SequenceAttribute(typeof(short));
+        attribute.FormatString = null;
 
         // Assert
-        attribute.Type.ShouldBe(typeof(short));
+        attribute.FormatString.ShouldBeNull();
     }
 
     [Fact]
-    public void SequenceAttribute_WithIntType_ShouldSetCorrectType()
+    public void SequenceAttribute_IsSealed_ShouldBeTrue()
     {
-        // Act
-        var attribute = new SequenceAttribute(typeof(int));
+        // Arrange
+        var attributeType = typeof(SequenceAttribute);
 
-        // Assert
-        attribute.Type.ShouldBe(typeof(int));
-    }
-
-    [Fact]
-    public void SequenceAttribute_WithLongType_ShouldSetCorrectType()
-    {
-        // Act
-        var attribute = new SequenceAttribute(typeof(long));
-
-        // Assert
-        attribute.Type.ShouldBe(typeof(long));
-    }
-
-    [Fact]
-    public void SequenceAttribute_WithUnsupportedType_ShouldThrowNotSupportedException()
-    {
         // Act & Assert
-        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(string)));
-        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(decimal)));
-        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(float)));
-        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(double)));
-        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(DateTime)));
+        attributeType.IsSealed.ShouldBeTrue();
     }
 
     [Fact]
@@ -93,65 +107,55 @@ public class SequenceAttributeTests
     }
 
     [Fact]
-    public void SequenceAttribute_AllSupportedTypes_ShouldBeAccepted()
+    public void SequenceAttribute_WithByteType_ShouldSetCorrectType()
     {
-        // Arrange & Act & Assert
-        Should.NotThrow(() => new SequenceAttribute(typeof(byte)));
-        Should.NotThrow(() => new SequenceAttribute(typeof(short)));
-        Should.NotThrow(() => new SequenceAttribute(typeof(int)));
-        Should.NotThrow(() => new SequenceAttribute(typeof(long)));
-    }
-
-    [Fact]
-    public void SequenceAttribute_FormatString_ShouldAcceptNullValue()
-    {
-        // Arrange
-        var attribute = new SequenceAttribute();
-
         // Act
-        attribute.FormatString = null;
+        var attribute = new SequenceAttribute(typeof(byte));
 
         // Assert
-        attribute.FormatString.ShouldBeNull();
+        attribute.Type.ShouldBe(typeof(byte));
     }
 
     [Fact]
-    public void SequenceAttribute_AttributeUsage_ShouldBeField()
+    public void SequenceAttribute_WithIntType_ShouldSetCorrectType()
     {
-        // Arrange
-        var attributeType = typeof(SequenceAttribute);
-
         // Act
-        var attributeUsage = attributeType.GetCustomAttributes(typeof(AttributeUsageAttribute), true)
-            .Cast<AttributeUsageAttribute>()
-            .FirstOrDefault();
+        var attribute = new SequenceAttribute(typeof(int));
 
         // Assert
-        attributeUsage.ShouldNotBeNull();
-        attributeUsage.ValidOn.ShouldBe(AttributeTargets.Field);
+        attribute.Type.ShouldBe(typeof(int));
     }
 
     [Fact]
-    public void SequenceAttribute_IsSealed_ShouldBeTrue()
+    public void SequenceAttribute_WithLongType_ShouldSetCorrectType()
     {
-        // Arrange
-        var attributeType = typeof(SequenceAttribute);
+        // Act
+        var attribute = new SequenceAttribute(typeof(long));
 
+        // Assert
+        attribute.Type.ShouldBe(typeof(long));
+    }
+
+    [Fact]
+    public void SequenceAttribute_WithShortType_ShouldSetCorrectType()
+    {
+        // Act
+        var attribute = new SequenceAttribute(typeof(short));
+
+        // Assert
+        attribute.Type.ShouldBe(typeof(short));
+    }
+
+    [Fact]
+    public void SequenceAttribute_WithUnsupportedType_ShouldThrowNotSupportedException()
+    {
         // Act & Assert
-        attributeType.IsSealed.ShouldBeTrue();
+        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(string)));
+        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(decimal)));
+        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(float)));
+        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(double)));
+        Should.Throw<NotSupportedException>(() => new SequenceAttribute(typeof(DateTime)));
     }
 
-    [Fact]
-    public void SequenceAttribute_DefaultValues_ShouldMatchSpecification()
-    {
-        // Act
-        var attribute = new SequenceAttribute();
-
-        // Assert
-        attribute.Cyclic.ShouldBeTrue();
-        attribute.IncrementsBy.ShouldBe(-1);
-        attribute.Max.ShouldBe(-1);
-        attribute.Min.ShouldBe(-1);
-        attribute.StartAt.ShouldBe(-1);
-    }
+    #endregion
 }

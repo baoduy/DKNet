@@ -7,6 +7,13 @@ public class AttributeExtensionsTestCases
     #region Methods
 
     [Fact]
+    public void GetAttributeGenericWithTypeReturnExpectedAttributeTest()
+    {
+        var type = typeof(HasAttributeTestClass1);
+        type.GetCustomAttribute<TestingAttribute>().ShouldNotBeNull();
+    }
+
+    [Fact]
     public void GetAttributeWithNullTypeReturnNullTest()
     {
         Type type = null!;
@@ -20,13 +27,6 @@ public class AttributeExtensionsTestCases
         var type = typeof(HasAttributeTestClass1);
         type.GetCustomAttribute<TestingAttribute>().ShouldNotBeNull();
         (type.GetCustomAttribute<TestingAttribute>() is not null).ShouldBeTrue();
-    }
-
-    [Fact]
-    public void GetAttributeGenericWithTypeReturnExpectedAttributeTest()
-    {
-        var type = typeof(HasAttributeTestClass1);
-        type.GetCustomAttribute<TestingAttribute>().ShouldNotBeNull();
     }
 
     [Fact]
@@ -51,5 +51,5 @@ public class AttributeExtensionsTestCases
         ((PropertyInfo)null!).HasAttribute<TestingAttribute>().ShouldBeFalse();
     }
 
-    #endregion Methods
+    #endregion
 }

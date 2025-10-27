@@ -2,7 +2,19 @@ namespace EfCore.Extensions.Tests.Fixtures;
 
 public class MemoryFixture : IAsyncLifetime
 {
+    #region Properties
+
     public MyDbContext? Db { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        if (Db != null)
+            await Db.DisposeAsync();
+    }
 
     public async Task InitializeAsync()
     {
@@ -23,9 +35,5 @@ public class MemoryFixture : IAsyncLifetime
         await Db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (Db != null)
-            await Db.DisposeAsync();
-    }
+    #endregion
 }

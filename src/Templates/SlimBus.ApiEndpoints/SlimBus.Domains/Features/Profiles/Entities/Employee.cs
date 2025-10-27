@@ -15,6 +15,8 @@ public enum EmployeeType
 [Table("Employees", Schema = DomainSchemas.Profile)]
 public class Employee : DomainEntity
 {
+    #region Constructors
+
     public Employee(Guid profileId, EmployeeType type, string userId) : base(Guid.NewGuid(), userId)
     {
         ProfileId = profileId;
@@ -25,6 +27,9 @@ public class Employee : DomainEntity
     {
     }
 
+    #endregion
+
+    #region Properties
 
     [Required] public virtual CustomerProfile Profile { get; private set; } = null!;
 
@@ -32,10 +37,15 @@ public class Employee : DomainEntity
 
     [Required] public EmployeeType Type { get; private set; }
 
+    #endregion
+
+    #region Methods
 
     public void PromoteTo(EmployeeType type, string userId)
     {
         Type = type;
         SetUpdatedBy(userId);
     }
+
+    #endregion
 }

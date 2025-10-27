@@ -8,6 +8,8 @@ namespace Microsoft.EntityFrameworkCore;
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal static class EntityAutoConfigExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Scan GlobalFilter from Assemblies
     /// </summary>
@@ -35,4 +37,6 @@ internal static class EntityAutoConfigExtensions
             filterInstance?.Apply(modelBuilder, dbContext);
         }
     }
+
+    #endregion
 }

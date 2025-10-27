@@ -11,8 +11,12 @@ public enum FeeTypes
 [Owned]
 public sealed class MxFee(float value, FeeTypes type)
 {
-    public static readonly MxFee Default = new(10, FeeTypes.Percentage);
+    #region Properties
 
     public FeeTypes Type { get; private set; } = type;
     public float Value { get; private set; } = value;
+
+    #endregion
+
+    public static readonly MxFee Default = new(10, FeeTypes.Percentage);
 }

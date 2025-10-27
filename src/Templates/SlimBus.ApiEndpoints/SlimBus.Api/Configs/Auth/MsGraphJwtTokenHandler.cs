@@ -10,25 +10,7 @@ namespace SlimBus.Api.Configs.Auth;
 [ExcludeFromCodeCoverage]
 internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
 {
-    /// <summary>
-    ///     Validates the provided JWT token by calling the Microsoft Graph API.
-    /// </summary>
-    /// <param name="token">The JWT token to validate.</param>
-    /// <exception cref="SecurityTokenValidationException">Thrown if the token validation against Microsoft Graph fails.</exception>
-    private static async Task ValidateTokenWithMsGraphEndPoint(string token)
-    {
-        // Create an HTTP client for sending requests.
-        using var httpClient = new HttpClient();
-        // Add the token to the Authorization header as a Bearer token.
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        // Send a GET request to the Microsoft Graph API to validate the token.
-        var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
-
-        // If the response is not successful, throw an exception indicating token validation failure.
-        if (!response.IsSuccessStatusCode)
-            throw new SecurityTokenValidationException("Failed to validate token against Microsoft Graph.");
-    }
+    #region Methods
 
     /// <summary>
     ///     Override the default signature validation to bypass internal signature validation.
@@ -77,4 +59,26 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
             };
         }
     }
+
+    /// <summary>
+    ///     Validates the provided JWT token by calling the Microsoft Graph API.
+    /// </summary>
+    /// <param name="token">The JWT token to validate.</param>
+    /// <exception cref="SecurityTokenValidationException">Thrown if the token validation against Microsoft Graph fails.</exception>
+    private static async Task ValidateTokenWithMsGraphEndPoint(string token)
+    {
+        // Create an HTTP client for sending requests.
+        using var httpClient = new HttpClient();
+        // Add the token to the Authorization header as a Bearer token.
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Send a GET request to the Microsoft Graph API to validate the token.
+        var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
+
+        // If the response is not successful, throw an exception indicating token validation failure.
+        if (!response.IsSuccessStatusCode)
+            throw new SecurityTokenValidationException("Failed to validate token against Microsoft Graph.");
+    }
+
+    #endregion
 }

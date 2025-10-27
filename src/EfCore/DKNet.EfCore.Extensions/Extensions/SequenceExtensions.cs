@@ -5,6 +5,8 @@ namespace DKNet.EfCore.Extensions.Extensions;
 
 internal static class SequenceExtensions
 {
+    #region Methods
+
     internal static SqlSequenceAttribute? GetAttribute(Type enumType) =>
         enumType.GetCustomAttribute<SqlSequenceAttribute>();
 
@@ -55,4 +57,6 @@ internal static class SequenceExtensions
             seq.IsCyclic(fieldAtt.Cyclic);
         }
     }
+
+    #endregion
 }

@@ -21,5 +21,5 @@ public class ConvertorTests
         c.Convert(null!, (float)123456.70).ShouldBe("123,456.70");
     }
 
-    #endregion Methods
+    #endregion
 }

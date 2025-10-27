@@ -4,6 +4,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class SetupRepository
 {
+    #region Methods
+
     /// <summary>
     ///     Add Generic Repositories. All generic repositories are required DbContext as constructor parameter.
     ///     Ensure you expose an instance of DbContext in <see cref="IServiceCollection" />.
@@ -41,4 +43,6 @@ public static class SetupRepository
     public static IServiceCollection AddRepoFactory<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext =>
         services.AddScoped<IRepositoryFactory, RepositoryFactory<TDbContext>>();
+
+    #endregion
 }

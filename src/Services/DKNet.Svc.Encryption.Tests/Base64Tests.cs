@@ -4,6 +4,21 @@ namespace DKNet.Svc.Encryption.Tests;
 
 public class Base64Tests
 {
+    #region Methods
+
+    [Theory]
+    [InlineData("SGVsbG8gV29ybGQ=", "Hello World")]
+    [InlineData("VGVzdDEyMyFAIw==", "Test123!@#")]
+    [InlineData("", "")]
+    public void FromBase64StringWithValidInputReturnsExpectedString(string base64Input, string expectedString)
+    {
+        // Arrange & Act
+        var result = base64Input.FromBase64String();
+
+        // Assert
+        result.ShouldBe(expectedString, $"Failed to decode: {base64Input}");
+    }
+
     [Theory]
     [InlineData("test", true)] // valid base64 (decodes to char sequences) per current IsBase64String logic
     [InlineData("SGVsbG8gd29ybGQ=", true)]
@@ -38,16 +53,5 @@ public class Base64Tests
         result.ShouldBe(expectedBase64, $"Failed to encode: {input}");
     }
 
-    [Theory]
-    [InlineData("SGVsbG8gV29ybGQ=", "Hello World")]
-    [InlineData("VGVzdDEyMyFAIw==", "Test123!@#")]
-    [InlineData("", "")]
-    public void FromBase64StringWithValidInputReturnsExpectedString(string base64Input, string expectedString)
-    {
-        // Arrange & Act
-        var result = base64Input.FromBase64String();
-
-        // Assert
-        result.ShouldBe(expectedString, $"Failed to decode: {base64Input}");
-    }
+    #endregion
 }

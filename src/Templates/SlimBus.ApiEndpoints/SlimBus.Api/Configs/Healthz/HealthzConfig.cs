@@ -5,7 +5,13 @@ namespace SlimBus.Api.Configs.Healthz;
 [ExcludeFromCodeCoverage]
 internal static class HealthzConfig
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     public static IServiceCollection AddHealthzConfig(this IServiceCollection services, FeatureOptions features)
     {
@@ -39,4 +45,6 @@ internal static class HealthzConfig
 
         return endpoints;
     }
+
+    #endregion
 }

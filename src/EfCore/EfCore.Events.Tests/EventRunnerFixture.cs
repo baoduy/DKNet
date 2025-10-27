@@ -7,8 +7,33 @@ namespace EfCore.Events.Tests;
 
 public sealed class EventRunnerFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer= null!;
+    #region Fields
+
+    private MsSqlContainer _sqlContainer = null!;
+
+    #endregion
+
+    #region Properties
+
     public ServiceProvider Provider { get; private set; } = null!;
+
+    #endregion
+
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        if (_sqlContainer is null) return;
+        await _sqlContainer.StopAsync();
+        await _sqlContainer.DisposeAsync();
+    }
+
+    public async Task EnsureSqlReadyAsync()
+    {
+        if (_sqlContainer is null) return;
+        if (_sqlContainer.State == TestcontainersStates.Running) return;
+        await _sqlContainer.StartAsync();
+    }
 
     public async Task InitializeAsync()
     {
@@ -40,17 +65,5 @@ public sealed class EventRunnerFixture : IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (_sqlContainer is null) return;
-        await _sqlContainer.StopAsync();
-        await _sqlContainer.DisposeAsync();
-    }
-
-    public async Task EnsureSqlReadyAsync()
-    {
-        if (_sqlContainer is null) return;
-        if (_sqlContainer.State == TestcontainersStates.Running) return;
-        await _sqlContainer.StartAsync();
-    }
+    #endregion
 }

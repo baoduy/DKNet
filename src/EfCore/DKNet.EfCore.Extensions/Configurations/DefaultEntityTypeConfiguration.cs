@@ -7,6 +7,8 @@ namespace DKNet.EfCore.Extensions.Configurations;
 
 public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<TEntity> where TEntity : class
 {
+    #region Methods
+
     public virtual void Configure(EntityTypeBuilder<TEntity> builder)
     {
         var clrType = builder.Metadata.ClrType;
@@ -49,4 +51,6 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
                 .IsRowVersion()
                 .ValueGeneratedOnAddOrUpdate();
     }
+
+    #endregion
 }

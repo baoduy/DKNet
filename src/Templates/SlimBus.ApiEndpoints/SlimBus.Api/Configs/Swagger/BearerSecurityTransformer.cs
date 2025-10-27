@@ -9,6 +9,8 @@ namespace SlimBus.Api.Configs.Swagger;
 internal sealed class BearerSecurityTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider)
     : IOpenApiDocumentTransformer
 {
+    #region Methods
+
     public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context,
         CancellationToken cancellationToken)
     {
@@ -37,4 +39,6 @@ internal sealed class BearerSecurityTransformer(IAuthenticationSchemeProvider au
                 operation.Security.Add(securityRequirement);
         }
     }
+
+    #endregion
 }

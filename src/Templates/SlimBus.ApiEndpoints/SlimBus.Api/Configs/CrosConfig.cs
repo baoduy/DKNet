@@ -3,7 +3,13 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class CrosConfig
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     public static IServiceCollection AddCrosConfig(this IServiceCollection services)
     {
@@ -22,4 +28,6 @@ internal static class CrosConfig
 
         return app;
     }
+
+    #endregion
 }

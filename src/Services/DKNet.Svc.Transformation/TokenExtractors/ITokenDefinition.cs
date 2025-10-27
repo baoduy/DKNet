@@ -2,17 +2,31 @@
 
 public interface ITokenDefinition
 {
+    #region Properties
+
     string BeginTag { get; }
 
     string EndTag { get; }
 
+    #endregion
+
+    #region Methods
+
     bool IsToken(string value);
+
+    #endregion
 }
 
 public class TokenDefinition(string begin, string end) : ITokenDefinition
 {
+    #region Properties
+
     public string BeginTag { get; } = begin;
     public string EndTag { get; } = end;
+
+    #endregion
+
+    #region Methods
 
     public bool IsToken(string value)
     {
@@ -36,4 +50,6 @@ public class TokenDefinition(string begin, string end) : ITokenDefinition
 
         return true;
     }
+
+    #endregion
 }

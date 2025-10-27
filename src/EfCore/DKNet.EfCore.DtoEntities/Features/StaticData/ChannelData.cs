@@ -8,6 +8,8 @@ namespace DKNet.EfCore.DtoEntities.Features.StaticData;
 
 public abstract class ChannelDataBase : AuditedEntity<int>
 {
+    #region Constructors
+
     protected ChannelDataBase(ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount,
         string byUser)
     {
@@ -21,6 +23,10 @@ public abstract class ChannelDataBase : AuditedEntity<int>
             throw new ArgumentException("Invalid settlement format. It should T+Date format.", nameof(settlement));
     }
 
+    #endregion
+
+    #region Properties
+
     [MaxLength(10)] public ChannelCodes Code { get; private set; }
 
     public decimal? MaxAmount { get; private set; }
@@ -28,13 +34,21 @@ public abstract class ChannelDataBase : AuditedEntity<int>
 
     public string Settlement { get; private set; }
 
+    #endregion
+
+    #region Methods
+
     private static bool IsValidSettlementFormat(string settlement) => Regex.IsMatch(settlement, @"^T\+\d+$",
         RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+
+    #endregion
 }
 
 [AuditLog]
 public sealed class ChannelData : ChannelDataBase
 {
+    #region Constructors
+
     private ChannelData(ChannelCodes code, string name, string country, string currency, string settlement,
         decimal minAmount,
         decimal? maxAmount, string byUser) : base(code, settlement, minAmount, maxAmount, byUser)
@@ -51,11 +65,21 @@ public sealed class ChannelData : ChannelDataBase
         Name = string.Empty;
     }
 
+    #endregion
+
+    #region Properties
+
     [MaxLength(3)] public string Country { get; private set; }
     [MaxLength(4)] public string Currency { get; private set; }
     [MaxLength(50)] public string Name { get; private set; }
 
+    #endregion
+
+    #region Methods
+
     public static ChannelData Create(ChannelCodes code, string name, string settlement, string country, string currency,
         decimal minAmount, decimal? maxAmount, string byUser) =>
         new(code, name, country, currency, settlement, minAmount, maxAmount, byUser);
+
+    #endregion
 }

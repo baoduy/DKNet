@@ -41,8 +41,10 @@ char[] randomChars = RandomCreators.NewChars(20, options);
 
 ## API
 
-- `RandomCreators.NewString(int length = 25, StringCreatorOptions? options = null)`: Returns a random string with optional constraints.
-- `RandomCreators.NewChars(int length = 25, StringCreatorOptions? options = null)`: Returns a random char array with optional constraints.
+- `RandomCreators.NewString(int length = 25, StringCreatorOptions? options = null)`: Returns a random string with
+  optional constraints.
+- `RandomCreators.NewChars(int length = 25, StringCreatorOptions? options = null)`: Returns a random char array with
+  optional constraints.
 - `StringCreatorOptions`: Options to control alphabetic-only, minimum numbers, and minimum special characters.
 
 ## License

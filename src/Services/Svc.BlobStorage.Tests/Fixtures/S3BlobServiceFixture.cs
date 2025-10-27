@@ -5,7 +5,13 @@ namespace Svc.BlobStorage.Tests.Fixtures;
 
 public sealed class S3BlobServiceFixture : IDisposable
 {
+    #region Fields
+
     private readonly MinioContainer _minioContainer;
+
+    #endregion
+
+    #region Constructors
 
     public S3BlobServiceFixture()
     {
@@ -36,11 +42,21 @@ public sealed class S3BlobServiceFixture : IDisposable
         Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
+    #endregion
+
+    #region Properties
+
     public IBlobService Service { get; }
+
+    #endregion
+
+    #region Methods
 
     public void Dispose()
     {
         _minioContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
+
+    #endregion
 }

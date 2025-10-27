@@ -5,33 +5,46 @@ namespace DKNet.Svc.Encryption;
 
 public interface IAesGcmEncryption : IDisposable // now disposable due to internal cache
 {
+    #region Properties
+
     string Key { get; } // added to mirror AesEncryption pattern
 
-    /// <summary>Encrypt plainText with provided Base64 key. Returns Base64 of (nonce:tag:cipher), each part base64 then wrapped again.</summary>
-    string EncryptString(string plainText, byte[]? associatedData = null); // new primary API
+    #endregion
+
+    #region Methods
+
+    string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null);
 
     /// <summary>Decrypt previously encrypted package.</summary>
     string DecryptString(string cipherPackage, byte[]? associatedData = null); // new primary API
 
     // Backward-compatible wrappers
     string Encrypt(string plainText, string base64Key, byte[]? associatedData = null);
-    string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null);
+
+    /// <summary>
+    ///     Encrypt plainText with provided Base64 key. Returns Base64 of (nonce:tag:cipher), each part base64 then
+    ///     wrapped again.
+    /// </summary>
+    string EncryptString(string plainText, byte[]? associatedData = null); // new primary API
+
+    #endregion
 }
 
 /// <summary>
-/// AES-GCM authenticated encryption (AEAD). Output layout: base64(nonce):base64(tag):base64(cipher) all concatenated with ':' then Base64 wrapped again for safe transport.
-/// Caches AesGcm instances per key to avoid repeated allocations when the same key is reused.
+///     AES-GCM authenticated encryption (AEAD). Output layout: base64(nonce):base64(tag):base64(cipher) all concatenated
+///     with ':' then Base64 wrapped again for safe transport.
+///     Caches AesGcm instances per key to avoid repeated allocations when the same key is reused.
 /// </summary>
 public sealed class AesGcmEncryption : IAesGcmEncryption
 {
-    private const int KeySize = 32; // 256-bit key
-    private const int NonceSize = 12; // 96-bit nonce recommended for GCM
-    private const int TagSize = 16; // 128-bit tag
+    #region Fields
 
     private readonly AesGcm _aesGcm;
     private bool _disposed;
 
-    public string Key { get; }
+    #endregion
+
+    #region Constructors
 
     public AesGcmEncryption(string? key = null)
     {
@@ -55,22 +68,22 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         _aesGcm = new AesGcm(keyBytes, TagSize);
     }
 
-    public string EncryptString(string plainText, byte[]? associatedData = null)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
-        ArgumentNullException.ThrowIfNull(plainText);
-        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        var plainBytes = Encoding.UTF8.GetBytes(plainText);
-        var cipher = new byte[plainBytes.Length];
-        var tag = new byte[TagSize];
-        lock (_aesGcm)
-        {
-            _aesGcm.Encrypt(nonce, plainBytes, cipher, tag, associatedData);
-        }
+    #endregion
 
-        var packaged =
-            $"{Convert.ToBase64String(nonce)}:{Convert.ToBase64String(tag)}:{Convert.ToBase64String(cipher)}";
-        return packaged.ToBase64String();
+    #region Properties
+
+    public string Key { get; }
+
+    #endregion
+
+    #region Methods
+
+    public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
+    {
+        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Provided key does not match instance key. Create a new instance with the desired key or use DecryptString().");
+        return DecryptString(cipherPackage, associatedData);
     }
 
     public string DecryptString(string cipherPackage, byte[]? associatedData = null)
@@ -92,6 +105,13 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return Encoding.UTF8.GetString(plain);
     }
 
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _aesGcm.Dispose();
+        _disposed = true;
+    }
+
     // Backward-compatible wrappers (will ignore supplied key and use this instance key)
     public string Encrypt(string plainText, string base64Key, byte[]? associatedData = null)
     {
@@ -101,18 +121,27 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return EncryptString(plainText, associatedData);
     }
 
-    public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
+    public string EncryptString(string plainText, byte[]? associatedData = null)
     {
-        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
-            throw new InvalidOperationException(
-                "Provided key does not match instance key. Create a new instance with the desired key or use DecryptString().");
-        return DecryptString(cipherPackage, associatedData);
+        ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
+        ArgumentNullException.ThrowIfNull(plainText);
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        var cipher = new byte[plainBytes.Length];
+        var tag = new byte[TagSize];
+        lock (_aesGcm)
+        {
+            _aesGcm.Encrypt(nonce, plainBytes, cipher, tag, associatedData);
+        }
+
+        var packaged =
+            $"{Convert.ToBase64String(nonce)}:{Convert.ToBase64String(tag)}:{Convert.ToBase64String(cipher)}";
+        return packaged.ToBase64String();
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        _aesGcm.Dispose();
-        _disposed = true;
-    }
+    #endregion
+
+    private const int KeySize = 32; // 256-bit key
+    private const int NonceSize = 12; // 96-bit nonce recommended for GCM
+    private const int TagSize = 16; // 128-bit tag
 }

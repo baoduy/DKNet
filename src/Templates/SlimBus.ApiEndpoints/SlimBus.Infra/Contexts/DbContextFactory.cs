@@ -7,6 +7,8 @@ namespace SlimBus.Infra.Contexts;
 [ExcludeFromCodeCoverage]
 internal sealed class DbContextFactory : IDesignTimeDbContextFactory<CoreDbContext>
 {
+    #region Methods
+
     public CoreDbContext CreateDbContext(string[] args)
     {
         var config = new ConfigurationBuilder()
@@ -25,4 +27,6 @@ internal sealed class DbContextFactory : IDesignTimeDbContextFactory<CoreDbConte
 
         return service.GetRequiredService<CoreDbContext>();
     }
+
+    #endregion
 }

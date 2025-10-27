@@ -8,9 +8,13 @@ namespace DKNet.EfCore.Abstractions.Attributes;
 [AttributeUsage(AttributeTargets.Enum)]
 public sealed class SqlSequenceAttribute(string schema = "seq") : Attribute
 {
+    #region Properties
+
     /// <summary>
     ///     Gets or sets the schema name for the SQL sequence.
     ///     The schema name defaults to "seq" if not specified.
     /// </summary>
     public string Schema { get; } = schema;
+
+    #endregion
 }

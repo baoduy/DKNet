@@ -8,9 +8,24 @@ namespace DKNet.EfCore.Relational.Helpers;
 
 public static class DbContextHelpers
 {
-    private static bool IsSqlServer(this DbContext context) =>
-        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
-            StringComparison.OrdinalIgnoreCase);
+    #region Methods
+
+    /// <summary>
+    ///     Create Table for Entity this is not migration so you need to ensure to call this methods once only.
+    /// </summary>
+    /// <param name="dbContext"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TEntity"></typeparam>
+    public static async Task CreateTableAsync<TEntity>(this DbContext dbContext,
+        CancellationToken cancellationToken = default) where TEntity : class
+    {
+        var databaseCreator = (RelationalDatabaseCreator)dbContext.Database.GetService<IDatabaseCreator>();
+        if (!await databaseCreator.ExistsAsync(cancellationToken))
+            await databaseCreator.EnsureCreatedAsync(cancellationToken);
+
+        if (await dbContext.TableExistsAsync<TEntity>(cancellationToken)) return;
+        await databaseCreator.CreateTablesAsync(cancellationToken);
+    }
 
     public static async Task<DbConnection> GetDbConnection(this DbContext dbContext,
         CancellationToken cancellationToken = default)
@@ -33,6 +48,10 @@ public static class DbContextHelpers
         return (schema, tableName);
     }
 
+    private static bool IsSqlServer(this DbContext context) =>
+        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+            StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     ///     Check whether a particular table of entity is exited or not.
     /// </summary>
@@ -54,20 +73,5 @@ public static class DbContextHelpers
         }
     }
 
-    /// <summary>
-    ///     Create Table for Entity this is not migration so you need to ensure to call this methods once only.
-    /// </summary>
-    /// <param name="dbContext"></param>
-    /// <param name="cancellationToken"></param>
-    /// <typeparam name="TEntity"></typeparam>
-    public static async Task CreateTableAsync<TEntity>(this DbContext dbContext,
-        CancellationToken cancellationToken = default) where TEntity : class
-    {
-        var databaseCreator = (RelationalDatabaseCreator)dbContext.Database.GetService<IDatabaseCreator>();
-        if (!await databaseCreator.ExistsAsync(cancellationToken))
-            await databaseCreator.EnsureCreatedAsync(cancellationToken);
-
-        if (await dbContext.TableExistsAsync<TEntity>(cancellationToken)) return;
-        await databaseCreator.CreateTablesAsync(cancellationToken);
-    }
+    #endregion
 }

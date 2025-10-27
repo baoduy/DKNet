@@ -5,6 +5,15 @@
 /// </summary>
 public static class DateTimeExtensions
 {
+    #region Methods
+
+    /// <summary>
+    ///     Determines the quarter of the year for the given date.
+    /// </summary>
+    /// <param name="date">The date to determine the quarter for.</param>
+    /// <returns>The quarter of the year (1, 2, 3, or 4).</returns>
+    public static int InQuarter(this DateTime date) => (date.Month - 1) / 3 + 1;
+
     /// <summary>
     ///     Returns the last day of the month for the given date.
     /// </summary>
@@ -24,10 +33,5 @@ public static class DateTimeExtensions
             DateTimeKind.Local);
     }
 
-    /// <summary>
-    ///     Determines the quarter of the year for the given date.
-    /// </summary>
-    /// <param name="date">The date to determine the quarter for.</param>
-    /// <returns>The quarter of the year (1, 2, 3, or 4).</returns>
-    public static int InQuarter(this DateTime date) => (date.Month - 1) / 3 + 1;
+    #endregion
 }

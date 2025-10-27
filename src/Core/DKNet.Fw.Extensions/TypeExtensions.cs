@@ -6,6 +6,11 @@
 /// </summary>
 public static class TypeExtensions
 {
+    #region Methods
+
+    public static bool IsAssignableFrom<TType>(this Type type) => type.IsAssignableFrom(typeof(TType));
+    public static bool IsAssignableTo<TType>(this Type type) => type.IsAssignableTo(typeof(TType));
+
     /// <summary>
     ///     Determines whether the specified type implements or inherits from the given matching type.
     /// </summary>
@@ -47,9 +52,6 @@ public static class TypeExtensions
     /// </returns>
     public static bool IsImplementOf<T>(this Type type) => type.IsImplementOf(typeof(T));
 
-    public static bool IsAssignableFrom<TType>(this Type type) => type.IsAssignableFrom(typeof(TType));
-    public static bool IsAssignableTo<TType>(this Type type) => type.IsAssignableTo(typeof(TType));
-
     /// <summary>
     ///     Determines whether the specified type is a numeric type.
     /// </summary>
@@ -83,4 +85,6 @@ public static class TypeExtensions
     ///     <c>true</c> if the object is of a numeric type; otherwise, <c>false</c>.
     /// </returns>
     public static bool IsNumericType(this object? @this) => @this?.GetType().IsNumericType() ?? false;
+
+    #endregion
 }

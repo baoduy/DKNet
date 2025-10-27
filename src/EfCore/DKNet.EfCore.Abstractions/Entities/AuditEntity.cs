@@ -13,6 +13,8 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public interface IAuditedProperties
 {
+    #region Properties
+
     /// <summary>
     ///     Gets the identifier of the user who created the entity.
     /// </summary>
@@ -38,6 +40,8 @@ public interface IAuditedProperties
     /// </summary>
     [IgnoreAuditLog]
     DateTimeOffset? UpdatedOn { get; }
+
+    #endregion
 }
 
 /// <summary>
@@ -50,6 +54,8 @@ public interface IAuditedProperties
 /// </remarks>
 public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties
 {
+    #region Methods
+
     /// <summary>
     ///     Sets the creation audit information for the entity.
     /// </summary>
@@ -63,6 +69,8 @@ public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties
     /// <param name="userName">The identifier of the updating user.</param>
     /// <param name="updatedOn">Optional update timestamp.</param>
     void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null);
+
+    #endregion
 }
 
 /// <summary>
@@ -80,6 +88,8 @@ public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties
 public abstract class AuditedEntity<TKey> : Entity<TKey>,
     IAuditedEntity<TKey>
 {
+    #region Constructors
+
     protected AuditedEntity()
     {
     }
@@ -88,9 +98,9 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     {
     }
 
-    [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
+    #endregion
 
-    [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
+    #region Properties
 
     /// <summary>
     ///     Gets the user who created this entity.
@@ -103,6 +113,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// </summary>
     public DateTimeOffset CreatedOn { get; private set; }
 
+    [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
+
+    [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
+
     /// <summary>
     ///     Gets the user who last modified this entity.
     /// </summary>
@@ -113,6 +127,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     ///     Gets the timestamp when this entity was last modified.
     /// </summary>
     public DateTimeOffset? UpdatedOn { get; private set; }
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Sets the creation audit information for this entity.
@@ -142,6 +160,8 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
         UpdatedBy = userName;
         UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
     }
+
+    #endregion
 }
 
 /// <summary>
@@ -150,6 +170,8 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
 /// </summary>
 public abstract class AuditedEntity : AuditedEntity<Guid>
 {
+    #region Constructors
+
     protected AuditedEntity()
     {
     }
@@ -157,4 +179,6 @@ public abstract class AuditedEntity : AuditedEntity<Guid>
     protected AuditedEntity(Guid id) : base(id)
     {
     }
+
+    #endregion
 }

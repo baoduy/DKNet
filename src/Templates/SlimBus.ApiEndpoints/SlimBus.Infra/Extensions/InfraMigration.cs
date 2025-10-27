@@ -6,6 +6,8 @@ namespace SlimBus.Infra.Extensions;
 [ExcludeFromCodeCoverage]
 public static class InfraMigration
 {
+    #region Methods
+
     public static async Task MigrateDb(string connectionString)
     {
         //Db migration
@@ -18,4 +20,6 @@ public static class InfraMigration
 
         // Data seeding can be added here when needed (IDataSeedingConfiguration has limitations with owned types)
     }
+
+    #endregion
 }

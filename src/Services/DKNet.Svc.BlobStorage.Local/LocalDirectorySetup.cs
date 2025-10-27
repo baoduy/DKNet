@@ -7,6 +7,16 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class LocalDirectorySetup
 {
+    #region Methods
+
+    public static IServiceCollection AddLocalDirectoryBlobService(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        return services
+            .Configure<LocalDirectoryOptions>(o => configuration.GetSection(LocalDirectoryOptions.Name).Bind(o))
+            .AddScoped<IBlobService, LocalBlobService>();
+    }
+
     public static bool IsDirectory(this string path)
     {
         try
@@ -24,11 +34,5 @@ public static class LocalDirectorySetup
         }
     }
 
-    public static IServiceCollection AddLocalDirectoryBlobService(this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        return services
-            .Configure<LocalDirectoryOptions>(o => configuration.GetSection(LocalDirectoryOptions.Name).Bind(o))
-            .AddScoped<IBlobService, LocalBlobService>();
-    }
+    #endregion
 }

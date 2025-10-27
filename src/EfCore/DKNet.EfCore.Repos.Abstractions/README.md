@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Repository pattern abstractions for Entity Framework Core, providing clean separation between read and write operations with strongly-typed interfaces. This package defines the contracts for data access operations following CQRS principles and Domain-Driven Design patterns.
+Repository pattern abstractions for Entity Framework Core, providing clean separation between read and write operations
+with strongly-typed interfaces. This package defines the contracts for data access operations following CQRS principles
+and Domain-Driven Design patterns.
 
 ## Features
 
@@ -419,16 +421,19 @@ public class BusinessService
 ## Design Principles
 
 ### CQRS Separation
+
 - **IReadRepository**: Optimized for queries and projections
 - **IWriteRepository**: Focused on data modifications and transactions
 - **IRepository**: Combines both when full access is needed
 
 ### Entity Framework Integration
+
 - Direct integration with EF Core change tracking
 - Transaction support through IDbContextTransaction
 - IQueryable support for deferred execution
 
 ### Testability
+
 - Interface-based design for easy mocking
 - Separation of concerns between read and write operations
 - Clear contracts for business logic testing
@@ -465,4 +470,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

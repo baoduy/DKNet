@@ -7,7 +7,13 @@ namespace SlimBus.Infra.Features.Profiles.ExternalEvents;
 internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCreatedEmailNotificationHandler> logger)
     : Fluents.EventsConsumers.IHandler<ProfileCreatedEvent>
 {
+    #region Properties
+
     public static bool Called { get; set; }
+
+    #endregion
+
+    #region Methods
 
     public Task OnHandle(ProfileCreatedEvent notification, CancellationToken cancellationToken)
     {
@@ -15,4 +21,6 @@ internal sealed class ProfileCreatedEmailNotificationHandler(ILogger<ProfileCrea
         logger.LogInformation("ProfileCreatedEmailNotificationHandler called with Id: {Id}", notification.Id);
         return Task.CompletedTask;
     }
+
+    #endregion
 }

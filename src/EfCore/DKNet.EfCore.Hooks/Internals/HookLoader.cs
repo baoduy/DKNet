@@ -6,8 +6,7 @@ namespace DKNet.EfCore.Hooks.Internals;
 
 internal class HookFactory(IServiceProvider provider)
 {
-    private static bool IsBaseTypeAvailable(Type type) =>
-        type.BaseType is not null && type.BaseType.IsClass && type.BaseType != typeof(object);
+    #region Methods
 
     /// <summary>
     ///     Load all hooks keyed names for the nested DbContext.
@@ -29,6 +28,9 @@ internal class HookFactory(IServiceProvider provider)
         return [.. name];
     }
 
+    private static bool IsBaseTypeAvailable(Type type) =>
+        type.BaseType is not null && type.BaseType.IsClass && type.BaseType != typeof(object);
+
     /// <summary>
     ///     Load all hooks for the nested DbContext.
     /// </summary>
@@ -45,4 +47,6 @@ internal class HookFactory(IServiceProvider provider)
 
         return (beforeSaveHooks, afterSaveHooks);
     }
+
+    #endregion
 }

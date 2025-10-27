@@ -6,14 +6,20 @@ namespace EfCore.Extensions.Tests;
 // Test global query filter register
 public class TestGlobalQueryFilter : IGlobalModelBuilder
 {
+    #region Methods
+
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
         // Implementation for testing
     }
+
+    #endregion
 }
 
 public class EfCoreSetupTests
 {
+    #region Methods
+
     [Fact]
     public void AddGlobalModelBuilderRegister_ShouldAddToGlobalQueryFilters()
     {
@@ -51,4 +57,6 @@ public class EfCoreSetupTests
         Should.Throw<ArgumentNullException>(() =>
             ((DbContextOptionsBuilder)null!).UseAutoConfigModel([typeof(MyDbContext).Assembly]));
     }
+
+    #endregion
 }

@@ -6,6 +6,8 @@ namespace SlimBus.Domains.Features.Profiles.Entities;
 [Owned]
 public class Company
 {
+    #region Constructors
+
     public Company(string name, string uen, string abn, string arbn, string can)
     {
         Name = name;
@@ -19,6 +21,10 @@ public class Company
     {
     }
 
+    #endregion
+
+    #region Properties
+
     [MaxLength(50)] public string? ABN { get; private set; }
 
     [MaxLength(50)] public string? ARBN { get; private set; }
@@ -28,4 +34,6 @@ public class Company
     [MaxLength(100)] [Required] public string Name { get; private set; } = null!;
 
     [MaxLength(100)] [Required] public string UEN { get; private set; } = null!;
+
+    #endregion
 }

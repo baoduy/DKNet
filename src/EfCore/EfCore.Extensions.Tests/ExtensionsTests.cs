@@ -2,8 +2,13 @@
 
 public class ExtensionsTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
+
+    #region Methods
 
     [Fact]
     public void TestGetKeys()
@@ -26,4 +31,6 @@ public class ExtensionsTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
         _db.GetPrimaryKeyValues(user).Any()
             .ShouldBeFalse();
     }
+
+    #endregion
 }

@@ -2,6 +2,8 @@
 
 public interface ITokenExtractor
 {
+    #region Methods
+
     /// <summary>
     ///     Extract token from string.
     /// </summary>
@@ -15,11 +17,19 @@ public interface ITokenExtractor
     /// <param name="templateString"></param>
     /// <returns></returns>
     Task<IReadOnlyCollection<IToken>> ExtractAsync(string templateString);
+
+    #endregion
 }
 
 internal sealed class TokenExtractor(ITokenDefinition definition) : ITokenExtractor
 {
+    #region Properties
+
     private ITokenDefinition Definition { get; } = definition ?? throw new ArgumentNullException(nameof(definition));
+
+    #endregion
+
+    #region Methods
 
     public IReadOnlyCollection<IToken> Extract(string templateString) => ExtractCore(templateString);
 
@@ -84,4 +94,6 @@ internal sealed class TokenExtractor(ITokenDefinition definition) : ITokenExtrac
 
         return list;
     }
+
+    #endregion
 }

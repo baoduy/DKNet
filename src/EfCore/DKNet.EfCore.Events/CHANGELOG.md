@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README documentation with usage examples
 - Standardized changelog following Keep a Changelog format
 - Enhanced API documentation for all public interfaces and classes
@@ -15,19 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complex domain event scenarios with aggregate roots
 
 ### Changed
+
 - Enhanced README with detailed event lifecycle and best practices
 - Improved code examples with real-world scenarios
 
 ### Deprecated
+
 - N/A
 
 ### Removed
+
 - N/A
 
 ### Fixed
+
 - N/A
 
 ### Security
+
 - N/A
 
 ## Migration Guide
@@ -39,18 +45,24 @@ This section will be updated as breaking changes are introduced in future versio
 Currently, all APIs are stable and no migration is required.
 
 #### Event Publisher
+
 All event publisher interfaces maintain backward compatibility:
+
 - `IEventPublisher`
 - `AddEventPublisher<TDbContext, TImplementation>()`
 
 #### Entity Events
+
 All entity event interfaces maintain backward compatibility:
+
 - `IEventEntity` (from DKNet.EfCore.Abstractions)
 - `EntityEventItem`
 - Event queuing and clearing methods
 
 #### Event Handling
+
 All event handling patterns maintain backward compatibility:
+
 - Domain event patterns
 - Event handler registration
 - Automatic event publishing during SaveChanges

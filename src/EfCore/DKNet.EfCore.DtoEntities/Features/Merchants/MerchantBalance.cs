@@ -5,6 +5,8 @@ namespace DKNet.EfCore.DtoEntities.Features.Merchants;
 
 public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
 {
+    #region Constructors
+
     private MerchantBalance(
         Guid merchantId,
         Merchant merchant,
@@ -26,20 +28,40 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
         Merchant = null!;
     }
 
-    public Merchant Merchant { get; private set; }
+    #endregion
 
-    public Guid MerchantId { get; private set; }
-
-    public decimal ReservedAmount { get; private set; }
+    #region Properties
 
     //public decimal TotalAmount { get; private set; }
     public decimal AvailableAmount { get; private set; }
-    public decimal FeeAmount { get; private set; }
-    public decimal PendingAmount { get; private set; }
     public int AvailableCount { get; private set; }
-    public int PendingCount { get; private set; }
 
     [MaxLength(3)] public string Currency { get; private set; }
+    public decimal FeeAmount { get; private set; }
+
+    public Merchant Merchant { get; private set; }
+
+    public Guid MerchantId { get; private set; }
+    public decimal PendingAmount { get; private set; }
+    public int PendingCount { get; private set; }
+
+    public decimal ReservedAmount { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public static MerchantBalance Create(
+        Guid merchantId,
+        Merchant merchant,
+        string currency,
+        string byUser) =>
+        new(
+            merchantId,
+            merchant,
+            currency,
+            byUser
+        );
 
     public void SetAvailable(int count, decimal amount)
     {
@@ -58,15 +80,5 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
         ReservedAmount = amount;
     }
 
-    public static MerchantBalance Create(
-        Guid merchantId,
-        Merchant merchant,
-        string currency,
-        string byUser) =>
-        new(
-            merchantId,
-            merchant,
-            currency,
-            byUser
-        );
+    #endregion
 }

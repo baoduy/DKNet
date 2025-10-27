@@ -6,6 +6,8 @@ internal sealed class GlobalExceptionHandler(
     IProblemDetailsService problemDetailsService,
     ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
+    #region Methods
+
     public ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
         CancellationToken cancellationToken)
     {
@@ -25,4 +27,6 @@ internal sealed class GlobalExceptionHandler(
         return problemDetailsService.TryWriteAsync(new ProblemDetailsContext
             { HttpContext = httpContext, ProblemDetails = problem, Exception = exception });
     }
+
+    #endregion
 }

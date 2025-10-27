@@ -2,6 +2,8 @@
 
 public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixture<EvenPublisherFixture>
 {
+    #region Methods
+
     [Fact]
     public async Task AfterSaveEventTestAsync()
     {
@@ -20,4 +22,6 @@ public class TestEventPublisherTests(EvenPublisherFixture provider) : IClassFixt
         TestEventPublisher.Events.ShouldNotBeEmpty();
         TestEventPublisher.Events.Any(e => e is EntityAddedEvent).ShouldBeTrue();
     }
+
+    #endregion
 }

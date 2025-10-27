@@ -2,11 +2,16 @@
 
 ## What is DtoGenerator
 
-DKNet.EfCore.DtoGenerator is a lightweight Roslyn Incremental Source Generator that automatically creates immutable DTO (Data Transfer Object) types from your EF Core entities or any POCO classes at compile time. It eliminates the need to manually write repetitive DTO classes while maintaining type safety and reducing boilerplate code.
+DKNet.EfCore.DtoGenerator is a lightweight Roslyn Incremental Source Generator that automatically creates immutable
+DTO (Data Transfer Object) types from your EF Core entities or any POCO classes at compile time. It eliminates the need
+to manually write repetitive DTO classes while maintaining type safety and reducing boilerplate code.
 
-The generator synthesizes matching `public init` properties for every public instance readable property on the entity (excluding indexers & statics). **It also automatically copies validation attributes** from entity properties to DTO properties, ensuring that validation rules are consistently applied across your application layers.
+The generator synthesizes matching `public init` properties for every public instance readable property on the entity (
+excluding indexers & statics). **It also automatically copies validation attributes** from entity properties to DTO
+properties, ensuring that validation rules are consistently applied across your application layers.
 
-When Mapster is available, it uses `TypeAdapter.Adapt` for efficient mapping; otherwise, it falls back to property-by-property initialization.
+When Mapster is available, it uses `TypeAdapter.Adapt` for efficient mapping; otherwise, it falls back to
+property-by-property initialization.
 
 ## NuGet Package
 
@@ -39,13 +44,16 @@ To enable and configure the source generator, add the following properties to yo
 </PropertyGroup>
 ```
 
-These settings enable the generator to emit generated files in the `obj/Generated` directory and ensure the analyzer runs correctly on every build.
+These settings enable the generator to emit generated files in the `obj/Generated` directory and ensure the analyzer
+runs correctly on every build.
 
 ## DTO Declaration
 
-To generate a DTO from an entity, create an empty partial record (recommended) or class/struct and apply the `[GenerateDto]` attribute:
+To generate a DTO from an entity, create an empty partial record (recommended) or class/struct and apply the
+`[GenerateDto]` attribute:
 
 **Example Entity:**
+
 ```csharp
 public class MerchantBalance
 {
@@ -57,6 +65,7 @@ public class MerchantBalance
 ```
 
 **DTO Declaration:**
+
 ```csharp
 using DKNet.EfCore.DtoGenerator;
 
@@ -64,13 +73,16 @@ using DKNet.EfCore.DtoGenerator;
 public partial record BalanceDto;
 ```
 
-The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping helper methods.
+The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping
+helper methods.
 
 ## Validation Attributes
 
-**NEW:** The generator automatically copies all validation attributes from entity properties to DTO properties. This ensures consistent validation rules across your application layers without manual duplication.
+**NEW:** The generator automatically copies all validation attributes from entity properties to DTO properties. This
+ensures consistent validation rules across your application layers without manual duplication.
 
 **Supported Validation Attributes:**
+
 - `[MaxLength]`
 - `[StringLength]` (including MinimumLength parameter)
 - `[Required]`
@@ -81,6 +93,7 @@ The generator will automatically create a `BalanceDto.g.cs` file with all proper
 - All other `System.ComponentModel.DataAnnotations` attributes
 
 **Example Entity with Validation:**
+
 ```csharp
 public class Product
 {
@@ -102,6 +115,7 @@ public class Product
 ```
 
 **Generated DTO with Copied Attributes:**
+
 ```csharp
 public partial record ProductDto
 {
@@ -122,7 +136,8 @@ public partial record ProductDto
 }
 ```
 
-The copied validation attributes work seamlessly with ASP.NET Core model validation, allowing you to validate DTOs using `ModelState.IsValid` or `Validator.TryValidateObject()`.
+The copied validation attributes work seamlessly with ASP.NET Core model validation, allowing you to validate DTOs using
+`ModelState.IsValid` or `Validator.TryValidateObject()`.
 
 ### Excluding Properties
 
@@ -135,18 +150,21 @@ public partial record BalanceSummaryDto;
 
 ### Including Only Specific Properties
 
-Alternatively, you can specify only the properties you want to include using the `Include` parameter. When `Include` is provided, only those properties will be generated:
+Alternatively, you can specify only the properties you want to include using the `Include` parameter. When `Include` is
+provided, only those properties will be generated:
 
 ```csharp
 [GenerateDto(typeof(MerchantBalance), Include = new[] { "MerchantId", "Balance" })]
 public partial record BalanceOnlyDto;
 ```
 
-**Note:** `Include` and `Exclude` are mutually exclusive. If you specify `Include`, the `Exclude` parameter will be ignored, and a warning will be generated if both are provided.
+**Note:** `Include` and `Exclude` are mutually exclusive. If you specify `Include`, the `Exclude` parameter will be
+ignored, and a warning will be generated if both are provided.
 
 ### Ignoring Complex Types (Entity Navigation Properties)
 
-Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This is useful for creating simple DTOs that only contain primitive and value type properties:
+Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This
+is useful for creating simple DTOs that only contain primitive and value type properties:
 
 ```csharp
 // Assuming Customer has Orders (List<Order>) and PrimaryAddress (Address) navigation properties
@@ -155,10 +173,12 @@ public partial record CustomerSimpleDto;
 ```
 
 When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
+
 - Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
 - Collection properties of entities (e.g., `public List<Order> Orders { get; set; }`)
 
-**Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered part of the entity, not navigation properties.
+**Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered
+part of the entity, not navigation properties.
 
 You can combine `IgnoreComplexType` with `Exclude` to exclude additional properties:
 
@@ -168,7 +188,8 @@ public partial record CustomerBasicDto;
 // Generated DTO will exclude Orders, PrimaryAddress (complex types) AND Email
 ```
 
-However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation properties if needed:
+However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation
+properties if needed:
 
 ```csharp
 // Orders navigation property will be included even though IgnoreComplexType = true
@@ -195,7 +216,8 @@ public partial record BalanceDto
 
 ## Copy Generated DTOs to Project Folder
 
-For verification and debugging purposes, you can copy generated DTOs to your project folder using a custom MSBuild target. Add the following to your project file (`.csproj`):
+For verification and debugging purposes, you can copy generated DTOs to your project folder using a custom MSBuild
+target. Add the following to your project file (`.csproj`):
 
 ```xml
 <!-- Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
@@ -220,6 +242,7 @@ For verification and debugging purposes, you can copy generated DTOs to your pro
 ```
 
 This MSBuild target will:
+
 - Copy all generated `*Dto.g.cs` files to a `GeneratedDtos` folder in your project
 - Exclude these files from compilation to avoid duplicates
 - Keep them visible in Solution Explorer for inspection
@@ -300,7 +323,8 @@ TypeAdapterConfig<MerchantBalance, BalanceDto>
     .Ignore(dest => dest.Id);
 ```
 
-For EF Core query projections, use Mapster's `.ProjectToType<T>()` extension instead of `FromEntity` to enable database-side translation:
+For EF Core query projections, use Mapster's `.ProjectToType<T>()` extension instead of `FromEntity` to enable
+database-side translation:
 
 ```csharp
 var balances = await dbContext.MerchantBalances
@@ -310,15 +334,19 @@ var balances = await dbContext.MerchantBalances
 
 ## Additional Notes
 
-- **Navigation Properties**: 
-  - By default, navigation and collection properties are included as shallow copies in DTOs.
-  - Use `IgnoreComplexType = true` to automatically exclude all entity navigation properties (both single and collection).
-  - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned types, not navigations.
-  - Customize via Mapster configuration or override in partial DTO for more control.
-- **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy compiler null-state analysis.
+- **Navigation Properties**:
+    - By default, navigation and collection properties are included as shallow copies in DTOs.
+    - Use `IgnoreComplexType = true` to automatically exclude all entity navigation properties (both single and
+      collection).
+    - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned
+      types, not navigations.
+    - Customize via Mapster configuration or override in partial DTO for more control.
+- **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy
+  compiler null-state analysis.
 - **Generic Entities**: Limited support for generic entities (non-generic DTO shells only).
 - **Diagnostics**: `DKDTOGEN001` warning is reported if generation fails for a target type; build continues.
-- **Validation Attributes**: All `System.ComponentModel.DataAnnotations` attributes are automatically copied from entity properties to DTO properties, ensuring consistent validation across layers.
+- **Validation Attributes**: All `System.ComponentModel.DataAnnotations` attributes are automatically copied from entity
+  properties to DTO properties, ensuring consistent validation across layers.
 
 ## Local Development
 
@@ -351,4 +379,5 @@ For local consumption in another project:
 
 ---
 
-Happy generating! For more information and complete documentation, visit the [DKNet Framework Documentation](https://github.com/baoduy/DKNet/tree/dev/docs).
+Happy generating! For more information and complete documentation, visit
+the [DKNet Framework Documentation](https://github.com/baoduy/DKNet/tree/dev/docs).

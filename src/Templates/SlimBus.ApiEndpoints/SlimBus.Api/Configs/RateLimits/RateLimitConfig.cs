@@ -8,7 +8,13 @@ namespace SlimBus.Api.Configs.RateLimits;
 [ExcludeFromCodeCoverage]
 internal static class RateLimitConfig
 {
+    #region Fields
+
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Adds rate limiting services to the service collection
@@ -64,4 +70,6 @@ internal static class RateLimitConfig
         app.UseRateLimiter();
         return app;
     }
+
+    #endregion
 }

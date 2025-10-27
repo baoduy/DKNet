@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Enhanced SlimMessageBus integration with Entity Framework Core, providing fluent interfaces for CQRS patterns, automatic transaction management, and result-based error handling. This package bridges SlimMessageBus with EF Core for seamless domain-driven applications.
+Enhanced SlimMessageBus integration with Entity Framework Core, providing fluent interfaces for CQRS patterns, automatic
+transaction management, and result-based error handling. This package bridges SlimMessageBus with EF Core for seamless
+domain-driven applications.
 
 ## Features
 
@@ -416,4 +418,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

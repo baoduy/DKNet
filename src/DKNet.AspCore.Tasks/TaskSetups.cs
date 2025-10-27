@@ -7,15 +7,13 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class TaskSetups
 {
+    #region Fields
+
     private static bool _added;
 
-    private static IServiceCollection AddHost(this IServiceCollection services)
-    {
-        if (_added) return services;
-        services.AddHostedService<BackgroundJobHost>();
-        _added = true;
-        return services;
-    }
+    #endregion
+
+    #region Methods
 
     public static IServiceCollection AddBackgroundJob<TJob>(this IServiceCollection services)
         where TJob : class, IBackgroundTask
@@ -30,4 +28,14 @@ public static class TaskSetups
                 .WithScopedLifetime());
         return services;
     }
+
+    private static IServiceCollection AddHost(this IServiceCollection services)
+    {
+        if (_added) return services;
+        services.AddHostedService<BackgroundJobHost>();
+        _added = true;
+        return services;
+    }
+
+    #endregion
 }

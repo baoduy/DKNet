@@ -7,6 +7,8 @@ namespace DKNet.Fw.Extensions;
 /// </summary>
 public static class StringExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Extracts the first sequence of numeric characters from the input string.
     /// </summary>
@@ -51,4 +53,6 @@ public static class StringExtensions
 
         return type == typeof(string) || type.IsValueType;
     }
+
+    #endregion
 }

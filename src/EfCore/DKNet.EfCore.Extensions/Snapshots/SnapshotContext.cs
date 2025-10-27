@@ -6,6 +6,15 @@ namespace DKNet.EfCore.Extensions.Snapshots;
 /// </summary>
 public sealed class SnapshotContext : IAsyncDisposable, IDisposable
 {
+    #region Fields
+
+    private DbContext? _dbContext;
+    private readonly List<SnapshotEntityEntry> _snapshotEntities;
+
+    #endregion
+
+    #region Constructors
+
     public SnapshotContext(DbContext context)
     {
         _dbContext = context ?? throw new ArgumentNullException(nameof(context));
@@ -13,8 +22,9 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
         _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
     }
 
-    private DbContext? _dbContext;
-    private readonly List<SnapshotEntityEntry> _snapshotEntities;
+    #endregion
+
+    #region Properties
 
     public DbContext DbContext => _dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
 
@@ -23,11 +33,9 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
     /// </summary>
     public IReadOnlyCollection<SnapshotEntityEntry> Entities => _snapshotEntities;
 
-    public ValueTask DisposeAsync()
-    {
-        Dispose();
-        return ValueTask.CompletedTask;
-    }
+    #endregion
+
+    #region Methods
 
     public void Dispose()
     {
@@ -35,4 +43,12 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
         //DO NOT dispose DbContext, it is not owned by this class.
         _dbContext = null;
     }
+
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    #endregion
 }

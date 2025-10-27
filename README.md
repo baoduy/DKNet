@@ -7,11 +7,13 @@
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
 
-A comprehensive .NET framework designed to enhance enterprise application development using **Domain-Driven Design (DDD)** principles and **Onion Architecture** patterns.
+A comprehensive .NET framework designed to enhance enterprise application development using **Domain-Driven Design (DDD)
+** principles and **Onion Architecture** patterns.
 
 ## 🚀 Quick Start
 
 ### Installation
+
 ```bash
 # Core framework extensions
 dotnet add package DKNet.Fw.Extensions
@@ -28,6 +30,7 @@ dotnet add package DKNet.Svc.BlobStorage.AzureStorage
 ```
 
 ### Get Started with Template
+
 ```bash
 # Use the complete SlimBus API template
 git clone https://github.com/baoduy/DKNet.git
@@ -47,29 +50,30 @@ dotnet run --project SlimBus.Api
 
 ## 📋 Core Packages
 
-| Package | Description | NuGet |
-|---------|-------------|--------|
-| **DKNet.Fw.Extensions** | Core framework utilities and extensions | [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/) |
-| **DKNet.EfCore.Extensions** | Entity Framework Core enhancements | [![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/) |
-| **DKNet.SlimBus.Extensions** | CQRS and messaging integration | [![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Extensions)](https://www.nuget.org/packages/DKNet.SlimBus.Extensions/) |
+| Package                      | Description                             | NuGet                                                                                                                         |
+|------------------------------|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| **DKNet.Fw.Extensions**      | Core framework utilities and extensions | [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)           |
+| **DKNet.EfCore.Extensions**  | Entity Framework Core enhancements      | [![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/)   |
+| **DKNet.SlimBus.Extensions** | CQRS and messaging integration          | [![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Extensions)](https://www.nuget.org/packages/DKNet.SlimBus.Extensions/) |
 
 [**→ View All Packages**](docs/README.md#component-documentation)
 
 ## 📖 Documentation
 
-| Section | Description |
-|---------|-------------|
-| **[📚 Complete Documentation](docs/README.md)** | Comprehensive guides organized by functional areas |
-| **[🚀 Getting Started](docs/Getting-Started.md)** | Installation, setup, and first steps |
-| **[🏗️ Architecture Guide](docs/Architecture.md)** | Understanding DDD and Onion Architecture |
-| **[⚙️ Configuration](docs/Configuration.md)** | Setup and configuration options |
-| **[📝 Examples & Recipes](docs/Examples/README.md)** | Practical implementation examples |
-| **[📖 API Reference](docs/API-Reference.md)** | Complete API documentation |
-| **[❓ FAQ](docs/FAQ.md)** | Frequently asked questions |
+| Section                                              | Description                                        |
+|------------------------------------------------------|----------------------------------------------------|
+| **[📚 Complete Documentation](docs/README.md)**      | Comprehensive guides organized by functional areas |
+| **[🚀 Getting Started](docs/Getting-Started.md)**    | Installation, setup, and first steps               |
+| **[🏗️ Architecture Guide](docs/Architecture.md)**   | Understanding DDD and Onion Architecture           |
+| **[⚙️ Configuration](docs/Configuration.md)**        | Setup and configuration options                    |
+| **[📝 Examples & Recipes](docs/Examples/README.md)** | Practical implementation examples                  |
+| **[📖 API Reference](docs/API-Reference.md)**        | Complete API documentation                         |
+| **[❓ FAQ](docs/FAQ.md)**                             | Frequently asked questions                         |
 
 ## 🔧 Example Usage
 
 ### Domain Entity with Events
+
 ```csharp
 public class Product : AggregateRoot
 {
@@ -95,6 +99,7 @@ public class Product : AggregateRoot
 ```
 
 ### CQRS Command Handler
+
 ```csharp
 public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
 {
@@ -112,8 +117,9 @@ public class CreateProductHandler : IRequestHandler<CreateProductCommand, Produc
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](docs/Contributing.md) for details on:
+
 - Development setup
-- Coding standards  
+- Coding standards
 - Pull request process
 - Testing requirements
 
@@ -123,4 +129,5 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 ---
 
-> 💡 **New to DKNet?** Start with our [Getting Started Guide](docs/Getting-Started.md) or explore the [SlimBus Template](src/Templates/SlimBus.ApiEndpoints/README.md) for a complete working example!
+> 💡 **New to DKNet?** Start with our [Getting Started Guide](docs/Getting-Started.md) or explore
+> the [SlimBus Template](src/Templates/SlimBus.ApiEndpoints/README.md) for a complete working example!

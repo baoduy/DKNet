@@ -4,6 +4,8 @@ namespace DKNet.AspCore.SlimBus;
 
 public sealed record PagedResult<TResult>
 {
+    #region Constructors
+
     public PagedResult() => Items = [];
 
     public PagedResult(IPagedList<TResult> list)
@@ -15,9 +17,16 @@ public sealed record PagedResult<TResult>
         Items = [.. list];
     }
 
+    #endregion
+
+    #region Properties
+
+    public IList<TResult> Items { get; init; }
+    public int PageCount { get; init; }
+
     public int PageNumber { get; init; }
     public int PageSize { get; init; }
-    public int PageCount { get; init; }
     public int TotalItemCount { get; init; }
-    public IList<TResult> Items { get; init; }
+
+    #endregion
 }

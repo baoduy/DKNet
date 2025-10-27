@@ -7,6 +7,8 @@ namespace DKNet.EfCore.DtoEntities.Features.Merchants;
 [AuditLog]
 public sealed class MerchantChannel : ChannelDataBase
 {
+    #region Constructors
+
     public MerchantChannel(Guid merchantId, ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount,
         string byUser) : base(code, settlement, minAmount, maxAmount, byUser) =>
         MerchantId = merchantId;
@@ -15,6 +17,12 @@ public sealed class MerchantChannel : ChannelDataBase
     {
     }
 
+    #endregion
+
+    #region Properties
+
     public Merchant Merchant { get; private set; } = null!;
     public Guid MerchantId { get; private set; }
+
+    #endregion
 }

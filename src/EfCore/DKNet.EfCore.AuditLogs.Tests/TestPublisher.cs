@@ -4,14 +4,19 @@ namespace DKNet.EfCore.AuditLogs.Tests;
 
 public sealed class TestPublisher : IAuditLogPublisher
 {
+    #region Fields
+
     private static readonly ConcurrentBag<AuditLogEntry> _received = [];
+
+    #endregion
+
+    #region Properties
+
     public static IReadOnlyCollection<AuditLogEntry> Received => _received;
 
-    public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
-    {
-        foreach (var l in logs) _received.Add(l);
-        return Task.CompletedTask;
-    }
+    #endregion
+
+    #region Methods
 
     public static void Clear()
     {
@@ -19,4 +24,12 @@ public sealed class TestPublisher : IAuditLogPublisher
         {
         }
     }
+
+    public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
+    {
+        foreach (var l in logs) _received.Add(l);
+        return Task.CompletedTask;
+    }
+
+    #endregion
 }

@@ -6,11 +6,20 @@ namespace DKNet.RandomCreator;
 [SuppressMessage("Security", "CA5394:Do not use insecure randomness")]
 internal sealed class StringCreator(int bufferLength, StringCreatorOptions options) : IDisposable
 {
-    private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private const string DefaultNumbers = "1234567890";
-    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
+    #region Fields
+
     private readonly RandomNumberGenerator _cryptoGen = RandomNumberGenerator.Create();
     private bool _disposed;
+
+    #endregion
+
+    #region Methods
+
+    public void Dispose()
+    {
+        _cryptoGen.Dispose();
+        _disposed = true;
+    }
 
     private char[] Generate(string validChars, int length)
     {
@@ -65,9 +74,9 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
         return new string(chars);
     }
 
-    public void Dispose()
-    {
-        _cryptoGen.Dispose();
-        _disposed = true;
-    }
+    #endregion
+
+    private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private const string DefaultNumbers = "1234567890";
+    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
 }

@@ -5,9 +5,17 @@ namespace DKNet.EfCore.Abstractions.Entities;
 
 public interface ISoftDeletableEntity
 {
-    public bool IsDeleted { get; }
-    public DateTimeOffset? DeletedOn { get; }
+    #region Properties
+
     [MaxLength(250)] public string? DeletedBy { get; }
+    public DateTimeOffset? DeletedOn { get; }
+    public bool IsDeleted { get; }
+
+    #endregion
+
+    #region Methods
 
     IResultBase Delete(string byUser, DateTimeOffset? deletedOn = null);
+
+    #endregion
 }

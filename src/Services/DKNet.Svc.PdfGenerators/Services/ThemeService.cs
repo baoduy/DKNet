@@ -5,7 +5,11 @@ namespace DKNet.Svc.PdfGenerators.Services;
 
 internal class ThemeService
 {
-    private const string StyleKey = "stylePath";
+    #region Fields
+
+    private readonly ModuleOptions _options;
+
+    private readonly Theme _theme;
 
     private readonly IReadOnlyDictionary<ThemeType, ModuleInformation> _themeSourceMapping =
         new Dictionary<ThemeType, ModuleInformation>
@@ -19,8 +23,9 @@ internal class ThemeService
             { ThemeType.Latex, new ModuleInformation("https://latex.now.sh/style.css", "latex.css/style.min.css") }
         };
 
-    private readonly Theme _theme;
-    private readonly ModuleOptions _options;
+    #endregion
+
+    #region Constructors
 
     public ThemeService(Theme theme, ModuleOptions options, IConversionEvents events)
     {
@@ -37,6 +42,10 @@ internal class ThemeService
 
         events.OnTemplateModelCreatingAsync += InternalAddThemeToTemplateAsync;
     }
+
+    #endregion
+
+    #region Methods
 
     internal async Task InternalAddThemeToTemplateAsync(object sender, TemplateModelEventArgs e)
     {
@@ -56,4 +65,8 @@ internal class ThemeService
 
         await Task.CompletedTask;
     }
+
+    #endregion
+
+    private const string StyleKey = "stylePath";
 }

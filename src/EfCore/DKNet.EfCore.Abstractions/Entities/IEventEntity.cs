@@ -9,6 +9,8 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public interface IEventEntity
 {
+    #region Methods
+
     /// <summary>
     ///     Adds a domain event object to the event queue for later processing.
     /// </summary>
@@ -35,4 +37,6 @@ public interface IEventEntity
     ///     The second element contains event types that need to be instantiated.
     /// </remarks>
     (object[] events, Type[] eventTypes) GetEventsAndClear();
+
+    #endregion
 }

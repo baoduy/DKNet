@@ -7,6 +7,8 @@ namespace System.Collections.Generic;
 /// </summary>
 public static class AsyncEnumerableExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Convert the specified sequence of asynchronous items into a single list.
     /// </summary>
@@ -23,4 +25,6 @@ public static class AsyncEnumerableExtensions
             list.Add(item);
         return list;
     }
+
+    #endregion
 }

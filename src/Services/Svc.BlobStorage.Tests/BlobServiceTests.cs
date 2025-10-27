@@ -2,40 +2,7 @@ namespace Svc.BlobStorage.Tests;
 
 public class BlobServiceTests
 {
-    private class TestBlobService : BlobService
-    {
-        public TestBlobService(BlobServiceOptions options) : base(options)
-        {
-        }
-
-        public override Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        public override Task<BlobDataResult?>
-            GetAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
-            CancellationToken cancellationToken = default)
-        {
-            // Return empty enumerable for testing
-            await Task.CompletedTask;
-            yield break;
-        }
-
-        public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
-            CancellationToken cancellationToken = default) => throw new NotImplementedException();
-
-        // Expose protected methods for testing
-        public string TestGetBlobLocation(BlobRequest item) => GetBlobLocation(item);
-        public void TestValidateFile(BlobData item) => ValidateFile(item);
-    }
+    #region Methods
 
     [Theory]
     [InlineData("file.txt", "/file.txt")]
@@ -58,18 +25,31 @@ public class BlobServiceTests
     }
 
     [Fact]
-    public void ValidateFile_WithValidFile_ShouldNotThrow()
+    public async Task GetItemAsync_WithNoResults_ShouldReturnNull()
+    {
+        // Arrange
+        var options = new BlobServiceOptions();
+        var service = new TestBlobService(options);
+        var request = new BlobRequest("nonexistent.txt");
+
+        // Act
+        var result = await service.GetItemAsync(request);
+
+        // Assert
+        result.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ValidateFile_WithCaseInsensitiveExtension_ShouldNotThrow()
     {
         // Arrange
         var options = new BlobServiceOptions
         {
-            IncludedExtensions = [".txt"],
-            MaxFileNameLength = 100,
-            MaxFileSizeInMb = 10
+            IncludedExtensions = [".txt"]
         };
         var service = new TestBlobService(options);
         var data = BinaryData.FromString("test content");
-        var blobData = new BlobData("test.txt", data);
+        var blobData = new BlobData("test.TXT", data);
 
         // Act & Assert
         Should.NotThrow(() => service.TestValidateFile(blobData));
@@ -94,40 +74,6 @@ public class BlobServiceTests
     }
 
     [Fact]
-    public void ValidateFile_WithNoExtension_ShouldThrowFileLoadException()
-    {
-        // Arrange
-        var options = new BlobServiceOptions
-        {
-            IncludedExtensions = [".txt"]
-        };
-        var service = new TestBlobService(options);
-        var data = BinaryData.FromString("test content");
-        var blobData = new BlobData("testfile", data);
-
-        // Act & Assert
-        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
-        exception.Message.ShouldBe("File extension is invalid.");
-    }
-
-    [Fact]
-    public void ValidateFile_WithInvalidExtension_ShouldThrowFileLoadException()
-    {
-        // Arrange
-        var options = new BlobServiceOptions
-        {
-            IncludedExtensions = [".txt"]
-        };
-        var service = new TestBlobService(options);
-        var data = BinaryData.FromString("test content");
-        var blobData = new BlobData("test.pdf", data);
-
-        // Act & Assert
-        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
-        exception.Message.ShouldBe("File extension is invalid.");
-    }
-
-    [Fact]
     public void ValidateFile_WithFileTooLarge_ShouldThrowFileLoadException()
     {
         // Arrange
@@ -149,7 +95,7 @@ public class BlobServiceTests
     }
 
     [Fact]
-    public void ValidateFile_WithCaseInsensitiveExtension_ShouldNotThrow()
+    public void ValidateFile_WithInvalidExtension_ShouldThrowFileLoadException()
     {
         // Arrange
         var options = new BlobServiceOptions
@@ -158,10 +104,28 @@ public class BlobServiceTests
         };
         var service = new TestBlobService(options);
         var data = BinaryData.FromString("test content");
-        var blobData = new BlobData("test.TXT", data);
+        var blobData = new BlobData("test.pdf", data);
 
         // Act & Assert
-        Should.NotThrow(() => service.TestValidateFile(blobData));
+        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
+        exception.Message.ShouldBe("File extension is invalid.");
+    }
+
+    [Fact]
+    public void ValidateFile_WithNoExtension_ShouldThrowFileLoadException()
+    {
+        // Arrange
+        var options = new BlobServiceOptions
+        {
+            IncludedExtensions = [".txt"]
+        };
+        var service = new TestBlobService(options);
+        var data = BinaryData.FromString("test content");
+        var blobData = new BlobData("testfile", data);
+
+        // Act & Assert
+        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
+        exception.Message.ShouldBe("File extension is invalid.");
     }
 
     [Fact]
@@ -186,17 +150,65 @@ public class BlobServiceTests
     }
 
     [Fact]
-    public async Task GetItemAsync_WithNoResults_ShouldReturnNull()
+    public void ValidateFile_WithValidFile_ShouldNotThrow()
     {
         // Arrange
-        var options = new BlobServiceOptions();
+        var options = new BlobServiceOptions
+        {
+            IncludedExtensions = [".txt"],
+            MaxFileNameLength = 100,
+            MaxFileSizeInMb = 10
+        };
         var service = new TestBlobService(options);
-        var request = new BlobRequest("nonexistent.txt");
+        var data = BinaryData.FromString("test content");
+        var blobData = new BlobData("test.txt", data);
 
-        // Act
-        var result = await service.GetItemAsync(request);
+        // Act & Assert
+        Should.NotThrow(() => service.TestValidateFile(blobData));
+    }
 
-        // Assert
-        result.ShouldBeNull();
+    #endregion
+
+    private class TestBlobService : BlobService
+    {
+        #region Constructors
+
+        public TestBlobService(BlobServiceOptions options) : base(options)
+        {
+        }
+
+        #endregion
+
+        #region Methods
+
+        public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public override Task<BlobDataResult?>
+            GetAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+            CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+            CancellationToken cancellationToken = default)
+        {
+            // Return empty enumerable for testing
+            await Task.CompletedTask;
+            yield break;
+        }
+
+        public override Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        // Expose protected methods for testing
+        public string TestGetBlobLocation(BlobRequest item) => GetBlobLocation(item);
+        public void TestValidateFile(BlobData item) => ValidateFile(item);
+
+        #endregion
     }
 }

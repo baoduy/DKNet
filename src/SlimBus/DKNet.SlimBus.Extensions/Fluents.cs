@@ -9,48 +9,17 @@ namespace DKNet.SlimBus.Extensions;
 /// </summary>
 public static class Fluents
 {
-    public static class Requests
+    public static class EventsConsumers
     {
         /// <summary>
-        ///     Represents a request that does not return a response.
+        ///     Represents a handler for an event of type <typeparamref name="TEvent" />.
         /// </summary>
-        public interface INoResponse : IRequest<IResultBase>;
-
-        /// <summary>
-        ///     Represents a request that returns a response of type <typeparamref name="TResponse" />.
-        /// </summary>
-        /// <typeparam name="TResponse">The type of the response.</typeparam>
-        public interface IWitResponse<out TResponse> : IRequest<IResult<TResponse>>;
-
-        /// <summary>
-        ///     Represents a handler for a request that does not return a response.
-        /// </summary>
-        /// <typeparam name="TRequest">The type of the request.</typeparam>
-        public interface IHandler<in TRequest> : IRequestHandler<TRequest, IResultBase> where TRequest : INoResponse;
-
-        /// <summary>
-        ///     Represents a handler for a request that returns a response of type <typeparamref name="TResponse" />.
-        /// </summary>
-        /// <typeparam name="TRequest">The type of the request.</typeparam>
-        /// <typeparam name="TResponse">The type of the response.</typeparam>
-        public interface IHandler<in TRequest, TResponse> : IRequestHandler<TRequest, IResult<TResponse>>
-            where TRequest : IWitResponse<TResponse>;
+        /// <typeparam name="TEvent">The type of the event.</typeparam>
+        public interface IHandler<in TEvent> : IConsumer<TEvent>;
     }
 
     public static class Queries
     {
-        /// <summary>
-        ///     Represents a query that returns a response of type <typeparamref name="TResponse" />.
-        /// </summary>
-        /// <typeparam name="TResponse">The type of the response.</typeparam>
-        public interface IWitResponse<out TResponse> : IRequest<TResponse?>;
-
-        /// <summary>
-        ///     Represents a query that returns a paged response of type <typeparamref name="TResponse" />.
-        /// </summary>
-        /// <typeparam name="TResponse">The type of the response.</typeparam>
-        public interface IWitPageResponse<out TResponse> : IRequest<IPagedList<TResponse>>;
-
         /// <summary>
         ///     Represents a handler for a query that returns a response of type <typeparamref name="TResponse" />.
         /// </summary>
@@ -66,14 +35,45 @@ public static class Fluents
         /// <typeparam name="TResponse">The type of the response.</typeparam>
         public interface IPageHandler<in TQuery, TResponse> : IRequestHandler<TQuery, IPagedList<TResponse>>
             where TQuery : IWitPageResponse<TResponse>;
+
+        /// <summary>
+        ///     Represents a query that returns a paged response of type <typeparamref name="TResponse" />.
+        /// </summary>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        public interface IWitPageResponse<out TResponse> : IRequest<IPagedList<TResponse>>;
+
+        /// <summary>
+        ///     Represents a query that returns a response of type <typeparamref name="TResponse" />.
+        /// </summary>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        public interface IWitResponse<out TResponse> : IRequest<TResponse?>;
     }
 
-    public static class EventsConsumers
+    public static class Requests
     {
         /// <summary>
-        ///     Represents a handler for an event of type <typeparamref name="TEvent" />.
+        ///     Represents a handler for a request that does not return a response.
         /// </summary>
-        /// <typeparam name="TEvent">The type of the event.</typeparam>
-        public interface IHandler<in TEvent> : IConsumer<TEvent>;
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        public interface IHandler<in TRequest> : IRequestHandler<TRequest, IResultBase> where TRequest : INoResponse;
+
+        /// <summary>
+        ///     Represents a handler for a request that returns a response of type <typeparamref name="TResponse" />.
+        /// </summary>
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        public interface IHandler<in TRequest, TResponse> : IRequestHandler<TRequest, IResult<TResponse>>
+            where TRequest : IWitResponse<TResponse>;
+
+        /// <summary>
+        ///     Represents a request that does not return a response.
+        /// </summary>
+        public interface INoResponse : IRequest<IResultBase>;
+
+        /// <summary>
+        ///     Represents a request that returns a response of type <typeparamref name="TResponse" />.
+        /// </summary>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        public interface IWitResponse<out TResponse> : IRequest<IResult<TResponse>>;
     }
 }

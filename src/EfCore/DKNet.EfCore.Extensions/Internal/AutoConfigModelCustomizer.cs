@@ -4,23 +4,7 @@ namespace DKNet.EfCore.Extensions.Internal;
 
 internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IModelCustomizer
 {
-    public void Customize(ModelBuilder modelBuilder, DbContext context)
-    {
-        ConfigModelCreating(context, modelBuilder);
-        original.Customize(modelBuilder, context);
-    }
-
-    private static Assembly[] GetAssemblies(DbContext dbContext)
-    {
-        var options = dbContext.GetService<IDbContextOptions>();
-        var register = options.FindExtension<EntityAutoConfigRegister>();
-        var assemblies = register?.Assemblies ?? [];
-
-        if (assemblies.Length <= 0)
-            assemblies = [dbContext.GetType().Assembly];
-
-        return assemblies;
-    }
+    #region Methods
 
     private static void ConfigModelCreating(DbContext dbContext, ModelBuilder modelBuilder)
     {
@@ -43,4 +27,24 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         if (dbContext.IsSqlServer())
             modelBuilder.RegisterSequences(assemblies);
     }
+
+    public void Customize(ModelBuilder modelBuilder, DbContext context)
+    {
+        ConfigModelCreating(context, modelBuilder);
+        original.Customize(modelBuilder, context);
+    }
+
+    private static Assembly[] GetAssemblies(DbContext dbContext)
+    {
+        var options = dbContext.GetService<IDbContextOptions>();
+        var register = options.FindExtension<EntityAutoConfigRegister>();
+        var assemblies = register?.Assemblies ?? [];
+
+        if (assemblies.Length <= 0)
+            assemblies = [dbContext.GetType().Assembly];
+
+        return assemblies;
+    }
+
+    #endregion
 }

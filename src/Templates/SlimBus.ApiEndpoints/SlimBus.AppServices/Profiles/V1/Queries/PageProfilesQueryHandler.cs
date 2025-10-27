@@ -6,24 +6,34 @@ namespace SlimBus.AppServices.Profiles.V1.Queries;
 
 public class PageProfilePageQuery : Fluents.Queries.IWitPageResponse<ProfileResult>
 {
-    public int PageSize { get; init; } = 100;
+    #region Properties
+
     public int PageIndex { get; init; }
+    public int PageSize { get; init; } = 100;
+
+    #endregion
 }
 
 [SuppressMessage("ReSharper", "UnusedType.Global")]
 internal sealed class ProfilePageableQueryValidator : AbstractValidator<PageProfilePageQuery>
 {
+    #region Constructors
+
     public ProfilePageableQueryValidator()
     {
         RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
         RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
     }
+
+    #endregion
 }
 
 internal sealed class PageProfilesQueryHandler(
     IReadRepository<CustomerProfile> repo,
     IMapper mapper) : Fluents.Queries.IPageHandler<PageProfilePageQuery, ProfileResult>
 {
+    #region Methods
+
     public async Task<IPagedList<ProfileResult>> OnHandle(PageProfilePageQuery request,
         CancellationToken cancellationToken)
     {
@@ -32,4 +42,6 @@ internal sealed class PageProfilesQueryHandler(
             .OrderBy(p => p.Name)
             .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);
     }
+
+    #endregion
 }

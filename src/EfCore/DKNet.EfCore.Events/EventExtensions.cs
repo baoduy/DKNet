@@ -7,6 +7,8 @@ namespace DKNet.EfCore.Events;
 
 internal static class EventExtensions
 {
+    #region Methods
+
     public static IEnumerable<object> GetEventObjects(this SnapshotContext context, IMapper? mapper)
     {
         foreach (var entry in context.Entities.Where(entry => entry.Entity is IEventEntity))
@@ -35,4 +37,6 @@ internal static class EventExtensions
             }
         }
     }
+
+    #endregion
 }

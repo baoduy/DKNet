@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Entity Framework Core lifecycle hooks system providing pre and post-save interceptors for implementing cross-cutting concerns like auditing, validation, caching, and event publishing. This package enables clean separation of business logic from data access concerns.
+Entity Framework Core lifecycle hooks system providing pre and post-save interceptors for implementing cross-cutting
+concerns like auditing, validation, caching, and event publishing. This package enables clean separation of business
+logic from data access concerns.
 
 ## Features
 
@@ -589,4 +591,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

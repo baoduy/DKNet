@@ -7,17 +7,24 @@ public interface IHookDisablingContext : IDisposable, IAsyncDisposable;
 
 internal sealed class HookDisablingContext : IHookDisablingContext
 {
+    #region Fields
+
     private readonly DbContext _context;
     private static readonly ConcurrentDictionary<Type, int> DisabledHooks = [];
 
-    public static bool IsHookDisabled(DbContext context) =>
-        DisabledHooks.TryGetValue(context.GetType(), out var count) && count > 0;
+    #endregion
+
+    #region Constructors
 
     public HookDisablingContext(DbContext context)
     {
         _context = context;
         DisabledHooks.AddOrUpdate(context.GetType(), 1, (_, oldValue) => oldValue + 1);
     }
+
+    #endregion
+
+    #region Methods
 
     public void Dispose()
     {
@@ -29,4 +36,9 @@ internal sealed class HookDisablingContext : IHookDisablingContext
         Dispose();
         return ValueTask.CompletedTask;
     }
+
+    public static bool IsHookDisabled(DbContext context) =>
+        DisabledHooks.TryGetValue(context.GetType(), out var count) && count > 0;
+
+    #endregion
 }

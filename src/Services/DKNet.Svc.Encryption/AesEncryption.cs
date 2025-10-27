@@ -4,19 +4,44 @@ namespace DKNet.Svc.Encryption;
 
 public interface IAesEncryption
 {
+    #region Properties
+
     string Key { get; }
-    string EncryptString(string plainText);
+
+    #endregion
+
+    #region Methods
+
     string DecryptString(string cipherText);
+    string EncryptString(string plainText);
+
+    #endregion
 }
 
 public sealed class AesEncryption : IAesEncryption, IDisposable
 {
-    private string? _keyString;
+    #region Fields
+
     private readonly Aes _aes;
     private bool _disposed;
+    private string? _keyString;
+
+    #endregion
+
+    #region Constructors
 
     public AesEncryption(string? keyString = null) =>
         _aes = string.IsNullOrEmpty(keyString) ? CreateAes() : CreateAesFromKey(keyString);
+
+    #endregion
+
+    #region Properties
+
+    public string Key => _keyString!;
+
+    #endregion
+
+    #region Methods
 
     private Aes CreateAes()
     {
@@ -46,24 +71,6 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         return aes;
     }
 
-    public string Key => _keyString!;
-
-    public string EncryptString(string plainText)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
-
-        var encryptor = _aes.CreateEncryptor();
-        using var msEncrypt = new MemoryStream();
-        using var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
-        using (var swEncrypt = new StreamWriter(csEncrypt))
-        {
-            swEncrypt.Write(plainText);
-        }
-
-        var encrypted = msEncrypt.ToArray();
-        return Convert.ToBase64String(encrypted);
-    }
-
     public string DecryptString(string cipherText)
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
@@ -88,4 +95,22 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         if (disposing)
             _aes.Dispose();
     }
+
+    public string EncryptString(string plainText)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
+
+        var encryptor = _aes.CreateEncryptor();
+        using var msEncrypt = new MemoryStream();
+        using var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
+        using (var swEncrypt = new StreamWriter(csEncrypt))
+        {
+            swEncrypt.Write(plainText);
+        }
+
+        var encrypted = msEncrypt.ToArray();
+        return Convert.ToBase64String(encrypted);
+    }
+
+    #endregion
 }

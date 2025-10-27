@@ -8,6 +8,10 @@ namespace DKNet.Svc.Transformation;
 
 public interface ITransformerService
 {
+    #region Methods
+
+    string Transform(string templateString, params object[] parameters);
+
     /// <summary>
     ///     Transform template from TransformData and additionalData
     /// </summary>
@@ -22,30 +26,28 @@ public interface ITransformerService
     /// </returns>
     Task<string> TransformAsync(string templateString, params object[] parameters);
 
-    string Transform(string templateString, params object[] parameters);
+    #endregion
 }
 
 public sealed class TransformerService(IOptions<TransformOptions> options) : ITransformerService
 {
-    private TransformOptions _options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
+    #region Fields
 
     private readonly ConcurrentDictionary<string, object> _cacheService = new(StringComparer.Ordinal);
     private readonly TokenResolver _tokenResolver = new();
 
+    #endregion
+
+    #region Properties
+
+    private TransformOptions _options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
+
+    #endregion
+
+    #region Methods
+
     private ITokenExtractor[] GetExtractors() =>
         [.. _options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
-
-    public string Transform(string templateString, params object[] parameters)
-    {
-        var tokens = GetExtractors().Select(t => t.Extract(templateString));
-        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
-    }
-
-    public async Task<string> TransformAsync(string templateString, params object[] parameters)
-    {
-        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
-        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
-    }
 
     private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
     {
@@ -86,6 +88,18 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
         return builder.ToString();
     }
 
+    public string Transform(string templateString, params object[] parameters)
+    {
+        var tokens = GetExtractors().Select(t => t.Extract(templateString));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+    }
+
+    public async Task<string> TransformAsync(string templateString, params object[] parameters)
+    {
+        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+    }
+
     /// <summary>
     ///     Try to Get data for <see cref="IToken" /> from additionalData and then TransformData and Cache for later use.
     /// </summary>
@@ -121,4 +135,6 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
         return val;
     }
+
+    #endregion
 }

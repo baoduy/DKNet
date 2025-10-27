@@ -10,13 +10,7 @@ namespace Microsoft.AspNetCore.Builder;
 [ExcludeFromCodeCoverage]
 internal static class EndpointConfig
 {
-    private static ApiVersionSet CreateVersionSet(this WebApplication app, IEnumerable<int> versions)
-    {
-        return app.NewApiVersionSet()
-            .HasApiVersions(versions.Distinct().Select(v => new ApiVersion(v)))
-            .ReportApiVersions()
-            .Build();
-    }
+    #region Methods
 
     private static RouteGroupBuilder CreateGroup(this WebApplication app, ApiVersionSet versionSet,
         IEndpointConfig config)
@@ -43,6 +37,14 @@ internal static class EndpointConfig
         return group;
     }
 
+    private static ApiVersionSet CreateVersionSet(this WebApplication app, IEnumerable<int> versions)
+    {
+        return app.NewApiVersionSet()
+            .HasApiVersions(versions.Distinct().Select(v => new ApiVersion(v)))
+            .ReportApiVersions()
+            .Build();
+    }
+
     public static List<RouteGroupBuilder> UseEndpointConfigs(this WebApplication app)
     {
         var groupList = new List<RouteGroupBuilder>();
@@ -59,4 +61,6 @@ internal static class EndpointConfig
 
         return groupList;
     }
+
+    #endregion
 }

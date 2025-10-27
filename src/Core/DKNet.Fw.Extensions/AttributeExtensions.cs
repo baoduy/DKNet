@@ -8,6 +8,8 @@ namespace DKNet.Fw.Extensions;
 /// </summary>
 public static class AttributeExtensions
 {
+    #region Methods
+
     /// <summary>
     ///     Determines whether the provided property has the specified attribute.
     /// </summary>
@@ -44,4 +46,6 @@ public static class AttributeExtensions
         var prop = @this.GetProperty(propertyName);
         return prop?.HasAttribute<TAttribute>(inherit) == true;
     }
+
+    #endregion
 }

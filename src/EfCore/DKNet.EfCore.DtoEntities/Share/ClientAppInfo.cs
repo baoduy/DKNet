@@ -6,6 +6,10 @@ namespace DKNet.EfCore.DtoEntities.Share;
 [Owned]
 public sealed record ClientAppInfo
 {
-    public DateTimeOffset CreatedOn { get; init; }
+    #region Properties
+
     [MaxLength(50)] public required Guid ClientId { get; init; }
+    public DateTimeOffset CreatedOn { get; init; }
+
+    #endregion
 }

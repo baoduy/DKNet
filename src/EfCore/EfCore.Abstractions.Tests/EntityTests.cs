@@ -3,6 +3,8 @@ namespace EfCore.Abstractions.Tests;
 // Test entities for testing purposes
 public class TestEntity : Entity<int>, IConcurrencyEntity<byte[]>
 {
+    #region Constructors
+
     public TestEntity()
     {
     }
@@ -11,16 +13,29 @@ public class TestEntity : Entity<int>, IConcurrencyEntity<byte[]>
     {
     }
 
+    #endregion
+
+    #region Properties
+
     public string Name { get; set; } = string.Empty;
     public byte[]? RowVersion { get; private set; }
+
+    #endregion
+
+    #region Methods
+
     public void SetRowVersion(byte[] rowVersion)
     {
         RowVersion = rowVersion;
     }
+
+    #endregion
 }
 
 public class TestGuidEntity : Entity
 {
+    #region Constructors
+
     public TestGuidEntity()
     {
     }
@@ -29,21 +44,18 @@ public class TestGuidEntity : Entity
     {
     }
 
+    #endregion
+
+    #region Properties
+
     public string Name { get; set; } = string.Empty;
+
+    #endregion
 }
 
 public class EntityTests
 {
-    [Fact]
-    public void Entity_DefaultConstructor_ShouldInitializeCorrectly()
-    {
-        // Arrange & Act
-        var entity = new TestEntity();
-
-        // Assert
-        entity.Id.ShouldBe(0); // default int value
-        entity.ToString().ShouldBe("TestEntity '0'");
-    }
+    #region Methods
 
     [Fact]
     public void Entity_ConstructorWithId_ShouldSetId()
@@ -60,16 +72,14 @@ public class EntityTests
     }
 
     [Fact]
-    public void Entity_ToString_ShouldReturnCorrectFormat()
+    public void Entity_DefaultConstructor_ShouldInitializeCorrectly()
     {
-        // Arrange
-        var entity = new TestEntity(123);
-
-        // Act
-        var result = entity.ToString();
+        // Arrange & Act
+        var entity = new TestEntity();
 
         // Assert
-        result.ShouldBe("TestEntity '123'");
+        entity.Id.ShouldBe(0); // default int value
+        entity.ToString().ShouldBe("TestEntity '0'");
     }
 
     [Fact]
@@ -93,6 +103,19 @@ public class EntityTests
     }
 
     [Fact]
+    public void Entity_ToString_ShouldReturnCorrectFormat()
+    {
+        // Arrange
+        var entity = new TestEntity(123);
+
+        // Act
+        var result = entity.ToString();
+
+        // Assert
+        result.ShouldBe("TestEntity '123'");
+    }
+
+    [Fact]
     public void GuidEntity_InheritsFromEntity_ShouldHaveCorrectType()
     {
         // Arrange & Act
@@ -102,4 +125,6 @@ public class EntityTests
         entity.ShouldBeAssignableTo<Entity<Guid>>();
         entity.ShouldBeAssignableTo<IEntity<Guid>>();
     }
+
+    #endregion
 }

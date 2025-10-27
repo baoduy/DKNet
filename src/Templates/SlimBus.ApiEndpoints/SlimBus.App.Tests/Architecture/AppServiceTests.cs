@@ -7,6 +7,8 @@ namespace SlimBus.App.Tests.Architecture;
 
 public class AppServiceTests
 {
+    #region Methods
+
     [Fact]
     public void AllHandlerClassesShouldBeInternalAndSealed()
     {
@@ -45,4 +47,6 @@ public class AppServiceTests
         result.IsSuccessful.ShouldBeTrue(
             $"These handler classes should be sealed and internal: {string.Join(", ", (result.FailingTypes ?? []).Select(t => t.FullName))}");
     }
+
+    #endregion
 }

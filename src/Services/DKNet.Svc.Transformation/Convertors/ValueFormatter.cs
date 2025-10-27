@@ -10,11 +10,17 @@ namespace DKNet.Svc.Transformation.Convertors;
 /// </summary>
 public class ValueFormatter : IValueFormatter
 {
+    #region Properties
+
     public virtual string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";
 
     public virtual string IntegerFormat { get; set; } = "###,##0";
 
     public virtual string NumberFormat { get; set; } = "###,##0.00";
+
+    #endregion
+
+    #region Methods
 
     public virtual string Convert(IToken token, object? value)
     {
@@ -33,4 +39,6 @@ public class ValueFormatter : IValueFormatter
                 _ => value.ToString()!
             };
     }
+
+    #endregion
 }

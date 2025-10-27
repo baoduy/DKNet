@@ -2,8 +2,14 @@ namespace DKNet.EfCore.Extensions.Extensions;
 
 internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) : IAsyncEnumerable<T>
 {
+    #region Fields
+
     private int _currentPage;
     private bool _hasMorePages = true;
+
+    #endregion
+
+    #region Methods
 
     public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
@@ -39,10 +45,16 @@ internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) :
 
         return page;
     }
+
+    #endregion
 }
 
 public static class PageAsyncEnumeratorExtensions
 {
+    #region Methods
+
     public static IAsyncEnumerable<T> ToPageEnumerable<T>(this IQueryable<T> query, int pageSize = 100) =>
         new EfCorePageAsyncEnumerator<T>(query, pageSize);
+
+    #endregion
 }

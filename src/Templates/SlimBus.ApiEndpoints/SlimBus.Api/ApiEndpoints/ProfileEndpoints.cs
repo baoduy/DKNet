@@ -6,10 +6,16 @@ namespace SlimBus.Api.ApiEndpoints;
 
 internal sealed class ProfileV1Endpoint : IEndpointConfig
 {
+    #region Properties
+
     public string GroupEndpoint => "/profiles";
 
     public int Version => 1;
 
+    #endregion
+
+    #region Methods
+
     public void Map(RouteGroupBuilder group)
     {
         group.MapGetPage<PageProfilePageQuery, ProfileResult>("")
@@ -25,13 +31,21 @@ internal sealed class ProfileV1Endpoint : IEndpointConfig
         group.MapDelete<DeleteProfileCommand>("{id:guid}")
             .WithDescription("Delete profile by id");
     }
+
+    #endregion
 }
 
 internal sealed class ProfileV2Endpoint : IEndpointConfig
 {
+    #region Properties
+
     public string GroupEndpoint => "/profiles";
 
     public int Version => 2;
+
+    #endregion
+
+    #region Methods
 
     public void Map(RouteGroupBuilder group)
     {
@@ -48,4 +62,6 @@ internal sealed class ProfileV2Endpoint : IEndpointConfig
         group.MapDelete<DeleteProfileCommand>("{id:guid}")
             .WithDescription("Delete profile by id");
     }
+
+    #endregion
 }

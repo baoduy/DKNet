@@ -5,6 +5,8 @@ namespace SlimBus.App.Tests.Architecture;
 
 public class ApiTests
 {
+    #region Methods
+
     [Fact]
     public void AllApiClassesShouldBeInternal()
     {
@@ -62,4 +64,6 @@ public class ApiTests
         result.IsSuccessful.ShouldBeTrue(
             $"These classes should be sealed and internal: {string.Join(", ", (result.FailingTypes ?? []).Select(t => t.FullName))}");
     }
+
+    #endregion
 }

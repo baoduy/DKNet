@@ -5,6 +5,8 @@ namespace EfCore.Events.Tests;
 
 public class EventExceptionTests
 {
+    #region Methods
+
     [Fact]
     public void ConstructorSetsStatusProperty()
     {
@@ -12,17 +14,6 @@ public class EventExceptionTests
         var exception = new EventException(expectedStatus);
 
         Assert.Same(expectedStatus, exception.Status);
-    }
-
-    [Fact]
-    public void MessageMatchesStatusToString()
-    {
-        var status = Result.Fail("Validation error")
-            .WithError("Field required");
-
-        var exception = new EventException(status);
-
-        Assert.Equal(status.Errors[0].Message, exception.Message);
     }
 
     [Theory]
@@ -36,4 +27,17 @@ public class EventExceptionTests
 
         Assert.Equal(errorMessage, exception.Message);
     }
+
+    [Fact]
+    public void MessageMatchesStatusToString()
+    {
+        var status = Result.Fail("Validation error")
+            .WithError("Field required");
+
+        var exception = new EventException(status);
+
+        Assert.Equal(status.Errors[0].Message, exception.Message);
+    }
+
+    #endregion
 }

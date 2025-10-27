@@ -1,41 +1,35 @@
 ﻿.table-of-contents a {
-  display: grid;
-  grid-template-columns: auto max-content;
-  grid-template-areas: "title page-number";
-  align-items: end;
-  gap: 0 .25rem;
+    display: grid;
+    grid-template-columns: auto max-content;
+    grid-template-areas: "title page-number";
+    align-items: end;
+    gap: 0 .25rem;
 }
 
 .table-of-contents .title {
-  grid-area: title;
-  position: relative;
-  overflow: hidden;
+    grid-area: title;
+    position: relative;
+    overflow: hidden;
 }
 
-  .table-of-contents .title::after {
+.table-of-contents .title::after {
     position: absolute;
     padding-left: .25ch;
     text-align: right;
-  }
+}
 
 .table-of-contents.dots .title::after {
-  content: " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
-    ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
-    ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ";
+    content: " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . " ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . " ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ";
 }
 
 .table-of-contents.underline .title::after {
-  content: " ______________________________________________________________________"
-    "______________________________________________________________________________"
-    "_____________________________________________________________________________ ";
+    content: " ______________________________________________________________________" "______________________________________________________________________________" "_____________________________________________________________________________ ";
 }
 
 .table-of-contents.dashes .title::after {
-  content: " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
-    "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
-    "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ";
+    content: " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - " "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - " "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ";
 }
 
 .table-of-contents .page-number {
-  grid-area: page-number;
+    grid-area: page-number;
 }

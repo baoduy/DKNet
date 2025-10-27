@@ -8,6 +8,9 @@ namespace DKNet.EfCore.Extensions.Snapshots;
 /// <param name="entry"></param>
 public sealed class SnapshotEntityEntry(EntityEntry entry)
 {
+    #region Properties
+
+    public object Entity => Entry.Entity;
     public EntityEntry Entry { get; } = entry;
 
     /// <summary>
@@ -15,5 +18,5 @@ public sealed class SnapshotEntityEntry(EntityEntry entry)
     /// </summary>
     public EntityState OriginalState { get; } = entry.State;
 
-    public object Entity => Entry.Entity;
+    #endregion
 }

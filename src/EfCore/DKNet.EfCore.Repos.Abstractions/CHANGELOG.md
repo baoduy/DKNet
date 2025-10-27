@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README documentation with usage examples
 - Standardized changelog following Keep a Changelog format
 - Enhanced API documentation for all repository interfaces
@@ -15,18 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CQRS integration examples and transaction management
 
 ### Changed
+
 - N/A
 
 ### Deprecated
+
 - N/A
 
 ### Removed
+
 - N/A
 
 ### Fixed
+
 - N/A
 
 ### Security
+
 - N/A
 
 ## Migration Guide
@@ -38,18 +44,23 @@ This section will be updated as breaking changes are introduced in future versio
 Currently, all APIs are stable and no migration is required.
 
 #### Repository Interfaces
+
 All repository interfaces maintain backward compatibility:
+
 - `IRepository<TEntity>`
 - `IReadRepository<TEntity>`
 - `IWriteRepository<TEntity>`
 
 #### Method Signatures
+
 All method signatures remain stable:
+
 - Read operations (Gets, FindAsync, GetDto, etc.)
 - Write operations (AddAsync, UpdateAsync, DeleteAsync, etc.)
 - Transaction operations (BeginTransactionAsync, SaveChangesAsync)
 
 #### Generic Constraints
+
 All generic type constraints maintain backward compatibility for entity types.
 
 ---

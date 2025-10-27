@@ -21,16 +21,7 @@ public enum DefaultSchemaSequenceTypes
 
 public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    [Fact]
-    public void GetAttribute_WithValidEnum_ShouldReturnAttribute()
-    {
-        // Act
-        var attribute = SequenceExtensions.GetAttribute(typeof(TestSequenceTypes));
-
-        // Assert
-        attribute.ShouldNotBeNull();
-        attribute.Schema.ShouldBe("seq");
-    }
+    #region Methods
 
     [Fact]
     public void GetAttribute_WithDefaultSchema_ShouldReturnDefaultSchema()
@@ -51,6 +42,17 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
 
         // Assert
         attribute.ShouldBeNull();
+    }
+
+    [Fact]
+    public void GetAttribute_WithValidEnum_ShouldReturnAttribute()
+    {
+        // Act
+        var attribute = SequenceExtensions.GetAttribute(typeof(TestSequenceTypes));
+
+        // Assert
+        attribute.ShouldNotBeNull();
+        attribute.Schema.ShouldBe("seq");
     }
 
     [Fact]
@@ -134,4 +136,6 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
         formattedValue.ShouldNotBeNullOrEmpty();
         formattedValue.ShouldStartWith("TEST-");
     }
+
+    #endregion
 }

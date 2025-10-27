@@ -4,14 +4,32 @@ namespace SlimBus.Api.Configs.RateLimits;
 
 public interface IRateLimitOptionsProvider
 {
-    public FixedWindowRateLimiterOptions GetRateLimiterOptions();
+    #region Methods
+
     public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions();
+    public FixedWindowRateLimiterOptions GetRateLimiterOptions();
+
+    #endregion
 }
 
 internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> options)
     : IRateLimitOptionsProvider
 {
+    #region Fields
+
     private readonly RateLimitOptions _option = options.Value;
+
+    #endregion
+
+    #region Methods
+
+    public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions() =>
+        new()
+        {
+            PermitLimit = _option.DefaultConcurrentLimit,
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        };
 
     public FixedWindowRateLimiterOptions GetRateLimiterOptions() =>
         new()
@@ -23,11 +41,5 @@ internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> option
             Window = TimeSpan.FromSeconds(_option.TimeWindowInSeconds)
         };
 
-    public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions() =>
-        new()
-        {
-            PermitLimit = _option.DefaultConcurrentLimit,
-            QueueLimit = 0,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-        };
+    #endregion
 }

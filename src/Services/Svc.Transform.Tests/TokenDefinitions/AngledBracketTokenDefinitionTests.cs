@@ -2,6 +2,8 @@ namespace Svc.Transform.Tests.TokenDefinitions;
 
 public class AngledBracketTokenDefinitionTests
 {
+    #region Methods
+
     [Fact]
     public void AngledBracketTokenDefinitionTest()
     {
@@ -19,4 +21,6 @@ public class AngledBracketTokenDefinitionTests
         t.IsToken("Duy>")
             .ShouldBeFalse();
     }
+
+    #endregion
 }

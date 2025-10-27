@@ -4,37 +4,13 @@ namespace Fw.Extensions.Tests;
 
 public class EnumExtensionsTests
 {
+    #region Methods
+
     [Fact]
     public void GetAttribute()
     {
         HbdTypes.DescriptionEnum.GetAttribute<DisplayAttribute>()
             .ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void TestGetEnumInfo()
-    {
-        HbdTypes.DescriptionEnum.GetEumInfo()?.Name.ShouldBe("HBD");
-    }
-
-    [Fact]
-    public void TestGetEnumInfos()
-    {
-        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
-        list.Count.ShouldBeGreaterThanOrEqualTo(3);
-    }
-
-    [Fact]
-    public void GetAttributeReturnsNullForNullEnum()
-    {
-        // Arrange
-        HbdTypes? nullEnum = null;
-
-        // Act
-        var result = nullEnum.GetAttribute<DisplayAttribute>();
-
-        // Assert
-        result.ShouldBeNull();
     }
 
     [Fact]
@@ -51,13 +27,13 @@ public class EnumExtensionsTests
     }
 
     [Fact]
-    public void GetEumInfoReturnsNullForNullEnum()
+    public void GetAttributeReturnsNullForNullEnum()
     {
         // Arrange
         HbdTypes? nullEnum = null;
 
         // Act
-        var result = nullEnum.GetEumInfo();
+        var result = nullEnum.GetAttribute<DisplayAttribute>();
 
         // Assert
         result.ShouldBeNull();
@@ -81,6 +57,19 @@ public class EnumExtensionsTests
     }
 
     [Fact]
+    public void GetEumInfoReturnsNullForNullEnum()
+    {
+        // Arrange
+        HbdTypes? nullEnum = null;
+
+        // Act
+        var result = nullEnum.GetEumInfo();
+
+        // Assert
+        result.ShouldBeNull();
+    }
+
+    [Fact]
     public void GetEumInfosIncludesEnumWithoutDisplayAttribute()
     {
         // Arrange & Act
@@ -93,4 +82,19 @@ public class EnumExtensionsTests
         enumInfo.Description.ShouldBeNull();
         enumInfo.GroupName.ShouldBeNull();
     }
+
+    [Fact]
+    public void TestGetEnumInfo()
+    {
+        HbdTypes.DescriptionEnum.GetEumInfo()?.Name.ShouldBe("HBD");
+    }
+
+    [Fact]
+    public void TestGetEnumInfos()
+    {
+        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
+        list.Count.ShouldBeGreaterThanOrEqualTo(3);
+    }
+
+    #endregion
 }

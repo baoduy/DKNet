@@ -16,6 +16,8 @@ namespace DKNet.EfCore.DataAuthorization;
 /// </remarks>
 public static class EfCoreDataAuthSetup
 {
+    #region Methods
+
     /// <summary>
     ///     Registers a custom data ownership provider in the service collection.
     /// </summary>
@@ -53,4 +55,6 @@ public static class EfCoreDataAuthSetup
         services
             .AddDataOwnerProvider<TProvider>()
             .AddHook<TDbContext, DataOwnerHook>();
+
+    #endregion
 }

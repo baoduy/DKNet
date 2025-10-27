@@ -6,11 +6,35 @@ namespace EfCore.Extensions.Tests;
 
 public class TypeExtractorExtensionsTests
 {
+    #region Methods
+
     [Fact]
     public void TestAbstract()
     {
         typeof(MyDbContext).Assembly.Extract().Abstract()
             .Count().ShouldBeGreaterThanOrEqualTo(1);
+    }
+
+    // [Fact]
+    // public void ExtractEnumsTest()
+    // {
+    //     typeof(MyDbContext).Assembly.Extract().Enums().HasAttribute<StaticDataAttribute>()
+    //         .Count().ShouldBeGreaterThanOrEqualTo(1);
+    // }
+
+    [Fact]
+    public void TestExtract()
+    {
+        typeof(MyDbContext).Assembly.Extract().Publics().Classes().Count()
+            .ShouldBeGreaterThanOrEqualTo(3);
+    }
+
+    [Fact]
+    public void TestExtractNotInstanceOf()
+    {
+        var list = typeof(MyDbContext).Assembly.Extract().Classes().NotInstanceOf(typeof(IEntity<>)).ToList();
+        list.Contains(typeof(User)).ShouldBeFalse();
+        list.Contains(typeof(Address)).ShouldBeFalse();
     }
 
     // [Fact]
@@ -25,6 +49,14 @@ public class TypeExtractorExtensionsTests
     {
         typeof(MyDbContext).Assembly.Extract().IsInstanceOf<BaseEntity>()
             .Count().ShouldBeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public void TestIsImplementOf()
+    {
+        typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
+        typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
+        typeof(BaseEntity).IsImplementOf(typeof(IConcurrencyEntity<>)).ShouldBeTrue();
     }
 
     [Fact]
@@ -47,33 +79,5 @@ public class TypeExtractorExtensionsTests
             .Count().ShouldBeGreaterThanOrEqualTo(1);
     }
 
-    // [Fact]
-    // public void ExtractEnumsTest()
-    // {
-    //     typeof(MyDbContext).Assembly.Extract().Enums().HasAttribute<StaticDataAttribute>()
-    //         .Count().ShouldBeGreaterThanOrEqualTo(1);
-    // }
-
-    [Fact]
-    public void TestExtract()
-    {
-        typeof(MyDbContext).Assembly.Extract().Publics().Classes().Count()
-            .ShouldBeGreaterThanOrEqualTo(3);
-    }
-
-    [Fact]
-    public void TestIsImplementOf()
-    {
-        typeof(User).IsImplementOf(typeof(IEntity<>)).ShouldBeTrue();
-        typeof(List<>).IsImplementOf(typeof(IEntity<>)).ShouldBeFalse();
-        typeof(BaseEntity).IsImplementOf(typeof(IConcurrencyEntity<>)).ShouldBeTrue();
-    }
-
-    [Fact]
-    public void TestExtractNotInstanceOf()
-    {
-        var list = typeof(MyDbContext).Assembly.Extract().Classes().NotInstanceOf(typeof(IEntity<>)).ToList();
-        list.Contains(typeof(User)).ShouldBeFalse();
-        list.Contains(typeof(Address)).ShouldBeFalse();
-    }
+    #endregion
 }

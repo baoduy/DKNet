@@ -2,6 +2,8 @@ namespace Svc.BlobStorage.Tests.Fixtures;
 
 public sealed class LocalBlobServiceFixture : IDisposable
 {
+    #region Constructors
+
     public LocalBlobServiceFixture()
     {
         TestRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
@@ -26,12 +28,22 @@ public sealed class LocalBlobServiceFixture : IDisposable
         Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
+    #endregion
+
+    #region Properties
+
     public IBlobService Service { get; }
     public string TestRoot { get; }
+
+    #endregion
+
+    #region Methods
 
     public void Dispose()
     {
         if (Directory.Exists(TestRoot)) Directory.Delete(TestRoot, true);
         GC.SuppressFinalize(this);
     }
+
+    #endregion
 }

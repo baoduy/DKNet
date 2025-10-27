@@ -2,9 +2,15 @@
 
 internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrincipalProvider
 {
+    #region Fields
+
     private string _email = null!;
     private Guid _profileId;
     private string _userName = null!;
+
+    #endregion
+
+    #region Properties
 
     public string Email
     {
@@ -33,6 +39,9 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
         }
     }
 
+    #endregion
+
+    #region Methods
 
     public ICollection<string> GetAccessibleKeys() => [GetOwnershipKey()];
 
@@ -65,4 +74,6 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
                 _userName = _email;
         }
     }
+
+    #endregion
 }

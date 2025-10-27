@@ -4,6 +4,50 @@ namespace SlimBus.App.Tests.Unit;
 
 public class ExtendedDomainEntityTests
 {
+    #region Methods
+
+    [Fact]
+    public void AddressAllPropertiesRequiredShouldSetCorrectly()
+    {
+        // Arrange
+        var line = "123 Main Street";
+        var state = "California";
+        var city = "Los Angeles";
+        var country = "United States";
+        var postal = "90210";
+
+        // Act
+        var address = new Address(line, state, city, country, postal);
+
+        // Assert
+        address.Line.ShouldBe(line);
+        address.State.ShouldBe(state);
+        address.City.ShouldBe(city);
+        address.Country.ShouldBe(country);
+        address.Postal.ShouldBe(postal);
+    }
+
+    [Fact]
+    public void CompanyAllPropertiesSetShouldSetCorrectly()
+    {
+        // Arrange
+        var name = "Tech Solutions Inc";
+        var uen = "UEN123456789";
+        var abn = "ABN123456789";
+        var arbn = "ARBN123456789";
+        var can = "CAN123456789";
+
+        // Act
+        var company = new Company(name, uen, abn, arbn, can);
+
+        // Assert
+        company.Name.ShouldBe(name);
+        company.UEN.ShouldBe(uen);
+        company.ABN.ShouldBe(abn);
+        company.ARBN.ShouldBe(arbn);
+        company.CAN.ShouldBe(can);
+    }
+
     [Fact]
     public void CustomerProfileConstructorWithFullParametersShouldSetAllProperties()
     {
@@ -48,24 +92,6 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfileUpdateWithNullValuesShouldHandleNullsCorrectly()
-    {
-        // Arrange
-        var originalName = "Original Name";
-        var originalPhone = "+1111111111";
-        var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
-
-        // Act
-        profile.Update(null, null, null, null, "user2");
-
-        // Assert
-        profile.Avatar.ShouldBeNull();
-        profile.Name.ShouldBe(originalName); // Should not change
-        profile.Phone.ShouldBe(originalPhone); // Should not change
-        profile.BirthDay.ShouldBeNull();
-    }
-
-    [Fact]
     public void CustomerProfileUpdateWithEmptyStringsShouldNotUpdateNameAndPhone()
     {
         // Arrange
@@ -84,21 +110,21 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void CustomerProfileUpdateWithWhitespaceStringsShouldUpdateNameAndPhone()
+    public void CustomerProfileUpdateWithNullValuesShouldHandleNullsCorrectly()
     {
         // Arrange
         var originalName = "Original Name";
         var originalPhone = "+1111111111";
         var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
-        // Act - string.IsNullOrEmpty() returns false for whitespace strings, so they will update
-        profile.Update("avatar.jpg", "   ", "   ", new DateTime(1990, 1, 1,0, 0, 0, DateTimeKind.Local), "user2");
+        // Act
+        profile.Update(null, null, null, null, "user2");
 
         // Assert
-        profile.Avatar.ShouldBe("avatar.jpg");
-        profile.Name.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
-        profile.Phone.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
-        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local));
+        profile.Avatar.ShouldBeNull();
+        profile.Name.ShouldBe(originalName); // Should not change
+        profile.Phone.ShouldBe(originalPhone); // Should not change
+        profile.BirthDay.ShouldBeNull();
     }
 
     [Theory]
@@ -155,62 +181,39 @@ public class ExtendedDomainEntityTests
     }
 
     [Fact]
-    public void AddressAllPropertiesRequiredShouldSetCorrectly()
+    public void CustomerProfileUpdateWithWhitespaceStringsShouldUpdateNameAndPhone()
     {
         // Arrange
-        var line = "123 Main Street";
-        var state = "California";
-        var city = "Los Angeles";
-        var country = "United States";
-        var postal = "90210";
+        var originalName = "Original Name";
+        var originalPhone = "+1111111111";
+        var profile = new CustomerProfile(originalName, "MEM123", "original@example.com", originalPhone, "user1");
 
-        // Act
-        var address = new Address(line, state, city, country, postal);
+        // Act - string.IsNullOrEmpty() returns false for whitespace strings, so they will update
+        profile.Update("avatar.jpg", "   ", "   ", new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local), "user2");
 
         // Assert
-        address.Line.ShouldBe(line);
-        address.State.ShouldBe(state);
-        address.City.ShouldBe(city);
-        address.Country.ShouldBe(country);
-        address.Postal.ShouldBe(postal);
+        profile.Avatar.ShouldBe("avatar.jpg");
+        profile.Name.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
+        profile.Phone.ShouldBe("   "); // Will be updated since IsNullOrEmpty("   ") is false
+        profile.BirthDay.ShouldBe(new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Local));
     }
 
-    [Fact]
-    public void CompanyAllPropertiesSetShouldSetCorrectly()
-    {
-        // Arrange
-        var name = "Tech Solutions Inc";
-        var uen = "UEN123456789";
-        var abn = "ABN123456789";
-        var arbn = "ARBN123456789";
-        var can = "CAN123456789";
-
-        // Act
-        var company = new Company(name, uen, abn, arbn, can);
-
-        // Assert
-        company.Name.ShouldBe(name);
-        company.UEN.ShouldBe(uen);
-        company.ABN.ShouldBe(abn);
-        company.ARBN.ShouldBe(arbn);
-        company.CAN.ShouldBe(can);
-    }
-
-    [Fact]
-    public void EmployeePromoteToShouldChangeTypeCorrectly()
+    [Theory]
+    [InlineData(EmployeeType.None)]
+    [InlineData(EmployeeType.Director)]
+    [InlineData(EmployeeType.Secretary)]
+    [InlineData(EmployeeType.Other)]
+    public void EmployeeCanBePromotedToAnyType(EmployeeType targetType)
     {
         // Arrange
         var profileId = Guid.NewGuid();
-        var employee = new Employee(profileId, EmployeeType.Secretary, "user1");
-        var originalType = employee.Type;
+        var employee = new Employee(profileId, EmployeeType.None, "user1");
 
         // Act
-        employee.PromoteTo(EmployeeType.Director, "user2");
+        employee.PromoteTo(targetType, "user2");
 
         // Assert
-        employee.Type.ShouldBe(EmployeeType.Director);
-        employee.Type.ShouldNotBe(originalType);
-        employee.ProfileId.ShouldBe(profileId);
+        employee.Type.ShouldBe(targetType);
     }
 
     [Fact]
@@ -231,21 +234,22 @@ public class ExtendedDomainEntityTests
         employee.Type.ShouldBe(EmployeeType.Other);
     }
 
-    [Theory]
-    [InlineData(EmployeeType.None)]
-    [InlineData(EmployeeType.Director)]
-    [InlineData(EmployeeType.Secretary)]
-    [InlineData(EmployeeType.Other)]
-    public void EmployeeCanBePromotedToAnyType(EmployeeType targetType)
+    [Fact]
+    public void EmployeePromoteToShouldChangeTypeCorrectly()
     {
         // Arrange
         var profileId = Guid.NewGuid();
-        var employee = new Employee(profileId, EmployeeType.None, "user1");
+        var employee = new Employee(profileId, EmployeeType.Secretary, "user1");
+        var originalType = employee.Type;
 
         // Act
-        employee.PromoteTo(targetType, "user2");
+        employee.PromoteTo(EmployeeType.Director, "user2");
 
         // Assert
-        employee.Type.ShouldBe(targetType);
+        employee.Type.ShouldBe(EmployeeType.Director);
+        employee.Type.ShouldNotBe(originalType);
+        employee.ProfileId.ShouldBe(profileId);
     }
+
+    #endregion
 }

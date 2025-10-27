@@ -2,9 +2,9 @@ name: Build, Test, Coverage & Check
 
 on:
   push:
-    branches: [dev]
+    branches: [ dev ]
   pull_request:
-    branches: [main, dev]
+    branches: [ main, dev ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: ["9.0.x"]
+        dotnet-version: [ "9.0.x" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -120,21 +120,21 @@ jobs:
               if (fs.existsSync(summaryPath)) {
                 const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
                 const coverage = summary.summary;
-                
+            
                 const comment = `## 📊 Code Coverage Report
-                
+            
                 | Metric | Coverage |
                 |--------|----------|
                 | **Line Coverage** | ${coverage.linecoverage}% |
                 | **Branch Coverage** | ${coverage.branchcoverage}% |
                 | **Method Coverage** | ${coverage.methodcoverage}% |
-                
+            
                 **Lines:** ${coverage.coveredlines}/${coverage.lines} covered
                 **Branches:** ${coverage.coveredbranches}/${coverage.branches} covered
-                
+            
                 📈 [View Full Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
                 `;
-                
+            
                 github.rest.issues.createComment({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,

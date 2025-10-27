@@ -3,6 +3,25 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class ServiceConfigs
 {
+    #region Methods
+
+    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration,
+        FeatureOptions features)
+    {
+        services
+            .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
+            .AddScoped<IPrincipalProvider, PrincipalProvider>()
+            .AddScoped<IDataOwnerProvider>(p => p.GetRequiredService<IPrincipalProvider>());
+
+        services
+            .AddAppServices()
+            .AddInfraServices()
+            //Service Bus
+            .AddServiceBus(configuration, typeof(AppSetup).Assembly);
+
+        return services;
+    }
+
     public static IServiceCollection AddOptions(this IServiceCollection services, IConfiguration configuration)
     {
         // Configure core options for the application
@@ -25,20 +44,5 @@ internal static class ServiceConfigs
         return services;
     }
 
-    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration,
-        FeatureOptions features)
-    {
-        services
-            .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
-            .AddScoped<IPrincipalProvider, PrincipalProvider>()
-            .AddScoped<IDataOwnerProvider>(p => p.GetRequiredService<IPrincipalProvider>());
-
-        services
-            .AddAppServices()
-            .AddInfraServices()
-            //Service Bus
-            .AddServiceBus(configuration, typeof(AppSetup).Assembly);
-
-        return services;
-    }
+    #endregion
 }

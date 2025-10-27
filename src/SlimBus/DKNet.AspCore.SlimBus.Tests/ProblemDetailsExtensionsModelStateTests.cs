@@ -6,16 +6,7 @@ namespace DKNet.AspCore.SlimBus.Tests;
 
 public class ProblemDetailsExtensionsModelStateTests
 {
-    [Fact]
-    public void ToProblemDetails_ModelState_Valid_ReturnsNull()
-    {
-        var modelState = new ModelStateDictionary();
-        modelState.AddModelError("key", string.Empty); // Add then clear to make valid
-        modelState.Clear();
-        modelState.IsValid.ShouldBeTrue();
-        var result = modelState.ToProblemDetails();
-        result.ShouldBeNull();
-    }
+    #region Methods
 
     [Fact]
     public void ToProblemDetails_ModelState_Invalid_ReturnsProblemDetails()
@@ -29,5 +20,17 @@ public class ProblemDetailsExtensionsModelStateTests
         result.Title.ShouldBe("Error");
         ((IEnumerable<string>)result.Extensions["errors"]!).Count().ShouldBe(2);
     }
-}
 
+    [Fact]
+    public void ToProblemDetails_ModelState_Valid_ReturnsNull()
+    {
+        var modelState = new ModelStateDictionary();
+        modelState.AddModelError("key", string.Empty); // Add then clear to make valid
+        modelState.Clear();
+        modelState.IsValid.ShouldBeTrue();
+        var result = modelState.ToProblemDetails();
+        result.ShouldBeNull();
+    }
+
+    #endregion
+}

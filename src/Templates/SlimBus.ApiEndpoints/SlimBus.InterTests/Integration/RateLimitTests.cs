@@ -5,6 +5,8 @@ namespace SlimBus.InterTests.Integration;
 
 public class RateLimitTests(RateLimitFixture api) : IClassFixture<RateLimitFixture>
 {
+    #region Methods
+
     [Fact]
     public async Task RateLimitCallsProfile()
     {
@@ -21,4 +23,6 @@ public class RateLimitTests(RateLimitFixture api) : IClassFixture<RateLimitFixtu
 
         await action.ShouldThrowAsync<HttpRequestException>();
     }
+
+    #endregion
 }

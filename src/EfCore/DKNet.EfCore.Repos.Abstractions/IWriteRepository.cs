@@ -5,16 +5,7 @@ namespace DKNet.EfCore.Repos.Abstractions;
 
 public interface IWriteRepository<TEntity> where TEntity : class
 {
-    EntityEntry<TEntity> Entry(TEntity entity);
-
-    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    ///     Save Changes to Database
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    #region Methods
 
     /// <summary>
     ///     Add Entity
@@ -30,6 +21,29 @@ public interface IWriteRepository<TEntity> where TEntity : class
     /// <param name="cancellationToken"></param>
     ValueTask AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Delete Entity
+    /// </summary>
+    /// <param name="entity"></param>
+    void Delete(TEntity entity);
+
+    /// <summary>
+    ///     Delete Range of Entities
+    /// </summary>
+    /// <param name="entities"></param>
+    void DeleteRange(IEnumerable<TEntity> entities);
+
+    EntityEntry<TEntity> Entry(TEntity entity);
+
+    /// <summary>
+    ///     Save Changes to Database
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
     ///     Update Entity
     /// </summary>
@@ -44,15 +58,5 @@ public interface IWriteRepository<TEntity> where TEntity : class
     /// <param name="cancellationToken"></param>
     Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    ///     Delete Entity
-    /// </summary>
-    /// <param name="entity"></param>
-    void Delete(TEntity entity);
-
-    /// <summary>
-    ///     Delete Range of Entities
-    /// </summary>
-    /// <param name="entities"></param>
-    void DeleteRange(IEnumerable<TEntity> entities);
+    #endregion
 }

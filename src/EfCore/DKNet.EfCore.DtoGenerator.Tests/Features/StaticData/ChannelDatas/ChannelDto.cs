@@ -3,7 +3,8 @@ using DKNet.EfCore.DtoEntities.Features.StaticData;
 namespace DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;
 
 // Include audit properties explicitly to override global exclusions for this DTO
-[GenerateDto(typeof(ChannelData), Include = [
+[GenerateDto(typeof(ChannelData), Include =
+[
     nameof(ChannelData.Id),
     nameof(ChannelData.Code),
     nameof(ChannelData.Country),
@@ -15,5 +16,6 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;
     nameof(ChannelData.CreatedBy),
     nameof(ChannelData.CreatedOn),
     nameof(ChannelData.LastModifiedBy),
-    nameof(ChannelData.LastModifiedOn)])]
+    nameof(ChannelData.LastModifiedOn)
+])]
 public partial record ChannelDto;

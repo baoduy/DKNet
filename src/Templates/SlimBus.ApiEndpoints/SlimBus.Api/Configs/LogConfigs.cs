@@ -8,6 +8,8 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class LogConfigs
 {
+    #region Methods
+
     public static WebApplicationBuilder AddLogConfig(this WebApplicationBuilder builder, FeatureOptions features)
     {
         if (!features.EnableOpenTelemetry)
@@ -54,4 +56,6 @@ internal static class LogConfigs
 
         return builder;
     }
+
+    #endregion
 }

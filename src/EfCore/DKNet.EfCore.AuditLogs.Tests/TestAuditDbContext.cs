@@ -7,13 +7,19 @@ namespace DKNet.EfCore.AuditLogs.Tests;
 // Test entity implementing audited functionality with additional diverse properties
 public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())
 {
-    [MaxLength(100)] public required string Name { get; set; }
+    #region Properties
+
     public int Age { get; set; }
-    public bool IsActive { get; set; }
     public decimal Balance { get; set; }
+    public bool IsActive { get; set; }
     public DateTimeOffset? LastLoginOn { get; set; }
+    [MaxLength(100)] public required string Name { get; set; }
 
     [MaxLength(200)] public string? Notes { get; set; }
+
+    #endregion
+
+    #region Methods
 
     // Helper to simulate an update cycle in tests
     public void UpdateProfile(string updater, string? notes = null, DateTimeOffset? updatedOn = null)
@@ -21,13 +27,21 @@ public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())
         Notes = notes ?? Notes;
         SetUpdatedBy(updater, updatedOn);
     }
+
+    #endregion
 }
 
 // DbContext for testing audit logging
 public sealed class TestAuditDbContext(DbContextOptions<TestAuditDbContext> options) : DbContext(options)
 {
+    #region Properties
+
     public DbSet<TestAuditEntity> AuditEntities => Set<TestAuditEntity>();
     public DbSet<PlainEntity> PlainEntities => Set<PlainEntity>();
+
+    #endregion
+
+    #region Methods
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,4 +54,6 @@ public sealed class TestAuditDbContext(DbContextOptions<TestAuditDbContext> opti
         // Minimal configuration for PlainEntity (optional as conventions handle it)
         modelBuilder.Entity<PlainEntity>().ToTable("PlainEntities");
     }
+
+    #endregion
 }

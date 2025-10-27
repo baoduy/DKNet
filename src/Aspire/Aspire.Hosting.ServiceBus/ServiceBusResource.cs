@@ -4,12 +4,13 @@ namespace Aspire.Hosting.ServiceBus;
 
 public sealed class ServiceBusResource(string name) : ContainerResource(name), IResourceWithConnectionString
 {
-    internal const string PrimaryEndpointName = "tcp";
-    internal const string SecondaryEndpointName = "tcp2";
+    #region Fields
 
     private EndpointReference? _primaryEndpoint;
 
-    public EndpointReference PrimaryEndpoint => _primaryEndpoint ??= new EndpointReference(this, PrimaryEndpointName);
+    #endregion
+
+    #region Properties
 
     private ReferenceExpression ConnectionString =>
         ReferenceExpression.Create(
@@ -20,8 +21,19 @@ public sealed class ServiceBusResource(string name) : ContainerResource(name), I
             ? connectionStringAnnotation.Resource.ConnectionStringExpression
             : ConnectionString;
 
+    public EndpointReference PrimaryEndpoint => _primaryEndpoint ??= new EndpointReference(this, PrimaryEndpointName);
+
+    #endregion
+
+    #region Methods
+
     public ValueTask<string?> GetConnectionStringAsync(CancellationToken cancellationToken = default) =>
         this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
             ? connectionStringAnnotation.Resource.GetConnectionStringAsync(cancellationToken)
             : ConnectionString.GetValueAsync(cancellationToken);
+
+    #endregion
+
+    internal const string PrimaryEndpointName = "tcp";
+    internal const string SecondaryEndpointName = "tcp2";
 }

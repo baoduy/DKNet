@@ -11,20 +11,30 @@ internal enum HashAlgorithmKind
 
 public interface IShaHashing : IDisposable // now disposable so we can release cached algorithms
 {
-    string ComputeSha256(string input, bool upperCase = false);
+    #region Methods
 
-    bool VerifySha256(string input, string expectedHex, bool ignoreCase = true);
+    string ComputeSha256(string input, bool upperCase = false);
 
     string ComputeSha512(string input, bool upperCase = false);
 
+    bool VerifySha256(string input, string expectedHex, bool ignoreCase = true);
+
     bool VerifySha512(string input, string expectedHex, bool ignoreCase = true);
+
+    #endregion
 }
 
 public sealed class ShaHashing : IShaHashing
 {
+    #region Fields
+
     private readonly Dictionary<HashAlgorithmKind, HashAlgorithm> _algorithms = [];
-    private readonly Lock _sync = new(); // corrected from Lock to object
     private bool _disposed;
+    private readonly Lock _sync = new(); // corrected from Lock to object
+
+    #endregion
+
+    #region Methods
 
     private string ComputeHash(string input, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
         bool upperCase = false)
@@ -43,28 +53,11 @@ public sealed class ShaHashing : IShaHashing
         return upperCase ? hexUpper : hexUpper.ToUpperInvariant();
     }
 
-    private bool VerifyHash(string input, string expectedHex, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
-        bool ignoreCase = true)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
-        ArgumentNullException.ThrowIfNull(input);
-        ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
-        var actual = ComputeHash(input, algorithm, !ignoreCase);
-        return ignoreCase
-            ? string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase)
-            : actual == expectedHex;
-    }
+    public string ComputeSha256(string input, bool upperCase = false)
+        => ComputeHash(input, HashAlgorithmKind.Sha256, upperCase);
 
-    private HashAlgorithm GetOrCreate(HashAlgorithmKind kind)
-    {
-        lock (_sync)
-        {
-            if (_algorithms.TryGetValue(kind, out var existing)) return existing;
-            var created = CreateAlgorithm(kind);
-            _algorithms[kind] = created;
-            return created;
-        }
-    }
+    public string ComputeSha512(string input, bool upperCase = false)
+        => ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
 
     private static HashAlgorithm CreateAlgorithm(HashAlgorithmKind kind) => kind switch
     {
@@ -84,15 +77,34 @@ public sealed class ShaHashing : IShaHashing
         }
     }
 
-    public string ComputeSha256(string input, bool upperCase = false)
-        => ComputeHash(input, HashAlgorithmKind.Sha256, upperCase);
+    private HashAlgorithm GetOrCreate(HashAlgorithmKind kind)
+    {
+        lock (_sync)
+        {
+            if (_algorithms.TryGetValue(kind, out var existing)) return existing;
+            var created = CreateAlgorithm(kind);
+            _algorithms[kind] = created;
+            return created;
+        }
+    }
+
+    private bool VerifyHash(string input, string expectedHex, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
+        bool ignoreCase = true)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
+        var actual = ComputeHash(input, algorithm, !ignoreCase);
+        return ignoreCase
+            ? string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase)
+            : actual == expectedHex;
+    }
 
     public bool VerifySha256(string input, string expectedHex, bool ignoreCase = true)
         => VerifyHash(input, expectedHex, HashAlgorithmKind.Sha256, ignoreCase);
 
-    public string ComputeSha512(string input, bool upperCase = false)
-        => ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
-
     public bool VerifySha512(string input, string expectedHex, bool ignoreCase = true)
         => VerifyHash(input, expectedHex, HashAlgorithmKind.Sha512, ignoreCase);
+
+    #endregion
 }

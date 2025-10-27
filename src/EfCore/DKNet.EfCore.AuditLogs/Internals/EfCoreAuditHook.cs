@@ -12,7 +12,23 @@ internal sealed class EfCoreAuditHook(
     IOptions<AuditLogOptions> option,
     ILogger<EfCoreAuditHook> logger) : HookAsync
 {
+    #region Fields
+
     private readonly Dictionary<Guid, List<AuditLogEntry>> _cache = [];
+
+    #endregion
+
+    #region Methods
+
+    public override async Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    {
+        await base.AfterSaveAsync(context, cancellationToken);
+
+        var logs = _cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
+        if (logs is not { Count: > 0 }) return;
+        _cache.Remove(context.DbContext.ContextId.InstanceId);
+        PublishLogsAsync(context.DbContext, logs);
+    }
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
@@ -50,13 +66,5 @@ internal sealed class EfCoreAuditHook(
             });
     }
 
-    public override async Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
-    {
-        await base.AfterSaveAsync(context, cancellationToken);
-
-        var logs = _cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
-        if (logs is not { Count: > 0 }) return;
-        _cache.Remove(context.DbContext.ContextId.InstanceId);
-        PublishLogsAsync(context.DbContext, logs);
-    }
+    #endregion
 }

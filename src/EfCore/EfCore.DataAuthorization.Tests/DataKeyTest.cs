@@ -2,6 +2,8 @@
 
 public class DataKeyTests(DataKeyFixture fixture) : IClassFixture<DataKeyFixture>
 {
+    #region Methods
+
     [Fact]
     public void TestContextDataKeys()
     {
@@ -39,4 +41,6 @@ public class DataKeyTests(DataKeyFixture fixture) : IClassFixture<DataKeyFixture
         etype.ShouldNotBeNull();
         etype.GetQueryFilter().ShouldNotBeNull();
     }
+
+    #endregion
 }

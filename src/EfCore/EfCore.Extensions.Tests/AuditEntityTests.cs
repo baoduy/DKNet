@@ -2,7 +2,13 @@
 
 public class AuditEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
+
+    #endregion
+
+    #region Methods
 
     [Fact]
     public void TestCreatingEntity()
@@ -37,4 +43,6 @@ public class AuditEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtu
         user.UpdatedOn.ShouldNotBeNull();
         user.Id.ShouldBeGreaterThanOrEqualTo(1);
     }
+
+    #endregion
 }

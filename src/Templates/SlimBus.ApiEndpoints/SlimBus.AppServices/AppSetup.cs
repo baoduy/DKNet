@@ -2,6 +2,8 @@
 
 public static class AppSetup
 {
+    #region Methods
+
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
         TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
@@ -16,4 +18,6 @@ public static class AppSetup
 
         return services;
     }
+
+    #endregion
 }

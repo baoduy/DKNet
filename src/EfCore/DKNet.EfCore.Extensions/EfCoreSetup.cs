@@ -7,7 +7,7 @@ namespace Microsoft.EntityFrameworkCore;
 
 public static class EfCoreSetup
 {
-    internal static readonly HashSet<Type> GlobalQueryFilters = [];
+    #region Methods
 
     /// <summary>
     ///     Register the GlobalModelBuilderRegister to the service collection.
@@ -20,6 +20,24 @@ public static class EfCoreSetup
     {
         GlobalQueryFilters.Add(typeof(TImplementation));
         return services;
+    }
+
+    /// <summary>
+    ///     Get or Create the EntityMappingRegister from the DbContextOptionsBuilder.
+    /// </summary>
+    /// <param name="optionsBuilder"></param>
+    /// <param name="assemblies"></param>
+    /// <returns></returns>
+    private static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder,
+        Assembly[] assemblies)
+    {
+        var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
+        if (op != null) return op;
+
+        op = new EntityAutoConfigRegister(assemblies);
+        ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);
+
+        return op;
     }
 
     /// <summary>
@@ -49,21 +67,7 @@ public static class EfCoreSetup
         return @this;
     }
 
-    /// <summary>
-    ///     Get or Create the EntityMappingRegister from the DbContextOptionsBuilder.
-    /// </summary>
-    /// <param name="optionsBuilder"></param>
-    /// <param name="assemblies"></param>
-    /// <returns></returns>
-    private static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder,
-        Assembly[] assemblies)
-    {
-        var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
-        if (op != null) return op;
+    #endregion
 
-        op = new EntityAutoConfigRegister(assemblies);
-        ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);
-
-        return op;
-    }
+    internal static readonly HashSet<Type> GlobalQueryFilters = [];
 }

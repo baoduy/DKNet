@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../../LICENSE)
 
-Core abstractions and interfaces for blob storage services, providing a unified API for file storage operations across different providers (Azure Blob Storage, AWS S3, Local File System). This package defines contracts for storage operations, data models, and configuration options.
+Core abstractions and interfaces for blob storage services, providing a unified API for file storage operations across
+different providers (Azure Blob Storage, AWS S3, Local File System). This package defines contracts for storage
+operations, data models, and configuration options.
 
 ## Features
 
@@ -384,4 +386,5 @@ This project is licensed under the [MIT License](../../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

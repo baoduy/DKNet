@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class EventSetup
 {
+    #region Methods
+
     /// <summary>
     ///     Add Event Publisher
     /// </summary>
@@ -21,4 +23,6 @@ public static class EventSetup
         services
             .AddScoped<IEventPublisher, TImplementation>()
             .AddHook<TDbContext, EventHook>();
+
+    #endregion
 }

@@ -4,6 +4,8 @@ namespace SlimBus.Domains.Share;
 
 public abstract class DomainEntity : AuditedEntity<Guid>
 {
+    #region Constructors
+
     /// <inheritdoc />
     protected DomainEntity(Guid id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
     {
@@ -14,4 +16,6 @@ public abstract class DomainEntity : AuditedEntity<Guid>
     protected DomainEntity()
     {
     }
+
+    #endregion
 }

@@ -8,6 +8,10 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 public partial record GlobalAndLocalExclusionTestDto
 {
     /// <summary>
+    /// Gets or sets the Description.
+    /// </summary>
+    public required string Description { get; init; }
+    /// <summary>
     /// Gets or sets the Id.
     /// </summary>
     public Guid Id { get; init; }
@@ -15,8 +19,4 @@ public partial record GlobalAndLocalExclusionTestDto
     /// Gets or sets the Name.
     /// </summary>
     public required string Name { get; init; }
-    /// <summary>
-    /// Gets or sets the Description.
-    /// </summary>
-    public required string Description { get; init; }
 }

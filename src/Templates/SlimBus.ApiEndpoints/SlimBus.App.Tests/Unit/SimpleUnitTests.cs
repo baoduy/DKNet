@@ -4,6 +4,8 @@ namespace SlimBus.App.Tests.Unit;
 
 public class SimpleUnitTests
 {
+    #region Methods
+
     [Fact]
     public void PageableQueryDefaultValuesShouldBeCorrect()
     {
@@ -29,4 +31,6 @@ public class SimpleUnitTests
         query.PageIndex.ShouldBe(5);
         query.PageSize.ShouldBe(50);
     }
+
+    #endregion
 }

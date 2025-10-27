@@ -14,78 +14,62 @@ namespace DKNet.AspCore.Tasks.Tests;
 
 public class BackgroundJobTests
 {
-    private static void ResetHostAddedFlag()
+    #region Methods
+
+    [Fact]
+    public void AddBackgroundJobFromScansAssemblyForJobs()
     {
-        var type = typeof(TaskSetups);
-        var field = type.GetField("_added", BindingFlags.Static | BindingFlags.NonPublic);
-        field!.SetValue(null, false);
+        ResetHostAddedFlag();
+        var services = new ServiceCollection();
+        services.AddSingleton(new Counter());
+        services.AddSingleton(new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+        services.AddBackgroundJobFrom([typeof(BackgroundJobTests).Assembly]);
+
+        var provider = services.BuildServiceProvider();
+        var jobs = provider.GetServices<IBackgroundTask>().ToList();
+        jobs.Count.ShouldBeGreaterThan(1);
+        jobs.Any(j => j is ScannedTask).ShouldBeTrue();
     }
 
-    private sealed class CountingTask(TaskCompletionSource<bool> tcs, Counter counter) : IBackgroundTask
+    [Fact]
+    public void AddBackgroundJobRegistersHostOnlyOnce()
     {
-        public Task RunAsync(CancellationToken cancellationToken = default)
-        {
-            counter.Increment();
-            tcs.TrySetResult(true);
-            return Task.CompletedTask;
-        }
+        ResetHostAddedFlag();
+        var services = new ServiceCollection();
+        services.AddBackgroundJob<CountingTask>();
+        services.AddBackgroundJob<DelayedTask>();
+        var hostDescriptors = services.Where(d =>
+            d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(BackgroundJobHost)).ToList();
+        Assert.Single(hostDescriptors);
     }
 
-    private sealed class DelayedTask(Counter counter) : IBackgroundTask
+    [Fact]
+    public async Task FailingJobDoesNotPreventOtherJobsAndLogsError()
     {
-        public async Task RunAsync(CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(50, cancellationToken);
-            counter.Increment();
-        }
-    }
-
-    private sealed class FailingTask(Counter counter) : IBackgroundTask
-    {
-        public Task RunAsync(CancellationToken cancellationToken = default)
-        {
-            counter.Increment();
-            throw new InvalidOperationException("Boom");
-        }
-    }
-
-    private sealed class ScannedTask(Counter counter) : IBackgroundTask
-    {
-        public Task RunAsync(CancellationToken cancellationToken = default)
-        {
-            counter.Increment();
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class Counter
-    {
-        private int _count;
-        public void Increment() => Interlocked.Increment(ref _count);
-        public int Value => _count;
-    }
-
-    private sealed record LogEntry(LogLevel Level, string Message, Exception? Exception);
-
-    private sealed class TestLoggerProvider(ConcurrentBag<LogEntry> sink) : ILoggerProvider
-    {
-        public ILogger CreateLogger(string categoryName) => new TestLogger(sink);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class TestLogger(ConcurrentBag<LogEntry> sink) : ILogger
-        {
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-                Func<TState, Exception?, string> formatter)
+        ResetHostAddedFlag();
+        var counter = new Counter();
+        var logs = new ConcurrentBag<LogEntry>();
+        using var host = new HostBuilder()
+            .ConfigureLogging(b => b.ClearProviders().AddProvider(new TestLoggerProvider(logs)))
+            .ConfigureServices(s =>
             {
-                sink.Add(new LogEntry(logLevel, formatter(state, exception), exception));
-            }
-        }
+                s.AddSingleton(counter);
+                s.AddBackgroundJob<FailingTask>();
+                s.AddBackgroundJob<DelayedTask>();
+            })
+            .Build();
+
+        await host.StartAsync();
+        await Task.Delay(300);
+        await host.StopAsync();
+
+        // Failing job increments then throws, delayed increments after
+        Assert.Equal(2, counter.Value);
+        Assert.Contains(logs,
+            l => l.Level == LogLevel.Information && l.Message.Contains("started", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logs,
+            l => l.Level == LogLevel.Information && l.Message.Contains("finished", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logs, l => l.Level == LogLevel.Error && l.Exception is InvalidOperationException);
     }
 
     [Fact]
@@ -134,59 +118,117 @@ public class BackgroundJobTests
         await host.StopAsync();
     }
 
-    [Fact]
-    public async Task FailingJobDoesNotPreventOtherJobsAndLogsError()
+    private static void ResetHostAddedFlag()
     {
-        ResetHostAddedFlag();
-        var counter = new Counter();
-        var logs = new ConcurrentBag<LogEntry>();
-        using var host = new HostBuilder()
-            .ConfigureLogging(b => b.ClearProviders().AddProvider(new TestLoggerProvider(logs)))
-            .ConfigureServices(s =>
+        var type = typeof(TaskSetups);
+        var field = type.GetField("_added", BindingFlags.Static | BindingFlags.NonPublic);
+        field!.SetValue(null, false);
+    }
+
+    #endregion
+
+    private sealed class Counter
+    {
+        #region Fields
+
+        private int _count;
+
+        #endregion
+
+        #region Properties
+
+        public int Value => _count;
+
+        #endregion
+
+        #region Methods
+
+        public void Increment() => Interlocked.Increment(ref _count);
+
+        #endregion
+    }
+
+    private sealed class CountingTask(TaskCompletionSource<bool> tcs, Counter counter) : IBackgroundTask
+    {
+        #region Methods
+
+        public Task RunAsync(CancellationToken cancellationToken = default)
+        {
+            counter.Increment();
+            tcs.TrySetResult(true);
+            return Task.CompletedTask;
+        }
+
+        #endregion
+    }
+
+    private sealed class DelayedTask(Counter counter) : IBackgroundTask
+    {
+        #region Methods
+
+        public async Task RunAsync(CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(50, cancellationToken);
+            counter.Increment();
+        }
+
+        #endregion
+    }
+
+    private sealed class FailingTask(Counter counter) : IBackgroundTask
+    {
+        #region Methods
+
+        public Task RunAsync(CancellationToken cancellationToken = default)
+        {
+            counter.Increment();
+            throw new InvalidOperationException("Boom");
+        }
+
+        #endregion
+    }
+
+    private sealed record LogEntry(LogLevel Level, string Message, Exception? Exception);
+
+    private sealed class ScannedTask(Counter counter) : IBackgroundTask
+    {
+        #region Methods
+
+        public Task RunAsync(CancellationToken cancellationToken = default)
+        {
+            counter.Increment();
+            return Task.CompletedTask;
+        }
+
+        #endregion
+    }
+
+    private sealed class TestLoggerProvider(ConcurrentBag<LogEntry> sink) : ILoggerProvider
+    {
+        #region Methods
+
+        public ILogger CreateLogger(string categoryName) => new TestLogger(sink);
+
+        public void Dispose()
+        {
+        }
+
+        #endregion
+
+        private sealed class TestLogger(ConcurrentBag<LogEntry> sink) : ILogger
+        {
+            #region Methods
+
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+                Func<TState, Exception?, string> formatter)
             {
-                s.AddSingleton(counter);
-                s.AddBackgroundJob<FailingTask>();
-                s.AddBackgroundJob<DelayedTask>();
-            })
-            .Build();
+                sink.Add(new LogEntry(logLevel, formatter(state, exception), exception));
+            }
 
-        await host.StartAsync();
-        await Task.Delay(300);
-        await host.StopAsync();
-
-        // Failing job increments then throws, delayed increments after
-        Assert.Equal(2, counter.Value);
-        Assert.Contains(logs,
-            l => l.Level == LogLevel.Information && l.Message.Contains("started", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(logs,
-            l => l.Level == LogLevel.Information && l.Message.Contains("finished", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(logs, l => l.Level == LogLevel.Error && l.Exception is InvalidOperationException);
-    }
-
-    [Fact]
-    public void AddBackgroundJobRegistersHostOnlyOnce()
-    {
-        ResetHostAddedFlag();
-        var services = new ServiceCollection();
-        services.AddBackgroundJob<CountingTask>();
-        services.AddBackgroundJob<DelayedTask>();
-        var hostDescriptors = services.Where(d =>
-            d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(BackgroundJobHost)).ToList();
-        Assert.Single(hostDescriptors);
-    }
-
-    [Fact]
-    public void AddBackgroundJobFromScansAssemblyForJobs()
-    {
-        ResetHostAddedFlag();
-        var services = new ServiceCollection();
-        services.AddSingleton(new Counter());
-        services.AddSingleton(new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
-        services.AddBackgroundJobFrom([typeof(BackgroundJobTests).Assembly]);
-
-        var provider = services.BuildServiceProvider();
-        var jobs = provider.GetServices<IBackgroundTask>().ToList();
-        jobs.Count.ShouldBeGreaterThan(1);
-        jobs.Any(j => j is ScannedTask).ShouldBeTrue();
+            #endregion
+        }
     }
 }

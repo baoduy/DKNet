@@ -2,6 +2,8 @@ namespace EfCore.HookTests;
 
 public class SetupTest
 {
+    #region Methods
+
     [Fact]
     public void ServiceProviderSetupTest()
     {
@@ -14,4 +16,6 @@ public class SetupTest
         var instance2 = provider.GetService<IHookAsync>();
         instance2.ShouldNotBeNull();
     }
+
+    #endregion
 }

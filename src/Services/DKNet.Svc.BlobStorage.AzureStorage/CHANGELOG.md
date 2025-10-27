@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README documentation with usage examples
 - Standardized changelog following Keep a Changelog format
 - Enhanced API documentation for Azure Storage integration
@@ -15,18 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error handling and resilience patterns for production use
 
 ### Changed
+
 - N/A
 
 ### Deprecated
+
 - N/A
 
 ### Removed
+
 - N/A
 
 ### Fixed
+
 - N/A
 
 ### Security
+
 - N/A
 
 ## Migration Guide
@@ -38,19 +44,25 @@ This section will be updated as breaking changes are introduced in future versio
 Currently, all APIs are stable and no migration is required.
 
 #### Service Implementation
+
 All Azure Storage service implementations maintain backward compatibility:
+
 - `AzureStorageBlobService` implementing `IBlobService`
 - All method signatures remain stable
 
 #### Configuration
+
 All configuration options maintain backward compatibility:
+
 - `AzureStorageOptions`
 - `AddAzureStorageAdapter()` registration method
 
 #### Connection Strings
+
 All connection string formats remain supported:
+
 - Storage account connection strings
-- SAS token connection strings  
+- SAS token connection strings
 - Development storage (Azurite) connection strings
 
 ---

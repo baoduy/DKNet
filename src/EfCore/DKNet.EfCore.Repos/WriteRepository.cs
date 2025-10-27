@@ -6,10 +6,7 @@ namespace DKNet.EfCore.Repos;
 public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TEntity>
     where TEntity : class
 {
-    public EntityEntry<TEntity> Entry(TEntity entity) => dbContext.Entry(entity);
-
-    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
-        => dbContext.Database.BeginTransactionAsync(cancellationToken);
+    #region Methods
 
     public virtual async ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default)
         => await dbContext.AddAsync(entity, cancellationToken);
@@ -18,9 +15,13 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
         CancellationToken cancellationToken = default) =>
         await dbContext.AddRangeAsync(entities, cancellationToken);
 
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        => dbContext.Database.BeginTransactionAsync(cancellationToken);
+
     public virtual void Delete(TEntity entity) => dbContext.Set<TEntity>().Remove(entity);
 
     public virtual void DeleteRange(IEnumerable<TEntity> entities) => dbContext.Set<TEntity>().RemoveRange(entities);
+    public EntityEntry<TEntity> Entry(TEntity entity) => dbContext.Entry(entity);
 
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -42,4 +43,6 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
         foreach (var entity in entities)
             await UpdateAsync(entity, cancellationToken);
     }
+
+    #endregion
 }

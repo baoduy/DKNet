@@ -4,6 +4,8 @@ namespace SlimBus.Api.Configs.Idempotency;
 
 public interface IIdempotencyKeyRepository
 {
+    #region Methods
+
     /// <summary>
     ///     Checks if the key has been processed. If it has, returns true and the result if provided when marking the key as
     ///     processed.
@@ -21,6 +23,8 @@ public interface IIdempotencyKeyRepository
     /// <param name="result">The result can be null.</param>
     /// <returns></returns>
     ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, string? result);
+
+    #endregion
 }
 
 internal class IdempotencyKeyRepository(
@@ -28,7 +32,13 @@ internal class IdempotencyKeyRepository(
     IOptions<IdempotencyOptions> options,
     ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyRepository
 {
+    #region Fields
+
     private readonly IdempotencyOptions _options = options.Value;
+
+    #endregion
+
+    #region Methods
 
     public async ValueTask<(bool processed, string? result)> IsKeyProcessedAsync(string idempotencyKey)
     {
@@ -55,4 +65,6 @@ internal class IdempotencyKeyRepository(
             AbsoluteExpirationRelativeToNow = _options.Expiration
         });
     }
+
+    #endregion
 }

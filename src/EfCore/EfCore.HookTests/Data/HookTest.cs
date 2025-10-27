@@ -5,25 +5,31 @@ namespace EfCore.HookTests.Data;
 
 public class HookTest : IHookAsync
 {
-    public static bool BeforeCalled { get; private set; }
+    #region Properties
+
+    public static int AfterCallCount { get; private set; }
     public static bool AfterCalled { get; private set; }
     public static int BeforeCallCount { get; private set; }
-    public static int AfterCallCount { get; private set; }
+    public static bool BeforeCalled { get; private set; }
     public bool ShouldThrowException { get; set; }
 
-    public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
-    {
-        Trace.WriteLine($"Running BeforeSaveAsync at {DateTime.Now}");
-        BeforeCalled = context.Entities.Count > 0;
-        BeforeCallCount++;
-        return Task.CompletedTask;
-    }
+    #endregion
+
+    #region Methods
 
     public Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         Trace.WriteLine($"Running RunAfterSaveAsync at {DateTime.Now}");
         AfterCalled = context.Entities.Count > 0;
         AfterCallCount++;
+        return Task.CompletedTask;
+    }
+
+    public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    {
+        Trace.WriteLine($"Running BeforeSaveAsync at {DateTime.Now}");
+        BeforeCalled = context.Entities.Count > 0;
+        BeforeCallCount++;
         return Task.CompletedTask;
     }
 
@@ -35,4 +41,6 @@ public class HookTest : IHookAsync
         AfterCallCount = 0;
         ShouldThrowException = false;
     }
+
+    #endregion
 }

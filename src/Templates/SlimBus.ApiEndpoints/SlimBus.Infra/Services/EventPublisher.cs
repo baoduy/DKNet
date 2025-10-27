@@ -9,8 +9,12 @@ namespace SlimBus.Infra.Services;
 /// <param name="bus"></param>
 internal sealed class EventPublisher(IMessageBus bus) : IEventPublisher
 {
+    #region Methods
+
     public async Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
         await bus.Publish(eventObj, cancellationToken: cancellationToken);
     }
+
+    #endregion
 }

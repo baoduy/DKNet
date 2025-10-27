@@ -4,10 +4,21 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
     : IReadRepository<TEntity>
     where TEntity : class
 {
+    #region Fields
+
     private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
-    public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>().AsNoTracking();
-    public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
+    #endregion
+
+    #region Methods
+
+    public Task<int> CountAsync(Expression<Func<TEntity, bool>> filter,
+        CancellationToken cancellationToken = default) =>
+        Query(filter).CountAsync(cancellationToken);
+
+    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter,
+        CancellationToken cancellationToken = default)
+        => Query(filter).AnyAsync(cancellationToken);
 
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
         => FindAsync([keyValue], cancellationToken);
@@ -19,13 +30,8 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
         CancellationToken cancellationToken = default) =>
         Query(filter).FirstOrDefaultAsync(cancellationToken);
 
-    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter,
-        CancellationToken cancellationToken = default)
-        => Query(filter).AnyAsync(cancellationToken);
-
-    public Task<int> CountAsync(Expression<Func<TEntity, bool>> filter,
-        CancellationToken cancellationToken = default) =>
-        Query(filter).CountAsync(cancellationToken);
+    public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>().AsNoTracking();
+    public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
 
     public IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
@@ -35,4 +41,6 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
         var query = Query(filter);
         return query.ProjectToType<TModel>(_mapper.Config);
     }
+
+    #endregion
 }

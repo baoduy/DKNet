@@ -20,6 +20,8 @@ namespace DKNet.Fw.Extensions.TypeExtractors;
 /// </remarks>
 public interface ITypeExtractor : IEnumerable<Type>
 {
+    #region Methods
+
     /// <summary>
     ///     Filters the types to include only abstract classes.
     /// </summary>
@@ -159,4 +161,6 @@ public interface ITypeExtractor : IEnumerable<Type>
     /// <param name="predicate">The predicate to filter by.</param>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
     ITypeExtractor Where(Expression<Func<Type, bool>>? predicate);
+
+    #endregion
 }

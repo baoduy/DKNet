@@ -6,7 +6,13 @@ namespace SlimBus.Api.Configs;
 [ExcludeFromCodeCoverage]
 internal static class FluentValidationConfig
 {
+    #region Properties
+
     public static bool ConfigAdded { get; private set; }
+
+    #endregion
+
+    #region Methods
 
     public static WebApplicationBuilder AddFluentValidationConfig(this WebApplicationBuilder builder)
     {
@@ -16,4 +22,6 @@ internal static class FluentValidationConfig
         ConfigAdded = true;
         return builder;
     }
+
+    #endregion
 }

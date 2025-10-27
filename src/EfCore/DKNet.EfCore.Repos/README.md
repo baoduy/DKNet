@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Concrete implementations of the Repository pattern for Entity Framework Core, providing ready-to-use repository classes that implement the abstractions from DKNet.EfCore.Repos.Abstractions. This package includes generic repositories, automatic DI registration, and Mapster integration for projections.
+Concrete implementations of the Repository pattern for Entity Framework Core, providing ready-to-use repository classes
+that implement the abstractions from DKNet.EfCore.Repos.Abstractions. This package includes generic repositories,
+automatic DI registration, and Mapster integration for projections.
 
 ## Features
 
@@ -285,12 +287,14 @@ services.AddScoped<IProductRepository, ProductRepository>();
 ### Key Methods
 
 #### Read Operations
+
 - `Gets()` - Get IQueryable for building complex queries
 - `GetDto<TModel>(filter?)` - Get projected DTOs with optional filtering
 - `FindAsync(id)` - Find entity by primary key
 - `FindAsync(filter)` - Find first entity matching filter
 
 #### Write Operations
+
 - `AddAsync(entity)` - Add single entity
 - `AddRangeAsync(entities)` - Add multiple entities
 - `UpdateAsync(entity)` - Update entity
@@ -298,6 +302,7 @@ services.AddScoped<IProductRepository, ProductRepository>();
 - `SaveChangesAsync()` - Persist changes to database
 
 #### Transaction Operations
+
 - `BeginTransactionAsync()` - Start database transaction
 - `Entry(entity)` - Get EntityEntry for change tracking
 
@@ -518,4 +523,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

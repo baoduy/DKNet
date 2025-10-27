@@ -3,8 +3,14 @@ namespace SlimBus.Api.Configs.GlobalExceptions;
 [ExcludeFromCodeCoverage]
 internal static class GlobalExceptionConfigs
 {
+    #region Fields
+
     // A flag to check if the global exception configuration has been added
     private static bool _configAdded;
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     ///     Configures the services to add global exception handling.
@@ -53,4 +59,6 @@ internal static class GlobalExceptionConfigs
         // Return the web application
         return app;
     }
+
+    #endregion
 }

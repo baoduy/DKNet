@@ -2,33 +2,13 @@ namespace EfCore.Extensions.Tests;
 
 public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 {
+    #region Fields
+
     private readonly MyDbContext _db = fixture.Db!;
 
+    #endregion
 
-    [Fact]
-    public async Task TestRegisterEntitiesDefaultOptions()
-    {
-        //Create User with Address
-        await _db.Set<User>().AddAsync(new User("Duy")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang",
-            Addresses =
-            {
-                new Address
-                {
-                    OwnedEntity = new OwnedEntity { Name = "123" },
-                    City = "HBD",
-                    Street = "HBD"
-                }
-            }
-        });
-
-        await _db.SaveChangesAsync();
-
-        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
-        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
-    }
+    #region Methods
 
     [Fact]
     public async Task TestCreateDb()
@@ -100,6 +80,34 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
         var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
+
+
+    [Fact]
+    public async Task TestRegisterEntitiesDefaultOptions()
+    {
+        //Create User with Address
+        await _db.Set<User>().AddAsync(new User("Duy")
+        {
+            FirstName = "Duy",
+            LastName = "Hoang",
+            Addresses =
+            {
+                new Address
+                {
+                    OwnedEntity = new OwnedEntity { Name = "123" },
+                    City = "HBD",
+                    Street = "HBD"
+                }
+            }
+        });
+
+        await _db.SaveChangesAsync();
+
+        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
+    }
+
+    #endregion
 
     // [Fact]
     // public async Task TestWithCustomEntityMapperBad()

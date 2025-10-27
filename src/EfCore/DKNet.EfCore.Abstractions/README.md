@@ -5,7 +5,9 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-Core abstractions and interfaces for Entity Framework Core applications implementing Domain-Driven Design (DDD) patterns. This package provides essential base classes, interfaces, and attributes for building robust data access layers with auditing, events, and entity management capabilities.
+Core abstractions and interfaces for Entity Framework Core applications implementing Domain-Driven Design (DDD)
+patterns. This package provides essential base classes, interfaces, and attributes for building robust data access
+layers with auditing, events, and entity management capabilities.
 
 ## Features
 
@@ -281,4 +283,5 @@ This project is licensed under the [MIT License](../../../../LICENSE).
 
 ---
 
-Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern, scalable applications.
+Part of the [DKNet Framework](https://github.com/baoduy/DKNet) - A comprehensive .NET framework for building modern,
+scalable applications.

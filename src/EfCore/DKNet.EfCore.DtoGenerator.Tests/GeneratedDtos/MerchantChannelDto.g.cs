@@ -32,14 +32,6 @@ public partial record MerchantChannelDto
     /// </summary>
     public required string Settlement { get; init; }
     /// <summary>
-    /// Gets or sets the LastModifiedBy.
-    /// </summary>
-    public required string LastModifiedBy { get; init; }
-    /// <summary>
-    /// Gets or sets the LastModifiedOn.
-    /// </summary>
-    public DateTimeOffset LastModifiedOn { get; init; }
-    /// <summary>
     /// Gets or sets the CreatedBy.
     /// </summary>
     [MaxLength(500)]
@@ -48,6 +40,14 @@ public partial record MerchantChannelDto
     /// Gets or sets the CreatedOn.
     /// </summary>
     public DateTimeOffset CreatedOn { get; init; }
+    /// <summary>
+    /// Gets or sets the LastModifiedBy.
+    /// </summary>
+    public required string LastModifiedBy { get; init; }
+    /// <summary>
+    /// Gets or sets the LastModifiedOn.
+    /// </summary>
+    public DateTimeOffset LastModifiedOn { get; init; }
     /// <summary>
     /// Gets or sets the Id.
     /// </summary>

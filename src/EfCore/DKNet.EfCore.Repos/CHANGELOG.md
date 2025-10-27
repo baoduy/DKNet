@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README documentation with usage examples
 - Standardized changelog following Keep a Changelog format
 - Enhanced API documentation for all repository implementations
@@ -15,18 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit of Work pattern examples and CQRS implementation guides
 
 ### Changed
+
 - N/A
 
 ### Deprecated
+
 - N/A
 
 ### Removed
+
 - N/A
 
 ### Fixed
+
 - N/A
 
 ### Security
+
 - N/A
 
 ## Migration Guide
@@ -38,17 +44,23 @@ This section will be updated as breaking changes are introduced in future versio
 Currently, all APIs are stable and no migration is required.
 
 #### Repository Implementations
+
 All repository implementations maintain backward compatibility:
+
 - `Repository<TEntity>`
 - `ReadRepository<TEntity>`
 - `WriteRepository<TEntity>`
 
 #### Service Registration
+
 All service registration extensions maintain backward compatibility:
+
 - `AddGenericRepositories<TDbContext>()`
 
 #### Mapster Integration
+
 All Mapster integration features maintain backward compatibility:
+
 - `GetDto<TModel>()` projections
 - Automatic mapper injection
 

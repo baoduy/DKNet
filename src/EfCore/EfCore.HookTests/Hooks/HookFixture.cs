@@ -4,8 +4,27 @@ namespace EfCore.HookTests.Hooks;
 
 public sealed class HookFixture : IAsyncLifetime
 {
+    #region Fields
+
     private MsSqlContainer _sqlContainer = null!;
+
+    #endregion
+
+    #region Properties
+
     public ServiceProvider Provider { get; private set; } = null!;
+
+    #endregion
+
+    #region Methods
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    public string GetConnectionString() =>
+        _sqlContainer?.GetConnectionString()
+            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException(
+            "SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
@@ -30,11 +49,5 @@ public sealed class HookFixture : IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    public string GetConnectionString() =>
-        _sqlContainer?.GetConnectionString()
-            .Replace("Database=master", "Database=HookDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
+    #endregion
 }

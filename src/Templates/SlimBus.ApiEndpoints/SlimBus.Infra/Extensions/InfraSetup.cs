@@ -9,6 +9,22 @@ namespace SlimBus.Infra.Extensions;
 [ExcludeFromCodeCoverage]
 public static class InfraSetup
 {
+    #region Methods
+
+    private static IServiceCollection AddImplementations(this IServiceCollection services)
+    {
+        services.Scan(s => s.FromAssemblies(typeof(InfraSetup).Assembly)
+            .AddClasses(c => c.Where(t =>
+                t is { IsSealed: true, Namespace: not null }
+                && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
+                    || t.Namespace!.Contains(".Services", StringComparison.Ordinal))
+            ), false)
+            .AsImplementedInterfaces()
+            .WithScopedLifetime());
+
+        return services;
+    }
+
     public static IServiceCollection AddInfraServices(this IServiceCollection service)
     {
         service
@@ -26,20 +42,6 @@ public static class InfraSetup
             });
 
         return service;
-    }
-
-    private static IServiceCollection AddImplementations(this IServiceCollection services)
-    {
-        services.Scan(s => s.FromAssemblies(typeof(InfraSetup).Assembly)
-            .AddClasses(c => c.Where(t =>
-                t is { IsSealed: true, Namespace: not null }
-                && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
-                    || t.Namespace!.Contains(".Services", StringComparison.Ordinal))
-            ), false)
-            .AsImplementedInterfaces()
-            .WithScopedLifetime());
-
-        return services;
     }
 
     internal static DbContextOptionsBuilder UseSqlWithMigration(this DbContextOptionsBuilder builder,
@@ -63,4 +65,6 @@ public static class InfraSetup
                 .EnableRetryOnFailure()
                 .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
     }
+
+    #endregion
 }

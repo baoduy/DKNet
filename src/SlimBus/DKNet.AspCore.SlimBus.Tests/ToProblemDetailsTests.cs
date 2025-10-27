@@ -8,12 +8,7 @@ namespace DKNet.AspCore.SlimBus.Tests;
 
 public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
 {
-    [Fact]
-    public void ToProblemsNull()
-    {
-        var rs = Result.Ok("The id is invalid.").ToProblemDetails();
-        rs.ShouldBeNull();
-    }
+    #region Methods
 
     [Fact]
     public void ToProblems()
@@ -23,6 +18,13 @@ public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
         rs.Title.ShouldBe("Error");
 
         testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, JsonSerializerOptions.Default));
+    }
+
+    [Fact]
+    public void ToProblemsNull()
+    {
+        var rs = Result.Ok("The id is invalid.").ToProblemDetails();
+        rs.ShouldBeNull();
     }
 
     [Fact]
@@ -36,4 +38,6 @@ public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
         rs!.Status.ShouldBe((int)HttpStatusCode.BadRequest);
         testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, JsonSerializerOptions.Default));
     }
+
+    #endregion
 }

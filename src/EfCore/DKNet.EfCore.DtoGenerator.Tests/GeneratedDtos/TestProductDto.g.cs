@@ -10,31 +10,14 @@ namespace DKNet.EfCore.DtoGenerator.Tests.Features;
 public partial record TestProductDto
 {
     /// <summary>
-    /// Gets or sets the Id.
+    /// Gets or sets the CreatedDate.
     /// </summary>
-    public Guid Id { get; init; }
+    public DateTime CreatedDate { get; init; }
     /// <summary>
-    /// Gets or sets the Name.
+    /// Gets or sets the Description.
     /// </summary>
-    [Required]
-    [StringLength(100, MinimumLength = 3)]
-    public required string Name { get; init; }
-    /// <summary>
-    /// Gets or sets the Sku.
-    /// </summary>
-    [Required]
-    [MaxLength(50)]
-    public required string Sku { get; init; }
-    /// <summary>
-    /// Gets or sets the Price.
-    /// </summary>
-    [Range(0.01, 999999.99)]
-    public decimal Price { get; init; }
-    /// <summary>
-    /// Gets or sets the StockQuantity.
-    /// </summary>
-    [Range(0, 10000)]
-    public int StockQuantity { get; init; }
+    [MaxLength(500)]
+    public string? Description { get; init; }
     /// <summary>
     /// Gets or sets the Email.
     /// </summary>
@@ -42,26 +25,43 @@ public partial record TestProductDto
     [MaxLength(200)]
     public required string Email { get; init; }
     /// <summary>
-    /// Gets or sets the Description.
+    /// Gets or sets the Id.
     /// </summary>
-    [MaxLength(500)]
-    public string? Description { get; init; }
+    public Guid Id { get; init; }
     /// <summary>
-    /// Gets or sets the WebsiteUrl.
+    /// Gets or sets the IsActive.
     /// </summary>
-    [Url]
-    public string? WebsiteUrl { get; init; }
+    public bool IsActive { get; init; }
+    /// <summary>
+    /// Gets or sets the Name.
+    /// </summary>
+    [Required]
+    [StringLength(100, MinimumLength = 3)]
+    public required string Name { get; init; }
     /// <summary>
     /// Gets or sets the PhoneNumber.
     /// </summary>
     [Phone]
     public string? PhoneNumber { get; init; }
     /// <summary>
-    /// Gets or sets the CreatedDate.
+    /// Gets or sets the Price.
     /// </summary>
-    public DateTime CreatedDate { get; init; }
+    [Range(0.01, 999999.99)]
+    public decimal Price { get; init; }
     /// <summary>
-    /// Gets or sets the IsActive.
+    /// Gets or sets the Sku.
     /// </summary>
-    public bool IsActive { get; init; }
+    [Required]
+    [MaxLength(50)]
+    public required string Sku { get; init; }
+    /// <summary>
+    /// Gets or sets the StockQuantity.
+    /// </summary>
+    [Range(0, 10000)]
+    public int StockQuantity { get; init; }
+    /// <summary>
+    /// Gets or sets the WebsiteUrl.
+    /// </summary>
+    [Url]
+    public string? WebsiteUrl { get; init; }
 }

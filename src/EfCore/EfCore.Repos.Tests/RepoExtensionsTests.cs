@@ -6,6 +6,8 @@ namespace EfCore.Repos.Tests;
 
 public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper output) : IClassFixture<RepositoryFixture>
 {
+    #region Methods
+
     private async Task CreateUser(int number = 1)
     {
         var repo = fixture.DbContext!;
@@ -55,4 +57,6 @@ public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper ou
         (await db.AddNewEntitiesFromNavigations()).ShouldBeGreaterThanOrEqualTo(1);
         await db.SaveChangesAsync().ShouldNotThrowAsync();
     }
+
+    #endregion
 }

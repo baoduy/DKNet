@@ -8,22 +8,7 @@ namespace SlimBus.Infra.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceBusSetup
 {
-    private static MessageBusBuilder AddMemoryBus(this MessageBusBuilder builder, Assembly serviceAssembly)
-    {
-        //Memory bus to handle the internal MediatR-Like processes
-        builder.AddChildBus("ImMemory", me =>
-            //https://github.com/zarusz/SlimMessageBus/blob/master/docs/provider_memory.md
-            me.WithProviderMemory(cf =>
-                {
-                    cf.EnableMessageHeaders = false;
-                    cf.EnableMessageSerialization = false;
-                    cf.EnableBlockingPublish = false;
-                })
-                .AutoDeclareFrom(serviceAssembly)
-                .AddServicesFromAssembly(serviceAssembly));
-
-        return builder;
-    }
+    #region Methods
 
     private static MessageBusBuilder AddAzureBus(this MessageBusBuilder builder, string connectionString)
     {
@@ -66,6 +51,23 @@ public static class ServiceBusSetup
         return builder;
     }
 
+    private static MessageBusBuilder AddMemoryBus(this MessageBusBuilder builder, Assembly serviceAssembly)
+    {
+        //Memory bus to handle the internal MediatR-Like processes
+        builder.AddChildBus("ImMemory", me =>
+            //https://github.com/zarusz/SlimMessageBus/blob/master/docs/provider_memory.md
+            me.WithProviderMemory(cf =>
+                {
+                    cf.EnableMessageHeaders = false;
+                    cf.EnableMessageSerialization = false;
+                    cf.EnableBlockingPublish = false;
+                })
+                .AutoDeclareFrom(serviceAssembly)
+                .AddServicesFromAssembly(serviceAssembly));
+
+        return builder;
+    }
+
     public static IServiceCollection AddServiceBus(this IServiceCollection service, IConfiguration configuration,
         Assembly serviceAssembly)
     {
@@ -84,4 +86,6 @@ public static class ServiceBusSetup
 
         return service;
     }
+
+    #endregion
 }

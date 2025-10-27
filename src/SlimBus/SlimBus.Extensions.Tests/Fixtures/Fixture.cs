@@ -7,6 +7,8 @@ namespace SlimBus.Extensions.Tests.Fixtures;
 
 public sealed class Fixture : IAsyncDisposable
 {
+    #region Constructors
+
     public Fixture()
     {
         ServiceProvider = new ServiceCollection()
@@ -32,7 +34,17 @@ public sealed class Fixture : IAsyncDisposable
         db.Database.EnsureCreated();
     }
 
+    #endregion
+
+    #region Properties
+
     public ServiceProvider ServiceProvider { get; }
 
+    #endregion
+
+    #region Methods
+
     public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
+
+    #endregion
 }

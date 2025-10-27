@@ -21,6 +21,8 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 /// <param name="dataOwnerProvider">The provider that supplies ownership information.</param>
 internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBeforeSaveHookAsync
 {
+    #region Methods
+
     /// <summary>
     ///     Executes before saving changes to ensure proper ownership assignment.
     /// </summary>
@@ -60,4 +62,6 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
                 own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
         }
     }
+
+    #endregion
 }

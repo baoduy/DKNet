@@ -2,12 +2,18 @@ namespace SlimBus.AppServices.Profiles.V1.Actions;
 
 public record DeleteProfileCommand : BaseCommand, Fluents.Requests.INoResponse
 {
+    #region Properties
+
     public required Guid Id { get; init; }
+
+    #endregion
 }
 
 internal sealed class DeleteProfileCommandHandler(ICustomerProfileRepo repository)
     : Fluents.Requests.IHandler<DeleteProfileCommand>
 {
+    #region Methods
+
     public async Task<IResultBase> OnHandle(DeleteProfileCommand request, CancellationToken cancellationToken)
     {
         if (request.Id == Guid.Empty)
@@ -23,4 +29,6 @@ internal sealed class DeleteProfileCommandHandler(ICustomerProfileRepo repositor
 
         return Result.Ok();
     }
+
+    #endregion
 }
