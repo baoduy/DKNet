@@ -150,9 +150,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.AuditLogs.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator", "EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj", "{6A4087FA-8514-4F23-8649-34871BF22866}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator.Tests", "EfCore\DKNet.EfCore.DtoGenerator.Tests\DKNet.EfCore.DtoGenerator.Tests.csproj", "{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DtoGenerator.Tests", "EfCore\EfCore.DtoGenerator.Tests\EfCore.DtoGenerator.Tests.csproj", "{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoEntities", "EfCore\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj", "{BD132A0C-DFD3-492E-A265-BDD230761BD2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Encryption", "EfCore\DKNet.EfCore.Encryption\DKNet.EfCore.Encryption.csproj", "{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Encryption.Tests", "EfCore\EfCore.Encryption.Tests\EfCore.Encryption.Tests.csproj", "{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -364,6 +368,14 @@ Global
 		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD132A0C-DFD3-492E-A265-BDD230761BD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -424,5 +436,7 @@ Global
 		{6A4087FA-8514-4F23-8649-34871BF22866} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{BD132A0C-DFD3-492E-A265-BDD230761BD2} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71} = {79AB749C-6325-4718-9BE0-36C750367F00}
 	EndGlobalSection
 EndGlobal

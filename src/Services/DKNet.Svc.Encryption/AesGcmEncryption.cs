@@ -91,12 +91,14 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
         ArgumentException.ThrowIfNullOrWhiteSpace(cipherPackage);
         var decoded = cipherPackage.FromBase64String();
+
         var parts = decoded.Split(':');
         if (parts.Length != 3) throw new ArgumentException("Invalid cipher package format", nameof(cipherPackage));
         var nonce = Convert.FromBase64String(parts[0]);
         var tag = Convert.FromBase64String(parts[1]);
         var cipher = Convert.FromBase64String(parts[2]);
         var plain = new byte[cipher.Length];
+
         lock (_aesGcm)
         {
             _aesGcm.Decrypt(nonce, cipher, tag, plain, associatedData);
@@ -125,10 +127,12 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
         ArgumentNullException.ThrowIfNull(plainText);
+
         var nonce = RandomNumberGenerator.GetBytes(NonceSize);
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
         var cipher = new byte[plainBytes.Length];
         var tag = new byte[TagSize];
+
         lock (_aesGcm)
         {
             _aesGcm.Encrypt(nonce, plainBytes, cipher, tag, associatedData);

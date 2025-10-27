@@ -25,14 +25,14 @@ public class EfCoreSetupTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var initialCount = EfCoreSetup.GlobalQueryFilters.Count;
+        var initialCount = EfCoreSetup.GlobalModelBuilders.Count;
 
         // Act
-        services.AddGlobalQueryFilter<TestGlobalQueryFilter>();
+        services.AddGlobalModelBuilder<TestGlobalQueryFilter>();
 
         // Assert
-        EfCoreSetup.GlobalQueryFilters.Count.ShouldBe(initialCount + 1);
-        EfCoreSetup.GlobalQueryFilters.ShouldContain(typeof(TestGlobalQueryFilter));
+        EfCoreSetup.GlobalModelBuilders.Count.ShouldBe(initialCount + 1);
+        EfCoreSetup.GlobalModelBuilders.ShouldContain(typeof(TestGlobalQueryFilter));
     }
 
     [Fact]
