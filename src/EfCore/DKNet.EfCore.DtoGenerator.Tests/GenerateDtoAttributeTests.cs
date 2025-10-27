@@ -1,21 +1,10 @@
-using DKNet.EfCore.DtoGenerator;
 using Shouldly;
 
 namespace DKNet.EfCore.DtoGenerator.Tests;
 
 public class GenerateDtoAttributeTests
 {
-    #region Test Entity
-
-    public class TestEntity
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    #endregion
-
-    #region Tests
+    #region Methods
 
     [Fact]
     public void Constructor_SetsEntityType()
@@ -46,35 +35,16 @@ public class GenerateDtoAttributeTests
     }
 
     [Fact]
-    public void Exclude_DefaultsToEmptyArray()
+    public void EntityFullName_WithTypeWithoutFullName_ReturnsName()
     {
         // Arrange
         var attribute = new GenerateDtoAttribute(typeof(TestEntity));
 
-        // Act & Assert
-        attribute.Exclude.ShouldNotBeNull();
-        attribute.Exclude.ShouldBeEmpty();
-    }
+        // Act
+        var fullName = attribute.EntityFullName;
 
-    [Fact]
-    public void Include_DefaultsToEmptyArray()
-    {
-        // Arrange
-        var attribute = new GenerateDtoAttribute(typeof(TestEntity));
-
-        // Act & Assert
-        attribute.Include.ShouldNotBeNull();
-        attribute.Include.ShouldBeEmpty();
-    }
-
-    [Fact]
-    public void IgnoreComplexType_DefaultsToFalse()
-    {
-        // Arrange
-        var attribute = new GenerateDtoAttribute(typeof(TestEntity));
-
-        // Act & Assert
-        attribute.IgnoreComplexType.ShouldBeFalse();
+        // Assert
+        fullName.ShouldNotBeNullOrEmpty();
     }
 
     [Fact]
@@ -92,17 +62,14 @@ public class GenerateDtoAttributeTests
     }
 
     [Fact]
-    public void Include_CanBeSet()
+    public void Exclude_DefaultsToEmptyArray()
     {
         // Arrange
         var attribute = new GenerateDtoAttribute(typeof(TestEntity));
-        var includeProperties = new[] { "Name", "Email" };
 
-        // Act
-        attribute.Include = includeProperties;
-
-        // Assert
-        attribute.Include.ShouldBe(includeProperties);
+        // Act & Assert
+        attribute.Exclude.ShouldNotBeNull();
+        attribute.Exclude.ShouldBeEmpty();
     }
 
     [Fact]
@@ -119,17 +86,49 @@ public class GenerateDtoAttributeTests
     }
 
     [Fact]
-    public void EntityFullName_WithTypeWithoutFullName_ReturnsName()
+    public void IgnoreComplexType_DefaultsToFalse()
     {
         // Arrange
         var attribute = new GenerateDtoAttribute(typeof(TestEntity));
 
+        // Act & Assert
+        attribute.IgnoreComplexType.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Include_CanBeSet()
+    {
+        // Arrange
+        var attribute = new GenerateDtoAttribute(typeof(TestEntity));
+        var includeProperties = new[] { "Name", "Email" };
+
         // Act
-        var fullName = attribute.EntityFullName;
+        attribute.Include = includeProperties;
 
         // Assert
-        fullName.ShouldNotBeNullOrEmpty();
+        attribute.Include.ShouldBe(includeProperties);
+    }
+
+    [Fact]
+    public void Include_DefaultsToEmptyArray()
+    {
+        // Arrange
+        var attribute = new GenerateDtoAttribute(typeof(TestEntity));
+
+        // Act & Assert
+        attribute.Include.ShouldNotBeNull();
+        attribute.Include.ShouldBeEmpty();
     }
 
     #endregion
+
+    public class TestEntity
+    {
+        #region Properties
+
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        #endregion
+    }
 }

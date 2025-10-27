@@ -2,70 +2,29 @@ using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
 using Mapster;
 using MapsterMapper;
-using Microsoft.EntityFrameworkCore;
-using Shouldly;
 
 namespace EfCore.Repos.Tests;
 
 public class RepositoryExtendedTests : IAsyncLifetime
 {
-    #region Test Entities
-
-    public class TestEntity
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int Age { get; set; }
-    }
-
-    public class TestEntityDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class TestDbContext : DbContext
-    {
-        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
-        {
-        }
-
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
-    }
-
-    #endregion
-
     #region Fields
 
     private TestDbContext? _dbContext;
-    private IRepository<TestEntity>? _repository;
     private IReadRepository<TestEntity>? _readRepository;
+    private IRepository<TestEntity>? _repository;
 
     #endregion
 
-    #region Setup/Teardown
+    #region Methods
 
-    public async Task InitializeAsync()
+    [Fact]
+    public async Task CountAsync_ReturnsCorrectCount()
     {
-        var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite("DataSource=:memory:")
-            .Options;
+        // Act
+        var count = await _repository!.CountAsync(e => e.Age > 25);
 
-        _dbContext = new TestDbContext(options);
-        await _dbContext.Database.OpenConnectionAsync();
-        await _dbContext.Database.EnsureCreatedAsync();
-
-        _repository = new Repository<TestEntity>(_dbContext);
-        _readRepository = new ReadRepository<TestEntity>(_dbContext);
-
-        // Seed some data
-        _dbContext.TestEntities.AddRange(
-            new TestEntity { Id = 1, Name = "John", Age = 30 },
-            new TestEntity { Id = 2, Name = "Jane", Age = 25 },
-            new TestEntity { Id = 3, Name = "Bob", Age = 35 }
-        );
-        await _dbContext.SaveChangesAsync();
-        _dbContext.ChangeTracker.Clear();
+        // Assert
+        count.ShouldBe(2);
     }
 
     public async Task DisposeAsync()
@@ -77,30 +36,24 @@ public class RepositoryExtendedTests : IAsyncLifetime
         }
     }
 
-    #endregion
-
-    #region Repository Tests
-
     [Fact]
-    public async Task FindAsync_WithKeyValue_ReturnsEntity()
+    public async Task ExistsAsync_WhenExists_ReturnsTrue()
     {
         // Act
-        var entity = await _repository!.FindAsync(1);
+        var exists = await _repository!.ExistsAsync(e => e.Name == "John");
 
         // Assert
-        entity.ShouldNotBeNull();
-        entity.Name.ShouldBe("John");
+        exists.ShouldBeTrue();
     }
 
     [Fact]
-    public async Task FindAsync_WithKeyValues_ReturnsEntity()
+    public async Task ExistsAsync_WhenNotExists_ReturnsFalse()
     {
         // Act
-        var entity = await _repository!.FindAsync(new object[] { 1 });
+        var exists = await _repository!.ExistsAsync(e => e.Name == "NonExistent");
 
         // Assert
-        entity.ShouldNotBeNull();
-        entity.Name.ShouldBe("John");
+        exists.ShouldBeFalse();
     }
 
     [Fact]
@@ -125,33 +78,48 @@ public class RepositoryExtendedTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CountAsync_ReturnsCorrectCount()
+    public async Task FindAsync_WithKeyValue_ReturnsEntity()
     {
         // Act
-        var count = await _repository!.CountAsync(e => e.Age > 25);
+        var entity = await _repository!.FindAsync(1);
 
         // Assert
-        count.ShouldBe(2);
+        entity.ShouldNotBeNull();
+        entity.Name.ShouldBe("John");
     }
 
     [Fact]
-    public async Task ExistsAsync_WhenExists_ReturnsTrue()
+    public async Task FindAsync_WithKeyValues_ReturnsEntity()
     {
         // Act
-        var exists = await _repository!.ExistsAsync(e => e.Name == "John");
+        var entity = await _repository!.FindAsync(new object[] { 1 });
 
         // Assert
-        exists.ShouldBeTrue();
+        entity.ShouldNotBeNull();
+        entity.Name.ShouldBe("John");
     }
 
-    [Fact]
-    public async Task ExistsAsync_WhenNotExists_ReturnsFalse()
+    public async Task InitializeAsync()
     {
-        // Act
-        var exists = await _repository!.ExistsAsync(e => e.Name == "NonExistent");
+        var options = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .Options;
 
-        // Assert
-        exists.ShouldBeFalse();
+        _dbContext = new TestDbContext(options);
+        await _dbContext.Database.OpenConnectionAsync();
+        await _dbContext.Database.EnsureCreatedAsync();
+
+        _repository = new Repository<TestEntity>(_dbContext);
+        _readRepository = new ReadRepository<TestEntity>(_dbContext);
+
+        // Seed some data
+        _dbContext.TestEntities.AddRange(
+            new TestEntity { Id = 1, Name = "John", Age = 30 },
+            new TestEntity { Id = 2, Name = "Jane", Age = 25 },
+            new TestEntity { Id = 3, Name = "Bob", Age = 35 }
+        );
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
     }
 
     [Fact]
@@ -177,19 +145,6 @@ public class RepositoryExtendedTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Query_WithMapperAndNoMapper_ThrowsException()
-    {
-        // Arrange
-        var repo = new Repository<TestEntity>(_dbContext!);
-
-        // Act & Assert
-        Should.Throw<InvalidOperationException>(() =>
-        {
-            repo.Query<TestEntityDto>(e => e.Age > 25);
-        });
-    }
-
-    [Fact]
     public void Query_WithMapper_ReturnsProjectedQueryable()
     {
         // Arrange
@@ -207,41 +162,14 @@ public class RepositoryExtendedTests : IAsyncLifetime
         query.Count().ShouldBe(2);
     }
 
-    #endregion
-
-    #region ReadRepository Tests
-
     [Fact]
-    public async Task ReadRepository_FindAsync_WithKeyValue_ReturnsEntity()
+    public void Query_WithMapperAndNoMapper_ThrowsException()
     {
-        // Act
-        var entity = await _readRepository!.FindAsync(1);
+        // Arrange
+        var repo = new Repository<TestEntity>(_dbContext!);
 
-        // Assert
-        entity.ShouldNotBeNull();
-        entity.Name.ShouldBe("John");
-    }
-
-    [Fact]
-    public async Task ReadRepository_FindAsync_WithKeyValues_ReturnsEntity()
-    {
-        // Act
-        var entity = await _readRepository!.FindAsync(new object[] { 2 });
-
-        // Assert
-        entity.ShouldNotBeNull();
-        entity.Name.ShouldBe("Jane");
-    }
-
-    [Fact]
-    public async Task ReadRepository_FindAsync_WithFilter_ReturnsEntity()
-    {
-        // Act
-        var entity = await _readRepository!.FindAsync(e => e.Name == "Bob");
-
-        // Assert
-        entity.ShouldNotBeNull();
-        entity.Age.ShouldBe(35);
+        // Act & Assert
+        Should.Throw<InvalidOperationException>(() => { repo.Query<TestEntityDto>(e => e.Age > 25); });
     }
 
     [Fact]
@@ -275,6 +203,39 @@ public class RepositoryExtendedTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ReadRepository_FindAsync_WithFilter_ReturnsEntity()
+    {
+        // Act
+        var entity = await _readRepository!.FindAsync(e => e.Name == "Bob");
+
+        // Assert
+        entity.ShouldNotBeNull();
+        entity.Age.ShouldBe(35);
+    }
+
+    [Fact]
+    public async Task ReadRepository_FindAsync_WithKeyValue_ReturnsEntity()
+    {
+        // Act
+        var entity = await _readRepository!.FindAsync(1);
+
+        // Assert
+        entity.ShouldNotBeNull();
+        entity.Name.ShouldBe("John");
+    }
+
+    [Fact]
+    public async Task ReadRepository_FindAsync_WithKeyValues_ReturnsEntity()
+    {
+        // Act
+        var entity = await _readRepository!.FindAsync(new object[] { 2 });
+
+        // Assert
+        entity.ShouldNotBeNull();
+        entity.Name.ShouldBe("Jane");
+    }
+
+    [Fact]
     public void ReadRepository_Query_ReturnsNoTrackingQueryable()
     {
         // Act
@@ -297,19 +258,6 @@ public class RepositoryExtendedTests : IAsyncLifetime
     }
 
     [Fact]
-    public void ReadRepository_Query_WithMapperAndNoMapper_ThrowsException()
-    {
-        // Arrange
-        var repo = new ReadRepository<TestEntity>(_dbContext!);
-
-        // Act & Assert
-        Should.Throw<InvalidOperationException>(() =>
-        {
-            repo.Query<TestEntityDto>(e => e.Age > 25);
-        });
-    }
-
-    [Fact]
     public void ReadRepository_Query_WithMapper_ReturnsProjectedQueryable()
     {
         // Arrange
@@ -327,5 +275,53 @@ public class RepositoryExtendedTests : IAsyncLifetime
         query.Count().ShouldBe(2);
     }
 
+    [Fact]
+    public void ReadRepository_Query_WithMapperAndNoMapper_ThrowsException()
+    {
+        // Arrange
+        var repo = new ReadRepository<TestEntity>(_dbContext!);
+
+        // Act & Assert
+        Should.Throw<InvalidOperationException>(() => { repo.Query<TestEntityDto>(e => e.Age > 25); });
+    }
+
     #endregion
+
+    public class TestDbContext : DbContext
+    {
+        #region Constructors
+
+        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
+        {
+        }
+
+        #endregion
+
+        #region Properties
+
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+
+        #endregion
+    }
+
+    public class TestEntity
+    {
+        #region Properties
+
+        public int Age { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        #endregion
+    }
+
+    public class TestEntityDto
+    {
+        #region Properties
+
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        #endregion
+    }
 }

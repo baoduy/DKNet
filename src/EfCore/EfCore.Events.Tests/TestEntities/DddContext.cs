@@ -11,7 +11,7 @@ namespace EfCore.Events.Tests.TestEntities;
 /// </param>
 public class DddContext(
     DbContextOptions options,
-    [AllowNull] IEnumerable<IDataOwnerProvider> dataKeyProviders) : DbContext(options), IDataOwnerDbContext
+    IEnumerable<IDataOwnerProvider>? dataKeyProviders) : DbContext(options), IDataOwnerDbContext
 {
     #region Properties
 
@@ -22,5 +22,5 @@ public class DddContext(
     //Internal fields will be available in unit test project.
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once InconsistentNaming
-    internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders?.First();
+    internal readonly IDataOwnerProvider? _dataKeyProvider = dataKeyProviders?.FirstOrDefault();
 }

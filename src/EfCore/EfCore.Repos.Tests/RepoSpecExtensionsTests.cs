@@ -1,46 +1,10 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
-using Shouldly;
 
 namespace EfCore.Repos.Tests;
 
 public class RepoSpecExtensionsTests : IAsyncLifetime
 {
-    #region Test Entities
-
-    public class TestEntity
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-    }
-
-    public class TestDbContext : DbContext
-    {
-        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
-        {
-        }
-
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
-    }
-
-    public class ActiveEntitySpec : Specification<TestEntity>
-    {
-        public ActiveEntitySpec() : base(e => e.IsActive)
-        {
-        }
-    }
-
-    public class NameContainsSpec : Specification<TestEntity>
-    {
-        public NameContainsSpec(string name) : base(e => e.Name.Contains(name))
-        {
-        }
-    }
-
-    #endregion
-
     #region Fields
 
     private TestDbContext? _dbContext;
@@ -48,7 +12,16 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
 
     #endregion
 
-    #region Setup/Teardown
+    #region Methods
+
+    public async Task DisposeAsync()
+    {
+        if (_dbContext != null)
+        {
+            await _dbContext.Database.CloseConnectionAsync();
+            await _dbContext.DisposeAsync();
+        }
+    }
 
     public async Task InitializeAsync()
     {
@@ -72,19 +45,6 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
     }
-
-    public async Task DisposeAsync()
-    {
-        if (_dbContext != null)
-        {
-            await _dbContext.Database.CloseConnectionAsync();
-            await _dbContext.DisposeAsync();
-        }
-    }
-
-    #endregion
-
-    #region Tests
 
     [Fact]
     public void QuerySpecs_AppliesSpecification()
@@ -227,4 +187,54 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
     }
 
     #endregion
+
+    public class ActiveEntitySpec : Specification<TestEntity>
+    {
+        #region Constructors
+
+        public ActiveEntitySpec() : base(e => e.IsActive)
+        {
+        }
+
+        #endregion
+    }
+
+    public class NameContainsSpec : Specification<TestEntity>
+    {
+        #region Constructors
+
+        public NameContainsSpec(string name) : base(e => e.Name.Contains(name))
+        {
+        }
+
+        #endregion
+    }
+
+    public class TestDbContext : DbContext
+    {
+        #region Constructors
+
+        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
+        {
+        }
+
+        #endregion
+
+        #region Properties
+
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+
+        #endregion
+    }
+
+    public class TestEntity
+    {
+        #region Properties
+
+        public int Id { get; set; }
+        public bool IsActive { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        #endregion
+    }
 }

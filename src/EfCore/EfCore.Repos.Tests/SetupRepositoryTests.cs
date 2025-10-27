@@ -1,33 +1,29 @@
-using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Shouldly;
 
 namespace EfCore.Repos.Tests;
 
 public class SetupRepositoryTests
 {
-    #region Test Entity
+    #region Methods
 
-    public class TestEntity
+    [Fact]
+    public void AddGenericRepositories_MultipleCalls_DoesNotDuplicateDbContext()
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddDbContext<TestDbContext>(options =>
+            options.UseSqlite("DataSource=:memory:"));
+
+        // Act
+        services.AddGenericRepositories<TestDbContext>();
+        services.AddGenericRepositories<TestDbContext>();
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+        var dbContext = serviceProvider.GetService<DbContext>();
+        dbContext.ShouldNotBeNull();
     }
-
-    public class TestDbContext : DbContext
-    {
-        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
-        {
-        }
-
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
-    }
-
-    #endregion
-
-    #region Tests
 
     [Fact]
     public void AddGenericRepositories_RegistersRepositories()
@@ -42,7 +38,7 @@ public class SetupRepositoryTests
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var dbContext = serviceProvider.GetService<DbContext>();
         dbContext.ShouldNotBeNull();
         dbContext.ShouldBeOfType<TestDbContext>();
@@ -77,23 +73,6 @@ public class SetupRepositoryTests
     }
 
     [Fact]
-    public void AddRepoFactory_RegistersRepositoryFactory()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddDbContextFactory<TestDbContext>(options =>
-            options.UseSqlite("DataSource=:memory:"));
-
-        // Act
-        services.AddRepoFactory<TestDbContext>();
-
-        // Assert
-        var serviceProvider = services.BuildServiceProvider();
-        var factory = serviceProvider.GetService<IRepositoryFactory>();
-        factory.ShouldNotBeNull();
-    }
-
-    [Fact]
     public void AddRepoFactory_CanCreateRepositories()
     {
         // Arrange
@@ -119,22 +98,48 @@ public class SetupRepositoryTests
     }
 
     [Fact]
-    public void AddGenericRepositories_MultipleCalls_DoesNotDuplicateDbContext()
+    public void AddRepoFactory_RegistersRepositoryFactory()
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDbContext<TestDbContext>(options =>
+        services.AddDbContextFactory<TestDbContext>(options =>
             options.UseSqlite("DataSource=:memory:"));
 
         // Act
-        services.AddGenericRepositories<TestDbContext>();
-        services.AddGenericRepositories<TestDbContext>();
+        services.AddRepoFactory<TestDbContext>();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        var dbContext = serviceProvider.GetService<DbContext>();
-        dbContext.ShouldNotBeNull();
+        var factory = serviceProvider.GetService<IRepositoryFactory>();
+        factory.ShouldNotBeNull();
     }
 
     #endregion
+
+    public class TestDbContext : DbContext
+    {
+        #region Constructors
+
+        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
+        {
+        }
+
+        #endregion
+
+        #region Properties
+
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+
+        #endregion
+    }
+
+    public class TestEntity
+    {
+        #region Properties
+
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        #endregion
+    }
 }
