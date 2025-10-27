@@ -517,7 +517,7 @@ public class DtoMappingTests
             StockQuantity = 100,
             Email = "test@example.com",
             Description = "A valid product description",
-            WebsiteUrl = "https://example.com",
+            WebsiteUrl = new Uri("https://example.com"),
             PhoneNumber = "123-456-7890",
             CreatedDate = DateTime.UtcNow,
             IsActive = true

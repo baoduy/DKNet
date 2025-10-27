@@ -21,5 +21,5 @@ public partial record CustomerWithIncludeDto
     /// <summary>
     /// Gets or sets the Orders.
     /// </summary>
-    public List<Order> Orders { get; init; } = [];
+    public ICollection<Order> Orders { get; init; } = [];
 }

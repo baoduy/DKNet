@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Svc.BlobStorage.Tests;
 
 public class BlobServiceTests
@@ -195,7 +197,7 @@ public class BlobServiceTests
             CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
-            CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // Return empty enumerable for testing
             await Task.CompletedTask;

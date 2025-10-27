@@ -7,7 +7,6 @@ using DKNet.Svc.PdfGenerators.Options;
 using Markdig.Helpers;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Actions;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using UglyToad.PdfPig.Tokens;
 
 namespace DKNet.Svc.PdfGenerators.Services;
@@ -39,7 +38,7 @@ internal class TableOfContentsCreator
     private static readonly Regex InsertionRegex = new("""^(\[TOC]|\[\[_TOC_]]|<!-- toc -->)\r?$""",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-    private static readonly Regex LineBreakRegex = new("\r\n?|\n", RegexOptions.Compiled);
+    //private static readonly Regex LineBreakRegex = new("\r\n?|\n", RegexOptions.Compiled);
     private static readonly string Nl = Environment.NewLine;
 
     #endregion
@@ -128,7 +127,7 @@ internal class TableOfContentsCreator
             title = EmojiReg.Replace(title, string.Empty).Trim();
 
             var linkAddress = LinkHelper.Urilize(title, false);
-            linkAddress = "#" + linkAddress.ToLower();
+            linkAddress = "#" + linkAddress.ToLowerInvariant();
 
             // ensure every linkAddress is unique
             var counterVal = 2;
@@ -201,8 +200,8 @@ internal class TableOfContentsCreator
 
         foreach (var page in pdf.GetPages())
         {
-            var text = ContentOrderTextExtractor.GetText(page);
-            var lines = LineBreakRegex.Split(text);
+            //var text = ContentOrderTextExtractor.GetText(page);
+            //var lines = LineBreakRegex.Split(text);
             var annotations = page.GetAnnotations();
 
             // the invisible link rectangles in the TOC contains the link addresses and the destination page
@@ -213,7 +212,7 @@ internal class TableOfContentsCreator
                 if (annotation.Action!.Type != ActionType.GoTo
                     || !annotation.AnnotationDictionary.ContainsKey(NameToken.Dest))
                     continue;
-                // extract the destination form dictionary (instead of the # ther is a leading /)
+                // extract the destination form dictionary (instead of the # there is a leading /)
                 annotation.AnnotationDictionary.TryGet(NameToken.Dest, out var linkToken);
                 var linkAddress = linkToken!.ToString()!.Replace('/', '#');
                 // try to find the link address in all links
@@ -251,14 +250,9 @@ internal class TableOfContentsCreator
         // Fill in values that could not be found
         var length = _links.Length;
         for (var i = 0; i < length; ++i)
-        {
-            if (_linkPages[i] != null)
-                continue;
-
             _linkPages[i] = i == 0
                 ? new LinkWithPageNumber(_links[i], 1) // Assume first page
                 : new LinkWithPageNumber(_links[i], _linkPages[i - 1].PageNumber); // Assume same as previous
-        }
     }
 
     private string InternalToHtml(string markdownContent)
@@ -281,7 +275,7 @@ internal class TableOfContentsCreator
             htmlClasses += $" {leaderClass}";
         }
 
-        tocBuilder.Append($"<nav class=\"{htmlClasses}\">");
+        tocBuilder.Append(CultureInfo.InvariantCulture, $"<nav class=\"{htmlClasses}\">");
 
         foreach (var link in links)
         {

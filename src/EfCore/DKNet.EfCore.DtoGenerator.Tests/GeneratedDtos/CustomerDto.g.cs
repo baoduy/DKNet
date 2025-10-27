@@ -25,7 +25,7 @@ public partial record CustomerDto
     /// <summary>
     /// Gets or sets the Orders.
     /// </summary>
-    public List<Order> Orders { get; init; } = [];
+    public ICollection<Order> Orders { get; init; } = [];
     /// <summary>
     /// Gets or sets the PrimaryAddress.
     /// </summary>

@@ -14,7 +14,7 @@ public sealed class Order : EntityBase
 
     #region Properties
 
-    public List<OrderItem> Items { get; set; }
+    public ICollection<OrderItem> Items { get; private set; }
 
     public int OrderId { get; set; }
     public string OrderNumber { get; set; }
