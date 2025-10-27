@@ -14,11 +14,11 @@ internal sealed class UserGuidConfig : DefaultEntityTypeConfiguration<UserGuid>
         builder.Navigation(u => u.Addresses)
             .HasField("_addresses");
 
+        // SQLite doesn't support automatic row versioning like PostgreSQL or SQL Server
+        // Use a simple byte array concurrency token
         builder.Property(u => u.RowVersion)
             .IsRowVersion()
-            .IsConcurrencyToken()
-            .ValueGeneratedOnAddOrUpdate()
-            .HasColumnType("xid");
+            .IsConcurrencyToken();
 
         builder.HasMany(u => u.Addresses)
             .WithOne(a => a.User)

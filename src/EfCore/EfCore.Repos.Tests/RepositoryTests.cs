@@ -92,7 +92,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.BeginTransactionAsync(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fixture.Repository.BeginTransactionAsync(cts.Token));
     }
 
     [Fact]
@@ -135,7 +135,8 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await repo1.AddAsync(user);
         await repo1.SaveChangesAsync();
         var createdVersion = user.RowVersion;
-        createdVersion.ShouldBeGreaterThan(0u);
+        createdVersion.ShouldNotBeNull();
+        createdVersion.Length.ShouldBeGreaterThan(0);
 
         // 2. Simulate two users/contexts
         fixture.DbContext.ChangeTracker.Clear();
@@ -331,7 +332,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fixture.Repository.SaveChangesAsync(cts.Token));
     }
 
     [Fact]
