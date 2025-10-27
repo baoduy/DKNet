@@ -7,7 +7,7 @@ namespace EfCore.Events.Tests.EventPublisherTests;
 
 public sealed class EvenPublisherFixture : IAsyncLifetime
 {
-    private MsSqlContainer _sqlContainer= null!;
+    private MsSqlContainer? _sqlContainer;
 
     public ServiceProvider Provider { get; private set; } = null!;
 
@@ -30,7 +30,8 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
+                builder.UseAutoConfigModel([typeof(DddContext).Assembly])
+                    .UseSqlServer(GetConnectionString()))
             .BuildServiceProvider();
 
         var db = Provider.GetRequiredService<DddContext>();

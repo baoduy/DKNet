@@ -19,7 +19,7 @@ internal static class SequenceExtensions
     /// </summary>
     /// <param name="modelBuilder"></param>
     /// <param name="assemblies"></param>
-    internal static void RegisterSequencesFrom(this ModelBuilder modelBuilder, params Assembly[] assemblies)
+    internal static void RegisterSequences(this ModelBuilder modelBuilder, params Assembly[] assemblies)
     {
         var sequenceEnums = assemblies.SelectMany(a => a.Extract().Enums()).ToList()
             .Where(e => e.HasAttribute<SqlSequenceAttribute>())

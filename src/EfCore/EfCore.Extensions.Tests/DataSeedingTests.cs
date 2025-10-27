@@ -28,7 +28,7 @@ public class DataSeedingTests
         var options = new DbContextOptionsBuilder<MyDbContext>()
             .UseInMemoryDatabase("TestDb_Seeding")
             .UseAutoConfigModel()
-            .UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly)
+            .UseAutoDataSeeding([typeof(UserSeedingConfiguration).Assembly])
             .Options;
 
         await using var context = new MyDbContext(options);
@@ -48,6 +48,6 @@ public class DataSeedingTests
     {
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
-            ((DbContextOptionsBuilder)null!).UseAutoDataSeeding(typeof(UserSeedingConfiguration).Assembly));
+            ((DbContextOptionsBuilder)null!).UseAutoDataSeeding([typeof(UserSeedingConfiguration).Assembly]));
     }
 }

@@ -19,7 +19,7 @@ public class SqlServerFixture : IAsyncLifetime
             .EnableSensitiveDataLogging()
             .EnableDetailedErrors()
             .UseSqlServer(_sql.GetConnectionString())
-            .UseAutoConfigModel()
+            .UseAutoConfigModel([typeof(MyDbContext).Assembly])
             //DONOT use auto seeding here as there are a dedicated test for it
             //.UseAutoDataSeeding()
             .Options;

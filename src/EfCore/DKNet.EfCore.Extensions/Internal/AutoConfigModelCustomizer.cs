@@ -10,24 +10,37 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         original.Customize(modelBuilder, context);
     }
 
+    private static Assembly[] GetAssemblies(DbContext dbContext)
+    {
+        var options = dbContext.GetService<IDbContextOptions>();
+        var register = options.FindExtension<EntityAutoConfigRegister>();
+        var assemblies = register?.Assemblies ?? [];
+
+        if (assemblies.Length <= 0)
+            assemblies = [dbContext.GetType().Assembly];
+
+        return assemblies;
+    }
+
     private static void ConfigModelCreating(DbContext dbContext, ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        var assemblies = dbContext.GetType().Assembly;
+        var assemblies = GetAssemblies(dbContext);
 
         //Register Entities
-        modelBuilder.ApplyConfigurationsFromAssembly(assemblies);
+        foreach (var assembly in assemblies)
+            modelBuilder.ApplyConfigurationsFromAssembly(assembly);
 
         //Register StaticData Of
-        modelBuilder.RegisterDataSeedingFrom(assemblies);
+        modelBuilder.RegisterDataSeeding(assemblies);
 
         //Register Global Filter
-        modelBuilder.RegisterGlobalFilters(assemblies, dbContext);
+        modelBuilder.RegisterGlobalModelBuilders(assemblies, dbContext);
 
         //Register Sequence
         if (dbContext.IsSqlServer())
-            modelBuilder.RegisterSequencesFrom(assemblies);
+            modelBuilder.RegisterSequences(assemblies);
     }
 }

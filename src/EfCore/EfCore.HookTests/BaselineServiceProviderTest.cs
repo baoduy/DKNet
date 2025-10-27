@@ -6,8 +6,8 @@ namespace EfCore.HookTests;
 
 public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifetime
 {
-    private ServiceProvider _provider = null!;
-    private MsSqlContainer _sqlContainer = null!;
+    private ServiceProvider? _provider;
+    private MsSqlContainer? _sqlContainer;
 
     public async Task InitializeAsync()
     {
@@ -21,7 +21,9 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
         _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContext<HookContext>(o =>
-                o.UseSqlServer(GetConnectionString()).UseAutoConfigModel())
+                o.UseAutoConfigModel([typeof(HookContext).Assembly])
+                    .UseSqlServer(GetConnectionString())
+            )
             .BuildServiceProvider();
 
         var db = _provider.GetRequiredService<HookContext>();
@@ -30,7 +32,8 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
 
     public async Task DisposeAsync()
     {
-        await _provider.DisposeAsync();
+        if (_provider != null)
+            await _provider.DisposeAsync();
         if (_sqlContainer != null)
             await _sqlContainer.DisposeAsync();
     }
@@ -51,7 +54,7 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
             // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
             for (var i = 0; i < 25; i++)
             {
-                using var scope = _provider.CreateScope();
+                using var scope = _provider!.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<HookContext>();
 
                 var entity = new CustomerProfile { Name = $"Baseline Entity {i}" };

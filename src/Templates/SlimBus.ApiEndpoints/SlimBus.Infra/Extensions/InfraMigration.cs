@@ -9,9 +9,9 @@ public static class InfraMigration
     public static async Task MigrateDb(string connectionString)
     {
         //Db migration
-        await using var db = new CoreDbContext(new DbContextOptionsBuilder()
-            .UseSqlWithMigration(connectionString)
+        await using var db = new CoreDbContext(new DbContextOptionsBuilder<CoreDbContext>()
             .UseAutoConfigModel()
+            .UseSqlWithMigration(connectionString)
             .Options);
 
         await db.Database.MigrateAsync();

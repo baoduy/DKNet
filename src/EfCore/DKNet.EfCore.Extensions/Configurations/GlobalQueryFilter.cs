@@ -1,18 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DKNet.EfCore.Extensions.Configurations;
 
-/// <summary>
-///     This will be scans from the Assemblies when registering the services.
-///     Use this to apply the global filter for entity or add custom entities into DbContext.
-/// </summary>
-public interface IGlobalQueryFilter
-{
-    void Apply(ModelBuilder modelBuilder, DbContext context);
-}
-
-public abstract class GlobalQueryFilter : IGlobalQueryFilter
+public abstract class GlobalQueryFilter : IGlobalModelBuilder
 {
     private readonly MethodInfo _method = typeof(GlobalQueryFilter)
         .GetMethod(nameof(ApplyQueryFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -28,14 +20,15 @@ public abstract class GlobalQueryFilter : IGlobalQueryFilter
         }
     }
 
-    protected abstract void HasQueryFilter<TEntity>(EntityTypeBuilder<TEntity> builder, DbContext context)
+    protected abstract Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
         where TEntity : class;
 
     private void ApplyQueryFilter<TEntity>(ModelBuilder modelBuilder, DbContext context)
         where TEntity : class
     {
         //TODO: convert to named query filter when migrate to EFCore 10
-        HasQueryFilter(modelBuilder.Entity<TEntity>(), context);
+        var filter = HasQueryFilter<TEntity>(context);
+        modelBuilder.Entity<TEntity>().HasQueryFilter(filter);
     }
 
     protected abstract IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder);

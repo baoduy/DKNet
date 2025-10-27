@@ -6,8 +6,9 @@ namespace DKNet.EfCore.Extensions.Internal;
 /// <summary>
 ///     The Entity Mapping Register
 /// </summary>
-internal sealed class EntityAutoConfigRegister : IDbContextOptionsExtension
+internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbContextOptionsExtension
 {
+    public Assembly[] Assemblies { get; } = assemblies;
     private DbContextOptionsExtensionInfo? _info;
     public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
 
