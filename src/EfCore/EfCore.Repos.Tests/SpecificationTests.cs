@@ -108,7 +108,7 @@ public class SpecificationTests
         spec.IncludeQueries.ShouldBeEmpty();
         spec.OrderByQueries.ShouldBeEmpty();
         spec.OrderByDescendingQueries.ShouldBeEmpty();
-        spec.IgnoreQueryFilters.ShouldBeFalse();
+        spec.IsIgnoreQueryFilters.ShouldBeFalse();
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class SpecificationTests
         copiedSpec.IncludeQueries.Count.ShouldBe(1);
         copiedSpec.OrderByQueries.Count.ShouldBe(1);
         copiedSpec.OrderByDescendingQueries.Count.ShouldBe(1);
-        copiedSpec.IgnoreQueryFilters.ShouldBeTrue();
+        copiedSpec.IsIgnoreQueryFilters.ShouldBeTrue();
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class SpecificationTests
         spec.IncludeQueries.ShouldBeEmpty();
         spec.OrderByQueries.ShouldBeEmpty();
         spec.OrderByDescendingQueries.ShouldBeEmpty();
-        spec.IgnoreQueryFilters.ShouldBeFalse();
+        spec.IsIgnoreQueryFilters.ShouldBeFalse();
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class SpecificationTests
         spec.EnableIgnoreQueryFilters();
 
         // Assert
-        spec.IgnoreQueryFilters.ShouldBeTrue();
+        spec.IsIgnoreQueryFilters.ShouldBeTrue();
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public class TestSpecification : Specification<User>
     public void AddTestOrderByDescending(Expression<Func<User, object>> orderByDesc) =>
         AddOrderByDescending(orderByDesc);
 
-    public void EnableIgnoreQueryFilters() => IgnoreQueryFiltersEnabled();
+    public void EnableIgnoreQueryFilters() => IgnoreQueryFilters();
 
     #endregion
 }

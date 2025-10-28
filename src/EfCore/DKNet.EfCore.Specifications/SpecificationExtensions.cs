@@ -22,7 +22,7 @@ internal static class SpecificationExtensions
     {
         ArgumentNullException.ThrowIfNull(specification);
 
-        if (specification.IgnoreQueryFilters)
+        if (specification.IsIgnoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
 
         if (specification.FilterQuery is not null) queryable = queryable.Where(specification.FilterQuery);

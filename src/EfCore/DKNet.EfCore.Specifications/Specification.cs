@@ -22,7 +22,7 @@ public interface ISpecification<TEntity>
     /// <summary>
     ///     Ignore the global query filters (e.g., for soft delete or multi-tenancy)
     /// </summary>
-    bool IgnoreQueryFilters { get; }
+    bool IsIgnoreQueryFilters { get; }
 
     /// <summary>
     ///     A collection of functions that describes included entities
@@ -79,7 +79,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected Specification(ISpecification<TEntity> specification)
     {
         FilterQuery = specification.FilterQuery;
-        IgnoreQueryFilters = specification.IgnoreQueryFilters;
+        IsIgnoreQueryFilters = specification.IsIgnoreQueryFilters;
 
         _includeQueries = [.. specification.IncludeQueries];
         _orderByQueries = [.. specification.OrderByQueries];
@@ -92,7 +92,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
 
     public Expression<Func<TEntity, bool>>? FilterQuery { get; private set; }
 
-    public bool IgnoreQueryFilters { get; private set; }
+    public bool IsIgnoreQueryFilters { get; private set; }
 
     public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
 
@@ -135,9 +135,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected ExpressionStarter<TEntity> CreatePredicate(Expression<Func<TEntity, bool>>? expression = null) =>
         expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
 
-    protected void IgnoreQueryFiltersEnabled()
+    protected void IgnoreQueryFilters()
     {
-        IgnoreQueryFilters = true;
+        IsIgnoreQueryFilters = true;
     }
 
     /// <summary>
@@ -165,30 +165,4 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     }
 
     #endregion
-
-    // /// <summary>
-    // ///     Returns an expression that combines two specifications with a logical "and"
-    // /// </summary>
-    // /// <param name="specification">Specification to combine with</param>
-    // /// <returns>
-    // ///     <see cref="AndSpecification{T}" />
-    // /// </returns>
-    // public Specification<TEntity> And(Specification<TEntity> specification) =>
-    //     new AndSpecification<TEntity>(this, specification);
-    //
-    // /// <summary>
-    // ///     Returns an expression that combines two specifications with a logical "or"
-    // /// </summary>
-    // /// <param name="specification">Specification to combine with</param>
-    // /// <returns>
-    // ///     <see cref="OrSpecification{T}" />
-    // /// </returns>
-    // public Specification<TEntity> Or(Specification<TEntity> specification) =>
-    //     new OrSpecification<TEntity>(this, specification);
-
-    // public static Specification<TEntity> operator &(Specification<TEntity> left, Specification<TEntity> right) =>
-    //     left.And(right);
-    //
-    // public static Specification<TEntity> operator |(Specification<TEntity> left, Specification<TEntity> right) =>
-    //     left.Or(right);
 }
