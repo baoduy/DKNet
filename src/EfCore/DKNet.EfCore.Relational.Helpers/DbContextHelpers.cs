@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DKNet.EfCore.Relational.Helpers;
 
+/// <summary>
+///     Provides helper methods for working with Entity Framework Core DbContext.
+/// </summary>
 public static class DbContextHelpers
 {
     #region Methods
@@ -34,6 +37,12 @@ public static class DbContextHelpers
         await databaseCreator.CreateTablesAsync(cancellationToken);
     }
 
+    /// <summary>
+    ///     Gets the database connection from the DbContext, opening it if closed.
+    /// </summary>
+    /// <param name="dbContext">The database context.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>An open database connection.</returns>
     public static async Task<DbConnection> GetDbConnection(
         this DbContext dbContext,
         CancellationToken cancellationToken = default)
@@ -47,6 +56,12 @@ public static class DbContextHelpers
         return conn;
     }
 
+    /// <summary>
+    ///     Gets the schema and table name for the specified entity type.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type.</typeparam>
+    /// <param name="dbContext">The database context.</param>
+    /// <returns>A tuple containing the schema name and table name, or null values if the entity is not found.</returns>
     public static (string? schema, string? tableName) GetTableName<TEntity>(this DbContext dbContext)
     {
         var defaultSchema = dbContext.IsSqlServer() ? "dbo" : null;
