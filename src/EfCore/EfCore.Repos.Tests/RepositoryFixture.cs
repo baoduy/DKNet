@@ -54,8 +54,8 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Use a shared connection for SQLite in-memory database
-        this._connection = new SqliteConnection("DataSource=sqlite_repo_tests.db");
+        // Use in-memory SQLite database that is deleted on connection close
+        this._connection = new SqliteConnection("DataSource=:memory:");
         await this._connection.OpenAsync();
 
         this.DbContext = this.CreateNewDbContext();
