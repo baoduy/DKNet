@@ -7,4 +7,5 @@
 /// <summary>
 ///     CustomTheme operation.
 /// </summary>
+/// <returns>The result of the operation.</returns>
 public record CustomTheme(string CssPath) : Theme;

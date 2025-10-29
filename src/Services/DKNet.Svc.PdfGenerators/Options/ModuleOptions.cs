@@ -61,6 +61,7 @@ public record ModuleOptions
     /// npm i latex.css
     /// </code>
     /// </remarks>
+    /// <returns>The result of the operation.</returns>
     public static ModuleOptions FromLocalPath(string modulePath) => new NodeModuleOptions(modulePath);
 
     #endregion

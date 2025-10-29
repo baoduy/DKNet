@@ -26,8 +26,12 @@ public class ValueFormatter : IValueFormatter
     #region Methods
 
     /// <summary>
+    /// <summary>
     ///     Convert operation.
     /// </summary>
+    /// <param name="token">The token parameter.</param>
+    /// <param name="value">The value parameter.</param>
+    /// <returns>The result of the operation.</returns>
     public virtual string Convert(IToken token, object? value)
     {
         return value == null

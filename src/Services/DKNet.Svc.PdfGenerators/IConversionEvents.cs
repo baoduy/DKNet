@@ -58,6 +58,7 @@ public interface IConversionEvents
 ///     <see cref="EventArgs" /> containing the markdown content before the HTML conversion.
 /// </summary>
 /// <param name="markdownContent">The current markdown content.</param>
+/// <returns>The result of the operation.</returns>
 public class MarkdownEventArgs(string markdownContent) : EventArgs
 {
     #region Properties
@@ -74,6 +75,7 @@ public class MarkdownEventArgs(string markdownContent) : EventArgs
 ///     <see cref="EventArgs" /> containing the model for the HTML template.
 /// </summary>
 /// <param name="templateModel">The model for the HMTml template.</param>
+/// <returns>The result of the operation.</returns>
 public class TemplateModelEventArgs(Dictionary<string, string> templateModel) : EventArgs
 {
     #region Properties
@@ -90,6 +92,7 @@ public class TemplateModelEventArgs(Dictionary<string, string> templateModel) : 
 ///     <see cref="EventArgs" /> containing the path to the temporary PDF file.
 /// </summary>
 /// <param name="pdfPath">Path to the temporary PDF.</param>
+/// <returns>The result of the operation.</returns>
 public class PdfEventArgs(string pdfPath) : EventArgs
 {
     #region Properties

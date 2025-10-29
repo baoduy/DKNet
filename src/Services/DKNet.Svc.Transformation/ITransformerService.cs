@@ -98,8 +98,12 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     }
 
     /// <summary>
+    /// <summary>
     ///     Transform operation.
     /// </summary>
+    /// <param name="templateString">The templateString parameter.</param>
+    /// <param name="parameters">The parameters parameter.</param>
+    /// <returns>The result of the operation.</returns>
     public string Transform(string templateString, params object[] parameters)
     {
         var tokens = this.GetExtractors().Select(t => t.Extract(templateString));

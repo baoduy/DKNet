@@ -358,6 +358,7 @@ public sealed record CodeHighlightTheme
     /// <summary>
     ///     ToString operation.
     /// </summary>
+    /// <returns>The result of the operation.</returns>
     public override string ToString() => this._sheetName;
 
     #endregion

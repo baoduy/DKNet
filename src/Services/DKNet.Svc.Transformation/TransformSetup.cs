@@ -15,6 +15,7 @@ public static class TransformSetup
     /// <summary>
     ///     AddTransformerService operation.
     /// </summary>
+    /// <returns>The result of the operation.</returns>
     public static IServiceCollection AddTransformerService(
         this IServiceCollection services,
         Action<TransformOptions>? optionFactory = null)

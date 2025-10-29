@@ -7,4 +7,5 @@
 /// <summary>
 ///     NodeModuleOptions operation.
 /// </summary>
+/// <returns>The result of the operation.</returns>
 public record NodeModuleOptions(string ModulePath) : ModuleOptions(ModuleLocation.Custom);

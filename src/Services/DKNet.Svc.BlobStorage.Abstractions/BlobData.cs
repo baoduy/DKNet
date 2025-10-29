@@ -10,8 +10,11 @@ public enum BlobTypes
 }
 
 /// <summary>
+/// <summary>
 ///     BlobRequest operation.
 /// </summary>
+/// <param name="Name">The Name parameter.</param>
+/// <returns>The result of the operation.</returns>
 public record BlobRequest(string Name)
 {
     #region Properties
@@ -47,11 +50,11 @@ public record BlobDetails
     public required string ContentType { get; init; }
 
     #endregion
-}
-
 /// <summary>
 ///     BlobResult operation.
 /// </summary>
+/// <param name="Name">The Name parameter.</param>
+/// <returns>The result of the operation.</returns>
 public record BlobResult(string Name) : BlobRequest(Name)
 {
     #region Properties
@@ -61,11 +64,12 @@ public record BlobResult(string Name) : BlobRequest(Name)
     #endregion
 }
 
-public record BlobDataResult(string Name, BinaryData Data) : BlobResult(Name);
-
 /// <summary>
 ///     BlobData operation.
 /// </summary>
+/// <param name="Name">The Name parameter.</param>
+/// <param name="Data">The Data parameter.</param>
+/// <returns>The result of the operation.</returns>
 public record BlobData(string Name, BinaryData Data) : BlobRequest(Name)
 {
     #region Properties

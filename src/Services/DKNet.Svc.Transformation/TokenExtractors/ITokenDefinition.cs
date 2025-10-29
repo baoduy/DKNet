@@ -21,8 +21,12 @@ public interface ITokenDefinition
 }
 
 /// <summary>
+/// <summary>
 ///     Provides TokenDefinition functionality.
 /// </summary>
+/// <param name="begin">The begin parameter.</param>
+/// <param name="end">The end parameter.</param>
+/// <returns>The result of the operation.</returns>
 public class TokenDefinition(string begin, string end) : ITokenDefinition
 {
     #region Properties

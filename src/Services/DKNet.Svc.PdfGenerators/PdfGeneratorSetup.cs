@@ -14,6 +14,7 @@ public static class PdfGeneratorSetup
     /// <summary>
     ///     AddPdfGenerator operation.
     /// </summary>
+    /// <returns>The result of the operation.</returns>
     public static IServiceCollection AddPdfGenerator(
         this IServiceCollection services,
         PdfGeneratorOptions? options = null)
