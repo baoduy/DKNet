@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// </summary>
 public static class EfCoreSetup
 {
     #region Methods
@@ -34,10 +36,7 @@ public static class EfCoreSetup
         Assembly[] assemblies)
     {
         var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
-        if (op != null)
-        {
-            return op;
-        }
+        if (op != null) return op;
 
         op = new EntityAutoConfigRegister(assemblies);
         ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);

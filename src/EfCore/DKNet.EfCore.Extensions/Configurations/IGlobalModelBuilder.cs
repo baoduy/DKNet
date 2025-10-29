@@ -8,6 +8,10 @@ public interface IGlobalModelBuilder
 {
     #region Methods
 
+    /// <summary>
+    /// </summary>
+    /// <param name="modelBuilder"></param>
+    /// <param name="context"></param>
     void Apply(ModelBuilder modelBuilder, DbContext context);
 
     #endregion

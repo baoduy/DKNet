@@ -1,4 +1,7 @@
-﻿using System.Data;
+﻿// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.Data;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -14,14 +17,16 @@ public static class DbContextHelpers
     #region Methods
 
     /// <summary>
-    ///     Create Table for Entity this is not migration so you need to ensure to call this methods once only.
+    ///     Creates a table for the specified entity type. This is not a migration; ensure this method is called only once.
     /// </summary>
-    /// <param name="dbContext"></param>
-    /// <param name="cancellationToken"></param>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <param name="dbContext">The <see cref="DbContext" /> instance to operate on.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+    /// <typeparam name="TEntity">The entity type for which to create the table.</typeparam>
+    /// <returns>A <see cref="Task" /> representing the asynchronous operation.</returns>
     public static async Task CreateTableAsync<TEntity>(
         this DbContext dbContext,
-        CancellationToken cancellationToken = default) where TEntity : class
+        CancellationToken cancellationToken = default)
+        where TEntity : class
     {
         var databaseCreator = (RelationalDatabaseCreator)dbContext.Database.GetService<IDatabaseCreator>();
         if (!await databaseCreator.ExistsAsync(cancellationToken))
@@ -61,8 +66,8 @@ public static class DbContextHelpers
     /// </summary>
     /// <typeparam name="TEntity">The entity type.</typeparam>
     /// <param name="dbContext">The database context.</param>
-    /// <returns>A tuple containing the schema name and table name, or null values if the entity is not found.</returns>
-    public static (string? schema, string? tableName) GetTableName<TEntity>(this DbContext dbContext)
+    /// <returns>A tuple containing the <c>Schema</c> and <c>TableName</c>, or null values if the entity is not found.</returns>
+    public static (string? Schema, string? TableName) GetTableName<TEntity>(this DbContext dbContext)
     {
         var defaultSchema = dbContext.IsSqlServer() ? "dbo" : null;
 
@@ -84,15 +89,16 @@ public static class DbContextHelpers
             StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    ///     Check whether a particular table of entity is exited or not.
+    ///     Checks whether a particular table for the specified entity exists in the database.
     /// </summary>
-    /// <param name="dbContext"></param>
-    /// <param name="cancellationToken"></param>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <returns></returns>
+    /// <param name="dbContext">The <see cref="DbContext" /> instance to operate on.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+    /// <typeparam name="TEntity">The entity type to check for table existence.</typeparam>
+    /// <returns><c>true</c> if the table exists; otherwise, <c>false</c>.</returns>
     public static async Task<bool> TableExistsAsync<TEntity>(
         this DbContext dbContext,
-        CancellationToken cancellationToken = default) where TEntity : class
+        CancellationToken cancellationToken = default)
+        where TEntity : class
     {
         try
         {

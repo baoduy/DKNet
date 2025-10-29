@@ -1,7 +1,11 @@
-﻿using System.Linq.Expressions;
-using LinqKit;
+﻿// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Author: DRUNK Coding Team
+// File: Specification.cs
+// Description: Base specification interfaces and implementation for building query specifications used by repositories.
 
-// ReSharper disable UnusedMember.Global
+using System.Linq.Expressions;
+using LinqKit;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -51,9 +55,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
 {
     #region Fields
 
-    private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
-    private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
-    private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
+    private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = new();
+    private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = new();
+    private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = new();
 
     #endregion
 
@@ -70,36 +74,54 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     Initializes a new instance of the class
     /// </summary>
     /// <param name="query">A filtering function to test each element for condition</param>
-    protected Specification(Expression<Func<TEntity, bool>> query) => this.FilterQuery = query;
+    protected Specification(Expression<Func<TEntity, bool>> query) => FilterQuery = query;
 
     /// <summary>
-    ///     Initializes a new instance of the class
+    ///     Initializes a new instance of the class by copying an existing specification.
     /// </summary>
     /// <param name="specification">A specification to be built</param>
     protected Specification(ISpecification<TEntity> specification)
     {
-        this.FilterQuery = specification.FilterQuery;
-        this.IsIgnoreQueryFilters = specification.IsIgnoreQueryFilters;
+        ArgumentNullException.ThrowIfNull(specification);
 
-        this._includeQueries = [.. specification.IncludeQueries];
-        this._orderByQueries = [.. specification.OrderByQueries];
-        this._orderByDescendingQueries = [.. specification.OrderByDescendingQueries];
+        FilterQuery = specification.FilterQuery;
+        IsIgnoreQueryFilters = specification.IsIgnoreQueryFilters;
+        // Copy collections into the mutable backing lists (interface properties are non-null by contract)
+        _includeQueries.AddRange(specification.IncludeQueries);
+        _orderByQueries.AddRange(specification.OrderByQueries);
+        _orderByDescendingQueries.AddRange(specification.OrderByDescendingQueries);
     }
 
     #endregion
 
     #region Properties
 
-    public bool IsIgnoreQueryFilters { get; private set; }
-
+    /// <summary>
+    ///     Gets the filter expression used by this specification or <c>null</c> when no filter is defined.
+    /// </summary>
     public Expression<Func<TEntity, bool>>? FilterQuery { get; private set; }
 
-    public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => this._includeQueries;
+    /// <summary>
+    ///     Gets the collection of include expressions that describe related entities to include when querying.
+    /// </summary>
+    public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
 
+    /// <summary>
+    ///     Gets a value indicating whether global query filters should be ignored for this specification.
+    ///     Call <see cref="IgnoreQueryFilters" /> to enable this behavior.
+    /// </summary>
+    public bool IsIgnoreQueryFilters { get; private set; }
+
+    /// <summary>
+    ///     Gets the collection of expressions that describe descending ordering for query results.
+    /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries =>
-        this._orderByDescendingQueries;
+        _orderByDescendingQueries;
 
-    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => this._orderByQueries;
+    /// <summary>
+    ///     Gets the collection of expressions that describe ascending ordering for query results.
+    /// </summary>
+    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
 
     #endregion
 
@@ -111,7 +133,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">Expression that describes included entities</param>
     protected void AddInclude(Expression<Func<TEntity, object?>> query)
     {
-        this._includeQueries.Add(query);
+        _includeQueries.Add(query);
     }
 
     /// <summary>
@@ -120,7 +142,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">A function that describes how to order entities by ascending</param>
     protected void AddOrderBy(Expression<Func<TEntity, object>> query)
     {
-        this._orderByQueries.Add(query);
+        _orderByQueries.Add(query);
     }
 
     /// <summary>
@@ -129,15 +151,23 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">A function that describes how to order entities by descending</param>
     protected void AddOrderByDescending(Expression<Func<TEntity, object>> query)
     {
-        this._orderByDescendingQueries.Add(query);
+        _orderByDescendingQueries.Add(query);
     }
 
+    /// <summary>
+    ///     Creates a predicate builder initialized with an optional starting expression.
+    /// </summary>
+    /// <param name="expression">Optional starting expression for the predicate.</param>
+    /// <returns>An <see cref="ExpressionStarter{T}" /> used to build a composable predicate.</returns>
     protected ExpressionStarter<TEntity> CreatePredicate(Expression<Func<TEntity, bool>>? expression = null) =>
         expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
 
+    /// <summary>
+    ///     Instructs the specification to ignore global query filters (for example soft-delete filters).
+    /// </summary>
     protected void IgnoreQueryFilters()
     {
-        this.IsIgnoreQueryFilters = true;
+        IsIgnoreQueryFilters = true;
     }
 
     /// <summary>
@@ -149,12 +179,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// </returns>
     public bool Match(TEntity entity)
     {
-        if (this.FilterQuery is null)
-        {
-            return false;
-        }
+        if (FilterQuery is null) return false;
 
-        var predicate = this.FilterQuery.Compile();
+        var predicate = FilterQuery.Compile();
         return predicate(entity);
     }
 
@@ -164,7 +191,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">A filtering function that describes how to test each element for condition</param>
     protected void WithFilter(Expression<Func<TEntity, bool>> query)
     {
-        this.FilterQuery = query;
+        FilterQuery = query;
     }
 
     #endregion

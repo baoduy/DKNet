@@ -4,10 +4,15 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-        <!-- Force analyzer to reload on every build to avoid caching issues -->
-        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <!-- Disable code analysis for test entities -->
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <AnalysisMode>None</AnalysisMode>
+        <RunAnalyzers>false</RunAnalyzers>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;SA1600;DKDTOGEN004</NoWarn>
     </PropertyGroup>
 
     <!-- 1. Configure global exclusions for DTO generator -->

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
 
+/// <summary>
+///     Event Setup
+/// </summary>
 public static class EventSetup
 {
     #region Methods

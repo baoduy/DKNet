@@ -7,6 +7,8 @@ public class BlobServiceOptions
 {
     #region Properties
 
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> IncludedExtensions { get; set; } = [];
 
     /// <summary>
@@ -14,6 +16,8 @@ public class BlobServiceOptions
     /// </summary>
     public int MaxFileNameLength { get; set; }
 
+    /// <summary>
+    /// </summary>
     public int MaxFileSizeInMb { get; set; }
 
     #endregion

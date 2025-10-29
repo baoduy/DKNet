@@ -1,9 +1,8 @@
 using System.Collections.Concurrent;
-using DKNet.EfCore.AuditLogs.Internals;
+using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 // for EfCoreAuditHook via DI
@@ -17,49 +16,9 @@ public class PlainEntity
 
     public int Id { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    [MaxLength(200)] public string Name { get; set; } = string.Empty;
 
     #endregion
-}
-
-internal sealed class CapturingLogger<T> : ILogger<T>
-{
-    #region Properties
-
-    public ConcurrentBag<string> Messages { get; } = [];
-
-    #endregion
-
-    #region Methods
-
-    public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
-
-    public bool IsEnabled(LogLevel logLevel) => true;
-
-    public void Log<TState>(
-        LogLevel logLevel,
-        EventId eventId,
-        TState state,
-        Exception? exception,
-        Func<TState, Exception?, string> formatter)
-    {
-        this.Messages.Add(formatter(state, exception));
-    }
-
-    #endregion
-
-    private sealed class NullScope : IDisposable
-    {
-        #region Methods
-
-        public void Dispose()
-        {
-        }
-
-        #endregion
-
-        public static readonly NullScope Instance = new();
-    }
 }
 
 // internal sealed class FailingPublisher2 : IAuditLogPublisher
@@ -83,10 +42,7 @@ internal sealed class RecordingPublisher : IAuditLogPublisher
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
         Called = true;
-        foreach (var log in logs)
-        {
-            Logs.Add(log);
-        }
+        foreach (var log in logs) Logs.Add(log);
 
         return Task.CompletedTask;
     }
@@ -264,7 +220,6 @@ public class AdditionalAuditLogTests
     public async Task FailingPublisher_Logs_Error_But_Allows_Others()
     {
         var services = new ServiceCollection().AddLogging();
-        services.AddSingleton<ILogger<EfCoreAuditHook>, CapturingLogger<EfCoreAuditHook>>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, FailingPublisher>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, RecordingPublisher>();
 

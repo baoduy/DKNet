@@ -23,7 +23,8 @@ public enum RunningTypes
 /// <summary>
 ///     Runs hooks before and after save operations.
 /// </summary>
-/// <param name="logger"></param>
+/// <param name="provider">the IServiceProvider of HookRunner</param>
+/// <param name="logger">the logger of HookRunner</param>
 internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : SaveChangesInterceptor
 {
     #region Fields
@@ -35,16 +36,13 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     #region Methods
 
     private HookRunnerContext GetContext(DbContextEventData eventData) =>
-        this._cache.GetOrAdd(
+        _cache.GetOrAdd(
             eventData.Context!.ContextId.InstanceId,
             _ => new HookRunnerContext(provider, eventData.Context!));
 
     private async Task RemoveContext(DbContextEventData eventData)
     {
-        if (this._cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
-        {
-            await context.DisposeAsync();
-        }
+        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context)) await context.DisposeAsync();
     }
 
     /// <summary>
@@ -65,10 +63,7 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
             context.BeforeSaveHooks.Count,
             context.AfterSaveHooks.Count);
 
-        if (context.Snapshot.Entities.Count == 0)
-        {
-            return;
-        }
+        if (context.Snapshot.Entities.Count == 0) return;
 
         var tasks = new List<Task>();
         tasks.AddRange(
@@ -83,7 +78,7 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
         DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
-        await this.RemoveContext(eventData);
+        await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
@@ -92,24 +87,19 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
         int result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null)
-        {
-            return await base.SavedChangesAsync(eventData, result, cancellationToken);
-        }
+        if (eventData.Context == null) return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
         if (HookDisablingContext.IsHookDisabled(eventData.Context!))
-        {
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
-        }
 
         try
         {
-            var context = this.GetContext(eventData);
-            await this.RunHooksAsync(context, RunningTypes.AfterSave, cancellationToken);
+            var context = GetContext(eventData);
+            await RunHooksAsync(context, RunningTypes.AfterSave, cancellationToken);
         }
         finally
         {
-            await this.RemoveContext(eventData);
+            await RemoveContext(eventData);
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -127,18 +117,13 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null)
-        {
-            return await base.SavingChangesAsync(eventData, result, cancellationToken);
-        }
+        if (eventData.Context == null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
         if (HookDisablingContext.IsHookDisabled(eventData.Context!))
-        {
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
-        }
 
-        var context = this.GetContext(eventData);
-        await this.RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
+        var context = GetContext(eventData);
+        await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 

@@ -1,3 +1,9 @@
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Author: DRUNK Coding Team
+// File: Fluents.cs
+// Description: Fluent interfaces and abstractions for SlimMessageBus requests, queries, paged queries and event consumers.
+
 using FluentResults;
 using SlimMessageBus;
 using X.PagedList;
@@ -9,6 +15,10 @@ namespace DKNet.SlimBus.Extensions;
 /// </summary>
 public static class Fluents
 {
+    /// <summary>
+    ///     Container for event consumer handler interfaces used by SlimMessageBus integrations.
+    ///     Use <see cref="EventsConsumers.IHandler{TEvent}" /> to implement event handlers.
+    /// </summary>
     public static class EventsConsumers
     {
         /// <summary>
@@ -18,6 +28,10 @@ public static class Fluents
         public interface IHandler<in TEvent> : IConsumer<TEvent>;
     }
 
+    /// <summary>
+    ///     Container for query-related interfaces: request/response, paged responses and query handlers.
+    ///     Use the nested interfaces to implement query handlers that integrate with SlimMessageBus.
+    /// </summary>
     public static class Queries
     {
         /// <summary>
@@ -49,6 +63,9 @@ public static class Fluents
         public interface IWitResponse<out TResponse> : IRequest<TResponse?>;
     }
 
+    /// <summary>
+    ///     Container for request-related interfaces: requests that may or may not return results and their handlers.
+    /// </summary>
     public static class Requests
     {
         /// <summary>

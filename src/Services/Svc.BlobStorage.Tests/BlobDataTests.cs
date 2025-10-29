@@ -11,7 +11,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var blobData = new BlobData("test.txt", data) { Overwrite = true };
+        var blobData = new BlobDetails.BlobData("test.txt", data) { Overwrite = true };
 
         // Assert
         blobData.Overwrite.ShouldBeTrue();
@@ -24,7 +24,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var blobData = new BlobData("test.txt", data);
+        var blobData = new BlobDetails.BlobData("test.txt", data);
 
         // Assert
         blobData.Overwrite.ShouldBeFalse();
@@ -37,7 +37,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var blobData = new BlobData("test.txt", data);
+        var blobData = new BlobDetails.BlobData("test.txt", data);
 
         // Assert
         blobData.ContentType.ShouldBe("text/plain");
@@ -53,7 +53,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var blobData = new BlobData(fileName, data);
+        var blobData = new BlobDetails.BlobData(fileName, data);
 
         // Assert
         blobData.ContentType.ShouldBe(expectedContentType);
@@ -66,7 +66,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var blobData = new BlobData("test.txt", data);
+        var blobData = new BlobDetails.BlobData("test.txt", data);
 
         // Assert
         blobData.Name.ShouldBe("test.txt");
@@ -82,7 +82,7 @@ public class BlobDataTests
         var customContentType = "application/custom";
 
         // Act
-        var blobData = new BlobData("test.txt", data) { ContentType = customContentType };
+        var blobData = new BlobDetails.BlobData("test.txt", data) { ContentType = customContentType };
 
         // Assert
         blobData.ContentType.ShouldBe(customContentType);
@@ -95,7 +95,7 @@ public class BlobDataTests
         var data = BinaryData.FromString("test content");
 
         // Act
-        var result = new BlobDataResult("test.txt", data);
+        var result = new BlobDetails.BlobDataResult("test.txt", data);
 
         // Assert
         result.Name.ShouldBe("test.txt");
@@ -176,7 +176,7 @@ public class BlobDataTests
     public void BlobResult_ShouldInheritFromBlobRequest()
     {
         // Arrange & Act
-        var result = new BlobResult("test.txt");
+        var result = new BlobDetails.BlobResult("test.txt");
 
         // Assert
         result.Name.ShouldBe("test.txt");
@@ -197,7 +197,7 @@ public class BlobDataTests
         };
 
         // Act
-        var result = new BlobResult("test.txt") { Details = details };
+        var result = new BlobDetails.BlobResult("test.txt") { Details = details };
 
         // Assert
         result.Name.ShouldBe("test.txt");

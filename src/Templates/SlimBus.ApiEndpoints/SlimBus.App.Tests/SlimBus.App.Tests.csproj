@@ -3,6 +3,7 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <LangVersion>default</LangVersion>
+        <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
         <AnalysisMode>None</AnalysisMode>
@@ -10,6 +11,7 @@
         <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;SA1600</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,0 +1,2 @@
+# Allow private fields to start with an underscore
+dotnet_diagnostic.SA1309.severity = none

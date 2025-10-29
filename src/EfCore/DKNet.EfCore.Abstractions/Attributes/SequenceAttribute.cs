@@ -1,4 +1,7 @@
-﻿using System.ComponentModel;
+﻿// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.ComponentModel;
 
 namespace DKNet.EfCore.Abstractions.Attributes;
 
@@ -52,6 +55,12 @@ public sealed class SequenceAttribute : Attribute
     public bool Cyclic { get; set; } = true;
 
     /// <summary>
+    ///     Gets or sets the format string to be applied to the sequence value.
+    /// </summary>
+    /// <value>The format string pattern, or null if no formatting is needed.</value>
+    public string? FormatString { get; set; }
+
+    /// <summary>
     ///     Gets or sets the increment step size for the sequence.
     /// </summary>
     /// <value>The number of units to increment by. Defaults to -1.</value>
@@ -80,12 +89,6 @@ public sealed class SequenceAttribute : Attribute
     [Description("The starting value")]
     [DefaultValue(-1)]
     public long StartAt { get; set; } = -1;
-
-    /// <summary>
-    ///     Gets or sets the format string to be applied to the sequence value.
-    /// </summary>
-    /// <value>The format string pattern, or null if no formatting is needed.</value>
-    public string? FormatString { get; set; }
 
     /// <summary>
     ///     Gets the data type of the sequence.

@@ -26,7 +26,8 @@ public interface IEventEntity
     ///     This method is useful when the event instance will be created from the entity state
     ///     at the time of event processing.
     /// </remarks>
-    void AddEvent<TEvent>() where TEvent : class;
+    void AddEvent<TEvent>()
+        where TEvent : class;
 
     /// <summary>
     ///     Retrieves all queued events and event types, then clears the queue.
@@ -36,7 +37,7 @@ public interface IEventEntity
     ///     The first element of the tuple contains instantiated event objects.
     ///     The second element contains event types that need to be instantiated.
     /// </remarks>
-    (object[] events, Type[] eventTypes) GetEventsAndClear();
+    (object[] Events, Type[] EventTypes) GetEventsAndClear();
 
     #endregion
 }

@@ -1,3 +1,8 @@
+// <copyright file="RandomCreators.cs" company="https://drunkcoding.net">
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
 namespace DKNet.RandomCreator;
 
 /// <summary>

@@ -4,7 +4,7 @@
     "documentationRules": {
       "companyName": "https://drunkcoding.net",
       "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the MIT License. See LICENSE in the project root for license information.",
-      "xmlHeader": true,
+      "xmlHeader": false,
       "fileNamingConvention": "stylecop"
     },
     "orderingRules": {

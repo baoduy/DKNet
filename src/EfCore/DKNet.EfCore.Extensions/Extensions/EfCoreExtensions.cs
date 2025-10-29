@@ -39,11 +39,8 @@ public static class EfCoreExtensions
         var primaryKey = entityEntry.Metadata.FindPrimaryKey();
 
         if (primaryKey == null)
-
             // Entity does not have a primary key defined
-        {
             return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        }
 
         return primaryKey.Properties.ToDictionary(
             p => p.Name,
@@ -114,6 +111,10 @@ public static class EfCoreExtensions
         return entity.GetSchemaQualifiedTableName()!;
     }
 
+    /// <summary>
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
     public static bool IsSqlServer(this DbContext context) =>
         string.Equals(
             context.Database.ProviderName,
@@ -151,10 +152,7 @@ public static class EfCoreExtensions
 
         var type = typeof(TEnum);
         var att = SequenceExtensions.GetAttribute(type);
-        if (att == null)
-        {
-            return null;
-        }
+        if (att == null) return null;
 
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceExtensions.GetSequenceName(name)}";
@@ -163,10 +161,7 @@ public static class EfCoreExtensions
         await using var result = await command.ExecuteReaderAsync();
 
         object? rs = null;
-        if (await result.ReadAsync())
-        {
-            rs = await result.GetFieldValueAsync<object>(0);
-        }
+        if (await result.ReadAsync()) rs = await result.GetFieldValueAsync<object>(0);
 
         await dbContext.Database.CloseConnectionAsync();
         return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
@@ -185,10 +180,7 @@ public static class EfCoreExtensions
         var att = SequenceExtensions.GetFieldAttributeOrDefault(typeof(TEnum), name);
         var value = await dbContext.NextSeqValue(name);
 
-        if (string.IsNullOrEmpty(att.FormatString))
-        {
-            return $"{value}";
-        }
+        if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
 
         var f = att.FormatString.Replace(nameof(DateTime), "0", StringComparison.OrdinalIgnoreCase);
         return string.Format(CultureInfo.CurrentCulture, f, DateTime.Now, value);

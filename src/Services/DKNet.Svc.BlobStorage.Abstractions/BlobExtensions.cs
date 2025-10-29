@@ -10,7 +10,6 @@ public static class BlobExtensions
     #region Methods
 
     /// <summary>
-    /// <summary>
     ///     GetContentTypeByExtension operation.
     /// </summary>
     /// <param name="fileName">The fileName parameter.</param>

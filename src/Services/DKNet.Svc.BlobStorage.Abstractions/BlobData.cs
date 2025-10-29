@@ -5,11 +5,17 @@ namespace DKNet.Svc.BlobStorage.Abstractions;
 /// </summary>
 public enum BlobTypes
 {
+    /// <summary>
+    ///     The Blob is a file.
+    /// </summary>
     File,
+
+    /// <summary>
+    ///     The Blob is a directory.
+    /// </summary>
     Directory
 }
 
-/// <summary>
 /// <summary>
 ///     BlobRequest operation.
 /// </summary>
@@ -28,6 +34,9 @@ public record BlobRequest(string Name)
     #endregion
 }
 
+/// <summary>
+///     Blob details information.
+/// </summary>
 public record BlobDetails
 {
     #region Properties
@@ -47,42 +56,57 @@ public record BlobDetails
     /// </summary>
     public long ContentLength { get; init; }
 
+    /// <summary>
+    ///     The content type of the blob.
+    /// </summary>
     public required string ContentType { get; init; }
 
     #endregion
-/// <summary>
-///     BlobResult operation.
-/// </summary>
-/// <param name="Name">The Name parameter.</param>
-/// <returns>The result of the operation.</returns>
-public record BlobResult(string Name) : BlobRequest(Name)
-{
-    #region Properties
-
-    public BlobDetails? Details { get; init; }
-
-    #endregion
-}
-
-/// <summary>
-///     BlobData operation.
-/// </summary>
-/// <param name="Name">The Name parameter.</param>
-/// <param name="Data">The Data parameter.</param>
-/// <returns>The result of the operation.</returns>
-public record BlobData(string Name, BinaryData Data) : BlobRequest(Name)
-{
-    #region Properties
 
     /// <summary>
-    ///     Gets or sets Overwrite.
+    ///     BlobResult operation.
     /// </summary>
-    public bool Overwrite { get; set; }
+    /// <param name="Name">The Name parameter.</param>
+    /// <returns>The result of the operation.</returns>
+    public record BlobResult(string Name) : BlobRequest(Name)
+    {
+        #region Properties
+
+        /// <summary>
+        ///     Details about the blob.
+        /// </summary>
+        public BlobDetails? Details { get; init; }
+
+        #endregion
+    }
 
     /// <summary>
-    ///     Gets or sets ContentType.
+    ///     BlobResult with Data.
     /// </summary>
-    public string ContentType { get; init; } = Name.GetContentTypeByExtension();
+    /// <param name="Name"></param>
+    /// <param name="Data"></param>
+    public record BlobDataResult(string Name, BinaryData Data) : BlobResult(Name);
 
-    #endregion
+    /// <summary>
+    ///     BlobData operation.
+    /// </summary>
+    /// <param name="Name">The Name parameter.</param>
+    /// <param name="Data">The Data parameter.</param>
+    /// <returns>The result of the operation.</returns>
+    public record BlobData(string Name, BinaryData Data) : BlobRequest(Name)
+    {
+        #region Properties
+
+        /// <summary>
+        ///     Gets or sets Overwrite.
+        /// </summary>
+        public bool Overwrite { get; set; }
+
+        /// <summary>
+        ///     Gets or sets ContentType.
+        /// </summary>
+        public string ContentType { get; init; } = Name.GetContentTypeByExtension();
+
+        #endregion
+    }
 }

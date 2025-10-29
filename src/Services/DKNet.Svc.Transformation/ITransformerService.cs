@@ -13,6 +13,11 @@ public interface ITransformerService
 {
     #region Methods
 
+    /// <summary>
+    /// </summary>
+    /// <param name="templateString"></param>
+    /// <param name="parameters"></param>
+    /// <returns></returns>
     string Transform(string templateString, params object[] parameters);
 
     /// <summary>
@@ -32,6 +37,9 @@ public interface ITransformerService
     #endregion
 }
 
+/// <summary>
+/// </summary>
+/// <param name="options"></param>
 public sealed class TransformerService(IOptions<TransformOptions> options) : ITransformerService
 {
     #region Fields
@@ -43,23 +51,20 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
     #region Properties
 
-    private TransformOptions _options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
+    private TransformOptions Options { get; } = options.Value ?? throw new ArgumentNullException(nameof(options));
 
     #endregion
 
     #region Methods
 
     private ITokenExtractor[] GetExtractors() =>
-        [.. this._options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
+        [.. Options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
 
     private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
     {
         // Sort tokens by index
         var orderedTokens = tokens.OrderBy(t => t.Index).ToArray();
-        if (orderedTokens.Length == 0)
-        {
-            return template;
-        }
+        if (orderedTokens.Length == 0) return template;
 
         var templateSpan = template.AsSpan();
         var builder = new StringBuilder(template.Length);
@@ -67,7 +72,7 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
         foreach (var token in orderedTokens)
         {
-            var val = this.TryGetAndCacheValue(token, additionalData) ?? this._options.TokenNotFoundBehavior switch
+            var val = TryGetAndCacheValue(token, additionalData) ?? Options.TokenNotFoundBehavior switch
             {
                 TokenNotFoundBehavior.LeaveAsIs => token.Token,
                 TokenNotFoundBehavior.Remove => string.Empty,
@@ -75,13 +80,10 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
                 _ => throw new UnResolvedTokenException(token)
             };
 
-            var strVal = this._options.Formatter.Convert(token, val);
+            var strVal = Options.Formatter.Convert(token, val);
 
             // Append text before the token
-            if (token.Index > lastIndex)
-            {
-                builder.Append(templateSpan[lastIndex..token.Index]);
-            }
+            if (token.Index > lastIndex) builder.Append(templateSpan[lastIndex..token.Index]);
 
             // Append replacement value
             builder.Append(strVal);
@@ -89,31 +91,32 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
         }
 
         // Append any remaining text after the last token
-        if (lastIndex < template.Length)
-        {
-            builder.Append(templateSpan[lastIndex..]);
-        }
+        if (lastIndex < template.Length) builder.Append(templateSpan[lastIndex..]);
 
         return builder.ToString();
     }
 
     /// <summary>
-    /// <summary>
     ///     Transform operation.
     /// </summary>
     /// <param name="templateString">The templateString parameter.</param>
-    /// <param name="parameters">The parameters parameter.</param>
+    /// <param name="parameters">The parameter.</param>
     /// <returns>The result of the operation.</returns>
     public string Transform(string templateString, params object[] parameters)
     {
-        var tokens = this.GetExtractors().Select(t => t.Extract(templateString));
-        return this.InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+        var tokens = GetExtractors().Select(t => t.Extract(templateString));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
+    /// <summary>
+    /// </summary>
+    /// <param name="templateString"></param>
+    /// <param name="parameters"></param>
+    /// <returns></returns>
     public async Task<string> TransformAsync(string templateString, params object[] parameters)
     {
-        var tokens = await Task.WhenAll(this.GetExtractors().Select(t => t.ExtractAsync(templateString)));
-        return this.InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
+        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
     /// <summary>
@@ -124,16 +127,10 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     /// <returns></returns>
     private object? TryGetAndCacheValue(IToken token, object[] additionalData)
     {
-        if (this._cacheService.TryGetValue(token.Token, out var value))
-        {
-            return value;
-        }
+        if (_cacheService.TryGetValue(token.Token, out var value)) return value;
 
-        var val = this.TryGetValue(token, additionalData);
-        if (val is not null)
-        {
-            this._cacheService.TryAdd(token.Token, val);
-        }
+        var val = TryGetValue(token, additionalData);
+        if (val is not null) _cacheService.TryAdd(token.Token, val);
 
         return val;
     }
@@ -148,15 +145,9 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     {
         object? val = null;
 
-        if (additionalData.Length > 0)
-        {
-            val = this._tokenResolver.Resolve(token, additionalData);
-        }
+        if (additionalData.Length > 0) val = _tokenResolver.Resolve(token, additionalData);
 
-        if (val is null)
-        {
-            val = this._tokenResolver.Resolve(token, this._options.GlobalParameters);
-        }
+        if (val is null) val = _tokenResolver.Resolve(token, Options.GlobalParameters);
 
         return val;
     }

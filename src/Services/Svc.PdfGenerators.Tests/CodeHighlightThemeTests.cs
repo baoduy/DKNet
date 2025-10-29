@@ -11,7 +11,7 @@ public class CodeHighlightThemeTests
     public void A11yDark_ReturnsTheme()
     {
         // Act
-        var theme = CodeHighlightTheme.A11yDark;
+        var theme = CodeHighlightTheme.A11YDark;
 
         // Assert
         theme.ShouldNotBeNull();
@@ -22,7 +22,7 @@ public class CodeHighlightThemeTests
     public void A11yLight_ReturnsTheme()
     {
         // Act
-        var theme = CodeHighlightTheme.A11yLight;
+        var theme = CodeHighlightTheme.A11YLight;
 
         // Assert
         theme.ShouldNotBeNull();

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using DKNet.EfCore.Extensions.Extensions;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using SlimBus.Infra.Contexts;

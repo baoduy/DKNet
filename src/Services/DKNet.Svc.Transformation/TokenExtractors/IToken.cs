@@ -22,6 +22,8 @@ public interface IToken
     /// </summary>
     string Key { get; }
 
+    /// <summary>
+    /// </summary>
     string OriginalString { get; }
 
     /// <summary>

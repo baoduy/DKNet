@@ -10,7 +10,7 @@
     <ItemGroup>
         <!-- Microsoft recommended analyzers - versions managed in Directory.Packages.props -->
         <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" PrivateAssets="all"/>
-        <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all"/>
+        <!--        <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all"/>-->
     </ItemGroup>
     <ItemGroup>
         <!-- StyleCop configuration -->

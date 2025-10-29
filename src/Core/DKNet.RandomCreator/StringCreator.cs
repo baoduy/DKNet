@@ -1,12 +1,24 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿// <copyright file="StringCreator.cs" company="https://drunkcoding.net">
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
 using System.Security.Cryptography;
 
 namespace DKNet.RandomCreator;
 
-[SuppressMessage("Security", "CA5394:Do not use insecure randomness")]
+/// <summary>
+///     Random String generator.
+/// </summary>
+/// <param name="bufferLength">The length of the string.</param>
+/// <param name="options">the option of the generation.</param>
 internal sealed class StringCreator(int bufferLength, StringCreatorOptions options) : IDisposable
 {
     #region Fields
+
+    private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private const string DefaultNumbers = "1234567890";
+    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
 
     private readonly RandomNumberGenerator _cryptoGen = RandomNumberGenerator.Create();
     private bool _disposed;
@@ -15,6 +27,7 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
 
     #region Methods
 
+    /// <inheritdoc />
     public void Dispose()
     {
         this._cryptoGen.Dispose();
@@ -37,6 +50,11 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
         return result;
     }
 
+    /// <summary>
+    ///     To a character array.
+    /// </summary>
+    /// <returns>character array.</returns>
+    /// <exception cref="ArgumentException">The exception if the options are invalid.</exception>
     public char[] ToChars()
     {
         // Prepare result list
@@ -71,10 +89,15 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
         result.AddRange(this.Generate(DefaultChars, remaining));
 
         var array = result.ToArray();
-        new Random().Shuffle(array);
-        return array;
+        var span = array.AsSpan();
+        RandomNumberGenerator.Shuffle(span);
+        return span.ToArray();
     }
 
+    /// <summary>
+    ///     To string.
+    /// </summary>
+    /// <returns>The generated string.</returns>
     public override string ToString()
     {
         var chars = this.ToChars();
@@ -82,8 +105,4 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     }
 
     #endregion
-
-    private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private const string DefaultNumbers = "1234567890";
-    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
 }

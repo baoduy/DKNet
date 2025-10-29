@@ -10,16 +10,39 @@ internal enum HmacAlgorithm
 }
 
 /// <summary>
-///     Interface for HmacHashing operations.
+///     Interface for HMAC hashing operations.
 /// </summary>
-public interface IHmacHashing : IDisposable // now disposable for cached instances
+public interface IHmacHashing : IDisposable
 {
     #region Methods
 
+    /// <summary>
+    ///     Computes the HMAC-SHA256 hash of the specified message using the provided secret key.
+    /// </summary>
+    /// <param name="message">The message to hash.</param>
+    /// <param name="secretKey">The secret key to use for hashing.</param>
+    /// <param name="asBase64">If <c>true</c>, returns the hash as a base64 string; otherwise, as a hexadecimal string.</param>
+    /// <returns>The computed HMAC-SHA256 hash as a string.</returns>
     string ComputeSha256(string message, string secretKey, bool asBase64 = true);
 
+    /// <summary>
+    ///     Computes the HMAC-SHA512 hash of the specified message using the provided secret key.
+    /// </summary>
+    /// <param name="message">The message to hash.</param>
+    /// <param name="secretKey">The secret key to use for hashing.</param>
+    /// <param name="asBase64">If <c>true</c>, returns the hash as a base64 string; otherwise, as a hexadecimal string.</param>
+    /// <returns>The computed HMAC-SHA512 hash as a string.</returns>
     string ComputeSha512(string message, string secretKey, bool asBase64 = true);
 
+    /// <summary>
+    ///     Verifies that the HMAC-SHA256 hash of the specified message and secret key matches the expected signature.
+    /// </summary>
+    /// <param name="message">The message to hash and verify.</param>
+    /// <param name="secretKey">The secret key to use for hashing.</param>
+    /// <param name="expectedSignature">The expected hash signature to compare against.</param>
+    /// <param name="signatureIsBase64">If <c>true</c>, the signature is base64-encoded; otherwise, hexadecimal.</param>
+    /// <param name="ignoreCase">If <c>true</c>, ignores case when comparing signatures.</param>
+    /// <returns><c>true</c> if the computed hash matches the expected signature; otherwise, <c>false</c>.</returns>
     bool VerifySha256(
         string message,
         string secretKey,
@@ -27,6 +50,15 @@ public interface IHmacHashing : IDisposable // now disposable for cached instanc
         bool signatureIsBase64 = true,
         bool ignoreCase = true);
 
+    /// <summary>
+    ///     Verifies that the HMAC-SHA512 hash of the specified message and secret key matches the expected signature.
+    /// </summary>
+    /// <param name="message">The message to hash and verify.</param>
+    /// <param name="secretKey">The secret key to use for hashing.</param>
+    /// <param name="expectedSignature">The expected hash signature to compare against.</param>
+    /// <param name="signatureIsBase64">If <c>true</c>, the signature is base64-encoded; otherwise, hexadecimal.</param>
+    /// <param name="ignoreCase">If <c>true</c>, ignores case when comparing signatures.</param>
+    /// <returns><c>true</c> if the computed hash matches the expected signature; otherwise, <c>false</c>.</returns>
     bool VerifySha512(
         string message,
         string secretKey,
@@ -38,15 +70,15 @@ public interface IHmacHashing : IDisposable // now disposable for cached instanc
 }
 
 /// <summary>
-///     Provides HmacHashing functionality.
+///     Provides HMAC hashing functionality for SHA256 and SHA512 algorithms, with caching for performance.
 /// </summary>
 public sealed class HmacHashing : IHmacHashing
 {
     #region Fields
 
     private readonly Dictionary<(HmacAlgorithm alg, string key), HMAC> _cache = [];
-    private bool _disposed;
     private readonly Lock _sync = new();
+    private bool _disposed;
 
     #endregion
 
@@ -58,11 +90,11 @@ public sealed class HmacHashing : IHmacHashing
         HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
         bool asBase64 = true)
     {
-        ObjectDisposedException.ThrowIf(this._disposed, nameof(HmacHashing));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         ArgumentException.ThrowIfNullOrWhiteSpace(secretKey);
 
-        var hmac = this.GetOrCreate(algorithm, secretKey);
+        var hmac = GetOrCreate(algorithm, secretKey);
         byte[] hash;
         lock (hmac) // HMAC not thread-safe
         {
@@ -77,14 +109,14 @@ public sealed class HmacHashing : IHmacHashing
     /// </summary>
     public string ComputeSha256(string message, string secretKey, bool asBase64 = true)
         =>
-            this.Compute(message, secretKey, HmacAlgorithm.Sha256, asBase64);
+            Compute(message, secretKey, HmacAlgorithm.Sha256, asBase64);
 
     /// <summary>
     ///     ComputeSha512 operation.
     /// </summary>
     public string ComputeSha512(string message, string secretKey, bool asBase64 = true)
         =>
-            this.Compute(message, secretKey, HmacAlgorithm.Sha512, asBase64);
+            Compute(message, secretKey, HmacAlgorithm.Sha512, asBase64);
 
     private static HMAC Create(HmacAlgorithm algorithm, byte[] key) => algorithm switch
     {
@@ -98,36 +130,27 @@ public sealed class HmacHashing : IHmacHashing
     /// </summary>
     public void Dispose()
     {
-        if (this._disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
-        lock (this._sync)
+        lock (_sync)
         {
-            foreach (var kv in this._cache)
-            {
-                kv.Value.Dispose();
-            }
+            foreach (var kv in _cache) kv.Value.Dispose();
 
-            this._cache.Clear();
-            this._disposed = true;
+            _cache.Clear();
+            _disposed = true;
         }
     }
 
     private HMAC GetOrCreate(HmacAlgorithm algorithm, string secretKey)
     {
         var cacheKey = (algorithm, secretKey);
-        lock (this._sync)
+        lock (_sync)
         {
-            if (this._cache.TryGetValue(cacheKey, out var existing))
-            {
-                return existing;
-            }
+            if (_cache.TryGetValue(cacheKey, out var existing)) return existing;
 
             var keyBytes = Encoding.UTF8.GetBytes(secretKey);
             var created = Create(algorithm, keyBytes);
-            this._cache[cacheKey] = created;
+            _cache[cacheKey] = created;
             return created;
         }
     }
@@ -140,10 +163,10 @@ public sealed class HmacHashing : IHmacHashing
         bool signatureIsBase64 = true,
         bool ignoreCase = true)
     {
-        ObjectDisposedException.ThrowIf(this._disposed, nameof(HmacHashing));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedSignature);
 
-        var actual = this.Compute(message, secretKey, algorithm, signatureIsBase64);
+        var actual = Compute(message, secretKey, algorithm, signatureIsBase64);
         return ignoreCase
             ? string.Equals(actual, expectedSignature, StringComparison.OrdinalIgnoreCase)
             : actual == expectedSignature;
@@ -159,8 +182,11 @@ public sealed class HmacHashing : IHmacHashing
         bool signatureIsBase64 = true,
         bool ignoreCase = true)
         =>
-            this.Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha256, signatureIsBase64, ignoreCase);
+            Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha256, signatureIsBase64, ignoreCase);
 
+    /// <summary>
+    ///     VerifySha512 operation.
+    /// </summary>
     public bool VerifySha512(
         string message,
         string secretKey,
@@ -168,7 +194,7 @@ public sealed class HmacHashing : IHmacHashing
         bool signatureIsBase64 = true,
         bool ignoreCase = true)
         =>
-            this.Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha512, signatureIsBase64, ignoreCase);
+            Verify(message, secretKey, expectedSignature, HmacAlgorithm.Sha512, signatureIsBase64, ignoreCase);
 
     #endregion
 }

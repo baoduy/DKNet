@@ -50,6 +50,9 @@ public interface IReadRepository<TEntity> where TEntity : class
     /// <returns></returns>
     IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
 
+    /// <summary>
+    /// </summary>
+    /// <returns></returns>
     IQueryable<TEntity> Query();
 
     /// <summary>

@@ -10,7 +10,7 @@ public interface IEventItem
     #region Properties
 
     /// <summary>
-    ///     This additional data will be added into the message headers.
+    ///     Gets this additional data will be added into the message headers.
     ///     This is useful for routing or filtering messages.
     ///     And will be ignored from the Event JSON serialization.
     /// </summary>

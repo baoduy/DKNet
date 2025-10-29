@@ -21,7 +21,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task CountAsync_ReturnsCorrectCount()
     {
         // Act
-        var count = await this._repository!.CountAsync(e => e.Age > 25);
+        var count = await _repository!.CountAsync(e => e.Age > 25);
 
         // Assert
         count.ShouldBe(2);
@@ -29,10 +29,10 @@ public class RepositoryExtendedTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (this._dbContext != null)
+        if (_dbContext != null)
         {
-            await this._dbContext.Database.CloseConnectionAsync();
-            await this._dbContext.DisposeAsync();
+            await _dbContext.Database.CloseConnectionAsync();
+            await _dbContext.DisposeAsync();
         }
     }
 
@@ -40,7 +40,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ExistsAsync_WhenExists_ReturnsTrue()
     {
         // Act
-        var exists = await this._repository!.ExistsAsync(e => e.Name == "John");
+        var exists = await _repository!.ExistsAsync(e => e.Name == "John");
 
         // Assert
         exists.ShouldBeTrue();
@@ -50,7 +50,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ExistsAsync_WhenNotExists_ReturnsFalse()
     {
         // Act
-        var exists = await this._repository!.ExistsAsync(e => e.Name == "NonExistent");
+        var exists = await _repository!.ExistsAsync(e => e.Name == "NonExistent");
 
         // Assert
         exists.ShouldBeFalse();
@@ -60,7 +60,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task FindAsync_WithFilter_ReturnsEntity()
     {
         // Act
-        var entity = await this._repository!.FindAsync(e => e.Name == "Jane");
+        var entity = await _repository!.FindAsync(e => e.Name == "Jane");
 
         // Assert
         entity.ShouldNotBeNull();
@@ -71,7 +71,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task FindAsync_WithInvalidKey_ReturnsNull()
     {
         // Act
-        var entity = await this._repository!.FindAsync(999);
+        var entity = await _repository!.FindAsync(999);
 
         // Assert
         entity.ShouldBeNull();
@@ -81,7 +81,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task FindAsync_WithKeyValue_ReturnsEntity()
     {
         // Act
-        var entity = await this._repository!.FindAsync(1);
+        var entity = await _repository!.FindAsync(1);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -92,7 +92,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task FindAsync_WithKeyValues_ReturnsEntity()
     {
         // Act
-        var entity = await this._repository!.FindAsync(new object[] { 1 });
+        var entity = await _repository!.FindAsync([1]);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -105,27 +105,27 @@ public class RepositoryExtendedTests : IAsyncLifetime
             .UseSqlite("DataSource=:memory:")
             .Options;
 
-        this._dbContext = new TestDbContext(options);
-        await this._dbContext.Database.OpenConnectionAsync();
-        await this._dbContext.Database.EnsureCreatedAsync();
+        _dbContext = new TestDbContext(options);
+        await _dbContext.Database.OpenConnectionAsync();
+        await _dbContext.Database.EnsureCreatedAsync();
 
-        this._repository = new Repository<TestEntity>(this._dbContext);
-        this._readRepository = new ReadRepository<TestEntity>(this._dbContext);
+        _repository = new Repository<TestEntity>(_dbContext);
+        _readRepository = new ReadRepository<TestEntity>(_dbContext);
 
         // Seed some data
-        this._dbContext.TestEntities.AddRange(
+        _dbContext.TestEntities.AddRange(
             new TestEntity { Id = 1, Name = "John", Age = 30 },
             new TestEntity { Id = 2, Name = "Jane", Age = 25 },
             new TestEntity { Id = 3, Name = "Bob", Age = 35 });
-        await this._dbContext.SaveChangesAsync();
-        this._dbContext.ChangeTracker.Clear();
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
     }
 
     [Fact]
     public void Query_ReturnsQueryable()
     {
         // Act
-        var query = this._repository!.Query();
+        var query = _repository!.Query();
 
         // Assert
         query.ShouldNotBeNull();
@@ -136,7 +136,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public void Query_WithFilter_ReturnsFilteredQueryable()
     {
         // Act
-        var query = this._repository!.Query(e => e.Age > 25);
+        var query = _repository!.Query(e => e.Age > 25);
 
         // Assert
         query.ShouldNotBeNull();
@@ -151,7 +151,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
         config.NewConfig<TestEntity, TestEntityDto>();
         var mapper = new Mapper(config);
         var mappers = new List<IMapper> { mapper };
-        var repo = new Repository<TestEntity>(this._dbContext!, mappers);
+        var repo = new Repository<TestEntity>(_dbContext!, mappers);
 
         // Act
         var query = repo.Query<TestEntityDto>(e => e.Age > 25);
@@ -165,7 +165,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public void Query_WithMapperAndNoMapper_ThrowsException()
     {
         // Arrange
-        var repo = new Repository<TestEntity>(this._dbContext!);
+        var repo = new Repository<TestEntity>(_dbContext!);
 
         // Act & Assert
         Should.Throw<InvalidOperationException>(() => { repo.Query<TestEntityDto>(e => e.Age > 25); });
@@ -175,7 +175,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_CountAsync_ReturnsCorrectCount()
     {
         // Act
-        var count = await this._readRepository!.CountAsync(e => e.Age <= 30);
+        var count = await _readRepository!.CountAsync(e => e.Age <= 30);
 
         // Assert
         count.ShouldBe(2);
@@ -185,7 +185,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_ExistsAsync_WhenExists_ReturnsTrue()
     {
         // Act
-        var exists = await this._readRepository!.ExistsAsync(e => e.Age == 25);
+        var exists = await _readRepository!.ExistsAsync(e => e.Age == 25);
 
         // Assert
         exists.ShouldBeTrue();
@@ -195,7 +195,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_ExistsAsync_WhenNotExists_ReturnsFalse()
     {
         // Act
-        var exists = await this._readRepository!.ExistsAsync(e => e.Age == 100);
+        var exists = await _readRepository!.ExistsAsync(e => e.Age == 100);
 
         // Assert
         exists.ShouldBeFalse();
@@ -205,7 +205,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_FindAsync_WithFilter_ReturnsEntity()
     {
         // Act
-        var entity = await this._readRepository!.FindAsync(e => e.Name == "Bob");
+        var entity = await _readRepository!.FindAsync(e => e.Name == "Bob");
 
         // Assert
         entity.ShouldNotBeNull();
@@ -216,7 +216,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_FindAsync_WithKeyValue_ReturnsEntity()
     {
         // Act
-        var entity = await this._readRepository!.FindAsync(1);
+        var entity = await _readRepository!.FindAsync(1);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -227,7 +227,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_FindAsync_WithKeyValues_ReturnsEntity()
     {
         // Act
-        var entity = await this._readRepository!.FindAsync(new object[] { 2 });
+        var entity = await _readRepository!.FindAsync([2]);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -238,7 +238,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public void ReadRepository_Query_ReturnsNoTrackingQueryable()
     {
         // Act
-        var query = this._readRepository!.Query();
+        var query = _readRepository!.Query();
 
         // Assert
         query.ShouldNotBeNull();
@@ -249,7 +249,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public void ReadRepository_Query_WithFilter_ReturnsFilteredQueryable()
     {
         // Act
-        var query = this._readRepository!.Query(e => e.Age < 30);
+        var query = _readRepository!.Query(e => e.Age < 30);
 
         // Assert
         query.ShouldNotBeNull();
@@ -264,7 +264,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
         config.NewConfig<TestEntity, TestEntityDto>();
         var mapper = new Mapper(config);
         var mappers = new List<IMapper> { mapper };
-        var repo = new ReadRepository<TestEntity>(this._dbContext!, mappers);
+        var repo = new ReadRepository<TestEntity>(_dbContext!, mappers);
 
         // Act
         var query = repo.Query<TestEntityDto>(e => e.Age > 25);
@@ -278,7 +278,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public void ReadRepository_Query_WithMapperAndNoMapper_ThrowsException()
     {
         // Arrange
-        var repo = new ReadRepository<TestEntity>(this._dbContext!);
+        var repo = new ReadRepository<TestEntity>(_dbContext!);
 
         // Act & Assert
         Should.Throw<InvalidOperationException>(() => { repo.Query<TestEntityDto>(e => e.Age > 25); });
@@ -298,7 +298,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
 
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
 
         #endregion
     }

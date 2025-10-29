@@ -3,27 +3,40 @@ using System.Security.Cryptography;
 namespace DKNet.Svc.Encryption;
 
 /// <summary>
-///     Interface for AesEncryption operations.
+///     Interface for AES encryption operations.
 /// </summary>
 public interface IAesEncryption
 {
     #region Properties
 
+    /// <summary>
+    ///     Gets the base64-encoded key and IV string for this encryption instance.
+    /// </summary>
     string Key { get; }
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Decrypts the specified base64-encoded cipher text string.
+    /// </summary>
+    /// <param name="cipherText">The base64-encoded cipher text to decrypt.</param>
+    /// <returns>The decrypted plain text string.</returns>
     string DecryptString(string cipherText);
 
+    /// <summary>
+    ///     Encrypts the specified plain text string.
+    /// </summary>
+    /// <param name="plainText">The plain text to encrypt.</param>
+    /// <returns>The encrypted cipher text as a base64-encoded string.</returns>
     string EncryptString(string plainText);
 
     #endregion
 }
 
 /// <summary>
-///     Provides AesEncryption functionality.
+///     Provides AES encryption and decryption functionality.
 /// </summary>
 public sealed class AesEncryption : IAesEncryption, IDisposable
 {
@@ -37,42 +50,53 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
 
     #region Constructors
 
-    public AesEncryption(string? keyString = null) => this._aes =
-        string.IsNullOrEmpty(keyString) ? this.CreateAes() : this.CreateAesFromKey(keyString);
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AesEncryption" /> class.
+    /// </summary>
+    /// <param name="keyString">The base64-encoded key and IV string, or <c>null</c> to generate a new key and IV.</param>
+    public AesEncryption(string? keyString = null) => _aes =
+        string.IsNullOrEmpty(keyString) ? CreateAes() : CreateAesFromKey(keyString);
 
     #endregion
 
     #region Properties
 
     /// <summary>
-    ///     Key field.
+    ///     Gets the base64-encoded key and IV string for this encryption instance.
     /// </summary>
-    public string Key => this._keyString!;
+    public string Key => _keyString!;
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Creates a new AES instance and generates a new key and IV.
+    /// </summary>
+    /// <returns>A new <see cref="Aes" /> instance with a generated key and IV.</returns>
     private Aes CreateAes()
     {
         var aes = Aes.Create();
         var key = aes.Key;
         var iv = aes.IV;
 
-        this._keyString = $"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}".ToBase64String();
+        _keyString = $"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}".ToBase64String();
         return aes;
     }
 
+    /// <summary>
+    ///     Creates a new AES instance from the specified base64-encoded key and IV string.
+    /// </summary>
+    /// <param name="keyString">The base64-encoded key and IV string.</param>
+    /// <returns>A new <see cref="Aes" /> instance with the specified key and IV.</returns>
+    /// <exception cref="ArgumentException">Thrown if the key string is invalid or not in the correct format.</exception>
     private Aes CreateAesFromKey(string keyString)
     {
-        this._keyString = keyString;
+        _keyString = keyString;
         ArgumentException.ThrowIfNullOrWhiteSpace(keyString);
 
         var keys = keyString.FromBase64String().Split(":");
-        if (keys.Length != 2)
-        {
-            throw new ArgumentException("Invalid key string format.", nameof(keyString));
-        }
+        if (keys.Length != 2) throw new ArgumentException("Invalid key string format.", nameof(keyString));
 
         var key = Convert.FromBase64String(keys[0]);
         var iv = Convert.FromBase64String(keys[1]);
@@ -85,12 +109,14 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
     }
 
     /// <summary>
-    ///     DecryptString operation.
+    ///     Decrypts the specified base64-encoded cipher text string.
     /// </summary>
+    /// <param name="cipherText">The base64-encoded cipher text to decrypt.</param>
+    /// <returns>The decrypted plain text string.</returns>
     public string DecryptString(string cipherText)
     {
-        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));
-        var decryptor = this._aes.CreateDecryptor();
+        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
+        var decryptor = _aes.CreateDecryptor();
 
         using var msDecrypt = new MemoryStream(Convert.FromBase64String(cipherText));
         using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
@@ -100,31 +126,38 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
     }
 
     /// <summary>
-    ///     Dispose operation.
+    ///     Releases all resources used by the <see cref="AesEncryption" /> instance.
     /// </summary>
     public void Dispose()
     {
-        this.Dispose(true);
+        Dispose(true);
         GC.SuppressFinalize(this);
-        this._disposed = true;
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            this._aes.Dispose();
-        }
+        _disposed = true;
     }
 
     /// <summary>
-    ///     EncryptString operation.
+    ///     Releases the unmanaged resources used by the <see cref="AesEncryption" /> and optionally releases the managed
+    ///     resources.
     /// </summary>
+    /// <param name="disposing">
+    ///     true to release both managed and unmanaged resources; false to release only unmanaged
+    ///     resources.
+    /// </param>
+    private void Dispose(bool disposing)
+    {
+        if (disposing) _aes.Dispose();
+    }
+
+    /// <summary>
+    ///     Encrypts the specified plain text string.
+    /// </summary>
+    /// <param name="plainText">The plain text to encrypt.</param>
+    /// <returns>The encrypted cipher text as a base64-encoded string.</returns>
     public string EncryptString(string plainText)
     {
-        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
 
-        var encryptor = this._aes.CreateEncryptor();
+        var encryptor = _aes.CreateEncryptor();
         using var msEncrypt = new MemoryStream();
         using var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
         using (var swEncrypt = new StreamWriter(csEncrypt))

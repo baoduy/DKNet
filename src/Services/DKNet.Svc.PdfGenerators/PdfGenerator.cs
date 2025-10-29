@@ -65,10 +65,8 @@ public interface IPdfGenerator
 }
 
 /// <summary>
-/// <summary>
 ///     Provides functionality to generate PDF files from Markdown or HTML sources.
 /// </summary>
-/// <param name="null">The null parameter.</param>
 /// <remarks>
 ///     Initializes a new instance of <see cref="PdfGenerator" />.
 /// </remarks>
@@ -76,11 +74,16 @@ public interface IPdfGenerator
 /// <summary>
 ///     Provides PdfGenerator functionality.
 /// </summary>
-/// <param name="null">The null parameter.</param>
+/// <param>The null parameter.</param>
 /// <returns>The result of the operation.</returns>
 public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
 {
     #region Properties
+
+    /// <summary>
+    ///     Options for PDF generation.
+    /// </summary>
+    private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
 
     /// <summary>
     ///     The Marking pipeline used for markdown to HTML conversion.
@@ -90,16 +93,13 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         .UseYamlFrontMatter()
         .UseEmojiAndSmiley();
 
-    /// <summary>
-    ///     Options for PDF generation.
-    /// </summary>
-    private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
-
     #endregion
+
+    #region Methods
+
     /// <summary>
     ///     Converts HTML content to PDF.
     /// </summary>
-    /// <param name="null">The null parameter.</param>
     /// <param name="htmlContent">HTML content as a string.</param>
     /// <param name="outputPath">
     ///     Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current
@@ -109,13 +109,13 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     public async Task<string> ConvertHtmlAsync(string htmlContent, string? outputPath = null)
     {
         var pdfFileName = outputPath ?? Path.Combine(Directory.GetCurrentDirectory(), "output_from_html.pdf");
-        await this.GeneratePdfFromHtmlAsync(htmlContent, pdfFileName);
+        await GeneratePdfFromHtmlAsync(htmlContent, pdfFileName);
         return pdfFileName;
     }
+
     /// <summary>
     ///     Converts an HTML file to PDF.
     /// </summary>
-    /// <param name="null">The null parameter.</param>
     /// <param name="htmlFilePath">Path to the HTML file.</param>
     /// <param name="outputPath">
     ///     Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current
@@ -124,13 +124,10 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <returns>Path to the generated PDF file.</returns>
     public async Task<string> ConvertHtmlFileAsync(string htmlFilePath, string? outputPath = null)
     {
-        if (!File.Exists(htmlFilePath))
-        {
-            throw new FileNotFoundException($"HTML file not found: {htmlFilePath}");
-        }
+        if (!File.Exists(htmlFilePath)) throw new FileNotFoundException($"HTML file not found: {htmlFilePath}");
 
         var htmlContent = await File.ReadAllTextAsync(htmlFilePath);
-        return await this.ConvertHtmlAsync(htmlContent, outputPath);
+        return await ConvertHtmlAsync(htmlContent, outputPath);
     }
 
     /// <summary>
@@ -139,11 +136,11 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <param name="markdownFile">The markdown file to convert.</param>
     /// <returns>The generated PDF file info.</returns>
     public async Task<FileInfo> ConvertMarkdownFileAsync(FileInfo markdownFile) =>
-        new(await this.ConvertMarkdownFileAsync(markdownFile.FullName));
+        new(await ConvertMarkdownFileAsync(markdownFile.FullName));
+
     /// <summary>
     ///     Converts a markdown file to PDF.
     /// </summary>
-    /// <param name="null">The null parameter.</param>
     /// <param name="markdownFilePath">Path to the markdown file.</param>
     /// <param name="outputFilePath">
     ///     Optional output PDF file path. If not provided, uses the markdown file name with .pdf
@@ -159,8 +156,8 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
 
         var markdownContent = await File.ReadAllTextAsync(markdownFilePath);
-        var html = Markdown.ToHtml(markdownContent, this.PipelineBuilder.Build());
-        await this.GeneratePdfFromHtmlAsync(html, outputFilePath);
+        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
+        await GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
 
@@ -174,8 +171,8 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     {
         var markdownContents = await Task.WhenAll(markdownFilePaths.Select(path => File.ReadAllTextAsync(path)));
         var markdownContent = string.Join(Environment.NewLine, markdownContents);
-        var html = Markdown.ToHtml(markdownContent, this.PipelineBuilder.Build());
-        await this.GeneratePdfFromHtmlAsync(html, outputFilePath);
+        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
+        await GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
 
@@ -190,37 +187,35 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         var launchOptions = new LaunchOptions
         {
             Headless = true,
-            ExecutablePath = this.Options.ChromePath
+            ExecutablePath = Options.ChromePath
         };
 
         // Add no-sandbox args for CI/container environments
         if (Environment.GetEnvironmentVariable("CI") == "true" ||
             Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
-        {
             launchOptions.Args = ["--no-sandbox", "--disable-setuid-sandbox"];
-        }
 
         await using var browser = await Puppeteer.LaunchAsync(launchOptions);
         await using var page = await browser.NewPageAsync();
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
         {
-            Format = this.Options.Format,
-            Landscape = this.Options.IsLandscape,
+            Format = Options.Format,
+            Landscape = Options.IsLandscape,
             PrintBackground = true,
-            MarginOptions = this.Options.MarginOptions != null
+            MarginOptions = Options.MarginOptions != null
                 ? new MarginOptions
                 {
-                    Top = this.Options.MarginOptions.Top,
-                    Bottom = this.Options.MarginOptions.Bottom,
-                    Left = this.Options.MarginOptions.Left,
-                    Right = this.Options.MarginOptions.Right
+                    Top = Options.MarginOptions.Top,
+                    Bottom = Options.MarginOptions.Bottom,
+                    Left = Options.MarginOptions.Left,
+                    Right = Options.MarginOptions.Right
                 }
                 : new MarginOptions(),
-            Scale = this.Options.Scale,
-            DisplayHeaderFooter = this.Options.HeaderHtml != null || this.Options.FooterHtml != null,
-            HeaderTemplate = this.Options.HeaderHtml,
-            FooterTemplate = this.Options.FooterHtml
+            Scale = Options.Scale,
+            DisplayHeaderFooter = Options.HeaderHtml != null || Options.FooterHtml != null,
+            HeaderTemplate = Options.HeaderHtml,
+            FooterTemplate = Options.FooterHtml
         };
         await page.EmulateMediaTypeAsync(MediaType.Screen);
         await page.PdfAsync(outputFilePath, pdfOptions);

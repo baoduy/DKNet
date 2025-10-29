@@ -5,6 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks;
 
+/// <summary>
+///     The setup for EF Core Hooks
+/// </summary>
 public static class SetupEfCoreHook
 {
     #region Methods

@@ -73,6 +73,19 @@ public class TransformOptions
     public ICollection<ITokenDefinition> DefaultDefinitions { get; } = [SquareBrackets];
 
     /// <summary>
+    ///     Gets or sets the value formatter used to format token values before applying them to templates.
+    /// </summary>
+    /// <value>
+    ///     An <see cref="IValueFormatter" /> instance. Default is <see cref="ValueFormatter" />.
+    /// </value>
+    /// <remarks>
+    ///     The formatter controls how token values are converted to strings in the final template output.
+    ///     Custom formatters can be provided to handle specific formatting requirements such as
+    ///     date formats, number formatting, or custom object serialization.
+    /// </remarks>
+    public IValueFormatter Formatter { get; set; } = new ValueFormatter();
+
+    /// <summary>
     ///     Gets or sets the global parameters that are shared across all transformation operations.
     /// </summary>
     /// <value>
@@ -88,18 +101,7 @@ public class TransformOptions
     public IEnumerable<object> GlobalParameters { get; set; } = [];
 
     /// <summary>
-    ///     Gets or sets the value formatter used to format token values before applying them to templates.
     /// </summary>
-    /// <value>
-    ///     An <see cref="IValueFormatter" /> instance. Default is <see cref="ValueFormatter" />.
-    /// </value>
-    /// <remarks>
-    ///     The formatter controls how token values are converted to strings in the final template output.
-    ///     Custom formatters can be provided to handle specific formatting requirements such as
-    ///     date formats, number formatting, or custom object serialization.
-    /// </remarks>
-    public IValueFormatter Formatter { get; set; } = new ValueFormatter();
-
     public TokenNotFoundBehavior TokenNotFoundBehavior { get; set; } = TokenNotFoundBehavior.ThrowError;
 
     #endregion

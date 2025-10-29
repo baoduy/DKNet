@@ -1,77 +1,12 @@
+// <copyright file="StringCreator.cs" company="https://drunkcoding.net">
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using DKNet.EfCore.Abstractions.Attributes;
 
 namespace DKNet.EfCore.Abstractions.Entities;
-
-/// <summary>
-///     Defines the basic auditing properties required for tracking entity changes.
-/// </summary>
-/// <remarks>
-///     This interface provides the fundamental properties needed for maintaining
-///     audit trails of entity creation and modifications.
-/// </remarks>
-public interface IAuditedProperties
-{
-    #region Properties
-
-    /// <summary>
-    ///     Gets the timestamp when the entity was created.
-    /// </summary>
-    [IgnoreAuditLog]
-    DateTimeOffset CreatedOn { get; }
-
-    /// <summary>
-    ///     Gets the timestamp when the entity was last updated.
-    /// </summary>
-    [IgnoreAuditLog]
-    DateTimeOffset? UpdatedOn { get; }
-
-    /// <summary>
-    ///     Gets the identifier of the user who created the entity.
-    /// </summary>
-    [IgnoreAuditLog]
-    [MaxLength(500)]
-    string CreatedBy { get; }
-
-    /// <summary>
-    ///     Gets the identifier of the user who last updated the entity.
-    /// </summary>
-    [MaxLength(500)]
-    [IgnoreAuditLog]
-    string? UpdatedBy { get; }
-
-    #endregion
-}
-
-/// <summary>
-///     Defines a contract for auditable entities with a specified key type.
-/// </summary>
-/// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
-/// <remarks>
-///     This interface combines entity identification, audit properties, and
-///     concurrency control capabilities.
-/// </remarks>
-public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties
-{
-    #region Methods
-
-    /// <summary>
-    ///     Sets the creation audit information for the entity.
-    /// </summary>
-    /// <param name="userName">The identifier of the creating user.</param>
-    /// <param name="createdOn">Optional creation timestamp.</param>
-    void SetCreatedBy(string userName, DateTimeOffset? createdOn = null);
-
-    /// <summary>
-    ///     Sets the update audit information for the entity.
-    /// </summary>
-    /// <param name="userName">The identifier of the updating user.</param>
-    /// <param name="updatedOn">Optional update timestamp.</param>
-    void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null);
-
-    #endregion
-}
 
 /// <summary>
 ///     Base class for entities that require audit tracking with a specified key type.
@@ -101,7 +36,8 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     ///     Initializes a new instance of the <see cref="AuditedEntity{TKey}" /> class with the specified ID.
     /// </summary>
     /// <param name="id">The unique identifier for the entity.</param>
-    protected AuditedEntity(TKey id) : base(id)
+    protected AuditedEntity(TKey id)
+        : base(id)
     {
     }
 
@@ -110,36 +46,38 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     #region Properties
 
     /// <summary>
-    ///     Gets the timestamp when this entity was created.
-    /// </summary>
-    public DateTimeOffset CreatedOn { get; private set; }
-
-    /// <summary>
-    ///     Gets the timestamp when this entity was last modified, or the creation timestamp if never modified.
-    /// </summary>
-    [NotMapped] public DateTimeOffset LastModifiedOn => this.UpdatedOn ?? this.CreatedOn;
-
-    /// <summary>
-    ///     Gets the timestamp when this entity was last modified.
-    /// </summary>
-    public DateTimeOffset? UpdatedOn { get; private set; }
-
-    /// <summary>
     ///     Gets the user who created this entity.
     /// </summary>
     [MaxLength(500)]
     public string CreatedBy { get; private set; } = null!;
 
     /// <summary>
+    ///     Gets the timestamp when this entity was created.
+    /// </summary>
+    public DateTimeOffset CreatedOn { get; private set; }
+
+    /// <summary>
     ///     Gets the user who last modified this entity, or the creator if never modified.
     /// </summary>
-    [NotMapped] public string LastModifiedBy => this.UpdatedBy ?? this.CreatedBy;
+    [NotMapped]
+    public string LastModifiedBy => this.UpdatedBy ?? this.CreatedBy;
+
+    /// <summary>
+    ///     Gets the timestamp when this entity was last modified, or the creation timestamp if never modified.
+    /// </summary>
+    [NotMapped]
+    public DateTimeOffset LastModifiedOn => this.UpdatedOn ?? this.CreatedOn;
 
     /// <summary>
     ///     Gets the user who last modified this entity.
     /// </summary>
     [MaxLength(500)]
     public string? UpdatedBy { get; private set; }
+
+    /// <summary>
+    ///     Gets the timestamp when this entity was last modified.
+    /// </summary>
+    public DateTimeOffset? UpdatedOn { get; private set; }
 
     #endregion
 
@@ -201,7 +139,8 @@ public abstract class AuditedEntity : AuditedEntity<Guid>
     ///     Initializes a new instance of the <see cref="AuditedEntity" /> class with the specified ID.
     /// </summary>
     /// <param name="id">The unique identifier for the entity.</param>
-    protected AuditedEntity(Guid id) : base(id)
+    protected AuditedEntity(Guid id)
+        : base(id)
     {
     }
 

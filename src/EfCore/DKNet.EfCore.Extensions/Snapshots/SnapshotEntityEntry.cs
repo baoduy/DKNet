@@ -1,23 +1,48 @@
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Author: DRUNK Coding Team
+// File: SnapshotEntityEntry.cs
+// Description: Lightweight snapshot wrapper that captures an EntityEntry and its original state at snapshot time.
+
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.Extensions.Snapshots;
 
 /// <summary>
-///     This snapshot will keep the State of entity before save changes.
+///     A snapshot of an EF Core <see cref="EntityEntry" /> capturing the entry and its state at the time of the snapshot.
 /// </summary>
-/// <param name="entry"></param>
-public sealed class SnapshotEntityEntry(EntityEntry entry)
+public sealed class SnapshotEntityEntry
 {
-    #region Properties
-
-    public EntityEntry Entry { get; } = entry;
+    #region Constructors
 
     /// <summary>
-    ///     The original stage before saved changes.
+    ///     Initializes a new instance of <see cref="SnapshotEntityEntry" /> from the provided <paramref name="entry" />.
     /// </summary>
-    public EntityState OriginalState { get; } = entry.State;
+    /// <param name="entry">The <see cref="EntityEntry" /> to snapshot (must not be null).</param>
+    public SnapshotEntityEntry(EntityEntry entry)
+    {
+        Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+        OriginalState = entry.State;
+    }
 
-    public object Entity => this.Entry.Entity;
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    ///     The underlying entity instance associated with the entry.
+    /// </summary>
+    public object Entity => Entry.Entity;
+
+    /// <summary>
+    ///     The captured <see cref="EntityEntry" /> instance.
+    /// </summary>
+    public EntityEntry Entry { get; }
+
+    /// <summary>
+    ///     The entity state at the time the snapshot was created.
+    /// </summary>
+    public EntityState OriginalState { get; }
 
     #endregion
 }

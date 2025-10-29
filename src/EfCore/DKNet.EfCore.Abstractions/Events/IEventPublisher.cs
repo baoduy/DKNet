@@ -2,7 +2,7 @@
 
 /// <summary>
 ///     Centralized event publisher.
-///     All events will be route to this publisher. Use <see />
+///     All events will be route to this publisher.
 /// </summary>
 public interface IEventPublisher
 {

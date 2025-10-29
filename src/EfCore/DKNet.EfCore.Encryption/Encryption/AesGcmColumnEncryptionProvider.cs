@@ -1,3 +1,6 @@
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Security.Cryptography;
 using System.Text;
 using DKNet.EfCore.Encryption.Interfaces;
@@ -10,6 +13,9 @@ namespace DKNet.EfCore.Encryption.Encryption;
 public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 {
     #region Fields
+
+    private const int IvSize = 12;
+    private const int TagSize = 16;
 
     private readonly byte[] _key;
 
@@ -121,7 +127,4 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
     }
 
     #endregion
-
-    private const int IvSize = 12;
-    private const int TagSize = 16;
 }

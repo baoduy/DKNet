@@ -47,4 +47,3 @@ This header format satisfies StyleCop rule SA1633 (FileMustHaveHeader) and provi
 - The year should be updated as needed
 - All new files should include this header
 - Existing files should be updated when modified
-
