@@ -4,4 +4,8 @@
 ///     A theme from a CSS file.
 /// </summary>
 /// <param name="CssPath">Path to the CSS file to use as the theme.</param>
+/// <summary>
+///     CustomTheme operation.
+/// </summary>
+/// <returns>The result of the operation.</returns>
 public record CustomTheme(string CssPath) : Theme;

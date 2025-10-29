@@ -25,6 +25,9 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="encryptedText">The Base64-encoded string.</param>
     /// <returns>The decrypted plain text string.</returns>
+    /// <summary>
+    ///     FromBase64String operation.
+    /// </summary>
     public static string FromBase64String(this string encryptedText)
     {
         if (string.IsNullOrWhiteSpace(encryptedText))
@@ -64,6 +67,9 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="base64String">The string to check.</param>
     /// <returns>True if the string is a valid Base64 encoded string; otherwise, false.</returns>
+    /// <summary>
+    ///     IsBase64String operation.
+    /// </summary>
     public static bool IsBase64String(this string base64String)
     {
         if (string.IsNullOrWhiteSpace(base64String))
@@ -131,6 +137,9 @@ public static class Base65StringExtensions
     /// <param name="plainText">The plain text to encode.</param>
     /// <returns>The Base64-encoded string.</returns>
     /// <exception cref="ArgumentNullException">Thrown when plainText is null.</exception>
+    /// <summary>
+    ///     ToBase64String operation.
+    /// </summary>
     public static string ToBase64String(this string plainText) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 

@@ -3,6 +3,9 @@
 /// <summary>
 ///     Options for the page numbers in the Table of Contents.
 /// </summary>
+/// <summary>
+///     Provides PageNumberOptions functionality.
+/// </summary>
 public class PageNumberOptions
 {
     #region Properties

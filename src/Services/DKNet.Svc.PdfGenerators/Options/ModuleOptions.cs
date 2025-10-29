@@ -26,6 +26,9 @@ public record ModuleOptions
     /// <summary>
     ///     Provides information from where to load modules.
     /// </summary>
+    /// <summary>
+    ///     Gets or sets ModuleLocation.
+    /// </summary>
     public ModuleLocation ModuleLocation { get; }
 
     /// <summary>
@@ -58,6 +61,7 @@ public record ModuleOptions
     /// npm i latex.css
     /// </code>
     /// </remarks>
+    /// <returns>The result of the operation.</returns>
     public static ModuleOptions FromLocalPath(string modulePath) => new NodeModuleOptions(modulePath);
 
     #endregion

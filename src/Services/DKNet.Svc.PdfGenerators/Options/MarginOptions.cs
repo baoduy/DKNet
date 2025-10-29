@@ -3,6 +3,9 @@
 /// <summary>
 ///     Margin values with units.
 /// </summary>
+/// <summary>
+///     Provides MarginOptions functionality.
+/// </summary>
 public class MarginOptions
 {
     #region Properties

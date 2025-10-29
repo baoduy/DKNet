@@ -79,10 +79,22 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 
     #region Methods
 
+    /// <summary>
+    ///     Adds a domain event to be published.
+    /// </summary>
+    /// <param name="eventObj">The event object to add.</param>
     public void AddEvent(object eventObj) => this._events.Add(eventObj);
 
+    /// <summary>
+    ///     Adds a domain event type to be created and published.
+    /// </summary>
+    /// <typeparam name="TEvent">The type of event to add.</typeparam>
     public void AddEvent<TEvent>() where TEvent : class => this._eventTypes.Add(typeof(TEvent));
 
+    /// <summary>
+    ///     Gets all pending events and event types, then clears them from this entity.
+    /// </summary>
+    /// <returns>A tuple containing arrays of events and event types.</returns>
     public (object[]events, Type[]eventTypes) GetEventsAndClear()
     {
         var events = this._events.ToArray();

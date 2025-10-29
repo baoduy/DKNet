@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Simple templating service.
 /// </summary>
+/// <summary>
+///     Provides TemplateFiller functionality.
+/// </summary>
 public static class TemplateFiller
 {
     #region Fields
@@ -26,6 +29,9 @@ public static class TemplateFiller
     /// <param name="template">The template to replace in.</param>
     /// <param name="model">The model, containg the keys and values.</param>
     /// <returns>The filled template.</returns>
+    /// <summary>
+    ///     FillTemplate operation.
+    /// </summary>
     public static string FillTemplate(string template, Dictionary<string, string> model)
     {
         var matches = TokenRegex.Matches(template);

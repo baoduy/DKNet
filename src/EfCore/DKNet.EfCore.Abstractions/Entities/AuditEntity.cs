@@ -90,10 +90,17 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
 {
     #region Constructors
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AuditedEntity{TKey}" /> class.
+    /// </summary>
     protected AuditedEntity()
     {
     }
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AuditedEntity{TKey}" /> class with the specified ID.
+    /// </summary>
+    /// <param name="id">The unique identifier for the entity.</param>
     protected AuditedEntity(TKey id) : base(id)
     {
     }
@@ -107,6 +114,9 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// </summary>
     public DateTimeOffset CreatedOn { get; private set; }
 
+    /// <summary>
+    ///     Gets the timestamp when this entity was last modified, or the creation timestamp if never modified.
+    /// </summary>
     [NotMapped] public DateTimeOffset LastModifiedOn => this.UpdatedOn ?? this.CreatedOn;
 
     /// <summary>
@@ -120,6 +130,9 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     [MaxLength(500)]
     public string CreatedBy { get; private set; } = null!;
 
+    /// <summary>
+    ///     Gets the user who last modified this entity, or the creator if never modified.
+    /// </summary>
     [NotMapped] public string LastModifiedBy => this.UpdatedBy ?? this.CreatedBy;
 
     /// <summary>
@@ -177,10 +190,17 @@ public abstract class AuditedEntity : AuditedEntity<Guid>
 {
     #region Constructors
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AuditedEntity" /> class.
+    /// </summary>
     protected AuditedEntity()
     {
     }
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AuditedEntity" /> class with the specified ID.
+    /// </summary>
+    /// <param name="id">The unique identifier for the entity.</param>
     protected AuditedEntity(Guid id) : base(id)
     {
     }

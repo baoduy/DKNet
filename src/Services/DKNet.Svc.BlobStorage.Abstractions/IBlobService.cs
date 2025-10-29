@@ -5,6 +5,9 @@ namespace DKNet.Svc.BlobStorage.Abstractions;
 /// <summary>
 ///     Provides an interface for blob storage operations including saving, retrieving, listing, and deleting blobs.
 /// </summary>
+/// <summary>
+///     Interface for BlobService operations.
+/// </summary>
 public interface IBlobService
 {
     #region Methods

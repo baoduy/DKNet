@@ -43,8 +43,14 @@ internal sealed class TokenResult : IToken
 
     #region Properties
 
+    /// <summary>
+    ///     Gets or sets Index.
+    /// </summary>
     public int Index { get; }
 
+    /// <summary>
+    ///     Gets or sets Definition.
+    /// </summary>
     public ITokenDefinition Definition { get; }
 
     public string Key
@@ -62,8 +68,14 @@ internal sealed class TokenResult : IToken
         }
     }
 
+    /// <summary>
+    ///     Gets or sets OriginalString.
+    /// </summary>
     public string OriginalString { get; }
 
+    /// <summary>
+    ///     Gets or sets Token.
+    /// </summary>
     public string Token { get; }
 
     #endregion

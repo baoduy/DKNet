@@ -8,6 +8,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Parser for YAML front matter blocks within markdown files.
 /// </summary>
+/// <summary>
+///     Provides InlineOptionsParser functionality.
+/// </summary>
 public static class InlineOptionsParser
 {
     #region Methods

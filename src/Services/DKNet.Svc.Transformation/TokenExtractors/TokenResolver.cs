@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace DKNet.Svc.Transformation.TokenExtractors;
 
+/// <summary>
+///     Interface for TokenResolver operations.
+/// </summary>
 public interface ITokenResolver
 {
     #region Methods

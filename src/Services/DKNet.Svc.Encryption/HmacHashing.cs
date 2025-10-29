@@ -9,6 +9,9 @@ internal enum HmacAlgorithm
     Sha512
 }
 
+/// <summary>
+///     Interface for HmacHashing operations.
+/// </summary>
 public interface IHmacHashing : IDisposable // now disposable for cached instances
 {
     #region Methods
@@ -34,6 +37,9 @@ public interface IHmacHashing : IDisposable // now disposable for cached instanc
     #endregion
 }
 
+/// <summary>
+///     Provides HmacHashing functionality.
+/// </summary>
 public sealed class HmacHashing : IHmacHashing
 {
     #region Fields
@@ -66,10 +72,16 @@ public sealed class HmacHashing : IHmacHashing
         return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
     }
 
+    /// <summary>
+    ///     ComputeSha256 operation.
+    /// </summary>
     public string ComputeSha256(string message, string secretKey, bool asBase64 = true)
         =>
             this.Compute(message, secretKey, HmacAlgorithm.Sha256, asBase64);
 
+    /// <summary>
+    ///     ComputeSha512 operation.
+    /// </summary>
     public string ComputeSha512(string message, string secretKey, bool asBase64 = true)
         =>
             this.Compute(message, secretKey, HmacAlgorithm.Sha512, asBase64);
@@ -81,6 +93,9 @@ public sealed class HmacHashing : IHmacHashing
         _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null)
     };
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         if (this._disposed)
@@ -134,6 +149,9 @@ public sealed class HmacHashing : IHmacHashing
             : actual == expectedSignature;
     }
 
+    /// <summary>
+    ///     VerifySha256 operation.
+    /// </summary>
     public bool VerifySha256(
         string message,
         string secretKey,

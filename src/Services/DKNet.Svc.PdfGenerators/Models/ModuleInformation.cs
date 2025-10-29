@@ -4,8 +4,14 @@ internal class ModuleInformation(string remotePath, string nodePath)
 {
     #region Properties
 
+    /// <summary>
+    ///     Gets or sets NodePath.
+    /// </summary>
     public string NodePath { get; } = nodePath;
 
+    /// <summary>
+    ///     Gets or sets RemotePath.
+    /// </summary>
     public string RemotePath { get; } = remotePath;
 
     #endregion

@@ -6,6 +6,9 @@ using MarginOptions = PuppeteerSharp.Media.MarginOptions;
 
 namespace DKNet.Svc.PdfGenerators;
 
+/// <summary>
+///     Interface for PdfGenerator operations.
+/// </summary>
 public interface IPdfGenerator
 {
     #region Methods
@@ -62,12 +65,19 @@ public interface IPdfGenerator
 }
 
 /// <summary>
+/// <summary>
 ///     Provides functionality to generate PDF files from Markdown or HTML sources.
 /// </summary>
+/// <param name="null">The null parameter.</param>
 /// <remarks>
 ///     Initializes a new instance of <see cref="PdfGenerator" />.
 /// </remarks>
 /// <param name="options">Options for PDF generation.</param>
+/// <summary>
+///     Provides PdfGenerator functionality.
+/// </summary>
+/// <param name="null">The null parameter.</param>
+/// <returns>The result of the operation.</returns>
 public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
 {
     #region Properties
@@ -86,12 +96,10 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
 
     #endregion
-
-    #region Methods
-
     /// <summary>
     ///     Converts HTML content to PDF.
     /// </summary>
+    /// <param name="null">The null parameter.</param>
     /// <param name="htmlContent">HTML content as a string.</param>
     /// <param name="outputPath">
     ///     Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current
@@ -104,10 +112,10 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         await this.GeneratePdfFromHtmlAsync(htmlContent, pdfFileName);
         return pdfFileName;
     }
-
     /// <summary>
     ///     Converts an HTML file to PDF.
     /// </summary>
+    /// <param name="null">The null parameter.</param>
     /// <param name="htmlFilePath">Path to the HTML file.</param>
     /// <param name="outputPath">
     ///     Optional output PDF file path. If not provided, uses "output_from_html.pdf" in the current
@@ -132,10 +140,10 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <returns>The generated PDF file info.</returns>
     public async Task<FileInfo> ConvertMarkdownFileAsync(FileInfo markdownFile) =>
         new(await this.ConvertMarkdownFileAsync(markdownFile.FullName));
-
     /// <summary>
     ///     Converts a markdown file to PDF.
     /// </summary>
+    /// <param name="null">The null parameter.</param>
     /// <param name="markdownFilePath">Path to the markdown file.</param>
     /// <param name="outputFilePath">
     ///     Optional output PDF file path. If not provided, uses the markdown file name with .pdf

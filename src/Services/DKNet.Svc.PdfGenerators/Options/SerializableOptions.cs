@@ -6,6 +6,9 @@ namespace DKNet.Svc.PdfGenerators.Options;
 /// <summary>
 ///     The <see cref="PdfGeneratorOptions" /> in a serializable format.
 /// </summary>
+/// <summary>
+///     Provides SerializableOptions functionality.
+/// </summary>
 public class SerializableOptions
 {
     #region Properties
@@ -66,6 +69,9 @@ public class SerializableOptions
     ///     Converts this serializable options into proper <see cref="PdfGeneratorOptions" />.
     /// </summary>
     /// <returns>The deserialized <see cref="PdfGeneratorOptions" />.</returns>
+    /// <summary>
+    ///     ToPdfGeneratorOptions operation.
+    /// </summary>
     public PdfGeneratorOptions ToPdfGeneratorOptions()
     {
         var options = new PdfGeneratorOptions();

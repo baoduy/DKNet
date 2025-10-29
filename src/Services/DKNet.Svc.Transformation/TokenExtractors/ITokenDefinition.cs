@@ -1,5 +1,8 @@
 ﻿namespace DKNet.Svc.Transformation.TokenExtractors;
 
+/// <summary>
+///     Interface for TokenDefinition operations.
+/// </summary>
 public interface ITokenDefinition
 {
     #region Properties
@@ -17,12 +20,25 @@ public interface ITokenDefinition
     #endregion
 }
 
+/// <summary>
+/// <summary>
+///     Provides TokenDefinition functionality.
+/// </summary>
+/// <param name="begin">The begin parameter.</param>
+/// <param name="end">The end parameter.</param>
+/// <returns>The result of the operation.</returns>
 public class TokenDefinition(string begin, string end) : ITokenDefinition
 {
     #region Properties
 
+    /// <summary>
+    ///     Gets or sets BeginTag.
+    /// </summary>
     public string BeginTag { get; } = begin;
 
+    /// <summary>
+    ///     Gets or sets EndTag.
+    /// </summary>
     public string EndTag { get; } = end;
 
     #endregion

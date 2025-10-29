@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Options;
 /// <summary>
 ///     All the options for the conversion.
 /// </summary>
+/// <summary>
+///     Provides PdfGeneratorOptions functionality.
+/// </summary>
 public class PdfGeneratorOptions
 {
     #region Properties
