@@ -4,6 +4,9 @@ using DKNet.EfCore.Encryption.Interfaces;
 
 namespace DKNet.EfCore.Encryption.Encryption;
 
+/// <summary>
+///     Provides AES-GCM encryption and decryption for Entity Framework Core column data.
+/// </summary>
 public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 {
     #region Fields
@@ -14,6 +17,12 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 
     #region Constructors
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AesGcmColumnEncryptionProvider" /> class.
+    /// </summary>
+    /// <param name="key">The encryption key. Must be 16, 24, or 32 bytes in length.</param>
+    /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when key length is not 16, 24, or 32 bytes.</exception>
     public AesGcmColumnEncryptionProvider(byte[] key)
     {
         if (key == null)
@@ -33,6 +42,13 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 
     #region Methods
 
+    /// <summary>
+    ///     Decrypts an encrypted string value.
+    /// </summary>
+    /// <param name="ciphertext">The encrypted string to decrypt, encoded as Base64.</param>
+    /// <returns>The decrypted plaintext, or null if the input is null or empty.</returns>
+    /// <exception cref="ArgumentException">Thrown when ciphertext format is invalid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when decryption fails.</exception>
     public string? Decrypt(string? ciphertext)
     {
         if (string.IsNullOrEmpty(ciphertext))
@@ -71,6 +87,11 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
         return Encoding.UTF8.GetString(plaintextBytes);
     }
 
+    /// <summary>
+    ///     Encrypts a plaintext string value.
+    /// </summary>
+    /// <param name="plaintext">The plaintext string to encrypt.</param>
+    /// <returns>The encrypted ciphertext encoded as Base64, or null if the input is null or empty.</returns>
     public string? Encrypt(string? plaintext)
     {
         if (string.IsNullOrEmpty(plaintext))
