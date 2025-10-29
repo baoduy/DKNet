@@ -6,6 +6,9 @@ using MarginOptions = PuppeteerSharp.Media.MarginOptions;
 
 namespace DKNet.Svc.PdfGenerators;
 
+/// <summary>
+///     Interface for PdfGenerator operations.
+/// </summary>
 public interface IPdfGenerator
 {
     #region Methods
@@ -68,6 +71,9 @@ public interface IPdfGenerator
 ///     Initializes a new instance of <see cref="PdfGenerator" />.
 /// </remarks>
 /// <param name="options">Options for PDF generation.</param>
+/// <summary>
+///     Provides PdfGenerator functionality.
+/// </summary>
 public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
 {
     #region Properties

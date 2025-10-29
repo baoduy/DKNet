@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Service for loading the content of embedded resources.
 /// </summary>
+/// <summary>
+///     Provides EmbeddedResourceService functionality.
+/// </summary>
 public class EmbeddedResourceService
 {
     #region Fields

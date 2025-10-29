@@ -15,6 +15,9 @@ public delegate Task AsyncConversionEventHandler<TEventArgs>(object? sender, TEv
 /// <summary>
 ///     Interface for events that occur during the PDF conversion process.
 /// </summary>
+/// <summary>
+///     Interface for ConversionEvents operations.
+/// </summary>
 public interface IConversionEvents
 {
     #region Properties

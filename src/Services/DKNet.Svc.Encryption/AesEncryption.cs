@@ -2,6 +2,9 @@ using System.Security.Cryptography;
 
 namespace DKNet.Svc.Encryption;
 
+/// <summary>
+///     Interface for AesEncryption operations.
+/// </summary>
 public interface IAesEncryption
 {
     #region Properties
@@ -19,6 +22,9 @@ public interface IAesEncryption
     #endregion
 }
 
+/// <summary>
+///     Provides AesEncryption functionality.
+/// </summary>
 public sealed class AesEncryption : IAesEncryption, IDisposable
 {
     #region Fields
@@ -38,6 +44,9 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
 
     #region Properties
 
+    /// <summary>
+    ///     Key field.
+    /// </summary>
     public string Key => this._keyString!;
 
     #endregion
@@ -75,6 +84,9 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         return aes;
     }
 
+    /// <summary>
+    ///     DecryptString operation.
+    /// </summary>
     public string DecryptString(string cipherText)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));
@@ -87,6 +99,9 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         return srDecrypt.ReadToEnd();
     }
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         this.Dispose(true);
@@ -102,6 +117,9 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         }
     }
 
+    /// <summary>
+    ///     EncryptString operation.
+    /// </summary>
     public string EncryptString(string plainText)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));

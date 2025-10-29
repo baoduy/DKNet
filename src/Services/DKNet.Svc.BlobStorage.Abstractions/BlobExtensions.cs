@@ -2,10 +2,16 @@ using System.Globalization;
 
 namespace DKNet.Svc.BlobStorage.Abstractions;
 
+/// <summary>
+///     Provides BlobExtensions functionality.
+/// </summary>
 public static class BlobExtensions
 {
     #region Methods
 
+    /// <summary>
+    ///     GetContentTypeByExtension operation.
+    /// </summary>
     public static string GetContentTypeByExtension(this string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLower(CultureInfo.CurrentCulture);

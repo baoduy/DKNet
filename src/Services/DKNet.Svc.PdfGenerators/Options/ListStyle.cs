@@ -3,6 +3,9 @@
 /// <summary>
 ///     Decides which characters to use before the TOC items.
 /// </summary>
+/// <summary>
+///     Defines ListStyle values.
+/// </summary>
 public enum ListStyle
 {
     /// <summary>

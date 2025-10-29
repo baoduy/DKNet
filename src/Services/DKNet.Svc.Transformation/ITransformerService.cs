@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace DKNet.Svc.Transformation;
 
+/// <summary>
+///     Interface for TransformerService operations.
+/// </summary>
 public interface ITransformerService
 {
     #region Methods
@@ -94,6 +97,9 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
         return builder.ToString();
     }
 
+    /// <summary>
+    ///     Transform operation.
+    /// </summary>
     public string Transform(string templateString, params object[] parameters)
     {
         var tokens = this.GetExtractors().Select(t => t.Extract(templateString));

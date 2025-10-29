@@ -1,5 +1,8 @@
 ﻿namespace DKNet.Svc.Transformation.TokenExtractors;
 
+/// <summary>
+///     Interface for Token operations.
+/// </summary>
 public interface IToken
 {
     #region Properties

@@ -3,6 +3,9 @@ using System.Text;
 
 namespace DKNet.Svc.Encryption;
 
+/// <summary>
+///     Interface for AesGcmEncryption operations.
+/// </summary>
 public interface IAesGcmEncryption : IDisposable // now disposable due to internal cache
 {
     #region Properties
@@ -34,6 +37,9 @@ public interface IAesGcmEncryption : IDisposable // now disposable due to intern
 ///     AES-GCM authenticated encryption (AEAD). Output layout: base64(nonce):base64(tag):base64(cipher) all concatenated
 ///     with ':' then Base64 wrapped again for safe transport.
 ///     Caches AesGcm instances per key to avoid repeated allocations when the same key is reused.
+/// </summary>
+/// <summary>
+///     Provides AesGcmEncryption functionality.
 /// </summary>
 public sealed class AesGcmEncryption : IAesGcmEncryption
 {
@@ -78,12 +84,18 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
     #region Properties
 
+    /// <summary>
+    ///     Gets or sets Key.
+    /// </summary>
     public string Key { get; }
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Decrypt operation.
+    /// </summary>
     public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
     {
         if (!string.Equals(base64Key, this.Key, StringComparison.Ordinal))
@@ -95,6 +107,9 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return this.DecryptString(cipherPackage, associatedData);
     }
 
+    /// <summary>
+    ///     DecryptString operation.
+    /// </summary>
     public string DecryptString(string cipherPackage, byte[]? associatedData = null)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(AesGcmEncryption));
@@ -120,6 +135,9 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return Encoding.UTF8.GetString(plain);
     }
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         if (this._disposed)
@@ -132,6 +150,9 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     }
 
     // Backward-compatible wrappers (will ignore supplied key and use this instance key)
+    /// <summary>
+    ///     Encrypt operation.
+    /// </summary>
     public string Encrypt(string plainText, string base64Key, byte[]? associatedData = null)
     {
         if (!string.Equals(base64Key, this.Key, StringComparison.Ordinal))
@@ -143,6 +164,9 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return this.EncryptString(plainText, associatedData);
     }
 
+    /// <summary>
+    ///     EncryptString operation.
+    /// </summary>
     public string EncryptString(string plainText, byte[]? associatedData = null)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(AesGcmEncryption));

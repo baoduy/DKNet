@@ -7,6 +7,9 @@ namespace DKNet.Svc.Encryption;
 ///     Provides RSA public/private key encryption, decryption and signing utilities.
 ///     Keys are stored / exchanged as Base64 encoded PKCS#1 DER blobs for simplicity.
 /// </summary>
+/// <summary>
+///     Interface for RsaEncryption operations.
+/// </summary>
 public interface IRsaEncryption
 {
     #region Properties
@@ -34,6 +37,9 @@ public interface IRsaEncryption
 
 /// <summary>
 ///     RSA implementation helper. NOT intended for very large payloads – only short secrets / session keys.
+/// </summary>
+/// <summary>
+///     Provides RsaEncryption functionality.
 /// </summary>
 public sealed class RsaEncryption : IRsaEncryption, IDisposable
 {
@@ -77,6 +83,9 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
 
     #region Properties
 
+    /// <summary>
+    ///     PublicKey field.
+    /// </summary>
     public string PublicKey => Convert.ToBase64String(this._rsa.ExportRSAPublicKey());
 
     public string? PrivateKey => this._hasPrivate ? Convert.ToBase64String(this._rsa.ExportRSAPrivateKey()) : null;
@@ -98,6 +107,9 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
         return Encoding.UTF8.GetString(plain);
     }
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         if (this._disposed)
@@ -109,6 +121,9 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
         this._disposed = true;
     }
 
+    /// <summary>
+    ///     Encrypt operation.
+    /// </summary>
     public string Encrypt(string plainText)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(RsaEncryption));
@@ -119,6 +134,9 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
 
     /// <summary>
     ///     Construct with only a public key (Base64 PKCS#1). Signing and decrypting will not be available.
+    /// </summary>
+    /// <summary>
+    ///     FromPublicKey operation.
     /// </summary>
     public static RsaEncryption FromPublicKey(string publicKeyBase64)
     {
@@ -141,6 +159,9 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
         return Convert.ToBase64String(sig);
     }
 
+    /// <summary>
+    ///     Verify operation.
+    /// </summary>
     public bool Verify(string data, string base64Signature)
     {
         ObjectDisposedException.ThrowIf(this._disposed, nameof(RsaEncryption));

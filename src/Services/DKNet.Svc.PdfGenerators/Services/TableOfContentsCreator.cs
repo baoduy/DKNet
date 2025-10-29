@@ -353,10 +353,19 @@ internal class TableOfContentsCreator
     {
         #region Properties
 
+        /// <summary>
+        ///     Gets or sets Depth.
+        /// </summary>
         public int Depth { get; } = depth;
 
+        /// <summary>
+        ///     Gets or sets LinkAddress.
+        /// </summary>
         public string LinkAddress { get; } = linkAddress;
 
+        /// <summary>
+        ///     Gets or sets Title.
+        /// </summary>
         public string Title { get; } = title;
 
         #endregion
@@ -379,6 +388,9 @@ internal class TableOfContentsCreator
     {
         #region Properties
 
+        /// <summary>
+        ///     Gets or sets PageNumber.
+        /// </summary>
         public int PageNumber { get; } = pageNumber;
 
         #endregion

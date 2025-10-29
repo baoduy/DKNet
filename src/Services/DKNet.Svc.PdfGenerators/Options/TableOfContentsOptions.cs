@@ -51,6 +51,9 @@ public class TableOfContentsOptions
     ///     Determines if the TOC links should have the default link color (instead of looking like normal text).
     ///     <value>Default: <see langword="false" />.</value>
     /// </summary>
+    /// <summary>
+    ///     Gets or sets HasColoredLinks.
+    /// </summary>
     public bool HasColoredLinks { get; set; }
 
     /// <summary>
@@ -96,6 +99,9 @@ public class TableOfContentsOptions
     }
 
     /// <inheritdoc cref="Options.ListStyle" />
+    /// <summary>
+    ///     Gets or sets ListStyle.
+    /// </summary>
     public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
 
     /// <summary>

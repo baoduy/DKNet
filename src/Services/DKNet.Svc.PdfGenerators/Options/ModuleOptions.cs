@@ -26,6 +26,9 @@ public record ModuleOptions
     /// <summary>
     ///     Provides information from where to load modules.
     /// </summary>
+    /// <summary>
+    ///     Gets or sets ModuleLocation.
+    /// </summary>
     public ModuleLocation ModuleLocation { get; }
 
     /// <summary>

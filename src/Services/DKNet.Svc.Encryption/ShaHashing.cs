@@ -9,6 +9,9 @@ internal enum HashAlgorithmKind
     Sha512
 }
 
+/// <summary>
+///     Interface for ShaHashing operations.
+/// </summary>
 public interface IShaHashing : IDisposable // now disposable so we can release cached algorithms
 {
     #region Methods
@@ -24,6 +27,9 @@ public interface IShaHashing : IDisposable // now disposable so we can release c
     #endregion
 }
 
+/// <summary>
+///     Provides ShaHashing functionality.
+/// </summary>
 public sealed class ShaHashing : IShaHashing
 {
     #region Fields
@@ -55,10 +61,16 @@ public sealed class ShaHashing : IShaHashing
         return upperCase ? hexUpper : hexUpper.ToUpperInvariant();
     }
 
+    /// <summary>
+    ///     ComputeSha256 operation.
+    /// </summary>
     public string ComputeSha256(string input, bool upperCase = false)
         =>
             this.ComputeHash(input, HashAlgorithmKind.Sha256, upperCase);
 
+    /// <summary>
+    ///     ComputeSha512 operation.
+    /// </summary>
     public string ComputeSha512(string input, bool upperCase = false)
         =>
             this.ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
@@ -70,6 +82,9 @@ public sealed class ShaHashing : IShaHashing
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
     };
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         if (this._disposed)
@@ -119,10 +134,16 @@ public sealed class ShaHashing : IShaHashing
             : actual == expectedHex;
     }
 
+    /// <summary>
+    ///     VerifySha256 operation.
+    /// </summary>
     public bool VerifySha256(string input, string expectedHex, bool ignoreCase = true)
         =>
             this.VerifyHash(input, expectedHex, HashAlgorithmKind.Sha256, ignoreCase);
 
+    /// <summary>
+    ///     VerifySha512 operation.
+    /// </summary>
     public bool VerifySha512(string input, string expectedHex, bool ignoreCase = true)
         =>
             this.VerifyHash(input, expectedHex, HashAlgorithmKind.Sha512, ignoreCase);

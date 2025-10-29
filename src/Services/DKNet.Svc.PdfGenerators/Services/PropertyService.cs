@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Helper service for properties.
 /// </summary>
+/// <summary>
+///     Provides PropertyService functionality.
+/// </summary>
 public static class PropertyService
 {
     #region Methods
