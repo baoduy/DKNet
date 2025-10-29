@@ -463,10 +463,11 @@ public class DtoMappingTests
         emailProperty.ShouldNotBeNull();
         emailProperty!.GetCustomAttributes(typeof(EmailAddressAttribute), false).ShouldNotBeEmpty();
 
-        // Test Url attribute
+        // Note: Uri? properties don't need [Url] attribute as Uri type itself validates URLs
+        // The [Url] attribute is meant for string properties only
         var urlProperty = typeof(TestProductDto).GetProperty("WebsiteUrl");
         urlProperty.ShouldNotBeNull();
-        urlProperty!.GetCustomAttributes(typeof(UrlAttribute), false).ShouldNotBeEmpty();
+        urlProperty!.PropertyType.ShouldBe(typeof(Uri));
 
         // Test Phone attribute
         var phoneProperty = typeof(TestProductDto).GetProperty("PhoneNumber");
