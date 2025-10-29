@@ -18,7 +18,6 @@ public class TypeExtensionsTests
         typeof(DBNull).IsNumericType().ShouldBeFalse();
     }
 
-
     [Fact]
     public void IsNumericTypeAllNumericTypesReturnTrue()
     {

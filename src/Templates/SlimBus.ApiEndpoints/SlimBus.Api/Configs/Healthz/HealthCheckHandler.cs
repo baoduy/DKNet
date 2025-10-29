@@ -5,7 +5,8 @@ internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : I
 {
     #region Methods
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         // Perform basic health check - this is a template implementation
@@ -16,15 +17,13 @@ internal sealed class HealthCheckHandler(ILogger<HealthCheckHandler> logger) : I
             var goodms = "TEMP Services is in GOOD health";
             logger.LogInformation(goodms);
 
-            return Task.FromResult(
-                HealthCheckResult.Healthy(goodms));
+            return Task.FromResult(HealthCheckResult.Healthy(goodms));
         }
 
         var ms = "TEMP Services is in BAD health";
         logger.LogInformation(ms);
 
-        return Task.FromResult(
-            HealthCheckResult.Unhealthy(ms));
+        return Task.FromResult(HealthCheckResult.Unhealthy(ms));
     }
 
     #endregion

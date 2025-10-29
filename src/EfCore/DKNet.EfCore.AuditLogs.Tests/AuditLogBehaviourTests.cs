@@ -16,8 +16,9 @@ internal sealed class AttributedAuditEntity : AuditedEntity<Guid>
 {
     #region Properties
 
-    public string Name { get; set; } = string.Empty;
     public int Value { get; set; }
+
+    public string Name { get; set; } = string.Empty;
 
     #endregion
 }
@@ -27,8 +28,9 @@ internal sealed class UnattributedAuditEntity : AuditedEntity<Guid>
 {
     #region Properties
 
-    public string Name { get; set; } = string.Empty;
     public int Value { get; set; }
+
+    public string Name { get; set; } = string.Empty;
 
     #endregion
 }
@@ -37,8 +39,9 @@ internal sealed class BehaviourDbContext(DbContextOptions<BehaviourDbContext> op
 {
     #region Properties
 
-    public DbSet<AttributedAuditEntity> Attributed => Set<AttributedAuditEntity>();
-    public DbSet<UnattributedAuditEntity> Unattributed => Set<UnattributedAuditEntity>();
+    public DbSet<AttributedAuditEntity> Attributed => this.Set<AttributedAuditEntity>();
+
+    public DbSet<UnattributedAuditEntity> Unattributed => this.Set<UnattributedAuditEntity>();
 
     #endregion
 }
@@ -68,7 +71,11 @@ internal sealed class BehaviourCapturingPublisher : IAuditLogPublisher
 
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
-        foreach (var l in logs) _logs.Add(l);
+        foreach (var l in logs)
+        {
+            _logs.Add(l);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -105,6 +112,7 @@ public class AuditLogBehaviourTests
 
         BehaviourCapturingPublisher.Clear();
         Guid attributedId, unattributedId;
+
         // Create (no logs expected on Added)
         await using (var scope = provider.CreateAsyncScope())
         {
@@ -158,6 +166,7 @@ public class AuditLogBehaviourTests
 
         BehaviourCapturingPublisher.Clear();
         Guid attributedId, unattributedId;
+
         // Create (no logs expected on Added)
         await using (var scope = provider.CreateAsyncScope())
         {
@@ -250,7 +259,11 @@ public class AuditLogBehaviourTests
         var sw = Stopwatch.StartNew();
         while (sw.ElapsedMilliseconds < timeoutMs)
         {
-            if (current() >= expected) return;
+            if (current() >= expected)
+            {
+                return;
+            }
+
             await Task.Delay(50);
         }
     }

@@ -15,7 +15,6 @@ public static class AppSetup
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>();
 
-
         return services;
     }
 

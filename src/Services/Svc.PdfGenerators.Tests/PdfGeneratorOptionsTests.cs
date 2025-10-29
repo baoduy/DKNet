@@ -223,6 +223,7 @@ public class PdfGeneratorOptionsTests
 
         // Assert
         Assert.NotNull(options.ModuleOptions);
+
         // Additional assertions would depend on ModuleOptions implementation
     }
 

@@ -74,6 +74,7 @@ table-of-contents:
 
             // Assert
             Assert.NotNull(options);
+
             // Should have default values
             Assert.Equal(Theme.Github, options.Theme);
             Assert.Equal(CodeHighlightTheme.Github, options.CodeHighlightTheme);

@@ -7,7 +7,8 @@ namespace EfCore.DtoGenerator.Tests.Features;
 ///     DTO that uses Include parameter to override global exclusions.
 ///     Only the included properties should be present, ignoring global exclusions.
 /// </summary>
-[GenerateDto(typeof(GlobalExclusionTestEntity),
+[GenerateDto(
+    typeof(GlobalExclusionTestEntity),
     Include =
     [
         nameof(GlobalExclusionTestEntity.Id),

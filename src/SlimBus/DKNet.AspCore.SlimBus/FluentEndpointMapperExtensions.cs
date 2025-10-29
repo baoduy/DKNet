@@ -15,28 +15,33 @@ public static class FluentsEndpointMapperExtensions
     public static RouteHandlerBuilder MapDelete<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
     {
-        return app.MapDelete(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response();
-            }).Produces<TResponse>()
+        return app.MapDelete(
+                endpoint,
+                async (IMessageBus bus, TCommand request) =>
+                {
+                    var rs = await bus.Send(request);
+                    return rs.Response();
+                }).Produces<TResponse>()
             .ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapDelete<TCommand>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.INoResponse
     {
-        return app.MapDelete(endpoint, async (IMessageBus bus, [AsParameters] TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response();
-        }).ProducesCommons();
+        return app.MapDelete(
+            endpoint,
+            async (IMessageBus bus, [AsParameters] TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response();
+            }).ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapGet<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Queries.IWitResponse<TResponse>
     {
-        return app.MapGet(endpoint,
+        return app.MapGet(
+                endpoint,
                 async (IMessageBus bus, [AsParameters] TCommand request) =>
                 {
                     var rs = await bus.Send(request);
@@ -49,7 +54,8 @@ public static class FluentsEndpointMapperExtensions
     public static RouteHandlerBuilder MapGetPage<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Queries.IWitPageResponse<TResponse>
     {
-        return app.MapGet(endpoint,
+        return app.MapGet(
+                endpoint,
                 async (IMessageBus bus, [AsParameters] TCommand request) =>
                 {
                     var rs = await bus.Send(request);
@@ -62,64 +68,76 @@ public static class FluentsEndpointMapperExtensions
     public static RouteHandlerBuilder MapPatch<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
     {
-        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response();
-            }).Produces<TResponse>()
+        return app.MapPatch(
+                endpoint,
+                async (IMessageBus bus, TCommand request) =>
+                {
+                    var rs = await bus.Send(request);
+                    return rs.Response();
+                }).Produces<TResponse>()
             .ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPatch<TCommand>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.INoResponse
     {
-        return app.MapPatch(endpoint, async (IMessageBus bus, TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response();
-        }).ProducesCommons();
+        return app.MapPatch(
+            endpoint,
+            async (IMessageBus bus, TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response();
+            }).ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPost<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
     {
-        return app.MapPost(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response(true);
-            }).Produces<TResponse>()
+        return app.MapPost(
+                endpoint,
+                async (IMessageBus bus, TCommand request) =>
+                {
+                    var rs = await bus.Send(request);
+                    return rs.Response(true);
+                }).Produces<TResponse>()
             .ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPost<TCommand>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.INoResponse
     {
-        return app.MapPost(endpoint, async (IMessageBus bus, TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response(true);
-        }).ProducesCommons();
+        return app.MapPost(
+            endpoint,
+            async (IMessageBus bus, TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response(true);
+            }).ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPut<TCommand, TResponse>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
     {
-        return app.MapPut(endpoint, async (IMessageBus bus, TCommand request) =>
-            {
-                var rs = await bus.Send(request);
-                return rs.Response();
-            }).Produces<TResponse>()
+        return app.MapPut(
+                endpoint,
+                async (IMessageBus bus, TCommand request) =>
+                {
+                    var rs = await bus.Send(request);
+                    return rs.Response();
+                }).Produces<TResponse>()
             .ProducesCommons();
     }
 
     public static RouteHandlerBuilder MapPut<TCommand>(this RouteGroupBuilder app, string endpoint)
         where TCommand : class, Fluents.Requests.INoResponse
     {
-        return app.MapPut(endpoint, async (IMessageBus bus, TCommand request) =>
-        {
-            var rs = await bus.Send(request);
-            return rs.Response();
-        }).ProducesCommons();
+        return app.MapPut(
+            endpoint,
+            async (IMessageBus bus, TCommand request) =>
+            {
+                var rs = await bus.Send(request);
+                return rs.Response();
+            }).ProducesCommons();
     }
 
     public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder) =>

@@ -14,10 +14,12 @@ internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndp
     {
         var userName = string.Empty;
 
-        if (_options.RequireAuthorization)
+        if (this._options.RequireAuthorization)
         {
             if (context.HttpContext.User.Identity?.IsAuthenticated == true)
+            {
                 userName = context.HttpContext.User.Identity.Name!;
+            }
         }
         else
         {
@@ -26,7 +28,11 @@ internal class SetUserIdPropertyFilter(IOptions<FeatureOptions> options) : IEndp
 
         foreach (var a in context.Arguments)
         {
-            if (a is not BaseCommand b) continue;
+            if (a is not BaseCommand b)
+            {
+                continue;
+            }
+
             b.ByUser = userName;
             Console.WriteLine("Set user for model: " + b.GetType().Name);
         }

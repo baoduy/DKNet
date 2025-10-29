@@ -19,8 +19,11 @@ internal static class EventExtensions
             finalEvents.AddRange(events);
 
             if (mapper != null)
-                finalEvents.AddRange(eventTypes.Select(eventType =>
-                    mapper.Map(entity, entry.Entry.Metadata.ClrType, eventType)));
+            {
+                finalEvents.AddRange(
+                    eventTypes.Select(eventType =>
+                        mapper.Map(entity, entry.Entry.Metadata.ClrType, eventType)));
+            }
 
             var sourceType = entry.Entry.Metadata.ClrType.FullName!;
             var sourceKeys = entry.Entry.GetEntityKeyValues();

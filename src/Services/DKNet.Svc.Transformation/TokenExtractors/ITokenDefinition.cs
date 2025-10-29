@@ -22,6 +22,7 @@ public class TokenDefinition(string begin, string end) : ITokenDefinition
     #region Properties
 
     public string BeginTag { get; } = begin;
+
     public string EndTag { get; } = end;
 
     #endregion
@@ -30,23 +31,44 @@ public class TokenDefinition(string begin, string end) : ITokenDefinition
 
     public bool IsToken(string value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
 
         var span = value.AsSpan();
 
-        if (!span.StartsWith(BeginTag.AsSpan(), StringComparison.OrdinalIgnoreCase)) return false;
-        if (!span.EndsWith(EndTag.AsSpan(), StringComparison.OrdinalIgnoreCase)) return false;
+        if (!span.StartsWith(this.BeginTag.AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
 
-        var inner = span.Slice(BeginTag.Length, span.Length - BeginTag.Length - EndTag.Length);
-        if (inner.Length == 0) return false;
+        if (!span.EndsWith(this.EndTag.AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
 
-        foreach (var c in BeginTag)
+        var inner = span.Slice(this.BeginTag.Length, span.Length - this.BeginTag.Length - this.EndTag.Length);
+        if (inner.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (var c in this.BeginTag)
+        {
             if (inner.Contains(c))
+            {
                 return false;
+            }
+        }
 
-        foreach (var c in EndTag)
+        foreach (var c in this.EndTag)
+        {
             if (inner.Contains(c))
+            {
                 return false;
+            }
+        }
 
         return true;
     }

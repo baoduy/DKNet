@@ -32,8 +32,7 @@ public class DtoMappingTests
             "USD",
             1,
             1000,
-            "sys"
-        );
+            "sys");
         var merchantChannel = new MerchantChannel(Guid.NewGuid(), ChannelCodes.Wallet, "T+1", 10, 1000, "admin");
 
         // Act & Assert - Should not throw
@@ -97,8 +96,7 @@ public class DtoMappingTests
             "USD",
             10.00m,
             10000.00m,
-            "system"
-        );
+            "system");
 
         // Act
         var dto = entity.Adapt<ChannelDto>();
@@ -131,8 +129,7 @@ public class DtoMappingTests
             "GBP",
             50.00m,
             null,
-            "admin"
-        );
+            "admin");
 
         // Act
         var dto = entity.Adapt<ChannelDto>();
@@ -183,8 +180,7 @@ public class DtoMappingTests
             "USD",
             "US Dollar",
             false,
-            "United States Dollar"
-        );
+            "United States Dollar");
 
         // Act
         var dto = entity.Adapt<CurrencyDto>();
@@ -205,8 +201,7 @@ public class DtoMappingTests
         var entity = new CurrencyData(
             "BTC",
             "Bitcoin",
-            true
-        );
+            true);
 
         // Act
         var dto = entity.Adapt<CurrencyDto>();
@@ -264,8 +259,7 @@ public class DtoMappingTests
             "T+1",
             10.00m,
             5000.00m,
-            "admin"
-        );
+            "admin");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();
@@ -294,8 +288,7 @@ public class DtoMappingTests
             "T+3",
             100.00m,
             null,
-            "admin"
-        );
+            "admin");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();
@@ -311,11 +304,19 @@ public class DtoMappingTests
     [InlineData(ChannelCodes.BankTransfer, "T+2", 50.00, null)]
     [InlineData(ChannelCodes.Wallet, "T+0", 1.00, 10000.00)]
     public void MerchantChannelDto_ShouldMapCorrectly_ForDifferentChannelTypes(
-        ChannelCodes code, string settlement, decimal minAmount, object? maxAmount)
+        ChannelCodes code,
+        string settlement,
+        decimal minAmount,
+        object? maxAmount)
     {
         // Arrange
-        var entity = new MerchantChannel(Guid.NewGuid(), code, settlement, minAmount,
-            maxAmount is not null ? decimal.Parse(maxAmount.ToString()!) : null, "admin");
+        var entity = new MerchantChannel(
+            Guid.NewGuid(),
+            code,
+            settlement,
+            minAmount,
+            maxAmount is not null ? decimal.Parse(maxAmount.ToString()!) : null,
+            "admin");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();
@@ -337,8 +338,7 @@ public class DtoMappingTests
             "T+0",
             1.00m,
             null,
-            "system"
-        );
+            "system");
 
         // Act
         var dto = entity.Adapt<MerchantChannelDto>();

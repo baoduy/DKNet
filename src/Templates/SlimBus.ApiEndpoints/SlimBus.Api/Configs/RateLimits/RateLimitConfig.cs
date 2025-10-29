@@ -42,16 +42,18 @@ internal static class RateLimitConfig
                     var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
                     var resolver = httpContext.RequestServices.GetRequiredService<IRateLimitOptionsProvider>();
 
-                    return RateLimitPartition.GetFixedWindowLimiter(keyProvider.GetPartitionKey(httpContext),
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        keyProvider.GetPartitionKey(httpContext),
                         _ => resolver.GetRateLimiterOptions());
-                }), PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                }),
+                PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
                 {
                     var keyProvider = httpContext.RequestServices.GetRequiredService<IRateLimitKeyProvider>();
                     var resolver = httpContext.RequestServices.GetRequiredService<IRateLimitOptionsProvider>();
-                    return RateLimitPartition.GetConcurrencyLimiter(keyProvider.GetPartitionKey(httpContext),
+                    return RateLimitPartition.GetConcurrencyLimiter(
+                        keyProvider.GetPartitionKey(httpContext),
                         _ => resolver.GetConcurrencyLimiterOptions());
-                })
-            );
+                }));
         });
 
         _configAdded = true;
@@ -66,7 +68,11 @@ internal static class RateLimitConfig
     /// <returns>The web application with rate limiting applied</returns>
     public static WebApplication UseRateLimitConfig(this WebApplication app)
     {
-        if (!_configAdded) return app;
+        if (!_configAdded)
+        {
+            return app;
+        }
+
         app.UseRateLimiter();
         return app;
     }

@@ -18,7 +18,7 @@ internal sealed class HookDisablingContext : IHookDisablingContext
 
     public HookDisablingContext(DbContext context)
     {
-        _context = context;
+        this._context = context;
         DisabledHooks.AddOrUpdate(context.GetType(), 1, (_, oldValue) => oldValue + 1);
     }
 
@@ -28,12 +28,12 @@ internal sealed class HookDisablingContext : IHookDisablingContext
 
     public void Dispose()
     {
-        DisabledHooks.AddOrUpdate(_context.GetType(), 0, (_, oldValue) => oldValue - 1);
+        DisabledHooks.AddOrUpdate(this._context.GetType(), 0, (_, oldValue) => oldValue - 1);
     }
 
     public ValueTask DisposeAsync()
     {
-        Dispose();
+        this.Dispose();
         return ValueTask.CompletedTask;
     }
 

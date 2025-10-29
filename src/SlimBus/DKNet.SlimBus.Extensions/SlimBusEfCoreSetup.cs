@@ -19,7 +19,8 @@ public static class SlimBusEfCoreSetup
         return serviceCollection;
     }
 
-    public static IServiceCollection AddSlimBusForEfCore(this IServiceCollection serviceCollection,
+    public static IServiceCollection AddSlimBusForEfCore(
+        this IServiceCollection serviceCollection,
         Action<MessageBusBuilder> configure)
     {
         serviceCollection

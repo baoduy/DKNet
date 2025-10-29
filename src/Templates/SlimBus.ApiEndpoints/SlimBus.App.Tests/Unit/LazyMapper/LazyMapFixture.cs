@@ -15,7 +15,7 @@ public sealed class LazyMapFixture : IAsyncDisposable
 
     #region Methods
 
-    public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
+    public ValueTask DisposeAsync() => this.ServiceProvider.DisposeAsync();
 
     #endregion
 }

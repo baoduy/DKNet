@@ -5,7 +5,9 @@ internal static class ServiceConfigs
 {
     #region Methods
 
-    public static IServiceCollection AddAllAppServices(this IServiceCollection services, IConfiguration configuration,
+    public static IServiceCollection AddAllAppServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
         FeatureOptions features)
     {
         services
@@ -16,6 +18,7 @@ internal static class ServiceConfigs
         services
             .AddAppServices()
             .AddInfraServices()
+
             //Service Bus
             .AddServiceBus(configuration, typeof(AppSetup).Assembly);
 
@@ -38,7 +41,9 @@ internal static class ServiceConfigs
 
             op.SerializerOptions.Converters.Clear();
             foreach (var converter in SharedConsts.JsonSerializerOptions.Converters)
+            {
                 op.SerializerOptions.Converters.Add(converter);
+            }
         });
 
         return services;

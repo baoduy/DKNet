@@ -12,6 +12,7 @@ var apDb = sql
 builder.AddProject<SlimBus_Api>("Api")
     .WithReference(cache, "Redis")
     .WithReference(apDb, "AppDb")
+
     //.WaitFor(bus)
     .WaitFor(cache)
     .WaitFor(apDb);

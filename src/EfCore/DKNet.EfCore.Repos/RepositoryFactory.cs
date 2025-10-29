@@ -13,17 +13,17 @@ public sealed class RepositoryFactory<TDbContext>(
 
     #region Methods
 
-    public IRepository<TEntity> Create<TEntity>() where TEntity : class => new Repository<TEntity>(_db, mappers);
+    public IRepository<TEntity> Create<TEntity>() where TEntity : class => new Repository<TEntity>(this._db, mappers);
 
     public IReadRepository<TEntity> CreateRead<TEntity>() where TEntity : class =>
-        new ReadRepository<TEntity>(_db, mappers);
+        new ReadRepository<TEntity>(this._db, mappers);
 
     public IWriteRepository<TEntity> CreateWrite<TEntity>() where TEntity : class =>
-        new WriteRepository<TEntity>(_db);
+        new WriteRepository<TEntity>(this._db);
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose() => this._db.Dispose();
 
-    public ValueTask DisposeAsync() => _db.DisposeAsync();
+    public ValueTask DisposeAsync() => this._db.DisposeAsync();
 
     #endregion
 }

@@ -3,6 +3,7 @@ using SlimBus.Api.Configs.AzureAppConfig;
 using SlimBus.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
 // Rebind features after potentially loading from Azure App Configuration
 var feature = builder.Configuration.Bind<FeatureOptions>(FeatureOptions.Name);
 

@@ -6,8 +6,9 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
 {
     #region Properties
 
-    public DbSet<Address> Addresses { get; set; }
     public DbContextOptions<TestDbContext> Options => options;
+
+    public DbSet<Address> Addresses { get; set; }
 
     public DbSet<User> Users { get; set; }
 
@@ -17,20 +18,20 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
 
     public override int SaveChanges()
     {
-        UpdateConcurrencyTokens();
+        this.UpdateConcurrencyTokens();
         return base.SaveChanges();
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        UpdateConcurrencyTokens();
+        this.UpdateConcurrencyTokens();
         return base.SaveChangesAsync(cancellationToken);
     }
 
     private void UpdateConcurrencyTokens()
     {
         // For SQLite, manually update RowVersion for modified entities
-        var entries = ChangeTracker.Entries()
+        var entries = this.ChangeTracker.Entries()
             .Where(e => e.State == EntityState.Modified || e.State == EntityState.Added);
 
         foreach (var entry in entries)

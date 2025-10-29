@@ -29,11 +29,15 @@ public static class EfCoreSetup
     /// <param name="optionsBuilder"></param>
     /// <param name="assemblies"></param>
     /// <returns></returns>
-    private static EntityAutoConfigRegister GetOrCreateExtension(this DbContextOptionsBuilder optionsBuilder,
+    private static EntityAutoConfigRegister GetOrCreateExtension(
+        this DbContextOptionsBuilder optionsBuilder,
         Assembly[] assemblies)
     {
         var op = optionsBuilder.Options.FindExtension<EntityAutoConfigRegister>();
-        if (op != null) return op;
+        if (op != null)
+        {
+            return op;
+        }
 
         op = new EntityAutoConfigRegister(assemblies);
         ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(op);
@@ -49,7 +53,8 @@ public static class EfCoreSetup
     /// <param name="assemblies"></param>
     /// <returns></returns>
     public static DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(
-        this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies)
+        this DbContextOptionsBuilder<TContext> @this,
+        params Assembly[]? assemblies)
         where TContext : DbContext =>
         (DbContextOptionsBuilder<TContext>)((DbContextOptionsBuilder)@this)
         .UseAutoConfigModel(assemblies is { Length: > 0 } ? assemblies : [typeof(TContext).Assembly]);

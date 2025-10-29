@@ -10,13 +10,14 @@ public sealed class SnapshotEntityEntry(EntityEntry entry)
 {
     #region Properties
 
-    public object Entity => Entry.Entity;
     public EntityEntry Entry { get; } = entry;
 
     /// <summary>
     ///     The original stage before saved changes.
     /// </summary>
     public EntityState OriginalState { get; } = entry.State;
+
+    public object Entity => this.Entry.Entity;
 
     #endregion
 }

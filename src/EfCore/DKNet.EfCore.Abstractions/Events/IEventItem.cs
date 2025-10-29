@@ -27,7 +27,7 @@ public abstract record EventItem : IEventItem
     public virtual IDictionary<string, string> AdditionalData { get; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-    public virtual string EventType => GetType().FullName ?? nameof(EventItem);
+    public virtual string EventType => this.GetType().FullName ?? nameof(EventItem);
 
     #endregion
 }

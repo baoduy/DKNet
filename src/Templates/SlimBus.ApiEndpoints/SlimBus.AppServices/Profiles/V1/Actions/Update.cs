@@ -5,9 +5,12 @@ public record UpdateProfileCommand : BaseCommand, Fluents.Requests.IWitResponse<
 {
     #region Properties
 
-    public string? Email { get; init; }
     public required Guid Id { get; init; }
+
+    public string? Email { get; init; }
+
     public string? Name { get; init; }
+
     public string? Phone { get; init; }
 
     #endregion
@@ -19,16 +22,21 @@ internal sealed class UpdateProfileCommandHandler(
 {
     #region Methods
 
-    public async Task<IResult<ProfileResult>> OnHandle(UpdateProfileCommand request,
+    public async Task<IResult<ProfileResult>> OnHandle(
+        UpdateProfileCommand request,
         CancellationToken cancellationToken)
     {
         if (request.Id == Guid.Empty)
+        {
             return Result.Fail<ProfileResult>("The Id is in valid.");
+        }
 
         var profile = await repo.FindAsync(request.Id, cancellationToken);
 
         if (profile == null)
+        {
             return Result.Fail<ProfileResult>($"The Profile {request.Id} is not found.");
+        }
 
         //Update Here
         profile.Update(null, request.Name, request.Phone, null, request.ByUser!);

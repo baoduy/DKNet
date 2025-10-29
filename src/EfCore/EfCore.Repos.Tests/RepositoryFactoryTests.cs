@@ -160,7 +160,7 @@ public class RepositoryFactoryTests
 
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
 
         #endregion
     }
@@ -175,13 +175,13 @@ public class RepositoryFactoryTests
 
         #region Constructors
 
-        public TestDbContextFactory(DbContextOptions<TestDbContext> options) => _options = options;
+        public TestDbContextFactory(DbContextOptions<TestDbContext> options) => this._options = options;
 
         #endregion
 
         #region Methods
 
-        public TestDbContext CreateDbContext() => new(_options);
+        public TestDbContext CreateDbContext() => new(this._options);
 
         #endregion
     }
@@ -191,6 +191,7 @@ public class RepositoryFactoryTests
         #region Properties
 
         public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         #endregion

@@ -25,7 +25,7 @@ public abstract record DomainEvent : EventItem, IDomainEvent
 
     #region Properties
 
-    [JsonIgnore] public string HashId => _hashId ??= GenerateHashId();
+    [JsonIgnore] public string HashId => this._hashId ??= this.GenerateHashId();
 
     #endregion
 

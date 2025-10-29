@@ -52,20 +52,26 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         if (string.IsNullOrWhiteSpace(key))
         {
             keyBytes = RandomNumberGenerator.GetBytes(KeySize);
-            Key = Convert.ToBase64String(keyBytes);
+            this.Key = Convert.ToBase64String(keyBytes);
         }
         else
         {
             // Expect just base64 key (no colon segmentation like AesEncryption uses key:iv)
             if (key.Contains(':', StringComparison.Ordinal))
+            {
                 throw new ArgumentException("Invalid key format for AesGcm (':' not expected).", nameof(key));
+            }
+
             keyBytes = Convert.FromBase64String(key);
             if (keyBytes.Length is not (16 or 24 or 32))
+            {
                 throw new ArgumentException("Key length must be 128/192/256 bits.", nameof(key));
-            Key = key;
+            }
+
+            this.Key = key;
         }
 
-        _aesGcm = new AesGcm(keyBytes, TagSize);
+        this._aesGcm = new AesGcm(keyBytes, TagSize);
     }
 
     #endregion
@@ -80,28 +86,35 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
     public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
     {
-        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
+        if (!string.Equals(base64Key, this.Key, StringComparison.Ordinal))
+        {
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use DecryptString().");
-        return DecryptString(cipherPackage, associatedData);
+        }
+
+        return this.DecryptString(cipherPackage, associatedData);
     }
 
     public string DecryptString(string cipherPackage, byte[]? associatedData = null)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesGcmEncryption));
         ArgumentException.ThrowIfNullOrWhiteSpace(cipherPackage);
         var decoded = cipherPackage.FromBase64String();
 
         var parts = decoded.Split(':');
-        if (parts.Length != 3) throw new ArgumentException("Invalid cipher package format", nameof(cipherPackage));
+        if (parts.Length != 3)
+        {
+            throw new ArgumentException("Invalid cipher package format", nameof(cipherPackage));
+        }
+
         var nonce = Convert.FromBase64String(parts[0]);
         var tag = Convert.FromBase64String(parts[1]);
         var cipher = Convert.FromBase64String(parts[2]);
         var plain = new byte[cipher.Length];
 
-        lock (_aesGcm)
+        lock (this._aesGcm)
         {
-            _aesGcm.Decrypt(nonce, cipher, tag, plain, associatedData);
+            this._aesGcm.Decrypt(nonce, cipher, tag, plain, associatedData);
         }
 
         return Encoding.UTF8.GetString(plain);
@@ -109,23 +122,30 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _aesGcm.Dispose();
-        _disposed = true;
+        if (this._disposed)
+        {
+            return;
+        }
+
+        this._aesGcm.Dispose();
+        this._disposed = true;
     }
 
     // Backward-compatible wrappers (will ignore supplied key and use this instance key)
     public string Encrypt(string plainText, string base64Key, byte[]? associatedData = null)
     {
-        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
+        if (!string.Equals(base64Key, this.Key, StringComparison.Ordinal))
+        {
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use EncryptString().");
-        return EncryptString(plainText, associatedData);
+        }
+
+        return this.EncryptString(plainText, associatedData);
     }
 
     public string EncryptString(string plainText, byte[]? associatedData = null)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesGcmEncryption));
         ArgumentNullException.ThrowIfNull(plainText);
 
         var nonce = RandomNumberGenerator.GetBytes(NonceSize);
@@ -133,9 +153,9 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         var cipher = new byte[plainBytes.Length];
         var tag = new byte[TagSize];
 
-        lock (_aesGcm)
+        lock (this._aesGcm)
         {
-            _aesGcm.Encrypt(nonce, plainBytes, cipher, tag, associatedData);
+            this._aesGcm.Encrypt(nonce, plainBytes, cipher, tag, associatedData);
         }
 
         var packaged =

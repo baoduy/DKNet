@@ -43,7 +43,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
     public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var finalFile = GetFinalPath(blob);
+        var finalFile = this.GetFinalPath(blob);
         return Task.FromResult(blob.Type == BlobTypes.File ? File.Exists(finalFile) : Directory.Exists(finalFile));
     }
 
@@ -58,16 +58,24 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var path = GetFinalPath(blob);
+        var path = this.GetFinalPath(blob);
         return blob.Type == BlobTypes.File
             ? DeleteFileAsync(path, cancellationToken)
-            : DeleteFolderAsync(path, cancellationToken);
+            : this.DeleteFolderAsync(path, cancellationToken);
     }
 
     private static Task<bool> DeleteFileAsync(string fileLocation, CancellationToken cancellationToken = default)
     {
-        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
-        if (!File.Exists(fileLocation)) return Task.FromResult(false);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromResult(false);
+        }
+
+        if (!File.Exists(fileLocation))
+        {
+            return Task.FromResult(false);
+        }
+
         File.Delete(fileLocation);
         return Task.FromResult(true);
     }
@@ -80,20 +88,28 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             return Task.FromResult(false);
         }
 
-        if (cancellationToken.IsCancellationRequested) return Task.FromResult(false);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromResult(false);
+        }
+
         Directory.Delete(folderLocation, true);
         return Task.FromResult(true);
     }
 
-    public override async Task<BlobDataResult?> GetAsync(BlobRequest blob,
+    public override async Task<BlobDataResult?> GetAsync(
+        BlobRequest blob,
         CancellationToken cancellationToken = default)
     {
-        var finalFile = GetFinalPath(blob);
-        if (!File.Exists(finalFile)) throw new FileNotFoundException("File not found", blob.Name);
+        var finalFile = this.GetFinalPath(blob);
+        if (!File.Exists(finalFile))
+        {
+            throw new FileNotFoundException("File not found", blob.Name);
+        }
 
         var file = new FileInfo(finalFile);
         var data = await BinaryData.FromStreamAsync(file.OpenRead(), cancellationToken);
-        var relativePath = GetRelativePath(file.FullName);
+        var relativePath = this.GetRelativePath(file.FullName);
 
         return new BlobDataResult(relativePath, data)
         {
@@ -106,11 +122,17 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     private string GetFinalPath(BlobRequest blob)
     {
         var name = blob.Name;
-        if (name.StartsWith('/')) name = name[1..];
-        return Path.GetFullPath(Path.Combine(_rootFolder, name));
+        if (name.StartsWith('/'))
+        {
+            name = name[1..];
+        }
+
+        return Path.GetFullPath(Path.Combine(this._rootFolder, name));
     }
 
-    public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+    public override Task<Uri> GetPublicAccessUrl(
+        BlobRequest blob,
+        TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException(
             $"Public access URLs are not supported in {nameof(LocalBlobService)}. " +
@@ -118,12 +140,13 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             "Consider using a cloud-based blob storage service if you require public access functionality.");
 
     private string GetRelativePath(string fullPath) =>
-        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
+        fullPath.Replace(this._rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
 
-    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(
+        BlobRequest blob,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var internalLocation = GetFinalPath(blob);
+        var internalLocation = this.GetFinalPath(blob);
 
         if (internalLocation.IsDirectory())
         {
@@ -133,7 +156,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                yield return new BlobResult(GetRelativePath(file.FullName))
+                yield return new BlobResult(this.GetRelativePath(file.FullName))
                 {
                     Type = BlobTypes.File,
                     Details = CreateBlobDetails(file)
@@ -143,31 +166,37 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
             foreach (var folder in directory.EnumerateDirectories("*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                yield return new BlobResult(GetRelativePath(folder.FullName));
+                yield return new BlobResult(this.GetRelativePath(folder.FullName));
             }
         }
         else
         {
             var file = new FileInfo(internalLocation);
             if (file.Exists)
-                yield return new BlobResult(GetRelativePath(file.FullName))
+            {
+                yield return new BlobResult(this.GetRelativePath(file.FullName))
                 {
                     Type = BlobTypes.File,
                     Details = CreateBlobDetails(file)
                 };
+            }
         }
     }
 
     public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
     {
-        if (await CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
+        if (await this.CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
+        {
             throw new InvalidOperationException("File already existed");
+        }
 
-        var finalFile = GetFinalPath(blob);
+        var finalFile = this.GetFinalPath(blob);
         var directory = Path.GetDirectoryName(finalFile);
 
         if (!Directory.Exists(directory))
+        {
             Directory.CreateDirectory(directory!);
+        }
 
         await File.WriteAllBytesAsync(finalFile, blob.Data.ToArray(), cancellationToken);
         return blob.Name;

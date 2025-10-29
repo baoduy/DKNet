@@ -5,7 +5,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace Microsoft.EntityFrameworkCore;
 
-[SuppressMessage("Major Code Smell",
+[SuppressMessage(
+    "Major Code Smell",
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 public static class EfCoreDataSeedingExtensions
 {
@@ -22,9 +23,16 @@ public static class EfCoreDataSeedingExtensions
         var seedingTypes = assemblies.GetDataSeedingTypes();
         foreach (var seedingType in seedingTypes)
         {
-            if (Activator.CreateInstance(seedingType) is not IDataSeedingConfiguration seedingInstance) continue;
+            if (Activator.CreateInstance(seedingType) is not IDataSeedingConfiguration seedingInstance)
+            {
+                continue;
+            }
+
             var data = seedingInstance.HasData.ToList();
-            if (data.Count == 0) continue;
+            if (data.Count == 0)
+            {
+                continue;
+            }
 
             var entityType = seedingInstance.EntityType;
             modelBuilder.Entity(entityType).HasData(data);
@@ -44,15 +52,21 @@ public static class EfCoreDataSeedingExtensions
         @this.UseSeeding((context, performedStoreOperation) =>
         {
             foreach (var s in seedingInstances.OfType<IDataSeedingConfiguration>())
+            {
                 s.SeedAsync?.Invoke(context, performedStoreOperation, CancellationToken.None)
                     .GetAwaiter().GetResult();
+            }
         });
 
         @this.UseAsyncSeeding(async (context, performedStoreOperation, cancellation) =>
         {
             foreach (var s in seedingInstances.OfType<IDataSeedingConfiguration>())
+            {
                 if (s.SeedAsync != null)
+                {
                     await s.SeedAsync.Invoke(context, performedStoreOperation, cancellation);
+                }
+            }
         });
 
         return @this;

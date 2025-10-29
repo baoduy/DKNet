@@ -36,7 +36,11 @@ internal sealed class DedicatedRecordingPublisher : IAuditLogPublisher
 
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
-        foreach (var l in logs) Logs.Add(l);
+        foreach (var l in logs)
+        {
+            Logs.Add(l);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -55,7 +59,7 @@ internal class PropertyIgnoredAuditLogDbContext(DbContextOptions<PropertyIgnored
 {
     #region Properties
 
-    public DbSet<PropertyIgnoredAuditEntity> PropIgnoredEntities => Set<PropertyIgnoredAuditEntity>();
+    public DbSet<PropertyIgnoredAuditEntity> PropIgnoredEntities => this.Set<PropertyIgnoredAuditEntity>();
 
     #endregion
 
@@ -85,7 +89,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
     public async Task Added_Entity_Ignores_Decorated_Property()
     {
         DedicatedRecordingPublisher.Reset(); // changed
-        var ctx = CreateContext();
+        var ctx = this.CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Add", Secret = "S1" };
         e.SetCreatedBy("creator");
         ctx.PropIgnoredEntities.Add(e);
@@ -94,6 +98,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
 
         var logs = DedicatedRecordingPublisher.Logs.Where(l => l.EntityName == nameof(PropertyIgnoredAuditEntity))
             .ToList(); // changed
+
         //Currently, no log is created for Added entities
         logs.Count.ShouldBe(1);
         logs.ShouldAllBe(l => l.Changes.Count == 0);
@@ -101,14 +106,14 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
 
     private PropertyIgnoredAuditLogDbContext CreateContext()
     {
-        var scope = _provider.CreateAsyncScope();
+        var scope = this._provider.CreateAsyncScope();
         return scope.ServiceProvider.GetRequiredService<PropertyIgnoredAuditLogDbContext>();
     }
 
     [Fact]
     public async Task Deleted_Entity_Ignores_Decorated_Property()
     {
-        var ctx = CreateContext();
+        var ctx = this.CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Del", Secret = "S4" };
         e.SetCreatedBy("creator");
         ctx.PropIgnoredEntities.Add(e);
@@ -128,10 +133,17 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        if (_provider is IDisposable d) d.Dispose();
+        if (this._provider is IDisposable d)
+        {
+            d.Dispose();
+        }
+
         try
         {
-            if (File.Exists(_dbPath)) File.Delete(_dbPath);
+            if (File.Exists(this._dbPath))
+            {
+                File.Delete(this._dbPath);
+            }
         }
         catch
         {
@@ -149,11 +161,11 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
         services.AddEfCoreAuditLogs<PropertyIgnoredAuditLogDbContext, DedicatedRecordingPublisher>(); // changed
         services.AddDbContextWithHook<PropertyIgnoredAuditLogDbContext>((_, opts) =>
         {
-            opts.UseSqlite($"Data Source={_dbPath}");
+            opts.UseSqlite($"Data Source={this._dbPath}");
             opts.EnableSensitiveDataLogging();
         });
-        _provider = services.BuildServiceProvider();
-        await using var scope = _provider.CreateAsyncScope();
+        this._provider = services.BuildServiceProvider();
+        await using var scope = this._provider.CreateAsyncScope();
         var ctx = scope.ServiceProvider.GetRequiredService<PropertyIgnoredAuditLogDbContext>();
         await ctx.Database.EnsureDeletedAsync();
         await ctx.Database.EnsureCreatedAsync();
@@ -162,7 +174,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
     [Fact]
     public async Task Updated_Entity_Ignores_Decorated_Property()
     {
-        var ctx = CreateContext();
+        var ctx = this.CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Upd", Secret = "S2" };
         e.SetCreatedBy("creator");
         ctx.PropIgnoredEntities.Add(e);

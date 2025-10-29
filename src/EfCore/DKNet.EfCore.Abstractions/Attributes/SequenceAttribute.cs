@@ -34,9 +34,11 @@ public sealed class SequenceAttribute : Attribute
     /// <exception cref="NotSupportedException">Thrown when the specified type is not supported by the sequence.</exception>
     public SequenceAttribute(Type? type = null)
     {
-        Type = type ?? typeof(int);
-        if (!SupportedTypes.Contains(Type))
-            throw new NotSupportedException(Type.Name);
+        this.Type = type ?? typeof(int);
+        if (!SupportedTypes.Contains(this.Type))
+        {
+            throw new NotSupportedException(this.Type.Name);
+        }
     }
 
     #endregion
@@ -48,12 +50,6 @@ public sealed class SequenceAttribute : Attribute
     /// </summary>
     /// <value>True if the sequence should cycle; otherwise, false. Defaults to true.</value>
     public bool Cyclic { get; set; } = true;
-
-    /// <summary>
-    ///     Gets or sets the format string to be applied to the sequence value.
-    /// </summary>
-    /// <value>The format string pattern, or null if no formatting is needed.</value>
-    public string? FormatString { get; set; }
 
     /// <summary>
     ///     Gets or sets the increment step size for the sequence.
@@ -84,6 +80,12 @@ public sealed class SequenceAttribute : Attribute
     [Description("The starting value")]
     [DefaultValue(-1)]
     public long StartAt { get; set; } = -1;
+
+    /// <summary>
+    ///     Gets or sets the format string to be applied to the sequence value.
+    /// </summary>
+    /// <value>The format string pattern, or null if no formatting is needed.</value>
+    public string? FormatString { get; set; }
 
     /// <summary>
     ///     Gets the data type of the sequence.

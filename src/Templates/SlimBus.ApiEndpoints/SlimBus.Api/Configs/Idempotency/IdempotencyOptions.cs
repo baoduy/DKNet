@@ -22,14 +22,16 @@ internal sealed class IdempotencyOptions
 {
     #region Properties
 
-    public string CachePrefix { get; set; } = "idem-";
-
     public IdempotentConflictHandling ConflictHandling { get; set; } = IdempotentConflictHandling.ConflictResponse;
-    public TimeSpan Expiration { get; set; } = TimeSpan.FromHours(4);
-    public string IdempotencyHeaderKey { get; set; } = "X-Idempotency-Key";
 
     public JsonSerializerOptions JsonSerializerOptions { get; set; } =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    public string CachePrefix { get; set; } = "idem-";
+
+    public string IdempotencyHeaderKey { get; set; } = "X-Idempotency-Key";
+
+    public TimeSpan Expiration { get; set; } = TimeSpan.FromHours(4);
 
     #endregion
 }

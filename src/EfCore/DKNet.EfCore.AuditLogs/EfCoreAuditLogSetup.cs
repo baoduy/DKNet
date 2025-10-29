@@ -35,14 +35,16 @@ public static class EfCoreAuditLogSetup
 {
     #region Methods
 
-    public static IServiceCollection AddEfCoreAuditHook<TDbContext>(this IServiceCollection services,
+    public static IServiceCollection AddEfCoreAuditHook<TDbContext>(
+        this IServiceCollection services,
         AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities)
         where TDbContext : DbContext =>
         services
             .AddSingleton(Options.Create(new AuditLogOptions { Behaviour = behaviour }))
             .AddHook<TDbContext, EfCoreAuditHook>();
 
-    public static IServiceCollection AddEfCoreAuditLogs<TDbContext, TPublisher>(this IServiceCollection services,
+    public static IServiceCollection AddEfCoreAuditLogs<TDbContext, TPublisher>(
+        this IServiceCollection services,
         AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities)
         where TDbContext : DbContext
         where TPublisher : class, IAuditLogPublisher
@@ -51,7 +53,9 @@ public static class EfCoreAuditLogSetup
         if (services.Any(s =>
                 s.IsKeyedService && ReferenceEquals(s.ServiceKey, key) &&
                 s.KeyedImplementationType == typeof(TPublisher)))
+        {
             return services;
+        }
 
         services.AddKeyedScoped<IAuditLogPublisher, TPublisher>(key);
         services.AddEfCoreAuditHook<TDbContext>(behaviour);

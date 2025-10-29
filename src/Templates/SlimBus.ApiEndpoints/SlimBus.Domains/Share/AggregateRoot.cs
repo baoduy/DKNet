@@ -14,7 +14,7 @@ public abstract class AggregateRoot : AuditedEntity<Guid>
     protected AggregateRoot(Guid id, string createdBy, DateTimeOffset? createdOn = null)
         : base(id)
     {
-        SetCreatedBy(createdBy, createdOn);
+        this.SetCreatedBy(createdBy, createdOn);
     }
 
     /// <inheritdoc />

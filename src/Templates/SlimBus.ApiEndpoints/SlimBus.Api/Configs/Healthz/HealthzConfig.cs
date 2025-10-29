@@ -15,7 +15,10 @@ internal static class HealthzConfig
 
     public static IServiceCollection AddHealthzConfig(this IServiceCollection services, FeatureOptions features)
     {
-        if (!features.EnableHealthCheck) return services;
+        if (!features.EnableHealthCheck)
+        {
+            return services;
+        }
 
         services.AddHealthChecks()
             .AddDbContextCheck<DbContext>()
@@ -31,7 +34,10 @@ internal static class HealthzConfig
     /// <returns></returns>
     public static WebApplication UseHealthzConfig(this WebApplication endpoints)
     {
-        if (!_configAdded) return endpoints;
+        if (!_configAdded)
+        {
+            return endpoints;
+        }
 
         var options = new HealthCheckOptions
         {

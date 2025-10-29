@@ -16,7 +16,10 @@ public class TransformTests
         var options = new TransformOptions();
         options.DefaultDefinitions.Clear();
         foreach (var definition in definitions)
+        {
             options.DefaultDefinitions.Add(definition);
+        }
+
         return Options.Create(options);
     }
 
@@ -70,8 +73,9 @@ public class TransformTests
         var transformer = service.GetRequiredService<ITransformerService>();
 
         await Should.ThrowAsync<UnResolvedTokenException>(async () =>
-            await transformer.TransformAsync("{A}", new Dictionary<string, string>
-                (StringComparer.OrdinalIgnoreCase)
+            await transformer.TransformAsync(
+                "{A}",
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     { "B", "Duy" }
                 }));
@@ -91,8 +95,9 @@ public class TransformTests
 
         var transformer = service.GetRequiredService<ITransformerService>();
 
-        var rs = await transformer.TransformAsync("{A}", new Dictionary<string, string>
-            (StringComparer.OrdinalIgnoreCase)
+        var rs = await transformer.TransformAsync(
+            "{A}",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "B", "Duy" }
             });
@@ -113,14 +118,14 @@ public class TransformTests
 
         var transformer = service.GetRequiredService<ITransformerService>();
 
-        var rs = await transformer.TransformAsync("{A}", new Dictionary<string, string>
-            (StringComparer.OrdinalIgnoreCase)
+        var rs = await transformer.TransformAsync(
+            "{A}",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "B", "Duy" }
             });
         rs.ShouldBeEmpty();
     }
-
 
     [Fact]
     public async Task TransformAsyncCustomTest()
@@ -159,7 +164,7 @@ public class TransformTests
             TransformOptions.AngledBrackets,
             TransformOptions.CurlyBrackets,
             TransformOptions.SquareBrackets);
-        
+
         var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 
@@ -168,7 +173,6 @@ public class TransformTests
         s.ShouldNotContain("[");
         s.ShouldNotContain("<");
     }
-
 
     [Fact]
     public async Task TransformHugeTemplateAsyncTest()
@@ -180,7 +184,7 @@ public class TransformTests
             TransformOptions.AngledBrackets,
             TransformOptions.CurlyBrackets,
             TransformOptions.SquareBrackets);
-        
+
         var t = new TransformerService(options);
         var s = await t.TransformAsync(template, new { A = "Hoang", B = "Bao", C = "Duy", D = "DKNet" });
 

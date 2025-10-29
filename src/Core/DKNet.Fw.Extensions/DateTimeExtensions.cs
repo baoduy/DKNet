@@ -1,4 +1,9 @@
-﻿namespace DKNet.Fw.Extensions;
+﻿// <copyright file="DateTimeExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+namespace DKNet.Fw.Extensions;
 
 /// <summary>
 ///     Provides extension methods for working with dates.
@@ -12,7 +17,7 @@ public static class DateTimeExtensions
     /// </summary>
     /// <param name="date">The date to determine the quarter for.</param>
     /// <returns>The quarter of the year (1, 2, 3, or 4).</returns>
-    public static int InQuarter(this DateTime date) => (date.Month - 1) / 3 + 1;
+    public static int InQuarter(this DateTime date) => ((date.Month - 1) / 3) + 1;
 
     /// <summary>
     ///     Returns the last day of the month for the given date.
@@ -29,7 +34,14 @@ public static class DateTimeExtensions
     public static DateTime LastDayOfMonth(this DateTime date)
     {
         var lastDay = DateTime.DaysInMonth(date.Year, date.Month);
-        return new DateTime(date.Year, date.Month, lastDay, date.Hour, date.Minute, date.Second, date.Millisecond,
+        return new DateTime(
+            date.Year,
+            date.Month,
+            lastDay,
+            date.Hour,
+            date.Minute,
+            date.Second,
+            date.Millisecond,
             DateTimeKind.Local);
     }
 

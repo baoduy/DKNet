@@ -12,7 +12,7 @@ internal sealed class CustomerProfileRepo(CoreDbContext dbContext)
 
     public Task<bool> IsEmailExistAsync(string email)
     {
-        return Query().AnyAsync(f => f.Email == email);
+        return this.Query().AnyAsync(f => f.Email == email);
     }
 
     #endregion

@@ -28,10 +28,14 @@ public class FeatureOptions
     public bool EnableRateLimit { get; set; } = true;
 
     public bool EnableServiceBus { get; set; }
+
     public bool EnableSwagger { get; set; }
-    public static string Name => "FeatureManagement";
+
     public bool RequireAuthorization { get; set; }
+
     public bool RunDbMigrationWhenAppStart { get; set; }
+
+    public static string Name => "FeatureManagement";
 
     #endregion
 }

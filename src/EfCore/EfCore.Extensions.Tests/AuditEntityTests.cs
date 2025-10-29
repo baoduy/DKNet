@@ -21,21 +21,23 @@ public class AuditEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtu
     [Fact]
     public async Task TestUpdatingEntityAsync()
     {
-        await _db.Set<User>()
-            .AddRangeAsync(new User("StevenHoang")
-            {
-                FirstName = "Steven",
-                LastName = "Hoang"
-            }, new User("DuyHoang")
-            {
-                FirstName = "Duy",
-                LastName = "Hoang"
-            });
-        await _db.SaveChangesAsync();
+        await this._db.Set<User>()
+            .AddRangeAsync(
+                new User("StevenHoang")
+                {
+                    FirstName = "Steven",
+                    LastName = "Hoang"
+                },
+                new User("DuyHoang")
+                {
+                    FirstName = "Duy",
+                    LastName = "Hoang"
+                });
+        await this._db.SaveChangesAsync();
 
-        _db.ChangeTracker.Clear();
+        this._db.ChangeTracker.Clear();
 
-        var user = await _db.Set<User>().FirstAsync();
+        var user = await this._db.Set<User>().FirstAsync();
         user.ShouldNotBeNull();
         user.UpdatedByUser("Hoang");
 

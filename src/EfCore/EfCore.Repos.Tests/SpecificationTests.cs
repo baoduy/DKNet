@@ -23,7 +23,6 @@ public class SpecificationTests
         spec.IncludeQueries.First().ShouldNotBeNull();
     }
 
-
     [Fact]
     public void AddMultipleIncludes_ShouldAddAllToCollection()
     {
@@ -245,14 +244,16 @@ public class TestSpecification : Specification<User>
     #region Methods
 
     // Expose protected methods for testing
-    public void AddTestFilter(Expression<Func<User, bool>> filter) => WithFilter(filter);
-    public void AddTestInclude(Expression<Func<User, object?>> include) => AddInclude(include);
-    public void AddTestOrderBy(Expression<Func<User, object>> orderBy) => AddOrderBy(orderBy);
+    public void AddTestFilter(Expression<Func<User, bool>> filter) => this.WithFilter(filter);
+
+    public void AddTestInclude(Expression<Func<User, object?>> include) => this.AddInclude(include);
+
+    public void AddTestOrderBy(Expression<Func<User, object>> orderBy) => this.AddOrderBy(orderBy);
 
     public void AddTestOrderByDescending(Expression<Func<User, object>> orderByDesc) =>
-        AddOrderByDescending(orderByDesc);
+        this.AddOrderByDescending(orderByDesc);
 
-    public void EnableIgnoreQueryFilters() => IgnoreQueryFilters();
+    public void EnableIgnoreQueryFilters() => this.IgnoreQueryFilters();
 
     #endregion
 }

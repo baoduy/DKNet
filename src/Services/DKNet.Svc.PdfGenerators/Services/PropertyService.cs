@@ -24,11 +24,13 @@ public static class PropertyService
     {
         propertyValue = default!;
         if (string.IsNullOrWhiteSpace(propertyName))
+        {
             return false;
+        }
 
-        var property = typeof(TContainer).GetProperty(propertyName,
+        var property = typeof(TContainer).GetProperty(
+            propertyName,
             BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-
 
         object? value;
         Type? memberType;
@@ -39,10 +41,14 @@ public static class PropertyService
         }
         else
         {
-            var field = typeof(TContainer).GetField(propertyName,
+            var field = typeof(TContainer).GetField(
+                propertyName,
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (field == null)
+            {
                 return false;
+            }
+
             value = field.GetValue(null);
             memberType = field.FieldType;
         }
@@ -54,13 +60,16 @@ public static class PropertyService
         }
 
         var targetType = typeof(TProperty);
+
         // Handle nullable types
         if (Nullable.GetUnderlyingType(targetType) != null)
         {
             var underlyingType = Nullable.GetUnderlyingType(targetType);
             if (underlyingType is not null && underlyingType != memberType &&
                 !underlyingType.IsAssignableFrom(memberType))
+            {
                 throw new InvalidCastException($"Member '{propertyName}' is not of type {targetType.Name}.");
+            }
         }
         else if (!targetType.IsAssignableFrom(memberType) && !memberType.IsAssignableFrom(targetType))
         {

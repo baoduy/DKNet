@@ -5,7 +5,9 @@ internal static class DbMigration
 {
     #region Methods
 
-    public static async Task RunMigrationAsync(this WebApplicationBuilder builder, FeatureOptions features,
+    public static async Task RunMigrationAsync(
+        this WebApplicationBuilder builder,
+        FeatureOptions features,
         params string[] args)
     {
 #if DEBUG

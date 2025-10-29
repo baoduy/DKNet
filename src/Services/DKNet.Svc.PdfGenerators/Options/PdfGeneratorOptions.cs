@@ -10,16 +10,55 @@ public class PdfGeneratorOptions
     #region Properties
 
     /// <summary>
-    ///     Path to chrome or chromium executable. If set to <see langword="null" /> downloads chromium by itself.
-    ///     <value>Default: <see langword="null" />.</value>
+    ///     Auto detect the language for code blocks without specfied language.
+    ///     <value>Default: <see langword="false" />.</value>
     /// </summary>
-    public string? ChromePath { get; set; }
+    public bool EnableAutoLanguageDetection { get; set; }
+
+    /// <summary>
+    ///     Paper orientation.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    public bool IsLandscape { get; set; }
+
+    /// <summary>
+    ///     Doesn't delete the HTML-file used for generating the PDF if set to <see langword="true" />.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    public bool KeepHtml { get; set; }
 
     /// <summary>
     ///     The theme to use for highlighting code blocks.
     ///     <value>Default: <see cref="CodeHighlightTheme.Github" />.</value>
     /// </summary>
     public CodeHighlightTheme CodeHighlightTheme { get; set; } = CodeHighlightTheme.Github;
+
+    /// <inheritdoc cref="PuppeteerSharp.PdfOptions.Scale" />
+    public decimal Scale { get; set; } = 1;
+
+    /// <summary>
+    ///     Css-margins for the sides of the document.
+    ///     <value>Default: <see langword="null" />.</value>
+    /// </summary>
+    public MarginOptions? MarginOptions { get; set; }
+
+    /// <summary>
+    ///     Options that decide from where to load additional modules.
+    ///     <value>Default: <see cref="ModuleOptions.Remote" />.</value>
+    /// </summary>
+    public ModuleOptions ModuleOptions { get; set; } = ModuleOptions.Remote;
+
+    /// <summary>
+    ///     The paper format for the PDF.
+    ///     <value>Default: <see cref="PaperFormat.A4" />.</value>
+    /// </summary>
+    public PaperFormat Format { get; set; } = PaperFormat.A4;
+
+    /// <summary>
+    ///     Path to chrome or chromium executable. If set to <see langword="null" /> downloads chromium by itself.
+    ///     <value>Default: <see langword="null" />.</value>
+    /// </summary>
+    public string? ChromePath { get; set; }
 
     /// <summary>
     ///     A <see langword="string" /> containing any content valid inside a HTML <c>&lt;head&gt;</c>
@@ -41,23 +80,11 @@ public class PdfGeneratorOptions
     /// </summary>
     public string? DocumentTitle { get; set; }
 
-    /// <summary>
-    ///     Auto detect the language for code blocks without specfied language.
-    ///     <value>Default: <see langword="false" />.</value>
-    /// </summary>
-    public bool EnableAutoLanguageDetection { get; set; }
-
     /// <inheritdoc cref="HeaderHtml" />
     /// <summary>
     ///     An HTML string to use as the document-footer.
     /// </summary>
     public string? FooterHtml { get; set; }
-
-    /// <summary>
-    ///     The paper format for the PDF.
-    ///     <value>Default: <see cref="PaperFormat.A4" />.</value>
-    /// </summary>
-    public PaperFormat Format { get; set; } = PaperFormat.A4;
 
     /// <summary>
     ///     An HTML string to use as the document-header.
@@ -71,38 +98,11 @@ public class PdfGeneratorOptions
     public string? HeaderHtml { get; set; }
 
     /// <summary>
-    ///     Paper orientation.
-    ///     <value>Default: <see langword="false" />.</value>
-    /// </summary>
-    public bool IsLandscape { get; set; }
-
-    /// <summary>
-    ///     Doesn't delete the HTML-file used for generating the PDF if set to <see langword="true" />.
-    ///     <value>Default: <see langword="false" />.</value>
-    /// </summary>
-    public bool KeepHtml { get; set; }
-
-    /// <summary>
-    ///     Css-margins for the sides of the document.
-    ///     <value>Default: <see langword="null" />.</value>
-    /// </summary>
-    public MarginOptions? MarginOptions { get; set; }
-
-    /// <summary>
     ///     The title in the metadata (PDF properties).
     ///     <value>Default: <see langword="null" />.</value>
     /// </summary>
     /// <remarks>If not set, first <see cref="DocumentTitle" /> and then the Output-Filename are used as fallback values.</remarks>
     public string? MetadataTitle { get; set; }
-
-    /// <summary>
-    ///     Options that decide from where to load additional modules.
-    ///     <value>Default: <see cref="ModuleOptions.Remote" />.</value>
-    /// </summary>
-    public ModuleOptions ModuleOptions { get; set; } = ModuleOptions.Remote;
-
-    /// <inheritdoc cref="PuppeteerSharp.PdfOptions.Scale" />
-    public decimal Scale { get; set; } = 1;
 
     /// <inheritdoc cref="TableOfContentsOptions" />
     /// <value>Default: <see langword="null" />.</value>

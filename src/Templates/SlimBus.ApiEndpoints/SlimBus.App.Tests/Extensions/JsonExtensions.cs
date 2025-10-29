@@ -25,8 +25,13 @@ public static class JsonExtensions
         if (!string.IsNullOrEmpty(str))
         {
             if (success)
+            {
                 result = JsonSerializer.Deserialize<TValue>(str, Options);
-            else error = JsonSerializer.Deserialize<ProblemDetails>(str, Options);
+            }
+            else
+            {
+                error = JsonSerializer.Deserialize<ProblemDetails>(str, Options);
+            }
         }
 
         return (success, result, error, str);

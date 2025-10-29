@@ -24,10 +24,14 @@ internal sealed class EfCoreAuditHook(
     {
         await base.AfterSaveAsync(context, cancellationToken);
 
-        var logs = _cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
-        if (logs is not { Count: > 0 }) return;
-        _cache.Remove(context.DbContext.ContextId.InstanceId);
-        PublishLogsAsync(context.DbContext, logs);
+        var logs = this._cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
+        if (logs is not { Count: > 0 })
+        {
+            return;
+        }
+
+        this._cache.Remove(context.DbContext.ContextId.InstanceId);
+        this.PublishLogsAsync(context.DbContext, logs);
     }
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
@@ -39,11 +43,16 @@ internal sealed class EfCoreAuditHook(
             .OfType<AuditLogEntry>()
             .ToList();
 
-        logger.LogInformation("Found {Count} audit log entries in current save operation of DbContext {DbContextId}",
-            logs.Count, context.DbContext.ContextId.InstanceId);
+        logger.LogInformation(
+            "Found {Count} audit log entries in current save operation of DbContext {DbContextId}",
+            logs.Count,
+            context.DbContext.ContextId.InstanceId);
 
         if (logs is { Count: > 0 })
-            _cache[context.DbContext.ContextId.InstanceId] = logs;
+        {
+            this._cache[context.DbContext.ContextId.InstanceId] = logs;
+        }
+
         return base.BeforeSaveAsync(context, cancellationToken);
     }
 
@@ -52,6 +61,7 @@ internal sealed class EfCoreAuditHook(
         // Fire & forget: do not await publishers. Each publisher runs independently.
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
         foreach (var publisher in publishers)
+        {
             Task.Run(async () =>
             {
                 try
@@ -64,6 +74,7 @@ internal sealed class EfCoreAuditHook(
                     logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
                 }
             });
+        }
     }
 
     #endregion

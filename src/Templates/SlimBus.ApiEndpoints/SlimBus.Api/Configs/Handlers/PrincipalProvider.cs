@@ -12,21 +12,21 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
 
     #region Properties
 
-    public string Email
-    {
-        get
-        {
-            Initialize();
-            return _email;
-        }
-    }
-
     public Guid ProfileId
     {
         get
         {
-            Initialize();
-            return _profileId;
+            this.Initialize();
+            return this._profileId;
+        }
+    }
+
+    public string Email
+    {
+        get
+        {
+            this.Initialize();
+            return this._email;
         }
     }
 
@@ -34,8 +34,8 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
     {
         get
         {
-            Initialize();
-            return _userName;
+            this.Initialize();
+            return this._userName;
         }
     }
 
@@ -43,25 +43,32 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
 
     #region Methods
 
-    public ICollection<string> GetAccessibleKeys() => [GetOwnershipKey()];
+    public ICollection<string> GetAccessibleKeys() => [this.GetOwnershipKey()];
 
-
-    public string GetOwnershipKey() => ProfileId.ToString();
+    public string GetOwnershipKey() => this.ProfileId.ToString();
 
     private void Initialize()
     {
         var context = accessor.HttpContext;
-        if (context == null) return;
+        if (context == null)
+        {
+            return;
+        }
 
-        if (!context.User.Identity?.IsAuthenticated == true || _profileId != Guid.Empty) return;
+        if (!context.User.Identity?.IsAuthenticated == true || this._profileId != Guid.Empty)
+        {
+            return;
+        }
 
-        _userName = context.User.Identity?.Name!;
+        this._userName = context.User.Identity?.Name!;
 
         //Get from ProfileId Claims
         var id = context.User.FindFirst(c =>
             string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase));
         if (id != null && Guid.TryParse(id.Value, out var p))
-            _profileId = p;
+        {
+            this._profileId = p;
+        }
 
         //Get email
         var email = context.User.FindFirst(c =>
@@ -69,9 +76,11 @@ internal sealed class PrincipalProvider(IHttpContextAccessor accessor) : IPrinci
             c.Type.Equals("email", StringComparison.OrdinalIgnoreCase));
         if (email != null)
         {
-            _email = email.Value;
-            if (string.IsNullOrEmpty(_userName))
-                _userName = _email;
+            this._email = email.Value;
+            if (string.IsNullOrEmpty(this._userName))
+            {
+                this._userName = this._email;
+            }
         }
     }
 

@@ -31,7 +31,11 @@ public class DomainEntityTests
     [InlineData("123 Main St", "CA", "Los Angeles", "USA", "90210")]
     [InlineData("456 Oak Ave", "NY", "New York", "USA", "10001")]
     [InlineData("789 Pine Rd", "TX", "Houston", "USA", "77001")]
-    public void AddressConstructorWithDifferentValuesShouldWork(string line, string state, string city, string country,
+    public void AddressConstructorWithDifferentValuesShouldWork(
+        string line,
+        string state,
+        string city,
+        string country,
         string postal)
     {
         // Act
@@ -69,7 +73,11 @@ public class DomainEntityTests
     [Theory]
     [InlineData("Tech Solutions Inc", "UEN987654321", "ABN987654321", "ARBN987654321", "CAN987654321")]
     [InlineData("Global Services Ltd", "UEN111222333", "ABN111222333", "ARBN111222333", "CAN111222333")]
-    public void CompanyConstructorWithDifferentValuesShouldWork(string name, string uen, string abn, string arbn,
+    public void CompanyConstructorWithDifferentValuesShouldWork(
+        string name,
+        string uen,
+        string abn,
+        string arbn,
         string can)
     {
         // Act
@@ -101,6 +109,7 @@ public class DomainEntityTests
         profile.MembershipNo.ShouldBe(membershipNo);
         profile.Email.ShouldBe(email);
         profile.Phone.ShouldBe(phone);
+
         // Note: The parameterless constructor uses Guid.Empty internally
         profile.Id.ShouldBe(Guid.Empty);
     }

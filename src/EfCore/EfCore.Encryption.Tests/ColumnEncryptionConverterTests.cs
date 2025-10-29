@@ -9,57 +9,62 @@ namespace EfCore.Encryption.Tests;
 
 public class ColumnEncryptionConverterTests
 {
+    #region Fields
+
     private readonly IColumnEncryptionProvider _encryptionProvider;
+
+    #endregion
+
+    #region Constructors
 
     public ColumnEncryptionConverterTests()
     {
         var key = new byte[32];
         RandomNumberGenerator.Fill(key);
-        _encryptionProvider = new AesGcmColumnEncryptionProvider(key);
+        this._encryptionProvider = new AesGcmColumnEncryptionProvider(key);
     }
 
-    [Fact]
-    public void Constructor_WithValidProvider_ShouldSucceed()
-    {
-        // Act
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
+    #endregion
 
-        // Assert
-        converter.ShouldNotBeNull();
-    }
+    #region Methods
 
     [Fact]
     public void ColumnEncryptionConverter_ShouldInheritFromValueConverter()
     {
         // Arrange & Act
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
 
         // Assert
         converter.ShouldBeAssignableTo<ValueConverter<string?, string?>>();
     }
 
     [Fact]
-    public void ConvertToProvider_WithPlaintext_ShouldEncrypt()
+    public void Constructor_WithValidProvider_ShouldSucceed()
     {
-        // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-        const string plaintext = "Sensitive Data";
-
         // Act
-        var encrypted = converter.ConvertToProvider(plaintext);
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
 
         // Assert
-        encrypted.ShouldNotBeNull();
-        encrypted.ShouldNotBe(plaintext);
+        converter.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void Converter_ShouldBeSealed()
+    {
+        // Arrange & Act
+        var converterType = typeof(ColumnEncryptionConverter);
+
+        // Assert
+        converterType.IsSealed.ShouldBeTrue();
     }
 
     [Fact]
     public void ConvertFromProvider_WithCiphertext_ShouldDecrypt()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
         const string plaintext = "Sensitive Data";
-        var encrypted = _encryptionProvider.Encrypt(plaintext);
+        var encrypted = this._encryptionProvider.Encrypt(plaintext);
 
         // Act
         var decrypted = converter.ConvertFromProvider(encrypted);
@@ -69,38 +74,23 @@ public class ColumnEncryptionConverterTests
     }
 
     [Fact]
-    public void ConvertToProviderThenFromProvider_ShouldReturnOriginal()
+    public void ConvertFromProvider_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-        const string original = "Test Message";
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
 
         // Act
-        var encrypted = converter.ConvertToProvider(original);
-        var decrypted = converter.ConvertFromProvider(encrypted);
+        var result = converter.ConvertFromProvider(string.Empty);
 
         // Assert
-        decrypted.ShouldBe(original);
-    }
-
-    [Fact]
-    public void ConvertToProvider_WithNull_ShouldReturnNull()
-    {
-        // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-
-        // Act
-        var result = converter.ConvertToProvider(null);
-
-        // Assert
-        result.ShouldBeNull();
+        result.ShouldBe(string.Empty);
     }
 
     [Fact]
     public void ConvertFromProvider_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
 
         // Act
         var result = converter.ConvertFromProvider(null);
@@ -110,54 +100,10 @@ public class ColumnEncryptionConverterTests
     }
 
     [Fact]
-    public void ConvertToProvider_WithEmptyString_ShouldReturnEmptyString()
-    {
-        // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-
-        // Act
-        var result = converter.ConvertToProvider(string.Empty);
-
-        // Assert
-        result.ShouldBe(string.Empty);
-    }
-
-    [Fact]
-    public void ConvertFromProvider_WithEmptyString_ShouldReturnEmptyString()
-    {
-        // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-
-        // Act
-        var result = converter.ConvertFromProvider(string.Empty);
-
-        // Assert
-        result.ShouldBe(string.Empty);
-    }
-
-    [Theory]
-    [InlineData("Hello World")]
-    [InlineData("Special chars: !@#$%^&*()")]
-    [InlineData("Unicode: 你好世界 🌍")]
-    [InlineData("123456789")]
-    public void RoundTrip_WithVariousInputs_ShouldPreserveData(string input)
-    {
-        // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
-
-        // Act
-        var encrypted = converter.ConvertToProvider(input);
-        var decrypted = converter.ConvertFromProvider(encrypted);
-
-        // Assert
-        decrypted.ShouldBe(input);
-    }
-
-    [Fact]
     public void ConvertToProvider_CalledMultipleTimes_ShouldProduceDifferentResults()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(_encryptionProvider);
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
         const string input = "Same input";
 
         // Act
@@ -171,12 +117,78 @@ public class ColumnEncryptionConverterTests
     }
 
     [Fact]
-    public void Converter_ShouldBeSealed()
+    public void ConvertToProvider_WithEmptyString_ShouldReturnEmptyString()
     {
-        // Arrange & Act
-        var converterType = typeof(ColumnEncryptionConverter);
+        // Arrange
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+
+        // Act
+        var result = converter.ConvertToProvider(string.Empty);
 
         // Assert
-        converterType.IsSealed.ShouldBeTrue();
+        result.ShouldBe(string.Empty);
     }
+
+    [Fact]
+    public void ConvertToProvider_WithNull_ShouldReturnNull()
+    {
+        // Arrange
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+
+        // Act
+        var result = converter.ConvertToProvider(null);
+
+        // Assert
+        result.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConvertToProvider_WithPlaintext_ShouldEncrypt()
+    {
+        // Arrange
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        const string plaintext = "Sensitive Data";
+
+        // Act
+        var encrypted = converter.ConvertToProvider(plaintext);
+
+        // Assert
+        encrypted.ShouldNotBeNull();
+        encrypted.ShouldNotBe(plaintext);
+    }
+
+    [Fact]
+    public void ConvertToProviderThenFromProvider_ShouldReturnOriginal()
+    {
+        // Arrange
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        const string original = "Test Message";
+
+        // Act
+        var encrypted = converter.ConvertToProvider(original);
+        var decrypted = converter.ConvertFromProvider(encrypted);
+
+        // Assert
+        decrypted.ShouldBe(original);
+    }
+
+    [Theory]
+    [InlineData("Hello World")]
+    [InlineData("Special chars: !@#$%^&*()")]
+    [InlineData("Unicode: 你好世界 🌍")]
+    [InlineData("123456789")]
+    public void RoundTrip_WithVariousInputs_ShouldPreserveData(string input)
+    {
+        // Arrange
+        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+
+        // Act
+        var encrypted = converter.ConvertToProvider(input);
+        var decrypted = converter.ConvertFromProvider(encrypted);
+
+        // Assert
+        decrypted.ShouldBe(input);
+    }
+
+    #endregion
 }

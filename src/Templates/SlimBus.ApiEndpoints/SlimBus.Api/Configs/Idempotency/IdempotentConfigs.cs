@@ -11,7 +11,8 @@ internal static class IdempotentConfigs
 
     #region Methods
 
-    public static IServiceCollection AddIdempotency(this IServiceCollection services,
+    public static IServiceCollection AddIdempotency(
+        this IServiceCollection services,
         Action<IdempotencyOptions>? config = null)
     {
         var options = new IdempotencyOptions();
@@ -28,7 +29,10 @@ internal static class IdempotentConfigs
     public static RouteHandlerBuilder AddIdempotencyFilter(this RouteHandlerBuilder builder)
     {
         if (_configAdded)
+        {
             builder.AddEndpointFilter<IdempotencyEndpointFilter>();
+        }
+
         return builder;
     }
 

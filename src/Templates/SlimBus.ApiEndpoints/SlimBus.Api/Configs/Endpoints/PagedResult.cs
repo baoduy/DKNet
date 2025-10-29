@@ -6,15 +6,15 @@ internal sealed record PagedResult<TResult>
 {
     #region Constructors
 
-    public PagedResult() => Items = [];
+    public PagedResult() => this.Items = [];
 
     public PagedResult(IPagedList<TResult> list)
     {
-        PageNumber = list.PageNumber;
-        PageSize = list.PageSize;
-        PageCount = list.PageCount;
-        TotalItemCount = list.TotalItemCount;
-        Items = [.. list];
+        this.PageNumber = list.PageNumber;
+        this.PageSize = list.PageSize;
+        this.PageCount = list.PageCount;
+        this.TotalItemCount = list.TotalItemCount;
+        this.Items = [.. list];
     }
 
     #endregion
@@ -22,10 +22,13 @@ internal sealed record PagedResult<TResult>
     #region Properties
 
     public IList<TResult> Items { get; init; }
+
     public int PageCount { get; init; }
 
     public int PageNumber { get; init; }
+
     public int PageSize { get; init; }
+
     public int TotalItemCount { get; init; }
 
     #endregion

@@ -12,8 +12,8 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IOwnedBy
     protected EntityBase(TKey id, string ownedBy, string createdBy, DateTimeOffset? createdOn = null)
         : base(id)
     {
-        OwnedBy = ownedBy;
-        SetCreatedBy(createdBy, createdOn);
+        this.OwnedBy = ownedBy;
+        this.SetCreatedBy(createdBy, createdOn);
     }
 
     #endregion
@@ -28,10 +28,10 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IOwnedBy
 
     public void SetOwnedBy(string ownerKey)
     {
-        OwnedBy = ownerKey;
+        this.OwnedBy = ownerKey;
     }
 
-    public override string ToString() => $"{GetType().Name} '{Id}'";
+    public override string ToString() => $"{this.GetType().Name} '{this.Id}'";
 
     #endregion
 }

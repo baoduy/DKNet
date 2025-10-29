@@ -193,10 +193,13 @@ public class BlobServiceTests
             GetAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        public override Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+        public override Task<Uri> GetPublicAccessUrl(
+            BlobRequest blob,
+            TimeSpan? expiresFromNow = null,
             CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-        public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+        public override async IAsyncEnumerable<BlobResult> ListItemsAsync(
+            BlobRequest blob,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // Return empty enumerable for testing
@@ -208,8 +211,9 @@ public class BlobServiceTests
             throw new NotImplementedException();
 
         // Expose protected methods for testing
-        public string TestGetBlobLocation(BlobRequest item) => GetBlobLocation(item);
-        public void TestValidateFile(BlobData item) => ValidateFile(item);
+        public string TestGetBlobLocation(BlobRequest item) => this.GetBlobLocation(item);
+
+        public void TestValidateFile(BlobData item) => this.ValidateFile(item);
 
         #endregion
     }

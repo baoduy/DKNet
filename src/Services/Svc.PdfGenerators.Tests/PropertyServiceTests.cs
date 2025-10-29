@@ -140,9 +140,12 @@ public class PropertyServiceTests
         #region Properties
 
         public static bool BoolProperty { get; } = true;
+
         public static int IntProperty { get; } = 42;
-        public static string? NullProperty { get; }
+
         public static string StringProperty { get; } = "TestValue";
+
+        public static string? NullProperty { get; }
 
         #endregion
     }

@@ -74,7 +74,8 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
     public void GetFieldAttributeOrDefault_WithoutFieldAttribute_ShouldReturnDefault()
     {
         // Act
-        var attribute = SequenceExtensions.GetFieldAttributeOrDefault(typeof(DefaultSchemaSequenceTypes),
+        var attribute = SequenceExtensions.GetFieldAttributeOrDefault(
+            typeof(DefaultSchemaSequenceTypes),
             DefaultSchemaSequenceTypes.DefaultSequence);
 
         // Assert

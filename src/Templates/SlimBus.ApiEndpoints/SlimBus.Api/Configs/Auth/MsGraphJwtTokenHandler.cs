@@ -20,7 +20,8 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
     /// <param name="validationParameters">The token validation parameters.</param>
     /// <returns>The JWT security token read from the provided token string.</returns>
     protected override JwtSecurityToken
-        ValidateSignature(string token, TokenValidationParameters validationParameters) => ReadJwtToken(token);
+        ValidateSignature(string token, TokenValidationParameters validationParameters) =>
+        this.ReadJwtToken(token);
 
     /// <summary>
     ///     Asynchronously validates the JWT token.
@@ -28,11 +29,13 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
     /// <param name="token">The JWT token to validate.</param>
     /// <param name="validationParameters">The token validation parameters.</param>
     /// <returns>A Task containing the TokenValidationResult.</returns>
-    public override async Task<TokenValidationResult> ValidateTokenAsync(string token,
+    public override async Task<TokenValidationResult> ValidateTokenAsync(
+        string token,
         TokenValidationParameters validationParameters)
     {
         // Override the default signature validation process with the custom method.
-        validationParameters.SignatureValidator = ValidateSignature;
+        validationParameters.SignatureValidator = this.ValidateSignature;
+
         // Disable issuer signing key validation.
         validationParameters.ValidateIssuerSigningKey = false;
 
@@ -40,12 +43,16 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
         var rs = await base.ValidateTokenAsync(token, validationParameters);
 
         // If base validation fails, return the failed result immediately.
-        if (!rs.IsValid) return rs;
+        if (!rs.IsValid)
+        {
+            return rs;
+        }
 
         // Further validate the token by checking it against Microsoft Graph API.
         try
         {
             await ValidateTokenWithMsGraphEndPoint(token);
+
             // Return the successful result if Microsoft Graph validation passes.
             return rs;
         }
@@ -69,6 +76,7 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
     {
         // Create an HTTP client for sending requests.
         using var httpClient = new HttpClient();
+
         // Add the token to the Authorization header as a Bearer token.
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -77,7 +85,9 @@ internal class MsGraphJwtTokenHandler : JwtSecurityTokenHandler
 
         // If the response is not successful, throw an exception indicating token validation failure.
         if (!response.IsSuccessStatusCode)
+        {
             throw new SecurityTokenValidationException("Failed to validate token against Microsoft Graph.");
+        }
     }
 
     #endregion

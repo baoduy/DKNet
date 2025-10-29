@@ -73,17 +73,17 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     #region Properties
 
     /// <summary>
-    ///     Options for PDF generation.
-    /// </summary>
-    private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
-
-    /// <summary>
     ///     The Marking pipeline used for markdown to HTML conversion.
     /// </summary>
     private MarkdownPipelineBuilder PipelineBuilder { get; } = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
         .UseEmojiAndSmiley();
+
+    /// <summary>
+    ///     Options for PDF generation.
+    /// </summary>
+    private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
 
     #endregion
 
@@ -101,7 +101,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     public async Task<string> ConvertHtmlAsync(string htmlContent, string? outputPath = null)
     {
         var pdfFileName = outputPath ?? Path.Combine(Directory.GetCurrentDirectory(), "output_from_html.pdf");
-        await GeneratePdfFromHtmlAsync(htmlContent, pdfFileName);
+        await this.GeneratePdfFromHtmlAsync(htmlContent, pdfFileName);
         return pdfFileName;
     }
 
@@ -117,9 +117,12 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     public async Task<string> ConvertHtmlFileAsync(string htmlFilePath, string? outputPath = null)
     {
         if (!File.Exists(htmlFilePath))
+        {
             throw new FileNotFoundException($"HTML file not found: {htmlFilePath}");
+        }
+
         var htmlContent = await File.ReadAllTextAsync(htmlFilePath);
-        return await ConvertHtmlAsync(htmlContent, outputPath);
+        return await this.ConvertHtmlAsync(htmlContent, outputPath);
     }
 
     /// <summary>
@@ -128,7 +131,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <param name="markdownFile">The markdown file to convert.</param>
     /// <returns>The generated PDF file info.</returns>
     public async Task<FileInfo> ConvertMarkdownFileAsync(FileInfo markdownFile) =>
-        new(await ConvertMarkdownFileAsync(markdownFile.FullName));
+        new(await this.ConvertMarkdownFileAsync(markdownFile.FullName));
 
     /// <summary>
     ///     Converts a markdown file to PDF.
@@ -148,8 +151,8 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
 
         var markdownContent = await File.ReadAllTextAsync(markdownFilePath);
-        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
-        await GeneratePdfFromHtmlAsync(html, outputFilePath);
+        var html = Markdown.ToHtml(markdownContent, this.PipelineBuilder.Build());
+        await this.GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
 
@@ -163,8 +166,8 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     {
         var markdownContents = await Task.WhenAll(markdownFilePaths.Select(path => File.ReadAllTextAsync(path)));
         var markdownContent = string.Join(Environment.NewLine, markdownContents);
-        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
-        await GeneratePdfFromHtmlAsync(html, outputFilePath);
+        var html = Markdown.ToHtml(markdownContent, this.PipelineBuilder.Build());
+        await this.GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
 
@@ -179,35 +182,37 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         var launchOptions = new LaunchOptions
         {
             Headless = true,
-            ExecutablePath = Options.ChromePath
+            ExecutablePath = this.Options.ChromePath
         };
 
         // Add no-sandbox args for CI/container environments
         if (Environment.GetEnvironmentVariable("CI") == "true" ||
             Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+        {
             launchOptions.Args = ["--no-sandbox", "--disable-setuid-sandbox"];
+        }
 
         await using var browser = await Puppeteer.LaunchAsync(launchOptions);
         await using var page = await browser.NewPageAsync();
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
         {
-            Format = Options.Format,
-            Landscape = Options.IsLandscape,
+            Format = this.Options.Format,
+            Landscape = this.Options.IsLandscape,
             PrintBackground = true,
-            MarginOptions = Options.MarginOptions != null
+            MarginOptions = this.Options.MarginOptions != null
                 ? new MarginOptions
                 {
-                    Top = Options.MarginOptions.Top,
-                    Bottom = Options.MarginOptions.Bottom,
-                    Left = Options.MarginOptions.Left,
-                    Right = Options.MarginOptions.Right
+                    Top = this.Options.MarginOptions.Top,
+                    Bottom = this.Options.MarginOptions.Bottom,
+                    Left = this.Options.MarginOptions.Left,
+                    Right = this.Options.MarginOptions.Right
                 }
                 : new MarginOptions(),
-            Scale = Options.Scale,
-            DisplayHeaderFooter = Options.HeaderHtml != null || Options.FooterHtml != null,
-            HeaderTemplate = Options.HeaderHtml,
-            FooterTemplate = Options.FooterHtml
+            Scale = this.Options.Scale,
+            DisplayHeaderFooter = this.Options.HeaderHtml != null || this.Options.FooterHtml != null,
+            HeaderTemplate = this.Options.HeaderHtml,
+            FooterTemplate = this.Options.FooterHtml
         };
         await page.EmulateMediaTypeAsync(MediaType.Screen);
         await page.PdfAsync(outputFilePath, pdfOptions);

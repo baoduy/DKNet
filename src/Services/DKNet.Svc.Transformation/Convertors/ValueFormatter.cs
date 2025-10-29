@@ -29,13 +29,13 @@ public class ValueFormatter : IValueFormatter
             : value switch
             {
                 bool b => b ? "Yes" : "No",
-                int a => a.ToString(IntegerFormat, CultureInfo.InvariantCulture),
-                long a => a.ToString(IntegerFormat, CultureInfo.InvariantCulture),
-                double a => a.ToString(NumberFormat, CultureInfo.InvariantCulture),
-                decimal a => a.ToString(NumberFormat, CultureInfo.InvariantCulture),
-                float a => a.ToString(NumberFormat, CultureInfo.InvariantCulture),
-                DateTime a => a.ToString(DateFormat, CultureInfo.InvariantCulture),
-                DateTimeOffset a => a.ToString(DateFormat, CultureInfo.InvariantCulture),
+                int a => a.ToString(this.IntegerFormat, CultureInfo.InvariantCulture),
+                long a => a.ToString(this.IntegerFormat, CultureInfo.InvariantCulture),
+                double a => a.ToString(this.NumberFormat, CultureInfo.InvariantCulture),
+                decimal a => a.ToString(this.NumberFormat, CultureInfo.InvariantCulture),
+                float a => a.ToString(this.NumberFormat, CultureInfo.InvariantCulture),
+                DateTime a => a.ToString(this.DateFormat, CultureInfo.InvariantCulture),
+                DateTimeOffset a => a.ToString(this.DateFormat, CultureInfo.InvariantCulture),
                 _ => value.ToString()!
             };
     }

@@ -15,33 +15,39 @@ internal class EfCorePageAsyncEnumerator<T>(IQueryable<T> query, int pageSize) :
     {
         do
         {
-            var page = await GetNextPageAsync(cancellationToken);
+            var page = await this.GetNextPageAsync(cancellationToken);
             if (page.Count == 0)
             {
-                _hasMorePages = false;
+                this._hasMorePages = false;
                 yield break;
             }
 
             foreach (var item in page)
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
                     break;
+                }
+
                 yield return item;
             }
-        } while (_hasMorePages);
+        } while (this._hasMorePages);
     }
 
     private async Task<IReadOnlyList<T>> GetNextPageAsync(CancellationToken cancellationToken = default)
     {
-        if (!_hasMorePages) return [];
+        if (!this._hasMorePages)
+        {
+            return [];
+        }
 
         var page = await query
-            .Skip(_currentPage * pageSize)
+            .Skip(this._currentPage * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        _currentPage++;
-        _hasMorePages = page.Count == pageSize;
+        this._currentPage++;
+        this._hasMorePages = page.Count == pageSize;
 
         return page;
     }

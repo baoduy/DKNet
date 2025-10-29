@@ -39,15 +39,17 @@ public static class EfCoreExtensions
         var primaryKey = entityEntry.Metadata.FindPrimaryKey();
 
         if (primaryKey == null)
+
             // Entity does not have a primary key defined
+        {
             return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
 
         return primaryKey.Properties.ToDictionary(
             p => p.Name,
-            p => p.PropertyInfo!.GetValue(entityEntry.Entity)
-            , StringComparer.OrdinalIgnoreCase);
+            p => p.PropertyInfo!.GetValue(entityEntry.Entity),
+            StringComparer.OrdinalIgnoreCase);
     }
-
 
     internal static Type GetEntityType(Type entityMappingType)
     {
@@ -113,7 +115,9 @@ public static class EfCoreExtensions
     }
 
     public static bool IsSqlServer(this DbContext context) =>
-        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+        string.Equals(
+            context.Database.ProviderName,
+            "Microsoft.EntityFrameworkCore.SqlServer",
             StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
@@ -136,7 +140,9 @@ public static class EfCoreExtensions
     /// <param name="dbContext">The database context.</param>
     /// <param name="name">The name of the sequence.</param>
     /// <returns>The next value of the sequence.</returns>
-    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+    [SuppressMessage(
+        "Security",
+        "CA2100:Review SQL queries for security vulnerabilities",
         Justification = "SQL is constructed from internal metadata, not user input")]
     public static async ValueTask<object?> NextSeqValue<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
@@ -145,7 +151,10 @@ public static class EfCoreExtensions
 
         var type = typeof(TEnum);
         var att = SequenceExtensions.GetAttribute(type);
-        if (att == null) return null;
+        if (att == null)
+        {
+            return null;
+        }
 
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceExtensions.GetSequenceName(name)}";
@@ -155,7 +164,9 @@ public static class EfCoreExtensions
 
         object? rs = null;
         if (await result.ReadAsync())
+        {
             rs = await result.GetFieldValueAsync<object>(0);
+        }
 
         await dbContext.Database.CloseConnectionAsync();
         return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
@@ -174,7 +185,10 @@ public static class EfCoreExtensions
         var att = SequenceExtensions.GetFieldAttributeOrDefault(typeof(TEnum), name);
         var value = await dbContext.NextSeqValue(name);
 
-        if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
+        if (string.IsNullOrEmpty(att.FormatString))
+        {
+            return $"{value}";
+        }
 
         var f = att.FormatString.Replace(nameof(DateTime), "0", StringComparison.OrdinalIgnoreCase);
         return string.Format(CultureInfo.CurrentCulture, f, DateTime.Now, value);

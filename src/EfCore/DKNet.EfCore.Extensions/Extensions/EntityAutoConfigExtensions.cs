@@ -4,7 +4,8 @@ using DKNet.Fw.Extensions.TypeExtractors;
 // ReSharper disable CheckNamespace
 namespace Microsoft.EntityFrameworkCore;
 
-[SuppressMessage("Major Code Smell",
+[SuppressMessage(
+    "Major Code Smell",
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal static class EntityAutoConfigExtensions
 {
@@ -24,7 +25,9 @@ internal static class EntityAutoConfigExtensions
     /// <param name="modelBuilder">The model builder.</param>
     /// <param name="assemblies"></param>
     /// <param name="dbContext">The database context.</param>
-    internal static void RegisterGlobalModelBuilders(this ModelBuilder modelBuilder, Assembly[] assemblies,
+    internal static void RegisterGlobalModelBuilders(
+        this ModelBuilder modelBuilder,
+        Assembly[] assemblies,
         DbContext dbContext)
     {
         var globalFilters = assemblies.GetGlobalFilters()

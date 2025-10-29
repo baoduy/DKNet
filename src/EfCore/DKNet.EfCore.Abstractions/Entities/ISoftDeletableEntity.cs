@@ -7,9 +7,11 @@ public interface ISoftDeletableEntity
 {
     #region Properties
 
-    [MaxLength(250)] public string? DeletedBy { get; }
-    public DateTimeOffset? DeletedOn { get; }
     public bool IsDeleted { get; }
+
+    public DateTimeOffset? DeletedOn { get; }
+
+    [MaxLength(250)] public string? DeletedBy { get; }
 
     #endregion
 

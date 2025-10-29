@@ -17,21 +17,21 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
 
     public SnapshotContext(DbContext context)
     {
-        _dbContext = context ?? throw new ArgumentNullException(nameof(context));
-        DbContext.ChangeTracker.DetectChanges();
-        _snapshotEntities = [.. DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
+        this._dbContext = context ?? throw new ArgumentNullException(nameof(context));
+        this.DbContext.ChangeTracker.DetectChanges();
+        this._snapshotEntities = [.. this.DbContext.ChangeTracker.Entries().Select(e => new SnapshotEntityEntry(e))];
     }
 
     #endregion
 
     #region Properties
 
-    public DbContext DbContext => _dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
+    public DbContext DbContext => this._dbContext ?? throw new ObjectDisposedException(nameof(SnapshotContext));
 
     /// <summary>
     ///     The snapshot of changed entities. Only Entity with status is Modified or Created.
     /// </summary>
-    public IReadOnlyCollection<SnapshotEntityEntry> Entities => _snapshotEntities;
+    public IReadOnlyCollection<SnapshotEntityEntry> Entities => this._snapshotEntities;
 
     #endregion
 
@@ -39,14 +39,15 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
 
     public void Dispose()
     {
-        _snapshotEntities.Clear();
+        this._snapshotEntities.Clear();
+
         //DO NOT dispose DbContext, it is not owned by this class.
-        _dbContext = null;
+        this._dbContext = null;
     }
 
     public ValueTask DisposeAsync()
     {
-        Dispose();
+        this.Dispose();
         return ValueTask.CompletedTask;
     }
 

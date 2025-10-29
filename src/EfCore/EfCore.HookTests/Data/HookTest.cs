@@ -7,11 +7,15 @@ public class HookTest : IHookAsync
 {
     #region Properties
 
-    public static int AfterCallCount { get; private set; }
     public static bool AfterCalled { get; private set; }
-    public static int BeforeCallCount { get; private set; }
+
     public static bool BeforeCalled { get; private set; }
+
     public bool ShouldThrowException { get; set; }
+
+    public static int AfterCallCount { get; private set; }
+
+    public static int BeforeCallCount { get; private set; }
 
     #endregion
 
@@ -39,7 +43,7 @@ public class HookTest : IHookAsync
         AfterCalled = false;
         BeforeCallCount = 0;
         AfterCallCount = 0;
-        ShouldThrowException = false;
+        this.ShouldThrowException = false;
     }
 
     #endregion

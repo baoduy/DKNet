@@ -128,7 +128,7 @@ public class SetupRepositoryTests
 
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
 
         #endregion
     }
@@ -138,6 +138,7 @@ public class SetupRepositoryTests
         #region Properties
 
         public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         #endregion

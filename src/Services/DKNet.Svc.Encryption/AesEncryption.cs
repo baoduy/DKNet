@@ -13,6 +13,7 @@ public interface IAesEncryption
     #region Methods
 
     string DecryptString(string cipherText);
+
     string EncryptString(string plainText);
 
     #endregion
@@ -30,14 +31,14 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
 
     #region Constructors
 
-    public AesEncryption(string? keyString = null) =>
-        _aes = string.IsNullOrEmpty(keyString) ? CreateAes() : CreateAesFromKey(keyString);
+    public AesEncryption(string? keyString = null) => this._aes =
+        string.IsNullOrEmpty(keyString) ? this.CreateAes() : this.CreateAesFromKey(keyString);
 
     #endregion
 
     #region Properties
 
-    public string Key => _keyString!;
+    public string Key => this._keyString!;
 
     #endregion
 
@@ -49,17 +50,20 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         var key = aes.Key;
         var iv = aes.IV;
 
-        _keyString = $"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}".ToBase64String();
+        this._keyString = $"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}".ToBase64String();
         return aes;
     }
 
     private Aes CreateAesFromKey(string keyString)
     {
-        _keyString = keyString;
+        this._keyString = keyString;
         ArgumentException.ThrowIfNullOrWhiteSpace(keyString);
 
         var keys = keyString.FromBase64String().Split(":");
-        if (keys.Length != 2) throw new ArgumentException("Invalid key string format.", nameof(keyString));
+        if (keys.Length != 2)
+        {
+            throw new ArgumentException("Invalid key string format.", nameof(keyString));
+        }
 
         var key = Convert.FromBase64String(keys[0]);
         var iv = Convert.FromBase64String(keys[1]);
@@ -73,8 +77,8 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
 
     public string DecryptString(string cipherText)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
-        var decryptor = _aes.CreateDecryptor();
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));
+        var decryptor = this._aes.CreateDecryptor();
 
         using var msDecrypt = new MemoryStream(Convert.FromBase64String(cipherText));
         using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
@@ -85,22 +89,24 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
-        _disposed = true;
+        this._disposed = true;
     }
 
     private void Dispose(bool disposing)
     {
         if (disposing)
-            _aes.Dispose();
+        {
+            this._aes.Dispose();
+        }
     }
 
     public string EncryptString(string plainText)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(AesEncryption));
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(AesEncryption));
 
-        var encryptor = _aes.CreateEncryptor();
+        var encryptor = this._aes.CreateEncryptor();
         using var msEncrypt = new MemoryStream();
         using var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
         using (var swEncrypt = new StreamWriter(csEncrypt))

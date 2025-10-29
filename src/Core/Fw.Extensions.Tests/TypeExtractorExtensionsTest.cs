@@ -223,6 +223,7 @@ public class TestTypeExtractorExtensions
     {
         // Arrange
         var types = typeof(TestItem).Assembly.Extract().HasAttribute<BrowsableAttribute>().ToList();
+
         // Act & Assert - Should have no items (since we don't have obsolete attributes)
         types.Count.ShouldBe(0);
     }
@@ -286,7 +287,6 @@ public class TestTypeExtractorExtensions
         // Act & Assert
         types.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
-
 
     [Fact]
     public void TestNotGeneric()

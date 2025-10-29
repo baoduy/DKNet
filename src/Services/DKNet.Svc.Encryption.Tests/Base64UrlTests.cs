@@ -33,6 +33,7 @@ public class Base64UrlTests(ITestOutputHelper output)
     {
         var plain = "pad-test";
         var url = plain.ToBase64UrlString();
+
         // Manually add '=' padding (not typical for URL form) and still decode by normal API (WebEncoders tolerates?)
         // If length mod 4 is 2 -> add 2 '=', if 3 -> add 1 '='.
         var mod = url.Length % 4;
@@ -42,8 +43,10 @@ public class Base64UrlTests(ITestOutputHelper output)
             3 => url + "=",
             _ => url
         };
+
         // We expect decode to still succeed for padded variant when we convert to standard base64 by replacing -/_
         var paddedStandardLike = padded.Replace('-', '+').Replace('_', '/');
+
         // Use Convert once after normalizing to ensure we understand underlying
         var bytes = Convert.FromBase64String(paddedStandardLike);
         Encoding.UTF8.GetString(bytes).ShouldBe(plain);
@@ -72,11 +75,17 @@ public class Base64UrlTests(ITestOutputHelper output)
         var url = input.ToBase64UrlString();
         std.ShouldNotContain("+");
         std.ShouldNotContain("/");
+
         // URL version must not contain + or /
         url.IndexOf('+').ShouldBe(-1);
         url.IndexOf('/').ShouldBe(-1);
+
         // Usually std ends with '=' padding; url variant should not (unless length 0)
-        if (std.EndsWith('=')) url.EndsWith('=').ShouldBeFalse();
+        if (std.EndsWith('='))
+        {
+            url.EndsWith('=').ShouldBeFalse();
+        }
+
         url.FromBase64UrlString().ShouldBe(input);
     }
 

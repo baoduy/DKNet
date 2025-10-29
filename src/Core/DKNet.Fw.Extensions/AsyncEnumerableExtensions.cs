@@ -1,5 +1,9 @@
-// ReSharper disable once CheckNamespace
+// <copyright file="AsyncEnumerableExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
 
+// ReSharper disable once CheckNamespace
 namespace System.Collections.Generic;
 
 /// <summary>
@@ -22,7 +26,10 @@ public static class AsyncEnumerableExtensions
     {
         var list = new List<T>();
         await foreach (var item in enumerable)
+        {
             list.Add(item);
+        }
+
         return list;
     }
 

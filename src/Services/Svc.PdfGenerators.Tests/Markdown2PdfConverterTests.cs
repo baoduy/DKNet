@@ -16,10 +16,12 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         var expectedPdfPath = Path.Combine(Path.GetDirectoryName(markdownPath)!, "Sample.pdf");
 
         if (File.Exists(expectedPdfPath))
+        {
             File.Delete(expectedPdfPath);
+        }
 
         var resultPath = await converter.ConvertMarkdownFileAsync(markdownPath);
-        OutputResultPath(resultPath);
+        this.OutputResultPath(resultPath);
 
         Assert.True(File.Exists(resultPath), $"PDF file was not created at {resultPath}");
         var fileInfo = new FileInfo(resultPath);
@@ -37,10 +39,12 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         var expectedPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "HtmlString.pdf");
 
         if (File.Exists(expectedPdfPath))
+        {
             File.Delete(expectedPdfPath);
+        }
 
         var resultPath = await converter.ConvertHtmlAsync(htmlContent, expectedPdfPath);
-        OutputResultPath(resultPath);
+        this.OutputResultPath(resultPath);
 
         Assert.True(File.Exists(resultPath), $"PDF file was not created at {resultPath}");
         var fileInfo = new FileInfo(resultPath);
@@ -61,9 +65,13 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         var converter = new PdfGenerator(options);
         var htmlContent = "<html><body><h2>Header/Footer Test</h2></body></html>";
         var outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "HeaderFooter.pdf");
-        if (File.Exists(outputPdf)) File.Delete(outputPdf);
+        if (File.Exists(outputPdf))
+        {
+            File.Delete(outputPdf);
+        }
+
         var resultPath = await converter.ConvertHtmlAsync(htmlContent, outputPdf);
-        OutputResultPath(resultPath);
+        this.OutputResultPath(resultPath);
         Assert.True(File.Exists(resultPath));
         var fileInfo = new FileInfo(resultPath);
         Assert.True(fileInfo.Length > 0);
@@ -78,11 +86,13 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         var expectedPdfPath = Path.Combine(Path.GetDirectoryName(htmlFilePath)!, "HtmlFile.pdf");
 
         if (File.Exists(expectedPdfPath))
+        {
             File.Delete(expectedPdfPath);
+        }
 
         // Act
         var resultPath = await converter.ConvertHtmlFileAsync(htmlFilePath, expectedPdfPath);
-        OutputResultPath(resultPath);
+        this.OutputResultPath(resultPath);
 
         // Assert
         Assert.True(File.Exists(resultPath));
@@ -110,9 +120,13 @@ public class Markdown2PdfConverterTests(ITestOutputHelper outputHelper)
         await File.WriteAllTextAsync(file1, "# Title 1\nContent 1");
         await File.WriteAllTextAsync(file2, "# Title 2\nContent 2");
         var outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "Merged.pdf");
-        if (File.Exists(outputPdf)) File.Delete(outputPdf);
+        if (File.Exists(outputPdf))
+        {
+            File.Delete(outputPdf);
+        }
+
         var resultPath = await converter.ConvertMultipleMarkdownFilesAsync([file1, file2], outputPdf);
-        OutputResultPath(resultPath);
+        this.OutputResultPath(resultPath);
         Assert.True(File.Exists(resultPath));
         var fileInfo = new FileInfo(resultPath);
         Assert.True(fileInfo.Length > 0);

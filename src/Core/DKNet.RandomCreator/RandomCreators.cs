@@ -6,7 +6,8 @@ public static class RandomCreators
 
     public static char[] NewChars(int length = 25, StringCreatorOptions? options = null)
     {
-        using var gen = new StringCreator(length,
+        using var gen = new StringCreator(
+            length,
             options ?? new StringCreatorOptions());
 
         return gen.ToChars();
@@ -14,7 +15,8 @@ public static class RandomCreators
 
     public static string NewString(int length = 25, StringCreatorOptions? options = null)
     {
-        using var gen = new StringCreator(length,
+        using var gen = new StringCreator(
+            length,
             options ?? new StringCreatorOptions());
         return gen.ToString();
     }

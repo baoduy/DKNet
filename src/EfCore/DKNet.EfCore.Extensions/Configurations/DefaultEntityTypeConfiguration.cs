@@ -14,6 +14,7 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
         var clrType = builder.Metadata.ClrType;
 
         const string idKey = nameof(IEntity<dynamic>.Id);
+
         // Handle IEntity<T> to set the primary key
         var idProperty = clrType.GetProperty(idKey);
         if (idProperty != null)
@@ -21,12 +22,16 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
             builder.HasKey(idKey);
 
             if (idProperty.PropertyType.IsNumericType())
+            {
                 builder.Property(idKey)
                     .ValueGeneratedOnAdd();
+            }
             else if (idProperty.PropertyType == typeof(Guid))
+            {
                 builder.Property(idKey)
                     .ValueGeneratedOnAdd()
                     .HasValueGenerator<GuidV7ValueGenerator>();
+            }
         }
 
         // Handle audit properties
@@ -46,10 +51,12 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
         }
 
         if (clrType.IsImplementOf(typeof(IConcurrencyEntity<>)))
+        {
             builder.Property(nameof(IConcurrencyEntity<dynamic>.RowVersion))
                 .IsConcurrencyToken()
                 .IsRowVersion()
                 .ValueGeneratedOnAddOrUpdate();
+        }
     }
 
     #endregion

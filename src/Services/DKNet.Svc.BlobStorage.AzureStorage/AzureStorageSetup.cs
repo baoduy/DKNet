@@ -8,7 +8,8 @@ public static class AzureStorageSetup
 {
     #region Methods
 
-    public static IServiceCollection AddAzureStorageAdapter(this IServiceCollection services,
+    public static IServiceCollection AddAzureStorageAdapter(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         return services

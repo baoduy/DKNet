@@ -11,21 +11,19 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
         Guid merchantId,
         Merchant merchant,
         string currency,
-        string byUser
-    )
+        string byUser)
         : base(byUser)
     {
-        Currency = currency.ToUpperInvariant();
-        MerchantId = merchantId;
-        Merchant = merchant;
+        this.Currency = currency.ToUpperInvariant();
+        this.MerchantId = merchantId;
+        this.Merchant = merchant;
     }
-
 
     private MerchantBalance(Guid id, string createdBy) : base(id, createdBy)
     {
-        Currency = string.Empty;
-        MerchantId = Guid.Empty;
-        Merchant = null!;
+        this.Currency = string.Empty;
+        this.MerchantId = Guid.Empty;
+        this.Merchant = null!;
     }
 
     #endregion
@@ -34,18 +32,22 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
 
     //public decimal TotalAmount { get; private set; }
     public decimal AvailableAmount { get; private set; }
+
+    public decimal FeeAmount { get; private set; }
+
+    public decimal PendingAmount { get; private set; }
+
+    public decimal ReservedAmount { get; private set; }
+
+    public Guid MerchantId { get; private set; }
+
     public int AvailableCount { get; private set; }
 
-    [MaxLength(3)] public string Currency { get; private set; }
-    public decimal FeeAmount { get; private set; }
+    public int PendingCount { get; private set; }
 
     public Merchant Merchant { get; private set; }
 
-    public Guid MerchantId { get; private set; }
-    public decimal PendingAmount { get; private set; }
-    public int PendingCount { get; private set; }
-
-    public decimal ReservedAmount { get; private set; }
+    [MaxLength(3)] public string Currency { get; private set; }
 
     #endregion
 
@@ -60,24 +62,23 @@ public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
             merchantId,
             merchant,
             currency,
-            byUser
-        );
+            byUser);
 
     public void SetAvailable(int count, decimal amount)
     {
-        AvailableAmount = amount;
-        AvailableCount = count;
+        this.AvailableAmount = amount;
+        this.AvailableCount = count;
     }
 
     public void SetPending(int count, decimal amount)
     {
-        PendingAmount = amount;
-        PendingCount = count;
+        this.PendingAmount = amount;
+        this.PendingCount = count;
     }
 
     public void SetReservedAmount(decimal amount)
     {
-        ReservedAmount = amount;
+        this.ReservedAmount = amount;
     }
 
     #endregion

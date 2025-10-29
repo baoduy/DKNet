@@ -14,11 +14,12 @@ public static class InfraSetup
     private static IServiceCollection AddImplementations(this IServiceCollection services)
     {
         services.Scan(s => s.FromAssemblies(typeof(InfraSetup).Assembly)
-            .AddClasses(c => c.Where(t =>
-                t is { IsSealed: true, Namespace: not null }
-                && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
-                    || t.Namespace!.Contains(".Services", StringComparison.Ordinal))
-            ), false)
+            .AddClasses(
+                c => c.Where(t =>
+                    t is { IsSealed: true, Namespace: not null }
+                    && (t.Namespace!.Contains(".Repos", StringComparison.Ordinal)
+                        || t.Namespace!.Contains(".Services", StringComparison.Ordinal))),
+                false)
             .AsImplementedInterfaces()
             .WithScopedLifetime());
 
@@ -44,7 +45,8 @@ public static class InfraSetup
         return service;
     }
 
-    internal static DbContextOptionsBuilder UseSqlWithMigration(this DbContextOptionsBuilder builder,
+    internal static DbContextOptionsBuilder UseSqlWithMigration(
+        this DbContextOptionsBuilder builder,
         string connectionString)
     {
         builder.ConfigureWarnings(warnings =>
@@ -56,7 +58,8 @@ public static class InfraSetup
         builder.EnableDetailedErrors().EnableSensitiveDataLogging();
 #endif
 
-        return builder.UseSqlServer(connectionString,
+        return builder.UseSqlServer(
+            connectionString,
             o => o
                 .MinBatchSize(1)
                 .MaxBatchSize(100)

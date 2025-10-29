@@ -5,14 +5,15 @@ internal class LazyResult<TResult>(object? originalValue, IMapper mapper)
 {
     #region Properties
 
-    public IReadOnlyList<IError> Errors => [.. Reasons.OfType<IError>()];
-    public bool IsFailed => Reasons.OfType<IError>().Any();
+    public bool IsFailed => this.Reasons.OfType<IError>().Any();
 
-    public bool IsSuccess => !IsFailed;
+    public bool IsSuccess => !this.IsFailed;
+
+    public IReadOnlyList<IError> Errors => [.. this.Reasons.OfType<IError>()];
+
+    public IReadOnlyList<ISuccess> Successes => [.. this.Reasons.OfType<ISuccess>()];
 
     public List<IReason> Reasons { get; init; } = [];
-
-    public IReadOnlyList<ISuccess> Successes => [.. Reasons.OfType<ISuccess>()];
 
     #endregion
 }

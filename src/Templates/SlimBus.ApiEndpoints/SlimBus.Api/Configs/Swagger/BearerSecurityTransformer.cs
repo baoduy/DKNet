@@ -11,12 +11,16 @@ internal sealed class BearerSecurityTransformer(IAuthenticationSchemeProvider au
 {
     #region Methods
 
-    public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context,
+    public async Task TransformAsync(
+        OpenApiDocument document,
+        OpenApiDocumentTransformerContext context,
         CancellationToken cancellationToken)
     {
         var authenticationSchemes = await authenticationSchemeProvider.GetAllSchemesAsync();
-        if (authenticationSchemes.Any(authScheme => string.Equals(authScheme.Name,
-                JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase)))
+        if (authenticationSchemes.Any(authScheme => string.Equals(
+                authScheme.Name,
+                JwtBearerDefaults.AuthenticationScheme,
+                StringComparison.OrdinalIgnoreCase)))
         {
             var securityScheme = new OpenApiSecurityScheme
             {
@@ -36,7 +40,9 @@ internal sealed class BearerSecurityTransformer(IAuthenticationSchemeProvider au
             };
 
             foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations.Values))
+            {
                 operation.Security.Add(securityRequirement);
+            }
         }
     }
 

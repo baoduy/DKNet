@@ -35,7 +35,9 @@ public static class SetupRepository
         where TDbContext : DbContext
     {
         if (services.All(s => s.ServiceType != typeof(DbContext)))
+        {
             services.AddScoped<DbContext>(sp => sp.GetRequiredService<TDbContext>());
+        }
 
         return services.AddGenericRepositories();
     }

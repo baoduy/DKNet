@@ -16,18 +16,18 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     public async Task Snapshot_ShouldCreateSnapshotContext()
     {
         // Act
-        await using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(this._db);
 
         // Assert
         snapshot.ShouldNotBeNull();
-        snapshot.DbContext.ShouldBe(_db);
+        snapshot.DbContext.ShouldBe(this._db);
     }
 
     [Fact]
     public async Task SnapshotContext_Dispose_ShouldReleaseResources()
     {
         // Arrange
-        var snapshot = new SnapshotContext(_db);
+        var snapshot = new SnapshotContext(this._db);
 
         // Act
         await snapshot.DisposeAsync();
@@ -40,7 +40,7 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     public async Task SnapshotEntities_MultipleAccess_ShouldReturnSameInstance()
     {
         // Arrange
-        await using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(this._db);
 
         // Act
         var firstAccess = snapshot.Entities;
@@ -55,10 +55,10 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     {
         // Arrange
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
-        _db.Set<User>().Add(user);
+        this._db.Set<User>().Add(user);
 
         // Act
-        await using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(this._db);
         var snapshotEntities = snapshot.Entities;
 
         // Assert
@@ -71,9 +71,9 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     {
         // Arrange
         var user = new User("Test Creator") { FirstName = "Test", LastName = "User" };
-        _db.Set<User>().Add(user);
+        this._db.Set<User>().Add(user);
 
-        await using var snapshot = new SnapshotContext(_db);
+        await using var snapshot = new SnapshotContext(this._db);
         var entry = snapshot.Entities.First();
 
         // Assert

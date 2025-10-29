@@ -42,6 +42,7 @@ public class SerializableOptionsTests
 
         // Assert
         Assert.NotNull(options.ModuleOptions);
+
         // Additional assertions would depend on ModuleOptions implementation
     }
 
@@ -59,6 +60,7 @@ public class SerializableOptionsTests
 
         // Assert
         Assert.NotNull(options.Theme);
+
         // Additional assertions would depend on Theme implementation details
     }
 

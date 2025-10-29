@@ -11,23 +11,35 @@ internal static class AppConfig
 {
     #region Methods
 
-    public static IServiceCollection AddAppConfig(this IServiceCollection services, FeatureOptions features,
+    public static IServiceCollection AddAppConfig(
+        this IServiceCollection services,
+        FeatureOptions features,
         IConfiguration configuration)
     {
         if (features.EnableAntiforgery)
+        {
             services.AddAntiforgeryConfig();
+        }
 
         if (features.RequireAuthorization)
+        {
             services.AddAuthConfig();
+        }
 
         if (features.EnableSwagger)
+        {
             services.AddOpenApiDoc(features);
+        }
 
         if (features.EnableHttps)
+        {
             services.AddHttpsConfig();
+        }
 
         if (features.EnableRateLimit)
+        {
             services.AddRateLimitConfig(configuration);
+        }
 
         services.AddHttpContextAccessor()
             .AddFeatureManagement();
@@ -52,8 +64,10 @@ internal static class AppConfig
 
         app.UseRouting();
         app.UseRateLimitConfig();
+
         //This must be after UseRouting
         app.UseAuthConfig();
+
         //This is UseEndpoints
         extra?.Invoke(app);
 

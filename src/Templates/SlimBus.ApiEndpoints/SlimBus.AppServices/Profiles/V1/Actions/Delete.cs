@@ -17,13 +17,17 @@ internal sealed class DeleteProfileCommandHandler(ICustomerProfileRepo repositor
     public async Task<IResultBase> OnHandle(DeleteProfileCommand request, CancellationToken cancellationToken)
     {
         if (request.Id == Guid.Empty)
+        {
             return Result.Fail("The Id is in valid.")
                 .WithError(new Error("The Id is in valid.") { Metadata = { ["field"] = nameof(request.Id) } });
+        }
 
         var profile = await repository.FindAsync(request.Id, cancellationToken);
 
         if (profile == null)
+        {
             return Result.Fail($"The Profile {request.Id} is not found.");
+        }
 
         repository.Delete(profile);
 

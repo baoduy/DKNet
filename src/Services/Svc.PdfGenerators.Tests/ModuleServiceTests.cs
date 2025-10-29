@@ -16,6 +16,7 @@ public class ModuleServiceTests
         var events = new TestConversionEvents();
         var options = new ModuleOptions(ModuleLocation.Custom);
         var service = new ModuleService(options, events);
+
         // Directly call the handler instead of invoking the event
         await service.AddModulesToTemplateAsync(service, args);
         Assert.Contains("mathjax", templateModel.Keys);
@@ -35,7 +36,9 @@ public class ModuleServiceTests
         #endregion
 
         public event EventHandler<MarkdownEventArgs>? HtmlConverting;
+
         public event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
+
         public event EventHandler<PdfEventArgs>? TempPdfCreated;
     }
 }

@@ -16,6 +16,18 @@ public interface IAuditedProperties
     #region Properties
 
     /// <summary>
+    ///     Gets the timestamp when the entity was created.
+    /// </summary>
+    [IgnoreAuditLog]
+    DateTimeOffset CreatedOn { get; }
+
+    /// <summary>
+    ///     Gets the timestamp when the entity was last updated.
+    /// </summary>
+    [IgnoreAuditLog]
+    DateTimeOffset? UpdatedOn { get; }
+
+    /// <summary>
     ///     Gets the identifier of the user who created the entity.
     /// </summary>
     [IgnoreAuditLog]
@@ -23,23 +35,11 @@ public interface IAuditedProperties
     string CreatedBy { get; }
 
     /// <summary>
-    ///     Gets the timestamp when the entity was created.
-    /// </summary>
-    [IgnoreAuditLog]
-    DateTimeOffset CreatedOn { get; }
-
-    /// <summary>
     ///     Gets the identifier of the user who last updated the entity.
     /// </summary>
     [MaxLength(500)]
     [IgnoreAuditLog]
     string? UpdatedBy { get; }
-
-    /// <summary>
-    ///     Gets the timestamp when the entity was last updated.
-    /// </summary>
-    [IgnoreAuditLog]
-    DateTimeOffset? UpdatedOn { get; }
 
     #endregion
 }
@@ -103,30 +103,30 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     #region Properties
 
     /// <summary>
+    ///     Gets the timestamp when this entity was created.
+    /// </summary>
+    public DateTimeOffset CreatedOn { get; private set; }
+
+    [NotMapped] public DateTimeOffset LastModifiedOn => this.UpdatedOn ?? this.CreatedOn;
+
+    /// <summary>
+    ///     Gets the timestamp when this entity was last modified.
+    /// </summary>
+    public DateTimeOffset? UpdatedOn { get; private set; }
+
+    /// <summary>
     ///     Gets the user who created this entity.
     /// </summary>
     [MaxLength(500)]
     public string CreatedBy { get; private set; } = null!;
 
-    /// <summary>
-    ///     Gets the timestamp when this entity was created.
-    /// </summary>
-    public DateTimeOffset CreatedOn { get; private set; }
-
-    [NotMapped] public string LastModifiedBy => UpdatedBy ?? CreatedBy;
-
-    [NotMapped] public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
+    [NotMapped] public string LastModifiedBy => this.UpdatedBy ?? this.CreatedBy;
 
     /// <summary>
     ///     Gets the user who last modified this entity.
     /// </summary>
     [MaxLength(500)]
     public string? UpdatedBy { get; private set; }
-
-    /// <summary>
-    ///     Gets the timestamp when this entity was last modified.
-    /// </summary>
-    public DateTimeOffset? UpdatedOn { get; private set; }
 
     #endregion
 
@@ -140,10 +140,13 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <exception cref="ArgumentNullException">Thrown when userName is null.</exception>
     public void SetCreatedBy(string userName, DateTimeOffset? createdOn = null)
     {
-        if (!string.IsNullOrEmpty(CreatedBy)) return;
+        if (!string.IsNullOrEmpty(this.CreatedBy))
+        {
+            return;
+        }
 
-        CreatedBy = userName ?? throw new ArgumentNullException(nameof(userName));
-        CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
+        this.CreatedBy = userName ?? throw new ArgumentNullException(nameof(userName));
+        this.CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -155,10 +158,12 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     public void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null)
     {
         if (string.IsNullOrEmpty(userName))
+        {
             throw new ArgumentNullException(nameof(userName));
+        }
 
-        UpdatedBy = userName;
-        UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
+        this.UpdatedBy = userName;
+        this.UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
     }
 
     #endregion

@@ -1,0 +1,11 @@
+- 🧠 Read `/memory-bank/memory-bank-instructions.md` first.
+- 🗂 Load all `/memory-bank/*.md` before any task.
+- 🚦 Use the Kiro-Lite workflow: PRD → Design → Tasks → Code.
+- 🔒 Follow security & style rules in `copilot-rules.md`.
+- 📝 On "/update memory bank", refresh activeContext.md & progress.md.
+
+- 🏗️ Project now enforces .NET/C# best practices from Awesome Copilot: code style, analyzers, documentation, and security.
+- 📚 All contributors must ensure XML documentation for public APIs and use [IgnoreFromCodeCoverage] where required.
+- 🧪 Expand and maintain unit test coverage for all new and changed code.
+- 🧹 Remove unused classes and related tests as part of ongoing code hygiene.
+- 🔄 Always keep memory bank and copilot-instructions.md in sync with current workflow and project state.

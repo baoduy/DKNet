@@ -9,7 +9,8 @@ public static class LocalDirectorySetup
 {
     #region Methods
 
-    public static IServiceCollection AddLocalDirectoryBlobService(this IServiceCollection services,
+    public static IServiceCollection AddLocalDirectoryBlobService(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         return services

@@ -14,8 +14,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
@@ -39,8 +40,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Act - Call CreateTableAsync multiple times
         await db.CreateTableAsync<TestEntity>();
@@ -58,8 +60,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         const string invalidConnectionString = "Server=invalid;Database=invalid;Integrated Security=true;";
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(invalidConnectionString).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(invalidConnectionString).Options);
 
         // Act & Assert
         await Should.ThrowAsync<Exception>(async () =>
@@ -72,8 +75,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Act
         await db.Database.EnsureCreatedAsync();
@@ -90,8 +94,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Act - Make multiple concurrent calls
         var tasks = Enumerable.Range(0, 10).Select(async _ => await db.GetDbConnection()).ToArray();
@@ -109,8 +114,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Act - Test with different entity types
         var (schema1, tableName1) = db.GetTableName<TestEntity>();
@@ -131,8 +137,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Dispose the context to make it invalid
         await db.DisposeAsync();
@@ -148,8 +155,9 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 

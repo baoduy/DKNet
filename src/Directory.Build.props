@@ -1,0 +1,20 @@
+<!-- Directory.Build.props for .NET best practices (awesome copilot)
+     Add analyzers, code quality, and documentation settings here. -->
+<Project>
+    <PropertyGroup>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Microsoft recommended analyzers - versions managed in Directory.Packages.props -->
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" PrivateAssets="all"/>
+        <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all"/>
+    </ItemGroup>
+    <ItemGroup>
+        <!-- StyleCop configuration -->
+        <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json"/>
+    </ItemGroup>
+</Project>
+

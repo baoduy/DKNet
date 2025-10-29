@@ -13,6 +13,7 @@ public class TestDataModel(Guid id, string name)
     #region Properties
 
     public Guid Id { get; } = id;
+
     public string Name { get; } = name;
 
     #endregion

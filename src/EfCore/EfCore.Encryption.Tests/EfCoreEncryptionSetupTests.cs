@@ -9,177 +9,48 @@ namespace EfCore.Encryption.Tests;
 // Test implementation for dependency injection testing
 internal class SimpleKeyProvider : IEncryptionKeyProvider
 {
+    #region Fields
+
     private readonly byte[] _key;
+
+    #endregion
+
+    #region Constructors
 
     public SimpleKeyProvider()
     {
-        _key = new byte[32];
-        RandomNumberGenerator.Fill(_key);
+        this._key = new byte[32];
+        RandomNumberGenerator.Fill(this._key);
     }
 
-    public byte[] GetKey(Type entityType)
-    {
-        return _key;
-    }
+    #endregion
+
+    #region Methods
+
+    public byte[] GetKey(Type entityType) => this._key;
+
+    #endregion
 }
 
 // Another test implementation
 internal class ConfigurableKeyProvider : IEncryptionKeyProvider
 {
+    #region Properties
+
     public byte[] Key { get; set; } = new byte[32];
 
-    public byte[] GetKey(Type entityType)
-    {
-        return Key;
-    }
+    #endregion
+
+    #region Methods
+
+    public byte[] GetKey(Type entityType) => this.Key;
+
+    #endregion
 }
 
 public class EfCoreEncryptionSetupTests
 {
-    [Fact]
-    public void AddEfCoreEncryption_ShouldRegisterKeyProviderAsSingleton()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        var keyProvider = serviceProvider.GetService<IEncryptionKeyProvider>();
-        keyProvider.ShouldNotBeNull();
-        keyProvider.ShouldBeOfType<SimpleKeyProvider>();
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_ShouldReturnServiceCollection()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        var result = services.AddEfCoreEncryption<SimpleKeyProvider>();
-
-        // Assert
-        result.ShouldBe(services);
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_MultipleCalls_ShouldUseLast()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        services.AddEfCoreEncryption<ConfigurableKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        var keyProviders = serviceProvider.GetServices<IEncryptionKeyProvider>().ToList();
-        keyProviders.Count.ShouldBe(2); // Both registrations exist
-        
-        var lastProvider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
-        lastProvider.ShouldBeOfType<ConfigurableKeyProvider>();
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_ShouldReturnSameSingletonInstance()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Act
-        var instance1 = serviceProvider.GetService<IEncryptionKeyProvider>();
-        var instance2 = serviceProvider.GetService<IEncryptionKeyProvider>();
-
-        // Assert
-        instance1.ShouldNotBeNull();
-        instance2.ShouldNotBeNull();
-        instance1.ShouldBeSameAs(instance2);
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_WithAbstractClass_ShouldWork()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        services.AddEfCoreEncryption<SetupTestKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        var keyProvider = serviceProvider.GetService<IEncryptionKeyProvider>();
-        keyProvider.ShouldNotBeNull();
-        keyProvider.ShouldBeOfType<SetupTestKeyProvider>();
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_KeyProviderShouldBeUsable()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Act
-        var keyProvider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
-        var key = keyProvider.GetKey(typeof(string));
-
-        // Assert
-        key.ShouldNotBeNull();
-        key.Length.ShouldBeGreaterThan(0);
-    }
-
-    [Fact]
-    public void EfCoreEncryptionSetup_ShouldBeStaticClass()
-    {
-        // Arrange & Act
-        var setupType = typeof(EfCoreEncryptionSetup);
-
-        // Assert
-        setupType.IsAbstract.ShouldBeTrue();
-        setupType.IsSealed.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_ShouldSupportMultipleServiceDescriptors()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddSingleton<string>("Test");
-        services.AddTransient<object>(_ => 42);
-
-        // Act
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        serviceProvider.GetService<string>().ShouldBe("Test");
-        serviceProvider.GetService<object>().ShouldBe(42);
-        serviceProvider.GetService<IEncryptionKeyProvider>().ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void AddEfCoreEncryption_ShouldRegisterAsInterface()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        services.AddEfCoreEncryption<SimpleKeyProvider>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Act
-        var keyProviderByInterface = serviceProvider.GetService<IEncryptionKeyProvider>();
-        var keyProviderByImplementation = serviceProvider.GetService<SimpleKeyProvider>();
-
-        // Assert
-        keyProviderByInterface.ShouldNotBeNull();
-        keyProviderByImplementation.ShouldBeNull(); // Not registered as implementation type
-    }
+    #region Methods
 
     [Fact]
     public void AddEfCoreEncryption_AfterBuildingServiceProvider_ShouldReflectNewRegistrations()
@@ -210,27 +81,183 @@ public class EfCoreEncryptionSetupTests
         // Assert
         method.ShouldNotBeNull();
         method.IsGenericMethod.ShouldBeTrue();
-        
+
         var genericArguments = method.GetGenericArguments();
         genericArguments.Length.ShouldBe(1);
-        
+
         var constraints = genericArguments[0].GetGenericParameterConstraints();
         constraints.ShouldContain(c => c == typeof(IEncryptionKeyProvider));
     }
+
+    [Fact]
+    public void AddEfCoreEncryption_KeyProviderShouldBeUsable()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var keyProvider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
+        var key = keyProvider.GetKey(typeof(string));
+
+        // Assert
+        key.ShouldNotBeNull();
+        key.Length.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_MultipleCalls_ShouldUseLast()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        services.AddEfCoreEncryption<ConfigurableKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var keyProviders = serviceProvider.GetServices<IEncryptionKeyProvider>().ToList();
+        keyProviders.Count.ShouldBe(2); // Both registrations exist
+
+        var lastProvider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
+        lastProvider.ShouldBeOfType<ConfigurableKeyProvider>();
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_ShouldRegisterAsInterface()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var keyProviderByInterface = serviceProvider.GetService<IEncryptionKeyProvider>();
+        var keyProviderByImplementation = serviceProvider.GetService<SimpleKeyProvider>();
+
+        // Assert
+        keyProviderByInterface.ShouldNotBeNull();
+        keyProviderByImplementation.ShouldBeNull(); // Not registered as implementation type
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_ShouldRegisterKeyProviderAsSingleton()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var keyProvider = serviceProvider.GetService<IEncryptionKeyProvider>();
+        keyProvider.ShouldNotBeNull();
+        keyProvider.ShouldBeOfType<SimpleKeyProvider>();
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_ShouldReturnSameSingletonInstance()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var instance1 = serviceProvider.GetService<IEncryptionKeyProvider>();
+        var instance2 = serviceProvider.GetService<IEncryptionKeyProvider>();
+
+        // Assert
+        instance1.ShouldNotBeNull();
+        instance2.ShouldNotBeNull();
+        instance1.ShouldBeSameAs(instance2);
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_ShouldReturnServiceCollection()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        var result = services.AddEfCoreEncryption<SimpleKeyProvider>();
+
+        // Assert
+        result.ShouldBe(services);
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_ShouldSupportMultipleServiceDescriptors()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddSingleton<string>("Test");
+        services.AddTransient<object>(_ => 42);
+
+        // Act
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        serviceProvider.GetService<string>().ShouldBe("Test");
+        serviceProvider.GetService<object>().ShouldBe(42);
+        serviceProvider.GetService<IEncryptionKeyProvider>().ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_WithAbstractClass_ShouldWork()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddEfCoreEncryption<SetupTestKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var keyProvider = serviceProvider.GetService<IEncryptionKeyProvider>();
+        keyProvider.ShouldNotBeNull();
+        keyProvider.ShouldBeOfType<SetupTestKeyProvider>();
+    }
+
+    [Fact]
+    public void EfCoreEncryptionSetup_ShouldBeStaticClass()
+    {
+        // Arrange & Act
+        var setupType = typeof(EfCoreEncryptionSetup);
+
+        // Assert
+        setupType.IsAbstract.ShouldBeTrue();
+        setupType.IsSealed.ShouldBeTrue();
+    }
+
+    #endregion
 }
 
 // Helper class for testing abstract implementation
 internal class SetupTestKeyProvider : EncryptionKeyProvider
 {
+    #region Fields
+
     private readonly byte[] _key = new byte[32];
+
+    #endregion
+
+    #region Constructors
 
     public SetupTestKeyProvider()
     {
-        RandomNumberGenerator.Fill(_key);
+        RandomNumberGenerator.Fill(this._key);
     }
 
-    public override byte[] GetKey(Type entityType)
-    {
-        return _key;
-    }
+    #endregion
+
+    #region Methods
+
+    public override byte[] GetKey(Type entityType) => this._key;
+
+    #endregion
 }

@@ -11,7 +11,8 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual async ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default)
         => await dbContext.AddAsync(entity, cancellationToken);
 
-    public virtual async ValueTask AddRangeAsync(IEnumerable<TEntity> entities,
+    public virtual async ValueTask AddRangeAsync(
+        IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default) =>
         await dbContext.AddRangeAsync(entities, cancellationToken);
 
@@ -21,6 +22,7 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public virtual void Delete(TEntity entity) => dbContext.Set<TEntity>().Remove(entity);
 
     public virtual void DeleteRange(IEnumerable<TEntity> entities) => dbContext.Set<TEntity>().RemoveRange(entities);
+
     public EntityEntry<TEntity> Entry(TEntity entity) => dbContext.Entry(entity);
 
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -41,7 +43,9 @@ public class WriteRepository<TEntity>(DbContext dbContext) : IWriteRepository<TE
     public async Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         foreach (var entity in entities)
-            await UpdateAsync(entity, cancellationToken);
+        {
+            await this.UpdateAsync(entity, cancellationToken);
+        }
     }
 
     #endregion

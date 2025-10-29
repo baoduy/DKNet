@@ -19,21 +19,25 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         //Create Profile
-        await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "abc1@hbd.com",
-            Name = "HBD",
-            Phone = "+6512345678"
-        });
+        await client.PostAsJsonAsync(
+            "/v1/Profiles",
+            new CreateProfileCommand
+            {
+                Email = "abc1@hbd.com",
+                Name = "HBD",
+                Phone = "+6512345678"
+            });
 
         //And create other with the same email
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
-        var rp = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "abc1@hbd.com",
-            Name = "HBD",
-            Phone = "+6512345678"
-        });
+        var rp = await client.PostAsJsonAsync(
+            "/v1/Profiles",
+            new CreateProfileCommand
+            {
+                Email = "abc1@hbd.com",
+                Name = "HBD",
+                Phone = "+6512345678"
+            });
         var (success, _, error, _) = await rp.As<ProfileResult>();
 
         success.ShouldBeFalse();
@@ -43,6 +47,7 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
     [Theory]
     [InlineData("v1")]
     [InlineData("v2")]
+
     //[InlineData("v3")]
     public async Task CreateProfileMultiVersion(string v)
     {
@@ -52,12 +57,14 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
         using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
-        var rp = await client.PostAsJsonAsync($"/{v}/Profiles", new CreateProfileCommand
-        {
-            Email = $"abc_{v}@hbd.com",
-            Name = $"HBD {v}",
-            Phone = "+6512345678"
-        });
+        var rp = await client.PostAsJsonAsync(
+            $"/{v}/Profiles",
+            new CreateProfileCommand
+            {
+                Email = $"abc_{v}@hbd.com",
+                Name = $"HBD {v}",
+                Phone = "+6512345678"
+            });
 
         var (success, result, error, _) = await rp.As<ProfileResult>();
 
@@ -78,12 +85,14 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
 
         //Create Profile
-        var created = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "delete_test@hbd.com",
-            Name = "Steven Hoang",
-            Phone = "+6512345678"
-        });
+        var created = await client.PostAsJsonAsync(
+            "/v1/Profiles",
+            new CreateProfileCommand
+            {
+                Email = "delete_test@hbd.com",
+                Name = "Steven Hoang",
+                Phone = "+6512345678"
+            });
 
         var (_, createdResult, createdError, _) = await created.As<ProfileResult>();
         createdResult.ShouldNotBeNull(createdError?.Detail);
@@ -100,24 +109,29 @@ public class ProfileTests(HostFixture api) : IClassFixture<HostFixture>
     {
         using var client = await api.CreateHttpClient("Api");
         client.DefaultRequestHeaders.Add("X-Idempotency-Key", Guid.CreateVersion7().ToString());
+
         //Create Profile
-        var created = await client.PostAsJsonAsync("/v1/Profiles", new CreateProfileCommand
-        {
-            Email = "update_test@hbd.com",
-            Name = "Duy Hoang",
-            Phone = "+6512345678"
-        });
+        var created = await client.PostAsJsonAsync(
+            "/v1/Profiles",
+            new CreateProfileCommand
+            {
+                Email = "update_test@hbd.com",
+                Name = "Duy Hoang",
+                Phone = "+6512345678"
+            });
 
         var (_, createdResult, createdError, _) = await created.As<ProfileResult>();
         createdResult.ShouldNotBeNull(createdError?.Detail);
 
         //Update
-        var rp = await client.PutAsJsonAsync($"/v1/Profiles/{createdResult.Id}", new UpdateProfileCommand
-        {
-            Id = createdResult.Id,
-            Name = "HBD New",
-            Phone = "+6512399999"
-        });
+        var rp = await client.PutAsJsonAsync(
+            $"/v1/Profiles/{createdResult.Id}",
+            new UpdateProfileCommand
+            {
+                Id = createdResult.Id,
+                Name = "HBD New",
+                Phone = "+6512399999"
+            });
 
         var (success, result, error, _) = await rp.As<ProfileResult>();
 

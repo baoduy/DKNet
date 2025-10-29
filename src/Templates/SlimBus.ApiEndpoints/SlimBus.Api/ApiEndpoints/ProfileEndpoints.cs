@@ -8,9 +8,9 @@ internal sealed class ProfileV1Endpoint : IEndpointConfig
 {
     #region Properties
 
-    public string GroupEndpoint => "/profiles";
-
     public int Version => 1;
+
+    public string GroupEndpoint => "/profiles";
 
     #endregion
 
@@ -24,8 +24,9 @@ internal sealed class ProfileV1Endpoint : IEndpointConfig
             .WithDescription("Get profile by id");
         group.MapPost<CreateProfileCommand, ProfileResult>("")
             .AddIdempotencyFilter()
-            .WithDescription("Create profile. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
-                             "X-Idempotency-Key: {IdempotencyKey} <br/>");
+            .WithDescription(
+                "Create profile. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
+                "X-Idempotency-Key: {IdempotencyKey} <br/>");
         group.MapPut<UpdateProfileCommand, ProfileResult>("{id:guid}")
             .WithDescription("Update profile by id");
         group.MapDelete<DeleteProfileCommand>("{id:guid}")
@@ -39,9 +40,9 @@ internal sealed class ProfileV2Endpoint : IEndpointConfig
 {
     #region Properties
 
-    public string GroupEndpoint => "/profiles";
-
     public int Version => 2;
+
+    public string GroupEndpoint => "/profiles";
 
     #endregion
 
@@ -55,8 +56,9 @@ internal sealed class ProfileV2Endpoint : IEndpointConfig
             .WithDescription("Get profile by id");
         group.MapPost<CreateProfileCommand, ProfileResult>("")
             .AddIdempotencyFilter()
-            .WithDescription("Create profile. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
-                             "X-Idempotency-Key: {IdempotencyKey} <br/>");
+            .WithDescription(
+                "Create profile. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
+                "X-Idempotency-Key: {IdempotencyKey} <br/>");
         group.MapPut<UpdateProfileCommand, ProfileResult>("{id:guid}")
             .WithDescription("Update profile by id");
         group.MapDelete<DeleteProfileCommand>("{id:guid}")

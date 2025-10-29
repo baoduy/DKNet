@@ -48,11 +48,14 @@ internal static class LogConfigs
             });
 
         if (!string.IsNullOrWhiteSpace(builder.Configuration.GetValue<string>("OTEL_EXPORTER_OTLP_ENDPOINT")))
+        {
             otelBuilder.UseOtlpExporter();
-
+        }
 
         if (!string.IsNullOrWhiteSpace(builder.Configuration.GetValue<string>("AzureMonitor:ConnectionString")))
+        {
             otelBuilder.UseAzureMonitor();
+        }
 
         return builder;
     }

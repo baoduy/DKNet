@@ -7,6 +7,7 @@ public interface IRateLimitOptionsProvider
     #region Methods
 
     public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions();
+
     public FixedWindowRateLimiterOptions GetRateLimiterOptions();
 
     #endregion
@@ -26,7 +27,7 @@ internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> option
     public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions() =>
         new()
         {
-            PermitLimit = _option.DefaultConcurrentLimit,
+            PermitLimit = this._option.DefaultConcurrentLimit,
             QueueLimit = 0,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         };
@@ -35,10 +36,10 @@ internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> option
         new()
         {
             AutoReplenishment = true,
-            PermitLimit = _option.DefaultRequestLimit,
+            PermitLimit = this._option.DefaultRequestLimit,
             QueueLimit = 0,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            Window = TimeSpan.FromSeconds(_option.TimeWindowInSeconds)
+            Window = TimeSpan.FromSeconds(this._option.TimeWindowInSeconds)
         };
 
     #endregion

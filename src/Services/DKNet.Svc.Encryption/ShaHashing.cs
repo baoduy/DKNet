@@ -36,12 +36,14 @@ public sealed class ShaHashing : IShaHashing
 
     #region Methods
 
-    private string ComputeHash(string input, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
+    private string ComputeHash(
+        string input,
+        HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
         bool upperCase = false)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(ShaHashing));
         ArgumentNullException.ThrowIfNull(input);
-        var hashAlgo = GetOrCreate(algorithm);
+        var hashAlgo = this.GetOrCreate(algorithm);
         byte[] hash;
         lock (hashAlgo) // HashAlgorithm instances are not thread-safe
         {
@@ -54,10 +56,12 @@ public sealed class ShaHashing : IShaHashing
     }
 
     public string ComputeSha256(string input, bool upperCase = false)
-        => ComputeHash(input, HashAlgorithmKind.Sha256, upperCase);
+        =>
+            this.ComputeHash(input, HashAlgorithmKind.Sha256, upperCase);
 
     public string ComputeSha512(string input, bool upperCase = false)
-        => ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
+        =>
+            this.ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
 
     private static HashAlgorithm CreateAlgorithm(HashAlgorithmKind kind) => kind switch
     {
@@ -68,43 +72,60 @@ public sealed class ShaHashing : IShaHashing
 
     public void Dispose()
     {
-        if (_disposed) return;
-        lock (_sync)
+        if (this._disposed)
         {
-            foreach (var kv in _algorithms) kv.Value.Dispose();
-            _algorithms.Clear();
-            _disposed = true;
+            return;
+        }
+
+        lock (this._sync)
+        {
+            foreach (var kv in this._algorithms)
+            {
+                kv.Value.Dispose();
+            }
+
+            this._algorithms.Clear();
+            this._disposed = true;
         }
     }
 
     private HashAlgorithm GetOrCreate(HashAlgorithmKind kind)
     {
-        lock (_sync)
+        lock (this._sync)
         {
-            if (_algorithms.TryGetValue(kind, out var existing)) return existing;
+            if (this._algorithms.TryGetValue(kind, out var existing))
+            {
+                return existing;
+            }
+
             var created = CreateAlgorithm(kind);
-            _algorithms[kind] = created;
+            this._algorithms[kind] = created;
             return created;
         }
     }
 
-    private bool VerifyHash(string input, string expectedHex, HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
+    private bool VerifyHash(
+        string input,
+        string expectedHex,
+        HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
         bool ignoreCase = true)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
+        ObjectDisposedException.ThrowIf(this._disposed, nameof(ShaHashing));
         ArgumentNullException.ThrowIfNull(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
-        var actual = ComputeHash(input, algorithm, !ignoreCase);
+        var actual = this.ComputeHash(input, algorithm, !ignoreCase);
         return ignoreCase
             ? string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase)
             : actual == expectedHex;
     }
 
     public bool VerifySha256(string input, string expectedHex, bool ignoreCase = true)
-        => VerifyHash(input, expectedHex, HashAlgorithmKind.Sha256, ignoreCase);
+        =>
+            this.VerifyHash(input, expectedHex, HashAlgorithmKind.Sha256, ignoreCase);
 
     public bool VerifySha512(string input, string expectedHex, bool ignoreCase = true)
-        => VerifyHash(input, expectedHex, HashAlgorithmKind.Sha512, ignoreCase);
+        =>
+            this.VerifyHash(input, expectedHex, HashAlgorithmKind.Sha512, ignoreCase);
 
     #endregion
 }

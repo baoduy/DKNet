@@ -23,18 +23,21 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     public override async Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
-        var client = await GetS3ClientAsync(cancellationToken);
+        var location = this.GetBlobLocation(blob);
+        var client = await this.GetS3ClientAsync(cancellationToken);
 
         try
         {
-            var response = await client.ListObjectsAsync(new ListObjectsRequest
-            {
-                BucketName = _options.BucketName,
-                Prefix = location,
-                //Delimiter = "/",
-                MaxKeys = 2
-            }, cancellationToken);
+            var response = await client.ListObjectsAsync(
+                new ListObjectsRequest
+                {
+                    BucketName = this._options.BucketName,
+                    Prefix = location,
+
+                    //Delimiter = "/",
+                    MaxKeys = 2
+                },
+                cancellationToken);
 
             return response.S3Objects is not null
                    && response.S3Objects.Exists(s => s.Key.Equals(location, StringComparison.OrdinalIgnoreCase));
@@ -42,41 +45,48 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         catch (AmazonS3Exception e)
         {
             if (e.StatusCode == HttpStatusCode.NotFound)
+            {
                 return false;
+            }
+
             throw;
         }
     }
 
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        var location = this.GetBlobLocation(blob);
         return blob.Type == BlobTypes.File
-            ? DeleteFileAsync(location, cancellationToken)
-            : DeleteFolderAsync(location, cancellationToken);
+            ? this.DeleteFileAsync(location, cancellationToken)
+            : this.DeleteFolderAsync(location, cancellationToken);
     }
 
     private async Task<bool> DeleteFileAsync(string fileLocation, CancellationToken cancellationToken = default)
     {
-        var client = await GetS3ClientAsync(cancellationToken);
+        var client = await this.GetS3ClientAsync(cancellationToken);
 
         var response =
-            await client.DeleteObjectAsync(_options.BucketName, fileLocation, cancellationToken);
+            await client.DeleteObjectAsync(this._options.BucketName, fileLocation, cancellationToken);
         return response.HttpStatusCode == HttpStatusCode.NoContent;
     }
 
     private async Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
     {
-        var client = await GetS3ClientAsync(cancellationToken);
+        var client = await this.GetS3ClientAsync(cancellationToken);
         do
         {
-            var info = await client.ListObjectsV2Async(new ListObjectsV2Request
-            {
-                BucketName = _options.BucketName,
-                Prefix = folderLocation
-            }, cancellationToken);
+            var info = await client.ListObjectsV2Async(
+                new ListObjectsV2Request
+                {
+                    BucketName = this._options.BucketName,
+                    Prefix = folderLocation
+                },
+                cancellationToken);
 
             if (info?.S3Objects is null || info.S3Objects.Count == 0)
+            {
                 break;
+            }
 
             foreach (var obj in info.S3Objects)
             {
@@ -85,32 +95,37 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
             }
         } while (true);
 
-        await client.DeleteObjectAsync(_options.BucketName, folderLocation, cancellationToken);
+        await client.DeleteObjectAsync(this._options.BucketName, folderLocation, cancellationToken);
         return true;
     }
 
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     // The bulk of the clean-up code is implemented in Dispose(bool)
     private void Dispose(bool disposing)
     {
-        if (!disposing || _client is null) return;
-        _client.Dispose();
-        _client = null;
+        if (!disposing || this._client is null)
+        {
+            return;
+        }
+
+        this._client.Dispose();
+        this._client = null;
     }
 
-    public override async Task<BlobDataResult?> GetAsync(BlobRequest blob,
+    public override async Task<BlobDataResult?> GetAsync(
+        BlobRequest blob,
         CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
-        var client = await GetS3ClientAsync(cancellationToken);
+        var location = this.GetBlobLocation(blob);
+        var client = await this.GetS3ClientAsync(cancellationToken);
         try
         {
-            var info = await client.GetObjectAsync(_options.BucketName, location, cancellationToken);
+            var info = await client.GetObjectAsync(this._options.BucketName, location, cancellationToken);
             var data = await BinaryData.FromStreamAsync(info.ResponseStream, cancellationToken);
 
             return new BlobDataResult(blob.Name, data)
@@ -128,19 +143,24 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         catch (AmazonS3Exception e)
         {
             if (e.StatusCode == HttpStatusCode.NotFound)
+            {
                 return null;
+            }
+
             throw;
         }
     }
 
-    public override async Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+    public override async Task<Uri> GetPublicAccessUrl(
+        BlobRequest blob,
+        TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
-        var client = await GetS3ClientAsync(cancellationToken);
+        var location = this.GetBlobLocation(blob);
+        var client = await this.GetS3ClientAsync(cancellationToken);
         var request = new GetPreSignedUrlRequest
         {
-            BucketName = _options.BucketName,
+            BucketName = this._options.BucketName,
             Key = location,
             Expires = DateTime.UtcNow.Add(expiresFromNow ?? TimeSpan.FromHours(1))
         };
@@ -149,56 +169,71 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
         return uri is null
             ? throw new NotSupportedException(
-                $"Current Container '{_options.BucketName}' does not support Shared Public Access Url")
+                $"Current Container '{this._options.BucketName}' does not support Shared Public Access Url")
             : new Uri(uri);
     }
 
     private async Task<AmazonS3Client> GetS3ClientAsync(CancellationToken cancellationToken = default)
     {
-        if (_client != null) return _client;
+        if (this._client != null)
+        {
+            return this._client;
+        }
 
         var config = new AmazonS3Config
         {
-            ServiceURL = _options.ConnectionString,
-            ForcePathStyle = _options.ForcePathStyle,
-            UseHttp = !_options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
+            ServiceURL = this._options.ConnectionString,
+            ForcePathStyle = this._options.ForcePathStyle,
+            UseHttp = !this._options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
             RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
             ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
         };
 
-        if (!string.IsNullOrWhiteSpace(_options.AccessKey) && !string.IsNullOrWhiteSpace(_options.Secret))
+        if (!string.IsNullOrWhiteSpace(this._options.AccessKey) && !string.IsNullOrWhiteSpace(this._options.Secret))
         {
-            _client = new AmazonS3Client(new BasicAWSCredentials(_options.AccessKey, _options.Secret), config);
+            this._client = new AmazonS3Client(
+                new BasicAWSCredentials(this._options.AccessKey, this._options.Secret),
+                config);
             logger.LogInformation("Loaded AmazonS3Client with BasicAWSCredentials");
         }
         else
         {
-            _client = new AmazonS3Client(config);
+            this._client = new AmazonS3Client(config);
             logger.LogInformation("Loaded AmazonS3Client without Credentials");
         }
 
         //Create Bucket if not exists
-        var buckets = await _client.ListBucketsAsync(cancellationToken);
+        var buckets = await this._client.ListBucketsAsync(cancellationToken);
         if (buckets.Buckets is null || !buckets.Buckets.Exists(b =>
-                b.BucketName.Equals(_options.BucketName, StringComparison.OrdinalIgnoreCase)))
-            await _client.PutBucketAsync(new PutBucketRequest { BucketName = _options.BucketName }, cancellationToken);
+                b.BucketName.Equals(this._options.BucketName, StringComparison.OrdinalIgnoreCase)))
+        {
+            await this._client.PutBucketAsync(
+                new PutBucketRequest { BucketName = this._options.BucketName },
+                cancellationToken);
+        }
 
-        return _client;
+        return this._client;
     }
 
-    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(
+        BlobRequest blob,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
-        var client = await GetS3ClientAsync(cancellationToken);
+        var location = this.GetBlobLocation(blob);
+        var client = await this.GetS3ClientAsync(cancellationToken);
 
-        var info = await client.ListObjectsV2Async(new ListObjectsV2Request
+        var info = await client.ListObjectsV2Async(
+            new ListObjectsV2Request
+            {
+                BucketName = this._options.BucketName,
+                Prefix = location
+            },
+            cancellationToken);
+
+        if (info?.S3Objects is null)
         {
-            BucketName = _options.BucketName,
-            Prefix = location
-        }, cancellationToken);
-
-        if (info?.S3Objects is null) yield break;
+            yield break;
+        }
 
         foreach (var obj in info.S3Objects)
         {
@@ -221,20 +256,22 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
     {
-        var existed = await CheckExistsAsync(blob, cancellationToken);
+        var existed = await this.CheckExistsAsync(blob, cancellationToken);
         if (existed && !blob.Overwrite)
+        {
             throw new InvalidOperationException($"File {blob.Name} is not allowed to override.");
+        }
 
-        var location = GetBlobLocation(blob);
-        var client = await GetS3ClientAsync(cancellationToken);
+        var location = this.GetBlobLocation(blob);
+        var client = await this.GetS3ClientAsync(cancellationToken);
 
         var uploadRequest = new PutObjectRequest
         {
-            BucketName = _options.BucketName,
+            BucketName = this._options.BucketName,
             Key = location,
             InputStream = blob.Data.ToStream(),
             ContentType = blob.ContentType,
-            DisablePayloadSigning = _options.DisablePayloadSigning
+            DisablePayloadSigning = this._options.DisablePayloadSigning
         };
 
         await client.PutObjectAsync(uploadRequest, cancellationToken);

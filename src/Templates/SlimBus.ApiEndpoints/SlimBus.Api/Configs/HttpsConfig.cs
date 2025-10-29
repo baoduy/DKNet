@@ -11,18 +11,23 @@ internal static class HttpsConfig
 
     #region Methods
 
-    public static IServiceCollection AddHttpsConfig(this IServiceCollection services,
+    public static IServiceCollection AddHttpsConfig(
+        this IServiceCollection services,
         Action<HstsOptions>? configureOptions = null)
     {
         if (configureOptions is not null)
+        {
             services.AddHsts(configureOptions);
+        }
         else
+        {
             services.AddHsts(c =>
             {
                 c.Preload = true;
                 c.IncludeSubDomains = true;
                 c.MaxAge = TimeSpan.FromDays(30);
             });
+        }
 
         _configAdded = true;
         return services;

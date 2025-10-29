@@ -18,7 +18,10 @@ internal class AntiforgeryCookieMiddleware(
         context.Request.Cookies.TryGetValue(options.Value.HeaderName!, out var requestToken);
         context.Request.Cookies.TryGetValue(options.Value.Cookie.Name!, out var cookieToken);
 
-        return new AntiforgeryTokenSet(requestToken, cookieToken, options.Value.FormFieldName,
+        return new AntiforgeryTokenSet(
+            requestToken,
+            cookieToken,
+            options.Value.FormFieldName,
             options.Value.HeaderName);
     }
 
@@ -28,9 +31,9 @@ internal class AntiforgeryCookieMiddleware(
         var method = context.Request.Method;
 
         AntiforgeryTokenSet token;
-        if (_validateMethods.Contains(method, StringComparer.OrdinalIgnoreCase))
+        if (this._validateMethods.Contains(method, StringComparer.OrdinalIgnoreCase))
         {
-            token = GetCookieToken(context);
+            token = this.GetCookieToken(context);
             context.Request.Headers[options.Value.HeaderName!] = token.RequestToken;
         }
         else
@@ -39,8 +42,11 @@ internal class AntiforgeryCookieMiddleware(
             token = antiforgery.GetTokens(context);
             if (string.IsNullOrWhiteSpace(token.CookieToken))
             {
-                var oldToken = GetCookieToken(context);
-                token = new AntiforgeryTokenSet(token.RequestToken, oldToken.CookieToken, token.FormFieldName,
+                var oldToken = this.GetCookieToken(context);
+                token = new AntiforgeryTokenSet(
+                    token.RequestToken,
+                    oldToken.CookieToken,
+                    token.FormFieldName,
                     token.HeaderName);
             }
         }

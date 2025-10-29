@@ -47,14 +47,16 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     #region Methods
 
     private ITokenExtractor[] GetExtractors() =>
-        [.. _options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
+        [.. this._options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
 
     private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
     {
         // Sort tokens by index
         var orderedTokens = tokens.OrderBy(t => t.Index).ToArray();
         if (orderedTokens.Length == 0)
+        {
             return template;
+        }
 
         var templateSpan = template.AsSpan();
         var builder = new StringBuilder(template.Length);
@@ -62,7 +64,7 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
         foreach (var token in orderedTokens)
         {
-            var val = TryGetAndCacheValue(token, additionalData) ?? _options.TokenNotFoundBehavior switch
+            var val = this.TryGetAndCacheValue(token, additionalData) ?? this._options.TokenNotFoundBehavior switch
             {
                 TokenNotFoundBehavior.LeaveAsIs => token.Token,
                 TokenNotFoundBehavior.Remove => string.Empty,
@@ -70,11 +72,13 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
                 _ => throw new UnResolvedTokenException(token)
             };
 
-            var strVal = _options.Formatter.Convert(token, val);
+            var strVal = this._options.Formatter.Convert(token, val);
 
             // Append text before the token
             if (token.Index > lastIndex)
+            {
                 builder.Append(templateSpan[lastIndex..token.Index]);
+            }
 
             // Append replacement value
             builder.Append(strVal);
@@ -83,21 +87,23 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
         // Append any remaining text after the last token
         if (lastIndex < template.Length)
+        {
             builder.Append(templateSpan[lastIndex..]);
+        }
 
         return builder.ToString();
     }
 
     public string Transform(string templateString, params object[] parameters)
     {
-        var tokens = GetExtractors().Select(t => t.Extract(templateString));
-        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+        var tokens = this.GetExtractors().Select(t => t.Extract(templateString));
+        return this.InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
     public async Task<string> TransformAsync(string templateString, params object[] parameters)
     {
-        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
-        return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
+        var tokens = await Task.WhenAll(this.GetExtractors().Select(t => t.ExtractAsync(templateString)));
+        return this.InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
     /// <summary>
@@ -108,12 +114,17 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     /// <returns></returns>
     private object? TryGetAndCacheValue(IToken token, object[] additionalData)
     {
-        if (_cacheService.TryGetValue(token.Token, out var value))
+        if (this._cacheService.TryGetValue(token.Token, out var value))
+        {
             return value;
+        }
 
-        var val = TryGetValue(token, additionalData);
+        var val = this.TryGetValue(token, additionalData);
         if (val is not null)
-            _cacheService.TryAdd(token.Token, val);
+        {
+            this._cacheService.TryAdd(token.Token, val);
+        }
+
         return val;
     }
 
@@ -128,10 +139,14 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
         object? val = null;
 
         if (additionalData.Length > 0)
-            val = _tokenResolver.Resolve(token, additionalData);
+        {
+            val = this._tokenResolver.Resolve(token, additionalData);
+        }
 
         if (val is null)
-            val = _tokenResolver.Resolve(token, _options.GlobalParameters);
+        {
+            val = this._tokenResolver.Resolve(token, this._options.GlobalParameters);
+        }
 
         return val;
     }

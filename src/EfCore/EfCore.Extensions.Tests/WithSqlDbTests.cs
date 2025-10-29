@@ -18,15 +18,15 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public async Task DatabaseConnection_ShouldOpenAndClose()
     {
         // Act
-        await _db.Database.OpenConnectionAsync();
-        var connectionState = _db.Database.GetDbConnection().State;
+        await this._db.Database.OpenConnectionAsync();
+        var connectionState = this._db.Database.GetDbConnection().State;
 
         // Assert
         connectionState.ShouldBe(ConnectionState.Open);
 
         // Cleanup
-        await _db.Database.CloseConnectionAsync();
-        connectionState = _db.Database.GetDbConnection().State;
+        await this._db.Database.CloseConnectionAsync();
+        connectionState = this._db.Database.GetDbConnection().State;
         connectionState.ShouldBe(ConnectionState.Closed);
     }
 
@@ -34,7 +34,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public void DatabaseProvider_ShouldBeSqlServer()
     {
         // Act
-        var providerName = _db.Database.ProviderName;
+        var providerName = this._db.Database.ProviderName;
 
         // Assert
         providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
@@ -44,25 +44,24 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
         // This test verifies the format processing logic
-        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
+        var result = await this._db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
         result.ShouldNotBeNullOrEmpty();
     }
-
 
     [Fact]
     public async Task SequenceValueTestAsync()
     {
-        var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
+        var val1 = await this._db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
         val1!.Value.ShouldBeGreaterThan((short)0);
 
-        var val2 = await _db.NextSeqValue<SequencesTest, int>(SequencesTest.Order);
+        var val2 = await this._db.NextSeqValue<SequencesTest, int>(SequencesTest.Order);
         val2!.Value.ShouldBeGreaterThan(0);
     }
 
     [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {
-        var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
+        var val1 = await this._db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
     }
 
@@ -75,11 +74,11 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
             FirstName = "Test",
             LastName = "User"
         };
-        _db.Set<User>().Add(user);
-        await _db.SaveChangesAsync();
+        this._db.Set<User>().Add(user);
+        await this._db.SaveChangesAsync();
 
         // Create new contexts with same configuration
-        var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
+        var dbOptions = this._db.GetService<IDbContextServices>().ContextOptions;
 
         await using var db1 = new MyDbContext(dbOptions);
         await using var db2 = new MyDbContext(dbOptions);
@@ -102,27 +101,29 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestCreateWithSqlDbAsync()
     {
-        _db.ChangeTracker.Clear();
-        //Create User with Address
-        _db.Set<User>().Add(new User("Duy")
-        {
-            FirstName = "Duy",
-            LastName = "Hoang",
-            Addresses =
-            {
-                new Address
-                {
-                    OwnedEntity = new OwnedEntity { Name = "123" },
-                    City = "HBD",
-                    Street = "HBD"
-                }
-            }
-        });
+        this._db.ChangeTracker.Clear();
 
-        var count = await _db.SaveChangesAsync();
+        //Create User with Address
+        this._db.Set<User>().Add(
+            new User("Duy")
+            {
+                FirstName = "Duy",
+                LastName = "Hoang",
+                Addresses =
+                {
+                    new Address
+                    {
+                        OwnedEntity = new OwnedEntity { Name = "123" },
+                        City = "HBD",
+                        Street = "HBD"
+                    }
+                }
+            });
+
+        var count = await this._db.SaveChangesAsync();
         (count >= 1).ShouldBeTrue();
 
-        var users = await _db.Set<User>().ToListAsync();
+        var users = await this._db.Set<User>().ToListAsync();
 
         (users.Count >= 1).ShouldBeTrue();
         users.TrueForAll(u => u.RowVersion != null).ShouldBeTrue();
@@ -131,17 +132,17 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestDeleteWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync();
+        await this.TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses)
+        var user = await this._db.Set<User>().Include(u => u.Addresses)
             .OrderByDescending(c => c.CreatedOn).FirstAsync();
 
-        _db.RemoveRange(user.Addresses);
-        _db.Remove(user);
+        this._db.RemoveRange(user.Addresses);
+        this._db.Remove(user);
 
-        await _db.SaveChangesAsync();
+        await this._db.SaveChangesAsync();
 
-        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
+        var count = await this._db.Set<User>().CountAsync(u => u.Id == user.Id);
 
         (count == 0).ShouldBeTrue();
     }
@@ -149,16 +150,17 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestUpdateWithSqlDbAsync()
     {
-        await TestCreateWithSqlDbAsync();
+        await this.TestCreateWithSqlDbAsync();
 
-        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
+        var user = await this._db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn)
+            .FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
-        await _db.SaveChangesAsync();
+        await this._db.SaveChangesAsync();
 
-        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
+        user = await this._db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
         string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
 

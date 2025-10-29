@@ -16,11 +16,11 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
 
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
-        var entityTypes = GetEntityTypes(modelBuilder);
+        var entityTypes = this.GetEntityTypes(modelBuilder);
 
         foreach (var entityType in entityTypes)
         {
-            var genericMethod = _method.MakeGenericMethod(entityType.ClrType);
+            var genericMethod = this._method.MakeGenericMethod(entityType.ClrType);
             genericMethod.Invoke(this, [modelBuilder, context]);
         }
     }
@@ -29,7 +29,7 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
         where TEntity : class
     {
         //TODO: convert to named query filter when migrate to EFCore 10
-        var filter = HasQueryFilter<TEntity>(context);
+        var filter = this.HasQueryFilter<TEntity>(context);
         modelBuilder.Entity<TEntity>().HasQueryFilter(filter);
     }
 

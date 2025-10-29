@@ -20,25 +20,27 @@ public sealed class HookFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_connection != null)
-            await _connection.DisposeAsync();
+        if (this._connection != null)
+        {
+            await this._connection.DisposeAsync();
+        }
     }
 
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
-        await _connection.OpenAsync();
+        this._connection = new SqliteConnection("DataSource=:memory:");
+        await this._connection.OpenAsync();
 
-        Provider = new ServiceCollection()
+        this.Provider = new ServiceCollection()
             .AddLogging()
             .AddDbContextWithHook<HookContext>(o =>
-                o.UseSqlite(_connection).UseAutoConfigModel())
+                o.UseSqlite(this._connection).UseAutoConfigModel())
             .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 
         //Ensure Db Created
-        var db = Provider.GetRequiredService<HookContext>();
+        var db = this.Provider.GetRequiredService<HookContext>();
         await db.Database.EnsureCreatedAsync();
     }
 

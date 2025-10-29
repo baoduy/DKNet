@@ -6,8 +6,9 @@ public interface IEndpointConfig
 {
     #region Properties
 
-    string GroupEndpoint { get; }
     int Version { get; }
+
+    string GroupEndpoint { get; }
 
     #endregion
 

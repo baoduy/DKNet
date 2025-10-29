@@ -451,8 +451,9 @@
                     &lt;/Or&gt;
                 &lt;/Entry.Match&gt;
                 &lt;Entry.SortBy&gt;
-                    &lt;Name /&gt;
                     &lt;Type /&gt;
+                    &lt;Name /&gt;
+                    
                     &lt;AccessorOrder&gt;
                         &lt;AccessorOrder.Order&gt;
                             &lt;AccessorKind&gt;Get&lt;/AccessorKind&gt;

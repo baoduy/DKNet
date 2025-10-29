@@ -48,7 +48,9 @@ public interface IBlobService
     /// <param name="expiresFromNow"></param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A URI that provides public access to the blob.</returns>
-    Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+    Task<Uri> GetPublicAccessUrl(
+        BlobRequest blob,
+        TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -85,7 +87,9 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
         var builder = new StringBuilder();
 
         if (!item.Name.StartsWith('/'))
+        {
             builder.Append('/');
+        }
 
         builder.Append(item.Name);
         return builder.ToString();
@@ -93,15 +97,21 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
 
     public virtual async Task<BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        await foreach (var item in ListItemsAsync(blob, cancellationToken))
+        await foreach (var item in this.ListItemsAsync(blob, cancellationToken))
+        {
             return item;
+        }
+
         return null;
     }
 
-    public abstract Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+    public abstract Task<Uri> GetPublicAccessUrl(
+        BlobRequest blob,
+        TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default);
 
-    public abstract IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+    public abstract IAsyncEnumerable<BlobResult> ListItemsAsync(
+        BlobRequest blob,
         CancellationToken cancellationToken = default);
 
     public abstract Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default);
@@ -109,21 +119,29 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
     protected virtual void ValidateFile(BlobData item)
     {
         if (options.MaxFileNameLength > 0 && item.Name.Length > options.MaxFileNameLength)
+        {
             throw new FileLoadException("File name is invalid.");
+        }
 
         var ext = Path.GetExtension(item.Name);
         if (string.IsNullOrEmpty(ext))
+        {
             throw new FileLoadException("File extension is invalid.");
+        }
 
         if (!options.IncludedExtensions.Any(e => string.Equals(e, ext, StringComparison.OrdinalIgnoreCase)))
+        {
             throw new FileLoadException("File extension is invalid.");
+        }
 
         if (options.MaxFileSizeInMb > 0)
         {
             var fileLength = item.Data.ToArray().LongLength;
             var limitLength = options.MaxFileSizeInMb * 1000000; //Convert Mb to Byte
             if (fileLength > limitLength)
+            {
                 throw new FileLoadException("File size is invalid.");
+            }
         }
     }
 

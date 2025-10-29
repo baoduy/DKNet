@@ -5,8 +5,11 @@ namespace DKNet.Svc.PdfGenerators;
 /// <summary>
 ///     Async event handler delegate for conversion events.
 /// </summary>
-[SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "This delegate is specifically designed as an event handler and the suffix accurately describes its purpose")]
+[SuppressMessage(
+    "Naming",
+    "CA1711:Identifiers should not have incorrect suffix",
+    Justification =
+        "This delegate is specifically designed as an event handler and the suffix accurately describes its purpose")]
 public delegate Task AsyncConversionEventHandler<TEventArgs>(object? sender, TEventArgs e) where TEventArgs : EventArgs;
 
 /// <summary>
@@ -36,7 +39,9 @@ public interface IConversionEvents
     ///     The CA1003 warning is suppressed because the async pattern is intentional and required
     ///     for proper async/await support in event handlers.
     /// </remarks>
-    [SuppressMessage("Design", "CA1003:Use generic event handler instances",
+    [SuppressMessage(
+        "Design",
+        "CA1003:Use generic event handler instances",
         Justification = "Async event pattern requires custom delegate for proper Task return support")]
     event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
 

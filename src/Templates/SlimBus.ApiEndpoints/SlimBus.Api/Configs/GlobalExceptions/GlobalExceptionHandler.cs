@@ -8,13 +8,17 @@ internal sealed class GlobalExceptionHandler(
 {
     #region Methods
 
-    public ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
+    public ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
         CancellationToken cancellationToken)
     {
         logger.LogError(exception, exception.Message);
 
         if (exception.InnerException is not null)
+        {
             exception = exception.InnerException;
+        }
 
         var problem = new ProblemDetails
         {
@@ -24,8 +28,9 @@ internal sealed class GlobalExceptionHandler(
             Type = exception.GetType().Name
         };
 
-        return problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-            { HttpContext = httpContext, ProblemDetails = problem, Exception = exception });
+        return problemDetailsService.TryWriteAsync(
+            new ProblemDetailsContext
+                { HttpContext = httpContext, ProblemDetails = problem, Exception = exception });
     }
 
     #endregion

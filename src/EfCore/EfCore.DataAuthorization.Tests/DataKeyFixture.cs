@@ -22,25 +22,27 @@ public sealed class DataKeyFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_connection != null)
-            await _connection.DisposeAsync();
+        if (this._connection != null)
+        {
+            await this._connection.DisposeAsync();
+        }
     }
 
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
-        await _connection.OpenAsync();
+        this._connection = new SqliteConnection("DataSource=:memory:");
+        await this._connection.OpenAsync();
 
-        Provider = new ServiceCollection()
+        this.Provider = new ServiceCollection()
             .AddLogging()
             .AddDataOwnerProvider<DddContext, TestDataKeyProvider>()
             .AddDbContextWithHook<DddContext>(builder =>
-                builder.UseSqlite(_connection)
+                builder.UseSqlite(this._connection)
                     .UseAutoConfigModel())
             .BuildServiceProvider();
 
-        var db = Provider.GetRequiredService<DddContext>();
+        var db = this.Provider.GetRequiredService<DddContext>();
         await db.Database.EnsureCreatedAsync();
     }
 

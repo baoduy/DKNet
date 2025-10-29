@@ -12,34 +12,43 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
 
     #region Methods
 
-    public Task<int> CountAsync(Expression<Func<TEntity, bool>> filter,
+    public Task<int> CountAsync(
+        Expression<Func<TEntity, bool>> filter,
         CancellationToken cancellationToken = default) =>
-        Query(filter).CountAsync(cancellationToken);
+        this.Query(filter).CountAsync(cancellationToken);
 
-    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter,
+    public Task<bool> ExistsAsync(
+        Expression<Func<TEntity, bool>> filter,
         CancellationToken cancellationToken = default)
-        => Query(filter).AnyAsync(cancellationToken);
+        =>
+            this.Query(filter).AnyAsync(cancellationToken);
 
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
-        => FindAsync([keyValue], cancellationToken);
+        =>
+            this.FindAsync([keyValue], cancellationToken);
 
     public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default) =>
         await dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
 
-    public Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter,
+    public Task<TEntity?> FindAsync(
+        Expression<Func<TEntity, bool>> filter,
         CancellationToken cancellationToken = default) =>
-        Query(filter).FirstOrDefaultAsync(cancellationToken);
+        this.Query(filter).FirstOrDefaultAsync(cancellationToken);
 
     public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>().AsNoTracking();
-    public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
+
+    public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => this.Query().Where(filter);
 
     public IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
     {
-        if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
+        if (this._mapper is null)
+        {
+            throw new InvalidOperationException("IMapper is not registered.");
+        }
 
-        var query = Query(filter);
-        return query.ProjectToType<TModel>(_mapper.Config);
+        var query = this.Query(filter);
+        return query.ProjectToType<TModel>(this._mapper.Config);
     }
 
     #endregion

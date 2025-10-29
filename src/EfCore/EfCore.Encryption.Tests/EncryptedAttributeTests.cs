@@ -5,25 +5,7 @@ namespace EfCore.Encryption.Tests;
 
 public class EncryptedAttributeTests
 {
-    [Fact]
-    public void EncryptedAttribute_ShouldBeSealed()
-    {
-        // Arrange & Act
-        var attributeType = typeof(EncryptedAttribute);
-
-        // Assert
-        attributeType.IsSealed.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void EncryptedAttribute_ShouldInheritFromAttribute()
-    {
-        // Arrange & Act
-        var attribute = new EncryptedAttribute();
-
-        // Assert
-        attribute.ShouldBeAssignableTo<Attribute>();
-    }
+    #region Methods
 
     [Fact]
     public void EncryptedAttribute_ShouldBeApplicableToProperty()
@@ -51,4 +33,26 @@ public class EncryptedAttributeTests
         attribute.ShouldNotBeNull();
         attribute.ShouldBeOfType<EncryptedAttribute>();
     }
+
+    [Fact]
+    public void EncryptedAttribute_ShouldBeSealed()
+    {
+        // Arrange & Act
+        var attributeType = typeof(EncryptedAttribute);
+
+        // Assert
+        attributeType.IsSealed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void EncryptedAttribute_ShouldInheritFromAttribute()
+    {
+        // Arrange & Act
+        var attribute = new EncryptedAttribute();
+
+        // Assert
+        attribute.ShouldBeAssignableTo<Attribute>();
+    }
+
+    #endregion
 }

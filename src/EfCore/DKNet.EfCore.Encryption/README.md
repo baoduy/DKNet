@@ -2,7 +2,10 @@
 
 *A secure column encryption library for Entity Framework Core using AES-GCM.*
 
-> **Note:** This project is a clone of [efeynr/EfCore.ColumnEncryption](https://github.com/efeynr/EfCore.ColumnEncryption/blob/master/README.md) and is being actively maintained and improved at [baoduy/DKNet/src/EfCore/DKNet.EfCore.Encryption](https://github.com/baoduy/DKNet/src/EfCore/DKNet.EfCore.Encryption).
+> **Note:** This project is a clone
+> of [efeynr/EfCore.ColumnEncryption](https://github.com/efeynr/EfCore.ColumnEncryption/blob/master/README.md) and is
+> being actively maintained and improved
+> at [baoduy/DKNet/src/EfCore/DKNet.EfCore.Encryption](https://github.com/baoduy/DKNet/src/EfCore/DKNet.EfCore.Encryption).
 
 ## Table of Contents
 
@@ -10,12 +13,12 @@
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-  - [Package Manager](#package-manager)
-  - [.NET CLI](#net-cli)
-  - [Package Reference](#package-reference)
+    - [Package Manager](#package-manager)
+    - [.NET CLI](#net-cli)
+    - [Package Reference](#package-reference)
 - [Getting Started](#getting-started)
-  - [Setup](#setup)
-  - [Usage](#usage)
+    - [Setup](#setup)
+    - [Usage](#usage)
 - [Example](#example)
 - [Limitations](#limitations)
 - [Security Considerations](#security-considerations)
@@ -30,14 +33,19 @@
 
 ## Introduction
 
-`DKNet.EfCore.Encryption` is a lightweight and secure library that provides column-level encryption for Entity Framework Core applications using the AES-GCM encryption algorithm. It allows you to protect sensitive data such as personal information, passwords, and financial data within your database columns without significant changes to your existing codebase.
+`DKNet.EfCore.Encryption` is a lightweight and secure library that provides column-level encryption for Entity Framework
+Core applications using the AES-GCM encryption algorithm. It allows you to protect sensitive data such as personal
+information, passwords, and financial data within your database columns without significant changes to your existing
+codebase.
 
 ---
 
 ## Features
 
-- **Transparent Encryption and Decryption**: Automatically encrypts data before saving to the database and decrypts data when reading from the database.
-- **AES-GCM Encryption**: Utilizes AES-GCM, a robust encryption algorithm that provides both confidentiality and integrity.
+- **Transparent Encryption and Decryption**: Automatically encrypts data before saving to the database and decrypts data
+  when reading from the database.
+- **AES-GCM Encryption**: Utilizes AES-GCM, a robust encryption algorithm that provides both confidentiality and
+  integrity.
 - **Easy Integration**: Minimal configuration required to start encrypting your data.
 - **Support for Nullable Strings**: Handles `null` and empty strings gracefully.
 - **Database-Agnostic**: Works with any database provider supported by Entity Framework Core.
@@ -53,19 +61,25 @@
 
 ## Installation
 
-You can install the `DKNet.EfCore.Encryption` package via NuGet Package Manager, .NET CLI, or by editing your project file.
+You can install the `DKNet.EfCore.Encryption` package via NuGet Package Manager, .NET CLI, or by editing your project
+file.
 
 ### Package Manager
 
 ```powershell
 Install-Package DKNet.EfCore.Encryption
 ```
+
 ### .NET CLI
+
 ```powershell
 dotnet add package DKNet.EfCore.Encryption
 ```
+
 ### Package Reference
+
 Add the following line to the .csproj file of your project
+
 ```xml
 <PackageReference Include="DKNet.EfCore.Encryption" Version="latest" />
 ```
@@ -74,7 +88,8 @@ Add the following line to the .csproj file of your project
 
 ### Setup
 
-To start using DKNet.EfCore.Encryption, you need to configure your Entity Framework Core DbContext to use the library and provide an encryption key.
+To start using DKNet.EfCore.Encryption, you need to configure your Entity Framework Core DbContext to use the library
+and provide an encryption key.
 
 1. **Create an Encryption Provider**
 
@@ -87,7 +102,8 @@ byte[] encryptionKey = Convert.FromBase64String("Base64EncodedKeyHere");
 var encryptionProvider = new AesGcmColumnEncryptionProvider(encryptionKey);
 ```
 
-> Note: Ensure that you securely manage your encryption key. Do not hard-code it in your source code or expose it in version control systems.
+> Note: Ensure that you securely manage your encryption key. Do not hard-code it in your source code or expose it in
+> version control systems.
 
 2. **Configure Your DbContext**
 
@@ -157,7 +173,8 @@ public class Customer
 
 2. **Perform Data Operations as Usual**
 
-You can perform CRUD operations without any additional code. The library handles encryption and decryption automatically.
+You can perform CRUD operations without any additional code. The library handles encryption and decryption
+automatically.
 
 ```csharp
 var customer = new Customer
@@ -173,7 +190,6 @@ await _context.SaveChangesAsync(); // Encrypts columns marked with the [Encrypte
 var storedCustomer = await _context.Customers.FindAsync(customer.Id);
 Console.WriteLine(storedCustomer.CreditCardNumber); // Decrypted value
 ```
-
 
 ## Example
 
@@ -291,9 +307,12 @@ public class CustomersController : Controller
 
 ## Limitations
 
-- **Data Length**: Encrypted data will be longer than the original plaintext. Ensure that your database columns are sized appropriately to store the encrypted data.
-- **Performance Overhead**: Encryption and decryption introduce computational overhead. Performance impact is minimal for small amounts of data but consider benchmarking for large-scale applications.
-- **Data Migrations**: When adding encryption to existing data, you'll need to migrate and encrypt existing plaintext data.
+- **Data Length**: Encrypted data will be longer than the original plaintext. Ensure that your database columns are
+  sized appropriately to store the encrypted data.
+- **Performance Overhead**: Encryption and decryption introduce computational overhead. Performance impact is minimal
+  for small amounts of data but consider benchmarking for large-scale applications.
+- **Data Migrations**: When adding encryption to existing data, you'll need to migrate and encrypt existing plaintext
+  data.
 
 ## Security Considerations
 
@@ -314,21 +333,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Email**: efeyener6132@gmail.com
 - **GitHub**: [efeynr](https://github.com/efeynr)
 
-
 ## FAQ
 
 1. **Can I use this library with databases other than SQL Server?**
-   Yes, DKNet.EfCore.Encryption is database-agnostic and should work with any database provider supported by Entity Framework Core.
+   Yes, DKNet.EfCore.Encryption is database-agnostic and should work with any database provider supported by Entity
+   Framework Core.
 
 2. **Does this library support encryption of data types other than strings?**
-   Currently, the library focuses on encrypting string properties. Support for other data types may be added in future releases.
+   Currently, the library focuses on encrypting string properties. Support for other data types may be added in future
+   releases.
 
 3. **How secure is the encryption provided by this library?**
-   The library uses AES-GCM, which is a widely accepted and secure encryption algorithm. However, security also depends on how you manage your encryption keys and the overall security practices of your application.
+   The library uses AES-GCM, which is a widely accepted and secure encryption algorithm. However, security also depends
+   on how you manage your encryption keys and the overall security practices of your application.
 
 ## Feedback
 
-If you encounter any issues, have questions, or want to suggest new features, please open an issue on the GitHub repository.
+If you encounter any issues, have questions, or want to suggest new features, please open an issue on the GitHub
+repository.
 
 ## Notes
 

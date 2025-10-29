@@ -12,7 +12,8 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
 
     #region Methods
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = new())
     {
         Called = true;

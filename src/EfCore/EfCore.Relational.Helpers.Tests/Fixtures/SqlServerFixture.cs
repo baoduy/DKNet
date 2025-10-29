@@ -17,25 +17,34 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task EnsureSqlReadyAsync()
     {
-        if (_container is null) return;
-        if (_container.State == TestcontainersStates.Running) return;
-        await _container.StartAsync();
+        if (this._container is null)
+        {
+            return;
+        }
+
+        if (this._container.State == TestcontainersStates.Running)
+        {
+            return;
+        }
+
+        await this._container.StartAsync();
     }
 
     public string GetConnectionString() =>
-        _container?.GetConnectionString()
+        this._container?.GetConnectionString()
             .Replace("Database=master", "Database=TestDb", StringComparison.OrdinalIgnoreCase) ??
-        throw new InvalidOperationException(
-            "SQL Server container is not initialized.");
+        throw new InvalidOperationException("SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
-        _container = new MsSqlBuilder()
+        this._container = new MsSqlBuilder()
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
+
             //.WithReuse(true)
             .Build();
 
-        await _container.StartAsync();
+        await this._container.StartAsync();
+
         // Wait for SQL Server to be ready
         await Task.Delay(TimeSpan.FromSeconds(20));
     }

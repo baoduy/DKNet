@@ -4,9 +4,11 @@ public interface IDataSeedingConfiguration
 {
     #region Properties
 
-    Type EntityType { get; }
-    IEnumerable<dynamic> HasData { get; }
     Func<DbContext, bool, CancellationToken, Task>? SeedAsync { get; }
+
+    IEnumerable<dynamic> HasData { get; }
+
+    Type EntityType { get; }
 
     #endregion
 }
@@ -20,11 +22,13 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
 {
     #region Properties
 
-    public Type EntityType => typeof(TEntity);
+    public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync { get; } = null!;
+
     protected virtual ICollection<TEntity> HasData { get; } = [];
 
-    IEnumerable<dynamic> IDataSeedingConfiguration.HasData => HasData;
-    public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync { get; } = null!;
+    IEnumerable<dynamic> IDataSeedingConfiguration.HasData => this.HasData;
+
+    public Type EntityType => typeof(TEntity);
 
     #endregion
 }

@@ -5,6 +5,8 @@ namespace Svc.PdfGenerators.Tests;
 
 public class PageNumberOptionsTests
 {
+    #region Methods
+
     [Fact]
     public void Constructor_SetsDefaultLeader()
     {
@@ -40,4 +42,6 @@ public class PageNumberOptionsTests
         // Assert
         options.TabLeader.ShouldBe(Leader.None);
     }
+
+    #endregion
 }

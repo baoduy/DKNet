@@ -9,7 +9,8 @@ public static class TransformSetup
 {
     #region Methods
 
-    public static IServiceCollection AddTransformerService(this IServiceCollection services,
+    public static IServiceCollection AddTransformerService(
+        this IServiceCollection services,
         Action<TransformOptions>? optionFactory = null)
     {
         var op = new TransformOptions();

@@ -38,7 +38,9 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
         var events = TestEventPublisher.Events.Cast<EntityAddedEvent>().Select(e => e.Name).ToList();
         output.WriteLine($"Names: {string.Join('\n', events)}");
         for (var i = 0; i < 5; i++)
+        {
             events.ShouldContain(e => e.Equals($"Concurrent Event {i}", StringComparison.OrdinalIgnoreCase));
+        }
     }
 
     [Fact]
@@ -219,6 +221,7 @@ public class EventsIntegrationTests(ITestOutputHelper output, EventRunnerFixture
         TestEventPublisher.Events.Clear();
 
         var root = new Root("No Events Root", "TestOwner");
+
         // Don't add any events
 
         // Act

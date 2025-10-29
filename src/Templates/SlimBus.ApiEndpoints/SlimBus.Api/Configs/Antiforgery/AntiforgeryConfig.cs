@@ -11,7 +11,8 @@ internal static class AntiforgeryConfig
 
     #region Methods
 
-    public static IServiceCollection AddAntiforgeryConfig(this IServiceCollection services,
+    public static IServiceCollection AddAntiforgeryConfig(
+        this IServiceCollection services,
         string cookieName = "x-csrf-cookie",
         string headerName = "x-csrf-header",
         string formFieldName = "x-csrf-field")

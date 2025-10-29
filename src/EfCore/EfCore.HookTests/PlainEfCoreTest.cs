@@ -15,19 +15,18 @@ public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _provider.DisposeAsync();
+        await this._provider.DisposeAsync();
     }
-
 
     public async Task InitializeAsync()
     {
-        _provider = new ServiceCollection()
+        this._provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContext<PlainHookContext>(o =>
                 o.UseSqlite("Data Source=sqlite_plain_efcore.db"))
             .BuildServiceProvider();
 
-        var db = _provider.GetRequiredService<PlainHookContext>();
+        var db = this._provider.GetRequiredService<PlainHookContext>();
         await db.Database.EnsureCreatedAsync();
     }
 
@@ -41,7 +40,7 @@ public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
             // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
             for (var i = 0; i < 25; i++)
             {
-                using var scope = _provider.CreateScope();
+                using var scope = this._provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PlainHookContext>();
 
                 var entity = new CustomerProfile { Name = $"Plain Entity {i}" };

@@ -18,6 +18,7 @@ public sealed record CreateProfileCommand : BaseCommand, Fluents.Requests.IWitRe
     public string MembershipNo { get; set; } = null!;
 
     [StringLength(150)] [Required] public string Name { get; set; } = null!;
+
     [Phone] public string Phone { get; set; } = null!;
 
     #endregion
@@ -29,9 +30,9 @@ internal sealed class CreateProfileCommandValidator : AbstractValidator<CreatePr
 
     public CreateProfileCommandValidator()
     {
-        RuleFor(a => a.Email).NotEmpty().EmailAddress().Length(1, 1000);
-        RuleFor(a => a.Phone).NotEmpty().Length(6, 50);
-        RuleFor(a => a.Name).NotEmpty().Length(6, 100);
+        this.RuleFor(a => a.Email).NotEmpty().EmailAddress().Length(1, 1000);
+        this.RuleFor(a => a.Phone).NotEmpty().Length(6, 50);
+        this.RuleFor(a => a.Name).NotEmpty().Length(6, 100);
     }
 
     #endregion
@@ -45,20 +46,27 @@ internal sealed class CreateProfileCommandHandler(
 {
     #region Methods
 
-    public async Task<IResult<ProfileResult>> OnHandle(CreateProfileCommand request,
+    public async Task<IResult<ProfileResult>> OnHandle(
+        CreateProfileCommand request,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MembershipNo))
+        {
             request.MembershipNo = await membershipProvider.NextValueAsync();
+        }
 
         //Check duplicate
         if (await repository.IsEmailExistAsync(request.Email))
+        {
             return Result.Fail<ProfileResult>($"Email {request.Email} is already existed.");
+        }
 
         var profile = mapper.Map<CustomerProfile>(request);
 
         if (string.IsNullOrEmpty(profile.MembershipNo))
+        {
             throw new NoNullAllowedException(nameof(profile.MembershipNo));
+        }
 
         //Add
         await repository.AddAsync(profile, cancellationToken);

@@ -17,7 +17,8 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 ///     - Handling inheritance scenarios correctly
 ///     - Ensuring proper data visibility based on ownership rules
 /// </remarks>
-[SuppressMessage("Major Code Smell",
+[SuppressMessage(
+    "Major Code Smell",
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 {
@@ -42,9 +43,9 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
         // EF Core can translate Contains on IEnumerable<string> to SQL IN clause
         var capturedContext = dataOwnerContext;
 
-        return (TEntity x) =>
+        return x =>
             !capturedContext.AccessibleKeys.Any()
-            || capturedContext.AccessibleKeys.Contains(((IOwnedBy)(object)x).OwnedBy);
+            || capturedContext.AccessibleKeys.Contains(((IOwnedBy)x).OwnedBy);
     }
 
     #endregion

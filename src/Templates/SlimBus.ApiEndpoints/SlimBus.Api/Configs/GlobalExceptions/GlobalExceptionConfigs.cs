@@ -26,6 +26,7 @@ internal static class GlobalExceptionConfigs
             {
                 // Set the instance to the request method and path
                 ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
+
                 // Add the trace identifier to the problem details extensions
                 ctx.ProblemDetails.Extensions.Add("trace-id", ctx.HttpContext.TraceIdentifier);
             };
@@ -36,6 +37,7 @@ internal static class GlobalExceptionConfigs
 
         // Set the flag to indicate that the configuration has been added
         _configAdded = true;
+
         // Return the service collection
         return services;
     }
@@ -48,7 +50,10 @@ internal static class GlobalExceptionConfigs
     public static WebApplication UseGlobalException(this WebApplication app)
     {
         // Check if the global exception configuration has been added
-        if (!_configAdded) return app;
+        if (!_configAdded)
+        {
+            return app;
+        }
 
         // Use the exception handler middleware
         app.UseExceptionHandler();

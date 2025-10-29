@@ -20,11 +20,17 @@ internal static class AzureAppConfigSetup
     /// <returns>The configuration builder</returns>
     public static WebApplicationBuilder AddAzureAppConfig(this WebApplicationBuilder builder, FeatureOptions feature)
     {
-        if (!feature.EnableAzureAppConfig) return builder;
+        if (!feature.EnableAzureAppConfig)
+        {
+            return builder;
+        }
 
         var options = builder.Configuration.Bind<AzureAppConfigOptions>(AzureAppConfigOptions.Name);
         var conn = builder.Configuration.GetConnectionString(options.ConnectionStringName);
-        if (string.IsNullOrWhiteSpace(conn)) return builder;
+        if (string.IsNullOrWhiteSpace(conn))
+        {
+            return builder;
+        }
 
         builder.Configuration.AddAzureAppConfiguration(op =>
         {
@@ -37,7 +43,6 @@ internal static class AzureAppConfigSetup
         });
 
         Console.WriteLine("Azure App Configuration is enabled.");
-
 
         return builder;
     }

@@ -3,7 +3,8 @@ using DKNet.EfCore.DtoGenerator;
 
 namespace EfCore.DtoGenerator.Tests.Features;
 
-[GenerateDto(typeof(Person),
+[GenerateDto(
+    typeof(Person),
     Include =
     [
         nameof(Person.Id),

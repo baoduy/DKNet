@@ -7,53 +7,51 @@ namespace EfCore.Encryption.Tests;
 // Test implementation for abstract class
 internal class TestEncryptionKeyProvider : EncryptionKeyProvider
 {
+    #region Fields
+
     private readonly byte[] _key;
 
-    public TestEncryptionKeyProvider(byte[] key)
-    {
-        _key = key;
-    }
+    #endregion
 
-    public override byte[] GetKey(Type entityType)
-    {
-        return _key;
-    }
+    #region Constructors
+
+    public TestEncryptionKeyProvider(byte[] key) => this._key = key;
+
+    #endregion
+
+    #region Methods
+
+    public override byte[] GetKey(Type entityType) => this._key;
+
+    #endregion
 }
 
 // Another test implementation that returns different keys per type
 internal class TypeSpecificKeyProvider : EncryptionKeyProvider
 {
+    #region Fields
+
     private readonly Dictionary<Type, byte[]> _keys = new();
+
+    #endregion
+
+    #region Methods
 
     public void AddKey(Type entityType, byte[] key)
     {
-        _keys[entityType] = key;
+        this._keys[entityType] = key;
     }
 
-    public override byte[] GetKey(Type entityType)
-    {
-        return _keys.TryGetValue(entityType, out var key) ? key : throw new InvalidOperationException($"No key configured for {entityType.Name}");
-    }
+    public override byte[] GetKey(Type entityType) => this._keys.TryGetValue(entityType, out var key)
+        ? key
+        : throw new InvalidOperationException($"No key configured for {entityType.Name}");
+
+    #endregion
 }
 
 public class EncryptionKeyProviderTests
 {
-    [Fact]
-    public void IEncryptionKeyProvider_ShouldHaveGetKeyMethod()
-    {
-        // Arrange
-        var interfaceType = typeof(IEncryptionKeyProvider);
-
-        // Act
-        var method = interfaceType.GetMethod(nameof(IEncryptionKeyProvider.GetKey));
-
-        // Assert
-        method.ShouldNotBeNull();
-        method.ReturnType.ShouldBe(typeof(byte[]));
-        var parameters = method.GetParameters();
-        parameters.Length.ShouldBe(1);
-        parameters[0].ParameterType.ShouldBe(typeof(Type));
-    }
+    #region Methods
 
     [Fact]
     public void EncryptionKeyProvider_ShouldBeAbstract()
@@ -73,6 +71,35 @@ public class EncryptionKeyProviderTests
 
         // Assert
         typeof(IEncryptionKeyProvider).IsAssignableFrom(providerType).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void EncryptionKeyProvider_ShouldSupportMultipleImplementations()
+    {
+        // Arrange & Act
+        IEncryptionKeyProvider provider1 = new TestEncryptionKeyProvider(new byte[32]);
+        IEncryptionKeyProvider provider2 = new TypeSpecificKeyProvider();
+
+        // Assert
+        provider1.ShouldBeAssignableTo<IEncryptionKeyProvider>();
+        provider2.ShouldBeAssignableTo<IEncryptionKeyProvider>();
+    }
+
+    [Fact]
+    public void IEncryptionKeyProvider_ShouldHaveGetKeyMethod()
+    {
+        // Arrange
+        var interfaceType = typeof(IEncryptionKeyProvider);
+
+        // Act
+        var method = interfaceType.GetMethod(nameof(IEncryptionKeyProvider.GetKey));
+
+        // Assert
+        method.ShouldNotBeNull();
+        method.ReturnType.ShouldBe(typeof(byte[]));
+        var parameters = method.GetParameters();
+        parameters.Length.ShouldBe(1);
+        parameters[0].ParameterType.ShouldBe(typeof(Type));
     }
 
     [Fact]
@@ -115,7 +142,7 @@ public class EncryptionKeyProviderTests
         var key2 = new byte[32];
         RandomNumberGenerator.Fill(key1);
         RandomNumberGenerator.Fill(key2);
-        
+
         var provider = new TypeSpecificKeyProvider();
         provider.AddKey(typeof(string), key1);
         provider.AddKey(typeof(int), key2);
@@ -142,15 +169,5 @@ public class EncryptionKeyProviderTests
         exception.Message.ShouldContain("String");
     }
 
-    [Fact]
-    public void EncryptionKeyProvider_ShouldSupportMultipleImplementations()
-    {
-        // Arrange & Act
-        IEncryptionKeyProvider provider1 = new TestEncryptionKeyProvider(new byte[32]);
-        IEncryptionKeyProvider provider2 = new TypeSpecificKeyProvider();
-
-        // Assert
-        provider1.ShouldBeAssignableTo<IEncryptionKeyProvider>();
-        provider2.ShouldBeAssignableTo<IEncryptionKeyProvider>();
-    }
+    #endregion
 }

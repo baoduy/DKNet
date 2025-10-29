@@ -23,33 +23,43 @@ internal static class SwaggerConfig
         return services;
     }
 
-    private static IServiceCollection AddOpenApiDocVersion(this IServiceCollection services, int version,
+    private static IServiceCollection AddOpenApiDocVersion(
+        this IServiceCollection services,
+        int version,
         bool enableAuthentication)
     {
         var docName = $"v{version}";
-        return services.AddOpenApi(docName,
+        return services.AddOpenApi(
+            docName,
             c =>
             {
                 c.ShouldInclude = description =>
-                    description.GroupName == null || string.Equals(description.GroupName, docName,
+                    description.GroupName == null || string.Equals(
+                        description.GroupName,
+                        docName,
                         StringComparison.OrdinalIgnoreCase);
 
                 if (enableAuthentication)
+                {
                     c.AddDocumentTransformer<BearerSecurityTransformer>();
+                }
 
                 c.AddDocumentTransformer((doc, _, _) =>
                 {
                     doc.Info.Title = $"{SharedConsts.ApiName} API Version {version}";
-                    doc.Servers.Add(new OpenApiServer
-                    {
-                        Description = "LocalHost",
-                        Url = "http://localhost:5000"
-                    });
+                    doc.Servers.Add(
+                        new OpenApiServer
+                        {
+                            Description = "LocalHost",
+                            Url = "http://localhost:5000"
+                        });
 
                     var paths = new OpenApiPaths();
                     foreach (var openApiPath in doc.Paths)
                     {
-                        var key = openApiPath.Key.Replace("v{version}", $"v{version}",
+                        var key = openApiPath.Key.Replace(
+                            "v{version}",
+                            $"v{version}",
                             StringComparison.OrdinalIgnoreCase);
                         paths.Add(key, openApiPath.Value);
                     }
@@ -62,16 +72,21 @@ internal static class SwaggerConfig
 
     public static WebApplication UseOpenApiDoc(this WebApplication app)
     {
-        if (!_configAdded) return app;
+        if (!_configAdded)
+        {
+            return app;
+        }
 
         app.MapOpenApi();
-        app.MapScalarApiReference("/docs", c =>
-            c.WithTitle($"{SharedConsts.ApiName} API")
-                .WithTheme(ScalarTheme.Default)
-                //.WithOpenApiRoutePattern("{documentName}.json")
-                .AddPreferredSecuritySchemes("Bearer")
-                .AddHttpAuthentication("Bearer", b => b.Token = "bearer token")
-        );
+        app.MapScalarApiReference(
+            "/docs",
+            c =>
+                c.WithTitle($"{SharedConsts.ApiName} API")
+                    .WithTheme(ScalarTheme.Default)
+
+                    //.WithOpenApiRoutePattern("{documentName}.json")
+                    .AddPreferredSecuritySchemes("Bearer")
+                    .AddHttpAuthentication("Bearer", b => b.Token = "bearer token"));
 
         Console.WriteLine("Swagger enabled.");
         return app;

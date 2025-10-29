@@ -12,7 +12,8 @@ public static class TemplateFiller
     /// <summary>
     ///     matches groups like @(myToken).
     /// </summary>
-    private static readonly Regex TokenRegex = new(@"(?<token>@\(.*?\))",
+    private static readonly Regex TokenRegex = new(
+        @"(?<token>@\(.*?\))",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
     #endregion
@@ -39,7 +40,9 @@ public static class TemplateFiller
                 .Replace(")", string.Empty, StringComparison.OrdinalIgnoreCase);
 
             if (!model.TryGetValue(keyName, out var value))
+            {
                 value = string.Empty;
+            }
 
             filled = filled.Replace(token, value, StringComparison.OrdinalIgnoreCase);
         }

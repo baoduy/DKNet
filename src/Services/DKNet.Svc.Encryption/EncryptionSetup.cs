@@ -12,6 +12,7 @@ public static class EncryptionSetup
         services.AddTransient<IRsaEncryption, RsaEncryption>(_ => new RsaEncryption());
         services.AddTransient<IShaHashing, ShaHashing>();
         services.AddTransient<IHmacHashing, HmacHashing>();
+
         //services.AddTransient<IPasswordAesEncryption, PasswordAesEncryption>();
         services.AddTransient<IAesGcmEncryption, AesGcmEncryption>();
         return services;

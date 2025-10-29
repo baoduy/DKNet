@@ -6,9 +6,13 @@ namespace DKNet.EfCore.Encryption.Encryption;
 
 public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 {
+    #region Fields
+
     private readonly byte[] _key;
-    private const int IvSize = 12;
-    private const int TagSize = 16;
+
+    #endregion
+
+    #region Constructors
 
     public AesGcmColumnEncryptionProvider(byte[] key)
     {
@@ -22,35 +26,12 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
             throw new ArgumentException("Key length must be 16, 24, or 32 bytes", nameof(key));
         }
 
-        _key = key;
+        this._key = key;
     }
-    
-    public string? Encrypt(string? plaintext)
-    {
-        if (string.IsNullOrEmpty(plaintext))
-        {
-            return plaintext;
-        }
 
-        var iv = new byte[IvSize]; 
-        RandomNumberGenerator.Fill(iv);
+    #endregion
 
-        var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
-
-        
-        var ciphertext = new byte[plaintextBytes.Length];
-        var tag = new byte[TagSize];
-
-        using (var aesGcm = new AesGcm(_key, tagSizeInBytes: TagSize))
-            aesGcm.Encrypt(iv, plaintextBytes, ciphertext, tag);
-
-        var result = new byte[iv.Length + ciphertext.Length + tag.Length];
-        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
-        Buffer.BlockCopy(tag, 0, result, iv.Length, tag.Length);
-        Buffer.BlockCopy(ciphertext, 0, result, iv.Length + tag.Length, ciphertext.Length);
-
-        return Convert.ToBase64String(result);
-    }
+    #region Methods
 
     public string? Decrypt(string? ciphertext)
     {
@@ -58,14 +39,14 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
         {
             return ciphertext;
         }
-        
+
         var cipherData = Convert.FromBase64String(ciphertext);
-        
+
         if (cipherData.Length < IvSize + TagSize)
         {
             throw new ArgumentException("Invalid ciphertext format");
         }
-        
+
         var iv = new byte[IvSize];
         var tag = new byte[TagSize];
         var ciphertextLength = cipherData.Length - IvSize - TagSize;
@@ -78,14 +59,48 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
         var plaintextBytes = new byte[ciphertextLength];
         try
         {
-            using var aesGcm = new AesGcm(_key, tagSizeInBytes: TagSize);
+            using var aesGcm = new AesGcm(this._key, TagSize);
             aesGcm.Decrypt(iv, actualCipherText, tag, plaintextBytes);
         }
         catch (CryptographicException)
         {
-            throw new InvalidOperationException("Decryption failed. The data may be corrupted or the key is incorrect.");
+            throw new InvalidOperationException(
+                "Decryption failed. The data may be corrupted or the key is incorrect.");
         }
 
         return Encoding.UTF8.GetString(plaintextBytes);
     }
+
+    public string? Encrypt(string? plaintext)
+    {
+        if (string.IsNullOrEmpty(plaintext))
+        {
+            return plaintext;
+        }
+
+        var iv = new byte[IvSize];
+        RandomNumberGenerator.Fill(iv);
+
+        var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
+
+        var ciphertext = new byte[plaintextBytes.Length];
+        var tag = new byte[TagSize];
+
+        using (var aesGcm = new AesGcm(this._key, TagSize))
+        {
+            aesGcm.Encrypt(iv, plaintextBytes, ciphertext, tag);
+        }
+
+        var result = new byte[iv.Length + ciphertext.Length + tag.Length];
+        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+        Buffer.BlockCopy(tag, 0, result, iv.Length, tag.Length);
+        Buffer.BlockCopy(ciphertext, 0, result, iv.Length + tag.Length, ciphertext.Length);
+
+        return Convert.ToBase64String(result);
+    }
+
+    #endregion
+
+    private const int IvSize = 12;
+    private const int TagSize = 16;
 }

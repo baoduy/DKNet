@@ -1,24 +1,16 @@
 namespace DKNet.EfCore.DtoEntities;
 
-public abstract class EntityBase
+public abstract class EntityBase(string createdBy)
 {
-    #region Constructors
-
-    protected EntityBase()
-    {
-        CreatedUtc = DateTime.UtcNow;
-        CreatedBy = string.Empty;
-    }
-
-    #endregion
-
     #region Properties
 
-    public string CreatedBy { get; protected set; }
+    public DateTime CreatedUtc { get; protected set; } = DateTime.UtcNow;
 
-    public DateTime CreatedUtc { get; protected set; }
-    public string? UpdatedBy { get; protected set; }
     public DateTime? UpdatedUtc { get; protected set; }
+
+    public string CreatedBy { get; protected set; } = createdBy;
+
+    public string? UpdatedBy { get; protected set; }
 
     #endregion
 
@@ -26,8 +18,8 @@ public abstract class EntityBase
 
     protected void SetUpdatedBy(string user)
     {
-        UpdatedBy = user;
-        UpdatedUtc = DateTime.UtcNow;
+        this.UpdatedBy = user;
+        this.UpdatedUtc = DateTime.UtcNow;
     }
 
     #endregion

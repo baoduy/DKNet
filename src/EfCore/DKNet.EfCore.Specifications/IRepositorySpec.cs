@@ -149,7 +149,8 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
     /// <param name="entities">The entities to add.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public virtual async ValueTask AddRangeAsync<TEntity>(IEnumerable<TEntity> entities,
+    public virtual async ValueTask AddRangeAsync<TEntity>(
+        IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default)
         where TEntity : class
         => await dbContext.AddRangeAsync(entities, cancellationToken);
@@ -211,9 +212,12 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
         where TEntity : class
         where TModel : class
     {
-        if (_mapper is null)
+        if (this._mapper is null)
+        {
             throw new InvalidOperationException($"No {nameof(IMapper)} instance available for mapping.");
-        return Query(spec).AsNoTracking().ProjectToType<TModel>(_mapper.Config);
+        }
+
+        return this.Query(spec).AsNoTracking().ProjectToType<TModel>(this._mapper.Config);
     }
 
     /// <summary>
@@ -254,12 +258,15 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
     /// <param name="entities">The entities to update.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task UpdateRangeAsync<TEntity>(IEnumerable<TEntity> entities,
+    public async Task UpdateRangeAsync<TEntity>(
+        IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default)
         where TEntity : class
     {
         foreach (var entity in entities)
-            await UpdateAsync(entity, cancellationToken);
+        {
+            await this.UpdateAsync(entity, cancellationToken);
+        }
     }
 
     #endregion

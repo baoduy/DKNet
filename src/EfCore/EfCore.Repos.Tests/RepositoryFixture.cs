@@ -15,7 +15,9 @@ public class RepositoryFixture : IAsyncLifetime
     #region Properties
 
     public DbContext? DbContext { get; set; }
+
     public IReadRepository<User> ReadRepository { get; set; } = null!;
+
     public IRepository<User> Repository { get; set; } = null!;
 
     #endregion
@@ -24,11 +26,13 @@ public class RepositoryFixture : IAsyncLifetime
 
     public DbContext CreateNewDbContext()
     {
-        if (_connection == null)
+        if (this._connection == null)
+        {
             throw new InvalidOperationException("Connection not initialized");
+        }
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(_connection)
+            .UseSqlite(this._connection)
             .UseAutoConfigModel();
 
         var context = new TestDbContext(optionsBuilder.Options);
@@ -37,24 +41,28 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (DbContext != null)
-            await DbContext.DisposeAsync();
+        if (this.DbContext != null)
+        {
+            await this.DbContext.DisposeAsync();
+        }
 
-        if (_connection != null)
-            await _connection.DisposeAsync();
+        if (this._connection != null)
+        {
+            await this._connection.DisposeAsync();
+        }
     }
 
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=sqlite_repo_tests.db");
-        await _connection.OpenAsync();
+        this._connection = new SqliteConnection("DataSource=sqlite_repo_tests.db");
+        await this._connection.OpenAsync();
 
-        DbContext = CreateNewDbContext();
-        await DbContext.Database.EnsureCreatedAsync();
+        this.DbContext = this.CreateNewDbContext();
+        await this.DbContext.Database.EnsureCreatedAsync();
 
-        ReadRepository = new ReadRepository<User>(DbContext);
-        Repository = new Repository<User>(DbContext);
+        this.ReadRepository = new ReadRepository<User>(this.DbContext);
+        this.Repository = new Repository<User>(this.DbContext);
     }
 
     #endregion

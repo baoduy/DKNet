@@ -6,70 +6,74 @@ namespace EfCore.Encryption.Tests;
 // Mock implementation for testing
 internal class MockColumnEncryptionProvider : IColumnEncryptionProvider
 {
+    #region Fields
+
     private readonly Dictionary<string, string> _storage = new();
 
-    public string? Encrypt(string? plaintext)
-    {
-        if (string.IsNullOrEmpty(plaintext))
-            return plaintext;
+    #endregion
 
-        var encrypted = $"ENCRYPTED_{plaintext}";
-        _storage[encrypted] = plaintext;
-        return encrypted;
-    }
+    #region Methods
 
     public string? Decrypt(string? ciphertext)
     {
         if (string.IsNullOrEmpty(ciphertext))
+        {
             return ciphertext;
+        }
 
-        return _storage.TryGetValue(ciphertext, out var plaintext) ? plaintext : throw new InvalidOperationException("Invalid ciphertext");
+        return this._storage.TryGetValue(ciphertext, out var plaintext)
+            ? plaintext
+            : throw new InvalidOperationException("Invalid ciphertext");
     }
 
-    public bool WasEncrypted(string? value)
+    public string? Encrypt(string? plaintext)
     {
-        return value != null && _storage.ContainsKey(value);
+        if (string.IsNullOrEmpty(plaintext))
+        {
+            return plaintext;
+        }
+
+        var encrypted = $"ENCRYPTED_{plaintext}";
+        this._storage[encrypted] = plaintext;
+        return encrypted;
     }
+
+    public bool WasEncrypted(string? value) => value != null && this._storage.ContainsKey(value);
+
+    #endregion
 }
 
 // Another mock that reverses strings
 internal class ReverseEncryptionProvider : IColumnEncryptionProvider
 {
-    public string? Encrypt(string? plaintext)
-    {
-        if (string.IsNullOrEmpty(plaintext))
-            return plaintext;
-
-        return new string(plaintext.Reverse().ToArray());
-    }
+    #region Methods
 
     public string? Decrypt(string? ciphertext)
     {
         if (string.IsNullOrEmpty(ciphertext))
+        {
             return ciphertext;
+        }
 
         return new string(ciphertext.Reverse().ToArray());
     }
+
+    public string? Encrypt(string? plaintext)
+    {
+        if (string.IsNullOrEmpty(plaintext))
+        {
+            return plaintext;
+        }
+
+        return new string(plaintext.Reverse().ToArray());
+    }
+
+    #endregion
 }
 
 public class IColumnEncryptionProviderTests
 {
-    [Fact]
-    public void IColumnEncryptionProvider_ShouldHaveEncryptMethod()
-    {
-        // Arrange
-        var interfaceType = typeof(IColumnEncryptionProvider);
-
-        // Act
-        var method = interfaceType.GetMethod(nameof(IColumnEncryptionProvider.Encrypt));
-
-        // Assert
-        method.ShouldNotBeNull();
-        method.ReturnType.ShouldBe(typeof(string));
-        var parameters = method.GetParameters();
-        parameters.Length.ShouldBe(1);
-        parameters[0].ParameterType.ShouldBe(typeof(string));
-    }
+    #region Methods
 
     [Fact]
     public void IColumnEncryptionProvider_ShouldHaveDecryptMethod()
@@ -89,19 +93,32 @@ public class IColumnEncryptionProviderTests
     }
 
     [Fact]
-    public void MockProvider_Encrypt_ShouldTransformPlaintext()
+    public void IColumnEncryptionProvider_ShouldHaveEncryptMethod()
     {
         // Arrange
-        var provider = new MockColumnEncryptionProvider();
-        const string plaintext = "Secret";
+        var interfaceType = typeof(IColumnEncryptionProvider);
 
         // Act
-        var encrypted = provider.Encrypt(plaintext);
+        var method = interfaceType.GetMethod(nameof(IColumnEncryptionProvider.Encrypt));
 
         // Assert
-        encrypted.ShouldNotBeNull();
-        encrypted.ShouldNotBe(plaintext);
-        encrypted.ShouldStartWith("ENCRYPTED_");
+        method.ShouldNotBeNull();
+        method.ReturnType.ShouldBe(typeof(string));
+        var parameters = method.GetParameters();
+        parameters.Length.ShouldBe(1);
+        parameters[0].ParameterType.ShouldBe(typeof(string));
+    }
+
+    [Fact]
+    public void IColumnEncryptionProvider_ShouldSupportMultipleImplementations()
+    {
+        // Arrange & Act
+        IColumnEncryptionProvider provider1 = new MockColumnEncryptionProvider();
+        IColumnEncryptionProvider provider2 = new ReverseEncryptionProvider();
+
+        // Assert
+        provider1.ShouldBeAssignableTo<IColumnEncryptionProvider>();
+        provider2.ShouldBeAssignableTo<IColumnEncryptionProvider>();
     }
 
     [Fact]
@@ -120,18 +137,31 @@ public class IColumnEncryptionProviderTests
     }
 
     [Fact]
-    public void MockProvider_EncryptDecrypt_WithNull_ShouldReturnNull()
+    public void MockProvider_Decrypt_WithInvalidCiphertext_ShouldThrowException()
     {
         // Arrange
         var provider = new MockColumnEncryptionProvider();
+        const string invalidCiphertext = "ENCRYPTED_NotInStorage";
+
+        // Act & Assert
+        Should.Throw<InvalidOperationException>(() => provider.Decrypt(invalidCiphertext))
+            .Message.ShouldContain("Invalid ciphertext");
+    }
+
+    [Fact]
+    public void MockProvider_Encrypt_ShouldTransformPlaintext()
+    {
+        // Arrange
+        var provider = new MockColumnEncryptionProvider();
+        const string plaintext = "Secret";
 
         // Act
-        var encrypted = provider.Encrypt(null);
-        var decrypted = provider.Decrypt(null);
+        var encrypted = provider.Encrypt(plaintext);
 
         // Assert
-        encrypted.ShouldBeNull();
-        decrypted.ShouldBeNull();
+        encrypted.ShouldNotBeNull();
+        encrypted.ShouldNotBe(plaintext);
+        encrypted.ShouldStartWith("ENCRYPTED_");
     }
 
     [Fact]
@@ -150,59 +180,18 @@ public class IColumnEncryptionProviderTests
     }
 
     [Fact]
-    public void ReverseProvider_Encrypt_ShouldReverseString()
+    public void MockProvider_EncryptDecrypt_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var provider = new ReverseEncryptionProvider();
-        const string plaintext = "Hello";
+        var provider = new MockColumnEncryptionProvider();
 
         // Act
-        var encrypted = provider.Encrypt(plaintext);
+        var encrypted = provider.Encrypt(null);
+        var decrypted = provider.Decrypt(null);
 
         // Assert
-        encrypted.ShouldBe("olleH");
-    }
-
-    [Fact]
-    public void ReverseProvider_Decrypt_ShouldReverseStringBack()
-    {
-        // Arrange
-        var provider = new ReverseEncryptionProvider();
-        const string plaintext = "Hello";
-
-        // Act
-        var encrypted = provider.Encrypt(plaintext);
-        var decrypted = provider.Decrypt(encrypted);
-
-        // Assert
-        decrypted.ShouldBe(plaintext);
-    }
-
-    [Fact]
-    public void ReverseProvider_EncryptTwice_ShouldReturnOriginal()
-    {
-        // Arrange
-        var provider = new ReverseEncryptionProvider();
-        const string plaintext = "Test";
-
-        // Act
-        var encrypted = provider.Encrypt(plaintext);
-        var doubleEncrypted = provider.Encrypt(encrypted);
-
-        // Assert
-        doubleEncrypted.ShouldBe(plaintext);
-    }
-
-    [Fact]
-    public void IColumnEncryptionProvider_ShouldSupportMultipleImplementations()
-    {
-        // Arrange & Act
-        IColumnEncryptionProvider provider1 = new MockColumnEncryptionProvider();
-        IColumnEncryptionProvider provider2 = new ReverseEncryptionProvider();
-
-        // Assert
-        provider1.ShouldBeAssignableTo<IColumnEncryptionProvider>();
-        provider2.ShouldBeAssignableTo<IColumnEncryptionProvider>();
+        encrypted.ShouldBeNull();
+        decrypted.ShouldBeNull();
     }
 
     [Theory]
@@ -222,6 +211,50 @@ public class IColumnEncryptionProviderTests
         decrypted.ShouldBe(input);
     }
 
+    [Fact]
+    public void ReverseProvider_Decrypt_ShouldReverseStringBack()
+    {
+        // Arrange
+        var provider = new ReverseEncryptionProvider();
+        const string plaintext = "Hello";
+
+        // Act
+        var encrypted = provider.Encrypt(plaintext);
+        var decrypted = provider.Decrypt(encrypted);
+
+        // Assert
+        decrypted.ShouldBe(plaintext);
+    }
+
+    [Fact]
+    public void ReverseProvider_Encrypt_ShouldReverseString()
+    {
+        // Arrange
+        var provider = new ReverseEncryptionProvider();
+        const string plaintext = "Hello";
+
+        // Act
+        var encrypted = provider.Encrypt(plaintext);
+
+        // Assert
+        encrypted.ShouldBe("olleH");
+    }
+
+    [Fact]
+    public void ReverseProvider_EncryptTwice_ShouldReturnOriginal()
+    {
+        // Arrange
+        var provider = new ReverseEncryptionProvider();
+        const string plaintext = "Test";
+
+        // Act
+        var encrypted = provider.Encrypt(plaintext);
+        var doubleEncrypted = provider.Encrypt(encrypted);
+
+        // Assert
+        doubleEncrypted.ShouldBe(plaintext);
+    }
+
     [Theory]
     [InlineData("racecar")]
     [InlineData("level")]
@@ -237,15 +270,5 @@ public class IColumnEncryptionProviderTests
         encrypted.ShouldBe(palindrome);
     }
 
-    [Fact]
-    public void MockProvider_Decrypt_WithInvalidCiphertext_ShouldThrowException()
-    {
-        // Arrange
-        var provider = new MockColumnEncryptionProvider();
-        const string invalidCiphertext = "ENCRYPTED_NotInStorage";
-
-        // Act & Assert
-        Should.Throw<InvalidOperationException>(() => provider.Decrypt(invalidCiphertext))
-            .Message.ShouldContain("Invalid ciphertext");
-    }
+    #endregion
 }

@@ -10,11 +10,11 @@ public class Company
 
     public Company(string name, string uen, string abn, string arbn, string can)
     {
-        Name = name;
-        UEN = uen;
-        ABN = abn;
-        ARBN = arbn;
-        CAN = can;
+        this.Name = name;
+        this.UEN = uen;
+        this.ABN = abn;
+        this.ARBN = arbn;
+        this.CAN = can;
     }
 
     internal Company()
@@ -25,15 +25,15 @@ public class Company
 
     #region Properties
 
+    [MaxLength(100)] [Required] public string Name { get; private set; } = null!;
+
+    [MaxLength(100)] [Required] public string UEN { get; private set; } = null!;
+
     [MaxLength(50)] public string? ABN { get; private set; }
 
     [MaxLength(50)] public string? ARBN { get; private set; }
 
     [MaxLength(50)] public string? CAN { get; private set; }
-
-    [MaxLength(100)] [Required] public string Name { get; private set; } = null!;
-
-    [MaxLength(100)] [Required] public string UEN { get; private set; } = null!;
 
     #endregion
 }

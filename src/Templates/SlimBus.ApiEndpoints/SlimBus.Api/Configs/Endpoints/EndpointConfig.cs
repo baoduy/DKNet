@@ -12,7 +12,9 @@ internal static class EndpointConfig
 {
     #region Methods
 
-    private static RouteGroupBuilder CreateGroup(this WebApplication app, ApiVersionSet versionSet,
+    private static RouteGroupBuilder CreateGroup(
+        this WebApplication app,
+        ApiVersionSet versionSet,
         IEndpointConfig config)
     {
         var path = $"/v{{version:apiVersion}}{config.GroupEndpoint}";
@@ -23,16 +25,21 @@ internal static class EndpointConfig
             .WithApiVersionSet(versionSet)
             .HasApiVersion(config.Version)
             .MapToApiVersion(config.Version)
+
             //Swagger config
             .WithDisplayName(displayName)
             .WithGroupName($"v{config.Version}")
             .WithTags(config.GroupEndpoint.Replace("/", string.Empty, StringComparison.OrdinalIgnoreCase));
 
         if (FluentValidationConfig.ConfigAdded)
+        {
             group.AddFluentValidationAutoValidation();
+        }
 
         if (AuthConfig.IsAuthConfigAdded)
+        {
             group.RequireAuthorization();
+        }
 
         return group;
     }

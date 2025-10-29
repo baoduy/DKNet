@@ -113,7 +113,10 @@ public class SpecificationExtensionsTests
     {
         // Arrange
         var users = new List<User>();
-        for (var i = 1; i <= 10; i++) users.Add(new User("test") { FirstName = $"User{i}", LastName = "Test" });
+        for (var i = 1; i <= 10; i++)
+        {
+            users.Add(new User("test") { FirstName = $"User{i}", LastName = "Test" });
+        }
 
         var mockRepo = new Mock<IReadRepository<User>>();
         mockRepo.Setup(r => r.Query()).Returns(users.AsQueryable());
@@ -368,6 +371,7 @@ public class SpecificationExtensionsTests
         var queryable = users.AsQueryable();
 
         var spec = new TestSpecification();
+
         // Start with OrderByDescending (no OrderBy first)
         spec.AddTestOrderByDescending(u => u.LastName);
 

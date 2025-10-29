@@ -32,10 +32,16 @@ public class AdditionalAuditLogEdgeCasesTests
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         var entry = ctx.Entry(e);
+
         // Force state to Modify without altering values
         entry.State = EntityState.Modified;
+
         // Ensure none of the properties marked modified
-        foreach (var p in entry.Properties) p.IsModified = false;
+        foreach (var p in entry.Properties)
+        {
+            p.IsModified = false;
+        }
+
         var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
         log.Changes.ShouldBeEmpty();
     }
@@ -48,6 +54,7 @@ public class AdditionalAuditLogEdgeCasesTests
         e.SetCreatedBy("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
+
         // Only update profile (audit fields) - Notes stays null
         e.UpdateProfile("updater");
         ctx.ChangeTracker.DetectChanges();
@@ -64,6 +71,7 @@ public class AdditionalAuditLogEdgeCasesTests
         e.SetCreatedBy("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
+
         // Mark property as modified without changing its value
         var entry = ctx.Entry(e);
         entry.Property(nameof(TestAuditEntity.Age)).IsModified = true; // value remains 7
@@ -80,12 +88,15 @@ public class AdditionalAuditLogEdgeCasesTests
         e.SetCreatedBy("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
+
         // No changes except we set updated info without altering scalar fields
         e.UpdateProfile("updater");
+
         // Removed ctx.Update(e) to allow EF Core to track only changed audit fields
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
         var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+
         // Age, Name, Balance, IsActive unchanged -> changes should only include audit fields UpdatedBy / UpdatedOn if tracked
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.UpdatedBy));
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.UpdatedOn));
@@ -111,10 +122,11 @@ public class AdditionalAuditLogEdgeCasesTests
             c.FieldName == nameof(TestAuditEntity.Notes) && (string?)c.OldValue == "original" && c.NewValue == null);
     }
 
-    private static TestAuditDbContext CreateCtx() => new(new DbContextOptionsBuilder<TestAuditDbContext>()
-        .UseSqlite($"Data Source={Path.Combine(Path.GetTempPath(), $"edge_{Guid.NewGuid():N}.db")}")
-        .EnableSensitiveDataLogging()
-        .Options);
+    private static TestAuditDbContext CreateCtx() => new(
+        new DbContextOptionsBuilder<TestAuditDbContext>()
+            .UseSqlite($"Data Source={Path.Combine(Path.GetTempPath(), $"edge_{Guid.NewGuid():N}.db")}")
+            .EnableSensitiveDataLogging()
+            .Options);
 
     private static async Task<TestAuditDbContext> InitAsync()
     {

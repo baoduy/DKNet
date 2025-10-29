@@ -61,7 +61,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <remarks>
     ///     This constructor is primarily used for EF Core data seeding scenarios.
     /// </remarks>
-    protected Entity(TKey id) => Id = id;
+    protected Entity(TKey id) => this.Id = id;
 
     #endregion
 
@@ -79,16 +79,16 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 
     #region Methods
 
-    public void AddEvent(object eventObj) => _events.Add(eventObj);
+    public void AddEvent(object eventObj) => this._events.Add(eventObj);
 
-    public void AddEvent<TEvent>() where TEvent : class => _eventTypes.Add(typeof(TEvent));
+    public void AddEvent<TEvent>() where TEvent : class => this._eventTypes.Add(typeof(TEvent));
 
     public (object[]events, Type[]eventTypes) GetEventsAndClear()
     {
-        var events = _events.ToArray();
-        var eventTypes = _eventTypes.ToArray();
-        _events.Clear();
-        _eventTypes.Clear();
+        var events = this._events.ToArray();
+        var eventTypes = this._eventTypes.ToArray();
+        this._events.Clear();
+        this._eventTypes.Clear();
 
         return (events, eventTypes);
     }
@@ -97,7 +97,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     ///     Returns a string that represents the current entity.
     /// </summary>
     /// <returns>A string in the format "EntityTypeName 'Id'".</returns>
-    public override string ToString() => $"{GetType().Name} '{Id}'";
+    public override string ToString() => $"{this.GetType().Name} '{this.Id}'";
 
     #endregion
 }

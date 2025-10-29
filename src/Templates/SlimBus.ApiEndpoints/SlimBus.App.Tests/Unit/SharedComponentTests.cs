@@ -15,7 +15,8 @@ public class SharedComponentTests
         var expectedUserId = "new-user-456";
 
         // Act
-        var byUserProp = typeof(TestCommand).GetProperty(nameof(TestCommand.ByUser),
+        var byUserProp = typeof(TestCommand).GetProperty(
+            nameof(TestCommand.ByUser),
             BindingFlags.Public | BindingFlags.Instance)!;
 
         byUserProp.SetValue(command, expectedUserId);

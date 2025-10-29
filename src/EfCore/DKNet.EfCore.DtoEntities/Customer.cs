@@ -6,19 +6,23 @@ public sealed class Customer : EntityBase
 
     public Customer()
     {
-        Name = string.Empty;
-        Orders = [];
+        this.Name = string.Empty;
+        this.Orders = [];
     }
 
     #endregion
 
     #region Properties
 
-    public int CustomerId { get; set; }
-    public string? Email { get; set; }
-    public string Name { get; set; }
-    public ICollection<Order> Orders { get; }
     public Address? PrimaryAddress { get; set; }
+
+    public ICollection<Order> Orders { get; }
+
+    public int CustomerId { get; set; }
+
+    public string Name { get; set; }
+
+    public string? Email { get; set; }
 
     #endregion
 }

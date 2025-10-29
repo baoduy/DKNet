@@ -9,6 +9,7 @@ public class PageProfilePageQuery : Fluents.Queries.IWitPageResponse<ProfileResu
     #region Properties
 
     public int PageIndex { get; init; }
+
     public int PageSize { get; init; } = 100;
 
     #endregion
@@ -21,8 +22,8 @@ internal sealed class ProfilePageableQueryValidator : AbstractValidator<PageProf
 
     public ProfilePageableQueryValidator()
     {
-        RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
-        RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
+        this.RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
+        this.RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
     }
 
     #endregion
@@ -34,7 +35,8 @@ internal sealed class PageProfilesQueryHandler(
 {
     #region Methods
 
-    public async Task<IPagedList<ProfileResult>> OnHandle(PageProfilePageQuery request,
+    public async Task<IPagedList<ProfileResult>> OnHandle(
+        PageProfilePageQuery request,
         CancellationToken cancellationToken)
     {
         return await repo.Query()

@@ -17,6 +17,7 @@ public class ThemeServiceTests
         var theme = new CustomTheme("custom.css");
         var options = new ModuleOptions(ModuleLocation.Custom);
         var service = new ThemeService(theme, options, events);
+
         // Directly call the handler instead of invoking the event
         await service.InternalAddThemeToTemplateAsync(service, args);
         Assert.Equal("custom.css", templateModel["stylePath"]);
@@ -31,6 +32,7 @@ public class ThemeServiceTests
         var theme = new PredefinedTheme(ThemeType.Github);
         var options = new ModuleOptions(ModuleLocation.Custom);
         var service = new ThemeService(theme, options, events);
+
         // Directly call the handler instead of invoking the event
         await service.InternalAddThemeToTemplateAsync(service, args);
         Assert.True(templateModel.ContainsKey("stylePath"));
@@ -48,7 +50,9 @@ public class ThemeServiceTests
         #endregion
 
         public event EventHandler<MarkdownEventArgs>? HtmlConverting;
+
         public event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
+
         public event EventHandler<PdfEventArgs>? TempPdfCreated;
     }
 }

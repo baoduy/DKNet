@@ -15,7 +15,7 @@ public class TestAuditedEntity : AuditedEntity<int>
 
     public TestAuditedEntity(int id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
     {
-        SetCreatedBy(createdBy, createdOn);
+        this.SetCreatedBy(createdBy, createdOn);
     }
 
     #endregion
@@ -41,7 +41,7 @@ public class TestAuditedGuidEntity : AuditedEntity
 
     public TestAuditedGuidEntity(Guid id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
     {
-        SetCreatedBy(createdBy, createdOn);
+        this.SetCreatedBy(createdBy, createdOn);
     }
 
     #endregion

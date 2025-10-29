@@ -7,7 +7,8 @@ public static class NavigationExtensions
 {
     #region Methods
 
-    public static async Task<int> AddNewEntitiesFromNavigations(this DbContext context,
+    public static async Task<int> AddNewEntitiesFromNavigations(
+        this DbContext context,
         CancellationToken cancellationToken = default)
     {
         var newEntities = context.GetNewEntitiesFromNavigations().ToList();
@@ -18,7 +19,11 @@ public static class NavigationExtensions
     public static IEnumerable<INavigation> GetCollectionNavigations(this DbContext context, Type entityType)
     {
         var type = context.Model.FindEntityType(entityType);
-        if (type is null) return [];
+        if (type is null)
+        {
+            return [];
+        }
+
         return type
             .GetNavigations().Where(n => n.IsCollection && !n.IsShadowProperty());
     }
@@ -29,7 +34,10 @@ public static class NavigationExtensions
 
         // Retrieve the primary key metadata for the entity.
         var primaryKey = entry.Metadata.FindPrimaryKey();
-        if (primaryKey is null) return [];
+        if (primaryKey is null)
+        {
+            return [];
+        }
 
         // Get the original values for each primary key property.
         return primaryKey.Properties.Select(p => entry.CurrentValues[p]);
@@ -42,7 +50,10 @@ public static class NavigationExtensions
 
         // Retrieve the property metadata for the given property name.
         var property = entity.Metadata.FindProperty(propertyName);
-        if (property is null) return null;
+        if (property is null)
+        {
+            return null;
+        }
 
         // Get the current value for the specified property.
         return entity.CurrentValues[property];
@@ -54,9 +65,15 @@ public static class NavigationExtensions
         ArgumentNullException.ThrowIfNull(navigation);
 
         if (navigation.PropertyInfo is not null)
+        {
             return navigation.PropertyInfo.GetValue(obj) as IEnumerable<object> ?? [];
+        }
+
         if (navigation.FieldInfo is not null)
+        {
             return navigation.FieldInfo.GetValue(obj) as IEnumerable<object> ?? [];
+        }
+
         return [];
     }
 
@@ -67,7 +84,9 @@ public static class NavigationExtensions
         {
             var list = context.GetNewEntitiesFromNavigations(root);
             foreach (var o in list)
+            {
                 yield return o;
+            }
         }
     }
 
@@ -78,7 +97,10 @@ public static class NavigationExtensions
         foreach (var i in entity.Entity.GetNavigationValues(nav))
         {
             var item = context.Entry(i);
-            if (item.IsNewEntity()) yield return i;
+            if (item.IsNewEntity())
+            {
+                yield return i;
+            }
         }
     }
 
@@ -88,7 +110,10 @@ public static class NavigationExtensions
 
         // Retrieve the primary key metadata for the entity.
         var primaryKey = entry.Metadata.FindPrimaryKey();
-        if (primaryKey is null) return [];
+        if (primaryKey is null)
+        {
+            return [];
+        }
 
         // Get the original values for each primary key property.
         return primaryKey.Properties.Select(p => entry.OriginalValues[p]);
@@ -101,7 +126,10 @@ public static class NavigationExtensions
 
         // Retrieve the property metadata for the given property name.
         var property = entity.Metadata.FindProperty(propertyName);
-        if (property is null) return null;
+        if (property is null)
+        {
+            return null;
+        }
 
         // Get the current value for the specified property.
         return entity.OriginalValues[property];
@@ -135,11 +163,21 @@ public static class NavigationExtensions
     public static bool IsNewEntity(this EntityEntry entry)
     {
         // If the entity's key is not set, it is considered new.
-        if (!entry.IsKeySet) return true;
+        if (!entry.IsKeySet)
+        {
+            return true;
+        }
 
-        if (entry.State is EntityState.Added) return true;
+        if (entry.State is EntityState.Added)
+        {
+            return true;
+        }
+
         // If the entity is not in the Detached state, it is not new.
-        if (entry.State is EntityState.Modified or EntityState.Deleted) return false;
+        if (entry.State is EntityState.Modified or EntityState.Deleted)
+        {
+            return false;
+        }
 
         var keyValues = entry.GetOriginalKeyValues().ToList();
         return keyValues.Count <= 0 || keyValues.TrueForAll(kv => kv is null);

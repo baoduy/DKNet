@@ -15,13 +15,13 @@ public sealed class S3BlobServiceFixture : IDisposable
 
     public S3BlobServiceFixture()
     {
-        _minioContainer = new MinioBuilder()
+        this._minioContainer = new MinioBuilder()
             .Build();
-        _minioContainer.StartAsync().GetAwaiter().GetResult();
+        this._minioContainer.StartAsync().GetAwaiter().GetResult();
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-                (StringComparer.OrdinalIgnoreCase)
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
                     {
                         "BlobService:S3:ConnectionString",
@@ -39,7 +39,7 @@ public sealed class S3BlobServiceFixture : IDisposable
             .AddS3BlobService(config);
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        Service = serviceProvider.GetRequiredService<IBlobService>();
+        this.Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
     #endregion
@@ -54,7 +54,7 @@ public sealed class S3BlobServiceFixture : IDisposable
 
     public void Dispose()
     {
-        _minioContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        this._minioContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
 

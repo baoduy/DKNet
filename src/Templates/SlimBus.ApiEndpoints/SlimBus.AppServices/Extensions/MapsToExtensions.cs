@@ -15,9 +15,14 @@ internal static class MapsToExtensions
         foreach (var type in mapsToTypes)
         {
             var attribute = type.GetCustomAttribute<MapsToAttribute>();
-            if (attribute == null) continue;
+            if (attribute == null)
+            {
+                continue;
+            }
+
             var ctor = attribute.EntityType.GetConstructors().First(c => c.IsPublic);
             config.NewConfig(type, attribute.EntityType)
+
                 //.PreserveReference(true)
                 .Settings.MapToConstructor = ctor;
         }

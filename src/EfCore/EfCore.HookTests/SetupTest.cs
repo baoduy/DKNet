@@ -9,6 +9,7 @@ public class SetupTest
     {
         var provider = new ServiceCollection()
             .AddSingleton<HookTest>()
+
             //.AddSingleton<IHook>(p => p.GetService<Hook>())
             .AddSingleton<IHookAsync>(p => p.GetRequiredService<HookTest>())
             .BuildServiceProvider();

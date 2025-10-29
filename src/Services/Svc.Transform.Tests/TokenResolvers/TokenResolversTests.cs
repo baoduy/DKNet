@@ -9,8 +9,11 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = resolver.Resolve(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0), null,
-            new { A = (string)null! }, new { A = 123 });
+        var val = resolver.Resolve(
+            new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
+            null,
+            new { A = (string)null! },
+            new { A = 123 });
 
         val.ShouldBe(123);
     }
@@ -20,9 +23,11 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
+        var val = await resolver.ResolveAsync(
+            new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
             null,
-            new { A = (string)null! }, new { A = 123 });
+            new { A = (string)null! },
+            new { A = 123 });
 
         val.ShouldBe(123);
     }
@@ -48,12 +53,12 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
-            new Dictionary<string, string>
-                (StringComparer.Ordinal)
-                {
-                    { "A", "Duy" }
-                });
+        var val = await resolver.ResolveAsync(
+            new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "A", "Duy" }
+            });
 
         val.ShouldBe("Duy");
     }
@@ -63,7 +68,8 @@ public class TokenResolversTests
     {
         var resolver = new TokenResolver();
 
-        var val = await resolver.ResolveAsync(new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
+        var val = await resolver.ResolveAsync(
+            new TokenResult(TransformOptions.CurlyBrackets, "{A}", "{A} 123", 0),
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "A", "Duy" }

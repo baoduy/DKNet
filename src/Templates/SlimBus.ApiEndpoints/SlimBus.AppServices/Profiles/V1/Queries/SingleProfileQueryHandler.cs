@@ -12,8 +12,7 @@ public record ProfileQuery : Fluents.Queries.IWitResponse<ProfileResult>
     #endregion
 }
 
-internal sealed class SingleProfileQueryHandler(
-    IReadRepository<CustomerProfile> repo)
+internal sealed class SingleProfileQueryHandler(IReadRepository<CustomerProfile> repo)
     : Fluents.Queries.IHandler<ProfileQuery, ProfileResult>
 {
     #region Methods

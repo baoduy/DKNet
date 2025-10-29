@@ -23,34 +23,42 @@ internal sealed class TokenResult : IToken
     /// <param name="index"></param>
     public TokenResult(ITokenDefinition definition, string token, string originalString, int index)
     {
-        Index = index;
-        OriginalString = originalString ?? throw new ArgumentNullException(nameof(originalString));
-        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-        Token = token ?? throw new ArgumentNullException(nameof(token));
+        this.Index = index;
+        this.OriginalString = originalString ?? throw new ArgumentNullException(nameof(originalString));
+        this.Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        this.Token = token ?? throw new ArgumentNullException(nameof(token));
 
-        if (!Definition.IsToken(Token))
+        if (!this.Definition.IsToken(this.Token))
+        {
             throw new InvalidTokenException(token);
+        }
 
         if (index < 0 || index > originalString.Length)
+        {
             throw new ArgumentOutOfRangeException(nameof(index));
+        }
     }
 
     #endregion
 
     #region Properties
 
-    public ITokenDefinition Definition { get; }
-
     public int Index { get; }
+
+    public ITokenDefinition Definition { get; }
 
     public string Key
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(_key)) return _key;
-            _key = Token.Replace(Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase)
-                .Replace(Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
-            return _key;
+            if (!string.IsNullOrWhiteSpace(this._key))
+            {
+                return this._key;
+            }
+
+            this._key = this.Token.Replace(this.Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace(this.Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
+            return this._key;
         }
     }
 

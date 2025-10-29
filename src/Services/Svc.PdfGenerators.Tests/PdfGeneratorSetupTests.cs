@@ -7,8 +7,27 @@ namespace Svc.PdfGenerators.Tests;
 
 public class PdfGeneratorSetupTests
 {
+    #region Methods
+
     [Fact]
-    public void AddPdfGenerator_WithoutOptions_RegistersService()
+    public void AddPdfGenerator_RegistersSingleton()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddPdfGenerator();
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+        var pdfGenerator1 = serviceProvider.GetService<IPdfGenerator>();
+        var pdfGenerator2 = serviceProvider.GetService<IPdfGenerator>();
+
+        pdfGenerator1.ShouldBeSameAs(pdfGenerator2);
+    }
+
+    [Fact]
+    public void AddPdfGenerator_WithNullOptions_RegistersService()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -39,7 +58,7 @@ public class PdfGeneratorSetupTests
     }
 
     [Fact]
-    public void AddPdfGenerator_RegistersSingleton()
+    public void AddPdfGenerator_WithoutOptions_RegistersService()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -49,24 +68,9 @@ public class PdfGeneratorSetupTests
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        var pdfGenerator1 = serviceProvider.GetService<IPdfGenerator>();
-        var pdfGenerator2 = serviceProvider.GetService<IPdfGenerator>();
-        
-        pdfGenerator1.ShouldBeSameAs(pdfGenerator2);
-    }
-
-    [Fact]
-    public void AddPdfGenerator_WithNullOptions_RegistersService()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        services.AddPdfGenerator(null);
-
-        // Assert
-        var serviceProvider = services.BuildServiceProvider();
         var pdfGenerator = serviceProvider.GetService<IPdfGenerator>();
         pdfGenerator.ShouldNotBeNull();
     }
+
+    #endregion
 }
