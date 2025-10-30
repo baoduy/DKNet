@@ -1,7 +1,8 @@
+using DKNet.AspCore.SlimBus;
 using Shouldly;
 using X.PagedList;
 
-namespace DKNet.AspCore.SlimBus.Tests;
+namespace AspCore.SlimBus.Tests;
 
 public class PagedResultTests
 {

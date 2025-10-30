@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
+using DKNet.EfCore.AuditLogs;
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 public sealed class TestPublisher : IAuditLogPublisher
 {

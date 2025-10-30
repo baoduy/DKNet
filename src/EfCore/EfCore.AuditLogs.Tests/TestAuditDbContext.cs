@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 // Test entity implementing audited functionality with additional diverse properties
 public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())

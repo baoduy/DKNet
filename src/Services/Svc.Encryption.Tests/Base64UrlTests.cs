@@ -1,8 +1,9 @@
 using System.Text;
+using DKNet.Svc.Encryption;
 using Shouldly;
 using Xunit.Abstractions;
 
-namespace DKNet.Svc.Encryption.Tests;
+namespace Svc.Encryption.Tests;
 
 public class Base64UrlTests(ITestOutputHelper output)
 {

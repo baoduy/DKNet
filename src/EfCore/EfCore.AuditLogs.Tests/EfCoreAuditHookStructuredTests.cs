@@ -1,6 +1,7 @@
 // Reconstructed comprehensive test suite for EfCoreAuditHook fire-and-forget structured audit logging
 
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +9,7 @@ using Shouldly;
 
 // added for AuditLogAction
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 public class EfCoreAuditHookStructuredTests : IAsyncLifetime
 {

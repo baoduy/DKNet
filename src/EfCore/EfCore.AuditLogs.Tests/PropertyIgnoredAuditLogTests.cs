@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ using Shouldly;
 
 // for AuditLogEntry & IAuditLogPublisher
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 public class PropertyIgnoredAuditEntity : AuditedEntity<Guid>
 {

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Shouldly;
 using static DKNet.SlimBus.Extensions.Fluents;
 
-namespace DKNet.AspCore.SlimBus.Tests;
+namespace AspCore.SlimBus.Tests;
 
 public class FluentEndpointMapperExtensionsTests
 {

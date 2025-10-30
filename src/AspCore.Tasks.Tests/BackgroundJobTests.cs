@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using DKNet.AspCore.Tasks;
 using DKNet.AspCore.Tasks.Internals;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,7 +11,7 @@ using Shouldly;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
-namespace DKNet.AspCore.Tasks.Tests;
+namespace AspCore.Tasks.Tests;
 
 public class BackgroundJobTests
 {

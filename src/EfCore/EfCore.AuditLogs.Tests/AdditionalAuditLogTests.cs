@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
+using DKNet.EfCore.AuditLogs;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +8,7 @@ using Shouldly;
 
 // for EfCoreAuditHook via DI
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 // Non audited entity for negative test
 public class PlainEntity

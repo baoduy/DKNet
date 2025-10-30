@@ -1,8 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
+using DKNet.Svc.Encryption;
 using Shouldly;
 
-namespace DKNet.Svc.Encryption.Tests;
+namespace Svc.Encryption.Tests;
 
 public class AdditionalEncryptionServicesTests
 {

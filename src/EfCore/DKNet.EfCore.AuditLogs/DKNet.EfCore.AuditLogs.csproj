@@ -17,7 +17,7 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
     </ItemGroup>
     <ItemGroup>
-        <InternalsVisibleTo Include="DKNet.EfCore.AuditLogs.Tests"/>
+        <InternalsVisibleTo Include="EfCore.AuditLogs.Tests"/>
     </ItemGroup>
 
 </Project>

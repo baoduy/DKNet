@@ -2,12 +2,13 @@ using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 // Entity decorated with IgnoreAuditLogAttribute should never produce audit logs
 [IgnoreAuditLog]

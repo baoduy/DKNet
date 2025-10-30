@@ -1,8 +1,9 @@
+using DKNet.Svc.Encryption;
 using Shouldly;
 
 // for extension methods
 
-namespace DKNet.Svc.Encryption.Tests;
+namespace Svc.Encryption.Tests;
 
 public class AesTests
 {

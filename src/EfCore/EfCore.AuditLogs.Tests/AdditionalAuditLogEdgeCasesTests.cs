@@ -1,7 +1,8 @@
+using DKNet.EfCore.AuditLogs;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 public class AdditionalAuditLogEdgeCasesTests
 {

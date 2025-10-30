@@ -1,8 +1,9 @@
 using System.Security.Cryptography;
+using DKNet.Svc.Encryption;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace DKNet.Svc.Encryption.Tests;
+namespace Svc.Encryption.Tests;
 
 public class EdgeCaseTests
 {

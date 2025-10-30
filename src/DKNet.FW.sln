@@ -92,7 +92,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AspNet", "AspNet", "{120F93
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Tasks", "DKNet.AspCore.Tasks\DKNet.AspCore.Tasks.csproj", "{7B01EC2A-2545-4475-91C4-E7CEF9D5976D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Tasks.Tests", "DKNet.AspCore.Tasks.Tests\DKNet.AspCore.Tasks.Tests.csproj", "{08854CA7-7311-4058-B784-143F4D2A162A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Tasks.Tests", "AspCore.Tasks.Tests\AspCore.Tasks.Tests.csproj", "{08854CA7-7311-4058-B784-143F4D2A162A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.PdfGenerators.Tests", "Services\Svc.PdfGenerators.Tests\Svc.PdfGenerators.Tests.csproj", "{7CF65BE7-FCD4-42DD-AA56-4F09BC877023}"
 EndProject
@@ -100,7 +100,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.PdfGenerators", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus", "SlimBus\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj", "{1556498E-1A4B-432C-8A81-1341F5389698}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus.Tests", "SlimBus\DKNet.AspCore.SlimBus.Tests\DKNet.AspCore.SlimBus.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.SlimBus.Tests", "SlimBus\AspCore.SlimBus.Tests\AspCore.SlimBus.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{4B2C950F-B328-4CB6-B12C-C5AB97705681}"
 	ProjectSection(SolutionItems) = preProject
@@ -112,11 +112,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Encryption", "Services\DKNet.Svc.Encryption\DKNet.Svc.Encryption.csproj", "{8B363ED1-AA92-48ED-933A-DB8A9B1122C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.Encryption.Tests", "Services\DKNet.Svc.Encryption.Tests\DKNet.Svc.Encryption.Tests.csproj", "{887B20CD-EDD9-473C-A7E0-6B0684D250A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.Encryption.Tests", "Services\Svc.Encryption.Tests\Svc.Encryption.Tests.csproj", "{887B20CD-EDD9-473C-A7E0-6B0684D250A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.AuditLogs", "EfCore\DKNet.EfCore.AuditLogs\DKNet.EfCore.AuditLogs.csproj", "{1C19FA78-FE1C-4642-847F-BC3E06AB8038}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.AuditLogs.Tests", "EfCore\DKNet.EfCore.AuditLogs.Tests\DKNet.EfCore.AuditLogs.Tests.csproj", "{DFB15D85-66A8-488A-9F95-80DBA31BB66B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.AuditLogs.Tests", "EfCore\EfCore.AuditLogs.Tests\EfCore.AuditLogs.Tests.csproj", "{DFB15D85-66A8-488A-9F95-80DBA31BB66B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator", "EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj", "{6A4087FA-8514-4F23-8649-34871BF22866}"
 EndProject

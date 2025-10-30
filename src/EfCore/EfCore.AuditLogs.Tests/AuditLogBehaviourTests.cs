@@ -4,12 +4,13 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace DKNet.EfCore.AuditLogs.Tests;
+namespace EfCore.AuditLogs.Tests;
 
 [AuditLog]
 internal sealed class AttributedAuditEntity : AuditedEntity<Guid>

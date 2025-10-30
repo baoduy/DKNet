@@ -1,6 +1,7 @@
-﻿using Shouldly;
+﻿using DKNet.Svc.Encryption;
+using Shouldly;
 
-namespace DKNet.Svc.Encryption.Tests;
+namespace Svc.Encryption.Tests;
 
 public class Base64Tests
 {
