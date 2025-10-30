@@ -55,8 +55,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task TestCallSaveChangesTwiceAsync()
     {
         var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        hook.Reset();
         var db = this._provider.GetRequiredService<HookContext>();
+        hook.Reset();
 
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
         await db.SaveChangesAsync();

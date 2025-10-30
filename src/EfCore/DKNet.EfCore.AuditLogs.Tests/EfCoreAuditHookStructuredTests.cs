@@ -78,6 +78,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     {
         TestPublisher.Clear();
         var (ctx, _) = await CreateScopeAsync();
+
         var entity = new TestAuditEntity { Name = "User3", Age = 40, IsActive = false, Balance = 0m };
         entity.SetCreatedBy("creator-3");
         ctx.AuditEntities.Add(entity);

@@ -117,9 +117,7 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
-
-        if (HookDisablingContext.IsHookDisabled(eventData.Context!))
+        if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
         var context = GetContext(eventData);

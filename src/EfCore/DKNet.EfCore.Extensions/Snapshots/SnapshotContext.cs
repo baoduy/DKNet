@@ -48,7 +48,7 @@ public sealed class SnapshotContext : IAsyncDisposable, IDisposable
         [
             .. DbContext.ChangeTracker
                 .Entries()
-                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
+                .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
                 .Select(e => new SnapshotEntityEntry(e))
         ];
 
