@@ -100,12 +100,13 @@ public static class PageAsyncEnumeratorExtensions
     /// <summary>
     ///     Converts an <see cref="IQueryable{T}" /> into an <see cref="IAsyncEnumerable{T}" /> that pages results.
     /// </summary>
-    /// <typeparam name="T">Element type.</typeparam>
+    /// <typeparam name="TEntity">Element type.</typeparam>
     /// <param name="query">The query to page through.</param>
     /// <param name="pageSize">Size of each page (default 100).</param>
     /// <returns>An async enumerable that yields items from the query in page-sized batches.</returns>
-    public static IAsyncEnumerable<T> ToPageEnumerable<T>(this IQueryable<T> query, int pageSize = 100) =>
-        new EfCorePageAsyncEnumerator<T>(query, pageSize);
+    public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(this IQueryable<TEntity> query,
+        int pageSize = 100) =>
+        new EfCorePageAsyncEnumerator<TEntity>(query, pageSize);
 
     #endregion
 }

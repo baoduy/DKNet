@@ -1,9 +1,12 @@
 using DKNet.EfCore.Extensions.Extensions;
+using LinqKit;
 using Mapster;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
+
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 
 namespace DKNet.EfCore.Specifications;
 
@@ -197,7 +200,7 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
     /// <param name="spec">The specification to apply to the query.</param>
     /// <returns>A queryable collection of entities matching the specification.</returns>
     public IQueryable<TEntity> Query<TEntity>(ISpecification<TEntity> spec) where TEntity : class =>
-        dbContext.Set<TEntity>().ApplySpecs(spec);
+        dbContext.Set<TEntity>().AsExpandable().ApplySpecs(spec);
 
     /// <summary>
     ///     Queries entities of type <typeparamref name="TEntity" /> using the provided specification and projects them to
@@ -212,12 +215,10 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
         where TEntity : class
         where TModel : class
     {
-        if (this._mapper is null)
-        {
+        if (_mapper is null)
             throw new InvalidOperationException($"No {nameof(IMapper)} instance available for mapping.");
-        }
 
-        return this.Query(spec).AsNoTracking().ProjectToType<TModel>(this._mapper.Config);
+        return Query(spec).AsNoTracking().ProjectToType<TModel>(_mapper.Config);
     }
 
     /// <summary>
@@ -263,10 +264,7 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
         CancellationToken cancellationToken = default)
         where TEntity : class
     {
-        foreach (var entity in entities)
-        {
-            await this.UpdateAsync(entity, cancellationToken);
-        }
+        foreach (var entity in entities) await UpdateAsync(entity, cancellationToken);
     }
 
     #endregion

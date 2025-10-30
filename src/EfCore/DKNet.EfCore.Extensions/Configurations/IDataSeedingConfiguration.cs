@@ -54,7 +54,7 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     ///     Strongly typed collection of seed data for the entity. Implementations may populate this collection with
     ///     instances of <typeparamref name="TEntity" /> to be used as model-managed seed data.
     /// </summary>
-    protected virtual ICollection<TEntity> HasData { get; } = new List<TEntity>();
+    protected virtual ICollection<TEntity> HasData { get; } = [];
 
     /// <inheritdoc />
     IEnumerable<dynamic> IDataSeedingConfiguration.HasData => HasData;

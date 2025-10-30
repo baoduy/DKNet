@@ -13,10 +13,13 @@
         <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="Mapster"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.DynamicLinq"/>
+        <PackageReference Include="System.Linq.Dynamic.Core"/>
         <PackageReference Include="X.PagedList.EF"/>
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.Repos.Tests"/>
+        <InternalsVisibleTo Include="EfCore.Specifications.Tests"/>
         <InternalsVisibleTo Include="DKNet.EfCore.Repos"/>
     </ItemGroup>
     <ItemGroup>

@@ -1,0 +1,500 @@
+using System.Linq.Dynamic.Core;
+
+namespace EfCore.Specifications.Tests;
+
+public class DynamicPredicateBuilderTests(TestDbFixture fixture) : IClassFixture<TestDbFixture>
+{
+    #region Fields
+
+    private readonly TestDbContext _db = fixture.Db!;
+
+    #endregion
+
+    #region Methods
+
+    [Fact]
+    public void Build_ComplexScenario_FiltersActiveExpensiveProducts()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.Equal, true)
+            .With("Price", FilterOperations.GreaterThanOrEqual, 200m)
+            .With("StockQuantity", FilterOperations.GreaterThan, 0);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var results = _db.Products
+            .Where(expression, parameters)
+            .OrderByDescending(p => p.Price)
+            .ToList();
+
+        // Assert
+        results.ShouldAllBe(p => p.IsActive && p.Price >= 200m && p.StockQuantity > 0);
+    }
+
+    [Fact]
+    public void Build_WithContainsOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var firstProduct = _db.Products.First();
+        var searchTerm = firstProduct.Name.Substring(0, 3);
+
+        var builder = new DynamicPredicateBuilder()
+            .With("Name", FilterOperations.Contains, searchTerm);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Name.Contains(searchTerm));
+        result.ShouldContain(firstProduct);
+    }
+
+    [Fact]
+    public void Build_WithDateComparison_WorksWithIQueryable()
+    {
+        // Arrange
+        var cutoffDate = DateTime.UtcNow.AddDays(-30);
+
+        var builder = new DynamicPredicateBuilder()
+            .With("CreatedDate", FilterOperations.GreaterThanOrEqual, cutoffDate);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldAllBe(p => p.CreatedDate >= cutoffDate);
+    }
+
+    [Fact]
+    public void Build_WithEndsWithOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var firstProduct = _db.Products.First();
+        var suffix = firstProduct.Name.Substring(firstProduct.Name.Length - 2);
+
+        var builder = new DynamicPredicateBuilder()
+            .With("Name", FilterOperations.EndsWith, suffix);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Name.EndsWith(suffix));
+    }
+
+    [Fact]
+    public void Build_WithEqualOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.IsActive == true);
+    }
+
+    [Fact]
+    public void Build_WithGreaterThanOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var testPrice = 100m;
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.GreaterThan, testPrice);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Price > testPrice);
+    }
+
+    [Fact]
+    public void Build_WithGreaterThanOrEqualOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var testPrice = 100m;
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.GreaterThanOrEqual, testPrice);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldAllBe(p => p.Price >= testPrice);
+    }
+
+    [Fact]
+    public void Build_WithGroupBy_WorksCorrectly()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var results = _db.Products
+            .Where(expression, parameters)
+            .GroupBy(p => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToList();
+
+        // Assert
+        results.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public void Build_WithLessThanOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var testPrice = 500m;
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.LessThan, testPrice);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Price < testPrice);
+    }
+
+    [Fact]
+    public void Build_WithLessThanOrEqualOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var testPrice = 500m;
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.LessThanOrEqual, testPrice);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Price <= testPrice);
+    }
+
+    [Fact]
+    public void Build_WithMultipleConditions_CombinesWithAnd()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.GreaterThan, 50m)
+            .With("IsActive", FilterOperations.Equal, true)
+            .With("Name", FilterOperations.Contains, "Test");
+
+        // Act
+        var (expression, parameters) = builder.Build();
+
+        // Assert
+        expression.ShouldBe("Price > @0 and IsActive == @1 and Name.Contains(@2)");
+        parameters.ShouldBe(new object[] { 50m, true, "Test" });
+    }
+
+    [Fact]
+    public void Build_WithMultipleConditions_WorksWithIQueryable()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.GreaterThan, 100m)
+            .With("Price", FilterOperations.LessThan, 500m)
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldAllBe(p => p.Price > 100m && p.Price < 500m && p.IsActive);
+    }
+
+    [Fact]
+    public void Build_WithNavigationProperty_WorksWithIQueryable()
+    {
+        // Arrange
+        var categoryName = _db.Categories.First().Name;
+
+        var builder = new DynamicPredicateBuilder()
+            .With("Category.Name", FilterOperations.Equal, categoryName);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Include(p => p.Category)
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Category!.Name == categoryName);
+    }
+
+    [Fact]
+    public void Build_WithNoConditions_ReturnsEmptyExpression()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder();
+
+        // Act
+        var (expression, parameters) = builder.Build();
+
+        // Assert
+        expression.ShouldBeEmpty();
+        parameters.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Build_WithNotContainsOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Name", FilterOperations.NotContains, "XYZ123");
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => !p.Name.Contains("XYZ123"));
+    }
+
+    [Fact]
+    public void Build_WithNotEqualOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.NotEqual, false);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.IsActive != false);
+    }
+
+    [Fact]
+    public void Build_WithProjection_WorksCorrectly()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var results = _db.Products
+            .Where(expression, parameters)
+            .Select(p => new { p.Id, p.Name, p.Price })
+            .ToList();
+
+        // Assert
+        results.ShouldNotBeEmpty();
+        results.ShouldAllBe(p => p.Price > 0);
+    }
+
+    [Fact]
+    public void Build_WithSingleEqualCondition_ReturnsCorrectExpression()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.Equal, 100m);
+
+        // Act
+        var (expression, parameters) = builder.Build();
+
+        // Assert
+        expression.ShouldBe("Price == @0");
+        parameters.ShouldBe(new object[] { 100m });
+    }
+
+    [Fact]
+    public void Build_WithStartsWithOperation_WorksWithIQueryable()
+    {
+        // Arrange
+        var firstProduct = _db.Products.First();
+        var prefix = firstProduct.Name.Substring(0, 2);
+
+        var builder = new DynamicPredicateBuilder()
+            .With("Name", FilterOperations.StartsWith, prefix);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var result = _db.Products
+            .Where(expression, parameters)
+            .ToList();
+
+        // Assert
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(p => p.Name.StartsWith(prefix));
+    }
+
+    [Fact]
+    public void ToQuery_WithEqualOperation_GeneratesCorrectSql()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var query = _db.Products.Where(expression, parameters);
+        var sql = query.ToQueryString();
+
+        // Assert
+        sql.ShouldContain("WHERE");
+        sql.ShouldContain("[p].[IsActive]");
+    }
+
+    [Fact]
+    public void ToQuery_WithMultipleConditions_GeneratesCorrectSql()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Price", FilterOperations.GreaterThan, 100m)
+            .With("IsActive", FilterOperations.Equal, true);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var query = _db.Products.Where(expression, parameters);
+        var sql = query.ToQueryString();
+
+        // Assert
+        sql.ShouldContain("WHERE");
+        sql.ShouldContain("[p].[Price]");
+        sql.ShouldContain("[p].[IsActive]");
+        sql.ShouldContain("AND");
+    }
+
+    [Fact]
+    public void ToQuery_WithNavigationProperty_GeneratesCorrectSqlWithJoin()
+    {
+        // Arrange
+        var categoryName = _db.Categories.First().Name;
+        var builder = new DynamicPredicateBuilder()
+            .With("Category.Name", FilterOperations.Equal, categoryName);
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var query = _db.Products
+            .Include(p => p.Category)
+            .Where(expression, parameters);
+        var sql = query.ToQueryString();
+
+        // Assert
+        sql.ShouldContain("INNER JOIN");
+        sql.ShouldContain("[Categories]");
+    }
+
+    [Fact]
+    public void ToQuery_WithStringContains_GeneratesCorrectSql()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder()
+            .With("Name", FilterOperations.Contains, "Test");
+
+        var (expression, parameters) = builder.Build();
+
+        // Act
+        var query = _db.Products.Where(expression, parameters);
+        var sql = query.ToQueryString();
+
+        // Assert
+        sql.ShouldContain("WHERE");
+        sql.ShouldContain("[p].[Name]");
+        sql.ShouldContain("LIKE");
+    }
+
+    [Fact]
+    public void With_EmptyPropertyName_ThrowsArgumentException()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder();
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() =>
+            builder.With("", FilterOperations.Equal, 100));
+    }
+
+    [Fact]
+    public void With_NullPropertyName_ThrowsArgumentException()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder();
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() =>
+            builder.With(null!, FilterOperations.Equal, 100));
+    }
+
+    [Fact]
+    public void With_WhitespacePropertyName_ThrowsArgumentException()
+    {
+        // Arrange
+        var builder = new DynamicPredicateBuilder();
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() =>
+            builder.With("   ", FilterOperations.Equal, 100));
+    }
+
+    #endregion
+}
