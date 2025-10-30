@@ -65,9 +65,11 @@ public class BackgroundJobTests
 
         // Failing job increments then throws, delayed increments after
         Assert.Equal(2, counter.Value);
-        Assert.Contains(logs,
+        Assert.Contains(
+            logs,
             l => l.Level == LogLevel.Information && l.Message.Contains("started", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(logs,
+        Assert.Contains(
+            logs,
             l => l.Level == LogLevel.Information && l.Message.Contains("finished", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(logs, l => l.Level == LogLevel.Error && l.Exception is InvalidOperationException);
     }
@@ -112,6 +114,7 @@ public class BackgroundJobTests
             .Build();
 
         await host.StartAsync();
+
         // Allow some time for jobs to run
         await Task.Delay(300);
         Assert.Equal(2, counter.Value); // Both jobs incremented
@@ -137,13 +140,13 @@ public class BackgroundJobTests
 
         #region Properties
 
-        public int Value => _count;
+        public int Value => this._count;
 
         #endregion
 
         #region Methods
 
-        public void Increment() => Interlocked.Increment(ref _count);
+        public void Increment() => Interlocked.Increment(ref this._count);
 
         #endregion
     }
@@ -220,9 +223,14 @@ public class BackgroundJobTests
             #region Methods
 
             public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
             public bool IsEnabled(LogLevel logLevel) => true;
 
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
                 Func<TState, Exception?, string> formatter)
             {
                 sink.Add(new LogEntry(logLevel, formatter(state, exception), exception));

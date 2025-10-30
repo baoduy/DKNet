@@ -11,6 +11,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task AddAsyncAddsEntityToDatabase()
     {
         fixture.DbContext!.ChangeTracker.Clear();
+
         // Arrange
         var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
 
@@ -51,12 +52,13 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     {
         // Arrange
         var entity = new User("steven1") { FirstName = "Test User", LastName = "Test" };
-        entity.AddAddress(new Address
-        {
-            City = "Test City",
-            Street = "Test Street",
-            Country = "Test Country"
-        });
+        entity.AddAddress(
+            new Address
+            {
+                City = "Test City",
+                Street = "Test Street",
+                Country = "Test Country"
+            });
 
         // Act
         await fixture.Repository.AddAsync(entity);
@@ -117,7 +119,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         Assert.Equal(2, results.Count);
     }
 
-
     [Fact]
     public void DeleteRangeRemovesMultipleEntitiesFromContext()
     {
@@ -141,11 +142,11 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         }
     }
 
-
     [Fact]
     public void DeleteRemovesEntityFromContext()
     {
         fixture.DbContext!.ChangeTracker.Clear();
+
         // Arrange
         var entity = new User("deltest") { FirstName = "ToDelete", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -275,7 +276,6 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         Assert.IsAssignableFrom<IQueryable<User>>(query);
     }
 
-
     [Fact]
     public async Task SaveChangesAsyncWithCancellationTokenRespectsCancellation()
     {
@@ -293,6 +293,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task UpdateAndSaveAsyncUpdatesEntityInDatabase()
     {
         fixture.DbContext!.ChangeTracker.Clear();
+
         // Arrange
         var entity = new User("steven3") { FirstName = "Original", LastName = "Test" };
         fixture.DbContext.Add(entity);
@@ -349,24 +350,27 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         user.Addresses.Count.ShouldBe(0);
         fixture.DbContext.ChangeTracker.HasChanges().ShouldBeFalse();
 
-        user.AddAddress(new Address
-        {
-            City = "Test City 1",
-            Street = "Test Street 1",
-            Country = "Test Country 1"
-        });
-        user.AddAddress(new Address
-        {
-            City = "Test City 2",
-            Street = "Test Street 2",
-            Country = "Test Country 2"
-        });
-        user.AddAddress(new Address
-        {
-            City = "Test City 3",
-            Street = "Test Street 3",
-            Country = "Test Country 3"
-        });
+        user.AddAddress(
+            new Address
+            {
+                City = "Test City 1",
+                Street = "Test Street 1",
+                Country = "Test Country 1"
+            });
+        user.AddAddress(
+            new Address
+            {
+                City = "Test City 2",
+                Street = "Test Street 2",
+                Country = "Test Country 2"
+            });
+        user.AddAddress(
+            new Address
+            {
+                City = "Test City 3",
+                Street = "Test Street 3",
+                Country = "Test Country 3"
+            });
 
         output.WriteLine(fixture.DbContext.ChangeTracker.DebugView.LongView);
         fixture.DbContext.ChangeTracker.HasChanges().ShouldBeTrue();
@@ -387,6 +391,7 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
     public async Task UpdateRangeMarksMultipleEntitiesAsModified()
     {
         fixture.DbContext!.ChangeTracker.Clear();
+
         // Arrange
         var entities = new[]
         {

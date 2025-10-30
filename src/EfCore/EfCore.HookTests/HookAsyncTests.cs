@@ -11,9 +11,10 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
+        await using var context = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
         await using var snapshot = new SnapshotContext(context);
         var cancellationToken = new CancellationToken();
 
@@ -30,9 +31,10 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
+        await using var context = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
         await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing
@@ -47,9 +49,10 @@ public class HookAsyncTests
     {
         // Arrange
         var hook = new TestHookAsync();
-        await using var context = new HookContext(new DbContextOptionsBuilder<HookContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
+        await using var context = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
         await using var snapshot = new SnapshotContext(context);
 
         // Act & Assert - should complete without throwing

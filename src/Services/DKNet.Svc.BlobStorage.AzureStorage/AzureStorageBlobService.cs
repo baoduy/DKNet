@@ -1,18 +1,35 @@
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Author: DRUNK Coding Team
+// File: AzureStorageBlobService.cs
+// Description: Azure Blob Storage implementation of the BlobService abstraction.
+
 namespace DKNet.Svc.BlobStorage.AzureStorage;
 
+/// <summary>
+///     Azure Blob Storage provider implementing <see cref="BlobService" /> using
+///     <c>Azure.Storage.Blobs</c> clients.
+/// </summary>
+/// <param name="options">The options wrapper that provides <see cref="AzureStorageOptions" />.</param>
 public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> options) : BlobService(options.Value)
 {
     #region Fields
 
-    private BlobContainerClient? _containerClient;
-
     private readonly AzureStorageOptions _options =
         options.Value ?? throw new ArgumentNullException(nameof(options));
+
+    private BlobContainerClient? _containerClient;
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Checks whether the specified blob exists in the configured Azure container.
+    /// </summary>
+    /// <param name="blob">The blob request describing the container name and blob path.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>True when the blob exists; otherwise false.</returns>
     public override async Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -21,6 +38,13 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return rs.Value;
     }
 
+    /// <summary>
+    ///     Deletes a blob or folder identified by the provided <paramref name="blob" /> request.
+    ///     If the blob request represents a folder, the implementation will enumerate and delete contained items.
+    /// </summary>
+    /// <param name="blob">The blob request describing the blob or folder to delete.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>True when the delete completed successfully; otherwise false.</returns>
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
         var location = GetBlobLocation(blob);
@@ -29,6 +53,12 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             : DeleteFolderAsync(location, cancellationToken);
     }
 
+    /// <summary>
+    ///     Deletes a single file blob at the specified location.
+    /// </summary>
+    /// <param name="fileLocation">Normalized blob path to delete.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>True when the delete operation succeeded or the blob did not exist.</returns>
     private async Task<bool> DeleteFileAsync(string fileLocation, CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -36,6 +66,12 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return rs.Value;
     }
 
+    /// <summary>
+    ///     Deletes a folder and all contained blobs by enumerating child items recursively.
+    /// </summary>
+    /// <param name="folderLocation">The folder path (with trailing slash) to delete.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>True when deletion succeeds; otherwise may throw an exception.</returns>
     private async Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -52,7 +88,8 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             await foreach (var blob in resultSegment)
                 if (blob.IsDirectory())
                     queue.Enqueue(blob.Name.EnsureTrailingSlash());
-                else await DeleteFileAsync(blob.Name, cancellationToken);
+                else
+                    await DeleteFileAsync(blob.Name, cancellationToken);
 
             //Add Empty folder to stack and delete later
             subStack.Push(tbDelete);
@@ -65,7 +102,14 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return true;
     }
 
-    public override async Task<BlobDataResult?> GetAsync(BlobRequest blob,
+    /// <summary>
+    ///     Retrieves blob content and metadata for the specified blob request.
+    /// </summary>
+    /// <param name="blob">The blob request describing the blob to retrieve.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>A BlobDataResult containing content and details when found; otherwise null.</returns>
+    public override async Task<BlobDetails.BlobDataResult?> GetAsync(
+        BlobRequest blob,
         CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -76,7 +120,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         if (!es.Value) return null;
 
         var data = await b.DownloadContentAsync(cancellationToken);
-        return new BlobDataResult(blob.Name, data.Value.Content)
+        return new BlobDetails.BlobDataResult(blob.Name, data.Value.Content)
         {
             Type = BlobTypes.File,
             Details = new BlobDetails
@@ -89,6 +133,10 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         };
     }
 
+    /// <summary>
+    ///     Creates or returns a cached <see cref="BlobContainerClient" /> for the configured container.
+    /// </summary>
+    /// <returns>An initialized <see cref="BlobContainerClient" /> instance.</returns>
     private async Task<BlobContainerClient> GetClient()
     {
         if (_containerClient != null) return _containerClient;
@@ -100,7 +148,16 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return _containerClient;
     }
 
-    public override async Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null,
+    /// <summary>
+    ///     Generates a public access URL (SAS) for the given blob request when supported by the container.
+    /// </summary>
+    /// <param name="blob">The blob request describing the target blob.</param>
+    /// <param name="expiresFromNow">Optional time span for which the generated URL will be valid. Defaults to 1 day.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>A URI granting temporary public read access to the blob.</returns>
+    public override async Task<Uri> GetPublicAccessUrl(
+        BlobRequest blob,
+        TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -124,7 +181,14 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         return blobClient.GenerateSasUri(sasBuilder);
     }
 
-    public override async IAsyncEnumerable<BlobResult> ListItemsAsync(BlobRequest blob,
+    /// <summary>
+    ///     Lists items in the configured container under the provided request path.
+    /// </summary>
+    /// <param name="blob">The blob request describing the target listing path.</param>
+    /// <param name="cancellationToken">Cancellation token for the async enumeration.</param>
+    /// <returns>An async stream of <see cref="BlobDetails.BlobResult" /> entries.</returns>
+    public override async IAsyncEnumerable<BlobDetails.BlobResult> ListItemsAsync(
+        BlobRequest blob,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
@@ -132,7 +196,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
 
         await foreach (var b in resultSegment)
-            yield return new BlobResult(blob.Name)
+            yield return new BlobDetails.BlobResult(blob.Name)
             {
                 Name = blob.Name,
                 Details = b.IsDirectory()
@@ -147,7 +211,14 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             };
     }
 
-    public override async Task<string> SaveAsync(BlobData blob, CancellationToken cancellationToken = default)
+    /// <summary>
+    ///     Uploads the provided blob data to the configured container and returns the saved blob name.
+    /// </summary>
+    /// <param name="blob">The blob payload and metadata to save.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The name/path of the stored blob.</returns>
+    public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
+        CancellationToken cancellationToken = default)
     {
         var client = await GetClient();
         var location = GetBlobLocation(blob);

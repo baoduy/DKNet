@@ -92,7 +92,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task FindAsync_WithKeyValues_ReturnsEntity()
     {
         // Act
-        var entity = await _repository!.FindAsync(new object[] { 1 });
+        var entity = await _repository!.FindAsync([1]);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -116,8 +116,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
         _dbContext.TestEntities.AddRange(
             new TestEntity { Id = 1, Name = "John", Age = 30 },
             new TestEntity { Id = 2, Name = "Jane", Age = 25 },
-            new TestEntity { Id = 3, Name = "Bob", Age = 35 }
-        );
+            new TestEntity { Id = 3, Name = "Bob", Age = 35 });
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
     }
@@ -228,7 +227,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
     public async Task ReadRepository_FindAsync_WithKeyValues_ReturnsEntity()
     {
         // Act
-        var entity = await _readRepository!.FindAsync(new object[] { 2 });
+        var entity = await _readRepository!.FindAsync([2]);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -309,7 +308,9 @@ public class RepositoryExtendedTests : IAsyncLifetime
         #region Properties
 
         public int Age { get; set; }
+
         public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         #endregion
@@ -320,6 +321,7 @@ public class RepositoryExtendedTests : IAsyncLifetime
         #region Properties
 
         public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         #endregion

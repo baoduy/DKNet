@@ -3,6 +3,9 @@ using DKNet.Svc.Transformation.TokenExtractors;
 
 namespace DKNet.Svc.Transformation;
 
+/// <summary>
+///     Defines TokenNotFoundBehavior values.
+/// </summary>
 public enum TokenNotFoundBehavior
 {
     /// <summary>
@@ -97,6 +100,8 @@ public class TransformOptions
     /// </remarks>
     public IEnumerable<object> GlobalParameters { get; set; } = [];
 
+    /// <summary>
+    /// </summary>
     public TokenNotFoundBehavior TokenNotFoundBehavior { get; set; } = TokenNotFoundBehavior.ThrowError;
 
     #endregion
@@ -107,6 +112,9 @@ public class TransformOptions
     /// <remarks>
     ///     Use this definition to identify tokens enclosed in square brackets, e.g., <c>[username]</c>.
     /// </remarks>
+    /// <summary>
+    ///     SquareBrackets field.
+    /// </summary>
     public static readonly ITokenDefinition SquareBrackets = new TokenDefinition("[", "]");
 
     /// <summary>

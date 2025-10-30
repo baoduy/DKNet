@@ -24,7 +24,9 @@ public static class SpecRepoExtensions
     ///     otherwise, false
     /// </returns>
     public static Task<bool> AnyAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class =>
         repo.Query(specification).AnyAsync(cancellationToken);
 
@@ -40,7 +42,9 @@ public static class SpecRepoExtensions
     ///     specification
     /// </returns>
     public static Task<int> CountAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class =>
         repo.Query(specification).CountAsync(cancellationToken);
 
@@ -54,7 +58,9 @@ public static class SpecRepoExtensions
     /// <returns>A task representing the asynchronous operation that returns the first entity</returns>
     /// <exception cref="InvalidOperationException">Thrown when no entity matching the specification is found</exception>
     public static Task<TEntity> FirstAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class =>
         repo.Query(specification).FirstAsync(cancellationToken);
 
@@ -67,7 +73,9 @@ public static class SpecRepoExtensions
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task representing the asynchronous operation that returns the first entity or null</returns>
     public static Task<TEntity?> FirstOrDefaultAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class =>
         repo.Query(specification).FirstOrDefaultAsync(cancellationToken);
 
@@ -81,7 +89,9 @@ public static class SpecRepoExtensions
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task representing the asynchronous operation that returns the first projected model or null</returns>
     public static Task<TModel?> FirstOrDefaultAsync<TEntity, TModel>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class
         where TModel : class
         => repo.Query<TEntity, TModel>(specification).FirstOrDefaultAsync(cancellationToken);
@@ -95,7 +105,9 @@ public static class SpecRepoExtensions
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task representing the asynchronous operation that returns a list of entities</returns>
     public static async Task<IList<TEntity>> ToListAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class =>
         await repo.Query(specification).ToListAsync(cancellationToken);
 
@@ -109,7 +121,9 @@ public static class SpecRepoExtensions
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task representing the asynchronous operation that returns a list of projected models</returns>
     public static async Task<IList<TModel>> ToListAsync<TEntity, TModel>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
         where TEntity : class
         where TModel : class
         => await repo.Query<TEntity, TModel>(specification).ToListAsync(cancellationToken);
@@ -124,7 +138,9 @@ public static class SpecRepoExtensions
     /// <param name="pageSize">Number of items per page</param>
     /// <returns>A task representing the asynchronous operation that returns a paged list of entities</returns>
     public static Task<IPagedList<TEntity>> ToPagedListAsync<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, int pageNumber,
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        int pageNumber,
         int pageSize) where TEntity : class => repo.Query(specification).ToPagedListAsync(pageNumber, pageSize);
 
     /// <summary>
@@ -138,7 +154,9 @@ public static class SpecRepoExtensions
     /// <param name="pageSize">Number of items per page</param>
     /// <returns>A task representing the asynchronous operation that returns a paged list of projected models</returns>
     public static Task<IPagedList<TModel>> ToPagedListAsync<TEntity, TModel>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification, int pageNumber,
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification,
+        int pageNumber,
         int pageSize)
         where TEntity : class
         where TModel : class
@@ -152,7 +170,8 @@ public static class SpecRepoExtensions
     /// <param name="specification">The specification to apply</param>
     /// <returns>An async enumerable of entities</returns>
     public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification) where TEntity : class =>
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification) where TEntity : class =>
         repo.Query(specification).ToPageEnumerable();
 
     /// <summary>
@@ -164,7 +183,8 @@ public static class SpecRepoExtensions
     /// <param name="specification">The specification to apply</param>
     /// <returns>An async enumerable of projected models</returns>
     public static IAsyncEnumerable<TModel> ToPageEnumerable<TEntity, TModel>(
-        this IRepositorySpec repo, ISpecification<TEntity> specification)
+        this IRepositorySpec repo,
+        ISpecification<TEntity> specification)
         where TEntity : class
         where TModel : class
         => repo.Query<TEntity, TModel>(specification).ToPageEnumerable();

@@ -25,9 +25,15 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="encryptedText">The Base64-encoded string.</param>
     /// <returns>The decrypted plain text string.</returns>
+    /// <summary>
+    ///     FromBase64String operation.
+    /// </summary>
     public static string FromBase64String(this string encryptedText)
     {
-        if (string.IsNullOrWhiteSpace(encryptedText)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(encryptedText))
+        {
+            return string.Empty;
+        }
 
         var base64EncodedBytes = Convert.FromBase64String(encryptedText);
         return Encoding.UTF8.GetString(base64EncodedBytes);
@@ -48,7 +54,11 @@ public static class Base65StringExtensions
     /// </remarks>
     public static string FromBase64UrlString(this string encryptedText)
     {
-        if (string.IsNullOrWhiteSpace(encryptedText)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(encryptedText))
+        {
+            return string.Empty;
+        }
+
         return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(encryptedText));
     }
 
@@ -57,36 +67,53 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="base64String">The string to check.</param>
     /// <returns>True if the string is a valid Base64 encoded string; otherwise, false.</returns>
+    /// <summary>
+    ///     IsBase64String operation.
+    /// </summary>
     public static bool IsBase64String(this string base64String)
     {
         if (string.IsNullOrWhiteSpace(base64String))
+        {
             return false;
+        }
 
         if (base64String.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)
             || base64String.Equals(bool.FalseString, StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         // Must be multiple of 4
         if (base64String.Length % 4 != 0)
+        {
             return false;
+        }
 
         var paddingCount = 0;
         var len = base64String.Length;
 
         // Count padding characters (`=`) only at the end
-        for (var i = len - 1; i >= 0 && base64String[i] == '='; i--) paddingCount++;
+        for (var i = len - 1; i >= 0 && base64String[i] == '='; i--)
+        {
+            paddingCount++;
+        }
 
         switch (paddingCount)
         {
             case > 2:
                 return false;
+
             // If there is padding, it must only be at the end (i.e. no '=' in the “middle”)
             case > 0:
             {
                 // All positions before len - paddingCount must not be '='
                 for (var i = 0; i < len - paddingCount; i++)
+                {
                     if (base64String[i] == '=')
+                    {
                         return false;
+                    }
+                }
 
                 break;
             }
@@ -94,7 +121,10 @@ public static class Base65StringExtensions
 
         // Character-level validation (letters, digits, +, /, =)
         if (base64String.Select(c => char.IsLetterOrDigit(c) || c == '+' || c == '/' || c == '=')
-            .Any(valid => !valid)) return false;
+            .Any(valid => !valid))
+        {
+            return false;
+        }
 
         // Try decode
         Span<byte> buffer = new byte[base64String.Length];
@@ -107,6 +137,9 @@ public static class Base65StringExtensions
     /// <param name="plainText">The plain text to encode.</param>
     /// <returns>The Base64-encoded string.</returns>
     /// <exception cref="ArgumentNullException">Thrown when plainText is null.</exception>
+    /// <summary>
+    ///     ToBase64String operation.
+    /// </summary>
     public static string ToBase64String(this string plainText) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 

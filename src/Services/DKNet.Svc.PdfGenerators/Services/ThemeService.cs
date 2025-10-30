@@ -29,18 +29,18 @@ internal class ThemeService
 
     public ThemeService(Theme theme, ModuleOptions options, IConversionEvents events)
     {
-        _theme = theme;
-        _options = options;
+        this._theme = theme;
+        this._options = options;
 
         // adjust local dictionary paths
         if (options is NodeModuleOptions nodeModuleOptions)
         {
             var path = nodeModuleOptions.ModulePath;
 
-            _themeSourceMapping = ModuleInformation.UpdateDic(_themeSourceMapping, path);
+            this._themeSourceMapping = ModuleInformation.UpdateDic(this._themeSourceMapping, path);
         }
 
-        events.TemplateModelCreating += InternalAddThemeToTemplateAsync;
+        events.TemplateModelCreating += this.InternalAddThemeToTemplateAsync;
     }
 
     #endregion
@@ -49,12 +49,12 @@ internal class ThemeService
 
     internal async Task InternalAddThemeToTemplateAsync(object? sender, TemplateModelEventArgs e)
     {
-        switch (_theme)
+        switch (this._theme)
         {
             case PredefinedTheme predefinedTheme when predefinedTheme.Type != ThemeType.None:
             {
-                var value = _themeSourceMapping[predefinedTheme.Type];
-                e.TemplateModel.Add(StyleKey, _options.IsRemote ? value.RemotePath : value.NodePath);
+                var value = this._themeSourceMapping[predefinedTheme.Type];
+                e.TemplateModel.Add(StyleKey, this._options.IsRemote ? value.RemotePath : value.NodePath);
                 break;
             }
 

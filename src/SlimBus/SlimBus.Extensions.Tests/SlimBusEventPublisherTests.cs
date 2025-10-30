@@ -49,6 +49,7 @@ public class SlimBusEventPublisherTests(Fixture fixture) : IClassFixture<Fixture
         var messageBus = fixture.ServiceProvider.GetRequiredService<IMessageBus>();
         var publisher = new SlimBusEventPublisher(messageBus);
         var eventItem = new TestEventItem();
+
         // AdditionalData is empty by default
 
         // Act & Assert - should not throw

@@ -32,11 +32,11 @@ public sealed class HasAttributeTestClass3
 {
     #region Properties
 
-    public string Prop3 { get; set; } = null!;
+    public int Prop5 { get; set; }
 
     public object Prop4 { get; set; } = null!;
 
-    public int Prop5 { get; set; }
+    public string Prop3 { get; set; } = null!;
 
     #endregion
 }

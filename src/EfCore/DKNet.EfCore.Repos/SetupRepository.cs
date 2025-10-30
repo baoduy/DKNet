@@ -2,6 +2,9 @@
 
 namespace Microsoft.Extensions.DependencyInjection;
 
+/// <summary>
+///     Repo setup extensions for <see cref="IServiceCollection" />
+/// </summary>
 public static class SetupRepository
 {
     #region Methods
@@ -40,6 +43,12 @@ public static class SetupRepository
         return services.AddGenericRepositories();
     }
 
+    /// <summary>
+    ///     Add Repository Factory for TDbContext
+    /// </summary>
+    /// <param name="services"></param>
+    /// <typeparam name="TDbContext"></typeparam>
+    /// <returns></returns>
     public static IServiceCollection AddRepoFactory<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext =>
         services.AddScoped<IRepositoryFactory, RepositoryFactory<TDbContext>>();

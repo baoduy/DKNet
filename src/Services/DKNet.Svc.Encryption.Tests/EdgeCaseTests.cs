@@ -92,6 +92,7 @@ public class EdgeCaseTests
         provider.GetRequiredService<IAesGcmEncryption>().ShouldNotBeNull();
         provider.GetRequiredService<IShaHashing>().ShouldNotBeNull();
         provider.GetRequiredService<IHmacHashing>().ShouldNotBeNull();
+
         //provider.GetRequiredService<IPasswordAesEncryption>().ShouldNotBeNull();
         provider.GetRequiredService<IRsaEncryption>().ShouldNotBeNull();
     }
@@ -112,6 +113,7 @@ public class EdgeCaseTests
         var hex = hmac.ComputeSha256("msg", "secret", false);
         hex.ShouldMatch("^[0-9A-F]+$");
         hmac.VerifySha256("msg", "secret", hex, false).ShouldBeTrue();
+
         // Change one char
         var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
         hmac.VerifySha256("msg", "secret", mutated, false, false).ShouldBeFalse();
@@ -124,6 +126,7 @@ public class EdgeCaseTests
         var hex = hmac.ComputeSha512("msg", "secret", false);
         hex.ShouldMatch("^[0-9A-F]+$");
         hmac.VerifySha512("msg", "secret", hex, false).ShouldBeTrue();
+
         // Change one char
         var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
         hmac.VerifySha512("msg", "secret", mutated, false, false).ShouldBeFalse();
@@ -176,6 +179,7 @@ public class EdgeCaseTests
     {
         using var rsa = new RsaEncryption();
         var sig = rsa.Sign("hello");
+
         // mutate signature
         var bytes = Convert.FromBase64String(sig);
         bytes[0] ^= 0xFF;

@@ -25,7 +25,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task CheckExistsAsyncReturnsTrueIfExists()
     {
         var fileName = $"exists-check-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("exists"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("exists"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
 
@@ -38,12 +38,12 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     {
         var dir = $"delete-dir-{Guid.NewGuid()}";
         var fileName = $"{dir}/file.txt";
-        var blob = new BlobData(fileName, new BinaryData("bye"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("bye"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
         var deleted = await _service.DeleteAsync(new BlobRequest(dir) { Type = BlobTypes.Directory });
         deleted.ShouldBeTrue();
-        var items = new List<BlobResult>();
+        var items = new List<BlobDetails.BlobResult>();
         await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
             items.Add(item);
 
@@ -54,7 +54,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task DeleteAsyncDeletesFile()
     {
         var fileName = $"delete-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("bye"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("bye"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
         var deleted = await _service.DeleteAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
@@ -67,7 +67,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task GetAsyncReturnsBlobDataResult()
     {
         var fileName = $"get-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("abc"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("abc"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
         var result = await _service.GetAsync(new BlobRequest(fileName) { Type = BlobTypes.File });
@@ -91,10 +91,11 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task GetPublicAccessUrlReturnsUrl()
     {
         var fileName = $"public-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("public"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("public"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
-        var url = await _service.GetPublicAccessUrl(new BlobRequest(fileName) { Type = BlobTypes.File },
+        var url = await _service.GetPublicAccessUrl(
+            new BlobRequest(fileName) { Type = BlobTypes.File },
             TimeSpan.FromMinutes(5));
         url.ShouldNotBeNull();
         url.ShouldBeOfType<Uri>();
@@ -106,10 +107,10 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     {
         var dir = $"dir-{Guid.NewGuid()}";
         var fileName = $"{dir}/file.txt";
-        var blob = new BlobData(fileName, new BinaryData("data"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("data"u8.ToArray()))
             { Overwrite = true, Type = BlobTypes.File };
         await _service.SaveAsync(blob);
-        var items = new List<BlobResult>();
+        var items = new List<BlobDetails.BlobResult>();
         await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
             items.Add(item);
 
@@ -120,7 +121,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task SaveAsyncSavesFileAndOverwrites()
     {
         var fileName = $"test-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("world"u8.ToArray()))
         {
             Overwrite = false,
             Type = BlobTypes.File
@@ -140,7 +141,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task SaveAsyncThrowsIfExistsAndNoOverwrite()
     {
         var fileName = $"exists-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("data"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("data"u8.ToArray()))
         {
             Overwrite = false,
             Type = BlobTypes.File
@@ -155,7 +156,7 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     public async Task SavesFileAndList()
     {
         var fileName = $"new-file-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("world"u8.ToArray()))
         {
             Overwrite = false,
             Type = BlobTypes.File

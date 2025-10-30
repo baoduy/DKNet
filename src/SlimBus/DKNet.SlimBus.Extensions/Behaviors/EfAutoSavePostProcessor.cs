@@ -7,8 +7,7 @@ using SlimMessageBus.Host.Interceptor;
 
 namespace DKNet.SlimBus.Extensions.Behaviors;
 
-internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
-    IServiceProvider serviceProvider)
+internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(IServiceProvider serviceProvider)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
 {
     #region Properties
@@ -25,12 +24,18 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(
         var response = await next();
 
         //If response is null or failed, do not save changes
-        if (response is null || response is IResultBase { IsSuccess: false }) return response;
+        if (response is null || response is IResultBase { IsSuccess: false })
+        {
+            return response;
+        }
 
         //If request is a query type, do not save changes
         if (request is Fluents.Queries.IWitResponse<TResponse> ||
             request is Fluents.Queries.IWitPageResponse<TResponse>
-            || request is Fluents.EventsConsumers.IHandler<IRequest>) return response;
+            || request is Fluents.EventsConsumers.IHandler<IRequest>)
+        {
+            return response;
+        }
 
         // Save changes for all DbContexts with changes
         var dbContexts = serviceProvider.GetServices<DbContext>().Distinct();

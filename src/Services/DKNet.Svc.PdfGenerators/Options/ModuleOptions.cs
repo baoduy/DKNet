@@ -15,16 +15,19 @@ public record ModuleOptions
     ///     Creates a new instance of <see cref="ModuleOptions" />.
     /// </summary>
     /// <param name="moduleLocation">Location from where to load the modules.</param>
-    protected internal ModuleOptions(ModuleLocation moduleLocation) => ModuleLocation = moduleLocation;
+    protected internal ModuleOptions(ModuleLocation moduleLocation) => this.ModuleLocation = moduleLocation;
 
     #endregion
 
     #region Properties
 
-    internal bool IsRemote => ModuleLocation == ModuleLocation.Remote;
+    internal bool IsRemote => this.ModuleLocation == ModuleLocation.Remote;
 
     /// <summary>
     ///     Provides information from where to load modules.
+    /// </summary>
+    /// <summary>
+    ///     Gets or sets ModuleLocation.
     /// </summary>
     public ModuleLocation ModuleLocation { get; }
 
@@ -58,6 +61,7 @@ public record ModuleOptions
     /// npm i latex.css
     /// </code>
     /// </remarks>
+    /// <returns>The result of the operation.</returns>
     public static ModuleOptions FromLocalPath(string modulePath) => new NodeModuleOptions(modulePath);
 
     #endregion

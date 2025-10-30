@@ -1,10 +1,15 @@
-﻿using System.Reflection;
+﻿// <copyright file="AttributeExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+using System.Reflection;
 
 // ReSharper disable MemberCanBePrivate.Global
 namespace DKNet.Fw.Extensions;
 
 /// <summary>
-///     Attributes extensions methods
+///     Attributes extensions methods.
 /// </summary>
 public static class AttributeExtensions
 {
@@ -40,8 +45,11 @@ public static class AttributeExtensions
     /// <param name="propertyName">The name of the property to check.</param>
     /// <param name="inherit">A value indicating whether to search the property's inheritance chain to find the attribute.</param>
     /// <returns><c>true</c> if the attribute is found; otherwise, <c>false</c>.</returns>
-    public static bool HasAttributeOnProperty<TAttribute>(this object @this, string propertyName,
-        bool inherit = true) where TAttribute : Attribute
+    public static bool HasAttributeOnProperty<TAttribute>(
+        this object @this,
+        string propertyName,
+        bool inherit = true)
+        where TAttribute : Attribute
     {
         var prop = @this.GetProperty(propertyName);
         return prop?.HasAttribute<TAttribute>(inherit) == true;

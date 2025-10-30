@@ -78,10 +78,12 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     {
         TestPublisher.Clear();
         var (ctx, _) = await CreateScopeAsync();
+
         var entity = new TestAuditEntity { Name = "User3", Age = 40, IsActive = false, Balance = 0m };
         entity.SetCreatedBy("creator-3");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait for create audit log to be published
         TestPublisher.Clear();
 
         ctx.AuditEntities.Remove(entity);
@@ -98,6 +100,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.Action.ShouldBe(AuditLogAction.Deleted); // assert action
         log.Changes.Count.ShouldBeGreaterThan(0);
         log.Changes.ShouldAllBe(c => c.NewValue == null);
+
         // Ensure at least one core property listed
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Name));
     }
@@ -105,6 +108,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
+
         try
         {
             if (File.Exists(_dbPath)) File.Delete(_dbPath);
@@ -124,7 +128,8 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         services.AddLogging();
         services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
-        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
+        services.AddDbContextWithHook<TestAuditDbContext>((_, options) =>
+            options.UseSqlite($"Data Source={_dbPath}"));
         var provider = services.BuildServiceProvider();
         await using var scope = provider.CreateAsyncScope();
         var publishers = scope.ServiceProvider.GetAuditLogPublishers<TestAuditDbContext>().ToList();
@@ -138,7 +143,8 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         services.AddLogging();
         services.AddEfCoreAuditLogs<TestAuditDbContext, TestPublisher>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, FailingPublisher>();
-        services.AddDbContextWithHook<TestAuditDbContext>((_, options) => options.UseSqlite($"Data Source={_dbPath}"));
+        services.AddDbContextWithHook<TestAuditDbContext>((_, options) =>
+            options.UseSqlite($"Data Source={_dbPath}"));
         var provider = services.BuildServiceProvider();
         await using var scope = provider.CreateAsyncScope();
         var ctx = scope.ServiceProvider.GetRequiredService<TestAuditDbContext>();
@@ -190,7 +196,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         entity.LastModifiedOn.ShouldBe(entity.CreatedOn);
         entity.SetUpdatedBy("updater");
         entity.LastModifiedBy.ShouldBe("updater");
-        entity.LastModifiedOn.ShouldBe(entity.UpdatedOn.Value);
+        entity.LastModifiedOn.ShouldBe(entity.UpdatedOn!.Value);
     }
 
     [Fact]
@@ -231,10 +237,12 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         entity.SetCreatedBy("creator-nc");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait for audit log to be published
         TestPublisher.Clear();
 
         // Save without modifications
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait to ensure no async audit logs are published
         TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(0);
     }
 

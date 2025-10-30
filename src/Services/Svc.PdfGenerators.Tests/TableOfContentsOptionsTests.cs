@@ -94,6 +94,7 @@ public class TableOfContentsOptionsTests
         var options = new TableOfContentsOptions
         {
             MinDepthLevel = 4,
+
             // Act
             MaxDepthLevel = 4
         };
@@ -169,6 +170,7 @@ public class TableOfContentsOptionsTests
         var options = new TableOfContentsOptions
         {
             MaxDepthLevel = 4,
+
             // Act
             MinDepthLevel = 4
         };

@@ -8,20 +8,35 @@ namespace DKNet.Svc.Transformation.Convertors;
 /// <summary>
 ///     The convertor will be used to convert object to string before replace to the template.
 /// </summary>
+/// <summary>
+///     Provides ValueFormatter functionality.
+/// </summary>
 public class ValueFormatter : IValueFormatter
 {
     #region Properties
 
+    /// <summary>
+    /// </summary>
     public virtual string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";
 
+    /// <summary>
+    /// </summary>
     public virtual string IntegerFormat { get; set; } = "###,##0";
 
+    /// <summary>
+    /// </summary>
     public virtual string NumberFormat { get; set; } = "###,##0.00";
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Convert operation.
+    /// </summary>
+    /// <param name="token">The token parameter.</param>
+    /// <param name="value">The value parameter.</param>
+    /// <returns>The result of the operation.</returns>
     public virtual string Convert(IToken token, object? value)
     {
         return value == null

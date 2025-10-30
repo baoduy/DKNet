@@ -117,6 +117,7 @@ public class AesTests
     {
         // Whitespace should throw because CreateAesFromKey is used then validation fails
         Should.Throw<ArgumentException>(() => new AesEncryption(" "));
+
         // Null should generate a new key (no exception)
         using var aes = new AesEncryption();
         aes.Key.ShouldNotBeNullOrWhiteSpace();

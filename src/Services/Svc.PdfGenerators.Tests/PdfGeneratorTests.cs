@@ -13,7 +13,7 @@ public class PdfGeneratorTests
 
     #region Constructors
 
-    public PdfGeneratorTests(ITestOutputHelper testOutputHelper) => _testOutputHelper = testOutputHelper;
+    public PdfGeneratorTests(ITestOutputHelper testOutputHelper) => this._testOutputHelper = testOutputHelper;
 
     #endregion
 
@@ -27,7 +27,7 @@ public class PdfGeneratorTests
         var pdfPath = Path.GetTempFileName() + ".pdf";
         var result = await generator.ConvertHtmlAsync(html, pdfPath);
         Assert.True(File.Exists(result));
-        _testOutputHelper.WriteLine($"PDF generated at: {result}");
+        this._testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(result);
     }
 
@@ -48,7 +48,7 @@ public class PdfGeneratorTests
         await File.WriteAllTextAsync(markdownPath, "# Hello World\nThis is a test.");
         var result = await generator.ConvertMarkdownFileAsync(markdownPath);
         Assert.True(File.Exists(result));
-        _testOutputHelper.WriteLine($"PDF generated at: {result}");
+        this._testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(markdownPath);
         File.Delete(result);
     }
@@ -64,7 +64,7 @@ public class PdfGeneratorTests
         var pdfPath = Path.GetTempFileName() + ".pdf";
         var result = await generator.ConvertMultipleMarkdownFilesAsync([md1, md2], pdfPath);
         Assert.True(File.Exists(result));
-        _testOutputHelper.WriteLine($"PDF generated at: {result}");
+        this._testOutputHelper.WriteLine($"PDF generated at: {result}");
         File.Delete(md1);
         File.Delete(md2);
         File.Delete(result);

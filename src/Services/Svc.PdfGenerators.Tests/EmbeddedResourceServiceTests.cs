@@ -75,6 +75,7 @@ public class EmbeddedResourceServiceTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(content));
+
             // CSS files typically contain selectors and properties
             Assert.Contains(".", content); // CSS class or property
             Console.WriteLine($"CSS resource length: {content.Length}");
@@ -112,6 +113,7 @@ public class EmbeddedResourceServiceTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(content));
+
             // HTML resources should contain HTML tags
             Assert.True(content.Contains("<") || content.Contains(">"));
             Console.WriteLine($"HTML resource length: {content.Length}");
@@ -165,6 +167,7 @@ public class EmbeddedResourceServiceTests
     {
         // Arrange
         var service = new EmbeddedResourceService();
+
         // Use a known embedded resource from the project
         var resourceName = "ContentTemplate.html";
 

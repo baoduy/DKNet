@@ -6,15 +6,18 @@ public sealed class LocalBlobServiceFixture : IDisposable
 
     public LocalBlobServiceFixture()
     {
-        TestRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
+        this.TestRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
 
-        if (Directory.Exists(TestRoot))
-            Directory.Delete(TestRoot, true);
-        Directory.CreateDirectory(TestRoot);
+        if (Directory.Exists(this.TestRoot))
+        {
+            Directory.Delete(this.TestRoot, true);
+        }
+
+        Directory.CreateDirectory(this.TestRoot);
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-                (StringComparer.OrdinalIgnoreCase)
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
                     { "BlobStorage:LocalFolder:RootFolder", "Test-Folder" }
                 })
@@ -25,7 +28,7 @@ public sealed class LocalBlobServiceFixture : IDisposable
             .AddLocalDirectoryBlobService(config);
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        Service = serviceProvider.GetRequiredService<IBlobService>();
+        this.Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
     #endregion
@@ -33,6 +36,7 @@ public sealed class LocalBlobServiceFixture : IDisposable
     #region Properties
 
     public IBlobService Service { get; }
+
     public string TestRoot { get; }
 
     #endregion
@@ -41,7 +45,11 @@ public sealed class LocalBlobServiceFixture : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(TestRoot)) Directory.Delete(TestRoot, true);
+        if (Directory.Exists(this.TestRoot))
+        {
+            Directory.Delete(this.TestRoot, true);
+        }
+
         GC.SuppressFinalize(this);
     }
 

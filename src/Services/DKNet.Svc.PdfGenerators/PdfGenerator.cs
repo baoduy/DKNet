@@ -6,6 +6,9 @@ using MarginOptions = PuppeteerSharp.Media.MarginOptions;
 
 namespace DKNet.Svc.PdfGenerators;
 
+/// <summary>
+///     Interface for PdfGenerator operations.
+/// </summary>
 public interface IPdfGenerator
 {
     #region Methods
@@ -68,6 +71,11 @@ public interface IPdfGenerator
 ///     Initializes a new instance of <see cref="PdfGenerator" />.
 /// </remarks>
 /// <param name="options">Options for PDF generation.</param>
+/// <summary>
+///     Provides PdfGenerator functionality.
+/// </summary>
+/// <param>The null parameter.</param>
+/// <returns>The result of the operation.</returns>
 public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
 {
     #region Properties
@@ -116,8 +124,8 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <returns>Path to the generated PDF file.</returns>
     public async Task<string> ConvertHtmlFileAsync(string htmlFilePath, string? outputPath = null)
     {
-        if (!File.Exists(htmlFilePath))
-            throw new FileNotFoundException($"HTML file not found: {htmlFilePath}");
+        if (!File.Exists(htmlFilePath)) throw new FileNotFoundException($"HTML file not found: {htmlFilePath}");
+
         var htmlContent = await File.ReadAllTextAsync(htmlFilePath);
         return await ConvertHtmlAsync(htmlContent, outputPath);
     }

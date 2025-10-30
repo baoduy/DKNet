@@ -13,8 +13,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -30,8 +31,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -52,8 +54,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         var uniqueConnectionString = fixture.GetConnectionString()
             .Replace("master", $"TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase);
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(uniqueConnectionString).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(uniqueConnectionString).Options);
 
         // Act
         await db.CreateTableAsync<TestEntity>();
@@ -72,8 +75,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -89,11 +93,15 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Ensure connection is closed first
-        if (db.Database.GetDbConnection().State != ConnectionState.Closed) await db.Database.CloseConnectionAsync();
+        if (db.Database.GetDbConnection().State != ConnectionState.Closed)
+        {
+            await db.Database.CloseConnectionAsync();
+        }
 
         // Act
         var connection = await db.GetDbConnection();
@@ -109,8 +117,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Ensure connection is open first
         await db.Database.OpenConnectionAsync();
@@ -129,8 +138,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -148,8 +158,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -165,8 +176,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -183,8 +195,9 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
 
         // Don't create the database - table won't exist
 

@@ -2,6 +2,22 @@ namespace Fw.Extensions.Tests;
 
 public class AsyncEnumerableExtensionsTests
 {
+    #region Methods
+
+    [Fact]
+    public async Task ToListAsync_WithEmptySequence_ReturnsEmptyList()
+    {
+        // Arrange
+        var asyncEnumerable = CreateAsyncEnumerable(Array.Empty<int>());
+
+        // Act
+        var result = await asyncEnumerable.ToListAsync();
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(0);
+    }
+
     [Fact]
     public async Task ToListAsync_WithItems_ReturnsCorrectList()
     {
@@ -19,17 +35,21 @@ public class AsyncEnumerableExtensionsTests
     }
 
     [Fact]
-    public async Task ToListAsync_WithEmptySequence_ReturnsEmptyList()
+    public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
     {
         // Arrange
-        var asyncEnumerable = CreateAsyncEnumerable(Array.Empty<int>());
+        var items = new[] { "hello", null, "world" };
+        var asyncEnumerable = CreateAsyncEnumerable(items);
 
         // Act
         var result = await asyncEnumerable.ToListAsync();
 
         // Assert
         result.ShouldNotBeNull();
-        result.Count.ShouldBe(0);
+        result.Count.ShouldBe(3);
+        result[0].ShouldBe("hello");
+        result[1].ShouldBeNull();
+        result[2].ShouldBe("world");
     }
 
     [Fact]
@@ -62,26 +82,6 @@ public class AsyncEnumerableExtensionsTests
         result.ShouldNotBeNull();
         result.Count.ShouldBe(3);
         items.ShouldBeEquivalentTo(result.ToArray());
-    }
-
-    #region Methods
-
-    [Fact]
-    public async Task ToListAsync_WithNullItems_HandlesNullCorrectly()
-    {
-        // Arrange
-        var items = new[] { "hello", null, "world" };
-        var asyncEnumerable = CreateAsyncEnumerable(items);
-
-        // Act
-        var result = await asyncEnumerable.ToListAsync();
-
-        // Assert
-        result.ShouldNotBeNull();
-        result.Count.ShouldBe(3);
-        result[0].ShouldBe("hello");
-        result[1].ShouldBeNull();
-        result[2].ShouldBe("world");
     }
 
     #endregion

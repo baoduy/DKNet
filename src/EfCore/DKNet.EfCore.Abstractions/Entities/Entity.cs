@@ -4,27 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace DKNet.EfCore.Abstractions.Entities;
 
 /// <summary>
-///     Defines the base contract for all entities in the system.
-/// </summary>
-/// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
-/// <remarks>
-///     This interface establishes the fundamental structure for entities,
-///     ensuring they have a unique identifier of a specified type.
-/// </remarks>
-public interface IEntity<out TKey>
-{
-    #region Properties
-
-    /// <summary>
-    ///     Gets the unique identifier for the entity.
-    /// </summary>
-    /// <value>The entity's primary key value.</value>
-    TKey Id { get; }
-
-    #endregion
-}
-
-/// <summary>
 ///     Provides a base implementation for entities with a specified key type.
 /// </summary>
 /// <typeparam name="TKey">The type of the entity's primary key.</typeparam>
@@ -41,6 +20,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     #region Fields
 
     [NotMapped] private readonly Collection<object> _events = [];
+
     [NotMapped] private readonly Collection<Type> _eventTypes = [];
 
     #endregion
@@ -61,7 +41,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <remarks>
     ///     This constructor is primarily used for EF Core data seeding scenarios.
     /// </remarks>
-    protected Entity(TKey id) => Id = id;
+    protected Entity(TKey id) => this.Id = id;
 
     #endregion
 
@@ -79,16 +59,30 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 
     #region Methods
 
-    public void AddEvent(object eventObj) => _events.Add(eventObj);
+    /// <summary>
+    ///     Adds a domain event to be published.
+    /// </summary>
+    /// <param name="eventObj">The event object to add.</param>
+    public void AddEvent(object eventObj) => this._events.Add(eventObj);
 
-    public void AddEvent<TEvent>() where TEvent : class => _eventTypes.Add(typeof(TEvent));
+    /// <summary>
+    ///     Adds a domain event type to be created and published.
+    /// </summary>
+    /// <typeparam name="TEvent">The type of event to add.</typeparam>
+    public void AddEvent<TEvent>()
+        where TEvent : class
+        => this._eventTypes.Add(typeof(TEvent));
 
-    public (object[]events, Type[]eventTypes) GetEventsAndClear()
+    /// <summary>
+    ///     Gets all pending events and event types, then clears them from this entity.
+    /// </summary>
+    /// <returns>A tuple containing arrays of events and event types.</returns>
+    public (object[] Events, Type[] EventTypes) GetEventsAndClear()
     {
-        var events = _events.ToArray();
-        var eventTypes = _eventTypes.ToArray();
-        _events.Clear();
-        _eventTypes.Clear();
+        var events = this._events.ToArray();
+        var eventTypes = this._eventTypes.ToArray();
+        this._events.Clear();
+        this._eventTypes.Clear();
 
         return (events, eventTypes);
     }
@@ -97,7 +91,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     ///     Returns a string that represents the current entity.
     /// </summary>
     /// <returns>A string in the format "EntityTypeName 'Id'".</returns>
-    public override string ToString() => $"{GetType().Name} '{Id}'";
+    public override string ToString() => $"{this.GetType().Name} '{this.Id}'";
 
     #endregion
 }
@@ -110,7 +104,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 ///     GUIDs as the primary key type. This is the recommended default for distributed systems as it:
 ///     - Ensures global uniqueness
 ///     - Eliminates the need for database coordination when generating IDs
-///     - Supports easier data merging and synchronization scenarios
+///     - Supports easier data merging and synchronization scenarios.
 /// </remarks>
 public abstract class Entity : Entity<Guid>
 {
@@ -130,7 +124,8 @@ public abstract class Entity : Entity<Guid>
     /// <remarks>
     ///     This constructor is primarily used for EF Core data seeding scenarios.
     /// </remarks>
-    protected Entity(Guid id) : base(id)
+    protected Entity(Guid id)
+        : base(id)
     {
     }
 

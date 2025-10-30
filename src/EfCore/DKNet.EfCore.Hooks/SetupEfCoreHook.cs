@@ -5,6 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks;
 
+/// <summary>
+///     The setup for EF Core Hooks
+/// </summary>
 public static class SetupEfCoreHook
 {
     #region Methods
@@ -18,18 +21,22 @@ public static class SetupEfCoreHook
     /// <param name="contextLifetime"></param>
     /// <param name="optionLifetime"></param>
     /// <returns></returns>
-    public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
+    public static IServiceCollection AddDbContextWithHook<TDbContext>(
+        this IServiceCollection services,
         Action<IServiceProvider, DbContextOptionsBuilder> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
         ServiceLifetime optionLifetime = ServiceLifetime.Singleton) where TDbContext : DbContext
     {
         services
             .AddHookRunner<TDbContext>()
-            .AddDbContext<TDbContext>((provider, options) =>
-            {
-                builder(provider, options);
-                options.UseHooks<TDbContext>(provider);
-            }, contextLifetime, optionLifetime);
+            .AddDbContext<TDbContext>(
+                (provider, options) =>
+                {
+                    builder(provider, options);
+                    options.UseHooks<TDbContext>(provider);
+                },
+                contextLifetime,
+                optionLifetime);
 
         return services;
     }
@@ -43,18 +50,22 @@ public static class SetupEfCoreHook
     /// <param name="contextLifetime"></param>
     /// <param name="optionLifetime"></param>
     /// <returns></returns>
-    public static IServiceCollection AddDbContextWithHook<TDbContext>(this IServiceCollection services,
+    public static IServiceCollection AddDbContextWithHook<TDbContext>(
+        this IServiceCollection services,
         Action<DbContextOptionsBuilder<TDbContext>> builder,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
         ServiceLifetime optionLifetime = ServiceLifetime.Singleton) where TDbContext : DbContext
     {
         services
             .AddHookRunner<TDbContext>()
-            .AddDbContext<TDbContext>((provider, options) =>
-            {
-                builder((DbContextOptionsBuilder<TDbContext>)options);
-                options.UseHooks<TDbContext>(provider);
-            }, contextLifetime, optionLifetime);
+            .AddDbContext<TDbContext>(
+                (provider, options) =>
+                {
+                    builder((DbContextOptionsBuilder<TDbContext>)options);
+                    options.UseHooks<TDbContext>(provider);
+                },
+                contextLifetime,
+                optionLifetime);
 
         return services;
     }

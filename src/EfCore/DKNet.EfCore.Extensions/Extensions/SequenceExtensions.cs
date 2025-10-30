@@ -28,13 +28,18 @@ internal static class SequenceExtensions
             .ToList();
 
         foreach (var type in sequenceEnums)
+        {
             modelBuilder.RegisterSequencesFromEnumType(type);
+        }
     }
 
     private static void RegisterSequencesFromEnumType(this ModelBuilder modelBuilder, Type enumType)
     {
         var att = GetAttribute(enumType);
-        if (att == null) return;
+        if (att == null)
+        {
+            return;
+        }
 
         var fields = Enum.GetValues(enumType);
 
@@ -46,13 +51,24 @@ internal static class SequenceExtensions
             var seq = modelBuilder.HasSequence(fieldAtt.Type, name, att.Schema);
 
             if (fieldAtt.StartAt > 0)
+            {
                 seq.StartsAt(fieldAtt.StartAt);
+            }
+
             if (fieldAtt.IncrementsBy > 0)
+            {
                 seq.IncrementsBy(fieldAtt.IncrementsBy);
+            }
+
             if (fieldAtt.Min > 0)
+            {
                 seq.HasMin(fieldAtt.Min);
+            }
+
             if (fieldAtt.Max > 0)
+            {
                 seq.HasMax(fieldAtt.Max);
+            }
 
             seq.IsCyclic(fieldAtt.Cyclic);
         }

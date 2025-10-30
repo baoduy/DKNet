@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Hooks;
@@ -16,9 +17,9 @@ public class PropertyIgnoredAuditEntity : AuditedEntity<Guid>
 {
     #region Properties
 
-    public string Name { get; set; } = string.Empty;
+    [MaxLength(200)] public string Name { get; set; } = string.Empty;
 
-    [IgnoreAuditLog] public string Secret { get; set; } = string.Empty;
+    [IgnoreAuditLog] [MaxLength(200)] public string Secret { get; set; } = string.Empty;
 
     #endregion
 }
@@ -37,6 +38,7 @@ internal sealed class DedicatedRecordingPublisher : IAuditLogPublisher
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
         foreach (var l in logs) Logs.Add(l);
+
         return Task.CompletedTask;
     }
 
@@ -94,6 +96,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
 
         var logs = DedicatedRecordingPublisher.Logs.Where(l => l.EntityName == nameof(PropertyIgnoredAuditEntity))
             .ToList(); // changed
+
         //Currently, no log is created for Added entities
         logs.Count.ShouldBe(1);
         logs.ShouldAllBe(l => l.Changes.Count == 0);
@@ -129,6 +132,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
     public Task DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
+
         try
         {
             if (File.Exists(_dbPath)) File.Delete(_dbPath);

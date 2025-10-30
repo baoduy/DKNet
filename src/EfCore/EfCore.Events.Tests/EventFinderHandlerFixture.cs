@@ -14,7 +14,10 @@ public sealed class EventFinderHandlerFixture : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Provider != null) await Provider.DisposeAsync();
+        if (this.Provider != null)
+        {
+            await this.Provider.DisposeAsync();
+        }
     }
 
     #endregion

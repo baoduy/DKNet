@@ -65,6 +65,7 @@ public class EntityEqualsTests
 
         set.Count.ShouldBeGreaterThanOrEqualTo(1);
     }
+
     // [Fact]
     // public void TestGetHashCode()
     // {

@@ -14,6 +14,7 @@ public sealed class MxFee(float value, FeeTypes type)
     #region Properties
 
     public FeeTypes Type { get; private set; } = type;
+
     public float Value { get; private set; } = value;
 
     #endregion

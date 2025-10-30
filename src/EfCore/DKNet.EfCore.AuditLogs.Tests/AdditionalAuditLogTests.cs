@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
-using DKNet.EfCore.AuditLogs.Internals;
+using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Shouldly;
+
 // for EfCoreAuditHook via DI
 
 namespace DKNet.EfCore.AuditLogs.Tests;
@@ -15,44 +15,10 @@ public class PlainEntity
     #region Properties
 
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(200)] public string Name { get; set; } = string.Empty;
 
     #endregion
-}
-
-internal sealed class CapturingLogger<T> : ILogger<T>
-{
-    #region Properties
-
-    public ConcurrentBag<string> Messages { get; } = [];
-
-    #endregion
-
-    #region Methods
-
-    public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
-    public bool IsEnabled(LogLevel logLevel) => true;
-
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-        Func<TState, Exception?, string> formatter)
-    {
-        Messages.Add(formatter(state, exception));
-    }
-
-    #endregion
-
-    private sealed class NullScope : IDisposable
-    {
-        #region Methods
-
-        public void Dispose()
-        {
-        }
-
-        #endregion
-
-        public static readonly NullScope Instance = new();
-    }
 }
 
 // internal sealed class FailingPublisher2 : IAuditLogPublisher
@@ -66,6 +32,7 @@ internal sealed class RecordingPublisher : IAuditLogPublisher
     #region Properties
 
     public static bool Called { get; private set; }
+
     public static ConcurrentBag<AuditLogEntry> Logs { get; } = [];
 
     #endregion
@@ -76,6 +43,7 @@ internal sealed class RecordingPublisher : IAuditLogPublisher
     {
         Called = true;
         foreach (var log in logs) Logs.Add(log);
+
         return Task.CompletedTask;
     }
 
@@ -147,6 +115,7 @@ public class AdditionalAuditLogTests
         var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities);
         log.ShouldBeNull();
     }
+
     // Helper to poll for expected count in fire-and-forget publishing
     // private static async Task WaitForCountAsync(Func<int> currentCount, int expected, int timeoutMs = 1000)
     // {
@@ -205,9 +174,11 @@ public class AdditionalAuditLogTests
 
         await Task.WhenAll(tasks);
         await Task.Delay(1000);
+
         //await WaitForCountAsync(() => rec.Logs.Count, 10); // replaced fixed delay
 
         RecordingPublisher.Logs.Count.ShouldBeGreaterThanOrEqualTo(10);
+
         //RecordingPublisher.Logs.Count.ShouldBe(seedCtx.AuditEntities.Count(e => e.UpdatedBy == "bulk-updater"));
     }
 
@@ -237,6 +208,7 @@ public class AdditionalAuditLogTests
         e.UpdateProfile("updater");
         await ctx.SaveChangesAsync();
         await Task.Delay(1000);
+
         //await WaitForCountAsync(() => rec.Logs.Count, 1);
         RecordingPublisher.Called.ShouldBeTrue();
         RecordingPublisher.Logs.Count.ShouldBeGreaterThan(0);
@@ -248,7 +220,6 @@ public class AdditionalAuditLogTests
     public async Task FailingPublisher_Logs_Error_But_Allows_Others()
     {
         var services = new ServiceCollection().AddLogging();
-        services.AddSingleton<ILogger<EfCoreAuditHook>, CapturingLogger<EfCoreAuditHook>>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, FailingPublisher>();
         services.AddEfCoreAuditLogs<TestAuditDbContext, RecordingPublisher>();
 
@@ -269,6 +240,7 @@ public class AdditionalAuditLogTests
         e.UpdateProfile("updater");
         await ctx.SaveChangesAsync();
         await Task.Delay(1000);
+
         //await WaitForCountAsync(() => rec.Logs.Count, 1); // replaced fixed delay
         RecordingPublisher.Logs.Count.ShouldBeGreaterThan(0);
     }

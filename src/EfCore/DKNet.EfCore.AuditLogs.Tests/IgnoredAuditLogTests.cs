@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Hooks;
@@ -14,7 +15,8 @@ internal class IgnoredAuditEntity : AuditedEntity<Guid>
 {
     #region Properties
 
-    public string Name { get; set; } = string.Empty;
+    [MaxLength(200)] public string Name { get; set; } = string.Empty;
+
     public int Value { get; set; }
 
     #endregion
@@ -46,6 +48,7 @@ public sealed class TestIgnoredPublisher : IAuditLogPublisher
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
         foreach (var l in logs) _received.Add(l);
+
         return Task.CompletedTask;
     }
 
@@ -119,6 +122,7 @@ public class IgnoredAuditLogTests : IAsyncLifetime
     public Task DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
+
         try
         {
             if (File.Exists(_dbPath)) File.Delete(_dbPath);

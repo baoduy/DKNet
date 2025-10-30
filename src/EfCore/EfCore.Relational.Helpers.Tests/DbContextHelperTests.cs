@@ -13,8 +13,9 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
 
         var action = async () =>
         {
-            await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+            await using var db = new TestDbContext(
+                new DbContextOptionsBuilder<TestDbContext>()
+                    .UseSqlServer(fixture.GetConnectionString()).Options);
             await db.Database.EnsureCreatedAsync();
             await db.TableExistsAsync<NotMappedTestEntity>();
         };
@@ -26,8 +27,9 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     {
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.CreateTableAsync<TestEntity>();
         var check = await db.TableExistsAsync<TestEntity>();
         check.ShouldBeTrue();
@@ -38,8 +40,9 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     {
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
         var (_, tableName) = db.GetTableName<TestEntity>();
         tableName.ShouldBe(nameof(TestEntity));
@@ -50,8 +53,9 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     {
         await fixture.EnsureSqlReadyAsync();
 
-        await using var db = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(fixture.GetConnectionString()).Options);
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseSqlServer(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
         var (_, tableName) = db.GetTableName<NotMappedTestEntity>();
         tableName.ShouldBeNullOrEmpty();

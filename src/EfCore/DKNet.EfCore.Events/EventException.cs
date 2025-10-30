@@ -11,6 +11,8 @@ public sealed class EventException(IResultBase status)
 {
     #region Properties
 
+    /// <summary>
+    /// </summary>
     public IResultBase Status => status;
 
     #endregion

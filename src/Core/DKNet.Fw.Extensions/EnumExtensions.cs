@@ -1,8 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// <copyright file="EnumExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
 // ReSharper disable MemberCanBePrivate.Global
-
 namespace DKNet.Fw.Extensions;
 
 /// <summary>
@@ -18,9 +22,13 @@ public static class EnumExtensions
     /// <typeparam name="T">The type of the attribute to retrieve.</typeparam>
     /// <param name="this">The enum to get the attribute from.</param>
     /// <returns>The attribute of type T, or null if not found.</returns>
-    public static T? GetAttribute<T>(this Enum? @this) where T : Attribute
+    public static T? GetAttribute<T>(this Enum? @this)
+        where T : Attribute
     {
-        if (@this is null) return null;
+        if (@this is null)
+        {
+            return null;
+        }
 
         var type = @this.GetType();
         var f = type.GetField(@this.ToString());
@@ -35,7 +43,10 @@ public static class EnumExtensions
     /// <returns>The <see cref="EnumInfo" /> containing the enum's information, or null if the enum is null.</returns>
     public static EnumInfo? GetEumInfo(this Enum? @this)
     {
-        if (@this == null) return null;
+        if (@this == null)
+        {
+            return null;
+        }
 
         var att = @this.GetAttribute<DisplayAttribute>();
 
@@ -53,14 +64,18 @@ public static class EnumExtensions
     /// </summary>
     /// <typeparam name="T">The enum type.</typeparam>
     /// <returns>An <see cref="IEnumerable{EnumInfo}" /> containing the enum's information.</returns>
-    public static IEnumerable<EnumInfo> GetEumInfos<T>() where T : Enum
+    public static IEnumerable<EnumInfo> GetEumInfos<T>()
+        where T : Enum
     {
         var type = typeof(T);
         var members = type.GetFields();
 
         foreach (var info in members)
         {
-            if (info.FieldType == typeof(int)) continue;
+            if (info.FieldType == typeof(int))
+            {
+                continue;
+            }
 
             var att = info.GetCustomAttribute<DisplayAttribute>();
 

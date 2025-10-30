@@ -14,6 +14,9 @@ public abstract record Theme
     ///     If the option <see cref="ModuleOptions.FromLocalPath(string)" /> is being used,
     ///     the <i>npm</i>-package <c>github-markdown-css</c> needs to be installed in the corresponding location.
     /// </remarks>
+    /// <summary>
+    ///     Github field.
+    /// </summary>
     public static Theme Github => new PredefinedTheme(ThemeType.Github);
 
     /// <summary>
@@ -39,6 +42,9 @@ public abstract record Theme
     /// </summary>
     /// <param name="cssPath">Path to the css containing the styles.</param>
     /// <returns>The generated PredefinedTheme</returns>
+    /// <summary>
+    ///     Custom operation.
+    /// </summary>
     public static Theme Custom(string cssPath) => new CustomTheme(cssPath);
 
     #endregion

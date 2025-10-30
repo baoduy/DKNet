@@ -1,4 +1,9 @@
-﻿namespace DKNet.Fw.Extensions;
+﻿// <copyright file="TypeExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+namespace DKNet.Fw.Extensions;
 
 /// <summary>
 ///     Provides extension methods for the <see cref="Type" /> class, enabling type-related operations such as checking
@@ -8,7 +13,28 @@ public static class TypeExtensions
 {
     #region Methods
 
+    /// <summary>
+    ///     Determines whether an instance of the specified type <typeparamref name="TType" /> can be assigned to a variable of
+    ///     the current type.
+    /// </summary>
+    /// <typeparam name="TType">The type to compare with the current type.</typeparam>
+    /// <param name="type">The current type.</param>
+    /// <returns>
+    ///     <c>true</c> if an instance of <typeparamref name="TType" /> can be assigned to a variable of the current type;
+    ///     otherwise, <c>false</c>.
+    /// </returns>
     public static bool IsAssignableFrom<TType>(this Type type) => type.IsAssignableFrom(typeof(TType));
+
+    /// <summary>
+    ///     Determines whether the current type can be assigned to a variable of the specified type
+    ///     <typeparamref name="TType" />.
+    /// </summary>
+    /// <typeparam name="TType">The type to compare with the current type.</typeparam>
+    /// <param name="type">The current type.</param>
+    /// <returns>
+    ///     <c>true</c> if the current type can be assigned to a variable of <typeparamref name="TType" />; otherwise,
+    ///     <c>false</c>.
+    /// </returns>
     public static bool IsAssignableTo<TType>(this Type type) => type.IsAssignableTo(typeof(TType));
 
     /// <summary>
@@ -21,20 +47,34 @@ public static class TypeExtensions
     /// </returns>
     public static bool IsImplementOf(this Type? type, Type? matching)
     {
-        if (type == null || matching == null) return false;
+        if (type == null || matching == null)
+        {
+            return false;
+        }
 
-        if (type == matching) return false;
+        if (type == matching)
+        {
+            return false;
+        }
 
-        if (matching.IsAssignableFrom(type)) return true;
+        if (matching.IsAssignableFrom(type))
+        {
+            return true;
+        }
 
         if (matching.IsInterface)
+        {
             return type.GetInterfaces().Any(y =>
                 (y.IsGenericType && y.GetGenericTypeDefinition() == matching) || matching.IsAssignableFrom(y));
+        }
 
         while (type != null)
         {
             if (type.IsGenericType && type.GetGenericTypeDefinition() == matching)
+            {
                 return true;
+            }
+
             type = type.BaseType;
         }
 

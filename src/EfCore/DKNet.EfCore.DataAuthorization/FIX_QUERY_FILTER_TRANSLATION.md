@@ -26,6 +26,7 @@ Changed the interface from `ICollection<string>` to `IEnumerable<string>`:
 ### Files Modified
 
 #### 1. Interface Definition
+
 **File**: `DKNet.EfCore.DataAuthorization/IDataOwnerDbContext.cs`
 
 ```csharp
@@ -37,6 +38,7 @@ IEnumerable<string> AccessibleKeys { get; }
 ```
 
 #### 2. Query Filter Implementation
+
 **File**: `DKNet.EfCore.DataAuthorization/Internals/DataOwnerAuthQuery.cs`
 
 ```csharp
@@ -74,6 +76,7 @@ Updated all implementations to return `IEnumerable<string>`:
 EF Core can translate certain LINQ expressions to SQL:
 
 ✅ **Can Translate**:
+
 ```csharp
 IEnumerable<string> keys = ...;
 query.Where(x => keys.Contains(x.OwnedBy))
@@ -81,6 +84,7 @@ query.Where(x => keys.Contains(x.OwnedBy))
 ```
 
 ❌ **Cannot Translate**:
+
 ```csharp
 ICollection<string> keys = ...;
 query.Where(x => keys.Contains(x.OwnedBy))
@@ -90,16 +94,16 @@ query.Where(x => keys.Contains(x.OwnedBy))
 ### Pattern Explanation
 
 1. **Closure Capture**: `var capturedContext = dataOwnerContext;`
-   - Captures the context in the expression closure
-   - Allows per-query evaluation (not just at registration time)
+    - Captures the context in the expression closure
+    - Allows per-query evaluation (not just at registration time)
 
 2. **Empty Check**: `!capturedContext.AccessibleKeys.Any()`
-   - If no keys are specified, allow access to all data
-   - Uses `!Any()` instead of `Count == 0` for better SQL translation
+    - If no keys are specified, allow access to all data
+    - Uses `!Any()` instead of `Count == 0` for better SQL translation
 
 3. **Contains Check**: `capturedContext.AccessibleKeys.Contains(...)`
-   - Translates to SQL `IN` clause
-   - Works with `IEnumerable<string>` but not `ICollection<string>`
+    - Translates to SQL `IN` clause
+    - Works with `IEnumerable<string>` but not `ICollection<string>`
 
 ## Testing
 
@@ -114,11 +118,13 @@ The fix has been applied and verified:
 ## Impact
 
 **Breaking Change**: Yes, but minimal
+
 - `IDataOwnerDbContext.AccessibleKeys` changed from `ICollection<string>` to `IEnumerable<string>`
 - Implementations only need to change the return type
 - No behavioral changes (IEnumerable is more general than ICollection)
 
 **Benefits**:
+
 - ✅ Query filters now work correctly with EF Core
 - ✅ Proper SQL translation (IN clause)
 - ✅ Better performance (no client-side evaluation)

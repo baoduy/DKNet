@@ -27,8 +27,12 @@ public interface IDataOwnerProvider
     /// </remarks>
     public ICollection<string> GetAccessibleKeys()
     {
-        var key = GetOwnershipKey();
-        if (string.IsNullOrEmpty(key)) return [];
+        var key = this.GetOwnershipKey();
+        if (string.IsNullOrEmpty(key))
+        {
+            return [];
+        }
+
         return [key];
     }
 

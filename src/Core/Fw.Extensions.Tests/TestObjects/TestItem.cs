@@ -24,9 +24,9 @@ public class TestItem : ITem
 {
     #region Properties
 
-    public string Details { get; set; } = string.Empty;
-
     public int Id { get; set; }
+
+    public string Details { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
 
@@ -52,7 +52,7 @@ public class TestItem3 : ITem, IDisposable
     {
     }
 
-    public TestItem3(string name) => Name = name;
+    public TestItem3(string name) => this.Name = name;
 
     #endregion
 
@@ -60,21 +60,13 @@ public class TestItem3 : ITem, IDisposable
 
     public bool BoolValue { get; set; }
 
+    public bool IsDisposed { get; private set; }
+
     public decimal DecimalValue { get; set; }
-
-    /// <summary>
-    ///     Summary of the item.
-    /// </summary>
-
-    public string? Description { get; set; }
 
     public int Id { get; set; }
 
     public int IntValue { get; set; }
-
-    public bool IsDisposed { get; private set; }
-
-    public string Name { get; set; } = string.Empty;
 
     public int? NullableIntValue { get; set; }
 
@@ -83,7 +75,15 @@ public class TestItem3 : ITem, IDisposable
 
     protected object ProtectedObj { get; set; } = new();
 
+    public string Name { get; set; } = string.Empty;
+
     [Column("Summ")] public string Summary { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     Summary of the item.
+    /// </summary>
+
+    public string? Description { get; set; }
 
     public TestEnumObject Type { get; set; } = TestEnumObject.Enum1;
 
@@ -93,13 +93,13 @@ public class TestItem3 : ITem, IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposed)
     {
-        IsDisposed = disposed;
+        this.IsDisposed = disposed;
     }
 
     #endregion

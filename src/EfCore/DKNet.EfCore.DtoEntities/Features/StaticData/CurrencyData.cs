@@ -14,33 +14,33 @@ public sealed class CurrencyData : IEntity<int>
 
     internal CurrencyData(int id, string code, string name, bool isCrypto, string? description = null)
     {
-        Id = id;
-        Code = code;
-        Name = name;
-        IsCrypto = isCrypto;
-        Description = description;
+        this.Id = id;
+        this.Code = code;
+        this.Name = name;
+        this.IsCrypto = isCrypto;
+        this.Description = description;
     }
 
     private CurrencyData()
     {
-        Id = 0;
-        Code = string.Empty;
-        Name = string.Empty;
+        this.Id = 0;
+        this.Code = string.Empty;
+        this.Name = string.Empty;
     }
 
     #endregion
 
     #region Properties
 
-    [MaxLength(10)] public string Code { get; private set; }
-
-    [MaxLength(200)] public string? Description { get; private set; }
+    public bool IsCrypto { get; set; }
 
     public int Id { get; private set; }
 
-    public bool IsCrypto { get; set; }
+    [MaxLength(10)] public string Code { get; private set; }
 
     [MaxLength(50)] public string Name { get; private set; }
+
+    [MaxLength(200)] public string? Description { get; private set; }
 
     #endregion
 

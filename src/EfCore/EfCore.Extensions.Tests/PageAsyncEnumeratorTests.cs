@@ -28,7 +28,7 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithCancellation_ShouldRespectCancellationToken()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 100);
         using var cts = new CancellationTokenSource();
 
@@ -61,13 +61,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithCustomPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 25);
         const int pageSize = 10;
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(25);
@@ -77,12 +80,15 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithDefaultPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 150); // More than default page size (100)
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable()) result.Add(item);
+        await foreach (var item in context.TestEntities.ToPageEnumerable())
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(150);
@@ -93,12 +99,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithEmptyQuery_ShouldReturnNoItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
+
         // No data seeded
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable()) result.Add(item);
+        await foreach (var item in context.TestEntities.ToPageEnumerable())
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(0);
@@ -108,13 +118,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithExactPageSize_ShouldReturnAllItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 20);
         const int pageSize = 10; // Exactly 2 pages
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(20);
@@ -124,14 +137,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithFilteredQuery_ShouldReturnFilteredItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 50);
         const int pageSize = 10;
 
         // Act - Only get even IDs
         var result = new List<TestEntity>();
         await foreach (var item in context.TestEntities.Where(x => x.Id % 2 == 0).ToPageEnumerable(pageSize))
+        {
             result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(25); // Half of 50
@@ -142,13 +157,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithOrderedQuery_ShouldMaintainOrder()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 25);
         const int pageSize = 10;
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.OrderBy(x => x.Id).ToPageEnumerable(pageSize)) result.Add(item);
+        await foreach (var item in context.TestEntities.OrderBy(x => x.Id).ToPageEnumerable(pageSize))
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(25);
@@ -160,13 +178,16 @@ public class PageAsyncEnumeratorTests
     public async Task ToPageEnumerable_WithSinglePage_ShouldReturnAllItems()
     {
         // Arrange
-        await using var context = new TestDbContext(_options);
+        await using var context = new TestDbContext(this._options);
         await SeedDataAsync(context, 5);
         const int pageSize = 10; // Larger than data set
 
         // Act
         var result = new List<TestEntity>();
-        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize)) result.Add(item);
+        await foreach (var item in context.TestEntities.ToPageEnumerable(pageSize))
+        {
+            result.Add(item);
+        }
 
         // Assert
         result.Count.ShouldBe(5);
@@ -180,6 +201,7 @@ public class TestEntity
     #region Properties
 
     public int Id { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     #endregion

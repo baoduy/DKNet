@@ -1,4 +1,9 @@
-﻿using System.Diagnostics;
+﻿// <copyright file="PropertyExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -18,15 +23,23 @@ public static class PropertyExtensions
     /// <typeparam name="T">The type of the object to get the property from.</typeparam>
     /// <param name="obj">The object to get the property from.</param>
     /// <param name="propertyName">The name of the property to get.</param>
-    /// <param name="flags"></param>
+    /// <param name="flags">The attribute flag.</param>
     /// <returns>The <see cref="PropertyInfo" /> of the property, or null if not found.</returns>
-    [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075",
+    [UnconditionalSuppressMessage(
+        "AssemblyLoadTrimming",
+        "IL2075",
         Justification = "Everything referenced in the loaded assembly is manually preserved, so it's safe")]
-    public static PropertyInfo? GetProperty<T>(this T? obj, string propertyName,
+    public static PropertyInfo? GetProperty<T>(
+        this T? obj,
+        string propertyName,
         BindingFlags flags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic |
-                             BindingFlags.Instance) where T : class
+                             BindingFlags.Instance)
+        where T : class
     {
-        if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
+        if (obj == null || string.IsNullOrEmpty(propertyName))
+        {
+            return null;
+        }
 
         var type = obj as Type ?? obj.GetType();
         return type.GetProperty(propertyName, flags);
@@ -40,19 +53,29 @@ public static class PropertyExtensions
     /// <param name="obj">The object to get the property value from.</param>
     /// <param name="propertyName">The name of the property to get.</param>
     /// <returns>The value of the property, or null if not found or if the object is null.</returns>
-    public static object? GetPropertyValue<T>(this T? obj, string propertyName) where T : class
+    public static object? GetPropertyValue<T>(this T? obj, string propertyName)
+        where T : class
     {
-        if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
+        if (obj == null || string.IsNullOrEmpty(propertyName))
+        {
+            return null;
+        }
 
         var properties = propertyName.Split('.');
         object? current = obj;
 
         foreach (var prop in properties)
         {
-            if (current == null) break;
+            if (current == null)
+            {
+                break;
+            }
 
             var propertyInfo = current.GetProperty(prop);
-            if (propertyInfo == null) return null;
+            if (propertyInfo == null)
+            {
+                return null;
+            }
 
             current = propertyInfo.GetValue(current);
         }
@@ -60,9 +83,16 @@ public static class PropertyExtensions
         return current;
     }
 
+    /// <summary>
+    ///     Determines whether the specified type is a nullable value type.
+    /// </summary>
+    /// <param name="type">The type to check.</param>
+    /// <returns><c>true</c> if the type is a nullable value type (Nullable&lt;T&gt;); otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="type" /> is null.</exception>
     public static bool IsNullableType(this Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
+
         // Check if the type is a generic type and is Nullable<>
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
@@ -88,8 +118,11 @@ public static class PropertyExtensions
         }
         else if (property.PropertyType.IsNullableType())
         {
-            property.SetValue(obj,
-                Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType)!,
+            property.SetValue(
+                obj,
+                Convert.ChangeType(
+                    value,
+                    Nullable.GetUnderlyingType(property.PropertyType)!,
                     CultureInfo.CurrentCulture));
         }
         else
@@ -101,7 +134,6 @@ public static class PropertyExtensions
             property.SetValue(obj, value);
         }
     }
-
 
     /// <summary>
     ///     Sets the value of a property by name, considering all access levels and ignoring case.
@@ -117,7 +149,10 @@ public static class PropertyExtensions
     public static void SetPropertyValue(this object obj, string propertyName, object value)
     {
         ArgumentNullException.ThrowIfNull(obj);
-        if (string.IsNullOrEmpty(propertyName)) throw new ArgumentNullException(nameof(propertyName));
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            throw new ArgumentNullException(nameof(propertyName));
+        }
 
         var property = obj.GetProperty(propertyName) ??
                        throw new ArgumentException(
@@ -139,10 +174,15 @@ public static class PropertyExtensions
     /// </exception>
     public static void TrySetPropertyValue(this object obj, string propertyName, object value)
     {
-        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
+        if (obj == null)
+        {
+            throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
+        }
 
         if (string.IsNullOrEmpty(propertyName))
+        {
             throw new ArgumentNullException(nameof(propertyName), "The property name cannot be null or empty.");
+        }
 
         try
         {
@@ -171,9 +211,15 @@ public static class PropertyExtensions
     /// </exception>
     public static void TrySetPropertyValue(this object obj, PropertyInfo property, object? value)
     {
-        if (obj == null) throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
+        if (obj == null)
+        {
+            throw new ArgumentNullException(nameof(obj), "The target object cannot be null.");
+        }
 
-        if (property == null) throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
+        if (property == null)
+        {
+            throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
+        }
 
         try
         {

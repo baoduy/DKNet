@@ -5,11 +5,13 @@ namespace Svc.PdfGenerators.Tests;
 
 public class CodeHighlightThemeTests
 {
+    #region Methods
+
     [Fact]
     public void A11yDark_ReturnsTheme()
     {
         // Act
-        var theme = CodeHighlightTheme.A11yDark;
+        var theme = CodeHighlightTheme.A11YDark;
 
         // Assert
         theme.ShouldNotBeNull();
@@ -20,7 +22,7 @@ public class CodeHighlightThemeTests
     public void A11yLight_ReturnsTheme()
     {
         // Act
-        var theme = CodeHighlightTheme.A11yLight;
+        var theme = CodeHighlightTheme.A11YLight;
 
         // Assert
         theme.ShouldNotBeNull();
@@ -58,6 +60,17 @@ public class CodeHighlightThemeTests
         // Assert
         theme.ShouldNotBeNull();
         theme.ToString().ShouldBe("an-old-hope.css");
+    }
+
+    [Fact]
+    public void AtomOneDark_ReturnsTheme()
+    {
+        // Act
+        var theme = CodeHighlightTheme.AtomOneDark;
+
+        // Assert
+        theme.ShouldNotBeNull();
+        theme.ToString().ShouldBe("atom-one-dark.css");
     }
 
     [Fact]
@@ -116,39 +129,6 @@ public class CodeHighlightThemeTests
     }
 
     [Fact]
-    public void Vs_ReturnsTheme()
-    {
-        // Act
-        var theme = CodeHighlightTheme.Vs;
-
-        // Assert
-        theme.ShouldNotBeNull();
-        theme.ToString().ShouldBe("vs.css");
-    }
-
-    [Fact]
-    public void Vs2015_ReturnsTheme()
-    {
-        // Act
-        var theme = CodeHighlightTheme.Vs2015;
-
-        // Assert
-        theme.ShouldNotBeNull();
-        theme.ToString().ShouldBe("vs2015.css");
-    }
-
-    [Fact]
-    public void AtomOneDark_ReturnsTheme()
-    {
-        // Act
-        var theme = CodeHighlightTheme.AtomOneDark;
-
-        // Assert
-        theme.ShouldNotBeNull();
-        theme.ToString().ShouldBe("atom-one-dark.css");
-    }
-
-    [Fact]
     public void Nord_ReturnsTheme()
     {
         // Act
@@ -182,17 +162,6 @@ public class CodeHighlightThemeTests
     }
 
     [Fact]
-    public void Xcode_ReturnsTheme()
-    {
-        // Act
-        var theme = CodeHighlightTheme.Xcode;
-
-        // Assert
-        theme.ShouldNotBeNull();
-        theme.ToString().ShouldBe("xcode.css");
-    }
-
-    [Fact]
     public void ToString_ReturnsSheetName()
     {
         // Arrange
@@ -204,4 +173,39 @@ public class CodeHighlightThemeTests
         // Assert
         result.ShouldBe("github.css");
     }
+
+    [Fact]
+    public void Vs_ReturnsTheme()
+    {
+        // Act
+        var theme = CodeHighlightTheme.Vs;
+
+        // Assert
+        theme.ShouldNotBeNull();
+        theme.ToString().ShouldBe("vs.css");
+    }
+
+    [Fact]
+    public void Vs2015_ReturnsTheme()
+    {
+        // Act
+        var theme = CodeHighlightTheme.Vs2015;
+
+        // Assert
+        theme.ShouldNotBeNull();
+        theme.ToString().ShouldBe("vs2015.css");
+    }
+
+    [Fact]
+    public void Xcode_ReturnsTheme()
+    {
+        // Act
+        var theme = CodeHighlightTheme.Xcode;
+
+        // Assert
+        theme.ShouldNotBeNull();
+        theme.ToString().ShouldBe("xcode.css");
+    }
+
+    #endregion
 }

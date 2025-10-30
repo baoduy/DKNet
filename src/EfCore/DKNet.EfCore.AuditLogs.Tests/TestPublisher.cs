@@ -27,7 +27,11 @@ public sealed class TestPublisher : IAuditLogPublisher
 
     public Task PublishAsync(IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken = default)
     {
-        foreach (var l in logs) _received.Add(l);
+        foreach (var l in logs)
+        {
+            _received.Add(l);
+        }
+
         return Task.CompletedTask;
     }
 

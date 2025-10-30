@@ -5,10 +5,19 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Helper service for properties.
 /// </summary>
+/// <summary>
+///     Provides PropertyService functionality.
+/// </summary>
 public static class PropertyService
 {
     #region Methods
 
+    /// <summary>
+    /// </summary>
+    /// <param name="propertyName"></param>
+    /// <param name="propertyValue"></param>
+    /// <typeparam name="TContainer"></typeparam>
+    /// <returns></returns>
     public static bool TryGetPropertyValue<TContainer>(string propertyName, out object propertyValue)
         => TryGetPropertyValue<TContainer, object>(propertyName, out propertyValue);
 
@@ -23,12 +32,11 @@ public static class PropertyService
     public static bool TryGetPropertyValue<TContainer, TProperty>(string propertyName, out TProperty propertyValue)
     {
         propertyValue = default!;
-        if (string.IsNullOrWhiteSpace(propertyName))
-            return false;
+        if (string.IsNullOrWhiteSpace(propertyName)) return false;
 
-        var property = typeof(TContainer).GetProperty(propertyName,
+        var property = typeof(TContainer).GetProperty(
+            propertyName,
             BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-
 
         object? value;
         Type? memberType;
@@ -39,10 +47,11 @@ public static class PropertyService
         }
         else
         {
-            var field = typeof(TContainer).GetField(propertyName,
+            var field = typeof(TContainer).GetField(
+                propertyName,
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (field == null)
-                return false;
+            if (field == null) return false;
+
             value = field.GetValue(null);
             memberType = field.FieldType;
         }
@@ -54,6 +63,7 @@ public static class PropertyService
         }
 
         var targetType = typeof(TProperty);
+
         // Handle nullable types
         if (Nullable.GetUnderlyingType(targetType) != null)
         {

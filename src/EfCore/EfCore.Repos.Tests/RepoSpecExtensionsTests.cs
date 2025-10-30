@@ -16,10 +16,10 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_dbContext != null)
+        if (this._dbContext != null)
         {
-            await _dbContext.Database.CloseConnectionAsync();
-            await _dbContext.DisposeAsync();
+            await this._dbContext.Database.CloseConnectionAsync();
+            await this._dbContext.DisposeAsync();
         }
     }
 
@@ -29,21 +29,20 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
             .UseSqlite("DataSource=:memory:")
             .Options;
 
-        _dbContext = new TestDbContext(options);
-        await _dbContext.Database.OpenConnectionAsync();
-        await _dbContext.Database.EnsureCreatedAsync();
+        this._dbContext = new TestDbContext(options);
+        await this._dbContext.Database.OpenConnectionAsync();
+        await this._dbContext.Database.EnsureCreatedAsync();
 
-        _repository = new ReadRepository<TestEntity>(_dbContext);
+        this._repository = new ReadRepository<TestEntity>(this._dbContext);
 
         // Seed data
-        _dbContext.TestEntities.AddRange(
+        this._dbContext.TestEntities.AddRange(
             new TestEntity { Id = 1, Name = "Active Item 1", IsActive = true },
             new TestEntity { Id = 2, Name = "Inactive Item", IsActive = false },
             new TestEntity { Id = 3, Name = "Active Item 2", IsActive = true },
-            new TestEntity { Id = 4, Name = "Another Active", IsActive = true }
-        );
-        await _dbContext.SaveChangesAsync();
-        _dbContext.ChangeTracker.Clear();
+            new TestEntity { Id = 4, Name = "Another Active", IsActive = true });
+        await this._dbContext.SaveChangesAsync();
+        this._dbContext.ChangeTracker.Clear();
     }
 
     [Fact]
@@ -53,7 +52,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var query = _repository!.QuerySpecs(spec);
+        var query = this._repository!.QuerySpecs(spec);
 
         // Assert
         query.ShouldNotBeNull();
@@ -67,7 +66,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var result = await _repository!.SpecsAnyAsync(spec);
+        var result = await this._repository!.SpecsAnyAsync(spec);
 
         // Assert
         result.ShouldBeTrue();
@@ -80,7 +79,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new NameContainsSpec("NonExistent");
 
         // Act
-        var result = await _repository!.SpecsAnyAsync(spec);
+        var result = await this._repository!.SpecsAnyAsync(spec);
 
         // Assert
         result.ShouldBeFalse();
@@ -93,7 +92,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var count = await _repository!.SpecsCountAsync(spec);
+        var count = await this._repository!.SpecsCountAsync(spec);
 
         // Assert
         count.ShouldBe(3);
@@ -106,7 +105,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var entity = await _repository!.SpecsFirstAsync(spec);
+        var entity = await this._repository!.SpecsFirstAsync(spec);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -120,7 +119,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new NameContainsSpec("Item 1");
 
         // Act
-        var entity = await _repository!.SpecsFirstOrDefaultAsync(spec);
+        var entity = await this._repository!.SpecsFirstOrDefaultAsync(spec);
 
         // Assert
         entity.ShouldNotBeNull();
@@ -134,7 +133,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new NameContainsSpec("DoesNotExist");
 
         // Act
-        var entity = await _repository!.SpecsFirstOrDefaultAsync(spec);
+        var entity = await this._repository!.SpecsFirstOrDefaultAsync(spec);
 
         // Assert
         entity.ShouldBeNull();
@@ -147,7 +146,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var list = await _repository!.SpecsListAsync(spec);
+        var list = await this._repository!.SpecsListAsync(spec);
 
         // Assert
         list.ShouldNotBeNull();
@@ -162,7 +161,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var enumerable = _repository!.SpecsToPageEnumerable(spec);
+        var enumerable = this._repository!.SpecsToPageEnumerable(spec);
 
         // Assert
         enumerable.ShouldNotBeNull();
@@ -177,7 +176,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
         var spec = new ActiveEntitySpec();
 
         // Act
-        var pagedList = await _repository!.SpecsToPageListAsync(spec, 1, 2);
+        var pagedList = await this._repository!.SpecsToPageListAsync(spec, 1, 2);
 
         // Assert
         pagedList.ShouldNotBeNull();
@@ -222,7 +221,7 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
 
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
 
         #endregion
     }
@@ -231,8 +230,10 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
     {
         #region Properties
 
-        public int Id { get; set; }
         public bool IsActive { get; set; }
+
+        public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         #endregion

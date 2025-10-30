@@ -1,3 +1,6 @@
+// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 namespace DKNet.EfCore.Abstractions.Attributes;
 
 /// <summary>
@@ -11,7 +14,7 @@ public sealed class SqlSequenceAttribute(string schema = "seq") : Attribute
     #region Properties
 
     /// <summary>
-    ///     Gets or sets the schema name for the SQL sequence.
+    ///     Gets the schema name for the SQL sequence.
     ///     The schema name defaults to "seq" if not specified.
     /// </summary>
     public string Schema { get; } = schema;

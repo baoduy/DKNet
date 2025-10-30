@@ -51,10 +51,10 @@ public class TableOfContentsOptions
     ///     Determines if the TOC links should have the default link color (instead of looking like normal text).
     ///     <value>Default: <see langword="false" />.</value>
     /// </summary>
+    /// <summary>
+    ///     Gets or sets HasColoredLinks.
+    /// </summary>
     public bool HasColoredLinks { get; set; }
-
-    /// <inheritdoc cref="Options.ListStyle" />
-    public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
 
     /// <summary>
     ///     The maximum level of heading depth to include in the TOC
@@ -64,14 +64,16 @@ public class TableOfContentsOptions
     /// </summary>
     public int MaxDepthLevel
     {
-        get => _maxDepthLevel ?? MAX_DEPTH_LEVEL;
+        get => this._maxDepthLevel ?? MAX_DEPTH_LEVEL;
         set
         {
             if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
+            {
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
+            }
 
-            _maxDepthLevel = value;
+            this._maxDepthLevel = value;
         }
     }
 
@@ -83,16 +85,24 @@ public class TableOfContentsOptions
     /// </summary>
     public int MinDepthLevel
     {
-        get => _minDepthLevel ?? MIN_DEPTH_LEVEL;
+        get => this._minDepthLevel ?? MIN_DEPTH_LEVEL;
         set
         {
             if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
+            {
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
+            }
 
-            _minDepthLevel = value;
+            this._minDepthLevel = value;
         }
     }
+
+    /// <inheritdoc cref="Options.ListStyle" />
+    /// <summary>
+    ///     Gets or sets ListStyle.
+    /// </summary>
+    public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
 
     /// <summary>
     ///     If set, the TOC will be generated with page numbers.

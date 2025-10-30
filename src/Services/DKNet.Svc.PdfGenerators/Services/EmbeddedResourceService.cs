@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Service for loading the content of embedded resources.
 /// </summary>
+/// <summary>
+///     Provides EmbeddedResourceService functionality.
+/// </summary>
 public class EmbeddedResourceService
 {
     #region Fields
@@ -23,10 +26,10 @@ public class EmbeddedResourceService
     internal async Task<string> GetResourceContentAsync(string resourceName)
     {
         var searchPath = $".{resourceName}";
-        var resourcePath = _currentAssembly.GetManifestResourceNames()
+        var resourcePath = this._currentAssembly.GetManifestResourceNames()
             .Single(n => n.EndsWith(searchPath, StringComparison.OrdinalIgnoreCase));
 
-        await using var stream = _currentAssembly.GetManifestResourceStream(resourcePath);
+        await using var stream = this._currentAssembly.GetManifestResourceStream(resourcePath);
         using var reader = new StreamReader(stream!);
         return await reader.ReadToEndAsync();
     }

@@ -1,4 +1,9 @@
-﻿using System.Reflection;
+﻿// <copyright file="StringExtensions.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+using System.Reflection;
 
 namespace DKNet.Fw.Extensions;
 
@@ -46,10 +51,15 @@ public static class StringExtensions
     /// <returns><c>true</c> if the type is a string or value type; otherwise, <c>false</c>.</returns>
     public static bool IsStringOrValueType(this Type? type)
     {
-        if (type == null) return false;
+        if (type == null)
+        {
+            return false;
+        }
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
             type = type.GenericTypeArguments[0];
+        }
 
         return type == typeof(string) || type.IsValueType;
     }

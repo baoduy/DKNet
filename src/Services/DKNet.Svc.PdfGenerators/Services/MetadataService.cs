@@ -15,9 +15,9 @@ internal class MetadataService
 
     public MetadataService(PdfGeneratorOptions generatorOptions, IConversionEvents events)
     {
-        events.TemplateModelCreating += AddTitleToTemplateAsync;
-        _generatorOptions = generatorOptions;
-        _events = events;
+        events.TemplateModelCreating += this.AddTitleToTemplateAsync;
+        this._generatorOptions = generatorOptions;
+        this._events = events;
     }
 
     #endregion
@@ -26,7 +26,8 @@ internal class MetadataService
 
     internal async Task AddTitleToTemplateAsync(object? _, TemplateModelEventArgs e)
     {
-        var title = _generatorOptions.MetadataTitle ?? _generatorOptions.DocumentTitle ?? _events.OutputFileName!;
+        var title = this._generatorOptions.MetadataTitle ??
+                    this._generatorOptions.DocumentTitle ?? this._events.OutputFileName!;
         e.TemplateModel.Add("title", title);
         await Task.CompletedTask;
     }

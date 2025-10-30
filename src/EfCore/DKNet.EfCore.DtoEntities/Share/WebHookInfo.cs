@@ -8,8 +8,9 @@ public sealed record WebHookInfo
 {
     #region Properties
 
-    public string[] Events { get; init; } = [];
     [MaxLength(50)] public string? Secret { get; init; }
+
+    public string[] Events { get; init; } = [];
 
     public required Uri Url { get; init; }
 

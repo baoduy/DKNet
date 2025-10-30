@@ -3,41 +3,72 @@ using System.Text;
 
 namespace DKNet.Svc.Encryption;
 
-public interface IAesGcmEncryption : IDisposable // now disposable due to internal cache
+/// <summary>
+///     Interface for AES-GCM encryption and decryption operations.
+/// </summary>
+public interface IAesGcmEncryption : IDisposable
 {
     #region Properties
 
-    string Key { get; } // added to mirror AesEncryption pattern
+    /// <summary>
+    ///     Gets the base64-encoded key for this encryption instance.
+    /// </summary>
+    string Key { get; }
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Decrypts the specified cipher package using the provided base64 key and optional associated data.
+    /// </summary>
+    /// <param name="cipherPackage">The base64-encoded cipher package to decrypt.</param>
+    /// <param name="base64Key">The base64-encoded key to use for decryption.</param>
+    /// <param name="associatedData">Optional additional data to authenticate.</param>
+    /// <returns>The decrypted plain text string.</returns>
     string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null);
 
-    /// <summary>Decrypt previously encrypted package.</summary>
-    string DecryptString(string cipherPackage, byte[]? associatedData = null); // new primary API
+    /// <summary>
+    ///     Decrypts a previously encrypted package using the instance key and optional associated data.
+    /// </summary>
+    /// <param name="cipherPackage">The base64-encoded cipher package to decrypt.</param>
+    /// <param name="associatedData">Optional additional data to authenticate.</param>
+    /// <returns>The decrypted plain text string.</returns>
+    string DecryptString(string cipherPackage, byte[]? associatedData = null);
 
-    // Backward-compatible wrappers
+    /// <summary>
+    ///     Encrypts the specified plain text using the provided base64 key and optional associated data.
+    /// </summary>
+    /// <param name="plainText">The plain text to encrypt.</param>
+    /// <param name="base64Key">The base64-encoded key to use for encryption.</param>
+    /// <param name="associatedData">Optional additional data to authenticate.</param>
+    /// <returns>The encrypted cipher package as a base64-encoded string.</returns>
     string Encrypt(string plainText, string base64Key, byte[]? associatedData = null);
 
     /// <summary>
-    ///     Encrypt plainText with provided Base64 key. Returns Base64 of (nonce:tag:cipher), each part base64 then
-    ///     wrapped again.
+    ///     Encrypts the specified plain text using the instance key and optional associated data. Returns a base64-encoded
+    ///     string containing nonce, tag, and cipher.
     /// </summary>
-    string EncryptString(string plainText, byte[]? associatedData = null); // new primary API
+    /// <param name="plainText">The plain text to encrypt.</param>
+    /// <param name="associatedData">Optional additional data to authenticate.</param>
+    /// <returns>The encrypted cipher package as a base64-encoded string.</returns>
+    string EncryptString(string plainText, byte[]? associatedData = null);
 
     #endregion
 }
 
 /// <summary>
-///     AES-GCM authenticated encryption (AEAD). Output layout: base64(nonce):base64(tag):base64(cipher) all concatenated
-///     with ':' then Base64 wrapped again for safe transport.
-///     Caches AesGcm instances per key to avoid repeated allocations when the same key is reused.
+///     Provides AES-GCM authenticated encryption and decryption functionality. Output layout:
+///     base64(nonce):base64(tag):base64(cipher), all concatenated with ':' then base64-wrapped for safe transport. Caches
+///     AesGcm instances per key to avoid repeated allocations when the same key is reused.
 /// </summary>
 public sealed class AesGcmEncryption : IAesGcmEncryption
 {
     #region Fields
+
+    private const int KeySize = 32; // 256-bit key
+    private const int NonceSize = 12; // 96-bit nonce recommended for GCM
+    private const int TagSize = 16; // 128-bit tag
 
     private readonly AesGcm _aesGcm;
     private bool _disposed;
@@ -46,6 +77,10 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
     #region Constructors
 
+    /// <summary>
+    /// </summary>
+    /// <param name="key"></param>
+    /// <exception cref="ArgumentException"></exception>
     public AesGcmEncryption(string? key = null)
     {
         byte[] keyBytes;
@@ -59,9 +94,11 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
             // Expect just base64 key (no colon segmentation like AesEncryption uses key:iv)
             if (key.Contains(':', StringComparison.Ordinal))
                 throw new ArgumentException("Invalid key format for AesGcm (':' not expected).", nameof(key));
+
             keyBytes = Convert.FromBase64String(key);
             if (keyBytes.Length is not (16 or 24 or 32))
                 throw new ArgumentException("Key length must be 128/192/256 bits.", nameof(key));
+
             Key = key;
         }
 
@@ -72,20 +109,30 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
     #region Properties
 
+    /// <summary>
+    ///     Gets or sets Key.
+    /// </summary>
     public string Key { get; }
 
     #endregion
 
     #region Methods
 
+    /// <summary>
+    ///     Decrypt operation.
+    /// </summary>
     public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
     {
         if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use DecryptString().");
+
         return DecryptString(cipherPackage, associatedData);
     }
 
+    /// <summary>
+    ///     DecryptString operation.
+    /// </summary>
     public string DecryptString(string cipherPackage, byte[]? associatedData = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
@@ -94,6 +141,7 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
         var parts = decoded.Split(':');
         if (parts.Length != 3) throw new ArgumentException("Invalid cipher package format", nameof(cipherPackage));
+
         var nonce = Convert.FromBase64String(parts[0]);
         var tag = Convert.FromBase64String(parts[1]);
         var cipher = Convert.FromBase64String(parts[2]);
@@ -107,22 +155,33 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
         return Encoding.UTF8.GetString(plain);
     }
 
+    /// <summary>
+    ///     Dispose operation.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed) return;
+
         _aesGcm.Dispose();
         _disposed = true;
     }
 
     // Backward-compatible wrappers (will ignore supplied key and use this instance key)
+    /// <summary>
+    ///     Encrypt operation.
+    /// </summary>
     public string Encrypt(string plainText, string base64Key, byte[]? associatedData = null)
     {
         if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use EncryptString().");
+
         return EncryptString(plainText, associatedData);
     }
 
+    /// <summary>
+    ///     EncryptString operation.
+    /// </summary>
     public string EncryptString(string plainText, byte[]? associatedData = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
@@ -144,8 +203,4 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     }
 
     #endregion
-
-    private const int KeySize = 32; // 256-bit key
-    private const int NonceSize = 12; // 96-bit nonce recommended for GCM
-    private const int TagSize = 16; // 128-bit tag
 }

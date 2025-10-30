@@ -16,6 +16,7 @@ public class MetadataServiceTests
         var events = new TestConversionEvents();
         var options = new PdfGeneratorOptions { MetadataTitle = "MetaTitle", DocumentTitle = "DocTitle" };
         var service = new MetadataService(options, events);
+
         // Directly call the handler instead of invoking the event
         await service.AddTitleToTemplateAsync(service, args);
         Assert.Equal("MetaTitle", templateModel["title"]);
@@ -32,7 +33,9 @@ public class MetadataServiceTests
         #endregion
 
         public event EventHandler<MarkdownEventArgs>? HtmlConverting;
+
         public event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
+
         public event EventHandler<PdfEventArgs>? TempPdfCreated;
     }
 }

@@ -23,7 +23,8 @@ public enum RunningTypes
 /// <summary>
 ///     Runs hooks before and after save operations.
 /// </summary>
-/// <param name="logger"></param>
+/// <param name="provider">the IServiceProvider of HookRunner</param>
+/// <param name="logger">the logger of HookRunner</param>
 internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : SaveChangesInterceptor
 {
     #region Fields
@@ -35,15 +36,14 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     #region Methods
 
     private HookRunnerContext GetContext(DbContextEventData eventData) =>
-        _cache.GetOrAdd(eventData.Context!.ContextId.InstanceId,
+        _cache.GetOrAdd(
+            eventData.Context!.ContextId.InstanceId,
             _ => new HookRunnerContext(provider, eventData.Context!));
 
     private async Task RemoveContext(DbContextEventData eventData)
     {
-        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
-            await context.DisposeAsync();
+        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context)) await context.DisposeAsync();
     }
-
 
     /// <summary>
     ///     Runs hooks before and after save operations.
@@ -52,34 +52,43 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     /// <param name="type"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private async Task RunHooksAsync(HookRunnerContext context, RunningTypes type,
+    private async Task RunHooksAsync(
+        HookRunnerContext context,
+        RunningTypes type,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
-            type, context.BeforeSaveHooks.Count, context.AfterSaveHooks.Count);
+        logger.LogInformation(
+            "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
+            type,
+            context.BeforeSaveHooks.Count,
+            context.AfterSaveHooks.Count);
 
         if (context.Snapshot.Entities.Count == 0) return;
 
         var tasks = new List<Task>();
-        tasks.AddRange(type == RunningTypes.BeforeSave
-            ? context.BeforeSaveHooks.Select(h => h.BeforeSaveAsync(context.Snapshot, cancellationToken))
-            : context.AfterSaveHooks.Select(h => h.AfterSaveAsync(context.Snapshot, cancellationToken)));
+        tasks.AddRange(
+            type == RunningTypes.BeforeSave
+                ? context.BeforeSaveHooks.Select(h => h.BeforeSaveAsync(context.Snapshot, cancellationToken))
+                : context.AfterSaveHooks.Select(h => h.AfterSaveAsync(context.Snapshot, cancellationToken)));
 
         await Task.WhenAll(tasks);
     }
 
-    public override async Task SaveChangesFailedAsync(DbContextErrorEventData eventData,
+    public override async Task SaveChangesFailedAsync(
+        DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
         await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
-    public override async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result,
+    public override async ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null)
-            return await base.SavedChangesAsync(eventData, result, cancellationToken);
+        if (eventData.Context == null) return await base.SavedChangesAsync(eventData, result, cancellationToken);
+
         if (HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
@@ -103,12 +112,12 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     /// <param name="result"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
-        InterceptionResult<int> result, CancellationToken cancellationToken = default)
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData,
+        InterceptionResult<int> result,
+        CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null)
-            return await base.SavingChangesAsync(eventData, result, cancellationToken);
-        if (HookDisablingContext.IsHookDisabled(eventData.Context!))
+        if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
         var context = GetContext(eventData);

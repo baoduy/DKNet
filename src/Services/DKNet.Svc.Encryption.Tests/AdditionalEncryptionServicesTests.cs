@@ -53,6 +53,7 @@ public class AdditionalEncryptionServicesTests
     {
         Should.Throw<FormatException>(() => new AesGcmEncryption("***notbase64***"));
     }
+
     //
     // [Fact]
     // public void PasswordAesEncryption_RoundTrip()
@@ -141,8 +142,10 @@ public class AdditionalEncryptionServicesTests
         signature.ShouldNotBeNullOrWhiteSpace();
         var publicOnly = RsaEncryption.FromPublicKey(rsa.PublicKey);
         publicOnly.Verify(plain, signature).ShouldBeTrue();
+
         // Public only cannot decrypt
         Should.Throw<InvalidOperationException>(() => publicOnly.Decrypt(cipher));
+
         // Public only cannot sign
         Should.Throw<InvalidOperationException>(() => publicOnly.Sign(plain));
     }

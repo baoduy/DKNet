@@ -8,6 +8,7 @@ public class CustomerProfile : IEntity<Guid>
     #region Properties
 
     public Guid Id { get; set; } = Guid.Empty;
+
     [Required] public string Name { get; set; } = string.Empty;
 
     #endregion

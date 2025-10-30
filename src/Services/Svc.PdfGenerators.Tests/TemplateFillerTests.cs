@@ -99,6 +99,7 @@ public class TemplateFillerTests
         var model = new Dictionary<string, string>
         {
             { "name", "John Doe" }
+
             // location is missing
         };
 

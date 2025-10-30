@@ -9,10 +9,14 @@ public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())
 {
     #region Properties
 
-    public int Age { get; set; }
-    public decimal Balance { get; set; }
     public bool IsActive { get; set; }
+
     public DateTimeOffset? LastLoginOn { get; set; }
+
+    public decimal Balance { get; set; }
+
+    public int Age { get; set; }
+
     [MaxLength(100)] public required string Name { get; set; }
 
     [MaxLength(200)] public string? Notes { get; set; }
@@ -24,8 +28,8 @@ public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())
     // Helper to simulate an update cycle in tests
     public void UpdateProfile(string updater, string? notes = null, DateTimeOffset? updatedOn = null)
     {
-        Notes = notes ?? Notes;
-        SetUpdatedBy(updater, updatedOn);
+        this.Notes = notes ?? this.Notes;
+        this.SetUpdatedBy(updater, updatedOn);
     }
 
     #endregion
@@ -36,8 +40,9 @@ public sealed class TestAuditDbContext(DbContextOptions<TestAuditDbContext> opti
 {
     #region Properties
 
-    public DbSet<TestAuditEntity> AuditEntities => Set<TestAuditEntity>();
-    public DbSet<PlainEntity> PlainEntities => Set<PlainEntity>();
+    public DbSet<PlainEntity> PlainEntities => this.Set<PlainEntity>();
+
+    public DbSet<TestAuditEntity> AuditEntities => this.Set<TestAuditEntity>();
 
     #endregion
 

@@ -15,20 +15,19 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
 
     public async Task DisposeAsync()
     {
-        await _provider.DisposeAsync();
+        await this._provider.DisposeAsync();
     }
-
 
     public async Task InitializeAsync()
     {
-        _provider = new ServiceCollection()
+        this._provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContextWithHook<HookContext>(o =>
                 o.UseSqlite("Data Source=sqlite.db").UseAutoConfigModel())
             .AddHook<HookContext, HookTest>()
             .BuildServiceProvider();
 
-        var db = _provider.GetRequiredService<HookContext>();
+        var db = this._provider.GetRequiredService<HookContext>();
         await db.Database.EnsureCreatedAsync();
     }
 
@@ -40,14 +39,14 @@ public class ServiceProviderProblemTest(ITestOutputHelper output) : IAsyncLifeti
             // This test simulates multiple API calls that each create entities
             // This should reproduce the "More than twenty IServiceProvider instances" issue
 
-            var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+            var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
 
             // Simulate 25 consecutive API calls - this should trigger the EF Core warning
             for (var i = 0; i < 25; i++)
             {
                 hook.Reset();
 
-                using var scope = _provider.CreateScope();
+                using var scope = this._provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<HookContext>();
 
                 var entity = new CustomerProfile { Name = $"Test Entity {i}" };

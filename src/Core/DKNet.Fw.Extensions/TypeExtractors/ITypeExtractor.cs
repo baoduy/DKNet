@@ -1,4 +1,9 @@
-﻿using System.Linq.Expressions;
+﻿// <copyright file="ITypeExtractor.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+using System.Linq.Expressions;
 
 namespace DKNet.Fw.Extensions.TypeExtractors;
 
@@ -51,7 +56,8 @@ public interface ITypeExtractor : IEnumerable<Type>
     /// </summary>
     /// <typeparam name="TAttribute">The type of the attribute to filter by.</typeparam>
     /// <returns>An <see cref="ITypeExtractor" /> instance for further filtering.</returns>
-    ITypeExtractor HasAttribute<TAttribute>() where TAttribute : Attribute;
+    ITypeExtractor HasAttribute<TAttribute>()
+        where TAttribute : Attribute;
 
     /// <summary>
     ///     Filters the types to include only those with the specified attribute.

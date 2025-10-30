@@ -28,6 +28,7 @@ public class NotInheritIEntity
     #region Properties
 
     public int Id { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     #endregion
@@ -64,6 +65,7 @@ internal sealed class UserEntityConfig : IEntityTypeConfiguration<User>
         builder.Property(x => x.FirstName).HasMaxLength(100);
         builder.Property(x => x.LastName).HasMaxLength(100);
         builder.Property(x => x.RowVersion).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();
+
         // Add more configuration as needed (e.g., relationships, default values)
         builder.HasMany(x => x.Addresses).WithOne(x => x.User).HasForeignKey(x => x.UserId);
     }

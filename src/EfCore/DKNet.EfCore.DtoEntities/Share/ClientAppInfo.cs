@@ -8,8 +8,9 @@ public sealed record ClientAppInfo
 {
     #region Properties
 
-    [MaxLength(50)] public required Guid ClientId { get; init; }
     public DateTimeOffset CreatedOn { get; init; }
+
+    [MaxLength(50)] public required Guid ClientId { get; init; }
 
     #endregion
 }

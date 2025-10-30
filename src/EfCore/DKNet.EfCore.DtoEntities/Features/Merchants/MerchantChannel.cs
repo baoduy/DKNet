@@ -9,9 +9,14 @@ public sealed class MerchantChannel : ChannelDataBase
 {
     #region Constructors
 
-    public MerchantChannel(Guid merchantId, ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount,
+    public MerchantChannel(
+        Guid merchantId,
+        ChannelCodes code,
+        string settlement,
+        decimal minAmount,
+        decimal? maxAmount,
         string byUser) : base(code, settlement, minAmount, maxAmount, byUser) =>
-        MerchantId = merchantId;
+        this.MerchantId = merchantId;
 
     private MerchantChannel(string createdBy) : base(ChannelCodes.None, string.Empty, 0, null, createdBy)
     {
@@ -21,8 +26,9 @@ public sealed class MerchantChannel : ChannelDataBase
 
     #region Properties
 
-    public Merchant Merchant { get; private set; } = null!;
     public Guid MerchantId { get; private set; }
+
+    public Merchant Merchant { get; private set; } = null!;
 
     #endregion
 }

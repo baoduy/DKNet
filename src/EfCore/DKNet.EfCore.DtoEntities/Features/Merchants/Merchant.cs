@@ -25,51 +25,63 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
 
     #region Constructors
 
-    public Merchant(string name, string email, string? description, string countryCode,
+    public Merchant(
+        string name,
+        string email,
+        string? description,
+        string countryCode,
         string defaultCurrency,
         string byUser) : this(Guid.CreateVersion7(), name, email, description, countryCode, defaultCurrency, byUser)
     {
     }
 
-    private Merchant(Guid id, string name, string email, string? description, string countryCode,
+    private Merchant(
+        Guid id,
+        string name,
+        string email,
+        string? description,
+        string countryCode,
         string defaultCurrency,
         string byUser) : base(id, byUser)
 
     {
-        Code = id.ToString();
-        Name = name;
-        Email = email;
-        CountryCode = countryCode;
-        DefaultCurrency = defaultCurrency;
-        Description = description;
-        MxFee = MxFee.Default;
+        this.Code = id.ToString();
+        this.Name = name;
+        this.Email = email;
+        this.CountryCode = countryCode;
+        this.DefaultCurrency = defaultCurrency;
+        this.Description = description;
+        this.MxFee = MxFee.Default;
     }
-
 
     private Merchant(Guid id, string createdBy) : base(id, createdBy)
     {
-        Code = string.Empty;
-        Name = string.Empty;
-        CountryCode = string.Empty;
-        DefaultCurrency = string.Empty;
-        Description = string.Empty;
-        Email = string.Empty;
-        MxFee = MxFee.Default;
+        this.Code = string.Empty;
+        this.Name = string.Empty;
+        this.CountryCode = string.Empty;
+        this.DefaultCurrency = string.Empty;
+        this.Description = string.Empty;
+        this.Email = string.Empty;
+        this.MxFee = MxFee.Default;
     }
 
     #endregion
 
     #region Properties
 
-    [Display(Name = "Approved By")]
-    [MaxLength(100)]
-    public string? ApprovedBy { get; private set; }
-
-    public DateTimeOffset? ApprovedOn { get; private set; }
-    public IReadOnlyCollection<MerchantChannel> Channels => _channels;
-
     public ClientAppInfo? ClientAppInfo { get; private set; }
 
+    public DateTimeOffset? ApprovedOn { get; private set; }
+
+    public IReadOnlyCollection<MerchantBalance> MerchantBalances => this._merchantBalances;
+
+    public IReadOnlyCollection<MerchantChannel> Channels => this._channels;
+
+    public LoginInfo? LoginInfo { get; private set; }
+
+    public MerchantStatus Status { get; private set; } = MerchantStatus.Pending;
+
+    public MxFee MxFee { get; private set; }
 
     public string Code { get; private set; }
 
@@ -77,19 +89,15 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
 
     [MaxLength(3)] public string DefaultCurrency { get; private set; }
 
-    [MaxLength(550)] public string? Description { get; private set; }
-
     [MaxLength(100)] public string Email { get; private set; }
-
-    public LoginInfo? LoginInfo { get; private set; }
-    public IReadOnlyCollection<MerchantBalance> MerchantBalances => _merchantBalances;
-
-    public MxFee MxFee { get; private set; }
 
     [MaxLength(100)] public string Name { get; private set; }
 
+    [Display(Name = "Approved By")]
+    [MaxLength(100)]
+    public string? ApprovedBy { get; private set; }
 
-    public MerchantStatus Status { get; private set; } = MerchantStatus.Pending;
+    [MaxLength(550)] public string? Description { get; private set; }
 
     public WebHookInfo? WebHook { get; private set; }
 
@@ -99,70 +107,91 @@ public sealed class Merchant : AggregateRoot, ICodeEntity
 
     public void Approve(string byUser)
     {
-        Status = MerchantStatus.Active;
-        ApprovedBy = byUser;
-        ApprovedOn = DateTimeOffset.Now;
-        SetUpdatedBy(byUser);
+        this.Status = MerchantStatus.Active;
+        this.ApprovedBy = byUser;
+        this.ApprovedOn = DateTimeOffset.Now;
+        this.SetUpdatedBy(byUser);
     }
 
     private MerchantBalance GetOrCreateBalance(string currency, string byUser)
     {
-        var balance =
-            _merchantBalances.FirstOrDefault(b =>
-                string.Equals(b.Currency, currency, StringComparison.OrdinalIgnoreCase));
-        if (balance is not null) return balance;
+        var balance = this._merchantBalances.FirstOrDefault(b =>
+            string.Equals(b.Currency, currency, StringComparison.OrdinalIgnoreCase));
+        if (balance is not null)
+        {
+            return balance;
+        }
 
-        balance = MerchantBalance.Create(Id, this, currency, byUser);
-        _merchantBalances.Add(balance);
+        balance = MerchantBalance.Create(this.Id, this, currency, byUser);
+        this._merchantBalances.Add(balance);
 
         return balance;
     }
 
     public void LinkClientAppInfo(ClientAppInfo info, string byUser)
     {
-        ClientAppInfo = info;
-        SetUpdatedBy(byUser);
+        this.ClientAppInfo = info;
+        this.SetUpdatedBy(byUser);
     }
 
     public void LinkLoginInfo(LoginInfo loginInfo, string byUser)
     {
-        LoginInfo = loginInfo;
-        SetUpdatedBy(byUser);
+        this.LoginInfo = loginInfo;
+        this.SetUpdatedBy(byUser);
     }
 
     public void SetActivationStatus(bool disabled, string byUser)
     {
-        Status = disabled ? MerchantStatus.Inactive : MerchantStatus.Active;
-        SetUpdatedBy(byUser);
+        this.Status = disabled ? MerchantStatus.Inactive : MerchantStatus.Active;
+        this.SetUpdatedBy(byUser);
     }
 
-    public void Update(string? name, string? email, string? description, string? countryCode, string? defaultCurrency,
+    public void Update(
+        string? name,
+        string? email,
+        string? description,
+        string? countryCode,
+        string? defaultCurrency,
         string byUser)
     {
         if (!string.IsNullOrEmpty(name))
-            Name = name;
-        if (!string.IsNullOrEmpty(email))
-            Email = email;
-        if (!string.IsNullOrEmpty(description))
-            Description = description;
-        if (!string.IsNullOrEmpty(countryCode))
-            CountryCode = countryCode;
-        if (!string.IsNullOrEmpty(defaultCurrency))
-            DefaultCurrency = defaultCurrency;
+        {
+            this.Name = name;
+        }
 
-        SetUpdatedBy(byUser);
+        if (!string.IsNullOrEmpty(email))
+        {
+            this.Email = email;
+        }
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            this.Description = description;
+        }
+
+        if (!string.IsNullOrEmpty(countryCode))
+        {
+            this.CountryCode = countryCode;
+        }
+
+        if (!string.IsNullOrEmpty(defaultCurrency))
+        {
+            this.DefaultCurrency = defaultCurrency;
+        }
+
+        this.SetUpdatedBy(byUser);
     }
 
     public void UpdateFee(MxFee mxFee, string byUser)
     {
-        MxFee = mxFee;
-        SetUpdatedBy(byUser);
+        this.MxFee = mxFee;
+        this.SetUpdatedBy(byUser);
     }
 
     public void UpdateWebHook(WebHookInfo webHookInfo, string byUser)
     {
-        WebHook = webHookInfo;
-        SetUpdatedBy(byUser);
+        this.WebHook = webHookInfo;
+        this.SetUpdatedBy(byUser);
     }
 
     #endregion

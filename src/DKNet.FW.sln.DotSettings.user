@@ -409,28 +409,68 @@
     &lt;/Entry&gt;
   &lt;/TypePattern&gt;
 
+    &lt;!-- Your “Default Pattern” for most classes --&gt;
     &lt;TypePattern DisplayName="Default Pattern" RemoveRegions="All"&gt;
         &lt;TypePattern.Match&gt;
-            &lt;!-- match your classes / interfaces as needed --&gt;
+            &lt;Kind Is="Class" /&gt;
         &lt;/TypePattern.Match&gt;
 
-        &lt;!-- Region for Fields --&gt;
+        &lt;!-- Region: Fields --&gt;
         &lt;Region Name="Fields" Priority="100"&gt;
-            &lt;Entry DisplayName="Private Fields"&gt;
+            &lt;!-- Private constants --&gt;
+            &lt;Entry DisplayName="Private Constants"&gt;
                 &lt;Entry.Match&gt;
                     &lt;And&gt;
-                        &lt;Kind Is="Field" /&gt;
+                        &lt;Kind Is="Constant" /&gt;
                         &lt;Access Is="Private" /&gt;
                     &lt;/And&gt;
                 &lt;/Entry.Match&gt;
                 &lt;Entry.SortBy&gt;
                     &lt;Name /&gt;
+                    &lt;Type /&gt;
+                &lt;/Entry.SortBy&gt;
+            &lt;/Entry&gt;
+
+            &lt;!-- Private static fields (non-const) --&gt;
+            &lt;Entry DisplayName="Private Static Fields"&gt;
+                &lt;Entry.Match&gt;
+                    &lt;And&gt;
+                        &lt;Kind Is="Field" /&gt;
+                        &lt;Access Is="Private" /&gt;
+                        &lt;Static /&gt;
+                        &lt;Not&gt;
+                            &lt;Kind Is="Constant" /&gt;
+                        &lt;/Not&gt;
+                    &lt;/And&gt;
+                &lt;/Entry.Match&gt;
+                &lt;Entry.SortBy&gt;
+                    &lt;Readonly /&gt;
+                    &lt;Name /&gt;
+                    &lt;Type /&gt;
+                &lt;/Entry.SortBy&gt;
+            &lt;/Entry&gt;
+
+            &lt;!-- Private instance fields --&gt;
+            &lt;Entry DisplayName="Private Instance Fields"&gt;
+                &lt;Entry.Match&gt;
+                    &lt;And&gt;
+                        &lt;Kind Is="Field" /&gt;
+                        &lt;Access Is="Private" /&gt;
+                        &lt;Not&gt;
+                            &lt;Static /&gt;
+                        &lt;/Not&gt;
+                    &lt;/And&gt;
+                &lt;/Entry.Match&gt;
+                &lt;Entry.SortBy&gt;
+                    &lt;Readonly /&gt;
+                    &lt;Name /&gt;
+                    &lt;Type /&gt;
                 &lt;/Entry.SortBy&gt;
             &lt;/Entry&gt;
         &lt;/Region&gt;
 
-        &lt;!-- Region for Constructors --&gt;
-        &lt;Region Name="Constructors" Priority="100"&gt;
+        &lt;!-- Region: Constructors --&gt;
+        &lt;Region Name="Constructors" Priority="90"&gt;
             &lt;Entry DisplayName="Constructors"&gt;
                 &lt;Entry.Match&gt;
                     &lt;Kind Is="Constructor" /&gt;
@@ -441,8 +481,8 @@
             &lt;/Entry&gt;
         &lt;/Region&gt;
 
-        &lt;!-- Region for Properties / Indexers --&gt;
-        &lt;Region Name="Properties" Priority="100"&gt;
+        &lt;!-- Region: Properties / Indexers --&gt;
+        &lt;Region Name="Properties" Priority="80"&gt;
             &lt;Entry DisplayName="Properties and Indexers"&gt;
                 &lt;Entry.Match&gt;
                     &lt;Or&gt;
@@ -464,8 +504,8 @@
             &lt;/Entry&gt;
         &lt;/Region&gt;
 
-        &lt;!-- Region for Methods --&gt;
-        &lt;Region Name="Methods" Priority="100"&gt;
+        &lt;!-- Region: Methods --&gt;
+        &lt;Region Name="Methods" Priority="70"&gt;
             &lt;Entry DisplayName="Methods"&gt;
                 &lt;Entry.Match&gt;
                     &lt;Kind Is="Method" /&gt;
@@ -476,7 +516,7 @@
             &lt;/Entry&gt;
         &lt;/Region&gt;
 
-        &lt;!-- Catch-all / Others (if any) --&gt;
+        &lt;!-- Catch-all for any other members not matched above --&gt;
         &lt;Entry DisplayName="Other Members"&gt;
             &lt;Entry.Match&gt;
                 &lt;Not&gt;
@@ -492,6 +532,13 @@
             &lt;Entry.SortBy&gt;
                 &lt;Name /&gt;
             &lt;/Entry.SortBy&gt;
+        &lt;/Entry&gt;
+
+        &lt;!-- Nested types at end --&gt;
+        &lt;Entry DisplayName="Nested Types"&gt;
+            &lt;Entry.Match&gt;
+                &lt;Kind Is="Type" /&gt;
+            &lt;/Entry.Match&gt;
         &lt;/Entry&gt;
 
     &lt;/TypePattern&gt;
@@ -510,16 +557,71 @@
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EPsi_002ECSharp_002ECodeStyle_002EMemberReordering_002EMigrations_002ECSharpFileLayoutPatternRemoveIsAttributeUpgrade/@EntryIndexedValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=15715e26_002D7680_002D476e_002D9ebb_002Da06a92e4deca/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a0a74494_002Da615_002D49dd_002D8d12_002Df8ff243d2139/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Or&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;AspNet&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Core&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;EfCore&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;Services&amp;gt;" /&gt;
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
-    &lt;Nothing /&gt;
   &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	

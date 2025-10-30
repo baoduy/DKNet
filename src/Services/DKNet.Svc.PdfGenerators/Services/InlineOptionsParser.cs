@@ -8,6 +8,9 @@ namespace DKNet.Svc.PdfGenerators.Services;
 /// <summary>
 ///     Parser for YAML front matter blocks within markdown files.
 /// </summary>
+/// <summary>
+///     Provides InlineOptionsParser functionality.
+/// </summary>
 public static class InlineOptionsParser
 {
     #region Methods
@@ -57,7 +60,9 @@ public static class InlineOptionsParser
     {
         var rs = await InternalTryReadYamlFrontMatter(markdownFilePath);
         if (!rs.success)
+        {
             throw new InvalidDataException($"Could not find a YAML front matter block in '{markdownFilePath}'.");
+        }
 
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(HyphenatedNamingConvention.Instance)

@@ -5,34 +5,19 @@ namespace Svc.PdfGenerators.Tests;
 
 public class ThemeTests
 {
-    [Fact]
-    public void Github_ReturnsTheme()
-    {
-        // Act
-        var theme = Theme.Github;
-
-        // Assert
-        theme.ShouldNotBeNull();
-    }
+    #region Methods
 
     [Fact]
-    public void Latex_ReturnsTheme()
+    public void Custom_IsCustomTheme()
     {
+        // Arrange
+        var cssPath = "/path/to/custom.css";
+
         // Act
-        var theme = Theme.Latex;
+        var theme = Theme.Custom(cssPath);
 
         // Assert
-        theme.ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void None_ReturnsTheme()
-    {
-        // Act
-        var theme = Theme.None;
-
-        // Assert
-        theme.ShouldNotBeNull();
+        theme.ShouldBeOfType<CustomTheme>();
     }
 
     [Fact]
@@ -72,6 +57,16 @@ public class ThemeTests
     }
 
     [Fact]
+    public void Github_ReturnsTheme()
+    {
+        // Act
+        var theme = Theme.Github;
+
+        // Assert
+        theme.ShouldNotBeNull();
+    }
+
+    [Fact]
     public void Latex_IsPredefinedTheme()
     {
         // Act
@@ -79,6 +74,16 @@ public class ThemeTests
 
         // Assert
         theme.ShouldBeOfType<PredefinedTheme>();
+    }
+
+    [Fact]
+    public void Latex_ReturnsTheme()
+    {
+        // Act
+        var theme = Theme.Latex;
+
+        // Assert
+        theme.ShouldNotBeNull();
     }
 
     [Fact]
@@ -92,15 +97,14 @@ public class ThemeTests
     }
 
     [Fact]
-    public void Custom_IsCustomTheme()
+    public void None_ReturnsTheme()
     {
-        // Arrange
-        var cssPath = "/path/to/custom.css";
-
         // Act
-        var theme = Theme.Custom(cssPath);
+        var theme = Theme.None;
 
         // Assert
-        theme.ShouldBeOfType<CustomTheme>();
+        theme.ShouldNotBeNull();
     }
+
+    #endregion
 }

@@ -20,10 +20,12 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         var testEvent = new EntityAddedEvent { Id = root.Id, Name = root.Name };
@@ -64,10 +66,12 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         root.AddEvent<EntityAddedEvent>(); // Add event type to be mapped
@@ -100,10 +104,12 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root1 = new Root("Root 1", "TestOwner");
         var root2 = new Root("Root 2", "TestOwner");
@@ -141,10 +147,12 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         var testEvent = new EntityAddedEvent { Id = root.Id, Name = root.Name };
@@ -175,9 +183,11 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         await using var snapshot = new SnapshotContext(context);
 
@@ -200,10 +210,12 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         root.AddEvent<EntityAddedEvent>(); // Add event type (requires mapper)
@@ -231,9 +243,11 @@ public class EventHookTests
 
         var eventHook = new EventHook(eventPublishers, mappers);
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         await using var snapshot = new SnapshotContext(context);
 

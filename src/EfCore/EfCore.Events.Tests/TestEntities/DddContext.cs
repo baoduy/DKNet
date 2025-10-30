@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.DataAuthorization;
 
 namespace EfCore.Events.Tests.TestEntities;
@@ -15,7 +14,7 @@ public class DddContext(
 {
     #region Properties
 
-    public IEnumerable<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
+    public IEnumerable<string> AccessibleKeys => this._dataKeyProvider?.GetAccessibleKeys() ?? [];
 
     #endregion
 

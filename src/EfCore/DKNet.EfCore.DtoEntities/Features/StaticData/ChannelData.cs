@@ -10,17 +10,23 @@ public abstract class ChannelDataBase : AuditedEntity<int>
 {
     #region Constructors
 
-    protected ChannelDataBase(ChannelCodes code, string settlement, decimal minAmount, decimal? maxAmount,
+    protected ChannelDataBase(
+        ChannelCodes code,
+        string settlement,
+        decimal minAmount,
+        decimal? maxAmount,
         string byUser)
     {
-        Code = code;
-        MaxAmount = maxAmount;
-        MinAmount = minAmount;
-        Settlement = settlement;
+        this.Code = code;
+        this.MaxAmount = maxAmount;
+        this.MinAmount = minAmount;
+        this.Settlement = settlement;
 
-        SetCreatedBy(byUser);
+        this.SetCreatedBy(byUser);
         if (!IsValidSettlementFormat(settlement))
+        {
             throw new ArgumentException("Invalid settlement format. It should T+Date format.", nameof(settlement));
+        }
     }
 
     #endregion
@@ -29,8 +35,9 @@ public abstract class ChannelDataBase : AuditedEntity<int>
 
     [MaxLength(10)] public ChannelCodes Code { get; private set; }
 
-    public decimal? MaxAmount { get; private set; }
     public decimal MinAmount { get; private set; }
+
+    public decimal? MaxAmount { get; private set; }
 
     public string Settlement { get; private set; }
 
@@ -38,8 +45,11 @@ public abstract class ChannelDataBase : AuditedEntity<int>
 
     #region Methods
 
-    private static bool IsValidSettlementFormat(string settlement) => Regex.IsMatch(settlement, @"^T\+\d+$",
-        RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+    private static bool IsValidSettlementFormat(string settlement) => Regex.IsMatch(
+        settlement,
+        @"^T\+\d+$",
+        RegexOptions.IgnoreCase,
+        TimeSpan.FromMilliseconds(100));
 
     #endregion
 }
@@ -49,20 +59,26 @@ public sealed class ChannelData : ChannelDataBase
 {
     #region Constructors
 
-    private ChannelData(ChannelCodes code, string name, string country, string currency, string settlement,
+    private ChannelData(
+        ChannelCodes code,
+        string name,
+        string country,
+        string currency,
+        string settlement,
         decimal minAmount,
-        decimal? maxAmount, string byUser) : base(code, settlement, minAmount, maxAmount, byUser)
+        decimal? maxAmount,
+        string byUser) : base(code, settlement, minAmount, maxAmount, byUser)
     {
-        Country = country;
-        Currency = currency;
-        Name = name;
+        this.Country = country;
+        this.Currency = currency;
+        this.Name = name;
     }
 
     private ChannelData() : base(ChannelCodes.None, string.Empty, 0, null, string.Empty)
     {
-        Country = string.Empty;
-        Currency = string.Empty;
-        Name = string.Empty;
+        this.Country = string.Empty;
+        this.Currency = string.Empty;
+        this.Name = string.Empty;
     }
 
     #endregion
@@ -70,15 +86,24 @@ public sealed class ChannelData : ChannelDataBase
     #region Properties
 
     [MaxLength(3)] public string Country { get; private set; }
+
     [MaxLength(4)] public string Currency { get; private set; }
+
     [MaxLength(50)] public string Name { get; private set; }
 
     #endregion
 
     #region Methods
 
-    public static ChannelData Create(ChannelCodes code, string name, string settlement, string country, string currency,
-        decimal minAmount, decimal? maxAmount, string byUser) =>
+    public static ChannelData Create(
+        ChannelCodes code,
+        string name,
+        string settlement,
+        string country,
+        string currency,
+        decimal minAmount,
+        decimal? maxAmount,
+        string byUser) =>
         new(code, name, country, currency, settlement, minAmount, maxAmount, byUser);
 
     #endregion

@@ -19,6 +19,7 @@ public class TableOfContentsCreatorTests
         var tocCreator = new TableOfContentsCreator(options, events, resourceService);
         var templateModel = new Dictionary<string, string>();
         var args = new TemplateModelEventArgs(templateModel);
+
         // Directly call the handler instead of invoking the event
         await tocCreator.InternalAddStylesToTemplateAsync(tocCreator, args);
         Assert.Contains("tocStyle", templateModel.Keys);
@@ -34,7 +35,8 @@ public class TableOfContentsCreatorTests
         var tocCreator = new TableOfContentsCreator(options, events, resourceService);
         var markdown = "# Title\n## Subtitle\nContent";
         var tocHtml = typeof(TableOfContentsCreator)
-            .GetMethod("InternalToHtml",
+            .GetMethod(
+                "InternalToHtml",
                 BindingFlags.NonPublic | BindingFlags.Instance)
             ?.Invoke(tocCreator, [markdown]) as string;
         Assert.Contains("table-of-contents", tocHtml);
@@ -53,7 +55,9 @@ public class TableOfContentsCreatorTests
         #endregion
 
         public event EventHandler<MarkdownEventArgs>? HtmlConverting;
+
         public event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
+
         public event EventHandler<PdfEventArgs>? TempPdfCreated;
     }
 }

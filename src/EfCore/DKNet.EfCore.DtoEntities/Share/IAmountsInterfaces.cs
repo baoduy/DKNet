@@ -7,13 +7,16 @@ public interface IBalanceAmounts
     #region Properties
 
     decimal AvailableAmount { get; }
-    int AvailableCount { get; }
-
-    [MaxLength(4)] string Currency { get; }
 
     decimal FeeAmount { get; }
+
     decimal PendingAmount { get; }
+
+    int AvailableCount { get; }
+
     int PendingCount { get; }
+
+    [MaxLength(4)] string Currency { get; }
 
     #endregion
 }
@@ -24,10 +27,11 @@ public interface ITransactionAmounts
 
     decimal Amount { get; }
 
-    [MaxLength(4)] string Currency { get; }
-
     decimal? FeeAmount { get; }
+
     decimal? NetAmount { get; }
+
+    [MaxLength(4)] string Currency { get; }
 
     #endregion
 }

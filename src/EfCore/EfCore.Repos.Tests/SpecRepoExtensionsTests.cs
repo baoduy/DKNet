@@ -24,11 +24,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task AnyAsync_WithMatchingEntities_ShouldReturnTrue()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.AnyAsync(spec);
+        var result = await this._repository.AnyAsync(spec);
 
         // Assert
         result.ShouldBeTrue();
@@ -41,7 +41,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.AnyAsync(spec);
+        var result = await this._repository.AnyAsync(spec);
 
         // Assert
         result.ShouldBeFalse();
@@ -51,11 +51,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task AnyAsync_WithSpecificCondition_ShouldReturnCorrectResult()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new UserByFirstNameSpecification("Inactive");
 
         // Act
-        var result = await _repository.AnyAsync(spec);
+        var result = await this._repository.AnyAsync(spec);
 
         // Assert
         result.ShouldBeTrue();
@@ -65,11 +65,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task CountAsync_WithAllEntities_ShouldReturnTotalCount()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.CountAsync(spec);
+        var result = await this._repository.CountAsync(spec);
 
         // Assert
         result.ShouldBe(3);
@@ -79,11 +79,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task CountAsync_WithMatchingEntities_ShouldReturnCount()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.CountAsync(spec);
+        var result = await this._repository.CountAsync(spec);
 
         // Assert
         result.ShouldBe(2);
@@ -96,7 +96,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.CountAsync(spec);
+        var result = await this._repository.CountAsync(spec);
 
         // Assert
         result.ShouldBe(0);
@@ -105,20 +105,22 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         //await _context.Database.EnsureDeletedAsync();
-        await _context.DisposeAsync();
-        if (_connection != null)
-            await _connection.DisposeAsync();
+        await this._context.DisposeAsync();
+        if (this._connection != null)
+        {
+            await this._connection.DisposeAsync();
+        }
     }
 
     [Fact]
     public async Task FirstAsync_WithMatchingEntity_ShouldReturnEntity()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.FirstAsync(spec);
+        var result = await this._repository.FirstAsync(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -132,18 +134,18 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new ActiveUsersSpecification();
 
         // Act & Assert
-        await Should.ThrowAsync<InvalidOperationException>(async () => { await _repository.FirstAsync(spec); });
+        await Should.ThrowAsync<InvalidOperationException>(async () => { await this._repository.FirstAsync(spec); });
     }
 
     [Fact]
     public async Task FirstOrDefaultAsync_WithMatchingEntity_ShouldReturnEntity()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new UserByFirstNameSpecification("ActiveOne");
 
         // Act
-        var result = await _repository.FirstOrDefaultAsync(spec);
+        var result = await this._repository.FirstOrDefaultAsync(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -154,11 +156,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task FirstOrDefaultAsync_WithNoMatch_ShouldReturnNull()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new UserByFirstNameSpecification("NonExistent");
 
         // Act
-        var result = await _repository.FirstOrDefaultAsync(spec);
+        var result = await this._repository.FirstOrDefaultAsync(spec);
 
         // Assert
         result.ShouldBeNull();
@@ -168,11 +170,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task FirstOrDefaultAsync_WithProjection_ShouldReturnProjectedModel()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new UserByFirstNameSpecification("ActiveOne");
 
         // Act
-        var result = await _repository.FirstOrDefaultAsync<User, UserDto>(spec);
+        var result = await this._repository.FirstOrDefaultAsync<User, UserDto>(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -183,11 +185,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task FirstOrDefaultAsync_WithProjectionNoMatch_ShouldReturnNull()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new UserByFirstNameSpecification("NonExistent");
 
         // Act
-        var result = await _repository.FirstOrDefaultAsync<User, UserDto>(spec);
+        var result = await this._repository.FirstOrDefaultAsync<User, UserDto>(spec);
 
         // Assert
         result.ShouldBeNull();
@@ -196,24 +198,24 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
-        await _connection.OpenAsync();
+        this._connection = new SqliteConnection("DataSource=:memory:");
+        await this._connection.OpenAsync();
 
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(_connection)
+            .UseSqlite(this._connection)
             .Options;
 
-        _context = new TestDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        this._context = new TestDbContext(options);
+        await this._context.Database.EnsureCreatedAsync();
 
         // Setup Mapster
         var config = new TypeAdapterConfig();
         config.NewConfig<User, UserDto>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.FullName, src => $"{src.FirstName} {src.LastName}");
-        _mapper = new Mapper(config);
+        this._mapper = new Mapper(config);
 
-        _repository = new RepositorySpec<TestDbContext>(_context, [_mapper]);
+        this._repository = new RepositorySpec<TestDbContext>(this._context, [this._mapper]);
     }
 
     private async Task SeedManyUsers(int count)
@@ -222,15 +224,16 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         for (var i = 1; i <= count; i++)
         {
             var prefix = i % 2 == 0 ? "Active" : "Inactive";
-            users.Add(new User("test")
-            {
-                FirstName = $"{prefix}User{i}",
-                LastName = $"LastName{i}"
-            });
+            users.Add(
+                new User("test")
+                {
+                    FirstName = $"{prefix}User{i}",
+                    LastName = $"LastName{i}"
+                });
         }
 
-        await _context.Users.AddRangeAsync(users);
-        await _context.SaveChangesAsync();
+        await this._context.Users.AddRangeAsync(users);
+        await this._context.SaveChangesAsync();
     }
 
     private async Task SeedTestUsers()
@@ -242,15 +245,15 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
             new User("test") { FirstName = "Inactive", LastName = "Johnson" }
         };
 
-        await _context.Users.AddRangeAsync(users);
-        await _context.SaveChangesAsync();
+        await this._context.Users.AddRangeAsync(users);
+        await this._context.SaveChangesAsync();
     }
 
     [Fact]
     public async Task ToListAsync_WithCancellation_ShouldRespectToken()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
         var cts = new CancellationTokenSource();
         await cts.CancelAsync();
@@ -258,7 +261,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(async () =>
         {
-            await _repository.ToListAsync(spec, cts.Token);
+            await this._repository.ToListAsync(spec, cts.Token);
         });
     }
 
@@ -269,7 +272,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.ToListAsync(spec);
+        var result = await this._repository.ToListAsync(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -280,11 +283,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToListAsync_WithProjection_ShouldReturnListOfModels()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.ToListAsync<User, UserDto>(spec);
+        var result = await this._repository.ToListAsync<User, UserDto>(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -297,11 +300,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToListAsync_WithSpecification_ShouldReturnListOfEntities()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.ToListAsync(spec);
+        var result = await this._repository.ToListAsync(spec);
 
         // Assert
         result.ShouldNotBeNull();
@@ -316,7 +319,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync(spec, 1, 10);
+        var result = await this._repository.ToPagedListAsync(spec, 1, 10);
 
         // Assert
         result.ShouldNotBeNull();
@@ -329,11 +332,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPagedListAsync_WithEntities_ShouldReturnPagedList()
     {
         // Arrange
-        await SeedManyUsers(15);
+        await this.SeedManyUsers(15);
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync(spec, 1, 5);
+        var result = await this._repository.ToPagedListAsync(spec, 1, 5);
 
         // Assert
         result.ShouldNotBeNull();
@@ -350,11 +353,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPagedListAsync_WithFilteredSpec_ShouldReturnFilteredPagedList()
     {
         // Arrange
-        await SeedManyUsers(20);
+        await this.SeedManyUsers(20);
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync(spec, 1, 5);
+        var result = await this._repository.ToPagedListAsync(spec, 1, 5);
 
         // Assert
         result.ShouldNotBeNull();
@@ -366,11 +369,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPagedListAsync_WithLastPage_ShouldReturnPartialPage()
     {
         // Arrange
-        await SeedManyUsers(15);
+        await this.SeedManyUsers(15);
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync(spec, 3, 5);
+        var result = await this._repository.ToPagedListAsync(spec, 3, 5);
 
         // Assert
         result.ShouldNotBeNull();
@@ -385,11 +388,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPagedListAsync_WithProjection_ShouldReturnPagedListOfModels()
     {
         // Arrange
-        await SeedManyUsers(10);
+        await this.SeedManyUsers(10);
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync<User, UserDto>(spec, 1, 5);
+        var result = await this._repository.ToPagedListAsync<User, UserDto>(spec, 1, 5);
 
         // Assert
         result.ShouldNotBeNull();
@@ -403,11 +406,11 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPagedListAsync_WithSecondPage_ShouldReturnCorrectPage()
     {
         // Arrange
-        await SeedManyUsers(15);
+        await this.SeedManyUsers(15);
         var spec = new AllUsersSpecification();
 
         // Act
-        var result = await _repository.ToPagedListAsync(spec, 2, 5);
+        var result = await this._repository.ToPagedListAsync(spec, 2, 5);
 
         // Assert
         result.ShouldNotBeNull();
@@ -424,9 +427,12 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var enumerable = _repository.ToPageEnumerable(spec);
+        var enumerable = this._repository.ToPageEnumerable(spec);
         var result = new List<User>();
-        await foreach (var user in enumerable) result.Add(user);
+        await foreach (var user in enumerable)
+        {
+            result.Add(user);
+        }
 
         // Assert
         result.ShouldBeEmpty();
@@ -436,13 +442,16 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPageEnumerable_WithEntities_ShouldReturnAsyncEnumerable()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var enumerable = _repository.ToPageEnumerable(spec);
+        var enumerable = this._repository.ToPageEnumerable(spec);
         var result = new List<User>();
-        await foreach (var user in enumerable) result.Add(user);
+        await foreach (var user in enumerable)
+        {
+            result.Add(user);
+        }
 
         // Assert
         result.ShouldNotBeNull();
@@ -454,13 +463,16 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     public async Task ToPageEnumerable_WithProjection_ShouldReturnAsyncEnumerableOfModels()
     {
         // Arrange
-        await SeedTestUsers();
+        await this.SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var enumerable = _repository.ToPageEnumerable<User, UserDto>(spec);
+        var enumerable = this._repository.ToPageEnumerable<User, UserDto>(spec);
         var result = new List<UserDto>();
-        await foreach (var dto in enumerable) result.Add(dto);
+        await foreach (var dto in enumerable)
+        {
+            result.Add(dto);
+        }
 
         // Assert
         result.ShouldNotBeNull();
@@ -476,8 +488,8 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
 
         public ActiveUsersSpecification()
         {
-            WithFilter(u => u.FirstName.StartsWith("Active"));
-            AddOrderBy(u => u.LastName);
+            this.WithFilter(u => u.FirstName.StartsWith("Active"));
+            this.AddOrderBy(u => u.LastName);
         }
 
         #endregion
@@ -489,7 +501,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
 
         public AllUsersSpecification()
         {
-            AddOrderBy(u => u.Id);
+            this.AddOrderBy(u => u.Id);
         }
 
         #endregion
@@ -501,7 +513,7 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
 
         public UserByFirstNameSpecification(string firstName)
         {
-            WithFilter(u => u.FirstName == firstName);
+            this.WithFilter(u => u.FirstName == firstName);
         }
 
         #endregion
@@ -511,8 +523,9 @@ public class SpecRepoExtensionsTests : IAsyncLifetime
     {
         #region Properties
 
-        public string FullName { get; set; } = string.Empty;
         public int Id { get; set; }
+
+        public string FullName { get; set; } = string.Empty;
 
         #endregion
     }

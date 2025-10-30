@@ -16,7 +16,7 @@ public abstract class BaseEntity : AuditedEntity<int>, IConcurrencyEntity<byte[]
     /// <inheritdoc />
     protected BaseEntity(int id, string createdBy) : base(id)
     {
-        SetCreatedBy(createdBy);
+        this.SetCreatedBy(createdBy);
     }
 
     /// <inheritdoc />
@@ -36,7 +36,7 @@ public abstract class BaseEntity : AuditedEntity<int>, IConcurrencyEntity<byte[]
 
     public void SetRowVersion(byte[] rowVersion)
     {
-        RowVersion = rowVersion;
+        this.RowVersion = rowVersion;
     }
 
     #endregion
@@ -62,7 +62,7 @@ public class User : BaseEntity
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    public string FullName => $"{FirstName} {LastName}";
+    public string FullName => $"{this.FirstName} {this.LastName}";
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
@@ -70,7 +70,7 @@ public class User : BaseEntity
 
     #region Methods
 
-    public void UpdatedByUser(string userName) => SetUpdatedBy(userName);
+    public void UpdatedByUser(string userName) => this.SetUpdatedBy(userName);
 
     #endregion
 }
@@ -114,13 +114,15 @@ public sealed class Address : Entity<int>
 
     #region Properties
 
-    [MaxLength(256)] public required string City { get; set; } = null!;
+    [ForeignKey("Address_User")] public int UserId { get; set; }
 
     public OwnedEntity? OwnedEntity { get; set; }
+
+    [MaxLength(256)] public required string City { get; set; } = null!;
+
     [MaxLength(256)] public required string Street { get; set; } = null!;
 
     public User User { get; set; } = null!;
-    [ForeignKey("Address_User")] public int UserId { get; set; }
 
     #endregion
 }
@@ -131,7 +133,7 @@ public class OwnedEntity
 {
     #region Properties
 
-    public string FullName => $"{nameof(OwnedEntity)} {Name}";
+    public string FullName => $"{nameof(OwnedEntity)} {this.Name}";
 
     [MaxLength(500)] public string? Name { get; set; }
 
@@ -151,9 +153,9 @@ public class GuidAuditEntity : AuditedEntity<Guid>
 {
     #region Constructors
 
-    public GuidAuditEntity() : base(default) => SetCreatedBy("Steven");
+    public GuidAuditEntity() : base(default) => this.SetCreatedBy("Steven");
 
-    public GuidAuditEntity(Guid id, string createdBy) : base(id) => SetCreatedBy(createdBy);
+    public GuidAuditEntity(Guid id, string createdBy) : base(id) => this.SetCreatedBy(createdBy);
 
     #endregion
 

@@ -14,10 +14,12 @@ public class EventExtensionsTests
     public void GetEntityKeyValues_WithCompositePrimaryKey_ShouldReturnAllKeys()
     {
         // Arrange - using Entity which may have composite keys in future
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .UseAutoConfigModel()
-            .Options, null);
+        using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .UseAutoConfigModel()
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         var entity = new Entity("Test Entity", root.Id);
@@ -49,10 +51,12 @@ public class EventExtensionsTests
         // For coverage purposes, we'll test with a valid entity and confirm the happy path
         // The null primary key path would need additional mocking infrastructure to test properly
 
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         context.Set<Root>().Add(root);
@@ -76,10 +80,12 @@ public class EventExtensionsTests
     public async Task GetEntityKeyValues_WithEntityWithPrimaryKey_ShouldReturnKeyValues()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         context.Set<Root>().Add(root);
@@ -101,10 +107,12 @@ public class EventExtensionsTests
     public void GetEntityKeyValues_WithNoPrimaryKey_ShouldReturnEmptyDictionary()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .UseAutoConfigModel()
-            .Options, null);
+        using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .UseAutoConfigModel()
+                .Options,
+            null);
 
         // Create a mock entity entry without primary key (simulated scenario)
         var root = new Root("Test Root", "TestOwner");
@@ -128,10 +136,12 @@ public class EventExtensionsTests
     public void GetEntityKeyValues_WithSinglePrimaryKey_ShouldReturnCorrectValues()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         context.Set<Root>().Add(root);
@@ -153,10 +163,12 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithEventEntitiesAndMapper_ShouldReturnEventObjectsWithMappedEvents()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var config = TypeAdapterConfig.GlobalSettings;
         config.NewConfig<Root, EntityAddedEvent>()
@@ -179,6 +191,7 @@ public class EventExtensionsTests
         eventObjects.Count.ShouldBe(1);
 
         var eventObject = eventObjects.First();
+
         // eventObject.EntityType.ShouldBe(typeof(Root).FullName);
         // eventObject.PrimaryKey.ShouldContainKey("Id");
         // eventObject.PrimaryKey["Id"].ShouldBe(root.Id);
@@ -193,10 +206,12 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithEventEntitiesNoMapper_ShouldReturnEventObjectsWithoutMappedEvents()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root = new Root("Test Root", "TestOwner");
         root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
@@ -213,6 +228,7 @@ public class EventExtensionsTests
 
         var eventObject = eventObjects.First();
         eventObject.ShouldNotBeAssignableTo<IEventItem>();
+
         // eventObject.EntityType.ShouldBe(typeof(Root).FullName);
         // eventObject.PrimaryKey.ShouldContainKey("Id");
         // eventObject.PrimaryKey["Id"].ShouldBe(root.Id);
@@ -225,10 +241,12 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithMixedEventsAndEventTypes_ShouldReturnAllEvents()
     {
         // Arrange
-        using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var config = TypeAdapterConfig.GlobalSettings;
         config.NewConfig<Root, EntityAddedEvent>()
@@ -256,6 +274,7 @@ public class EventExtensionsTests
         eventObjects.Count.ShouldBeGreaterThanOrEqualTo(1);
 
         var eventObject = eventObjects.First();
+
         //eventObject.Events.Length.ShouldBe(2); // One direct + one mapped
 
         // Should contain both the direct event and the mapped event
@@ -266,10 +285,12 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithMultipleEntities_ShouldReturnSeparateEventObjects()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         var root1 = new Root("Root 1", "TestOwner");
         var root2 = new Root("Root 2", "TestOwner");
@@ -300,10 +321,12 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithNoEventEntities_ShouldReturnEmpty()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         await using var snapshot = new SnapshotContext(context);
 
@@ -318,13 +341,16 @@ public class EventExtensionsTests
     public async Task GetEventObjects_WithNonEventEntity_ShouldNotIncludeInResults()
     {
         // Arrange
-        await using var context = new DddContext(new DbContextOptionsBuilder<DddContext>()
-            .UseAutoConfigModel()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options, null);
+        await using var context = new DddContext(
+            new DbContextOptionsBuilder<DddContext>()
+                .UseAutoConfigModel()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options,
+            null);
 
         // Add an entity that implements IEventEntity but has no events
         var root = new Root("Test Root", "TestOwner");
+
         // Don't add any events
         context.Set<Root>().Add(root);
 

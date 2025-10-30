@@ -11,7 +11,7 @@ public sealed class Fixture : IAsyncDisposable
 
     public Fixture()
     {
-        ServiceProvider = new ServiceCollection()
+        this.ServiceProvider = new ServiceCollection()
             .AddLogging()
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
@@ -22,15 +22,17 @@ public sealed class Fixture : IAsyncDisposable
                 //This is a global config for all the child busses
                 mmb.AddJsonSerializer()
                     .AddServicesFromAssembly(typeof(Fixture).Assembly)
-                    .AddChildBus("ImMemory", me =>
-                    {
-                        me.WithProviderMemory()
-                            .AutoDeclareFrom(typeof(Fixture).Assembly);
-                    });
+                    .AddChildBus(
+                        "ImMemory",
+                        me =>
+                        {
+                            me.WithProviderMemory()
+                                .AutoDeclareFrom(typeof(Fixture).Assembly);
+                        });
             })
             .BuildServiceProvider();
 
-        var db = ServiceProvider.GetRequiredService<TestDbContext>();
+        var db = this.ServiceProvider.GetRequiredService<TestDbContext>();
         db.Database.EnsureCreated();
     }
 
@@ -44,7 +46,7 @@ public sealed class Fixture : IAsyncDisposable
 
     #region Methods
 
-    public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
+    public ValueTask DisposeAsync() => this.ServiceProvider.DisposeAsync();
 
     #endregion
 }

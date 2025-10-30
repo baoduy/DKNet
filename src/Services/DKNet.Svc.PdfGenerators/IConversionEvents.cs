@@ -5,12 +5,18 @@ namespace DKNet.Svc.PdfGenerators;
 /// <summary>
 ///     Async event handler delegate for conversion events.
 /// </summary>
-[SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "This delegate is specifically designed as an event handler and the suffix accurately describes its purpose")]
+[SuppressMessage(
+    "Naming",
+    "CA1711:Identifiers should not have incorrect suffix",
+    Justification =
+        "This delegate is specifically designed as an event handler and the suffix accurately describes its purpose")]
 public delegate Task AsyncConversionEventHandler<TEventArgs>(object? sender, TEventArgs e) where TEventArgs : EventArgs;
 
 /// <summary>
 ///     Interface for events that occur during the PDF conversion process.
+/// </summary>
+/// <summary>
+///     Interface for ConversionEvents operations.
 /// </summary>
 public interface IConversionEvents
 {
@@ -36,7 +42,9 @@ public interface IConversionEvents
     ///     The CA1003 warning is suppressed because the async pattern is intentional and required
     ///     for proper async/await support in event handlers.
     /// </remarks>
-    [SuppressMessage("Design", "CA1003:Use generic event handler instances",
+    [SuppressMessage(
+        "Design",
+        "CA1003:Use generic event handler instances",
         Justification = "Async event pattern requires custom delegate for proper Task return support")]
     event AsyncConversionEventHandler<TemplateModelEventArgs>? TemplateModelCreating;
 
@@ -50,6 +58,7 @@ public interface IConversionEvents
 ///     <see cref="EventArgs" /> containing the markdown content before the HTML conversion.
 /// </summary>
 /// <param name="markdownContent">The current markdown content.</param>
+/// <returns>The result of the operation.</returns>
 public class MarkdownEventArgs(string markdownContent) : EventArgs
 {
     #region Properties
@@ -66,6 +75,7 @@ public class MarkdownEventArgs(string markdownContent) : EventArgs
 ///     <see cref="EventArgs" /> containing the model for the HTML template.
 /// </summary>
 /// <param name="templateModel">The model for the HMTml template.</param>
+/// <returns>The result of the operation.</returns>
 public class TemplateModelEventArgs(Dictionary<string, string> templateModel) : EventArgs
 {
     #region Properties
@@ -82,6 +92,7 @@ public class TemplateModelEventArgs(Dictionary<string, string> templateModel) : 
 ///     <see cref="EventArgs" /> containing the path to the temporary PDF file.
 /// </summary>
 /// <param name="pdfPath">Path to the temporary PDF.</param>
+/// <returns>The result of the operation.</returns>
 public class PdfEventArgs(string pdfPath) : EventArgs
 {
     #region Properties

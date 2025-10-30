@@ -19,18 +19,18 @@ public class User : AuditedEntity<int>
 
     public User(int id, string createdBy) : base(id)
     {
-        SetCreatedBy(createdBy);
+        this.SetCreatedBy(createdBy);
     }
 
     #endregion
 
     #region Properties
 
-    [BackingField(nameof(_addresses))] public IReadOnlyCollection<Address> Addresses => _addresses;
+    [BackingField(nameof(_addresses))] public IReadOnlyCollection<Address> Addresses => this._addresses;
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    public string FullName => $"{FirstName} {LastName}";
+    public string FullName => $"{this.FirstName} {this.LastName}";
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
 
@@ -40,7 +40,7 @@ public class User : AuditedEntity<int>
 
     public void AddAddress(Address address)
     {
-        _addresses.Add(address);
+        this._addresses.Add(address);
     }
 
     #endregion

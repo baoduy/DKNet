@@ -11,6 +11,7 @@ namespace DKNet.EfCore.Abstractions.Entities;
 ///     This interface provides the necessary properties and methods to implement
 ///     optimistic concurrency control using a row version timestamp.
 /// </remarks>
+/// <typeparam name="TType">The RowVersion type parameter.</typeparam>
 public interface IConcurrencyEntity<TType>
 {
     #region Properties

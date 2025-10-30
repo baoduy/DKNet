@@ -44,10 +44,9 @@ public static class EfCoreExtensions
 
         return primaryKey.Properties.ToDictionary(
             p => p.Name,
-            p => p.PropertyInfo!.GetValue(entityEntry.Entity)
-            , StringComparer.OrdinalIgnoreCase);
+            p => p.PropertyInfo!.GetValue(entityEntry.Entity),
+            StringComparer.OrdinalIgnoreCase);
     }
-
 
     internal static Type GetEntityType(Type entityMappingType)
     {
@@ -112,8 +111,14 @@ public static class EfCoreExtensions
         return entity.GetSchemaQualifiedTableName()!;
     }
 
+    /// <summary>
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
     public static bool IsSqlServer(this DbContext context) =>
-        string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer",
+        string.Equals(
+            context.Database.ProviderName,
+            "Microsoft.EntityFrameworkCore.SqlServer",
             StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
@@ -136,7 +141,9 @@ public static class EfCoreExtensions
     /// <param name="dbContext">The database context.</param>
     /// <param name="name">The name of the sequence.</param>
     /// <returns>The next value of the sequence.</returns>
-    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+    [SuppressMessage(
+        "Security",
+        "CA2100:Review SQL queries for security vulnerabilities",
         Justification = "SQL is constructed from internal metadata, not user input")]
     public static async ValueTask<object?> NextSeqValue<TEnum>(this DbContext dbContext, TEnum name)
         where TEnum : struct
@@ -154,8 +161,7 @@ public static class EfCoreExtensions
         await using var result = await command.ExecuteReaderAsync();
 
         object? rs = null;
-        if (await result.ReadAsync())
-            rs = await result.GetFieldValueAsync<object>(0);
+        if (await result.ReadAsync()) rs = await result.GetFieldValueAsync<object>(0);
 
         await dbContext.Database.CloseConnectionAsync();
         return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");

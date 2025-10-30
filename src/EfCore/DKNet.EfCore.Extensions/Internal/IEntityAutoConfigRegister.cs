@@ -17,7 +17,8 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
     #region Properties
 
     public Assembly[] Assemblies { get; } = assemblies;
-    public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
+
+    public DbContextOptionsExtensionInfo Info => this._info ??= new EntityConfigExtensionInfo(this);
 
     #endregion
 
@@ -32,16 +33,25 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
         {
             //it should be
             services.AddScoped<ModelCustomizer, RelationalModelCustomizer>();
-            services.Add(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer),
-                ServiceLifetime.Scoped));
+            services.Add(
+                new ServiceDescriptor(
+                    typeof(IModelCustomizer),
+                    typeof(AutoConfigModelCustomizer),
+                    ServiceLifetime.Scoped));
         }
         else
         {
             // ReSharper disable once AssignNullToNotNullAttribute
-            services.Add(new ServiceDescriptor(typeof(ModelCustomizer), originalDescriptor.ImplementationType!,
-                originalDescriptor.Lifetime));
-            services.Replace(new ServiceDescriptor(typeof(IModelCustomizer), typeof(AutoConfigModelCustomizer),
-                originalDescriptor.Lifetime));
+            services.Add(
+                new ServiceDescriptor(
+                    typeof(ModelCustomizer),
+                    originalDescriptor.ImplementationType!,
+                    originalDescriptor.Lifetime));
+            services.Replace(
+                new ServiceDescriptor(
+                    typeof(IModelCustomizer),
+                    typeof(AutoConfigModelCustomizer),
+                    originalDescriptor.Lifetime));
         }
     }
 

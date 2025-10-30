@@ -101,7 +101,7 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
         await File.WriteAllTextAsync(file3, "3");
 
         var blob = new BlobRequest("dir1") { Type = BlobTypes.Directory };
-        var items = new List<BlobResult>();
+        var items = new List<BlobDetails.BlobResult>();
 
         await foreach (var item in _service.ListItemsAsync(blob)) items.Add(item);
 
@@ -114,7 +114,7 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
         var file = Path.Combine(_testRoot, "single.txt");
         await File.WriteAllTextAsync(file, "x");
         var blob = new BlobRequest("single.txt") { Type = BlobTypes.File };
-        var items = new List<BlobResult>();
+        var items = new List<BlobDetails.BlobResult>();
         await foreach (var item in _service.ListItemsAsync(blob)) items.Add(item);
 
         items.Count.ShouldBe(1);
@@ -124,7 +124,7 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
     public async Task SaveAsyncSavesFileAndOverwrites()
     {
         var fileName = $"test-{Guid.NewGuid()}.txt";
-        var blob = new BlobData(fileName, new BinaryData("world"u8.ToArray()))
+        var blob = new BlobDetails.BlobData(fileName, new BinaryData("world"u8.ToArray()))
         {
             Overwrite = false,
             Type = BlobTypes.File
@@ -146,7 +146,7 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
         var filePath = Path.Combine(_testRoot, "exists.txt");
         await File.WriteAllTextAsync(filePath, "abc");
 
-        var blob = new BlobData("exists.txt", new BinaryData("data"u8.ToArray()))
+        var blob = new BlobDetails.BlobData("exists.txt", new BinaryData("data"u8.ToArray()))
         {
             Overwrite = false,
             Type = BlobTypes.File

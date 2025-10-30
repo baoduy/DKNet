@@ -31,7 +31,7 @@ namespace DKNet.EfCore.DtoGenerator;
 /// public partial record CustomerBasicDto; // Generated without complex types and Email property.
 /// </code>
 /// Note: Include and Exclude are mutually exclusive. If Include is provided, only those properties will be generated.
-/// When IgnoreComplexType is true, properties that link to other entities (classes without [Owned] attribute) 
+/// When IgnoreComplexType is true, properties that link to other entities (classes without [Owned] attribute)
 /// are automatically excluded, including both single entity properties and collection properties.
 /// </remarks>
 [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
@@ -57,12 +57,10 @@ public sealed class GenerateDtoAttribute : System.Attribute
 
     /// <summary>
     /// Gets or sets a value indicating whether to automatically ignore complex types during DTO generation.
-    /// When set to true, properties that link to other entities (classes without the Owned attribute) 
+    /// When set to true, properties that link to other entities (classes without the Owned attribute)
     /// will be automatically excluded, including both single entity properties and collection properties.
     /// </summary>
     public bool IgnoreComplexType { get; set; }
-
-    public string EntityFullName => EntityType.FullName ?? EntityType.Name;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GenerateDtoAttribute"/> class.

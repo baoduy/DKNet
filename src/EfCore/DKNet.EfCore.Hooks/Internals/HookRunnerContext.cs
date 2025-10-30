@@ -8,7 +8,7 @@ internal sealed class HookRunnerContext : IAsyncDisposable
 {
     #region Fields
 
-    private readonly IServiceScope _scope;
+    //private readonly IServiceScope _scope;
 
     #endregion
 
@@ -16,12 +16,12 @@ internal sealed class HookRunnerContext : IAsyncDisposable
 
     public HookRunnerContext(IServiceProvider provider, DbContext db)
     {
-        _scope = provider.CreateScope();
-        var factory = _scope.ServiceProvider.GetRequiredService<HookFactory>();
+        //this._scope = provider.CreateScope();
+        var factory = provider.GetRequiredService<HookFactory>();
         var (before, afters) = factory.LoadHooks(db);
-        BeforeSaveHooks = [..before];
-        AfterSaveHooks = [..afters];
-        Snapshot = new SnapshotContext(db);
+        this.BeforeSaveHooks = [..before];
+        this.AfterSaveHooks = [..afters];
+        this.Snapshot = new SnapshotContext(db);
     }
 
     #endregion
@@ -29,6 +29,7 @@ internal sealed class HookRunnerContext : IAsyncDisposable
     #region Properties
 
     public IReadOnlyCollection<IAfterSaveHookAsync> AfterSaveHooks { get; }
+
     public IReadOnlyCollection<IBeforeSaveHookAsync> BeforeSaveHooks { get; }
 
     public SnapshotContext Snapshot { get; }
@@ -39,8 +40,8 @@ internal sealed class HookRunnerContext : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        _scope.Dispose();
-        await Snapshot.DisposeAsync();
+        //this._scope.Dispose();
+        await this.Snapshot.DisposeAsync();
     }
 
     #endregion

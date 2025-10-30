@@ -8,13 +8,15 @@ public class AddressGuid : Entity<Guid>
 {
     #region Properties
 
+    public Guid UserId { get; set; }
+
     [MaxLength(100)] public required string City { get; set; }
+
     [MaxLength(100)] public required string Country { get; set; }
 
     [MaxLength(100)] public required string Street { get; set; }
 
     [JsonIgnore] public UserGuid User { get; set; } = null!;
-    public Guid UserId { get; set; }
 
     #endregion
 }

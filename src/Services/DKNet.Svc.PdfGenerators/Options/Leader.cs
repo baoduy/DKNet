@@ -5,6 +5,9 @@ namespace DKNet.Svc.PdfGenerators.Options;
 /// <summary>
 ///     The character to use to lead from the TOC title to the page number.
 /// </summary>
+/// <summary>
+///     Defines Leader values.
+/// </summary>
 public enum Leader
 {
     /// <summary>
