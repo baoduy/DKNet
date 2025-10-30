@@ -57,7 +57,7 @@ public sealed class EfCorePageAsyncEnumerator<T> : IAsyncEnumerable<T>
 
             foreach (var item in page)
             {
-                if (cancellationToken.IsCancellationRequested) yield break;
+                cancellationToken.ThrowIfCancellationRequested();
 
                 yield return item;
             }

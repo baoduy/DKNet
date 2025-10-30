@@ -82,6 +82,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         entity.SetCreatedBy("creator-3");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait for create audit log to be published
         TestPublisher.Clear();
 
         ctx.AuditEntities.Remove(entity);
@@ -235,10 +236,12 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         entity.SetCreatedBy("creator-nc");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait for audit log to be published
         TestPublisher.Clear();
 
         // Save without modifications
         await ctx.SaveChangesAsync();
+        await Task.Delay(500); // Wait to ensure no async audit logs are published
         TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(0);
     }
 
