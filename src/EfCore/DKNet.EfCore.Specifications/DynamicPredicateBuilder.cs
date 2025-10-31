@@ -157,6 +157,8 @@ public sealed class DynamicPredicateBuilder
     /// <summary>
     ///     Adds a filter condition to the dynamic predicate builder.
     ///     Multiple conditions are combined using AND logic when <see cref="Build" /> is called.
+    ///     Property name/path may be provided in camelCase, snake_case, kebab-case or mixed; each dotted segment is
+    ///     normalized to PascalCase (e.g. "user_name" -> "UserName", "address.city_name" -> "Address.CityName").
     /// </summary>
     /// <param name="propertyName">
     ///     The name of the property to filter on. Supports nested properties using dot notation (e.g., "Address.City").
@@ -170,33 +172,13 @@ public sealed class DynamicPredicateBuilder
     /// <returns>
     ///     The current <see cref="DynamicPredicateBuilder" /> instance for method chaining.
     /// </returns>
-    /// <example>
-    ///     <code>
-    ///     var builder = new DynamicPredicateBuilder()
-    ///         .With("Age", Operation.GreaterThanOrEqual, 18)
-    ///         .With("Name", Operation.StartsWith, "John")
-    ///         .With("Department.Name", Operation.Equal, "IT");
-    ///     </code>
-    /// </example>
     public DynamicPredicateBuilder With(string propertyName, FilterOperations operation, object? value)
     {
         if (string.IsNullOrWhiteSpace(propertyName))
             throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
 
-        // Validation for collection operations
-        // if (operation is FilterOperations.Any or FilterOperations.All)
-        // {
-        //     if (value is not Array arr)
-        //         throw new ArgumentException($"For {operation} operation, value must be an array of subexpressions.",
-        //             nameof(value));
-        //
-        //     foreach (var item in arr)
-        //         if (item is not string s || string.IsNullOrWhiteSpace(s))
-        //             throw new ArgumentException($"Each item in {operation} array must be a non-empty string condition.",
-        //                 nameof(value));
-        // }
-
-        _conditions.Add((propertyName, operation, value));
+        var normalized = propertyName.ToPascalCase();
+        _conditions.Add((normalized, operation, value));
         return this;
     }
 
