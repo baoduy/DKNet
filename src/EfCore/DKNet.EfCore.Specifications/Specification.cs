@@ -145,6 +145,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     {
         if (string.IsNullOrWhiteSpace(orderBy)) return;
 
+        orderBy = orderBy.ToPascalCase();
         var parameter = Expression.Parameter(typeof(TEntity), "x");
         var member = Expression.PropertyOrField(parameter, orderBy);
 
