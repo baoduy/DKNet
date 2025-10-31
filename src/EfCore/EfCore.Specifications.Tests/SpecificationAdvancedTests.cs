@@ -309,9 +309,7 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
         #endregion
     }
 
-    private class EmptyProductSpecification : Specification<Product>
-    {
-    }
+    private class EmptyProductSpecification : Specification<Product>;
 
     private class ProductWithCategoryFilterSpecification : Specification<Product>
     {

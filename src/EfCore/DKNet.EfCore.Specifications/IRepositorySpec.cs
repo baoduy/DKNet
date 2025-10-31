@@ -82,7 +82,8 @@ public interface IRepositorySpec
     /// <param name="spec">The specification to apply to the query.</param>
     /// <returns>A queryable collection of projected models.</returns>
     IQueryable<TModel> Query<TEntity, TModel>(ISpecification<TEntity> spec)
-        where TEntity : class where TModel : class;
+        where TEntity : class
+        where TModel : class;
 
     /// <summary>
     ///     Saves all changes made in this repository to the underlying database asynchronously.

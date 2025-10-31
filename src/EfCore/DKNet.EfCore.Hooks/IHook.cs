@@ -13,9 +13,7 @@ namespace DKNet.EfCore.Hooks;
 ///     Marker interface for asynchronous hook types. Implement specific hook interfaces to participate
 ///     in the DbContext save pipeline (for example, <see cref="IBeforeSaveHookAsync" />).
 /// </summary>
-public interface IHookBaseAsync
-{
-}
+public interface IHookBaseAsync;
 
 /// <summary>
 ///     Allows handling actions that must run before the DbContext Save operation completes.
@@ -57,9 +55,7 @@ public interface IAfterSaveHookAsync : IHookBaseAsync
 ///     Combined hook interface that includes both before- and after-save callbacks.
 ///     Implement this interface when you need to participate in both phases.
 /// </summary>
-public interface IHookAsync : IBeforeSaveHookAsync, IAfterSaveHookAsync
-{
-}
+public interface IHookAsync : IBeforeSaveHookAsync, IAfterSaveHookAsync;
 
 /// <summary>
 ///     A convenience base class that implements <see cref="IHookAsync" /> with no-op virtual methods.

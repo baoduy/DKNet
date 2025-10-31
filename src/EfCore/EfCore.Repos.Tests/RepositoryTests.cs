@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.DynamicLinq;
 using Microsoft.EntityFrameworkCore.Storage;
 using Xunit.Abstractions;
 

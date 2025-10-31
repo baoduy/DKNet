@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.DynamicLinq;
-
 namespace EfCore.Repos.Tests;
 
 public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClassFixture<RepositoryAdvancedFixture>

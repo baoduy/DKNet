@@ -1,6 +1,5 @@
 using Mapster;
 using MapsterMapper;
-using Microsoft.EntityFrameworkCore.DynamicLinq;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EfCore.Specifications.Tests;
@@ -401,16 +400,6 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
         {
             WithFilter(p => p.IsActive);
         }
-
-        #endregion
-    }
-
-    public class ProductDto
-    {
-        #region Properties
-
-        public string FullDescription { get; set; } = string.Empty;
-        public int Id { get; set; }
 
         #endregion
     }

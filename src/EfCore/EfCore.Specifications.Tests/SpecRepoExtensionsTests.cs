@@ -11,7 +11,6 @@ public class SpecRepoExtensionsTests : IClassFixture<TestDbFixture>
     #region Fields
 
     private readonly TestDbContext _context;
-    private readonly IMapper _mapper;
     private readonly IRepositorySpec _repository;
 
     #endregion
@@ -27,9 +26,9 @@ public class SpecRepoExtensionsTests : IClassFixture<TestDbFixture>
         config.NewConfig<Product, ProductDto>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.FullDescription, src => $"{src.Name} - {src.Description}");
-        _mapper = new Mapper(config);
+        IMapper mapper = new Mapper(config);
 
-        _repository = new RepositorySpec<TestDbContext>(_context, [_mapper]);
+        _repository = new RepositorySpec<TestDbContext>(_context, [mapper]);
     }
 
     #endregion
@@ -454,16 +453,6 @@ public class SpecRepoExtensionsTests : IClassFixture<TestDbFixture>
         {
             WithFilter(p => p.Name == name);
         }
-
-        #endregion
-    }
-
-    public class ProductDto
-    {
-        #region Properties
-
-        public string FullDescription { get; set; } = string.Empty;
-        public int Id { get; set; }
 
         #endregion
     }
