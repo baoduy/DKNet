@@ -165,6 +165,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
     [Fact]
     public void DynamicAnd_WithStringOperations_WorksWithIQueryable()
     {
+        _db.ChangeTracker.Clear();
         // Arrange
         var firstProduct = _db.Products.First();
         var searchTerm = firstProduct.Name.Substring(0, 3);
@@ -176,7 +177,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
         predicate = predicate.DynamicAnd(builder =>
             builder.With("Name", FilterOperations.Contains, searchTerm));
 
-        var results = _db.Products.AsExpandable().Where(predicate).ToList();
+        var results = _db.Products.AsNoTracking().AsExpandable().Where(predicate).ToList();
 
         // Assert
         results.ShouldNotBeEmpty();

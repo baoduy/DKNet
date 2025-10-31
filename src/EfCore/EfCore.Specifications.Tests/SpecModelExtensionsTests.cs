@@ -3,32 +3,58 @@ using MapsterMapper;
 
 namespace EfCore.Specifications.Tests;
 
-internal sealed class ProductModelSpecification : ModelSpecification<Product, ProductDto>;
+internal sealed class ActiveProductSpecification : Specification<Product>
+{
+    #region Constructors
+
+    public ActiveProductSpecification()
+    {
+        WithFilter(p => p.IsActive);
+        AddOrderBy(p => p.Name);
+    }
+
+    #endregion
+}
+
+internal sealed class ProductModelSpecification()
+    : ModelSpecification<Product, ProductDto>(new ActiveProductSpecification());
 
 internal sealed class ActiveProductModelSpecification : ModelSpecification<Product, ProductDto>
 {
+    #region Constructors
+
     public ActiveProductModelSpecification()
     {
         WithFilter(p => p.IsActive);
         AddOrderBy(p => p.Name);
     }
+
+    #endregion
 }
 
 internal sealed class NonExistingProductModelSpecification : ModelSpecification<Product, ProductDto>
 {
+    #region Constructors
+
     public NonExistingProductModelSpecification()
     {
         WithFilter(p => p.Name == "__NO_PRODUCT__");
     }
+
+    #endregion
 }
 
 internal sealed class OrderedProductsModelSpecification : ModelSpecification<Product, ProductDto>
 {
+    #region Constructors
+
     public OrderedProductsModelSpecification()
     {
         AddOrderBy(p => p.Name);
         AddOrderByDescending(p => p.Id);
     }
+
+    #endregion
 }
 
 /// <summary>
@@ -63,6 +89,17 @@ public class ModelSpecRepoExtensionsTests : IClassFixture<TestDbFixture>
     #region Methods
 
     [Fact]
+    public async Task FirstAsync_CancellationToken_CancelsOperation()
+    {
+        var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(async () =>
+        {
+            await _repository.FirstAsync(new ActiveProductModelSpecification(), cts.Token);
+        });
+    }
+
+    [Fact]
     public async Task FirstAsync_ReturnsProjectedModel_WhenEntityExists()
     {
         // Act
@@ -79,17 +116,6 @@ public class ModelSpecRepoExtensionsTests : IClassFixture<TestDbFixture>
         await Should.ThrowAsync<InvalidOperationException>(async () =>
         {
             await _repository.FirstAsync(new NonExistingProductModelSpecification());
-        });
-    }
-
-    [Fact]
-    public async Task FirstAsync_CancellationToken_CancelsOperation()
-    {
-        var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
-        await Should.ThrowAsync<OperationCanceledException>(async () =>
-        {
-            await _repository.FirstAsync(new ActiveProductModelSpecification(), cts.Token);
         });
     }
 
@@ -111,13 +137,15 @@ public class ModelSpecRepoExtensionsTests : IClassFixture<TestDbFixture>
     }
 
     [Fact]
-    public async Task ToListAsync_ReturnsListOfModels_WhenFiltered()
+    public async Task ToListAsync_Cancellation_Throws()
     {
         var spec = new ActiveProductModelSpecification();
-        var list = await _repository.ToListAsync(spec);
-        list.ShouldNotBeNull();
-        list.Count.ShouldBeGreaterThan(0);
-        list.ShouldAllBe(p => !string.IsNullOrEmpty(p.FullDescription));
+        var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(async () =>
+        {
+            await _repository.ToListAsync(spec, cts.Token);
+        });
     }
 
     [Fact]
@@ -130,15 +158,24 @@ public class ModelSpecRepoExtensionsTests : IClassFixture<TestDbFixture>
     }
 
     [Fact]
-    public async Task ToListAsync_Cancellation_Throws()
+    public async Task ToListAsync_ReturnsListOfModels_WhenFiltered()
     {
         var spec = new ActiveProductModelSpecification();
-        var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
-        await Should.ThrowAsync<OperationCanceledException>(async () =>
-        {
-            await _repository.ToListAsync(spec, cts.Token);
-        });
+        var list = await _repository.ToListAsync(spec);
+        list.ShouldNotBeNull();
+        list.Count.ShouldBeGreaterThan(0);
+        list.ShouldAllBe(p => !string.IsNullOrEmpty(p.FullDescription));
+    }
+
+    [Fact]
+    public async Task ToPagedListAsync_ReturnsEmptyPagedResult_WhenNoMatch()
+    {
+        var spec = new NonExistingProductModelSpecification();
+        var page = await _repository.ToPagedListAsync(spec, 1, 5);
+        page.ShouldNotBeNull();
+        page.ShouldBeEmpty();
+        page.TotalItemCount.ShouldBe(0);
+        page.PageCount.ShouldBe(0);
     }
 
     [Fact]
@@ -152,17 +189,6 @@ public class ModelSpecRepoExtensionsTests : IClassFixture<TestDbFixture>
         page.PageSize.ShouldBe(5);
         page.TotalItemCount.ShouldBeGreaterThan(5);
         page.HasNextPage.ShouldBeTrue();
-    }
-
-    [Fact]
-    public async Task ToPagedListAsync_ReturnsEmptyPagedResult_WhenNoMatch()
-    {
-        var spec = new NonExistingProductModelSpecification();
-        var page = await _repository.ToPagedListAsync(spec, 1, 5);
-        page.ShouldNotBeNull();
-        page.ShouldBeEmpty();
-        page.TotalItemCount.ShouldBe(0);
-        page.PageCount.ShouldBe(0);
     }
 
     [Fact]

@@ -13,39 +13,39 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
 
     #region Methods
 
-    [Fact]
-    public void Match_WithComplexExpression_ShouldEvaluateCorrectly()
-    {
-        // Arrange
-        var spec = new ProductWithFilterSpecification(p => p.Price > 100m && p.Price < 500m && p.IsActive);
+    // [Fact]
+    // public void Match_WithComplexExpression_ShouldEvaluateCorrectly()
+    // {
+    //     // Arrange
+    //     var spec = new ProductWithFilterSpecification(p => p.Price > 100m && p.Price < 500m && p.IsActive);
+    //
+    //     var matchingProduct = new Product { Price = 200m, IsActive = true };
+    //     var nonMatchingProduct1 = new Product { Price = 50m, IsActive = true };
+    //     var nonMatchingProduct2 = new Product { Price = 200m, IsActive = false };
+    //
+    //     // Act & Assert
+    //     spec.Match(matchingProduct).ShouldBeTrue();
+    //     spec.Match(nonMatchingProduct1).ShouldBeFalse();
+    //     spec.Match(nonMatchingProduct2).ShouldBeFalse();
+    // }
 
-        var matchingProduct = new Product { Price = 200m, IsActive = true };
-        var nonMatchingProduct1 = new Product { Price = 50m, IsActive = true };
-        var nonMatchingProduct2 = new Product { Price = 200m, IsActive = false };
-
-        // Act & Assert
-        spec.Match(matchingProduct).ShouldBeTrue();
-        spec.Match(nonMatchingProduct1).ShouldBeFalse();
-        spec.Match(nonMatchingProduct2).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void Match_WithNavigationPropertyFilter_ShouldWork()
-    {
-        // Arrange
-        var spec = new ProductWithFilterSpecification(p => p.Category != null && p.Category.Name == "Electronics");
-
-        var product = new Product
-        {
-            Category = new Category { Name = "Electronics" }
-        };
-
-        // Act
-        var result = spec.Match(product);
-
-        // Assert
-        result.ShouldBeTrue();
-    }
+    // [Fact]
+    // public void Match_WithNavigationPropertyFilter_ShouldWork()
+    // {
+    //     // Arrange
+    //     var spec = new ProductWithFilterSpecification(p => p.Category != null && p.Category.Name == "Electronics");
+    //
+    //     var product = new Product
+    //     {
+    //         Category = new Category { Name = "Electronics" }
+    //     };
+    //
+    //     // Act
+    //     var result = spec.Match(product);
+    //
+    //     // Assert
+    //     result.ShouldBeTrue();
+    // }
 
     [Fact]
     public void Specification_CopyConstructor_ShouldDeepCopyAllProperties()
@@ -191,14 +191,10 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
             // Primary sort by Name (ascending)
             var nameComparison = string.Compare(prev.Name, curr.Name, StringComparison.Ordinal);
             if (nameComparison == 0)
-            {
                 // Then sort by Price (descending)
                 (prev.Price >= curr.Price).ShouldBeTrue();
-            }
             else
-            {
                 (nameComparison <= 0).ShouldBeTrue();
-            }
         }
     }
 

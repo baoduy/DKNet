@@ -46,7 +46,7 @@ public class QueryStringVerificationTests : IClassFixture<TestDbFixture>
         sql.ShouldContain("[p].[Name] LIKE");
 
         // Count AND occurrences (should be 3 for 4 conditions)
-        var andCount = sql.Split(new[] { "AND" }, StringSplitOptions.None).Length - 1;
+        var andCount = sql.Split(["AND"], StringSplitOptions.None).Length - 1;
         andCount.ShouldBe(3);
     }
 
@@ -90,7 +90,7 @@ public class QueryStringVerificationTests : IClassFixture<TestDbFixture>
         sql.ShouldContain("[p].[StockQuantity] >");
 
         // All conditions should be combined with AND
-        var andCount = sql.Split(new[] { "AND" }, StringSplitOptions.None).Length - 1;
+        var andCount = sql.Split(["AND"], StringSplitOptions.None).Length - 1;
         andCount.ShouldBeGreaterThanOrEqualTo(2);
     }
 
