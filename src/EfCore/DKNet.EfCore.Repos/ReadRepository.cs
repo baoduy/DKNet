@@ -55,7 +55,7 @@ public class ReadRepository<TEntity> : IReadRepository<TEntity>
 
     /// <inheritdoc />
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default) =>
-        FindAsync(new[] { keyValue }, cancellationToken);
+        FindAsync([keyValue], cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default) =>

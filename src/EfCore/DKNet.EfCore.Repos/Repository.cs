@@ -65,7 +65,7 @@ public class Repository<TEntity> : WriteRepository<TEntity>, IRepository<TEntity
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The found entity or <c>null</c> when not found.</returns>
     public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
-        => FindAsync(new[] { keyValue }, cancellationToken);
+        => FindAsync([keyValue], cancellationToken);
 
     /// <summary>
     ///     Finds an entity by its primary key values asynchronously.

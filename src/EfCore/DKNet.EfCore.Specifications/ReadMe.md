@@ -1,24 +1,14 @@
 # DKNet.EfCore.Specifications
 
-A flexible and reusable implementation of the Specification Pattern for Entity Framework Core, providing clean data
-access without the overhead of traditional repository patterns.
-
-## Overview
-
-This library provides a powerful way to build flexible and reusable database queries in .NET projects. Define reusable
-filters, includes, and sorting as specification classes, avoiding the problems that come with large, hard-to-maintain
-repositories.
+A powerful and flexible specification pattern implementation for Entity Framework Core with dynamic LINQ query support.
 
 ## Features
 
-- **Specification Pattern**: Build complex queries using composable specification objects
-- **Repository Pattern**: Optional `IRepositorySpec` interface for common CRUD operations
-- **Type-Safe Queries**: Strongly-typed query specifications with IntelliSense support
-- **Flexible Filtering**: Define reusable filter criteria
-- **Include Support**: Eagerly load related entities
-- **Sorting**: Support for both ascending and descending ordering
-- **Query Filter Control**: Ability to ignore global query filters (e.g., soft delete, multi-tenancy)
-- **Projection Support**: Map entities to DTOs using Mapster integration
+- 🎯 **Specification Pattern** - Build reusable, composable query logic
+- ⚡ **Dynamic LINQ Queries** - Runtime query construction using string expressions
+- 🔗 **Fluent API** - Chainable methods for building complex queries
+- 🛠️ **Type-Safe Operations** - Strongly-typed filter operations
+- 📊 **LinqKit Integration** - Combine static and dynamic predicates seamlessly
 
 ## Installation
 
@@ -26,216 +16,210 @@ repositories.
 dotnet add package DKNet.EfCore.Specifications
 ```
 
-## Core Components
+## Quick Start
 
-### ISpecification<TEntity>
-
-The base specification interface that defines:
-
-- `FilterQuery`: Filtering function to test each element for a condition
-- `IncludeQueries`: Collection of functions describing included entities
-- `OrderByQueries`: Functions for ascending ordering
-- `OrderByDescendingQueries`: Functions for descending ordering
-- `IgnoreQueryFilters`: Flag to ignore global query filters
-
-### Specification<TEntity>
-
-Abstract base class for creating custom specifications:
+### 1. Basic Specification Usage
 
 ```csharp
-public class ActiveUsersSpecification : Specification<User>
+public class ActivePersonsSpec : Specification<Person>
 {
-    public ActiveUsersSpecification()
+    public ActivePersonsSpec()
     {
-        WithFilter(u => u.IsActive);
-        AddInclude(u => u.Profile);
-        AddOrderBy(u => u.LastName);
+        WithFilter(p => p.IsActive && !p.IsDeleted);
+        AddInclude(p => p.Address);
+        AddOrderBy(p => p.Name);
     }
 }
+
+// Usage
+var spec = new ActivePersonsSpec();
+var persons = await repository.ListAsync(spec);
 ```
 
-### IRepositorySpec
-
-Interface for repository operations with specification support:
-
-#### Query Operations
-
-- `Query<TEntity>(spec)`: Query entities using a specification
-- `Query<TEntity, TModel>(spec)`: Query and project to a model type
-
-#### Transaction Management
-
-- `BeginTransactionAsync()`: Start a new database transaction
-- `Entry<TEntity>(entity)`: Access entity change tracking information
-
-#### CRUD Operations
-
-- `AddAsync<TEntity>(entity)`: Add a single entity
-- `AddRangeAsync<TEntity>(entities)`: Add multiple entities
-- `UpdateAsync<TEntity>(entity)`: Update an entity and handle navigation properties
-- `UpdateRangeAsync<TEntity>(entities)`: Update multiple entities
-- `Delete<TEntity>(entity)`: Mark entity for deletion
-- `DeleteRange<TEntity>(entities)`: Mark multiple entities for deletion
-- `SaveChangesAsync()`: Persist all changes to the database
-
-### RepositorySpec<TDbContext>
-
-Concrete implementation of `IRepositorySpec` with:
-
-- Automatic handling of new entities from navigation properties during updates
-- Mapster integration for entity-to-DTO projections
-- Support for query filters and change tracking
-
-## Usage Examples
-
-### Creating a Specification
+### 2. Dynamic Filter Queries
 
 ```csharp
-public class UsersByRoleSpecification : Specification<User>
+public class PersonSearchSpec : Specification<Person>
 {
-    public UsersByRoleSpecification(string role)
+    public PersonSearchSpec(int minAge, string nameContains)
     {
-        // Define filter criteria
-        WithFilter(u => u.Role == role && u.IsActive);
+        // Add dynamic filters
+        AddFilter("Age", FilterOperations.GreaterThanOrEqual, minAge);
+        AddFilter("Name", FilterOperations.Contains, nameContains);
         
-        // Include related entities
-        AddInclude(u => u.Profile);
-        AddInclude(u => u.Orders);
+        // Mix with static filters
+        WithFilter(p => !p.IsDeleted);
+    }
+}
+
+// Usage
+var spec = new PersonSearchSpec(18, "John");
+var results = await repository.ListAsync(spec);
+```
+
+### 3. Dynamic Predicate Builder
+
+The `DynamicPredicateBuilder` provides a fluent API for building complex dynamic queries:
+
+```csharp
+var builder = new DynamicPredicateBuilder()
+    .With("Age", Operation.GreaterThan, 18)
+    .With("Department.Name", Operation.Equal, "Engineering")
+    .With("Salary", Operation.GreaterThanOrEqual, 50000)
+    .With("Name", Operation.Contains, "Smith");
+
+var predicate = builder.Build(out var values);
+// Result: "Age > @0 and Department.Name == @1 and Salary >= @2 and Name.Contains(@3)"
+// values: [18, "Engineering", 50000, "Smith"]
+
+// Use with EF Core
+var employees = await context.Employees
+    .Where(predicate, values)
+    .ToListAsync();
+```
+
+### 4. Dynamic LINQ Extensions
+
+Combine static predicates with dynamic expressions using LinqKit:
+
+```csharp
+var predicate = PredicateBuilder.New<Person>()
+    .And(p => p.IsActive)
+    .And("Age > @0 and Salary >= @1", 25, 60000)
+    .Or("Department == @0", "Executive");
+
+// Result: (IsActive AND (Age > 25 and Salary >= 60000)) OR (Department == "Executive")
+
+var query = context.Persons.Where(predicate);
+```
+
+## Available Operations
+
+The `Operation` enum supports the following filter operations:
+
+| Operation            | Description                | Example                    |
+|----------------------|----------------------------|----------------------------|
+| `Equal`              | Equality comparison (==)   | `"Age == @0"`              |
+| `NotEqual`           | Inequality comparison (!=) | `"Status != @0"`           |
+| `GreaterThan`        | Greater than (>)           | `"Salary > @0"`            |
+| `GreaterThanOrEqual` | Greater than or equal (>=) | `"Age >= @0"`              |
+| `LessThan`           | Less than (<)              | `"Price < @0"`             |
+| `LessThanOrEqual`    | Less than or equal (<=)    | `"Score <= @0"`            |
+| `Contains`           | String contains            | `"Name.Contains(@0)"`      |
+| `NotContains`        | String does not contain    | `"!Name.Contains(@0)"`     |
+| `StartsWith`         | String starts with         | `"Name.StartsWith(@0)"`    |
+| `EndsWith`           | String ends with           | `"Name.EndsWith(@0)"`      |
+| `Any`                | Collection any             | `"Tags.Any(x => x == @0)"` |
+| `All`                | Collection all             | `"Tags.All(x => x == @0)"` |
+
+## Advanced Scenarios
+
+### API Controller with Dynamic Queries
+
+```csharp
+[HttpGet]
+public async Task<IActionResult> SearchEmployees(
+    [FromQuery] string? filter,
+    [FromQuery] string? orderBy,
+    [FromQuery] int minSalary = 0)
+{
+    var spec = new Specification<Employee>();
+    
+    // Always filter deleted records
+    spec.WithFilter(e => !e.IsDeleted);
+    
+    // Add dynamic filters from query string
+    if (!string.IsNullOrEmpty(filter))
+    {
+        var builder = new DynamicPredicateBuilder()
+            .With("Salary", Operation.GreaterThanOrEqual, minSalary);
         
-        // Define ordering
-        AddOrderBy(u => u.LastName);
-        AddOrderBy(u => u.FirstName);
-    }
-}
-```
-
-### Using Specifications with IRepositorySpec
-
-```csharp
-public class UserService
-{
-    private readonly IRepositorySpec _repository;
-    
-    public UserService(IRepositorySpec repository)
-    {
-        _repository = repository;
+        var predicate = builder.Build(out var values);
+        // Apply to specification using the extension method
     }
     
-    public async Task<List<User>> GetActiveAdmins()
+    // Dynamic ordering
+    if (!string.IsNullOrEmpty(orderBy))
     {
-        var spec = new UsersByRoleSpecification("Admin");
-        return await _repository.Query(spec).ToListAsync();
+        spec.WithOrderBy(orderBy, isDescending: false);
     }
     
-    public async Task<List<UserDto>> GetActiveAdminsAsDto()
-    {
-        var spec = new UsersByRoleSpecification("Admin");
-        return await _repository.Query<User, UserDto>(spec).ToListAsync();
-    }
+    var employees = await _repository.ListAsync(spec);
+    return Ok(employees);
 }
 ```
 
-### CRUD Operations
+### Nested Property Filtering
 
 ```csharp
-// Add a new entity
-var user = new User { FirstName = "John", LastName = "Doe" };
-await _repository.AddAsync(user);
-await _repository.SaveChangesAsync();
+var builder = new DynamicPredicateBuilder()
+    .With("Address.City", Operation.Equal, "New York")
+    .With("Department.Manager.Name", Operation.StartsWith, "John")
+    .With("Projects.Any(x => x.IsActive)", Operation.Equal, true);
 
-// Update an entity
-user.IsActive = false;
-await _repository.UpdateAsync(user);
-await _repository.SaveChangesAsync();
-
-// Delete an entity
-_repository.Delete(user);
-await _repository.SaveChangesAsync();
-
-// Transaction support
-using var transaction = await _repository.BeginTransactionAsync();
-try
-{
-    await _repository.AddAsync(newUser);
-    await _repository.SaveChangesAsync();
-    await transaction.CommitAsync();
-}
-catch
-{
-    await transaction.RollbackAsync();
-    throw;
-}
+var predicate = builder.Build(out var values);
 ```
 
-### Ignoring Query Filters
+### Combining Multiple Specifications
 
 ```csharp
-public class AllUsersIncludingSoftDeletedSpecification : Specification<User>
+public class EmployeeSearchSpec : Specification<Employee>
 {
-    public AllUsersIncludingSoftDeletedSpecification()
+    public EmployeeSearchSpec(
+        string? department = null,
+        int? minAge = null,
+        decimal? minSalary = null)
     {
-        IgnoreQueryFiltersEnabled();
-        AddOrderBy(u => u.CreatedDate);
-    }
-}
-```
-
-### Complex Filtering with PredicateBuilder
-
-```csharp
-public class DynamicUserSearchSpecification : Specification<User>
-{
-    public DynamicUserSearchSpecification(string? name, bool? isActive)
-    {
-        var predicate = CreatePredicate();
+        // Base filter
+        WithFilter(e => e.IsActive);
         
-        if (!string.IsNullOrEmpty(name))
-            predicate = predicate.And(u => u.FirstName.Contains(name) || u.LastName.Contains(name));
-            
-        if (isActive.HasValue)
-            predicate = predicate.And(u => u.IsActive == isActive.Value);
-            
-        WithFilter(predicate);
+        // Dynamic filters
+        if (!string.IsNullOrEmpty(department))
+        {
+            AddFilter("Department.Name", FilterOperations.Equal, department);
+        }
+        
+        if (minAge.HasValue)
+        {
+            AddFilter("Age", FilterOperations.GreaterThanOrEqual, minAge.Value);
+        }
+        
+        if (minSalary.HasValue)
+        {
+            AddFilter("Salary", FilterOperations.GreaterThanOrEqual, minSalary.Value);
+        }
+        
+        // Includes
+        AddInclude(e => e.Department);
+        AddInclude(e => e.Address);
+        
+        // Ordering
+        AddOrderBy(e => e.Department);
+        AddOrderByDescending(e => e.Salary);
     }
 }
 ```
 
-## Dependency Injection Setup
+## Best Practices
 
-```csharp
-services.AddDbContext<MyDbContext>(options => 
-    options.UseNpgsql(connectionString));
+1. **Reusability**: Create named specification classes for common query patterns
+2. **Composition**: Build complex queries by combining simple specifications
+3. **Type Safety**: Prefer static predicates when possible; use dynamic queries for runtime flexibility
+4. **Performance**: Use `AddInclude()` wisely to avoid N+1 queries
+5. **Security**: Validate and sanitize user input before using in dynamic queries
 
-services.AddScoped<IRepositorySpec, RepositorySpec<MyDbContext>>();
+## Requirements
 
-// For projection support, register Mapster
-services.AddSingleton<IMapper>(new Mapper());
-```
-
-## Benefits
-
-1. **Reusability**: Define query logic once, use it everywhere
-2. **Testability**: Easy to unit test specifications in isolation
-3. **Maintainability**: Query logic is centralized and versioned
-4. **Type Safety**: Compile-time checking of query expressions
-5. **Separation of Concerns**: Business logic separate from data access
-6. **Performance**: Optimized query execution with proper includes and filtering
-
-## Migration Notes
-
-**Breaking Changes in Latest Version:**
-
-- `AndSpecification` and `OrSpecification` classes have been removed
-- Use LinqKit's `PredicateBuilder` for combining filter expressions instead
-- All methods in `IRepositorySpec` are now properly documented with XML comments
-
-## References
-
-- Original blog
-  post: https://antondevtips.com/blog/specification-pattern-in-ef-core-flexible-data-access-without-repositories
-- LinqKit Documentation: https://github.com/scottksmith95/LINQKit
-- Mapster Documentation: https://github.com/MapsterMapper/Mapster
+- .NET 9.0 or higher
+- Entity Framework Core 9.0 or higher
+- LinqKit.Microsoft.EntityFrameworkCore
+- System.Linq.Dynamic.Core
 
 ## License
 
-This library is part of the DKNet.FW framework.
+Licensed under the MIT License. See LICENSE in the project root for license information.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+

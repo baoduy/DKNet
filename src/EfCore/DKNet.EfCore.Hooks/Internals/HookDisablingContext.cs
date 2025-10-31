@@ -13,9 +13,7 @@ namespace DKNet.EfCore.Hooks.Internals;
 ///     Provides a disposable context that temporarily disables hooks for the given DbContext type.
 ///     The disabling is reference-counted so nested callers can safely create multiple disable scopes.
 /// </summary>
-public interface IHookDisablingContext : IDisposable, IAsyncDisposable
-{
-}
+public interface IHookDisablingContext : IDisposable, IAsyncDisposable;
 
 /// <summary>
 ///     Implementation of <see cref="IHookDisablingContext" /> which increments a ref-count for the

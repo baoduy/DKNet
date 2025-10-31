@@ -13,15 +13,15 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task ConcurrentUpdatesHandledCorrectly()
     {
-        this._fixture.DbContext.ChangeTracker.Clear();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Arrange
         var entity = new User("concurtest") { FirstName = "Concurrent", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Simulate concurrent update
-        var context2 = new TestDbContext(this._fixture.DbContext.Options);
+        var context2 = new TestDbContext(_fixture.DbContext.Options);
         var entity2 = await context2.Set<User>().FindAsync(entity.Id);
         entity2!.FirstName = "Updated by context2";
         await context2.SaveChangesAsync();
@@ -29,37 +29,37 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
 
         // Act & Assert
         entity.FirstName = "Updated by context1";
-        await this._fixture.RepositoryWithMapper.UpdateAsync(entity);
+        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
 
         // This should succeed since we're not using row versioning in this simple test
-        var affectedRows = await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
         Assert.Equal(1, affectedRows);
     }
 
     [Fact]
     public async Task DeleteAndSaveChangesRemovesEntity()
     {
-        this._fixture.DbContext.ChangeTracker.Clear();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Arrange
         var entity = new User("deletetest") { FirstName = "ToDelete", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        this._fixture.RepositoryWithMapper.Delete(entity);
-        var affectedRows = await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        _fixture.RepositoryWithMapper.Delete(entity);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
         Assert.Equal(1, affectedRows);
-        var result = await this._fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.Null(result);
     }
 
     [Fact]
     public async Task DeleteRangeAndSaveChangesRemovesMultipleEntities()
     {
-        this._fixture.DbContext.ChangeTracker.Clear();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Arrange
         var entities = new[]
@@ -67,16 +67,16 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
             new User("delrange1") { FirstName = "DelRange1", LastName = "Test" },
             new User("delrange2") { FirstName = "DelRange2", LastName = "Test" }
         };
-        this._fixture.DbContext.AddRange(entities);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.AddRange(entities);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        this._fixture.RepositoryWithMapper.DeleteRange(entities);
-        var affectedRows = await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        _fixture.RepositoryWithMapper.DeleteRange(entities);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
         Assert.Equal(2, affectedRows);
-        var results = await this._fixture.DbContext.Set<User>()
+        var results = await _fixture.DbContext.Set<User>()
             .Where(u => u.CreatedBy.StartsWith("delrange"))
             .ToListAsync();
         Assert.Empty(results);
@@ -86,7 +86,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     public async Task FindAsyncWithParamsReturnsNullWhenNotFound()
     {
         // Act
-        var result = await this._fixture.RepositoryWithMapper.FindAsync(999999);
+        var result = await _fixture.RepositoryWithMapper.FindAsync(999999);
 
         // Assert
         Assert.Null(result);
@@ -95,18 +95,18 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     [Fact]
     public async Task FindAsyncWithParamsWorksCorrectly()
     {
-        this._fixture.DbContext.ChangeTracker.Clear();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Arrange
         var entity = new User("findparams1") { FirstName = "FindByParams", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
+        _fixture.DbContext.Add(entity);
 
         var entity2 = new User("findparams2") { FirstName = "FindByParams2", LastName = "Test2" };
-        this._fixture.DbContext.Add(entity2);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity2);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var result = await this._fixture.RepositoryWithMapper.FindAsync(entity.Id);
+        var result = await _fixture.RepositoryWithMapper.FindAsync(entity.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -118,11 +118,11 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Arrange
         var entity = new User("projtest1") { FirstName = "ProjectMe", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var projection = this._fixture.RepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ProjectMe");
+        var projection = _fixture.RepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ProjectMe");
         var result = await projection.FirstOrDefaultAsync();
 
         // Assert
@@ -136,7 +136,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
-            this._fixture.RepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
+            _fixture.RepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
     }
 
     [Fact]
@@ -151,11 +151,11 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         };
 
         // Act
-        await this._fixture.RepositoryWithMapper.AddRangeAsync(entities);
-        await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        await _fixture.RepositoryWithMapper.AddRangeAsync(entities);
+        await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
-        var results = await this._fixture.DbContext.Set<User>()
+        var results = await _fixture.DbContext.Set<User>()
             .Where(u => u.CreatedBy.StartsWith("multi"))
             .ToListAsync();
         Assert.Equal(3, results.Count);
@@ -169,17 +169,17 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Arrange
         var entity = new User("readprojtest1") { FirstName = "ReadProjectMe", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
-        this._fixture.DbContext.ChangeTracker.Clear();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.ChangeTracker.Clear();
 
         // Act
-        var p1 = this._fixture.ReadRepositoryWithMapper.Query(u => u.Id == entity.Id);
+        var p1 = _fixture.ReadRepositoryWithMapper.Query(u => u.Id == entity.Id);
         var r1 = await p1.FirstOrDefaultAsync();
         Assert.NotNull(r1);
 
         // Act
-        var projection = this._fixture.ReadRepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ReadProjectMe");
+        var projection = _fixture.ReadRepositoryWithMapper.Query<UserDto>(u => u.FirstName == "ReadProjectMe");
         var result = await projection.FirstOrDefaultAsync();
 
         // Assert
@@ -193,7 +193,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
-            this._fixture.ReadRepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
+            _fixture.ReadRepositoryWithoutMapper.Query<UserDto>(u => u.FirstName == "ProjectMe"));
     }
 
     [Fact]
@@ -201,16 +201,16 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Arrange
         var entity = new User("tracktest1") { FirstName = "TrackMe", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var query = this._fixture.ReadRepositoryWithMapper.Query();
+        var query = _fixture.ReadRepositoryWithMapper.Query();
         var result = await query.Where(u => u.FirstName == "TrackMe").FirstOrDefaultAsync();
 
         // Assert
         Assert.NotNull(result);
-        var entry = this._fixture.DbContext.Entry(result);
+        var entry = _fixture.DbContext.Entry(result);
         Assert.Equal(EntityState.Detached, entry.State);
     }
 
@@ -219,16 +219,16 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Arrange
         var entity = new User("tracktest2") { FirstName = "TrackMe2", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Act
-        var query = this._fixture.RepositoryWithMapper.Query();
+        var query = _fixture.RepositoryWithMapper.Query();
         var result = await query.Where(u => u.FirstName == "TrackMe2").FirstOrDefaultAsync();
 
         // Assert
         Assert.NotNull(result);
-        var entry = this._fixture.DbContext.Entry(result);
+        var entry = _fixture.DbContext.Entry(result);
         Assert.NotEqual(EntityState.Detached, entry.State);
     }
 
@@ -239,13 +239,13 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("transtest2") { FirstName = "TransactionCommit", LastName = "Test" };
 
         // Act
-        await using var transaction = await this._fixture.RepositoryWithMapper.BeginTransactionAsync();
-        await this._fixture.RepositoryWithMapper.AddAsync(entity);
-        await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
+        await _fixture.RepositoryWithMapper.AddAsync(entity);
+        await _fixture.RepositoryWithMapper.SaveChangesAsync();
         await transaction.CommitAsync();
 
         // Assert
-        var result = await this._fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.NotNull(result);
         Assert.Equal("TransactionCommit", result.FirstName);
     }
@@ -257,12 +257,12 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         var entity = new User("transtest1") { FirstName = "TransactionTest", LastName = "Test" };
 
         // Act
-        await using var transaction = await this._fixture.RepositoryWithMapper.BeginTransactionAsync();
-        await this._fixture.RepositoryWithMapper.AddAsync(entity);
-        await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        await using var transaction = await _fixture.RepositoryWithMapper.BeginTransactionAsync();
+        await _fixture.RepositoryWithMapper.AddAsync(entity);
+        await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Verify entity exists in transaction
-        var resultInTransaction = await this._fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        var resultInTransaction = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.NotNull(resultInTransaction);
 
         await transaction.RollbackAsync();
@@ -270,7 +270,7 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
         // Clear the change tracker to avoid stale data
         //_fixture.DbContext.ChangeTracker.Clear();
         // Assert
-        var resultAfterRollback = await this._fixture.DbContext.Set<User>().Where(i => i.Id == entity.Id).ToListAsync();
+        var resultAfterRollback = await _fixture.DbContext.Set<User>().Where(i => i.Id == entity.Id).ToListAsync();
         Assert.True(resultAfterRollback.Count == 0);
     }
 
@@ -279,20 +279,20 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
     {
         // Arrange
         var entity = new User("updatetest") { FirstName = "Original", LastName = "Test" };
-        this._fixture.DbContext.Add(entity);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.Add(entity);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Detach to simulate external change
-        this._fixture.DbContext.Entry(entity).State = EntityState.Detached;
+        _fixture.DbContext.Entry(entity).State = EntityState.Detached;
         entity.FirstName = "Updated";
 
         // Act
-        await this._fixture.RepositoryWithMapper.UpdateAsync(entity);
-        var affectedRows = await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        await _fixture.RepositoryWithMapper.UpdateAsync(entity);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
         Assert.Equal(1, affectedRows);
-        var result = await this._fixture.DbContext.Set<User>().FindAsync(entity.Id);
+        var result = await _fixture.DbContext.Set<User>().FindAsync(entity.Id);
         Assert.Equal("Updated", result?.FirstName);
     }
 
@@ -305,23 +305,23 @@ public class RepositoryAdvancedTests(RepositoryAdvancedFixture fixture) : IClass
             new User("updrange1") { FirstName = "UpdRange1", LastName = "Original" },
             new User("updrange2") { FirstName = "UpdRange2", LastName = "Original" }
         };
-        this._fixture.DbContext.AddRange(entities);
-        await this._fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.AddRange(entities);
+        await _fixture.DbContext.SaveChangesAsync();
 
         // Detach entities to simulate external changes
         foreach (var entity in entities)
         {
-            this._fixture.DbContext.Entry(entity).State = EntityState.Detached;
+            _fixture.DbContext.Entry(entity).State = EntityState.Detached;
             entity.LastName = "Updated";
         }
 
         // Act
-        await this._fixture.RepositoryWithMapper.UpdateRangeAsync(entities);
-        var affectedRows = await this._fixture.RepositoryWithMapper.SaveChangesAsync();
+        await _fixture.RepositoryWithMapper.UpdateRangeAsync(entities);
+        var affectedRows = await _fixture.RepositoryWithMapper.SaveChangesAsync();
 
         // Assert
         Assert.Equal(2, affectedRows);
-        var results = await this._fixture.DbContext.Set<User>()
+        var results = await _fixture.DbContext.Set<User>()
             .Where(u => u.CreatedBy.StartsWith("updrange"))
             .ToListAsync();
         Assert.All(results, r => Assert.Equal("Updated", r.LastName));

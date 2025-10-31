@@ -19,7 +19,7 @@ public sealed record PagedResult<TResult>
     /// <summary>
     ///     Creates an empty paged result.
     /// </summary>
-    public PagedResult() => Items = new List<TResult>();
+    public PagedResult() => Items = [];
 
     /// <summary>
     ///     Creates a paged result from an <see cref="IPagedList{T}" /> produced by X.PagedList.
@@ -43,7 +43,7 @@ public sealed record PagedResult<TResult>
     /// <summary>
     ///     The items contained in the current page.
     /// </summary>
-    public IList<TResult> Items { get; init; } = new List<TResult>();
+    public IList<TResult> Items { get; init; } = [];
 
     /// <summary>
     ///     Total number of pages available.

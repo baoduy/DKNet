@@ -55,9 +55,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
 {
     #region Fields
 
-    private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = new();
-    private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = new();
-    private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = new();
+    private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
+    private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
+    private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
 
     #endregion
 
@@ -137,6 +137,29 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     }
 
     /// <summary>
+    ///     Adds an order by clause based on a property name and sort direction
+    /// </summary>
+    /// <param name="orderBy">Property Name</param>
+    /// <param name="descending">Order descending or ascending</param>
+    protected void AddOrderBy(string orderBy, bool descending = false)
+    {
+        if (string.IsNullOrWhiteSpace(orderBy)) return;
+
+        var parameter = Expression.Parameter(typeof(TEntity), "x");
+        var member = Expression.PropertyOrField(parameter, orderBy);
+
+        Expression body = member.Type.IsValueType
+            ? Expression.Convert(member, typeof(object))
+            : member;
+
+        var keySelector = Expression.Lambda<Func<TEntity, object>>(body, parameter);
+
+        if (descending)
+            AddOrderByDescending(keySelector);
+        AddOrderBy(keySelector);
+    }
+
+    /// <summary>
     ///     Adds a query that orders entities by ascending
     /// </summary>
     /// <param name="query">A function that describes how to order entities by ascending</param>
@@ -168,21 +191,6 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected void IgnoreQueryFilters()
     {
         IsIgnoreQueryFilters = true;
-    }
-
-    /// <summary>
-    ///     Returns an indication whether an entity matches the current specification
-    /// </summary>
-    /// <param name="entity">Entity</param>
-    /// <returns>
-    ///     <see langword="true" /> if an entity matches the current specification; otherwise, <see langword="false" />
-    /// </returns>
-    public bool Match(TEntity entity)
-    {
-        if (FilterQuery is null) return false;
-
-        var predicate = FilterQuery.Compile();
-        return predicate(entity);
     }
 
     /// <summary>
