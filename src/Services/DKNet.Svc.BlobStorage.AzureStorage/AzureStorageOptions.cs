@@ -15,10 +15,15 @@ public class AzureStorageOptions : BlobServiceOptions
     #region Properties
 
     /// <summary>
+    ///     The factory method used to create the <see cref="BlobServiceClient" /> instance.
+    /// </summary>
+    public Func<AzureStorageOptions, Task<BlobServiceClient>>? BlobServiceClientFactory { get; set; }
+
+    /// <summary>
     ///     The Azure Storage connection string used to create a <c>BlobServiceClient</c>.
     ///     This value is required for the Azure provider to initialize correctly.
     /// </summary>
-    public string ConnectionString { get; set; } = null!;
+    public string? ConnectionString { get; set; }
 
     /// <summary>
     ///     The container name to use for blob operations.
