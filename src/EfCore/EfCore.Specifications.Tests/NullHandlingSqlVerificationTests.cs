@@ -45,7 +45,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_NullHandling_WorksWithNavigationProperties()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Category.Description", FilterOperations.Equal, null);
 
         var (expression, parameters) = builder.Build();
@@ -65,7 +65,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_WithMultipleNullConditions_GeneratesCorrectSql()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null)
             .With("Name", FilterOperations.NotEqual, null);
 
@@ -85,7 +85,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_WithNullAndRegularConditions_GeneratesCorrectParameterIndexing()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.GreaterThan, 100m)
             .With("Description", FilterOperations.Equal, null)
             .With("IsActive", FilterOperations.Equal, true)
@@ -118,7 +118,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_WithNullEqual_GeneratesIsNullInSql()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null);
 
         var (expression, parameters) = builder.Build();
@@ -137,7 +137,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_WithNullNotEqual_GeneratesIsNotNullInSql()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.NotEqual, null);
 
         var (expression, parameters) = builder.Build();
@@ -156,7 +156,7 @@ public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
     public void Build_WithOnlyNullConditions_GeneratesNoParameters()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null)
             .With("Name", FilterOperations.NotEqual, null);
 

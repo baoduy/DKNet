@@ -38,7 +38,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
         foreach (var op in operators)
         {
             // Arrange
-            var builder = new DynamicPredicateBuilder()
+            var builder = new DynamicPredicateBuilder<Product>()
                 .With("Price", op, 100m);
 
             var (expression, parameters) = builder.Build();
@@ -66,7 +66,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
         foreach (var op in operators)
         {
             // Arrange
-            var builder = new DynamicPredicateBuilder()
+            var builder = new DynamicPredicateBuilder<Product>()
                 .With("Name", op, "Test");
 
             var (expression, parameters) = builder.Build();
@@ -83,7 +83,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithBooleanFalse_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, false);
 
         var (expression, parameters) = builder.Build();
@@ -99,7 +99,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithBooleanNotEqual_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.NotEqual, true);
 
         var (expression, parameters) = builder.Build();
@@ -115,7 +115,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithBooleanTrue_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
         var (expression, parameters) = builder.Build();
@@ -131,7 +131,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithCaseSensitiveContains_ShouldRespectCase()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Contains, "PRODUCT");
 
         var (expression, parameters) = builder.Build();
@@ -147,7 +147,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithDecimalPrecision_ShouldMaintainPrecision()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.Equal, 99.99m);
 
         var (expression, parameters) = builder.Build();
@@ -164,7 +164,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     {
         // Arrange
         var categoryName = _db.Categories.First().Name;
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Category.Name", FilterOperations.Equal, categoryName);
 
         var (expression, parameters) = builder.Build();
@@ -184,7 +184,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithEmptyString_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Equal, "");
 
         var (expression, parameters) = builder.Build();
@@ -200,7 +200,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithManyConditions_ShouldNotDegrade()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder();
+        var builder = new DynamicPredicateBuilder<Product>();
         for (var i = 0; i < 20; i++) builder.With("Price", FilterOperations.GreaterThan, i * 10m);
 
         // Act & Assert
@@ -215,7 +215,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithMaxDateTime_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.LessThan, DateTime.MaxValue);
 
         var (expression, parameters) = builder.Build();
@@ -231,7 +231,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithMaxDecimalValue_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.LessThan, decimal.MaxValue);
 
         var (expression, parameters) = builder.Build();
@@ -247,7 +247,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithMinDateTime_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.GreaterThan, DateTime.MinValue);
 
         var (expression, parameters) = builder.Build();
@@ -263,7 +263,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithMixedNullAndNonNullConditions_ShouldHandleBoth()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null)
             .With("Price", FilterOperations.GreaterThan, 100m)
             .With("Name", FilterOperations.NotEqual, null);
@@ -286,7 +286,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithNegativeValue_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.GreaterThan, -100m);
 
         var (expression, parameters) = builder.Build();
@@ -302,7 +302,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithNotEqualNull_ShouldGenerateIsNotNullClause()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.NotEqual, null);
 
         var (expression, parameters) = builder.Build();
@@ -324,7 +324,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithNullValue_ShouldGenerateIsNullClause()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null);
 
         var (expression, parameters) = builder.Build();
@@ -346,7 +346,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithNullValueInMiddle_ShouldMaintainCorrectParameterIndexing()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.GreaterThan, 50m)
             .With("Description", FilterOperations.Equal, null)
             .With("StockQuantity", FilterOperations.LessThan, 100);
@@ -370,7 +370,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithSpecialCharactersInValue_ShouldEscape()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Contains, "%_[]");
 
         var (expression, parameters) = builder.Build();
@@ -386,7 +386,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithUnicodeCharacters_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Equal, "产品测试");
 
         var (expression, parameters) = builder.Build();
@@ -403,7 +403,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     {
         // Arrange
         var now = DateTime.UtcNow;
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.LessThanOrEqual, now);
 
         var (expression, parameters) = builder.Build();
@@ -419,7 +419,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithWhitespaceValue_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Contains, "   ");
 
         var (expression, parameters) = builder.Build();
@@ -435,7 +435,7 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
     public void Build_WithZeroValue_ShouldWork()
     {
         // Arrange
-        var builder = new DynamicPredicateBuilder()
+        var builder = new DynamicPredicateBuilder<Product>()
             .With("StockQuantity", FilterOperations.Equal, 0);
 
         var (expression, parameters) = builder.Build();
@@ -505,3 +505,4 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
 
     #endregion
 }
+

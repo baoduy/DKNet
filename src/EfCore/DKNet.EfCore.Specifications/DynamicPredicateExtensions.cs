@@ -21,9 +21,9 @@ public static class DynamicPredicateExtensions
     /// <typeparam name="T">Entity type for which the predicate is being constructed.</typeparam>
     /// <param name="builder">Callback that configures the dynamic predicate (expression text and parameter values).</param>
     /// <returns>A compiled <see cref="Expression{TDelegate}" /> representing the dynamic predicate.</returns>
-    private static Expression<Func<T, bool>> CreateDynamicExpression<T>(Action<DynamicPredicateBuilder> builder)
+    private static Expression<Func<T, bool>> CreateDynamicExpression<T>(Action<DynamicPredicateBuilder<T>> builder)
     {
-        var dynamic = new DynamicPredicateBuilder();
+        var dynamic = new DynamicPredicateBuilder<T>();
         builder(dynamic);
 
         var (expression, values) = dynamic.Build();
@@ -47,9 +47,9 @@ public static class DynamicPredicateExtensions
     ///     The extended <see cref="ExpressionStarter{T}" /> with the AND condition applied
     /// </returns>
     public static Expression<Func<T, bool>> DynamicAnd<T>(this Expression<Func<T, bool>> predicate,
-        Action<DynamicPredicateBuilder> builder) =>
+        Action<DynamicPredicateBuilder<T>> builder) =>
         // Explicit type argument required to satisfy generic inference (previously caused CS0411)
-        predicate.And(CreateDynamicExpression<T>(builder));
+        predicate.And(CreateDynamicExpression(builder));
 
     /// <summary>
     ///     Combines the existing predicate with a new dynamic condition using AND logic.
@@ -63,8 +63,8 @@ public static class DynamicPredicateExtensions
     ///     The extended <see cref="ExpressionStarter{T}" /> with the AND condition applied
     /// </returns>
     public static Expression<Func<T, bool>> DynamicAnd<T>(this ExpressionStarter<T> predicate,
-        Action<DynamicPredicateBuilder> builder) =>
-        predicate.And(CreateDynamicExpression<T>(builder));
+        Action<DynamicPredicateBuilder<T>> builder) =>
+        predicate.And(CreateDynamicExpression(builder));
 
     /// <summary>
     ///     Combines the existing predicate with a new dynamic condition using OR logic.
@@ -79,8 +79,8 @@ public static class DynamicPredicateExtensions
     /// </returns>
     public static Expression<Func<T, bool>> DynamicOr<T>(
         this Expression<Func<T, bool>> predicate,
-        Action<DynamicPredicateBuilder> builder) =>
-        predicate.Or(CreateDynamicExpression<T>(builder));
+        Action<DynamicPredicateBuilder<T>> builder) =>
+        predicate.Or(CreateDynamicExpression(builder));
 
     /// <summary>
     ///     Combines the existing predicate with a new dynamic condition using OR logic.
@@ -95,8 +95,8 @@ public static class DynamicPredicateExtensions
     /// </returns>
     public static Expression<Func<T, bool>> DynamicOr<T>(
         this ExpressionStarter<T> predicate,
-        Action<DynamicPredicateBuilder> builder) =>
-        predicate.Or(CreateDynamicExpression<T>(builder));
+        Action<DynamicPredicateBuilder<T>> builder) =>
+        predicate.Or(CreateDynamicExpression(builder));
 
     #endregion
 }

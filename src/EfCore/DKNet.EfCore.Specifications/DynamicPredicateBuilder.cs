@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 
 namespace DKNet.EfCore.Specifications;
@@ -73,7 +74,7 @@ public enum FilterOperations
 ///     // values: [18, "John"]
 ///     </code>
 /// </example>
-public sealed class DynamicPredicateBuilder
+public sealed class DynamicPredicateBuilder<TEntity>
 {
     #region Fields
 
@@ -83,9 +84,24 @@ public sealed class DynamicPredicateBuilder
 
     #region Methods
 
+    private static FilterOperations AdjustOperationForValueType(Type? propValueType, FilterOperations op)
+    {
+        if (propValueType == null || propValueType == typeof(string) || Nullable.GetUnderlyingType(propValueType) == typeof(string)) return op;
+        // For all non-string types, switch Contains/NotContains to Equal/NotEqual, and throw for StartsWith/EndsWith
+        return op switch
+        {
+            FilterOperations.Contains => FilterOperations.Equal,
+            FilterOperations.NotContains => FilterOperations.NotEqual,
+            FilterOperations.StartsWith or FilterOperations.EndsWith => FilterOperations.Equal,
+            _ => op
+        };
+    }
+
     /// <summary>
     ///     Builds the dynamic LINQ predicate string and returns the corresponding parameter values.
     ///     All conditions are combined using AND logic.
+    ///     If a property is an enum, only Equal and NotEqual operations are allowed. If
+    ///     Contains/NotContains/StartsWith/EndsWith are used on enums, they are auto-switched to Equal/NotEqual.
     /// </summary>
     /// <returns>
     ///     A string representation of the dynamic LINQ predicate that can be used with
@@ -108,6 +124,7 @@ public sealed class DynamicPredicateBuilder
     {
         var sb = new StringBuilder();
         var parameters = new List<object>();
+        var entityType = typeof(TEntity);
 
         for (var i = 0; i < _conditions.Count; i++)
         {
@@ -115,43 +132,54 @@ public sealed class DynamicPredicateBuilder
             if (i > 0)
                 sb.Append(" and ");
 
-            // Handle null values specially for Equal and NotEqual operations
-            string clause;
-            if (val is null && op is FilterOperations.Equal)
-            {
-                clause = $"{prop} == null";
-            }
-            else if (val is null && op is FilterOperations.NotEqual)
-            {
-                clause = $"{prop} != null";
-            }
-            else
-            {
-                clause = op switch
-                {
-                    FilterOperations.Equal => $"{prop} == @{parameters.Count}",
-                    FilterOperations.NotEqual => $"{prop} != @{parameters.Count}",
-                    FilterOperations.GreaterThan => $"{prop} > @{parameters.Count}",
-                    FilterOperations.GreaterThanOrEqual => $"{prop} >= @{parameters.Count}",
-                    FilterOperations.LessThan => $"{prop} < @{parameters.Count}",
-                    FilterOperations.LessThanOrEqual => $"{prop} <= @{parameters.Count}",
-                    FilterOperations.Contains => $"{prop}.Contains(@{parameters.Count})",
-                    FilterOperations.NotContains => $"!{prop}.Contains(@{parameters.Count})",
-                    FilterOperations.StartsWith => $"{prop}.StartsWith(@{parameters.Count})",
-                    FilterOperations.EndsWith => $"{prop}.EndsWith(@{parameters.Count})",
-
-                    // FilterOperations.Any => $"{prop}.Any(x => {string.Join(" || ", (string[])val)})",
-                    // FilterOperations.All => $"{prop}.All(x => {string.Join(" && ", (string[])val)})",
-                    _ => throw new NotSupportedException($"Operation {op} not supported.")
-                };
-
+            var type = ResolvePropertyType(entityType, prop);
+            op = AdjustOperationForValueType(type, op);
+            var clause = BuildClause(prop, op, val, parameters.Count);
+            if (op is not FilterOperations.Equal and not FilterOperations.NotEqual || val != null)
                 parameters.Add(val!);
-            }
-
             sb.Append(clause);
         }
 
         return (sb.ToString(), parameters.ToArray());
+    }
+
+    private static string BuildClause(string prop, FilterOperations op, object? val, int paramIndex)
+    {
+        return val switch
+        {
+            null when op is FilterOperations.Equal => $"{prop} == null",
+            null when op is FilterOperations.NotEqual => $"{prop} != null",
+            _ => op switch
+            {
+                FilterOperations.Equal => $"{prop} == @{paramIndex}",
+                FilterOperations.NotEqual => $"{prop} != @{paramIndex}",
+                FilterOperations.GreaterThan => $"{prop} > @{paramIndex}",
+                FilterOperations.GreaterThanOrEqual => $"{prop} >= @{paramIndex}",
+                FilterOperations.LessThan => $"{prop} < @{paramIndex}",
+                FilterOperations.LessThanOrEqual => $"{prop} <= @{paramIndex}",
+                FilterOperations.Contains => $"{prop}.Contains(@{paramIndex})",
+                FilterOperations.NotContains => $"!{prop}.Contains(@{paramIndex})",
+                FilterOperations.StartsWith => $"{prop}.StartsWith(@{paramIndex})",
+                FilterOperations.EndsWith => $"{prop}.EndsWith(@{paramIndex})",
+                _ => throw new NotSupportedException($"Operation {op} not supported.")
+            }
+        };
+    }
+
+    private static Type? ResolvePropertyType(Type entityType, string propertyPath)
+    {
+        var segments = propertyPath.Split('.');
+        var currentType = entityType;
+        foreach (var segment in segments)
+        {
+            var pi = currentType.GetProperty(segment,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (pi == null)
+                return null;
+            currentType = pi.PropertyType;
+        }
+
+        return currentType;
     }
 
     /// <summary>
@@ -159,6 +187,7 @@ public sealed class DynamicPredicateBuilder
     ///     Multiple conditions are combined using AND logic when <see cref="Build" /> is called.
     ///     Property name/path may be provided in camelCase, snake_case, kebab-case or mixed; each dotted segment is
     ///     normalized to PascalCase (e.g. "user_name" -> "UserName", "address.city_name" -> "Address.CityName").
+    ///     Property type is resolved from <typeparamref name="TEntity" /> at build time.
     /// </summary>
     /// <param name="propertyName">
     ///     The name of the property to filter on. Supports nested properties using dot notation (e.g., "Address.City").
@@ -170,13 +199,12 @@ public sealed class DynamicPredicateBuilder
     ///     The value to compare against. The type should match the property type.
     /// </param>
     /// <returns>
-    ///     The current <see cref="DynamicPredicateBuilder" /> instance for method chaining.
+    ///     The current <see cref="DynamicPredicateBuilder{TEntity}" /> instance for method chaining.
     /// </returns>
-    public DynamicPredicateBuilder With(string propertyName, FilterOperations operation, object? value)
+    public DynamicPredicateBuilder<TEntity> With(string propertyName, FilterOperations operation, object? value)
     {
         if (string.IsNullOrWhiteSpace(propertyName))
             throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
-
         var normalized = propertyName.ToPascalCase();
         _conditions.Add((normalized, operation, value));
         return this;

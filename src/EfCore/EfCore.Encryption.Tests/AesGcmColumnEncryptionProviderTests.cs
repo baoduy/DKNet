@@ -19,9 +19,9 @@ public class AesGcmColumnEncryptionProviderTests
     public AesGcmColumnEncryptionProviderTests()
     {
         // Initialize with random bytes for testing
-        RandomNumberGenerator.Fill(this._validKey16);
-        RandomNumberGenerator.Fill(this._validKey24);
-        RandomNumberGenerator.Fill(this._validKey32);
+        RandomNumberGenerator.Fill(_validKey16);
+        RandomNumberGenerator.Fill(_validKey24);
+        RandomNumberGenerator.Fill(_validKey32);
     }
 
     #endregion
@@ -77,7 +77,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Decrypt_WithCorruptedCiphertext_ShouldThrowInvalidOperationException()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         const string plaintext = "Test message";
         var encrypted = provider.Encrypt(plaintext);
 
@@ -95,7 +95,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Decrypt_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var result = provider.Decrypt(string.Empty);
@@ -108,7 +108,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Decrypt_WithInvalidBase64_ShouldThrowException()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         const string invalidBase64 = "Not a valid base64 string!";
 
         // Act & Assert
@@ -119,7 +119,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Decrypt_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var result = provider.Decrypt(null);
@@ -132,7 +132,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Decrypt_WithTooShortCiphertext_ShouldThrowArgumentException()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         var shortData = new byte[10]; // Less than IV (12) + Tag (16) = 28 bytes
         var shortCiphertext = Convert.ToBase64String(shortData);
 
@@ -168,7 +168,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_SamePlaintext_ShouldProduceDifferentCiphertext()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         const string plaintext = "Test message";
 
         // Act
@@ -191,7 +191,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_ThenDecrypt_ShouldReturnOriginalPlaintext(string plaintext)
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var encrypted = provider.Encrypt(plaintext);
@@ -205,7 +205,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var result = provider.Encrypt(string.Empty);
@@ -218,7 +218,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_WithNewlineCharacters_ShouldEncryptAndDecryptCorrectly()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         const string plaintext = "Line1\nLine2\r\nLine3";
 
         // Act
@@ -233,7 +233,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var result = provider.Encrypt(null);
@@ -250,7 +250,7 @@ public class AesGcmColumnEncryptionProviderTests
     public void Encrypt_WithPlaintext_ShouldReturnBase64String(string plaintext)
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
 
         // Act
         var encrypted = provider.Encrypt(plaintext);
@@ -261,14 +261,14 @@ public class AesGcmColumnEncryptionProviderTests
         encrypted.Length.ShouldBeGreaterThan(0);
 
         // Verify it's valid base64
-        Should.NotThrow(() => Convert.FromBase64String(encrypted!));
+        Should.NotThrow(() => Convert.FromBase64String(encrypted));
     }
 
     [Fact]
     public void Encrypt_WithWhitespaceString_ShouldEncryptAndDecryptCorrectly()
     {
         // Arrange
-        var provider = new AesGcmColumnEncryptionProvider(this._validKey32);
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
         const string plaintext = "   ";
 
         // Act

@@ -56,32 +56,32 @@ public class DtoMappingTests
 
         // Assert
         countryProperty.ShouldNotBeNull();
-        var countryMaxLength = countryProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var countryMaxLength = countryProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         countryMaxLength.ShouldNotBeNull();
-        countryMaxLength!.Length.ShouldBe(3);
+        countryMaxLength.Length.ShouldBe(3);
 
         currencyProperty.ShouldNotBeNull();
-        var currencyMaxLength = currencyProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var currencyMaxLength = currencyProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         currencyMaxLength.ShouldNotBeNull();
-        currencyMaxLength!.Length.ShouldBe(4);
+        currencyMaxLength.Length.ShouldBe(4);
 
         nameProperty.ShouldNotBeNull();
-        var nameMaxLength = nameProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var nameMaxLength = nameProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         nameMaxLength.ShouldNotBeNull();
-        nameMaxLength!.Length.ShouldBe(50);
+        nameMaxLength.Length.ShouldBe(50);
 
         codeProperty.ShouldNotBeNull();
-        var codeMaxLength = codeProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var codeMaxLength = codeProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         codeMaxLength.ShouldNotBeNull();
-        codeMaxLength!.Length.ShouldBe(10);
+        codeMaxLength.Length.ShouldBe(10);
     }
 
     [Fact]
@@ -151,25 +151,25 @@ public class DtoMappingTests
 
         // Assert
         codeProperty.ShouldNotBeNull();
-        var codeMaxLength = codeProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var codeMaxLength = codeProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         codeMaxLength.ShouldNotBeNull();
-        codeMaxLength!.Length.ShouldBe(10);
+        codeMaxLength.Length.ShouldBe(10);
 
         nameProperty.ShouldNotBeNull();
-        var nameMaxLength = nameProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var nameMaxLength = nameProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         nameMaxLength.ShouldNotBeNull();
-        nameMaxLength!.Length.ShouldBe(50);
+        nameMaxLength.Length.ShouldBe(50);
 
         descriptionProperty.ShouldNotBeNull();
-        var descriptionMaxLength = descriptionProperty!.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        var descriptionMaxLength = descriptionProperty.GetCustomAttributes(typeof(MaxLengthAttribute), false)
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         descriptionMaxLength.ShouldNotBeNull();
-        descriptionMaxLength!.Length.ShouldBe(200);
+        descriptionMaxLength.Length.ShouldBe(200);
     }
 
     [Fact]
@@ -418,18 +418,18 @@ public class DtoMappingTests
         // Test Required attributes
         var nameProperty = typeof(TestProductDto).GetProperty("Name");
         nameProperty.ShouldNotBeNull();
-        nameProperty!.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
+        nameProperty.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
 
         var skuProperty = typeof(TestProductDto).GetProperty("Sku");
         skuProperty.ShouldNotBeNull();
-        skuProperty!.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
+        skuProperty.GetCustomAttributes(typeof(RequiredAttribute), false).ShouldNotBeEmpty();
 
         // Test StringLength attribute with MinimumLength
         var stringLengthAttr = nameProperty.GetCustomAttributes(typeof(StringLengthAttribute), false)
             .Cast<StringLengthAttribute>()
             .FirstOrDefault();
         stringLengthAttr.ShouldNotBeNull();
-        stringLengthAttr!.MaximumLength.ShouldBe(100);
+        stringLengthAttr.MaximumLength.ShouldBe(100);
         stringLengthAttr.MinimumLength.ShouldBe(3);
 
         // Test MaxLength attribute
@@ -437,42 +437,42 @@ public class DtoMappingTests
             .Cast<MaxLengthAttribute>()
             .FirstOrDefault();
         maxLengthAttr.ShouldNotBeNull();
-        maxLengthAttr!.Length.ShouldBe(50);
+        maxLengthAttr.Length.ShouldBe(50);
 
         // Test Range attributes
         var priceProperty = typeof(TestProductDto).GetProperty("Price");
         priceProperty.ShouldNotBeNull();
-        var priceRangeAttr = priceProperty!.GetCustomAttributes(typeof(RangeAttribute), false)
+        var priceRangeAttr = priceProperty.GetCustomAttributes(typeof(RangeAttribute), false)
             .Cast<RangeAttribute>()
             .FirstOrDefault();
         priceRangeAttr.ShouldNotBeNull();
-        priceRangeAttr!.Minimum.ShouldBe(0.01);
+        priceRangeAttr.Minimum.ShouldBe(0.01);
         priceRangeAttr.Maximum.ShouldBe(999999.99);
 
         var stockProperty = typeof(TestProductDto).GetProperty("StockQuantity");
         stockProperty.ShouldNotBeNull();
-        var stockRangeAttr = stockProperty!.GetCustomAttributes(typeof(RangeAttribute), false)
+        var stockRangeAttr = stockProperty.GetCustomAttributes(typeof(RangeAttribute), false)
             .Cast<RangeAttribute>()
             .FirstOrDefault();
         stockRangeAttr.ShouldNotBeNull();
-        stockRangeAttr!.Minimum.ShouldBe(0);
+        stockRangeAttr.Minimum.ShouldBe(0);
         stockRangeAttr.Maximum.ShouldBe(10000);
 
         // Test EmailAddress attribute
         var emailProperty = typeof(TestProductDto).GetProperty("Email");
         emailProperty.ShouldNotBeNull();
-        emailProperty!.GetCustomAttributes(typeof(EmailAddressAttribute), false).ShouldNotBeEmpty();
+        emailProperty.GetCustomAttributes(typeof(EmailAddressAttribute), false).ShouldNotBeEmpty();
 
         // Note: Uri? properties don't need [Url] attribute as Uri type itself validates URLs
         // The [Url] attribute is meant for string properties only
         var urlProperty = typeof(TestProductDto).GetProperty("WebsiteUrl");
         urlProperty.ShouldNotBeNull();
-        urlProperty!.PropertyType.ShouldBe(typeof(Uri));
+        urlProperty.PropertyType.ShouldBe(typeof(Uri));
 
         // Test Phone attribute
         var phoneProperty = typeof(TestProductDto).GetProperty("PhoneNumber");
         phoneProperty.ShouldNotBeNull();
-        phoneProperty!.GetCustomAttributes(typeof(PhoneAttribute), false).ShouldNotBeEmpty();
+        phoneProperty.GetCustomAttributes(typeof(PhoneAttribute), false).ShouldNotBeEmpty();
     }
 
     [Fact]
