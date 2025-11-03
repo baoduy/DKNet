@@ -17,7 +17,7 @@ public class ProblemDetailsExtensionsModelStateTests
         modelState.AddModelError("field2", "error2");
         var result = modelState.ToProblemDetails();
         result.ShouldNotBeNull();
-        result!.Status.ShouldBe((int)HttpStatusCode.BadRequest);
+        result.Status.ShouldBe((int)HttpStatusCode.BadRequest);
         result.Title.ShouldBe("Error");
         ((IEnumerable<string>)result.Extensions["errors"]!).Count().ShouldBe(2);
     }

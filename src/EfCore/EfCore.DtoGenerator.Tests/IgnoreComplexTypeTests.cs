@@ -22,19 +22,19 @@ public class IgnoreComplexTypeTests
         var ordersProperty = typeof(CustomerDto).GetProperty("Orders");
 
         customerIdProperty.ShouldNotBeNull();
-        customerIdProperty!.PropertyType.ShouldBe(typeof(int));
+        customerIdProperty.PropertyType.ShouldBe(typeof(int));
 
         nameProperty.ShouldNotBeNull();
-        nameProperty!.PropertyType.ShouldBe(typeof(string));
+        nameProperty.PropertyType.ShouldBe(typeof(string));
 
         emailProperty.ShouldNotBeNull();
-        emailProperty!.PropertyType.ShouldBe(typeof(string));
+        emailProperty.PropertyType.ShouldBe(typeof(string));
 
         primaryAddressProperty.ShouldNotBeNull();
-        primaryAddressProperty!.PropertyType.ShouldBe(typeof(Address));
+        primaryAddressProperty.PropertyType.ShouldBe(typeof(Address));
 
         ordersProperty.ShouldNotBeNull();
-        ordersProperty!.PropertyType.ShouldBe(typeof(ICollection<Order>));
+        ordersProperty.PropertyType.ShouldBe(typeof(ICollection<Order>));
     }
 
     [Fact]
