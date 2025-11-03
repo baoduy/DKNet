@@ -11,7 +11,8 @@ namespace DKNet.Svc.BlobStorage.AzureStorage;
 ///     <c>Azure.Storage.Blobs</c> clients.
 /// </summary>
 /// <param name="options">The options wrapper that provides <see cref="AzureStorageOptions" />.</param>
-public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> options) : BlobService(options.Value)
+public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> options)
+    : BlobService(options.Value)
 {
     #region Fields
 
@@ -44,7 +45,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     /// </summary>
     /// <param name="blob">The blob request describing the blob or folder to delete.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-    /// <returns>True when the delete completed successfully; otherwise false.</returns>
+    /// <returns>True when to delete completed successfully; otherwise false.</returns>
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
         var location = GetBlobLocation(blob);
@@ -141,9 +142,16 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     {
         if (_containerClient != null) return _containerClient;
 
-        var blobClient = new BlobServiceClient(_options.ConnectionString);
-        _containerClient = blobClient.GetBlobContainerClient(_options.ContainerName);
-        await _containerClient.CreateIfNotExistsAsync();
+        var client = _options switch
+        {
+            { BlobServiceClientFactory: not null } => await _options.BlobServiceClientFactory.Invoke(_options),
+            { ConnectionString: { } cs } => new BlobServiceClient(cs),
+            _ => throw new ArgumentException(
+                "AzureStorageOptions requires either a ConnectionString or BlobServiceClientFactory to be set.")
+        };
+
+        _containerClient = client.GetBlobContainerClient(_options.ContainerName);
+        await _containerClient!.CreateIfNotExistsAsync();
 
         return _containerClient;
     }
