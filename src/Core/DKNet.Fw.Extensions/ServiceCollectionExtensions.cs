@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
     public static bool IsKeyedImplementationOf(this ServiceDescriptor descriptor, object keyName,
         Type implementationType)
     {
-        if (!descriptor.IsKeyedService || ReferenceEquals(descriptor.ServiceKey, keyName))
+        if (!descriptor.IsKeyedService || !ReferenceEquals(descriptor.ServiceKey, keyName))
             return false;
         return descriptor.IsImplementationOf(implementationType);
     }
