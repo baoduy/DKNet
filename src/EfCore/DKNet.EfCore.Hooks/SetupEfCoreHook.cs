@@ -81,9 +81,7 @@ public static class SetupEfCoreHook
         var key = typeof(TDbContext).FullName!;
         var type = typeof(THook);
 
-        if (services.Any(s =>
-                s.IsKeyedService && ReferenceEquals(s.ServiceKey, key) &&
-                s.KeyedImplementationType == type))
+        if (services.Any(s => s.IsKeyedImplementationOf<THook>(key)))
         {
             Debug.WriteLine($"The Hook {type.Name} already added.");
             return services;
@@ -105,11 +103,9 @@ public static class SetupEfCoreHook
     internal static IServiceCollection AddHookRunner<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext
     {
-        var fullName = typeof(TDbContext).FullName;
+        var fullName = typeof(TDbContext).FullName!;
 
-        if (services.Any(s =>
-                s.IsKeyedService && ReferenceEquals(s.ServiceKey, fullName) &&
-                s.KeyedImplementationType == typeof(HookRunnerInterceptor)))
+        if (services.Any(s => s.IsKeyedImplementationOf<HookRunnerInterceptor>(fullName)))
         {
             Debug.WriteLine($"The {nameof(HookRunnerInterceptor)} already registered.");
             return services;
@@ -117,7 +113,7 @@ public static class SetupEfCoreHook
 
         return services
             .AddScoped<HookFactory>()
-            .AddKeyedScoped<HookRunnerInterceptor>(fullName);
+            .AddKeyedSingleton<HookRunnerInterceptor>(fullName);
     }
 
     /// <summary>
