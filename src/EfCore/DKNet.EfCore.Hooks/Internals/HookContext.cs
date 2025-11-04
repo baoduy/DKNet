@@ -4,24 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks.Internals;
 
-internal sealed class HookRunnerContext : IAsyncDisposable
+internal sealed class HookContext : IAsyncDisposable
 {
-    #region Fields
-
-    //private readonly IServiceScope _scope;
-
-    #endregion
-
     #region Constructors
 
-    public HookRunnerContext(IServiceProvider provider, DbContext db)
+    public HookContext(IServiceProvider provider, DbContext db)
     {
-        //this._scope = provider.CreateScope();
         var factory = provider.GetRequiredService<HookFactory>();
         var (before, afters) = factory.LoadHooks(db);
-        this.BeforeSaveHooks = [..before];
-        this.AfterSaveHooks = [..afters];
-        this.Snapshot = new SnapshotContext(db);
+        BeforeSaveHooks = [..before];
+        AfterSaveHooks = [..afters];
+        Snapshot = new SnapshotContext(db);
     }
 
     #endregion
@@ -41,8 +34,10 @@ internal sealed class HookRunnerContext : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         //this._scope.Dispose();
-        await this.Snapshot.DisposeAsync();
+        await Snapshot.DisposeAsync();
     }
 
     #endregion
+
+    //private readonly IServiceScope _scope;
 }

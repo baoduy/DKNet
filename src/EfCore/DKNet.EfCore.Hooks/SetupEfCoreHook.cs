@@ -109,15 +109,15 @@ public static class SetupEfCoreHook
 
         if (services.Any(s =>
                 s.IsKeyedService && ReferenceEquals(s.ServiceKey, fullName) &&
-                s.KeyedImplementationType == typeof(HookRunner)))
+                s.KeyedImplementationType == typeof(HookRunnerInterceptor)))
         {
-            Debug.WriteLine($"The {nameof(HookRunner)} already registered.");
+            Debug.WriteLine($"The {nameof(HookRunnerInterceptor)} already registered.");
             return services;
         }
 
         return services
-            .AddTransient<HookFactory>()
-            .AddKeyedSingleton<HookRunner>(fullName);
+            .AddScoped<HookFactory>()
+            .AddKeyedScoped<HookRunnerInterceptor>(fullName);
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ public static class SetupEfCoreHook
     public static DbContextOptionsBuilder UseHooks<TDbContext>(
         this DbContextOptionsBuilder options,
         IServiceProvider provider) where TDbContext : DbContext =>
-        options.AddInterceptors(provider.GetRequiredKeyedService<HookRunner>(typeof(TDbContext).FullName));
+        options.AddInterceptors(provider.GetRequiredKeyedService<HookRunnerInterceptor>(typeof(TDbContext).FullName));
 
     #endregion
 }

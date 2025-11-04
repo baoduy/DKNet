@@ -1,3 +1,5 @@
+using HookContext = EfCore.HookTests.Data.HookContext;
+
 namespace EfCore.HookTests.Hooks;
 
 public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture>
@@ -13,9 +15,9 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
     [Fact]
     public async Task DisableHooks_Async_Disposal_Should_Work()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         await using (db.DisableHooks())
         {
@@ -32,9 +34,9 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
     [Fact]
     public async Task DisableHooks_Should_Suppress_Hook_Calls()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         await using (db.DisableHooks())
         {
@@ -51,9 +53,9 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
     [Fact]
     public async Task Hooks_Should_Resume_After_DisableHooks_Disposed()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         await using (db.DisableHooks())
         {
@@ -80,9 +82,9 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
     [Fact]
     public async Task Nested_DisableHooks_Should_Keep_Disabled_Until_Last_Disposed()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         await using (db.DisableHooks())
         {
