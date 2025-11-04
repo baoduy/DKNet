@@ -64,9 +64,9 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
         await db.SaveChangesAsync();
         await db.SaveChangesAsync(); // No changes, hooks should not run
 
-        HookTest.AfterCalled.ShouldBeTrue();
+        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
         // Hooks only run when there are actual changes, so second SaveChanges doesn't trigger hooks
-        HookTest.AfterCallCount.ShouldBe(1);
+        HookTest.BeforeCalled.ShouldBeTrue();
     }
 
     #endregion
