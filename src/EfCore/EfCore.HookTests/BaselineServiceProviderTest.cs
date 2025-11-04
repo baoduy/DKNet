@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
+using HookContext = EfCore.HookTests.Data.HookContext;
 
 namespace EfCore.HookTests;
 
@@ -24,7 +25,7 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
             // Simulate 25 consecutive API calls - this should NOT trigger the EF Core warning
             for (var i = 0; i < 25; i++)
             {
-                using var scope = this._provider!.CreateScope();
+                using var scope = _provider!.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<HookContext>();
 
                 var entity = new CustomerProfile { Name = $"Baseline Entity {i}" };
@@ -42,22 +43,19 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
 
     public async Task DisposeAsync()
     {
-        if (this._provider != null)
-        {
-            await this._provider.DisposeAsync();
-        }
+        if (_provider != null) await _provider.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        this._provider = new ServiceCollection()
+        _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))
             .AddDbContext<HookContext>(o =>
                 o.UseAutoConfigModel([typeof(HookContext).Assembly])
                     .UseSqlite("Data Source=sqlite_baseline_hooks.db"))
             .BuildServiceProvider();
 
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
         await db.Database.EnsureCreatedAsync();
     }
 

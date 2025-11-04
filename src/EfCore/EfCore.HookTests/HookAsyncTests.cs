@@ -1,4 +1,5 @@
 using DKNet.EfCore.Extensions.Snapshots;
+using HookContext = EfCore.HookTests.Data.HookContext;
 
 namespace EfCore.HookTests;
 

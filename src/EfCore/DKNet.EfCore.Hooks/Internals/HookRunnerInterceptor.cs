@@ -25,20 +25,21 @@ public enum RunningTypes
 /// </summary>
 /// <param name="provider">the IServiceProvider of HookRunner</param>
 /// <param name="logger">the logger of HookRunner</param>
-internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> logger) : SaveChangesInterceptor
+internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<HookRunnerInterceptor> logger)
+    : SaveChangesInterceptor
 {
     #region Fields
 
-    private readonly ConcurrentDictionary<Guid, HookRunnerContext> _cache = new();
+    private readonly ConcurrentDictionary<Guid, HookContext> _cache = new();
 
     #endregion
 
     #region Methods
 
-    private HookRunnerContext GetContext(DbContextEventData eventData) =>
+    private HookContext GetContext(DbContextEventData eventData) =>
         _cache.GetOrAdd(
             eventData.Context!.ContextId.InstanceId,
-            _ => new HookRunnerContext(provider, eventData.Context!));
+            _ => new HookContext(provider, eventData.Context!));
 
     private async Task RemoveContext(DbContextEventData eventData)
     {
@@ -53,7 +54,7 @@ internal sealed class HookRunner(IServiceProvider provider, ILogger<HookRunner> 
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     private async Task RunHooksAsync(
-        HookRunnerContext context,
+        HookContext context,
         RunningTypes type,
         CancellationToken cancellationToken = default)
     {

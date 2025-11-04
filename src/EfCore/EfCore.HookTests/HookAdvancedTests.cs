@@ -1,4 +1,5 @@
 using EfCore.HookTests.Hooks;
+using HookContext = EfCore.HookTests.Data.HookContext;
 
 namespace EfCore.HookTests;
 
@@ -16,9 +17,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteInCorrectOrder()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Order Test" };
 
@@ -35,9 +36,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteMultipleTimes()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         // Act - Multiple save operations
         await db.AddAsync(new CustomerProfile { Name = "Multiple 1" });
@@ -60,9 +61,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnBulkOperations()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entities = new[]
         {
@@ -93,9 +94,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityAdd()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Test Add" };
 
@@ -119,9 +120,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityDelete()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Test Delete" };
         await db.AddAsync(entity);
@@ -149,9 +150,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldExecuteOnEntityUpdate()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Test Update Original" };
         await db.AddAsync(entity);
@@ -179,10 +180,10 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldHandleNoChangesGracefully()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
 
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
         db.ChangeTracker.Clear();
 
         // Act - Save without any changes
@@ -199,9 +200,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldProvideCorrectChangeTrackerInfo()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Change Tracker Test" };
 
@@ -218,9 +219,9 @@ public class HookAdvancedTests(HookFixture fixture) : IClassFixture<HookFixture>
     public async Task Hook_ShouldWorkWithTransactions()
     {
         // Arrange
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         var entity = new CustomerProfile { Name = "Transaction Test" };
 

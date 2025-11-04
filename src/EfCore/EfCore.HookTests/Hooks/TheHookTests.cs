@@ -1,3 +1,5 @@
+using HookContext = EfCore.HookTests.Data.HookContext;
+
 namespace EfCore.HookTests.Hooks;
 
 public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
@@ -18,7 +20,7 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
             .AddHookRunner<HookContext>()
             .AddHookRunner<HookContext>();
 
-        services.Count(s => s.ServiceType == typeof(HookRunner))
+        services.Count(s => s.ServiceType == typeof(HookRunnerInterceptor))
             .ShouldBe(1);
     }
 
@@ -39,10 +41,10 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     [Fact]
     public async Task TestAddHookAsync()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         hook.Reset();
 
-        var db = this._provider.GetRequiredService<HookContext>();
+        var db = _provider.GetRequiredService<HookContext>();
 
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
         await db.SaveChangesAsync();
@@ -54,8 +56,8 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     [Fact]
     public async Task TestCallSaveChangesTwiceAsync()
     {
-        var hook = this._provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
-        var db = this._provider.GetRequiredService<HookContext>();
+        var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
+        var db = _provider.GetRequiredService<HookContext>();
         hook.Reset();
 
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
