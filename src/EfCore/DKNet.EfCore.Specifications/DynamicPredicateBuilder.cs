@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using DKNet.Fw.Extensions;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -86,7 +87,8 @@ public sealed class DynamicPredicateBuilder<TEntity>
 
     private static FilterOperations AdjustOperationForValueType(Type? propValueType, FilterOperations op)
     {
-        if (propValueType == null || propValueType == typeof(string) || Nullable.GetUnderlyingType(propValueType) == typeof(string)) return op;
+        if (propValueType == null || propValueType == typeof(string) ||
+            Nullable.GetUnderlyingType(propValueType) == typeof(string)) return op;
         // For all non-string types, switch Contains/NotContains to Equal/NotEqual, and throw for StartsWith/EndsWith
         return op switch
         {
@@ -134,6 +136,25 @@ public sealed class DynamicPredicateBuilder<TEntity>
 
             var type = ResolvePropertyType(entityType, prop);
             op = AdjustOperationForValueType(type, op);
+
+            // Validate enum operations and value types
+            if (type.IsEnumType())
+            {
+                if (val == null)
+                {
+                    // Null is valid for nullable enum
+                    if (Nullable.GetUnderlyingType(type!) == null)
+                        continue; // Skip non-nullable enum with null value
+                }
+                else
+                {
+                    // Try to convert value to enum
+                    var enumType = type!.GetNonNullableType();
+                    if (!enumType.TryConvertToEnum(val, out _))
+                        continue;
+                }
+            }
+
             var clause = BuildClause(prop, op, val, parameters.Count);
             if (op is not FilterOperations.Equal and not FilterOperations.NotEqual || val != null)
                 parameters.Add(val!);
@@ -174,8 +195,7 @@ public sealed class DynamicPredicateBuilder<TEntity>
         {
             var pi = currentType.GetProperty(segment,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (pi == null)
-                return null;
+            if (pi == null) return null;
             currentType = pi.PropertyType;
         }
 

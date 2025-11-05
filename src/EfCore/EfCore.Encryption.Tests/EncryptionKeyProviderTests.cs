@@ -5,23 +5,11 @@ using Shouldly;
 namespace EfCore.Encryption.Tests;
 
 // Test implementation for abstract class
-internal class TestEncryptionKeyProvider : EncryptionKeyProvider
+internal class TestEncryptionKeyProvider(byte[] key) : EncryptionKeyProvider
 {
-    #region Fields
-
-    private readonly byte[] _key;
-
-    #endregion
-
-    #region Constructors
-
-    public TestEncryptionKeyProvider(byte[] key) => this._key = key;
-
-    #endregion
-
     #region Methods
 
-    public override byte[] GetKey(Type entityType) => this._key;
+    public override byte[] GetKey(Type entityType) => key;
 
     #endregion
 }
@@ -39,10 +27,10 @@ internal class TypeSpecificKeyProvider : EncryptionKeyProvider
 
     public void AddKey(Type entityType, byte[] key)
     {
-        this._keys[entityType] = key;
+        _keys[entityType] = key;
     }
 
-    public override byte[] GetKey(Type entityType) => this._keys.TryGetValue(entityType, out var key)
+    public override byte[] GetKey(Type entityType) => _keys.TryGetValue(entityType, out var key)
         ? key
         : throw new InvalidOperationException($"No key configured for {entityType.Name}");
 

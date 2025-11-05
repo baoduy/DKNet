@@ -6,17 +6,11 @@ namespace EfCore.Specifications.Tests;
 ///     Comprehensive tests that verify SQL query generation from dynamic predicates.
 ///     These tests demonstrate that ToQueryString() produces correct SQL for various scenarios.
 /// </summary>
-public class QueryStringVerificationTests : IClassFixture<TestDbFixture>
+public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture<TestDbFixture>
 {
     #region Fields
 
-    private readonly TestDbContext _db;
-
-    #endregion
-
-    #region Constructors
-
-    public QueryStringVerificationTests(TestDbFixture fixture) => _db = fixture.Db!;
+    private readonly TestDbContext _db = fixture.Db!;
 
     #endregion
 

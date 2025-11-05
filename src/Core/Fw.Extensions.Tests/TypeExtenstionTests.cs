@@ -160,5 +160,488 @@ public class TypeExtensionsTests
         typeof(DateTime?).IsNumericType().ShouldBeFalse();
     }
 
+    [Fact]
+    public void TryConvertToEnum_WithIntType_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var intType = typeof(int);
+        var value = 1;
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() => intType.TryConvertToEnum(value, out _));
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithInvalidStringValue_ShouldReturnFalse()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = "invalid";
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeFalse();
+        enumValue.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithNegativeValue_ShouldHandleAppropriately()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = -1;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        // This should either succeed with the underlying value or fail depending on enum definition
+        // Since HbdTypes doesn't have -1, it might still convert but to an undefined value
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithNonEnumType_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var nonEnumType = typeof(string);
+        var value = "test";
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() => nonEnumType.TryConvertToEnum(value, out _))
+            .Message.ShouldContain("not an enum type");
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithNullableEnumType_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes?);
+        var value = 2;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithOverflowValue_ShouldReturnFalse()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = long.MaxValue;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeFalse();
+        enumValue.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithShortValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        short value = 3;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithUIntValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        uint value = 1;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidByteValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        byte value = 1;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidDecimalValue_ShouldConvertToInt()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = 2.0m;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidDoubleValue_ShouldConvertToInt()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = 1.0;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidIntValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = 2;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidLongValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = 3L;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithValidStringValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = "1";
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnum_WithZeroValue_ShouldReturnTrue()
+    {
+        // Arrange
+        var enumType = typeof(HbdTypes);
+        var value = 0;
+
+        // Act
+        var result = enumType.TryConvertToEnum(value, out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.None);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithByteValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = (byte)3;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithDecimalValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 1.0m;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithDoubleValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 3.0;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithEnumValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = HbdTypes.NamedEnum;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithFloatValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 2.0f;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithInvalidStringValue_ShouldReturnFalse()
+    {
+        // Arrange
+        object value = "invalid";
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeFalse();
+        enumValue.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithLongValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 1L;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithNegativeValue_ShouldHandleAppropriately()
+    {
+        // Arrange
+        object value = -1;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        // -1 will be converted even though it's not a defined enum value
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithOverflowValue_ShouldReturnFalse()
+    {
+        // Arrange
+        object value = long.MaxValue;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeFalse();
+        enumValue.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithSByteValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = (sbyte)1;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithShortValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = (short)2;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithUIntValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 3u;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithULongValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 2ul;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithUShortValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = (ushort)3;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.Enum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithValidIntValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 2;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.NamedEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithValidStringValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = "1";
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.DescriptionEnum);
+    }
+
+    [Fact]
+    public void TryConvertToEnumGeneric_WithZeroValue_ShouldReturnTrue()
+    {
+        // Arrange
+        object value = 0;
+
+        // Act
+        var result = value.TryConvertToEnum<HbdTypes>(out var enumValue);
+
+        // Assert
+        result.ShouldBeTrue();
+        enumValue.ShouldNotBeNull();
+        enumValue.ShouldBe(HbdTypes.None);
+    }
+
     #endregion
 }

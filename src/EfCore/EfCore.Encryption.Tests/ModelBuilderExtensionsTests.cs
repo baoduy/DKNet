@@ -13,11 +13,11 @@ public class PersonEntity
 {
     #region Properties
 
+    [Encrypted] public string? CreditCardNumber { get; set; }
+
     [Key] public int Id { get; set; }
 
     public string Name { get; set; } = string.Empty;
-
-    [Encrypted] public string? CreditCardNumber { get; set; }
 
     [Encrypted] public string? SocialSecurityNumber { get; set; }
 
@@ -28,11 +28,11 @@ public class ProductEntity
 {
     #region Properties
 
-    public decimal Price { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     [Key] public int Id { get; set; }
 
-    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 
     [Encrypted] public string? SecretFormula { get; set; }
 
@@ -43,9 +43,9 @@ public class NoEncryptionEntity
 {
     #region Properties
 
-    [Key] public int Id { get; set; }
-
     public string Description { get; set; } = string.Empty;
+
+    [Key] public int Id { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
@@ -53,21 +53,9 @@ public class NoEncryptionEntity
 }
 
 // Test DbContext
-public class TestDbContext : DbContext
+public class TestDbContext(DbContextOptions<TestDbContext> options, IEncryptionKeyProvider? keyProvider = null)
+    : DbContext(options)
 {
-    #region Fields
-
-    private readonly IEncryptionKeyProvider? _keyProvider;
-
-    #endregion
-
-    #region Constructors
-
-    public TestDbContext(DbContextOptions<TestDbContext> options, IEncryptionKeyProvider? keyProvider = null) :
-        base(options) => this._keyProvider = keyProvider;
-
-    #endregion
-
     #region Properties
 
     public DbSet<NoEncryptionEntity> Items { get; set; }
@@ -84,10 +72,7 @@ public class TestDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        if (this._keyProvider != null)
-        {
-            modelBuilder.UseColumnEncryption(this._keyProvider);
-        }
+        if (keyProvider != null) modelBuilder.UseColumnEncryption(keyProvider);
     }
 
     #endregion
@@ -107,8 +92,8 @@ internal class TestKeyProvider : EncryptionKeyProvider
 
     public TestKeyProvider()
     {
-        this._defaultKey = new byte[32];
-        RandomNumberGenerator.Fill(this._defaultKey);
+        _defaultKey = new byte[32];
+        RandomNumberGenerator.Fill(_defaultKey);
     }
 
     #endregion
@@ -116,11 +101,11 @@ internal class TestKeyProvider : EncryptionKeyProvider
     #region Methods
 
     public override byte[] GetKey(Type entityType) =>
-        this._typeKeys.TryGetValue(entityType, out var key) ? key : this._defaultKey;
+        _typeKeys.TryGetValue(entityType, out var key) ? key : _defaultKey;
 
     public void SetKeyForType(Type type, byte[] key)
     {
-        this._typeKeys[type] = key;
+        _typeKeys[type] = key;
     }
 
     #endregion

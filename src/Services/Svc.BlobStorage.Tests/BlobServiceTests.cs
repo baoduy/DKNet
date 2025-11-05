@@ -171,16 +171,8 @@ public class BlobServiceTests
 
     #endregion
 
-    private class TestBlobService : BlobService
+    private class TestBlobService(BlobServiceOptions options) : BlobService(options)
     {
-        #region Constructors
-
-        public TestBlobService(BlobServiceOptions options) : base(options)
-        {
-        }
-
-        #endregion
-
         #region Methods
 
         public override Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default) =>

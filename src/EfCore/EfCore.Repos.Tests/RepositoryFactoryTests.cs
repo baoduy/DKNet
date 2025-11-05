@@ -148,40 +148,20 @@ public class RepositoryFactoryTests
 
     #endregion
 
-    public class TestDbContext : DbContext
+    public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
     {
-        #region Constructors
-
-        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
-        {
-        }
-
-        #endregion
-
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
 
         #endregion
     }
 
-    private class TestDbContextFactory : IDbContextFactory<TestDbContext>
+    private class TestDbContextFactory(DbContextOptions<TestDbContext> options) : IDbContextFactory<TestDbContext>
     {
-        #region Fields
-
-        private readonly DbContextOptions<TestDbContext> _options;
-
-        #endregion
-
-        #region Constructors
-
-        public TestDbContextFactory(DbContextOptions<TestDbContext> options) => this._options = options;
-
-        #endregion
-
         #region Methods
 
-        public TestDbContext CreateDbContext() => new(this._options);
+        public TestDbContext CreateDbContext() => new(options);
 
         #endregion
     }

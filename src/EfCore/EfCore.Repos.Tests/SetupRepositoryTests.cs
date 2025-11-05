@@ -116,19 +116,11 @@ public class SetupRepositoryTests
 
     #endregion
 
-    public class TestDbContext : DbContext
+    public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
     {
-        #region Constructors
-
-        public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
-        {
-        }
-
-        #endregion
-
         #region Properties
 
-        public DbSet<TestEntity> TestEntities => this.Set<TestEntity>();
+        public DbSet<TestEntity> TestEntities => Set<TestEntity>();
 
         #endregion
     }

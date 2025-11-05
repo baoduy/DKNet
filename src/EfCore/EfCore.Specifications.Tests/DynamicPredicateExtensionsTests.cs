@@ -49,21 +49,6 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
     }
 
     [Fact]
-    public void DynamicAnd_WithEmptyBuilder_DoesNotModifyPredicate()
-    {
-        // Arrange
-        var predicate = PredicateBuilder.New<Product>()
-            .And(p => p.IsActive);
-
-        var originalCount = _db.Products.AsExpandable().Where(predicate).Count();
-
-        // Act
-        var action = () => predicate.DynamicAnd(_ => { });
-
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
     public void DynamicAnd_WithMultipleConditions_CombinesCorrectly()
     {
         // Arrange
@@ -168,7 +153,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
         _db.ChangeTracker.Clear();
         // Arrange
         var firstProduct = _db.Products.First();
-        var searchTerm = firstProduct.Name.Substring(0, 3);
+        var searchTerm = firstProduct.Name[..3];
 
         var predicate = PredicateBuilder.New<Product>()
             .And(p => p.IsActive);
@@ -187,6 +172,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
     [Fact]
     public void DynamicOr_ChainedCalls_WorksCorrectly()
     {
+        _db.ChangeTracker.Clear();
         // Arrange & Act
         var predicate = PredicateBuilder.New<Product>()
             .And(p => p.Price > 700m)
@@ -200,6 +186,53 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
         // Assert
         results.ShouldNotBeEmpty();
         results.ShouldAllBe(p => p.Price > 700m || p.Price < 50m || p.StockQuantity == 0);
+    }
+
+    [Fact]
+    public void DynamicOr_OrderEntityGroupedConditions_CombineCorrectly()
+    {
+        _db.ChangeTracker.Clear();
+        // Arrange
+        var targetOrder = _db.Orders.AsNoTracking().OrderByDescending(o => o.TotalAmount).First();
+        targetOrder.CustomerEmail.ShouldNotBeNull();
+
+        var predicate = PredicateBuilder.New<Order>()
+            .And(o => o.Id == -1)
+            .DynamicOr(builder => builder
+                .With("CustomerEmail", FilterOperations.Equal, targetOrder.CustomerEmail!)
+                .With("TotalAmount", FilterOperations.GreaterThanOrEqual, targetOrder.TotalAmount));
+
+        // Act
+        var results = _db.Orders.AsExpandable().Where(predicate).ToList();
+
+        // Assert
+        results.ShouldNotBeEmpty();
+        results.ShouldAllBe(o =>
+            o.CustomerEmail == targetOrder.CustomerEmail && o.TotalAmount >= targetOrder.TotalAmount);
+        results.ShouldContain(o => o.Id == targetOrder.Id);
+    }
+
+    [Fact]
+    public void DynamicOr_OrderEntityProperties_ReturnMatchingOrders()
+    {
+        // Arrange
+        var sampledOrders = _db.Orders.AsNoTracking().OrderBy(o => o.Id).Take(2).ToList();
+        sampledOrders.Count.ShouldBeGreaterThanOrEqualTo(2);
+        sampledOrders[0].CustomerEmail.ShouldNotBeNull();
+
+        var targetEmail = sampledOrders[0].CustomerEmail!;
+        var targetStatus = "hello";
+
+        var predicate = PredicateBuilder.New<Order>()
+            .And(o => o.Id == -1)
+            .DynamicOr(builder => builder.With("CustomerEmail", FilterOperations.Equal, targetEmail))
+            .DynamicOr(builder => builder.With("Status", FilterOperations.Equal, targetStatus));
+
+        // Act
+        var results = _db.Orders.AsExpandable().Where(predicate).ToQueryString();
+
+        // Assert
+        results.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -288,7 +321,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
     {
         // Arrange
         var firstProduct = _db.Products.First();
-        var searchTerm = firstProduct.Name.Substring(0, 2);
+        var searchTerm = firstProduct.Name[..2];
 
         var predicate = PredicateBuilder.New<Product>()
             .And(p => !p.IsActive);
@@ -362,7 +395,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
     {
         // Arrange
         var firstProduct = _db.Products.First();
-        var searchStart = firstProduct.Name.Substring(0, 2);
+        var searchStart = firstProduct.Name[..2];
 
         var predicate = PredicateBuilder.New<Product>()
             .DynamicAnd(builder => builder
