@@ -4,6 +4,7 @@
 // File: Specification.cs
 // Description: Base specification interfaces and implementation for building query specifications used by repositories.
 
+using System.ComponentModel;
 using System.Linq.Expressions;
 using LinqKit;
 
@@ -140,8 +141,8 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     Adds an order by clause based on a property name and sort direction
     /// </summary>
     /// <param name="orderBy">Property Name</param>
-    /// <param name="descending">Order descending or ascending</param>
-    protected void AddOrderBy(string orderBy, bool descending = false)
+    /// <param name="direction">Order descending or ascending</param>
+    protected void AddOrderBy(string orderBy, ListSortDirection direction)
     {
         if (string.IsNullOrWhiteSpace(orderBy)) return;
 
@@ -155,9 +156,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
 
         var keySelector = Expression.Lambda<Func<TEntity, object>>(body, parameter);
 
-        if (descending)
-            AddOrderByDescending(keySelector);
-        AddOrderBy(keySelector);
+        if (direction == ListSortDirection.Ascending)
+            AddOrderBy(keySelector);
+        else AddOrderByDescending(keySelector);
     }
 
     /// <summary>
