@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace EfCore.Specifications.Tests;
 
 /// <summary>
@@ -25,7 +27,7 @@ internal sealed class ProductFilterSpecification : Specification<Product>
             predicate = predicate.DynamicAnd(b => b.With(f, FilterOperations.Contains, searchString));
 
         WithFilter(predicate);
-        AddOrderBy(orderBy);
+        AddOrderBy(orderBy, ListSortDirection.Ascending);
     }
 
     #endregion
@@ -35,8 +37,6 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
 {
     #region Fields
 
-    private readonly TestDbContext _context;
-
     private readonly IRepositorySpec _repository;
 
     #endregion
@@ -45,8 +45,8 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
 
     public SpecFilterTests(TestDbFixture fixture)
     {
-        _context = fixture.Db!;
-        _repository = new RepositorySpec<TestDbContext>(_context, []);
+        var context = fixture.Db!;
+        _repository = new RepositorySpec<TestDbContext>(context, []);
     }
 
     #endregion
