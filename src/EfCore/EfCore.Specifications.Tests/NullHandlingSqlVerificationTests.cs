@@ -5,17 +5,11 @@ namespace EfCore.Specifications.Tests;
 /// <summary>
 ///     SQL Generation verification for null handling
 /// </summary>
-public class NullHandlingSqlVerificationTests : IClassFixture<TestDbFixture>
+public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFixture<TestDbFixture>
 {
     #region Fields
 
-    private readonly TestDbContext _db;
-
-    #endregion
-
-    #region Constructors
-
-    public NullHandlingSqlVerificationTests(TestDbFixture fixture) => _db = fixture.Db!;
+    private readonly TestDbContext _db = fixture.Db!;
 
     #endregion
 

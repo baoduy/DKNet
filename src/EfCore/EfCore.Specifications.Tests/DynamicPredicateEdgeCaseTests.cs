@@ -5,17 +5,11 @@ namespace EfCore.Specifications.Tests;
 /// <summary>
 ///     Edge case tests for DynamicPredicateBuilder and DynamicPredicateExtensions
 /// </summary>
-public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
+public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixture<TestDbFixture>
 {
     #region Fields
 
-    private readonly TestDbContext _db;
-
-    #endregion
-
-    #region Constructors
-
-    public DynamicPredicateEdgeCaseTests(TestDbFixture fixture) => _db = fixture.Db!;
+    private readonly TestDbContext _db = fixture.Db!;
 
     #endregion
 
@@ -505,4 +499,3 @@ public class DynamicPredicateEdgeCaseTests : IClassFixture<TestDbFixture>
 
     #endregion
 }
-

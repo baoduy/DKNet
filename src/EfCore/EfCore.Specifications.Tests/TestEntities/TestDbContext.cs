@@ -1,16 +1,18 @@
 namespace EfCore.Specifications.Tests.TestEntities;
 
-public class TestDbContext : DbContext
+public class TestDbContext(DbContextOptions options) : DbContext(options)
 {
-    public TestDbContext(DbContextOptions options) : base(options)
-    {
-    }
+    #region Properties
 
-    public DbSet<Product> Products => Set<Product>();
     public DbSet<Category> Categories => Set<Category>();
-    public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductTag> ProductTags => Set<ProductTag>();
+
+    #endregion
+
+    #region Methods
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,10 +27,7 @@ public class TestDbContext : DbContext
                 .HasForeignKey(e => e.CategoryId);
         });
 
-        modelBuilder.Entity<Category>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-        });
+        modelBuilder.Entity<Category>(entity => { entity.HasKey(e => e.Id); });
 
         modelBuilder.Entity<Order>(entity =>
         {
@@ -56,5 +55,6 @@ public class TestDbContext : DbContext
                 .HasForeignKey(e => e.ProductId);
         });
     }
-}
 
+    #endregion
+}
