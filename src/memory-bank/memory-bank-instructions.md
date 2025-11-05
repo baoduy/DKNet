@@ -13,14 +13,17 @@ This document defines how GitHub Copilot maintains project memory and context ac
 * No exceptions.
 * Use this checklist before any work:
 
-  * [ ] Read `projectbrief.md`
-  * [ ] Read `productContext.md`
-  * [ ] Read `systemPatterns.md`
-  * [ ] Read `techContext.md`
-  * [ ] Read `activeContext.md`
-  * [ ] Read `progress.md`
-  * [ ] Read `copilot-rules.md`
+  * [ ] Read `README.md` (Start here - navigation index)
+  * [ ] Read `activeContext.md` (Current focus: Dynamic Predicate System)
+  * [ ] Read `copilot-quick-reference.md` (Quick patterns & snippets)
+  * [ ] Read `systemPatterns.md` (Specification Pattern, Repository, etc.)
+  * [ ] Read `copilot-rules.md` (Complete coding standards - 8000+ words)
+  * [ ] Read `techContext.md` (.NET 9, EF Core 9, TestContainers)
+  * [ ] Read `productContext.md` (DKNet Framework purpose & features)
+  * [ ] Read `progress-detailed.md` (Roadmap & metrics)
   * [ ] Read any additional context files in `/memory-bank/`
+
+**Priority Order**: README → activeContext → copilot-quick-reference → systemPatterns → copilot-rules
 
 ---
 
