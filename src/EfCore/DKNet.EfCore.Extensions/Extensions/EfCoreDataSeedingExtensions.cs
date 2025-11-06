@@ -25,8 +25,10 @@ public static class EfCoreDataSeedingExtensions
     {
         if (assemblies == null || assemblies.Count == 0) return [];
 
-        var types = assemblies.Extract()
+        var types = assemblies
+            .Extract()
             .Classes()
+            .NotAbstract()
             .IsInstanceOf<IDataSeedingConfiguration>();
 
         // Materialize to array to avoid deferred execution and potential multiple enumeration problems
