@@ -11,7 +11,7 @@
         <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
-        <NoWarn>$(NoWarn);CS1591;SA1600</NoWarn>
+        <NoWarn>$(NoWarn);CS1591;SA1600;CA1826</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
