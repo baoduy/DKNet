@@ -67,7 +67,7 @@
         <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10"/>
-        <PackageVersion Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="9.6.9"/>
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="9.6.10"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10"/>
@@ -117,7 +117,7 @@
         <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.3.4"/>
         <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0"/>
         <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0"/>
-        <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.6.9"/>
+        <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.6.10"/>
         <PackageVersion Include="System.Memory.Data" Version="9.0.10"/>
         <PackageVersion Include="Testcontainers.Azurite" Version="4.8.1"/>
         <PackageVersion Include="TestContainers.Container.Database.MsSql" Version="1.5.4"/>
