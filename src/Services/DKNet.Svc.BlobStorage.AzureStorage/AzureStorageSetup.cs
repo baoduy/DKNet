@@ -15,39 +15,33 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class AzureStorageSetup
 {
-    #region Methods
-
-    /// <summary>
-    ///     Registers the Azure storage adapter and binds <see cref="AzureStorageOptions" /> from configuration.
-    /// </summary>
     /// <param name="services">The service collection to register services into.</param>
-    /// <param name="config">The configuration <see cref="AzureStorageOptions" /></param>
-    /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
-    public static IServiceCollection AddAzureStorageAdapter(
-        this IServiceCollection services,
-        Action<AzureStorageOptions> config)
+    extension(IServiceCollection services)
     {
-        var option = new AzureStorageOptions();
-        config.Invoke(option);
-        return services
-            .AddSingleton(option)
-            .AddScoped<IBlobService, AzureStorageBlobService>();
-    }
+        /// <summary>
+        ///     Registers the Azure storage adapter and binds <see cref="AzureStorageOptions" /> from configuration.
+        /// </summary>
+        /// <param name="config">The configuration <see cref="AzureStorageOptions" /></param>
+        /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
+        public IServiceCollection AddAzureStorageAdapter(Action<AzureStorageOptions> config)
+        {
+            var option = new AzureStorageOptions();
+            config.Invoke(option);
+            return services
+                .AddSingleton(option)
+                .AddScoped<IBlobService, AzureStorageBlobService>();
+        }
 
-    /// <summary>
-    ///     Registers the Azure storage adapter and binds <see cref="AzureStorageOptions" /> from configuration.
-    /// </summary>
-    /// <param name="services">The service collection to register services into.</param>
-    /// <param name="configuration">Application configuration used to bind provider options.</param>
-    /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
-    public static IServiceCollection AddAzureStorageAdapter(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        return services
-            .Configure<AzureStorageOptions>(o => configuration.GetSection(AzureStorageOptions.Name).Bind(o))
-            .AddScoped<IBlobService, AzureStorageBlobService>();
+        /// <summary>
+        ///     Registers the Azure storage adapter and binds <see cref="AzureStorageOptions" /> from configuration.
+        /// </summary>
+        /// <param name="configuration">Application configuration used to bind provider options.</param>
+        /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
+        public IServiceCollection AddAzureStorageAdapter(IConfiguration configuration)
+        {
+            return services
+                .Configure<AzureStorageOptions>(o => configuration.GetSection(AzureStorageOptions.Name).Bind(o))
+                .AddScoped<IBlobService, AzureStorageBlobService>();
+        }
     }
-
-    #endregion
 }

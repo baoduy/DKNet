@@ -1,9 +1,9 @@
 using System.Net;
-using DKNet.AspCore.SlimBus;
+using DKNet.AspCore.Extensions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Shouldly;
 
-namespace AspCore.SlimBus.Tests;
+namespace AspCore.Extensions.Tests;
 
 public class ProblemDetailsExtensionsModelStateTests
 {

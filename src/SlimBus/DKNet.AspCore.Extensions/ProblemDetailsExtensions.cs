@@ -9,7 +9,7 @@ using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace DKNet.AspCore.SlimBus;
+namespace DKNet.AspCore.Extensions;
 
 /// <summary>
 ///     Extensions that produce <see cref="ProblemDetails" /> from common error carriers used by this project
@@ -58,10 +58,12 @@ public static class ProblemDetailsExtensions
 
         if (result.IsSuccess) return null;
 
-        var errors = result.Errors.Select(e => e.Message).Where(m => !string.IsNullOrWhiteSpace(m))
-            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var firstMessage = errors.FirstOrDefault() ?? statusCode.ToString();
+        var errors = result.Errors.Select(e => e.Message)
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
+        var firstMessage = errors.FirstOrDefault() ?? statusCode.ToString();
         return CreateProblemDetails(statusCode, firstMessage, errors);
     }
 
@@ -84,7 +86,6 @@ public static class ProblemDetailsExtensions
                 errors.Add(err.ErrorMessage);
 
         var firstMessage = errors.FirstOrDefault() ?? nameof(HttpStatusCode.BadRequest);
-
         return CreateProblemDetails(HttpStatusCode.BadRequest, firstMessage, errors);
     }
 

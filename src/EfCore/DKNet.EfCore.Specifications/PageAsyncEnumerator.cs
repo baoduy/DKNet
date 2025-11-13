@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 // Copyright (c) https://drunkcoding.net. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
@@ -5,20 +7,20 @@
 // File: PageAsyncEnumerator.cs
 // Description: Helper that enumerates an IQueryable in pages asynchronously to avoid loading entire result sets.
 
-namespace DKNet.EfCore.Extensions.Extensions;
+namespace DKNet.EfCore.Specifications;
 
 /// <summary>
 ///     Asynchronously enumerates an <see cref="IQueryable{T}" /> in pages of a fixed size.
 ///     Useful to stream large query results without materializing the full result set in memory.
 /// </summary>
-/// <typeparam name="T">Element type of the query.</typeparam>
-public sealed class EfCorePageAsyncEnumerator<T> : IAsyncEnumerable<T>
+/// <typeparam name="TEntity">Element type of the query.</typeparam>
+internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEntity>
 {
     #region Fields
 
     private readonly int _pageSize;
 
-    private readonly IQueryable<T> _query;
+    private readonly IOrderedQueryable<TEntity> _query;
     private int _currentPage;
     private bool _hasMorePages = true;
 
@@ -31,7 +33,7 @@ public sealed class EfCorePageAsyncEnumerator<T> : IAsyncEnumerable<T>
     /// </summary>
     /// <param name="query">The query to page through. Must not be null.</param>
     /// <param name="pageSize">The page size to use; must be greater than zero.</param>
-    public EfCorePageAsyncEnumerator(IQueryable<T> query, int pageSize)
+    public EfCorePageAsyncEnumerator(IOrderedQueryable<TEntity> query, int pageSize)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         if (pageSize <= 0)
@@ -48,7 +50,7 @@ public sealed class EfCorePageAsyncEnumerator<T> : IAsyncEnumerable<T>
     /// </summary>
     /// <param name="cancellationToken">Cancellation token to cancel the enumeration.</param>
     /// <returns>An async enumerator that streams items.</returns>
-    public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    public async IAsyncEnumerator<TEntity> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         while (true)
         {
@@ -70,8 +72,8 @@ public sealed class EfCorePageAsyncEnumerator<T> : IAsyncEnumerable<T>
     ///     Retrieves the next page of results from the underlying query.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for the async DB call.</param>
-    /// <returns>A read-only list representing the next page (may be empty).</returns>
-    private async Task<IReadOnlyList<T>> GetNextPageAsync(CancellationToken cancellationToken = default)
+    /// <returns>A read-only list representing the next page (maybe empty).</returns>
+    private async Task<IReadOnlyList<TEntity>> GetNextPageAsync(CancellationToken cancellationToken = default)
     {
         if (!_hasMorePages) return [];
 
@@ -97,16 +99,9 @@ public static class PageAsyncEnumeratorExtensions
 {
     #region Methods
 
-    /// <summary>
-    ///     Converts an <see cref="IQueryable{T}" /> into an <see cref="IAsyncEnumerable{T}" /> that pages results.
-    /// </summary>
-    /// <typeparam name="TEntity">Element type.</typeparam>
-    /// <param name="query">The query to page through.</param>
-    /// <param name="pageSize">Size of each page (default 100).</param>
-    /// <returns>An async enumerable that yields items from the query in page-sized batches.</returns>
-    public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(this IQueryable<TEntity> query,
-        int pageSize = 100) =>
-        new EfCorePageAsyncEnumerator<TEntity>(query, pageSize);
+    public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(
+        this IOrderedQueryable<TEntity> query, int pageSize = 100) where TEntity : class
+        => new EfCorePageAsyncEnumerator<TEntity>(query, pageSize);
 
     #endregion
 }

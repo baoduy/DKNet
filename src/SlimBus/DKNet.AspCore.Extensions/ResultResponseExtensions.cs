@@ -7,7 +7,7 @@
 using FluentResults;
 using Microsoft.AspNetCore.Http;
 
-namespace DKNet.AspCore.SlimBus;
+namespace DKNet.AspCore.Extensions;
 
 /// <summary>
 ///     Helper extensions that convert FluentResults result objects into minimal-API <see cref="IResult" /> responses
@@ -22,7 +22,7 @@ public static class ResultResponseExtensions
     ///     On success the method returns:
     ///     - Created(location, value) when <paramref name="isCreated" /> is <c>true</c>.
     ///     - Ok() when the value is null and success.
-    ///     - Json(value) when the value is non-null and success.
+    ///     - JSON(value) when the value is non-null and success.
     /// </summary>
     /// <typeparam name="TObject">The result value type.</typeparam>
     /// <param name="result">The Fluent result to convert. Must not be null.</param>

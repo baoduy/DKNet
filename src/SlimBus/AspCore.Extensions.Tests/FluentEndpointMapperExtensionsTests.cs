@@ -1,9 +1,10 @@
+using DKNet.AspCore.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Shouldly;
 using static DKNet.SlimBus.Extensions.Fluents;
 
-namespace AspCore.SlimBus.Tests;
+namespace AspCore.Extensions.Tests;
 
 public class FluentEndpointMapperExtensionsTests
 {

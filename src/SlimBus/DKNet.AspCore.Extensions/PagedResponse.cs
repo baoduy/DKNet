@@ -6,26 +6,26 @@
 
 using X.PagedList;
 
-namespace DKNet.AspCore.SlimBus;
+namespace DKNet.AspCore.Extensions;
 
 /// <summary>
 ///     Represents a paged result returned from a query including paging metadata and the items for the current page.
 /// </summary>
 /// <typeparam name="TResult">Type of the items contained in the page.</typeparam>
-public sealed record PagedResult<TResult>
+public sealed record PagedResponse<TResult>
 {
     #region Constructors
 
     /// <summary>
     ///     Creates an empty paged result.
     /// </summary>
-    public PagedResult() => Items = [];
+    public PagedResponse() => Items = [];
 
     /// <summary>
     ///     Creates a paged result from an <see cref="IPagedList{T}" /> produced by X.PagedList.
     /// </summary>
     /// <param name="list">The source paged list.</param>
-    public PagedResult(IPagedList<TResult> list)
+    public PagedResponse(IPagedList<TResult> list)
     {
         ArgumentNullException.ThrowIfNull(list);
 
@@ -33,7 +33,7 @@ public sealed record PagedResult<TResult>
         PageSize = list.PageSize;
         PageCount = list.PageCount;
         TotalItemCount = list.TotalItemCount;
-        Items = list.ToList();
+        Items = [.. list];
     }
 
     #endregion

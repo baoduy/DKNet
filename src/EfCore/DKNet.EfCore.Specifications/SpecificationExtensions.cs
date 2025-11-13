@@ -22,22 +22,14 @@ internal static class SpecificationExtensions
     {
         ArgumentNullException.ThrowIfNull(specification);
 
-        if (specification.IsIgnoreQueryFilters)
-        {
-            queryable = queryable.IgnoreQueryFilters();
-        }
+        if (specification.IsIgnoreQueryFilters) queryable = queryable.IgnoreQueryFilters();
 
-        if (specification.FilterQuery is not null)
-        {
-            queryable = queryable.Where(specification.FilterQuery);
-        }
+        if (specification.FilterQuery is not null) queryable = queryable.Where(specification.FilterQuery);
 
         if (specification.IncludeQueries.Count > 0)
-        {
             queryable = specification.IncludeQueries.Aggregate(
                 queryable,
                 (current, includeQuery) => current.Include(includeQuery));
-        }
 
         // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
         var hasOrderBy = specification.OrderByQueries.Count > 0;
@@ -49,7 +41,6 @@ internal static class SpecificationExtensions
         {
             var isFirst = true;
             foreach (var expr in specification.OrderByQueries)
-            {
                 if (isFirst)
                 {
                     ordered = queryable.OrderBy(expr);
@@ -59,7 +50,6 @@ internal static class SpecificationExtensions
                 {
                     ordered = ordered!.ThenBy(expr);
                 }
-            }
         }
 
         // Then apply OrderByDescending queries
@@ -69,7 +59,6 @@ internal static class SpecificationExtensions
             {
                 var isFirst = true;
                 foreach (var expr in specification.OrderByDescendingQueries)
-                {
                     if (isFirst)
                     {
                         ordered = queryable.OrderByDescending(expr);
@@ -79,7 +68,6 @@ internal static class SpecificationExtensions
                     {
                         ordered = ordered!.ThenByDescending(expr);
                     }
-                }
             }
             else
             {
@@ -89,12 +77,16 @@ internal static class SpecificationExtensions
             }
         }
 
-        if (ordered != null)
-        {
-            queryable = ordered;
-        }
+        if (ordered != null) queryable = ordered;
 
         return queryable;
+    }
+
+    public static void EnsureSpecHasOrdering<TEntity>(this ISpecification<TEntity> specification)
+        where TEntity : class
+    {
+        if (specification.OrderByQueries.Count == 0 && specification.OrderByDescendingQueries.Count == 0)
+            throw new NotSupportedException("The specification must include at least one ordering.");
     }
 
     #endregion

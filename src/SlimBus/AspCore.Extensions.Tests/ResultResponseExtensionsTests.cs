@@ -1,9 +1,9 @@
-using DKNet.AspCore.SlimBus;
+using DKNet.AspCore.Extensions;
 using FluentResults;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Shouldly;
 
-namespace AspCore.SlimBus.Tests;
+namespace AspCore.Extensions.Tests;
 
 public class ResultResponseExtensionsTests
 {

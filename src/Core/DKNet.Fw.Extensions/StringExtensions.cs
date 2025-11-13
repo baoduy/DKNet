@@ -15,28 +15,6 @@ public static class StringExtensions
     #region Methods
 
     /// <summary>
-    ///     Extracts the first sequence of numeric characters from the input string.
-    /// </summary>
-    /// <param name="input">The string to search within.</param>
-    /// <returns>A string containing the extracted numeric characters.</returns>
-    public static string ExtractDigits(this string input)
-    {
-        return new string([.. input.Where(c => char.IsDigit(c) || c is '.' or ',' or '-')]);
-    }
-
-    /// <summary>
-    ///     Determines whether the specified string represents a valid number.
-    /// </summary>
-    /// <param name="input">The string to evaluate.</param>
-    /// <returns><c>true</c> if the string is a valid number; otherwise, <c>false</c>.</returns>
-    public static bool IsNumber(this string input)
-    {
-        return !string.IsNullOrWhiteSpace(input)
-               && input.Count(c => c == '.') <= 1 && !input.Contains(",,", StringComparison.OrdinalIgnoreCase) &&
-               input.LastIndexOf('-') <= 0 && input.All(c => char.IsDigit(c) || c == '.' || c == ',' || c == '-');
-    }
-
-    /// <summary>
     ///     Checks if the specified property can store a string or a value type.
     /// </summary>
     /// <param name="propertyInfo">The <see cref="PropertyInfo" /> of the property to check.</param>
@@ -51,18 +29,37 @@ public static class StringExtensions
     /// <returns><c>true</c> if the type is a string or value type; otherwise, <c>false</c>.</returns>
     public static bool IsStringOrValueType(this Type? type)
     {
-        if (type == null)
-        {
-            return false;
-        }
+        if (type == null) return false;
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-        {
             type = type.GenericTypeArguments[0];
-        }
 
         return type == typeof(string) || type.IsValueType;
     }
 
     #endregion
+
+    /// <param name="input">The string to search within.</param>
+    extension(string input)
+    {
+        /// <summary>
+        ///     Extracts the first sequence of numeric characters from the input string.
+        /// </summary>
+        /// <returns>A string containing the extracted numeric characters.</returns>
+        public string ExtractDigits()
+        {
+            return new string([.. input.Where(c => char.IsDigit(c) || c is '.' or ',' or '-')]);
+        }
+
+        /// <summary>
+        ///     Determines whether the specified string represents a valid number.
+        /// </summary>
+        /// <returns><c>true</c> if the string is a valid number; otherwise, <c>false</c>.</returns>
+        public bool IsNumber()
+        {
+            return !string.IsNullOrWhiteSpace(input)
+                   && input.Count(c => c == '.') <= 1 && !input.Contains(",,", StringComparison.OrdinalIgnoreCase) &&
+                   input.LastIndexOf('-') <= 0 && input.All(c => char.IsDigit(c) || c == '.' || c == ',' || c == '-');
+        }
+    }
 }

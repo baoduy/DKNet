@@ -1,14 +1,20 @@
 using System.Net;
 using System.Text.Json;
-using DKNet.AspCore.SlimBus;
+using DKNet.AspCore.Extensions;
 using FluentResults;
 using Shouldly;
 using Xunit.Abstractions;
 
-namespace AspCore.SlimBus.Tests;
+namespace AspCore.Extensions.Tests;
 
 public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
 {
+    #region Fields
+
+    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+
+    #endregion
+
     #region Methods
 
     [Fact]
@@ -18,7 +24,7 @@ public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
         rs!.Status.ShouldBe((int)HttpStatusCode.BadRequest);
         rs.Title.ShouldBe("Error");
 
-        testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, JsonSerializerOptions.Default));
+        testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, Options));
     }
 
     [Fact]
@@ -37,7 +43,7 @@ public class ToProblemDetailsTests(ITestOutputHelper testOutputHelper)
             .ToProblemDetails();
 
         rs!.Status.ShouldBe((int)HttpStatusCode.BadRequest);
-        testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, JsonSerializerOptions.Default));
+        testOutputHelper.WriteLine(JsonSerializer.Serialize(rs, Options));
     }
 
     #endregion
