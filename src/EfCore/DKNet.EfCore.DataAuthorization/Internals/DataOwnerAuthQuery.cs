@@ -22,6 +22,12 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
     "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields")]
 internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 {
+    #region Properties
+
+    public override string FilterKey => nameof(DataOwnerAuthQuery);
+
+    #endregion
+
     #region Methods
 
     protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder) =>

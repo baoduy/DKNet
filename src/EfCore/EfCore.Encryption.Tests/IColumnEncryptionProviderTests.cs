@@ -59,7 +59,7 @@ internal class ReverseEncryptionProvider : IColumnEncryptionProvider
     #endregion
 }
 
-public class IColumnEncryptionProviderTests
+public class ColumnEncryptionProviderTests
 {
     #region Methods
 

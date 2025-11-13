@@ -27,6 +27,16 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
 
     #endregion
 
+    #region Properties
+
+    /// <summary>
+    ///     The query filter key used to identify this filter.
+    ///     Support from EF Core 10 onwards for named query filters.
+    /// </summary>
+    public abstract string FilterKey { get; }
+
+    #endregion
+
     #region Methods
 
     /// <summary>
@@ -56,9 +66,8 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     private void ApplyQueryFilter<TEntity>(ModelBuilder modelBuilder, DbContext context)
         where TEntity : class
     {
-        // TODO: convert to named query filter when migrate to EFCore 10
         var filter = HasQueryFilter<TEntity>(context);
-        if (filter is not null) modelBuilder.Entity<TEntity>().HasQueryFilter(filter);
+        if (filter is not null) modelBuilder.Entity<TEntity>().HasQueryFilter(FilterKey, filter);
     }
 
     /// <summary>
