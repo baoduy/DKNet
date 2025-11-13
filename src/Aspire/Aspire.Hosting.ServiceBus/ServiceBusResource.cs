@@ -20,15 +20,9 @@ public sealed class ServiceBusResource(string name) : ContainerResource(name), I
 
     #region Properties
 
-    /// <summary>
-    ///     Gets the primary endpoint reference for the Service Bus resource.
-    /// </summary>
-    public EndpointReference PrimaryEndpoint =>
-        this._primaryEndpoint ??= new EndpointReference(this, PrimaryEndpointName);
-
     private ReferenceExpression ConnectionString =>
         ReferenceExpression.Create(
-            $"Endpoint=sb://{this.PrimaryEndpoint.Host};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;");
+            $"Endpoint=sb://{PrimaryEndpoint.Host};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;");
 
     /// <summary>
     ///     Gets the connection string expression for the Service Bus resource.
@@ -36,7 +30,13 @@ public sealed class ServiceBusResource(string name) : ContainerResource(name), I
     public ReferenceExpression ConnectionStringExpression =>
         this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
             ? connectionStringAnnotation.Resource.ConnectionStringExpression
-            : this.ConnectionString;
+            : ConnectionString;
+
+    /// <summary>
+    ///     Gets the primary endpoint reference for the Service Bus resource.
+    /// </summary>
+    public EndpointReference PrimaryEndpoint =>
+        _primaryEndpoint ??= new EndpointReference(this, PrimaryEndpointName);
 
     #endregion
 
@@ -50,7 +50,7 @@ public sealed class ServiceBusResource(string name) : ContainerResource(name), I
     public ValueTask<string?> GetConnectionStringAsync(CancellationToken cancellationToken = default) =>
         this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation)
             ? connectionStringAnnotation.Resource.GetConnectionStringAsync(cancellationToken)
-            : this.ConnectionString.GetValueAsync(cancellationToken);
+            : ConnectionString.GetValueAsync(cancellationToken);
 
     #endregion
 

@@ -18,15 +18,15 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public async Task DatabaseConnection_ShouldOpenAndClose()
     {
         // Act
-        await this._db.Database.OpenConnectionAsync();
-        var connectionState = this._db.Database.GetDbConnection().State;
+        await _db.Database.OpenConnectionAsync();
+        var connectionState = _db.Database.GetDbConnection().State;
 
         // Assert
         connectionState.ShouldBe(ConnectionState.Open);
 
         // Cleanup
-        await this._db.Database.CloseConnectionAsync();
-        connectionState = this._db.Database.GetDbConnection().State;
+        await _db.Database.CloseConnectionAsync();
+        connectionState = _db.Database.GetDbConnection().State;
         connectionState.ShouldBe(ConnectionState.Closed);
     }
 
@@ -34,7 +34,7 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public void DatabaseProvider_ShouldBeSqlServer()
     {
         // Act
-        var providerName = this._db.Database.ProviderName;
+        var providerName = _db.Database.ProviderName;
 
         // Assert
         providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
@@ -44,24 +44,24 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
         // This test verifies the format processing logic
-        var result = await this._db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
+        var result = await _db.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
         result.ShouldNotBeNullOrEmpty();
     }
 
     [Fact]
     public async Task SequenceValueTestAsync()
     {
-        var val1 = await this._db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
+        var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
         val1!.Value.ShouldBeGreaterThan((short)0);
 
-        var val2 = await this._db.NextSeqValue<SequencesTest, int>(SequencesTest.Order);
+        var val2 = await _db.NextSeqValue<SequencesTest, int>(SequencesTest.Order);
         val2!.Value.ShouldBeGreaterThan(0);
     }
 
     [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {
-        var val1 = await this._db.NextSeqValueWithFormat(SequencesTest.Invoice);
+        var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
     }
 
@@ -74,11 +74,11 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
             FirstName = "Test",
             LastName = "User"
         };
-        this._db.Set<User>().Add(user);
-        await this._db.SaveChangesAsync();
+        _db.Set<User>().Add(user);
+        await _db.SaveChangesAsync();
 
         // Create new contexts with same configuration
-        var dbOptions = this._db.GetService<IDbContextServices>().ContextOptions;
+        var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
 
         await using var db1 = new MyDbContext(dbOptions);
         await using var db2 = new MyDbContext(dbOptions);
@@ -101,10 +101,10 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestCreateWithSqlDbAsync()
     {
-        this._db.ChangeTracker.Clear();
+        _db.ChangeTracker.Clear();
 
         //Create User with Address
-        this._db.Set<User>().Add(
+        _db.Set<User>().Add(
             new User("Duy")
             {
                 FirstName = "Duy",
@@ -120,10 +120,10 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
                 }
             });
 
-        var count = await this._db.SaveChangesAsync();
+        var count = await _db.SaveChangesAsync();
         (count >= 1).ShouldBeTrue();
 
-        var users = await this._db.Set<User>().ToListAsync();
+        var users = await _db.Set<User>().ToListAsync();
 
         (users.Count >= 1).ShouldBeTrue();
         users.TrueForAll(u => u.RowVersion != null).ShouldBeTrue();
@@ -132,17 +132,17 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestDeleteWithSqlDbAsync()
     {
-        await this.TestCreateWithSqlDbAsync();
+        await TestCreateWithSqlDbAsync();
 
-        var user = await this._db.Set<User>().Include(u => u.Addresses)
+        var user = await _db.Set<User>().Include(u => u.Addresses)
             .OrderByDescending(c => c.CreatedOn).FirstAsync();
 
-        this._db.RemoveRange(user.Addresses);
-        this._db.Remove(user);
+        _db.RemoveRange(user.Addresses);
+        _db.Remove(user);
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        var count = await this._db.Set<User>().CountAsync(u => u.Id == user.Id);
+        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
 
         (count == 0).ShouldBeTrue();
     }
@@ -150,17 +150,17 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task TestUpdateWithSqlDbAsync()
     {
-        await this.TestCreateWithSqlDbAsync();
+        await TestCreateWithSqlDbAsync();
 
-        var user = await this._db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn)
+        var user = await _db.Set<User>().Include(u => u.Addresses).OrderByDescending(u => u.CreatedOn)
             .FirstAsync();
 
         user.FirstName = "Steven";
         user.Addresses.Last().Street = "Steven Street";
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        user = await this._db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
+        user = await _db.Set<User>().Include(i => i.Addresses).OrderByDescending(u => u.CreatedOn).FirstAsync();
 
         string.Equals(user.FirstName, "Steven", StringComparison.OrdinalIgnoreCase).ShouldBeTrue();
 

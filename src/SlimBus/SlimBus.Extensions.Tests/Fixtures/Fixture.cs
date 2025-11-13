@@ -11,7 +11,7 @@ public sealed class Fixture : IAsyncDisposable
 
     public Fixture()
     {
-        this.ServiceProvider = new ServiceCollection()
+        ServiceProvider = new ServiceCollection()
             .AddLogging()
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
@@ -32,7 +32,7 @@ public sealed class Fixture : IAsyncDisposable
             })
             .BuildServiceProvider();
 
-        var db = this.ServiceProvider.GetRequiredService<TestDbContext>();
+        var db = ServiceProvider.GetRequiredService<TestDbContext>();
         db.Database.EnsureCreated();
     }
 
@@ -46,7 +46,7 @@ public sealed class Fixture : IAsyncDisposable
 
     #region Methods
 
-    public ValueTask DisposeAsync() => this.ServiceProvider.DisposeAsync();
+    public ValueTask DisposeAsync() => ServiceProvider.DisposeAsync();
 
     #endregion
 }

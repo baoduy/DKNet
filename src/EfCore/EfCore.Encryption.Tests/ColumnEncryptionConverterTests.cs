@@ -21,7 +21,7 @@ public class ColumnEncryptionConverterTests
     {
         var key = new byte[32];
         RandomNumberGenerator.Fill(key);
-        this._encryptionProvider = new AesGcmColumnEncryptionProvider(key);
+        _encryptionProvider = new AesGcmColumnEncryptionProvider(key);
     }
 
     #endregion
@@ -32,7 +32,7 @@ public class ColumnEncryptionConverterTests
     public void ColumnEncryptionConverter_ShouldInheritFromValueConverter()
     {
         // Arrange & Act
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Assert
         converter.ShouldBeAssignableTo<ValueConverter<string?, string?>>();
@@ -42,7 +42,7 @@ public class ColumnEncryptionConverterTests
     public void Constructor_WithValidProvider_ShouldSucceed()
     {
         // Act
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Assert
         converter.ShouldNotBeNull();
@@ -62,9 +62,9 @@ public class ColumnEncryptionConverterTests
     public void ConvertFromProvider_WithCiphertext_ShouldDecrypt()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
         const string plaintext = "Sensitive Data";
-        var encrypted = this._encryptionProvider.Encrypt(plaintext);
+        var encrypted = _encryptionProvider.Encrypt(plaintext);
 
         // Act
         var decrypted = converter.ConvertFromProvider(encrypted);
@@ -77,7 +77,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertFromProvider_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Act
         var result = converter.ConvertFromProvider(string.Empty);
@@ -90,7 +90,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertFromProvider_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Act
         var result = converter.ConvertFromProvider(null);
@@ -103,7 +103,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertToProvider_CalledMultipleTimes_ShouldProduceDifferentResults()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
         const string input = "Same input";
 
         // Act
@@ -120,7 +120,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertToProvider_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Act
         var result = converter.ConvertToProvider(string.Empty);
@@ -133,7 +133,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertToProvider_WithNull_ShouldReturnNull()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Act
         var result = converter.ConvertToProvider(null);
@@ -146,7 +146,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertToProvider_WithPlaintext_ShouldEncrypt()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
         const string plaintext = "Sensitive Data";
 
         // Act
@@ -161,7 +161,7 @@ public class ColumnEncryptionConverterTests
     public void ConvertToProviderThenFromProvider_ShouldReturnOriginal()
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
         const string original = "Test Message";
 
         // Act
@@ -180,7 +180,7 @@ public class ColumnEncryptionConverterTests
     public void RoundTrip_WithVariousInputs_ShouldPreserveData(string input)
     {
         // Arrange
-        var converter = new ColumnEncryptionConverter(this._encryptionProvider);
+        var converter = new ColumnEncryptionConverter(_encryptionProvider);
 
         // Act
         var encrypted = converter.ConvertToProvider(input);

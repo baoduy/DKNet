@@ -22,7 +22,7 @@ internal sealed class EventHook(
     /// <param name="cancellationToken"></param>
     public override async Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        var events = context.GetEventObjects(this._mapper);
+        var events = context.GetEventObjects(_mapper);
         var publishers = from entityEventItem in events
             from eventPublisher in eventPublishers
             select eventPublisher.PublishAsync(entityEventItem, cancellationToken);

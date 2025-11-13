@@ -54,10 +54,7 @@ internal sealed class TokenResolver : ITokenResolver
 
         foreach (var obj in data)
         {
-            if (obj == null)
-            {
-                continue;
-            }
+            if (obj == null) continue;
 
             var value = obj switch
             {
@@ -66,10 +63,7 @@ internal sealed class TokenResolver : ITokenResolver
                 _ => TryGetValueFromObject(obj, propertyName)
             };
 
-            if (value != null)
-            {
-                return value;
-            }
+            if (value != null) return value;
         }
 
         return null;
@@ -77,38 +71,30 @@ internal sealed class TokenResolver : ITokenResolver
 
     public Task<object?> ResolveAsync(IToken token, params object?[] data)
     {
-        return Task.Run(() => this.Resolve(token, data));
+        return Task.Run(() => Resolve(token, data));
     }
 
     private static object? TryGetValueFromCollection(IEnumerable<object?> collection, string keyName)
     {
         foreach (var item in collection)
-        {
             switch (item)
             {
                 case null: continue;
                 case IEnumerable<object?> objArray:
                 {
                     var value = TryGetValueFromCollection(objArray, keyName);
-                    if (value is not null)
-                    {
-                        return value;
-                    }
+                    if (value is not null) return value;
 
                     break;
                 }
                 default:
                 {
                     var value = TryGetValueFromObject(item, keyName);
-                    if (value is not null)
-                    {
-                        return value;
-                    }
+                    if (value is not null) return value;
 
                     break;
                 }
             }
-        }
 
         return null;
     }
@@ -116,9 +102,7 @@ internal sealed class TokenResolver : ITokenResolver
     private static string? TryGetValueFromDictionary(IDictionary dictionary, string keyName)
     {
         if (dictionary is not IDictionary<string, string> objects)
-        {
             throw new ArgumentException("Only IDictionary[string, string] is supported", nameof(dictionary));
-        }
 
         var key = objects.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
         return key is not null ? objects[key] : null;

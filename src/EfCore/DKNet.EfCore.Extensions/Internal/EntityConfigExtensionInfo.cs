@@ -19,10 +19,8 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extensi
     public override void PopulateDebugInfo(IDictionary<string, string>? debugInfo)
     {
         if (debugInfo is not null)
-        {
             debugInfo["Core:" + nameof(EntityAutoConfigRegister)] =
-                this.GetServiceProviderHashCode().ToString(CultureInfo.CurrentCulture);
-        }
+                GetServiceProviderHashCode().ToString(CultureInfo.CurrentCulture);
     }
 
     public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other) => true;

@@ -15,7 +15,7 @@ public class Root(string name, string ownedBy)
 
     #region Properties
 
-    [BackingField(nameof(_entities))] public IReadOnlyCollection<Entity> Entities => this._entities;
+    [BackingField(nameof(_entities))] public IReadOnlyCollection<Entity> Entities => _entities;
 
     [Required] public string Name { get; private set; } = name;
 
@@ -25,13 +25,13 @@ public class Root(string name, string ownedBy)
 
     public void AddEntity(string name)
     {
-        var entity = new Entity(name, this.Id);
-        this._entities.Add(entity);
+        var entity = new Entity(name, Id);
+        _entities.Add(entity);
     }
 
     public void UpdateName(string name)
     {
-        this.Name = name;
+        Name = name;
     }
 
     #endregion
@@ -55,9 +55,9 @@ public class Entity(string name, Guid rootId) : EntityBase<Guid>(Guid.Empty, "Te
 {
     #region Properties
 
-    public Guid RootId { get; private set; } = rootId;
-
     [Required] public string Name { get; private set; } = name;
+
+    public Guid RootId { get; private set; } = rootId;
 
     #endregion
 }

@@ -10,9 +10,9 @@ internal class TestDataKeyProvider : IDataOwnerProvider
 
     #region Methods
 
-    public ICollection<string> GetAccessibleKeys() => this._ownedKeys;
+    public ICollection<string> GetAccessibleKeys() => _ownedKeys;
 
-    public string GetOwnershipKey() => this._ownedKeys[0];
+    public string GetOwnershipKey() => _ownedKeys[0];
 
     #endregion
 }

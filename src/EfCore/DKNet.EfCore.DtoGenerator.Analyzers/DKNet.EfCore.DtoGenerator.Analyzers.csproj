@@ -1,9 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <IsRoslynComponent>true</IsRoslynComponent>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
+        <!-- Required for analyzer projects that reference Workspaces and implement code fixes -->
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
@@ -16,20 +21,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="Shouldly"/>
-        <PackageReference Include="xunit"/>
-        <PackageReference Include="xunit.runner.visualstudio"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Using Include="Xunit"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj"/>
-        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+        <PackageReference Include="Microsoft.CodeAnalysis"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all"/>
+        <PackageReference Include="System.Composition"/>
     </ItemGroup>
 
 </Project>

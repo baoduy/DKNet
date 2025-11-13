@@ -12,10 +12,7 @@ public class MemoryFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (this.Db != null)
-        {
-            await this.Db.DisposeAsync();
-        }
+        if (Db != null) await Db.DisposeAsync();
     }
 
     public async Task InitializeAsync()
@@ -36,8 +33,8 @@ public class MemoryFixture : IAsyncLifetime
             //.UseAutoDataSeeding()
             .Options;
 
-        this.Db = new MyDbContext(options);
-        await this.Db.Database.EnsureCreatedAsync();
+        Db = new MyDbContext(options);
+        await Db.Database.EnsureCreatedAsync();
     }
 
     #endregion

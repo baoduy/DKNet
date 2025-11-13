@@ -15,8 +15,8 @@ public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
     {
         var entity = new GuidEntity { Name = "Duy" };
 
-        this._db.Add(entity);
-        await this._db.SaveChangesAsync();
+        _db.Add(entity);
+        await _db.SaveChangesAsync();
         entity.Id.ShouldNotBe(Guid.Empty);
     }
 
@@ -25,8 +25,8 @@ public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
     {
         var entity = new GuidAuditEntity { Name = "Duy" };
 
-        this._db.Add(entity);
-        await this._db.SaveChangesAsync();
+        _db.Add(entity);
+        await _db.SaveChangesAsync();
 
         entity.Id.ShouldNotBe(Guid.Empty);
     }
@@ -39,7 +39,7 @@ public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
 
         entity.Name = "Hoang";
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         entity.Id.ToString().ShouldBe(oldId);
     }
@@ -52,7 +52,7 @@ public class GuidEntityTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
 
         entity.Name = "Hoang";
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         entity.Id.ToString().ShouldBe(oldId);
     }

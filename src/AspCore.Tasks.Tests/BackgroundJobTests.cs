@@ -141,13 +141,13 @@ public class BackgroundJobTests
 
         #region Properties
 
-        public int Value => this._count;
+        public int Value => _count;
 
         #endregion
 
         #region Methods
 
-        public void Increment() => Interlocked.Increment(ref this._count);
+        public void Increment() => Interlocked.Increment(ref _count);
 
         #endregion
     }

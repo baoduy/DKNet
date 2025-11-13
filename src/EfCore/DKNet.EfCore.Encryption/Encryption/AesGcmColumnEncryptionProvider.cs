@@ -31,17 +31,12 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
     /// <exception cref="ArgumentException">Thrown when key length is not 16, 24, or 32 bytes.</exception>
     public AesGcmColumnEncryptionProvider(byte[] key)
     {
-        if (key == null)
-        {
-            throw new ArgumentNullException(nameof(key), "Encryption key cannot be null.");
-        }
+        if (key == null) throw new ArgumentNullException(nameof(key), "Encryption key cannot be null.");
 
         if (key.Length != 16 && key.Length != 24 && key.Length != 32)
-        {
             throw new ArgumentException("Key length must be 16, 24, or 32 bytes", nameof(key));
-        }
 
-        this._key = key;
+        _key = key;
     }
 
     #endregion
@@ -57,17 +52,11 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
     /// <exception cref="InvalidOperationException">Thrown when decryption fails.</exception>
     public string? Decrypt(string? ciphertext)
     {
-        if (string.IsNullOrEmpty(ciphertext))
-        {
-            return ciphertext;
-        }
+        if (string.IsNullOrEmpty(ciphertext)) return ciphertext;
 
         var cipherData = Convert.FromBase64String(ciphertext);
 
-        if (cipherData.Length < IvSize + TagSize)
-        {
-            throw new ArgumentException("Invalid ciphertext format");
-        }
+        if (cipherData.Length < IvSize + TagSize) throw new ArgumentException("Invalid ciphertext format");
 
         var iv = new byte[IvSize];
         var tag = new byte[TagSize];
@@ -81,7 +70,7 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
         var plaintextBytes = new byte[ciphertextLength];
         try
         {
-            using var aesGcm = new AesGcm(this._key, TagSize);
+            using var aesGcm = new AesGcm(_key, TagSize);
             aesGcm.Decrypt(iv, actualCipherText, tag, plaintextBytes);
         }
         catch (CryptographicException)
@@ -100,10 +89,7 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
     /// <returns>The encrypted ciphertext encoded as Base64, or null if the input is null or empty.</returns>
     public string? Encrypt(string? plaintext)
     {
-        if (string.IsNullOrEmpty(plaintext))
-        {
-            return plaintext;
-        }
+        if (string.IsNullOrEmpty(plaintext)) return plaintext;
 
         var iv = new byte[IvSize];
         RandomNumberGenerator.Fill(iv);
@@ -113,7 +99,7 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
         var ciphertext = new byte[plaintextBytes.Length];
         var tag = new byte[TagSize];
 
-        using (var aesGcm = new AesGcm(this._key, TagSize))
+        using (var aesGcm = new AesGcm(_key, TagSize))
         {
             aesGcm.Encrypt(iv, plaintextBytes, ciphertext, tag);
         }

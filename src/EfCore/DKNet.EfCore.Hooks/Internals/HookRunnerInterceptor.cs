@@ -58,11 +58,12 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         RunningTypes type,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation(
-            "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
-            type,
-            context.BeforeSaveHooks.Count,
-            context.AfterSaveHooks.Count);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation(
+                "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
+                type,
+                context.BeforeSaveHooks.Count,
+                context.AfterSaveHooks.Count);
 
         if (context.Snapshot.Entities.Count == 0) return;
 

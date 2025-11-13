@@ -28,6 +28,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Reference the analyzer project so the analyzer and code-fix run in the IDE/build -->
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator.Analyzers\DKNet.EfCore.DtoGenerator.Analyzers.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Pack the generator DLL as an analyzer -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
 

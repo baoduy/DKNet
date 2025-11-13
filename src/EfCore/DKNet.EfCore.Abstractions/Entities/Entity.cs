@@ -41,7 +41,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <remarks>
     ///     This constructor is primarily used for EF Core data seeding scenarios.
     /// </remarks>
-    protected Entity(TKey id) => this.Id = id;
+    protected Entity(TKey id) => Id = id;
 
     #endregion
 
@@ -63,7 +63,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     ///     Adds a domain event to be published.
     /// </summary>
     /// <param name="eventObj">The event object to add.</param>
-    public void AddEvent(object eventObj) => this._events.Add(eventObj);
+    public void AddEvent(object eventObj) => _events.Add(eventObj);
 
     /// <summary>
     ///     Adds a domain event type to be created and published.
@@ -71,7 +71,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <typeparam name="TEvent">The type of event to add.</typeparam>
     public void AddEvent<TEvent>()
         where TEvent : class
-        => this._eventTypes.Add(typeof(TEvent));
+        => _eventTypes.Add(typeof(TEvent));
 
     /// <summary>
     ///     Gets all pending events and event types, then clears them from this entity.
@@ -79,10 +79,10 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     /// <returns>A tuple containing arrays of events and event types.</returns>
     public (object[] Events, Type[] EventTypes) GetEventsAndClear()
     {
-        var events = this._events.ToArray();
-        var eventTypes = this._eventTypes.ToArray();
-        this._events.Clear();
-        this._eventTypes.Clear();
+        var events = _events.ToArray();
+        var eventTypes = _eventTypes.ToArray();
+        _events.Clear();
+        _eventTypes.Clear();
 
         return (events, eventTypes);
     }
@@ -91,7 +91,7 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
     ///     Returns a string that represents the current entity.
     /// </summary>
     /// <returns>A string in the format "EntityTypeName 'Id'".</returns>
-    public override string ToString() => $"{this.GetType().Name} '{this.Id}'";
+    public override string ToString() => $"{GetType().Name} '{Id}'";
 
     #endregion
 }

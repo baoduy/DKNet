@@ -27,11 +27,11 @@ public class RepositorySpecTests : IAsyncLifetime
         var user = new User("test") { FirstName = "New", LastName = "User" };
 
         // Act
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var result = await this._context.Users.FindAsync(user.Id);
+        var result = await _context.Users.FindAsync(user.Id);
         result.ShouldNotBeNull();
         result.FirstName.ShouldBe("New");
         result.LastName.ShouldBe("User");
@@ -49,11 +49,11 @@ public class RepositorySpecTests : IAsyncLifetime
         };
 
         // Act
-        await this._repository.AddRangeAsync(users);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddRangeAsync(users);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var result = await this._context.Users.ToListAsync();
+        var result = await _context.Users.ToListAsync();
         result.Count.ShouldBe(3);
         result.ShouldContain(u => u.FirstName == "User1");
         result.ShouldContain(u => u.FirstName == "User2");
@@ -64,7 +64,7 @@ public class RepositorySpecTests : IAsyncLifetime
     public async Task BeginTransactionAsync_ShouldCreateTransaction()
     {
         // Act
-        var transaction = await this._repository.BeginTransactionAsync();
+        var transaction = await _repository.BeginTransactionAsync();
 
         // Assert
         transaction.ShouldNotBeNull();
@@ -76,15 +76,15 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var user = new User("test") { FirstName = "ToDelete", LastName = "User" };
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
 
         // Act
-        this._repository.Delete(user);
-        await this._repository.SaveChangesAsync();
+        _repository.Delete(user);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var result = await this._context.Users.FindAsync(user.Id);
+        var result = await _context.Users.FindAsync(user.Id);
         result.ShouldBeNull();
     }
 
@@ -97,26 +97,23 @@ public class RepositorySpecTests : IAsyncLifetime
             new User("test") { FirstName = "Delete1", LastName = "Test1" },
             new User("test") { FirstName = "Delete2", LastName = "Test2" }
         };
-        await this._repository.AddRangeAsync(users);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddRangeAsync(users);
+        await _repository.SaveChangesAsync();
 
         // Act
-        this._repository.DeleteRange(users);
-        await this._repository.SaveChangesAsync();
+        _repository.DeleteRange(users);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var result = await this._context.Users.ToListAsync();
+        var result = await _context.Users.ToListAsync();
         result.ShouldBeEmpty();
     }
 
     public async Task DisposeAsync()
     {
         //await _context.Database.EnsureDeletedAsync();
-        await this._context.DisposeAsync();
-        if (this._connection != null)
-        {
-            await this._connection.DisposeAsync();
-        }
+        await _context.DisposeAsync();
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     [Fact]
@@ -124,12 +121,12 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var user = new User("test") { FirstName = "Original", LastName = "Name" };
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
 
         // Act
         user.FirstName = "Modified";
-        var entry = this._repository.Entry(user);
+        var entry = _repository.Entry(user);
 
         // Assert
         entry.State.ShouldBe(EntityState.Modified);
@@ -141,10 +138,10 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var user = new User("test") { FirstName = "Entry", LastName = "Test" };
-        await this._repository.AddAsync(user);
+        await _repository.AddAsync(user);
 
         // Act
-        var entry = this._repository.Entry(user);
+        var entry = _repository.Entry(user);
 
         // Assert
         entry.ShouldNotBeNull();
@@ -155,34 +152,34 @@ public class RepositorySpecTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        this._connection = new SqliteConnection("DataSource=:memory:");
-        await this._connection.OpenAsync();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(this._connection)
+            .UseSqlite(_connection)
             .Options;
 
-        this._context = new TestDbContext(options);
-        await this._context.Database.EnsureCreatedAsync();
+        _context = new TestDbContext(options);
+        await _context.Database.EnsureCreatedAsync();
 
         // Setup Mapster
         var config = new TypeAdapterConfig();
         config.NewConfig<User, UserDto>()
             .Map(dest => dest.FullName, src => $"{src.FirstName} {src.LastName}");
-        this._mapper = new Mapper(config);
+        _mapper = new Mapper(config);
 
-        this._repository = new RepositorySpec<TestDbContext>(this._context, [this._mapper]);
+        _repository = new RepositorySpec<TestDbContext>(_context, [_mapper]);
     }
 
     [Fact]
     public async Task Query_WithOrdering_ShouldReturnOrderedResults()
     {
         // Arrange
-        await this.SeedTestUsers();
+        await SeedTestUsers();
         var spec = new OrderedUsersSpecification();
 
         // Act
-        var result = await this._repository.Query(spec).ToListAsync();
+        var result = await _repository.Query(spec).ToListAsync();
 
         // Assert
         result.ShouldNotBeNull();
@@ -190,17 +187,15 @@ public class RepositorySpecTests : IAsyncLifetime
 
         // Verify ordering by LastName
         for (var i = 0; i < result.Count - 1; i++)
-        {
             string.Compare(result[i].LastName, result[i + 1].LastName, StringComparison.Ordinal)
                 .ShouldBeLessThanOrEqualTo(0);
-        }
     }
 
     [Fact]
     public void Query_WithProjection_NoMapperAvailable_ShouldThrowException()
     {
         // Arrange
-        var repositoryNoMapper = new RepositorySpec<TestDbContext>(this._context, []);
+        var repositoryNoMapper = new RepositorySpec<TestDbContext>(_context, []);
         var spec = new ActiveUsersSpecification();
 
         // Act & Assert
@@ -215,11 +210,11 @@ public class RepositorySpecTests : IAsyncLifetime
     public async Task Query_WithProjection_ShouldReturnMappedModels()
     {
         // Arrange
-        await this.SeedTestUsers();
+        await SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await this._repository.Query<User, UserDto>(spec).ToListAsync();
+        var result = await _repository.Query<User, UserDto>(spec).ToListAsync();
 
         // Assert
         result.ShouldNotBeNull();
@@ -232,11 +227,11 @@ public class RepositorySpecTests : IAsyncLifetime
     public async Task Query_WithSpecification_ShouldReturnFilteredEntities()
     {
         // Arrange
-        await this.SeedTestUsers();
+        await SeedTestUsers();
         var spec = new ActiveUsersSpecification();
 
         // Act
-        var result = await this._repository.Query(spec).ToListAsync();
+        var result = await _repository.Query(spec).ToListAsync();
 
         // Assert
         result.ShouldNotBeNull();
@@ -249,14 +244,14 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var user = new User("test") { FirstName = "Cancel", LastName = "Test" };
-        await this._repository.AddAsync(user);
+        await _repository.AddAsync(user);
         var cts = new CancellationTokenSource();
         cts.Cancel();
 
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(async () =>
         {
-            await this._repository.SaveChangesAsync(cts.Token);
+            await _repository.SaveChangesAsync(cts.Token);
         });
     }
 
@@ -266,17 +261,17 @@ public class RepositorySpecTests : IAsyncLifetime
         // Arrange
         var user1 = new User("test") { FirstName = "Add", LastName = "User" };
         var user2 = new User("test") { FirstName = "Delete", LastName = "User" };
-        await this._repository.AddAsync(user2);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user2);
+        await _repository.SaveChangesAsync();
 
         // Act
-        await this._repository.AddAsync(user1);
-        this._repository.Delete(user2);
-        var count = await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user1);
+        _repository.Delete(user2);
+        var count = await _repository.SaveChangesAsync();
 
         // Assert
         count.ShouldBeGreaterThan(0);
-        var results = await this._context.Users.ToListAsync();
+        var results = await _context.Users.ToListAsync();
         results.Count.ShouldBe(1);
         results[0].FirstName.ShouldBe("Add");
     }
@@ -290,8 +285,8 @@ public class RepositorySpecTests : IAsyncLifetime
             new User("test") { FirstName = "Inactive", LastName = "Johnson" }
         };
 
-        await this._context.Users.AddRangeAsync(users);
-        await this._context.SaveChangesAsync();
+        await _context.Users.AddRangeAsync(users);
+        await _context.SaveChangesAsync();
     }
 
     [Fact]
@@ -301,13 +296,13 @@ public class RepositorySpecTests : IAsyncLifetime
         var user = new User("test") { FirstName = "Transaction", LastName = "User" };
 
         // Act
-        using var transaction = await this._repository.BeginTransactionAsync();
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        using var transaction = await _repository.BeginTransactionAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
         await transaction.CommitAsync();
 
         // Assert
-        var result = await this._context.Users.FindAsync(user.Id);
+        var result = await _context.Users.FindAsync(user.Id);
         result.ShouldNotBeNull();
         result.FirstName.ShouldBe("Transaction");
     }
@@ -319,16 +314,16 @@ public class RepositorySpecTests : IAsyncLifetime
         var user = new User("test") { FirstName = "Rollback", LastName = "User" };
 
         // Act
-        using var transaction = await this._repository.BeginTransactionAsync();
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        using var transaction = await _repository.BeginTransactionAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
         await transaction.RollbackAsync();
 
         // Clear the context to get fresh data
-        this._context.ChangeTracker.Clear();
+        _context.ChangeTracker.Clear();
 
         // Assert
-        var result = await this._context.Users.ToListAsync();
+        var result = await _context.Users.ToListAsync();
         result.ShouldBeEmpty();
     }
 
@@ -337,19 +332,19 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var user = new User("test") { FirstName = "Original", LastName = "Name" };
-        await this._repository.AddAsync(user);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddAsync(user);
+        await _repository.SaveChangesAsync();
 
         // Detach to simulate getting entity from another context
-        this._context.Entry(user).State = EntityState.Detached;
+        _context.Entry(user).State = EntityState.Detached;
 
         // Act
         user.FirstName = "Updated";
-        await this._repository.UpdateAsync(user);
-        await this._repository.SaveChangesAsync();
+        await _repository.UpdateAsync(user);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var result = await this._context.Users.FindAsync(user.Id);
+        var result = await _context.Users.FindAsync(user.Id);
         result.ShouldNotBeNull();
         result.FirstName.ShouldBe("Updated");
     }
@@ -363,23 +358,20 @@ public class RepositorySpecTests : IAsyncLifetime
             new User("test") { FirstName = "User1", LastName = "Test1" },
             new User("test") { FirstName = "User2", LastName = "Test2" }
         };
-        await this._repository.AddRangeAsync(users);
-        await this._repository.SaveChangesAsync();
+        await _repository.AddRangeAsync(users);
+        await _repository.SaveChangesAsync();
 
         // Detach entities
-        foreach (var user in users)
-        {
-            this._context.Entry(user).State = EntityState.Detached;
-        }
+        foreach (var user in users) _context.Entry(user).State = EntityState.Detached;
 
         // Act
         users[0].FirstName = "UpdatedUser1";
         users[1].FirstName = "UpdatedUser2";
-        await this._repository.UpdateRangeAsync(users);
-        await this._repository.SaveChangesAsync();
+        await _repository.UpdateRangeAsync(users);
+        await _repository.SaveChangesAsync();
 
         // Assert
-        var results = await this._context.Users.ToListAsync();
+        var results = await _context.Users.ToListAsync();
         results.ShouldContain(u => u.FirstName == "UpdatedUser1");
         results.ShouldContain(u => u.FirstName == "UpdatedUser2");
     }
@@ -392,8 +384,8 @@ public class RepositorySpecTests : IAsyncLifetime
 
         public ActiveUsersSpecification()
         {
-            this.WithFilter(u => u.FirstName.StartsWith("Active"));
-            this.AddOrderBy(u => u.LastName);
+            WithFilter(u => u.FirstName.StartsWith("Active"));
+            AddOrderBy(u => u.LastName);
         }
 
         #endregion
@@ -405,8 +397,8 @@ public class RepositorySpecTests : IAsyncLifetime
 
         public OrderedUsersSpecification()
         {
-            this.AddOrderBy(u => u.LastName);
-            this.AddOrderBy(u => u.FirstName);
+            AddOrderBy(u => u.LastName);
+            AddOrderBy(u => u.FirstName);
         }
 
         #endregion
@@ -416,9 +408,9 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         #region Properties
 
-        public int Id { get; set; }
-
         public string FullName { get; set; } = string.Empty;
+
+        public int Id { get; set; }
 
         #endregion
     }

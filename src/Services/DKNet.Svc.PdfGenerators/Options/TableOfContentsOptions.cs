@@ -39,6 +39,9 @@ public class TableOfContentsOptions
 {
     #region Fields
 
+    private const int MAX_DEPTH_LEVEL = 6;
+    private const int MIN_DEPTH_LEVEL = 1;
+
     private int? _maxDepthLevel;
 
     private int? _minDepthLevel;
@@ -56,6 +59,12 @@ public class TableOfContentsOptions
     /// </summary>
     public bool HasColoredLinks { get; set; }
 
+    /// <inheritdoc cref="Options.ListStyle" />
+    /// <summary>
+    ///     Gets or sets ListStyle.
+    /// </summary>
+    public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
+
     /// <summary>
     ///     The maximum level of heading depth to include in the TOC
     ///     (e.g. <c>3</c> will include headings less than or equal to <c>&lt;h3&gt;</c>).
@@ -64,16 +73,14 @@ public class TableOfContentsOptions
     /// </summary>
     public int MaxDepthLevel
     {
-        get => this._maxDepthLevel ?? MAX_DEPTH_LEVEL;
+        get => _maxDepthLevel ?? MAX_DEPTH_LEVEL;
         set
         {
             if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
-            {
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
-            }
 
-            this._maxDepthLevel = value;
+            _maxDepthLevel = value;
         }
     }
 
@@ -85,24 +92,16 @@ public class TableOfContentsOptions
     /// </summary>
     public int MinDepthLevel
     {
-        get => this._minDepthLevel ?? MIN_DEPTH_LEVEL;
+        get => _minDepthLevel ?? MIN_DEPTH_LEVEL;
         set
         {
             if (value is < MIN_DEPTH_LEVEL or > MAX_DEPTH_LEVEL)
-            {
                 throw new ArgumentOutOfRangeException(
                     $"Value must be between {MIN_DEPTH_LEVEL} and {MAX_DEPTH_LEVEL}.");
-            }
 
-            this._minDepthLevel = value;
+            _minDepthLevel = value;
         }
     }
-
-    /// <inheritdoc cref="Options.ListStyle" />
-    /// <summary>
-    ///     Gets or sets ListStyle.
-    /// </summary>
-    public ListStyle ListStyle { get; set; } = ListStyle.OrderedDefault;
 
     /// <summary>
     ///     If set, the TOC will be generated with page numbers.
@@ -114,7 +113,4 @@ public class TableOfContentsOptions
     public PageNumberOptions? PageNumberOptions { get; set; }
 
     #endregion
-
-    private const int MAX_DEPTH_LEVEL = 6;
-    private const int MIN_DEPTH_LEVEL = 1;
 }

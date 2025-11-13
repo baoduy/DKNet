@@ -37,11 +37,8 @@ public sealed class SequenceAttribute : Attribute
     /// <exception cref="NotSupportedException">Thrown when the specified type is not supported by the sequence.</exception>
     public SequenceAttribute(Type? type = null)
     {
-        this.Type = type ?? typeof(int);
-        if (!SupportedTypes.Contains(this.Type))
-        {
-            throw new NotSupportedException(this.Type.Name);
-        }
+        Type = type ?? typeof(int);
+        if (!SupportedTypes.Contains(Type)) throw new NotSupportedException(Type.Name);
     }
 
     #endregion

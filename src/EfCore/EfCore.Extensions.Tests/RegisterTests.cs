@@ -14,7 +14,7 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     public async Task TestCreateDb()
     {
         //Create User with Address
-        await this._db.Set<User>().AddAsync(
+        await _db.Set<User>().AddAsync(
             new User("Duy")
             {
                 FirstName = "Duy",
@@ -30,10 +30,10 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
                 }
             });
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        var users = await this._db.Set<User>().ToListAsync();
-        var adds = await this._db.Set<Address>().ToListAsync();
+        var users = await _db.Set<User>().ToListAsync();
+        var adds = await _db.Set<Address>().ToListAsync();
 
         (users.Count >= 1).ShouldBeTrue();
         (adds.Count >= 1).ShouldBeTrue();
@@ -43,7 +43,7 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     public async Task TestCreateDbCustomMapper()
     {
         //Create User with Address
-        await this._db.Set<User>().AddAsync(
+        await _db.Set<User>().AddAsync(
             new User("Duy")
             {
                 FirstName = "Duy",
@@ -59,9 +59,9 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
                 }
             });
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        (await this._db.Set<Address>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
     // [Fact]
@@ -79,7 +79,7 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     [Fact]
     public async Task TestIgnoredEntityAsync()
     {
-        var action = () => this._db.Set<IgnoredAutoMapperEntity>().ToListAsync();
+        var action = () => _db.Set<IgnoredAutoMapperEntity>().ToListAsync();
         await action.ShouldThrowAsync<InvalidOperationException>();
     }
 
@@ -87,7 +87,7 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     public async Task TestRegisterEntitiesDefaultOptions()
     {
         //Create User with Address
-        await this._db.Set<User>().AddAsync(
+        await _db.Set<User>().AddAsync(
             new User("Duy")
             {
                 FirstName = "Duy",
@@ -103,10 +103,10 @@ public class RegisterTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
                 }
             });
 
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        (await this._db.Set<User>().AnyAsync()).ShouldBeTrue();
-        (await this._db.Set<Address>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<User>().AnyAsync()).ShouldBeTrue();
+        (await _db.Set<Address>().AnyAsync()).ShouldBeTrue();
     }
 
     #endregion

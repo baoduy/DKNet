@@ -19,15 +19,15 @@ internal class SimpleKeyProvider : IEncryptionKeyProvider
 
     public SimpleKeyProvider()
     {
-        this._key = new byte[32];
-        RandomNumberGenerator.Fill(this._key);
+        _key = new byte[32];
+        RandomNumberGenerator.Fill(_key);
     }
 
     #endregion
 
     #region Methods
 
-    public byte[] GetKey(Type entityType) => this._key;
+    public byte[] GetKey(Type entityType) => _key;
 
     #endregion
 }
@@ -43,7 +43,7 @@ internal class ConfigurableKeyProvider : IEncryptionKeyProvider
 
     #region Methods
 
-    public byte[] GetKey(Type entityType) => this.Key;
+    public byte[] GetKey(Type entityType) => Key;
 
     #endregion
 }
@@ -250,14 +250,14 @@ internal class SetupTestKeyProvider : EncryptionKeyProvider
 
     public SetupTestKeyProvider()
     {
-        RandomNumberGenerator.Fill(this._key);
+        RandomNumberGenerator.Fill(_key);
     }
 
     #endregion
 
     #region Methods
 
-    public override byte[] GetKey(Type entityType) => this._key;
+    public override byte[] GetKey(Type entityType) => _key;
 
     #endregion
 }
