@@ -20,7 +20,7 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
 
     private readonly int _pageSize;
 
-    private readonly IOrderedQueryable<TEntity> _query;
+    private readonly IQueryable<TEntity> _query;
     private int _currentPage;
     private bool _hasMorePages = true;
 
@@ -33,7 +33,7 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
     /// </summary>
     /// <param name="query">The query to page through. Must not be null.</param>
     /// <param name="pageSize">The page size to use; must be greater than zero.</param>
-    public EfCorePageAsyncEnumerator(IOrderedQueryable<TEntity> query, int pageSize)
+    public EfCorePageAsyncEnumerator(IQueryable<TEntity> query, int pageSize)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         if (pageSize <= 0)
@@ -95,12 +95,12 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
 /// <summary>
 ///     Extension methods for paging an IQueryable as an IAsyncEnumerable.
 /// </summary>
-public static class PageAsyncEnumeratorExtensions
+internal static class PageAsyncEnumeratorExtensions
 {
     #region Methods
 
     public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(
-        this IOrderedQueryable<TEntity> query, int pageSize = 100) where TEntity : class
+        this IQueryable<TEntity> query, int pageSize = 100) where TEntity : class
         => new EfCorePageAsyncEnumerator<TEntity>(query, pageSize);
 
     #endregion

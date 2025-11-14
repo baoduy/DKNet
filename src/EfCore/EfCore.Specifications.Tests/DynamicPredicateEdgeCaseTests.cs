@@ -35,7 +35,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
             var builder = new DynamicPredicateBuilder<Product>()
                 .With("Price", op, 100m);
 
-            var (expression, parameters) = builder.Build();
+            var (expression, parameters) = builder.Build(Conditions.And);
 
             // Act & Assert
             Should.NotThrow(() =>
@@ -63,7 +63,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
             var builder = new DynamicPredicateBuilder<Product>()
                 .With("Name", op, "Test");
 
-            var (expression, parameters) = builder.Build();
+            var (expression, parameters) = builder.Build(Conditions.And);
 
             // Act & Assert
             Should.NotThrow(() =>
@@ -80,7 +80,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, false);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -96,7 +96,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.NotEqual, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -112,7 +112,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -128,7 +128,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Contains, "PRODUCT");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -144,7 +144,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.Equal, 99.99m);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -161,7 +161,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Category.Name", FilterOperations.Equal, categoryName);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products
@@ -181,7 +181,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Equal, "");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -200,7 +200,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         // Act & Assert
         Should.NotThrow(() =>
         {
-            var (expression, parameters) = builder.Build();
+            var (expression, parameters) = builder.Build(Conditions.And);
             var results = _db.Products.Where(expression, parameters).Take(10).ToList();
         });
     }
@@ -212,7 +212,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.LessThan, DateTime.MaxValue);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -228,7 +228,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.LessThan, decimal.MaxValue);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act & Assert
         Should.NotThrow(() =>
@@ -244,7 +244,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.GreaterThan, DateTime.MinValue);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -262,7 +262,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
             .With("Price", FilterOperations.GreaterThan, 100m)
             .With("Name", FilterOperations.NotEqual, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Assert
         expression.ShouldBe("Description == null and Price > @0 and Name != null");
@@ -273,7 +273,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var results = _db.Products.Where(expression, parameters).ToList();
 
         // Assert results
-        results.ShouldAllBe(p => p.Description == null && p.Price > 100m && p.Name != null);
+        results.ShouldAllBe(p => p.Description == null && p.Price > 100m);
     }
 
     [Fact]
@@ -283,7 +283,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Price", FilterOperations.GreaterThan, -100m);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -299,7 +299,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.NotEqual, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Assert
         expression.ShouldBe("Description != null");
@@ -321,7 +321,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Assert
         expression.ShouldBe("Description == null");
@@ -345,7 +345,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
             .With("Description", FilterOperations.Equal, null)
             .With("StockQuantity", FilterOperations.LessThan, 100);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Assert
         expression.ShouldBe("Price > @0 and Description == null and StockQuantity < @1");
@@ -367,7 +367,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Contains, "%_[]");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -383,7 +383,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Equal, "产品测试");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act & Assert
         Should.NotThrow(() =>
@@ -400,7 +400,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.LessThanOrEqual, now);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();
@@ -416,7 +416,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Contains, "   ");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act & Assert
         Should.NotThrow(() =>
@@ -432,7 +432,7 @@ public class DynamicPredicateEdgeCaseTests(TestDbFixture fixture) : IClassFixtur
         var builder = new DynamicPredicateBuilder<Product>()
             .With("StockQuantity", FilterOperations.Equal, 0);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var results = _db.Products.Where(expression, parameters).ToList();

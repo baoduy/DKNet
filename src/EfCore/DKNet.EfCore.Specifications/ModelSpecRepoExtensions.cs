@@ -106,7 +106,7 @@ public static class ModelSpecRepoExtensions
             where TModel : class
         {
             specification.EnsureSpecHasOrdering();
-            var query = (IOrderedQueryable<TModel>)repo.Query(specification);
+            var query = repo.Query<TEntity, TModel>(specification);
             return query.ToPageEnumerable();
         }
     }

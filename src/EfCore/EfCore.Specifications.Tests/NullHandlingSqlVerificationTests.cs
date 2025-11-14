@@ -42,7 +42,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Category.Description", FilterOperations.Equal, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products
@@ -63,7 +63,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
             .With("Description", FilterOperations.Equal, null)
             .With("Name", FilterOperations.NotEqual, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -86,7 +86,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
             .With("Name", FilterOperations.NotEqual, null)
             .With("StockQuantity", FilterOperations.LessThan, 50);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -115,7 +115,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.Equal, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -134,7 +134,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Description", FilterOperations.NotEqual, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var sql = _db.Products.Where(expression, parameters).ToQueryString();
@@ -154,7 +154,7 @@ public class NullHandlingSqlVerificationTests(TestDbFixture fixture) : IClassFix
             .With("Description", FilterOperations.Equal, null)
             .With("Name", FilterOperations.NotEqual, null);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Assert
         expression.ShouldBe("Description == null and Name != null");

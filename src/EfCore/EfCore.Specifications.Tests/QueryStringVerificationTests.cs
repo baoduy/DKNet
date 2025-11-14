@@ -26,7 +26,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
             .With("StockQuantity", FilterOperations.GreaterThan, 0)
             .With("Name", FilterOperations.Contains, "Product");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -52,7 +52,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("CreatedDate", FilterOperations.GreaterThanOrEqual, cutoffDate);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -116,7 +116,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Category.Name", FilterOperations.Equal, categoryName);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products
@@ -136,7 +136,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.NotEqual, false);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -153,7 +153,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products
@@ -175,7 +175,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products
@@ -195,7 +195,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products
@@ -221,7 +221,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products
@@ -246,7 +246,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
             .With("Price", FilterOperations.GreaterThanOrEqual, 100m)
             .With("Price", FilterOperations.LessThanOrEqual, 500m);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -265,7 +265,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("IsActive", FilterOperations.Equal, true);
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -285,7 +285,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.Contains, "Test");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -304,7 +304,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.EndsWith, "ing");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);
@@ -323,7 +323,7 @@ public class QueryStringVerificationTests(TestDbFixture fixture) : IClassFixture
         var builder = new DynamicPredicateBuilder<Product>()
             .With("Name", FilterOperations.StartsWith, "Pro");
 
-        var (expression, parameters) = builder.Build();
+        var (expression, parameters) = builder.Build(Conditions.And);
 
         // Act
         var query = _db.Products.Where(expression, parameters);

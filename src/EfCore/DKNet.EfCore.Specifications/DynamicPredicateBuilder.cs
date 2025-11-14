@@ -5,6 +5,22 @@ using DKNet.Fw.Extensions;
 namespace DKNet.EfCore.Specifications;
 
 /// <summary>
+///     Defines the logical conditions for combining multiple filter criteria.
+/// </summary>
+public enum Conditions
+{
+    /// <summary>
+    ///     Logical AND condition
+    /// </summary>
+    And,
+
+    /// <summary>
+    ///     Logical OR condition
+    /// </summary>
+    Or
+}
+
+/// <summary>
 ///     Defines the supported operations for building dynamic predicates.
 /// </summary>
 public enum FilterOperations
@@ -122,7 +138,7 @@ public sealed class DynamicPredicateBuilder<TEntity>
     ///     var query = dbContext.Users.Where(predicate, values);
     ///     </code>
     /// </example>
-    public (string Expression, object[] Parameters) Build()
+    public (string Expression, object[] Parameters) Build(Conditions condition)
     {
         var sb = new StringBuilder();
         var parameters = new List<object>();
@@ -132,7 +148,7 @@ public sealed class DynamicPredicateBuilder<TEntity>
         {
             var (prop, op, val) = _conditions[i];
             if (i > 0)
-                sb.Append(" and ");
+                sb.Append($" {condition} ".ToLowerInvariant());
 
             var type = ResolvePropertyType(entityType, prop);
             op = AdjustOperationForValueType(type, op);

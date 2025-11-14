@@ -452,6 +452,7 @@ public class SpecRepoExtensionsTests : IClassFixture<TestDbFixture>
         public ProductByNameSpecification(string name)
         {
             WithFilter(p => p.Name == name);
+            AddOrderBy(p => p.Name);
         }
 
         #endregion

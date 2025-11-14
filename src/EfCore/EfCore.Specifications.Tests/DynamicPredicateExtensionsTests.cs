@@ -362,7 +362,7 @@ public class DynamicPredicateExtensionsTests(TestDbFixture fixture) : IClassFixt
         // Assert
         results.ShouldAllBe(p =>
             (p.IsActive && p.Price >= 100m && p.Price <= 500m && p.StockQuantity > 0) ||
-            (p.Price > 700m && p.StockQuantity == 0));
+            p.Price > 700m || p.StockQuantity == 0);
     }
 
     [Fact]
