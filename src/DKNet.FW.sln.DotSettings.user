@@ -574,6 +574,9 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8275c8a4_002D4ae3_002D406a_002D9cd0_002D6dc520603cf1/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Specifications.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/EfCore/EfCore.Specifications.Tests" Presentation="&amp;lt;EfCore&amp;gt;\&amp;lt;EfCore.Specifications.Tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/UnloadedProject/UnloadedProjects/=11f03f5c_002D58f3_002D445c_002Db5df_002Dc1dbffe7019f_0023DKNet_002EEfCore_002ERepos_002EAbstractions/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UnloadedProject/UnloadedProjects/=83cd37b3_002Db6a2_002D4d0e_002D9452_002Ddd6398471ed6_0023DKNet_002EEfCore_002ERepos/@EntryIndexedValue">True</s:Boolean>
+	
 	
 	
 	
