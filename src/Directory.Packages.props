@@ -42,7 +42,7 @@
         <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0"/>
         <PackageVersion Include="AutoBogus" Version="2.13.1"/>
         <PackageVersion Include="AWSSDK.Core" Version="4.0.3.1"/>
-        <PackageVersion Include="AWSSDK.S3" Version="4.0.11.2"/>
+        <PackageVersion Include="AWSSDK.S3" Version="4.0.11.3"/>
         <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0"/>
         <PackageVersion Include="Azure.Storage.Blobs" Version="12.26.0"/>
         <PackageVersion Include="Bogus" Version="35.6.5"/>
@@ -50,7 +50,7 @@
         <PackageVersion Include="FluentResults" Version="4.0.0"/>
         <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0"/>
         <PackageVersion Include="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26"/>
-        <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8"/>
+        <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.9"/>
         <PackageVersion Include="Mapster" Version="7.4.0"/>
         <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1"/>
         <PackageVersion Include="Mapster.EFCore" Version="5.1.1"/>
@@ -72,7 +72,7 @@
         <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10"/>
-        <PackageVersion Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="9.6.10"/>
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="10.7.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0"/>
@@ -112,15 +112,15 @@
         <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0"/>
         <PackageVersion Include="Shouldly" Version="4.3.0"/>
         <PackageVersion Include="SlimMessageBus" Version="3.0.0"/>
-        <PackageVersion Include="SlimMessageBus.Host" Version="3.3.4"/>
+        <PackageVersion Include="SlimMessageBus.Host" Version="3.3.5"/>
         <PackageVersion Include="SlimMessageBus.Host.AzureServiceBus" Version="3.3.4"/>
         <PackageVersion Include="SlimMessageBus.Host.FluentValidation" Version="3.3.4"/>
         <PackageVersion Include="SlimMessageBus.Host.Interceptor" Version="3.0.0"/>
-        <PackageVersion Include="SlimMessageBus.Host.Memory" Version="3.3.4"/>
-        <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.3.4"/>
+        <PackageVersion Include="SlimMessageBus.Host.Memory" Version="3.3.5"/>
+        <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.3.5"/>
         <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0"/>
         <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0"/>
-        <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.6.10"/>
+        <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.0"/>
         <PackageVersion Include="System.Memory.Data" Version="10.0.0"/>
         <PackageVersion Include="Testcontainers.Azurite" Version="4.8.1"/>
         <PackageVersion Include="TestContainers.Container.Database.MsSql" Version="1.5.4"/>
