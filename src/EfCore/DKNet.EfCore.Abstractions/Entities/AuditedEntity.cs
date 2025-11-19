@@ -93,7 +93,7 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     {
         if (!string.IsNullOrEmpty(CreatedBy)) return;
 
-        CreatedBy = userName ?? throw new ArgumentNullException(nameof(userName));
+        CreatedBy = userName;
         CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
     }
 
@@ -105,7 +105,7 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <exception cref="ArgumentNullException">Thrown when userName is null or empty.</exception>
     public void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null)
     {
-        if (string.IsNullOrEmpty(userName)) throw new ArgumentNullException(nameof(userName));
+        if (updatedOn < UpdatedOn) return;
 
         UpdatedBy = userName;
         UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
