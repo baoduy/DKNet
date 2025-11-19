@@ -1,8 +1,9 @@
 using DKNet.Svc.PdfGenerators.Services;
+using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 
-public class EmbeddedResourceServiceTests
+public class EmbeddedResourceServiceTests(ITestOutputHelper testOutputHelper)
 {
     #region Methods
 
@@ -33,7 +34,7 @@ public class EmbeddedResourceServiceTests
         }
         catch (InvalidOperationException)
         {
-            // Case insensitive search might not find resource, which is valid behavior
+            // Case-insensitive search might not find resource, which is valid behavior
             Assert.True(true);
         }
     }
@@ -78,7 +79,7 @@ public class EmbeddedResourceServiceTests
 
             // CSS files typically contain selectors and properties
             Assert.Contains(".", content); // CSS class or property
-            Console.WriteLine($"CSS resource length: {content.Length}");
+            testOutputHelper.WriteLine($"CSS resource length: {content.Length}");
         }
         catch (InvalidOperationException)
         {
@@ -116,7 +117,7 @@ public class EmbeddedResourceServiceTests
 
             // HTML resources should contain HTML tags
             Assert.True(content.Contains("<") || content.Contains(">"));
-            Console.WriteLine($"HTML resource length: {content.Length}");
+            testOutputHelper.WriteLine($"HTML resource length: {content.Length}");
         }
         catch (InvalidOperationException)
         {
@@ -179,7 +180,7 @@ public class EmbeddedResourceServiceTests
             // Assert
             Assert.False(string.IsNullOrEmpty(content));
             Assert.Contains("<html>", content);
-            Console.WriteLine($"Resource content length: {content.Length}");
+            testOutputHelper.WriteLine($"Resource content length: {content.Length}");
         }
         catch (InvalidOperationException)
         {

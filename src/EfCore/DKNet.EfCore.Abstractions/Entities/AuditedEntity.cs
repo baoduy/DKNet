@@ -60,13 +60,13 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     ///     Gets the user who last modified this entity, or the creator if never modified.
     /// </summary>
     [NotMapped]
-    public string LastModifiedBy => this.UpdatedBy ?? this.CreatedBy;
+    public string LastModifiedBy => UpdatedBy ?? CreatedBy;
 
     /// <summary>
     ///     Gets the timestamp when this entity was last modified, or the creation timestamp if never modified.
     /// </summary>
     [NotMapped]
-    public DateTimeOffset LastModifiedOn => this.UpdatedOn ?? this.CreatedOn;
+    public DateTimeOffset LastModifiedOn => UpdatedOn ?? CreatedOn;
 
     /// <summary>
     ///     Gets the user who last modified this entity.
@@ -91,13 +91,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <exception cref="ArgumentNullException">Thrown when userName is null.</exception>
     public void SetCreatedBy(string userName, DateTimeOffset? createdOn = null)
     {
-        if (!string.IsNullOrEmpty(this.CreatedBy))
-        {
-            return;
-        }
+        if (!string.IsNullOrEmpty(CreatedBy)) return;
 
-        this.CreatedBy = userName ?? throw new ArgumentNullException(nameof(userName));
-        this.CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
+        CreatedBy = userName;
+        CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -108,13 +105,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <exception cref="ArgumentNullException">Thrown when userName is null or empty.</exception>
     public void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null)
     {
-        if (string.IsNullOrEmpty(userName))
-        {
-            throw new ArgumentNullException(nameof(userName));
-        }
+        if (updatedOn < UpdatedOn) return;
 
-        this.UpdatedBy = userName;
-        this.UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
+        UpdatedBy = userName;
+        UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;
     }
 
     #endregion

@@ -280,8 +280,8 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Balance) && (decimal?)c.OldValue == oldBalance &&
             (decimal?)c.NewValue == 75.5m);
-        log.Changes.ShouldContain(c => c.FieldName == nameof(AuditedEntity<Guid>.UpdatedBy));
-        log.Changes.ShouldContain(c => c.FieldName == nameof(AuditedEntity<Guid>.UpdatedOn));
+        log.Changes.ShouldContain(c => c.FieldName == nameof(AuditedEntity<>.UpdatedBy));
+        log.Changes.ShouldContain(c => c.FieldName == nameof(AuditedEntity<>.UpdatedOn));
     }
 
     #endregion

@@ -14,13 +14,13 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
 
     public AzureStorageBlobServiceFixture()
     {
-        this._azureContainer = new AzuriteBuilder()
+        _azureContainer = new AzuriteBuilder()
             .WithCommand("--skipApiVersionCheck")
             .WithPortBinding(10000)
             .WithAutoRemove(true)
             .Build();
 
-        this._azureContainer.StartAsync().GetAwaiter().GetResult();
+        _azureContainer.StartAsync().GetAwaiter().GetResult();
 
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(
@@ -37,7 +37,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
             .AddAzureStorageAdapter(config);
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        this.Service = serviceProvider.GetRequiredService<IBlobService>();
+        Service = serviceProvider.GetRequiredService<IBlobService>();
     }
 
     #endregion
@@ -52,7 +52,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
 
     public void Dispose()
     {
-        this._azureContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _azureContainer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
 

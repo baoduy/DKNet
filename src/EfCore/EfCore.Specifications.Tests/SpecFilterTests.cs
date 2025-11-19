@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using DKNet.EfCore.Specifications.Dynamics;
+using Xunit.Abstractions;
 
 namespace EfCore.Specifications.Tests;
 
@@ -20,12 +22,15 @@ internal sealed class ProductFilterSpecification : Specification<Product>
     public ProductFilterSpecification(string searchString, string orderBy = nameof(Product.Name))
     {
         // Build dynamic predicate across fields using AND semantics.
-        var predicate = PredicateBuilder.New<Product>(true);
+        var predicate = PredicateBuilder.New<Product>(x => x.IsActive);
         string[] fields = [nameof(Product.Name), nameof(Product.Description)];
 
+        // Build sub-predicate for all fields
+        var searchPredicator = PredicateBuilder.New<Product>();
         foreach (var f in fields)
-            predicate = predicate.DynamicAnd(b => b.With(f, FilterOperations.Contains, searchString));
+            searchPredicator = searchPredicator.DynamicOr(f, DynamicOperations.Contains, searchString);
 
+        predicate = predicate.And(searchPredicator);
         WithFilter(predicate);
         AddOrderBy(orderBy, ListSortDirection.Ascending);
     }
@@ -37,14 +42,17 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
 {
     #region Fields
 
+    private readonly ITestOutputHelper _output;
+
     private readonly IRepositorySpec _repository;
 
     #endregion
 
     #region Constructors
 
-    public SpecFilterTests(TestDbFixture fixture)
+    public SpecFilterTests(TestDbFixture fixture, ITestOutputHelper output)
     {
+        _output = output;
         var context = fixture.Db!;
         _repository = new RepositorySpec<TestDbContext>(context, []);
     }
@@ -83,11 +91,13 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         // Act
         var query = _repository.Query(spec);
         var sql = query.ToQueryString();
+        _output.WriteLine(sql);
 
         // Assert
         sql.ShouldContain("[p].[Name] LIKE");
         sql.ShouldContain("[p].[Description] LIKE");
         sql.ShouldContain("ORDER BY [p].[Name]");
+        sql.ShouldContain("WHERE [p].[IsActive] = CAST(1 AS bit) AND ([p].[Name] LIKE N'%a%' OR [p].[Description] LIKE N'%a%')");
     }
 
     #endregion

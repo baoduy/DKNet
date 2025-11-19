@@ -24,14 +24,11 @@ internal sealed class EfCoreAuditHook(
     {
         await base.AfterSaveAsync(context, cancellationToken);
 
-        var logs = this._cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
-        if (logs is not { Count: > 0 })
-        {
-            return;
-        }
+        var logs = _cache.GetValueOrDefault(context.DbContext.ContextId.InstanceId);
+        if (logs is not { Count: > 0 }) return;
 
-        this._cache.Remove(context.DbContext.ContextId.InstanceId);
-        this.PublishLogsAsync(context.DbContext, logs);
+        _cache.Remove(context.DbContext.ContextId.InstanceId);
+        PublishLogsAsync(context.DbContext, logs);
     }
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
@@ -43,15 +40,13 @@ internal sealed class EfCoreAuditHook(
             .OfType<AuditLogEntry>()
             .ToList();
 
-        logger.LogInformation(
-            "Found {Count} audit log entries in current save operation of DbContext {DbContextId}",
-            logs.Count,
-            context.DbContext.ContextId.InstanceId);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation(
+                "Found {Count} audit log entries in current save operation of DbContext {DbContextId}",
+                logs.Count,
+                context.DbContext.ContextId.InstanceId);
 
-        if (logs is { Count: > 0 })
-        {
-            this._cache[context.DbContext.ContextId.InstanceId] = logs;
-        }
+        if (logs is { Count: > 0 }) _cache[context.DbContext.ContextId.InstanceId] = logs;
 
         return base.BeforeSaveAsync(context, cancellationToken);
     }
@@ -61,7 +56,6 @@ internal sealed class EfCoreAuditHook(
         // Fire & forget: do not await publishers. Each publisher runs independently.
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
         foreach (var publisher in publishers)
-        {
             Task.Run(async () =>
             {
                 try
@@ -71,10 +65,10 @@ internal sealed class EfCoreAuditHook(
                 }
                 catch (DbUpdateException ex)
                 {
-                    logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
+                    if (logger.IsEnabled(LogLevel.Error))
+                        logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
                 }
             });
-        }
     }
 
     #endregion

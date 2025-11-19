@@ -13,7 +13,7 @@ public class ExtensionsTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
     [Fact]
     public void TestGetKeys()
     {
-        this._db.GetPrimaryKeyProperties<User>().Single()
+        _db.GetPrimaryKeyProperties<User>().Single()
             .ShouldBe("Id");
     }
 
@@ -21,14 +21,14 @@ public class ExtensionsTests(MemoryFixture fixture) : IClassFixture<MemoryFixtur
     public void TestGetKeyValue()
     {
         var user = new User(1, "Duy") { FirstName = "Steven", LastName = "Smith" };
-        this._db.GetPrimaryKeyValues(user).Single().Value.ShouldBe(1);
+        _db.GetPrimaryKeyValues(user).Single().Value.ShouldBe(1);
     }
 
     [Fact]
     public void TestGetKeyValueNotEntity()
     {
         var user = new { Id = 1, Name = "Duy" };
-        this._db.GetPrimaryKeyValues(user).Any()
+        _db.GetPrimaryKeyValues(user).Any()
             .ShouldBeFalse();
     }
 

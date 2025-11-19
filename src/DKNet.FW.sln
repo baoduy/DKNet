@@ -7,6 +7,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Fw.Extensions", "Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj", "{4F6257FB-B6B4-4D6F-933D-31D0E009CBCE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore", "EfCore", "{79AB749C-6325-4718-9BE0-36C750367F00}"
+	ProjectSection(SolutionItems) = preProject
+		EfCore\MERGE_SUMMARY.md = EfCore\MERGE_SUMMARY.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DataAuthorization.Tests", "EfCore\EfCore.DataAuthorization.Tests\EfCore.DataAuthorization.Tests.csproj", "{24070CA1-ACF8-42E6-ACDE-48BFA17D85D1}"
 EndProject
@@ -61,6 +64,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		..\.gitignore = ..\.gitignore
 		.aspire\settings.json = .aspire\settings.json
 		stylecop.json = stylecop.json
+		global.json = global.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus", "SlimBus", "{C2686F33-39EF-4995-AA5B-E256F5130F9B}"
@@ -97,9 +101,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Svc.PdfGenerators.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Svc.PdfGenerators", "Services\DKNet.Svc.PdfGenerators\DKNet.Svc.PdfGenerators.csproj", "{A369CD23-45B7-4160-8EC2-27DDA533452A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.SlimBus", "SlimBus\DKNet.AspCore.SlimBus\DKNet.AspCore.SlimBus.csproj", "{1556498E-1A4B-432C-8A81-1341F5389698}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Extensions", "SlimBus\DKNet.AspCore.Extensions\DKNet.AspCore.Extensions.csproj", "{1556498E-1A4B-432C-8A81-1341F5389698}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.SlimBus.Tests", "SlimBus\AspCore.SlimBus.Tests\AspCore.SlimBus.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Extensions.Tests", "SlimBus\AspCore.Extensions.Tests\AspCore.Extensions.Tests.csproj", "{23AD2768-B495-42C8-B915-A2D36FF1D508}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{4B2C950F-B328-4CB6-B12C-C5AB97705681}"
 	ProjectSection(SolutionItems) = preProject
@@ -128,6 +132,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Encryption.Tests", "EfCore\EfCore.Encryption.Tests\EfCore.Encryption.Tests.csproj", "{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.Specifications.Tests", "EfCore\EfCore.Specifications.Tests\EfCore.Specifications.Tests.csproj", "{F94150A1-2735-45FD-8893-2EADC8962B35}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator.Analyzers", "EfCore\DKNet.EfCore.DtoGenerator.Analyzers\DKNet.EfCore.DtoGenerator.Analyzers.csproj", "{53ED0997-9819-46FB-B305-16406DDAC7D6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore.DtoGenerator", "EfCore.DtoGenerator", "{8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -691,6 +699,18 @@ Global
 		{F94150A1-2735-45FD-8893-2EADC8962B35}.Release|x64.Build.0 = Release|Any CPU
 		{F94150A1-2735-45FD-8893-2EADC8962B35}.Release|x86.ActiveCfg = Release|Any CPU
 		{F94150A1-2735-45FD-8893-2EADC8962B35}.Release|x86.Build.0 = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|x64.Build.0 = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Debug|x86.Build.0 = Debug|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|x64.ActiveCfg = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|x64.Build.0 = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|x86.ActiveCfg = Release|Any CPU
+		{53ED0997-9819-46FB-B305-16406DDAC7D6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -738,11 +758,13 @@ Global
 		{887B20CD-EDD9-473C-A7E0-6B0684D250A7} = {42CE14AA-EB22-4CFF-923D-E4DD5BE9C751}
 		{1C19FA78-FE1C-4642-847F-BC3E06AB8038} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{DFB15D85-66A8-488A-9F95-80DBA31BB66B} = {79AB749C-6325-4718-9BE0-36C750367F00}
-		{6A4087FA-8514-4F23-8649-34871BF22866} = {79AB749C-6325-4718-9BE0-36C750367F00}
-		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE} = {79AB749C-6325-4718-9BE0-36C750367F00}
-		{BD132A0C-DFD3-492E-A265-BDD230761BD2} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{92652BF7-54DD-4C9E-8E63-ECC1CDC3DB71} = {79AB749C-6325-4718-9BE0-36C750367F00}
 		{F94150A1-2735-45FD-8893-2EADC8962B35} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{8B984881-D667-4AA9-B3FA-2B3F0CFDAF55} = {79AB749C-6325-4718-9BE0-36C750367F00}
+		{BD132A0C-DFD3-492E-A265-BDD230761BD2} = {8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}
+		{6A4087FA-8514-4F23-8649-34871BF22866} = {8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}
+		{53ED0997-9819-46FB-B305-16406DDAC7D6} = {8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}
+		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE} = {8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}
 	EndGlobalSection
 EndGlobal

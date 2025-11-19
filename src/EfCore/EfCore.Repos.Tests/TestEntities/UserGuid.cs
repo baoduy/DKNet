@@ -19,32 +19,32 @@ public class UserGuid : AuditedEntity<Guid>, IConcurrencyEntity<byte[]>
 
     public UserGuid(Guid id, string createdBy) : base(id)
     {
-        this.SetCreatedBy(createdBy);
+        SetCreatedBy(createdBy);
     }
 
     #endregion
 
     #region Properties
 
-    public byte[]? RowVersion { get; private set; }
-
-    [BackingField(nameof(_addresses))] public IReadOnlyCollection<AddressGuid> Addresses => this._addresses;
+    [BackingField(nameof(_addresses))] public IReadOnlyCollection<AddressGuid> Addresses => _addresses;
 
     [Required] [MaxLength(256)] public required string FirstName { get; set; }
 
-    public string FullName => $"{this.FirstName} {this.LastName}";
+    public string FullName => $"{FirstName} {LastName}";
 
     [Required] [MaxLength(256)] public required string LastName { get; set; }
+
+    public byte[]? RowVersion { get; private set; }
 
     #endregion
 
     #region Methods
 
-    public void AddAddress(AddressGuid address) => this._addresses.Add(address);
+    public void AddAddress(AddressGuid address) => _addresses.Add(address);
 
     public void SetRowVersion(byte[] rowVersion)
     {
-        this.RowVersion = rowVersion;
+        RowVersion = rowVersion;
     }
 
     #endregion

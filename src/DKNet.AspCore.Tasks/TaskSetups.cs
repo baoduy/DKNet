@@ -21,46 +21,41 @@ public static class TaskSetups
 
     #endregion
 
-    #region Methods
-
-    /// <summary>
-    ///     Registers a background job of type <typeparamref name="TJob" /> to run during application startup.
-    /// </summary>
-    /// <typeparam name="TJob">The type of the background job to register. Must implement <see cref="IBackgroundTask" />.</typeparam>
     /// <param name="services">The service collection to add the background job to.</param>
-    /// <returns>The service collection for method chaining.</returns>
-    public static IServiceCollection AddBackgroundJob<TJob>(this IServiceCollection services)
-        where TJob : class, IBackgroundTask
-        => services.AddHost().AddScoped<IBackgroundTask, TJob>();
-
-    /// <summary>
-    ///     Scans the specified assemblies and registers all types that implement <see cref="IBackgroundTask" /> as background
-    ///     jobs.
-    /// </summary>
-    /// <param name="services">The service collection to add the background jobs to.</param>
-    /// <param name="assemblies">The assemblies to scan for background job implementations.</param>
-    /// <returns>The service collection for method chaining.</returns>
-    public static IServiceCollection AddBackgroundJobFrom(this IServiceCollection services, Assembly[] assemblies)
+    extension(IServiceCollection services)
     {
-        services.AddHost().Scan(s =>
-            s.FromAssemblies(assemblies)
-                .AddClasses(c => c.AssignableTo<IBackgroundTask>(), false)
-                .AsImplementedInterfaces()
-                .WithScopedLifetime());
-        return services;
-    }
+        /// <summary>
+        ///     Registers a background job of type <typeparamref name="TJob" /> to run during application startup.
+        /// </summary>
+        /// <typeparam name="TJob">The type of the background job to register. Must implement <see cref="IBackgroundTask" />.</typeparam>
+        /// <returns>The service collection for method chaining.</returns>
+        public IServiceCollection AddBackgroundJob<TJob>()
+            where TJob : class, IBackgroundTask
+            => services.AddHost().AddScoped<IBackgroundTask, TJob>();
 
-    private static IServiceCollection AddHost(this IServiceCollection services)
-    {
-        if (_added)
+        /// <summary>
+        ///     Scans the specified assemblies and registers all types that implement <see cref="IBackgroundTask" /> as background
+        ///     jobs.
+        /// </summary>
+        /// <param name="assemblies">The assemblies to scan for background job implementations.</param>
+        /// <returns>The service collection for method chaining.</returns>
+        public IServiceCollection AddBackgroundJobFrom(Assembly[] assemblies)
         {
+            services.AddHost().Scan(s =>
+                s.FromAssemblies(assemblies)
+                    .AddClasses(c => c.AssignableTo<IBackgroundTask>(), false)
+                    .AsImplementedInterfaces()
+                    .WithScopedLifetime());
             return services;
         }
 
-        services.AddHostedService<BackgroundJobHost>();
-        _added = true;
-        return services;
-    }
+        private IServiceCollection AddHost()
+        {
+            if (_added) return services;
 
-    #endregion
+            services.AddHostedService<BackgroundJobHost>();
+            _added = true;
+            return services;
+        }
+    }
 }

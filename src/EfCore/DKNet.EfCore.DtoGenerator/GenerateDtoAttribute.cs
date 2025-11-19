@@ -34,13 +34,13 @@ namespace DKNet.EfCore.DtoGenerator;
 /// When IgnoreComplexType is true, properties that link to other entities (classes without [Owned] attribute)
 /// are automatically excluded, including both single entity properties and collection properties.
 /// </remarks>
-[System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public sealed class GenerateDtoAttribute : System.Attribute
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+public sealed class GenerateDtoAttribute : Attribute
 {
     /// <summary>
     /// Gets the entity type to generate a DTO for.
     /// </summary>
-    public System.Type EntityType { get; }
+    public Type EntityType { get; }
 
     /// <summary>
     /// Gets or sets the names of properties to exclude from DTO generation.
@@ -66,5 +66,5 @@ public sealed class GenerateDtoAttribute : System.Attribute
     /// Initializes a new instance of the <see cref="GenerateDtoAttribute"/> class.
     /// </summary>
     /// <param name="entityType">The entity type to generate a DTO for.</param>
-    public GenerateDtoAttribute(System.Type entityType) => EntityType = entityType;
+    public GenerateDtoAttribute(Type entityType) => EntityType = entityType;
 }

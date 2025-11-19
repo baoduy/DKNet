@@ -18,7 +18,7 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
 
     public Assembly[] Assemblies { get; } = assemblies;
 
-    public DbContextOptionsExtensionInfo Info => this._info ??= new EntityConfigExtensionInfo(this);
+    public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
 
     #endregion
 

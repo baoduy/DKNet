@@ -23,20 +23,14 @@ internal sealed class TokenResult : IToken
     /// <param name="index"></param>
     public TokenResult(ITokenDefinition definition, string token, string originalString, int index)
     {
-        this.Index = index;
-        this.OriginalString = originalString ?? throw new ArgumentNullException(nameof(originalString));
-        this.Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-        this.Token = token ?? throw new ArgumentNullException(nameof(token));
+        Index = index;
+        OriginalString = originalString ?? throw new ArgumentNullException(nameof(originalString));
+        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        Token = token ?? throw new ArgumentNullException(nameof(token));
 
-        if (!this.Definition.IsToken(this.Token))
-        {
-            throw new InvalidTokenException(token);
-        }
+        if (!Definition.IsToken(Token)) throw new InvalidTokenException(token);
 
-        if (index < 0 || index > originalString.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
+        if (index < 0 || index > originalString.Length) throw new ArgumentOutOfRangeException(nameof(index));
     }
 
     #endregion
@@ -44,27 +38,24 @@ internal sealed class TokenResult : IToken
     #region Properties
 
     /// <summary>
-    ///     Gets or sets Index.
-    /// </summary>
-    public int Index { get; }
-
-    /// <summary>
     ///     Gets or sets Definition.
     /// </summary>
     public ITokenDefinition Definition { get; }
+
+    /// <summary>
+    ///     Gets or sets Index.
+    /// </summary>
+    public int Index { get; }
 
     public string Key
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(this._key))
-            {
-                return this._key;
-            }
+            if (!string.IsNullOrWhiteSpace(_key)) return _key;
 
-            this._key = this.Token.Replace(this.Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase)
-                .Replace(this.Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
-            return this._key;
+            _key = Token.Replace(Definition.BeginTag, string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace(Definition.EndTag, string.Empty, StringComparison.OrdinalIgnoreCase);
+            return _key;
         }
     }
 

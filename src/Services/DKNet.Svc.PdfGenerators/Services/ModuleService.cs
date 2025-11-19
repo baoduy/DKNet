@@ -50,17 +50,17 @@ internal class ModuleService
 
     public ModuleService(ModuleOptions options, IConversionEvents events)
     {
-        this._options = options;
+        _options = options;
 
         // adjust local dictionary paths
         if (options is NodeModuleOptions nodeModuleOptions)
         {
             var path = nodeModuleOptions.ModulePath;
 
-            this._packagelocationMapping = ModuleInformation.UpdateDic(this._packagelocationMapping, path);
+            _packagelocationMapping = ModuleInformation.UpdateDic(_packagelocationMapping, path);
         }
 
-        events.TemplateModelCreating += this.AddModulesToTemplateAsync;
+        events.TemplateModelCreating += AddModulesToTemplateAsync;
     }
 
     #endregion
@@ -70,10 +70,8 @@ internal class ModuleService
     internal async Task AddModulesToTemplateAsync(object? sender, TemplateModelEventArgs e)
     {
         // load correct module paths
-        foreach (var kvp in this._packagelocationMapping)
-        {
-            e.TemplateModel.Add(kvp.Key, this._options.IsRemote ? kvp.Value.RemotePath : kvp.Value.NodePath);
-        }
+        foreach (var kvp in _packagelocationMapping)
+            e.TemplateModel.Add(kvp.Key, _options.IsRemote ? kvp.Value.RemotePath : kvp.Value.NodePath);
 
         await Task.CompletedTask;
     }

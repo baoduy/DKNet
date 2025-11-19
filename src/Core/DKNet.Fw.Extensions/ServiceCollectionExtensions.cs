@@ -8,49 +8,45 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-    #region Methods
-
-    /// <summary>
-    ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents
-    /// </summary>
     /// <param name="descriptor"></param>
-    /// <param name="implementationType"></param>
-    /// <returns></returns>
-    public static bool IsImplementationOf(this ServiceDescriptor descriptor, Type implementationType) =>
-        descriptor.ServiceType == implementationType || descriptor.ImplementationType == implementationType;
-
-    /// <summary>
-    ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents
-    /// </summary>
-    /// <param name="descriptor"></param>
-    /// <returns></returns>
-    public static bool IsImplementationOf<TImplement>(this ServiceDescriptor descriptor) =>
-        descriptor.IsImplementationOf(typeof(TImplement));
-
-    /// <summary>
-    ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents a keyed service.
-    /// </summary>
-    /// <param name="descriptor"></param>
-    /// <param name="keyName"></param>
-    /// <param name="implementationType"></param>
-    /// <returns></returns>
-    public static bool IsKeyedImplementationOf(this ServiceDescriptor descriptor, object keyName,
-        Type implementationType)
+    extension(ServiceDescriptor descriptor)
     {
-        if (!descriptor.IsKeyedService || !ReferenceEquals(descriptor.ServiceKey, keyName))
-            return false;
-        return descriptor.IsImplementationOf(implementationType);
+        /// <summary>
+        ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents
+        /// </summary>
+        /// <param name="implementationType"></param>
+        /// <returns></returns>
+        public bool IsImplementationOf(Type implementationType) =>
+            descriptor.ServiceType == implementationType || descriptor.ImplementationType == implementationType;
+
+        /// <summary>
+        ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents
+        /// </summary>
+        /// <returns></returns>
+        public bool IsImplementationOf<TImplement>() =>
+            descriptor.IsImplementationOf(typeof(TImplement));
+
+        /// <summary>
+        ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents a keyed service.
+        /// </summary>
+        /// <param name="keyName"></param>
+        /// <param name="implementationType"></param>
+        /// <returns></returns>
+        public bool IsKeyedImplementationOf(object keyName,
+            Type implementationType)
+        {
+            if (!descriptor.IsKeyedService || !ReferenceEquals(descriptor.ServiceKey, keyName))
+                return false;
+            return descriptor.IsImplementationOf(implementationType);
+        }
+
+        /// <summary>
+        ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents a keyed service.
+        /// </summary>
+        /// <param name="keyName"></param>
+        /// <typeparam name="TImplement"></typeparam>
+        /// <returns></returns>
+        public bool IsKeyedImplementationOf<TImplement>(object keyName) =>
+            descriptor.IsKeyedImplementationOf(keyName, typeof(TImplement));
     }
-
-    /// <summary>
-    ///     Determines whether the specified <see cref="ServiceDescriptor" /> represents a keyed service.
-    /// </summary>
-    /// <param name="descriptor"></param>
-    /// <param name="keyName"></param>
-    /// <typeparam name="TImplement"></typeparam>
-    /// <returns></returns>
-    public static bool IsKeyedImplementationOf<TImplement>(this ServiceDescriptor descriptor, object keyName) =>
-        descriptor.IsKeyedImplementationOf(keyName, typeof(TImplement));
-
-    #endregion
 }

@@ -34,26 +34,23 @@ internal sealed class TokenExtractor(ITokenDefinition definition) : ITokenExtrac
 
     #region Methods
 
-    public IReadOnlyCollection<IToken> Extract(string templateString) => this.ExtractCore(templateString);
+    public IReadOnlyCollection<IToken> Extract(string templateString) => ExtractCore(templateString);
 
     public Task<IReadOnlyCollection<IToken>> ExtractAsync(string templateString)
     {
-        return Task.Run(() => this.ExtractCore(templateString));
+        return Task.Run(() => ExtractCore(templateString));
     }
 
     private IReadOnlyCollection<IToken> ExtractCore(string templateString)
     {
-        if (string.IsNullOrWhiteSpace(templateString))
-        {
-            return [];
-        }
+        if (string.IsNullOrWhiteSpace(templateString)) return [];
 
         var list = new List<IToken>();
 
         // Use Span<char> for efficient substring operations
         var span = templateString.AsSpan();
-        var beginTag = this.Definition.BeginTag.AsSpan();
-        var endTag = this.Definition.EndTag.AsSpan();
+        var beginTag = Definition.BeginTag.AsSpan();
+        var endTag = Definition.EndTag.AsSpan();
         var length = span.Length;
 
         // Find the first occurrence of the begin tag
@@ -72,16 +69,10 @@ internal sealed class TokenExtractor(ITokenDefinition definition) : ITokenExtrac
 
             // Find the end tag after the current begin tag
             var endIndex = span[beginIndex..].IndexOf(endTag);
-            if (endIndex < 0)
-            {
-                break;
-            }
+            if (endIndex < 0) break;
 
             endIndex += beginIndex; // adjust to absolute position in the span
-            if (endIndex <= beginIndex)
-            {
-                break;
-            }
+            if (endIndex <= beginIndex) break;
 
             // Calculate the full token length (from begin to end tag)
             var tokenLength = endIndex - beginIndex + endTag.Length;
@@ -89,26 +80,20 @@ internal sealed class TokenExtractor(ITokenDefinition definition) : ITokenExtrac
             var tokenStr = tokenSpan.ToString();
 
             // Validate the token using the definition
-            if (this.Definition.IsToken(tokenStr))
+            if (Definition.IsToken(tokenStr))
             {
                 // Add the found token to the result list
-                list.Add(new TokenResult(this.Definition, tokenStr, templateString, beginIndex));
+                list.Add(new TokenResult(Definition, tokenStr, templateString, beginIndex));
 
                 // Move to the next begin tag after the current token
                 beginIndex = span[(endIndex + endTag.Length)..].IndexOf(beginTag);
-                if (beginIndex >= 0)
-                {
-                    beginIndex += endIndex + endTag.Length;
-                }
+                if (beginIndex >= 0) beginIndex += endIndex + endTag.Length;
             }
             else
             {
                 // If not a valid token, search for the next begin tag from the next character
                 var nextSearchStart = beginIndex + 1;
-                if (nextSearchStart >= length)
-                {
-                    break;
-                }
+                if (nextSearchStart >= length) break;
 
                 var nextBegin = span[nextSearchStart..].IndexOf(beginTag);
                 beginIndex = nextBegin >= 0 ? nextBegin + nextSearchStart : -1;

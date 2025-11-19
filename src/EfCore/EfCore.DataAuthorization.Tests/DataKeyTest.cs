@@ -41,7 +41,7 @@ public class DataKeyTests(DataKeyFixture fixture) : IClassFixture<DataKeyFixture
 
         var etype = db.Model.GetEntityTypes().FirstOrDefault(e => e.ClrType == typeof(Root));
         etype.ShouldNotBeNull();
-        etype.GetQueryFilter().ShouldNotBeNull();
+        etype.GetDeclaredQueryFilters().ShouldNotBeNull();
     }
 
     #endregion

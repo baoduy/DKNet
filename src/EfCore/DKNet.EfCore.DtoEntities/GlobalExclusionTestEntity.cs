@@ -12,42 +12,42 @@ public sealed class GlobalExclusionTestEntity : IEntity<Guid>
 
     public GlobalExclusionTestEntity(string name, string description)
     {
-        this.Id = Guid.NewGuid();
-        this.Name = name;
-        this.Description = description;
-        this.CreatedBy = "system";
-        this.UpdatedBy = "system";
-        this.CreatedAt = DateTime.UtcNow;
-        this.UpdatedAt = DateTime.UtcNow;
-        this.IsActive = true;
+        Id = Guid.NewGuid();
+        Name = name;
+        Description = description;
+        CreatedBy = "system";
+        UpdatedBy = "system";
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        IsActive = true;
     }
 
     private GlobalExclusionTestEntity()
     {
-        this.Id = Guid.Empty;
-        this.Name = string.Empty;
-        this.Description = string.Empty;
-        this.CreatedBy = string.Empty;
-        this.UpdatedBy = string.Empty;
+        Id = Guid.Empty;
+        Name = string.Empty;
+        Description = string.Empty;
+        CreatedBy = string.Empty;
+        UpdatedBy = string.Empty;
     }
 
     #endregion
 
     #region Properties
 
-    public bool IsActive { get; private set; }
-
     public DateTime CreatedAt { get; private set; }
-
-    public DateTime UpdatedAt { get; private set; }
-
-    public Guid Id { get; private set; }
 
     public string CreatedBy { get; private set; }
 
     public string Description { get; private set; }
 
+    public Guid Id { get; private set; }
+
+    public bool IsActive { get; private set; }
+
     public string Name { get; private set; }
+
+    public DateTime UpdatedAt { get; private set; }
 
     public string UpdatedBy { get; private set; }
 

@@ -13,21 +13,6 @@ public class SerializableOptions
 {
     #region Properties
 
-    /// <inheritdoc cref="PdfGeneratorOptions.EnableAutoLanguageDetection" />
-    public bool? EnableAutoLanguageDetection { get; set; }
-
-    /// <inheritdoc cref="PdfGeneratorOptions.IsLandscape" />
-    public bool? IsLandscape { get; set; }
-
-    /// <inheritdoc cref="PdfGeneratorOptions.KeepHtml" />
-    public bool? KeepHtml { get; set; }
-
-    /// <inheritdoc cref="PdfGeneratorOptions.Scale" />
-    public decimal? Scale { get; set; }
-
-    /// <inheritdoc cref="PdfGeneratorOptions.MarginOptions" />
-    public MarginOptions? MarginOptions { get; set; }
-
     /// <inheritdoc cref="PdfGeneratorOptions.ChromePath" />
     public string? ChromePath { get; set; }
 
@@ -40,6 +25,9 @@ public class SerializableOptions
     /// <inheritdoc cref="PdfGeneratorOptions.DocumentTitle" />
     public string? DocumentTitle { get; set; }
 
+    /// <inheritdoc cref="PdfGeneratorOptions.EnableAutoLanguageDetection" />
+    public bool? EnableAutoLanguageDetection { get; set; }
+
     /// <inheritdoc cref="PdfGeneratorOptions.FooterHtml" />
     public string? FooterHtml { get; set; }
 
@@ -49,17 +37,29 @@ public class SerializableOptions
     /// <inheritdoc cref="PdfGeneratorOptions.HeaderHtml" />
     public string? HeaderHtml { get; set; }
 
+    /// <inheritdoc cref="PdfGeneratorOptions.IsLandscape" />
+    public bool? IsLandscape { get; set; }
+
+    /// <inheritdoc cref="PdfGeneratorOptions.KeepHtml" />
+    public bool? KeepHtml { get; set; }
+
+    /// <inheritdoc cref="PdfGeneratorOptions.MarginOptions" />
+    public MarginOptions? MarginOptions { get; set; }
+
     /// <inheritdoc cref="PdfGeneratorOptions.MetadataTitle" />
     public string? MetadataTitle { get; set; }
 
     /// <inheritdoc cref="PdfGeneratorOptions.ModuleOptions" />
     public string? ModuleOptions { get; set; }
 
-    /// <inheritdoc cref="PdfGeneratorOptions.Theme" />
-    public string? Theme { get; set; }
+    /// <inheritdoc cref="PdfGeneratorOptions.Scale" />
+    public decimal? Scale { get; set; }
 
     /// <inheritdoc cref="PdfGeneratorOptions.TableOfContents" />
     public TableOfContentsOptions? TableOfContents { get; set; }
+
+    /// <inheritdoc cref="PdfGeneratorOptions.Theme" />
+    public string? Theme { get; set; }
 
     #endregion
 
@@ -76,96 +76,53 @@ public class SerializableOptions
     {
         var options = new PdfGeneratorOptions();
 
-        if (this.ModuleOptions != null)
-        {
+        if (ModuleOptions != null)
             options.ModuleOptions =
                 PropertyService.TryGetPropertyValue<ModuleOptions, ModuleOptions>(
-                    this.ModuleOptions,
+                    ModuleOptions,
                     out var moduleOptions)
                     ? moduleOptions
-                    : Options.ModuleOptions.FromLocalPath(this.ModuleOptions);
-        }
+                    : Options.ModuleOptions.FromLocalPath(ModuleOptions);
 
-        if (this.Theme != null)
-        {
-            options.Theme = PropertyService.TryGetPropertyValue<Theme, Theme>(this.Theme, out var theme)
+        if (Theme != null)
+            options.Theme = PropertyService.TryGetPropertyValue<Theme, Theme>(Theme, out var theme)
                 ? theme
-                : Options.Theme.Custom(this.Theme);
-        }
+                : Options.Theme.Custom(Theme);
 
-        if (this.CodeHighlightTheme != null
+        if (CodeHighlightTheme != null
             && PropertyService.TryGetPropertyValue<CodeHighlightTheme, CodeHighlightTheme>(
-                this.CodeHighlightTheme,
+                CodeHighlightTheme,
                 out var codeHighlightTheme))
-        {
             options.CodeHighlightTheme = codeHighlightTheme;
-        }
 
-        if (this.EnableAutoLanguageDetection != null)
-        {
-            options.EnableAutoLanguageDetection = this.EnableAutoLanguageDetection.Value;
-        }
+        if (EnableAutoLanguageDetection != null)
+            options.EnableAutoLanguageDetection = EnableAutoLanguageDetection.Value;
 
-        if (this.HeaderHtml != null)
-        {
-            options.HeaderHtml = this.HeaderHtml;
-        }
+        if (HeaderHtml != null) options.HeaderHtml = HeaderHtml;
 
-        if (this.FooterHtml != null)
-        {
-            options.FooterHtml = this.FooterHtml;
-        }
+        if (FooterHtml != null) options.FooterHtml = FooterHtml;
 
-        if (this.DocumentTitle != null)
-        {
-            options.DocumentTitle = this.DocumentTitle;
-        }
+        if (DocumentTitle != null) options.DocumentTitle = DocumentTitle;
 
-        if (this.MetadataTitle != null)
-        {
-            options.MetadataTitle = this.MetadataTitle;
-        }
+        if (MetadataTitle != null) options.MetadataTitle = MetadataTitle;
 
-        if (this.CustomHeadContent != null)
-        {
-            options.CustomHeadContent = this.CustomHeadContent;
-        }
+        if (CustomHeadContent != null) options.CustomHeadContent = CustomHeadContent;
 
-        if (this.ChromePath != null)
-        {
-            options.ChromePath = this.ChromePath;
-        }
+        if (ChromePath != null) options.ChromePath = ChromePath;
 
-        if (this.KeepHtml != null)
-        {
-            options.KeepHtml = this.KeepHtml.Value;
-        }
+        if (KeepHtml != null) options.KeepHtml = KeepHtml.Value;
 
-        if (this.MarginOptions != null)
-        {
-            options.MarginOptions = this.MarginOptions;
-        }
+        if (MarginOptions != null) options.MarginOptions = MarginOptions;
 
-        if (this.IsLandscape != null)
-        {
-            options.IsLandscape = this.IsLandscape.Value;
-        }
+        if (IsLandscape != null) options.IsLandscape = IsLandscape.Value;
 
-        if (this.Format != null &&
-            PropertyService.TryGetPropertyValue<PaperFormat, PaperFormat>(this.Format, out var format))
-        {
+        if (Format != null &&
+            PropertyService.TryGetPropertyValue<PaperFormat, PaperFormat>(Format, out var format))
             options.Format = format;
-        }
 
-        if (this.Scale != null)
-        {
-            options.Scale = this.Scale.Value;
-        }
+        if (Scale != null) options.Scale = Scale.Value;
 
-        if (this.TableOfContents != null)
-        {
-            options.TableOfContents = this.TableOfContents;
-        }
+        if (TableOfContents != null) options.TableOfContents = TableOfContents;
 
         return options;
     }

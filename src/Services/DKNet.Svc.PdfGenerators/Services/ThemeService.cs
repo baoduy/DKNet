@@ -7,6 +7,8 @@ internal class ThemeService
 {
     #region Fields
 
+    private const string StyleKey = "stylePath";
+
     private readonly ModuleOptions _options;
 
     private readonly Theme _theme;
@@ -29,18 +31,18 @@ internal class ThemeService
 
     public ThemeService(Theme theme, ModuleOptions options, IConversionEvents events)
     {
-        this._theme = theme;
-        this._options = options;
+        _theme = theme;
+        _options = options;
 
         // adjust local dictionary paths
         if (options is NodeModuleOptions nodeModuleOptions)
         {
             var path = nodeModuleOptions.ModulePath;
 
-            this._themeSourceMapping = ModuleInformation.UpdateDic(this._themeSourceMapping, path);
+            _themeSourceMapping = ModuleInformation.UpdateDic(_themeSourceMapping, path);
         }
 
-        events.TemplateModelCreating += this.InternalAddThemeToTemplateAsync;
+        events.TemplateModelCreating += InternalAddThemeToTemplateAsync;
     }
 
     #endregion
@@ -49,12 +51,12 @@ internal class ThemeService
 
     internal async Task InternalAddThemeToTemplateAsync(object? sender, TemplateModelEventArgs e)
     {
-        switch (this._theme)
+        switch (_theme)
         {
             case PredefinedTheme predefinedTheme when predefinedTheme.Type != ThemeType.None:
             {
-                var value = this._themeSourceMapping[predefinedTheme.Type];
-                e.TemplateModel.Add(StyleKey, this._options.IsRemote ? value.RemotePath : value.NodePath);
+                var value = _themeSourceMapping[predefinedTheme.Type];
+                e.TemplateModel.Add(StyleKey, _options.IsRemote ? value.RemotePath : value.NodePath);
                 break;
             }
 
@@ -67,6 +69,4 @@ internal class ThemeService
     }
 
     #endregion
-
-    private const string StyleKey = "stylePath";
 }

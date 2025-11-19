@@ -17,9 +17,9 @@ public class TestEntity : Entity<int>, IConcurrencyEntity<byte[]>
 
     #region Properties
 
-    public byte[]? RowVersion { get; private set; }
-
     public string Name { get; set; } = string.Empty;
+
+    public byte[]? RowVersion { get; private set; }
 
     #endregion
 
@@ -27,7 +27,7 @@ public class TestEntity : Entity<int>, IConcurrencyEntity<byte[]>
 
     public void SetRowVersion(byte[] rowVersion)
     {
-        this.RowVersion = rowVersion;
+        RowVersion = rowVersion;
     }
 
     #endregion

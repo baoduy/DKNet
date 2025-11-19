@@ -16,6 +16,8 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
 
     #region Properties
 
+    public TestDbContext DbContext { get; set; } = null!;
+
     public IReadRepository<User> ReadRepositoryWithMapper { get; set; } = null!;
 
     public IReadRepository<User> ReadRepositoryWithoutMapper { get; set; } = null!;
@@ -24,32 +26,27 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
 
     public IRepository<User> RepositoryWithoutMapper { get; set; } = null!;
 
-    public TestDbContext DbContext { get; set; } = null!;
-
     #endregion
 
     #region Methods
 
     public async Task DisposeAsync()
     {
-        await this.DbContext.DisposeAsync();
-        if (this._connection != null)
-        {
-            await this._connection.DisposeAsync();
-        }
+        await DbContext.DisposeAsync();
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
         // Use in-memory SQLite database that is deleted on connection close
-        this._connection = new SqliteConnection("DataSource=:memory:");
-        await this._connection.OpenAsync();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(this._connection);
+            .UseSqlite(_connection);
 
-        this.DbContext = new TestDbContext(optionsBuilder.Options);
-        await this.DbContext.Database.EnsureCreatedAsync();
+        DbContext = new TestDbContext(optionsBuilder.Options);
+        await DbContext.Database.EnsureCreatedAsync();
 
         // Configure Mapster
         var config = new TypeAdapterConfig();
@@ -61,10 +58,10 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         var mappers = new[] { mapper };
 
         // Create repositories with and without mappers
-        this.ReadRepositoryWithMapper = new ReadRepository<User>(this.DbContext, mappers);
-        this.ReadRepositoryWithoutMapper = new ReadRepository<User>(this.DbContext);
-        this.RepositoryWithMapper = new Repository<User>(this.DbContext, mappers);
-        this.RepositoryWithoutMapper = new Repository<User>(this.DbContext);
+        ReadRepositoryWithMapper = new ReadRepository<User>(DbContext, mappers);
+        ReadRepositoryWithoutMapper = new ReadRepository<User>(DbContext);
+        RepositoryWithMapper = new Repository<User>(DbContext, mappers);
+        RepositoryWithoutMapper = new Repository<User>(DbContext);
     }
 
     #endregion

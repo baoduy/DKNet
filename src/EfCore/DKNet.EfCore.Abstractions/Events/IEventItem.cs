@@ -38,7 +38,7 @@ public abstract record EventItem : IEventItem
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    public virtual string EventType => this.GetType().FullName ?? nameof(EventItem);
+    public virtual string EventType => GetType().FullName ?? nameof(EventItem);
 
     #endregion
 }

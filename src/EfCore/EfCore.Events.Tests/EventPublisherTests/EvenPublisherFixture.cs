@@ -22,31 +22,28 @@ public sealed class EvenPublisherFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (this._connection != null)
-        {
-            await this._connection.DisposeAsync();
-        }
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
-        this._connection = new SqliteConnection("DataSource=:memory:");
-        await this._connection.OpenAsync();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
         TypeAdapterConfig.GlobalSettings.Default.MapToConstructor(true);
 
-        this.Provider = new ServiceCollection()
+        Provider = new ServiceCollection()
             .AddLogging()
             .AddEventPublisher<DddContext, TestEventPublisher>()
             .AddSingleton(TypeAdapterConfig.GlobalSettings)
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContextWithHook<DddContext>(builder =>
                 builder.UseAutoConfigModel(typeof(DddContext).Assembly)
-                    .UseSqlite(this._connection))
+                    .UseSqlite(_connection))
             .BuildServiceProvider();
 
-        var db = this.Provider.GetRequiredService<DddContext>();
+        var db = Provider.GetRequiredService<DddContext>();
         await db.Database.EnsureCreatedAsync();
 
         db.Set<Root>()

@@ -29,7 +29,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
     public void GetPrimaryKeyProperties_WithValidEntityType_ShouldReturnPropertyNames()
     {
         // Act
-        var properties = this._db.GetPrimaryKeyProperties<User>().ToList();
+        var properties = _db.GetPrimaryKeyProperties<User>().ToList();
 
         // Assert
         properties.ShouldHaveSingleItem();
@@ -43,7 +43,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         var user = new User(1, "Test User") { FirstName = "Test", LastName = "User" };
 
         // Act
-        var keyValues = this._db.GetPrimaryKeyValues(user).ToList();
+        var keyValues = _db.GetPrimaryKeyValues(user).ToList();
 
         // Assert
         keyValues.ShouldHaveSingleItem();
@@ -53,7 +53,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
     [Fact]
     public void GetPrimaryKeyValues_WithNullEntity_ShouldThrowArgumentNullException()
     {
-        var action = () => this._db.GetPrimaryKeyValues(null!).ToList();
+        var action = () => _db.GetPrimaryKeyValues(null!).ToList();
 
         // Act & Assert
         action.ShouldThrow<ArgumentNullException>();
@@ -71,7 +71,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
     public void GetTableName_WithValidEntity_ShouldReturnQualifiedTableName()
     {
         // Act
-        var tableName = this._db.GetTableName(typeof(User));
+        var tableName = _db.GetTableName(typeof(User));
 
         // Assert
         tableName.ShouldNotBeNullOrEmpty();
@@ -93,7 +93,7 @@ public class EfCoreExtensionsAdvancedTests(MemoryFixture fixture) : IClassFixtur
         var regularEnum = DayOfWeek.Monday;
 
         // Act
-        var result = await this._db.NextSeqValue(regularEnum);
+        var result = await _db.NextSeqValue(regularEnum);
 
         // Assert
         result.ShouldBeNull();

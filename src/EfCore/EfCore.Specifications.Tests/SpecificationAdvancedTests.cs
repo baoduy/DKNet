@@ -1,3 +1,5 @@
+using DKNet.EfCore.Specifications.Extensions;
+
 namespace EfCore.Specifications.Tests;
 
 /// <summary>

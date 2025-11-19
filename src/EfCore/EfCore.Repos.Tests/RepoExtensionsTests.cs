@@ -30,7 +30,7 @@ public class RepoExtensionsTests(RepositoryFixture fixture, ITestOutputHelper ou
         db.ChangeTracker.Clear();
 
         // Arrange
-        await this.CreateUser(3);
+        await CreateUser(3);
 
         // Act
         var list = await db.Set<UserGuid>().ToListAsync();

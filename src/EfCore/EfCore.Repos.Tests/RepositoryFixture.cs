@@ -26,13 +26,10 @@ public class RepositoryFixture : IAsyncLifetime
 
     public DbContext CreateNewDbContext()
     {
-        if (this._connection == null)
-        {
-            throw new InvalidOperationException("Connection not initialized");
-        }
+        if (_connection == null) throw new InvalidOperationException("Connection not initialized");
 
         var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(this._connection)
+            .UseSqlite(_connection)
             .UseAutoConfigModel();
 
         var context = new TestDbContext(optionsBuilder.Options);
@@ -41,28 +38,22 @@ public class RepositoryFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (this.DbContext != null)
-        {
-            await this.DbContext.DisposeAsync();
-        }
+        if (DbContext != null) await DbContext.DisposeAsync();
 
-        if (this._connection != null)
-        {
-            await this._connection.DisposeAsync();
-        }
+        if (_connection != null) await _connection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
         // Use in-memory SQLite database that is deleted on connection close
-        this._connection = new SqliteConnection("DataSource=:memory:");
-        await this._connection.OpenAsync();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
 
-        this.DbContext = this.CreateNewDbContext();
-        await this.DbContext.Database.EnsureCreatedAsync();
+        DbContext = CreateNewDbContext();
+        await DbContext.Database.EnsureCreatedAsync();
 
-        this.ReadRepository = new ReadRepository<User>(this.DbContext);
-        this.Repository = new Repository<User>(this.DbContext);
+        ReadRepository = new ReadRepository<User>(DbContext);
+        Repository = new Repository<User>(DbContext);
     }
 
     #endregion

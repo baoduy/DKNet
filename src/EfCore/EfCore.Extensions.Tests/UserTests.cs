@@ -34,20 +34,20 @@ public class UserTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
             }
         };
 
-        this._db.Add(user);
-        await this._db.SaveChangesAsync();
+        _db.Add(user);
+        await _db.SaveChangesAsync();
 
-        var u = await this._db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
+        var u = await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.ShouldNotBeNull();
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(2);
 
         u.Addresses.Remove(u.Addresses.First());
-        await this._db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
-        u = await this._db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
+        u = await _db.Set<User>().Include(i => i.Addresses).FirstAsync(i => i.Id == user.Id);
         u.Addresses.Count.ShouldBeGreaterThanOrEqualTo(1);
 
-        this._db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
+        _db.ChangeTracker.AutoDetectChangesEnabled.ShouldBeTrue();
     }
 
     [Fact]

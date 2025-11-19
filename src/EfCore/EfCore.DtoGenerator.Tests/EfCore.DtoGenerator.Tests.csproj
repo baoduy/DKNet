@@ -59,6 +59,7 @@
     <ItemGroup>
         <!-- Reference the generator as an analyzer so it runs during compilation -->
         <ProjectReference Include="..\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator.Analyzers\DKNet.EfCore.DtoGenerator.Analyzers.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="true"/>

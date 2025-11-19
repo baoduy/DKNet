@@ -30,16 +30,16 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     /// <inheritdoc />
     public void Dispose()
     {
-        this._cryptoGen.Dispose();
-        this._disposed = true;
+        _cryptoGen.Dispose();
+        _disposed = true;
     }
 
     private char[] Generate(string validChars, int length)
     {
-        ObjectDisposedException.ThrowIf(this._disposed, nameof(StringCreator));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(StringCreator));
 
         var buffer = new byte[length * 8];
-        this._cryptoGen.GetBytes(buffer);
+        _cryptoGen.GetBytes(buffer);
         var result = new char[length];
         for (var i = 0; i < length; i++)
         {
@@ -58,17 +58,12 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     public char[] ToChars()
     {
         // Prepare result list
-        if (bufferLength <= 0)
-        {
-            throw new ArgumentException("Length must be greater than zero.", nameof(bufferLength));
-        }
+        if (bufferLength <= 0) throw new ArgumentException("Length must be greater than zero.", nameof(bufferLength));
 
         if (options.MinNumbers + options.MinSpecials >= bufferLength)
-        {
             throw new ArgumentException(
                 "The sum of MinNumbers and MinSpecials must be less than the total length.",
                 nameof(options));
-        }
 
         var result = new List<char>(bufferLength);
 
@@ -76,17 +71,17 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
         result.AddRange(
             options.MinNumbers <= 0
                 ? []
-                : this.Generate(DefaultNumbers, options.MinNumbers));
+                : Generate(DefaultNumbers, options.MinNumbers));
 
         // Add minimum specials
         result.AddRange(
             options.MinSpecials <= 0
                 ? []
-                : this.Generate(DefaultSymbols, options.MinSpecials));
+                : Generate(DefaultSymbols, options.MinSpecials));
 
         // Fill the rest
         var remaining = bufferLength - result.Count;
-        result.AddRange(this.Generate(DefaultChars, remaining));
+        result.AddRange(Generate(DefaultChars, remaining));
 
         var array = result.ToArray();
         var span = array.AsSpan();
@@ -100,7 +95,7 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     /// <returns>The generated string.</returns>
     public override string ToString()
     {
-        var chars = this.ToChars();
+        var chars = ToChars();
         return new string(chars);
     }
 

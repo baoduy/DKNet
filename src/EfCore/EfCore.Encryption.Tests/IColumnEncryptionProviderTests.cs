@@ -16,29 +16,23 @@ internal class MockColumnEncryptionProvider : IColumnEncryptionProvider
 
     public string? Decrypt(string? ciphertext)
     {
-        if (string.IsNullOrEmpty(ciphertext))
-        {
-            return ciphertext;
-        }
+        if (string.IsNullOrEmpty(ciphertext)) return ciphertext;
 
-        return this._storage.TryGetValue(ciphertext, out var plaintext)
+        return _storage.TryGetValue(ciphertext, out var plaintext)
             ? plaintext
             : throw new InvalidOperationException("Invalid ciphertext");
     }
 
     public string? Encrypt(string? plaintext)
     {
-        if (string.IsNullOrEmpty(plaintext))
-        {
-            return plaintext;
-        }
+        if (string.IsNullOrEmpty(plaintext)) return plaintext;
 
         var encrypted = $"ENCRYPTED_{plaintext}";
-        this._storage[encrypted] = plaintext;
+        _storage[encrypted] = plaintext;
         return encrypted;
     }
 
-    public bool WasEncrypted(string? value) => value != null && this._storage.ContainsKey(value);
+    public bool WasEncrypted(string? value) => value != null && _storage.ContainsKey(value);
 
     #endregion
 }
@@ -50,20 +44,14 @@ internal class ReverseEncryptionProvider : IColumnEncryptionProvider
 
     public string? Decrypt(string? ciphertext)
     {
-        if (string.IsNullOrEmpty(ciphertext))
-        {
-            return ciphertext;
-        }
+        if (string.IsNullOrEmpty(ciphertext)) return ciphertext;
 
         return new string(ciphertext.Reverse().ToArray());
     }
 
     public string? Encrypt(string? plaintext)
     {
-        if (string.IsNullOrEmpty(plaintext))
-        {
-            return plaintext;
-        }
+        if (string.IsNullOrEmpty(plaintext)) return plaintext;
 
         return new string(plaintext.Reverse().ToArray());
     }
@@ -71,7 +59,7 @@ internal class ReverseEncryptionProvider : IColumnEncryptionProvider
     #endregion
 }
 
-public class IColumnEncryptionProviderTests
+public class ColumnEncryptionProviderTests
 {
     #region Methods
 

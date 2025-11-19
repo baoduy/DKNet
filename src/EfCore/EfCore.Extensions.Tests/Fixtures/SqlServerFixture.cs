@@ -20,22 +20,19 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (this.Db != null)
-        {
-            await this.Db.DisposeAsync();
-        }
+        if (Db != null) await Db.DisposeAsync();
 
-        await this._sql.StopAsync();
-        await this._sql.DisposeAsync();
+        await _sql.StopAsync();
+        await _sql.DisposeAsync();
     }
 
     public string GetConnectionString(string dbName) =>
-        this._sql.GetConnectionString()
+        _sql.GetConnectionString()
             .Replace("Database=master;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
 
     public async Task InitializeAsync()
     {
-        await this._sql.StartAsync();
+        await _sql.StartAsync();
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         var options = new DbContextOptionsBuilder()
@@ -45,15 +42,15 @@ public class SqlServerFixture : IAsyncLifetime
                                        || eventId == RelationalEventId.CommandExecuting)
             .EnableSensitiveDataLogging()
             .EnableDetailedErrors()
-            .UseSqlServer(this._sql.GetConnectionString())
+            .UseSqlServer(_sql.GetConnectionString())
             .UseAutoConfigModel([typeof(MyDbContext).Assembly])
 
             //DONOT use auto seeding here as there are a dedicated test for it
             //.UseAutoDataSeeding()
             .Options;
 
-        this.Db = new MyDbContext(options);
-        await this.Db.Database.EnsureCreatedAsync();
+        Db = new MyDbContext(options);
+        await Db.Database.EnsureCreatedAsync();
     }
 
     #endregion

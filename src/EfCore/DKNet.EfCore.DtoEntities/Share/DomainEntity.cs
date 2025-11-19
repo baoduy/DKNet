@@ -23,7 +23,7 @@ public abstract class DomainEntity : AuditedEntity<Guid>, IConcurrencyEntity<byt
     /// <param name="byUser">The user creating the entity.</param>
     protected DomainEntity(string byUser)
     {
-        this.SetCreatedBy(byUser);
+        SetCreatedBy(byUser);
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public abstract class DomainEntity : AuditedEntity<Guid>, IConcurrencyEntity<byt
     /// <param name="createdBy">The user creating the entity.</param>
     protected DomainEntity(Guid id, string createdBy) : base(id)
     {
-        this.SetCreatedBy(createdBy);
+        SetCreatedBy(createdBy);
     }
 
     #endregion
@@ -55,7 +55,7 @@ public abstract class DomainEntity : AuditedEntity<Guid>, IConcurrencyEntity<byt
     /// <param name="rowVersion">The row version bytes.</param>
     public void SetRowVersion(byte[] rowVersion)
     {
-        this.RowVersion = rowVersion;
+        RowVersion = rowVersion;
     }
 
     #endregion

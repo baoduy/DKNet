@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-// Copyright (c) https://drunkcoding.net. All rights reserved.
+﻿// Copyright (c) https://drunkcoding.net. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // Author: DRUNK Coding Team
 // File: DefaultEntityTypeConfiguration.cs
@@ -35,14 +34,13 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
     {
         var clrType = builder.Metadata.ClrType;
 
-        const string idKey = nameof(IEntity<dynamic>.Id);
+        const string idKey = nameof(IEntity<>.Id);
 
         // Handle IEntity<T> to set the primary key
         var idProperty = clrType.GetProperty(idKey);
         if (idProperty != null)
         {
             builder.HasKey(idKey);
-
             if (idProperty.PropertyType.IsNumericType())
                 builder.Property(idKey)
                     .ValueGeneratedOnAdd();
@@ -69,7 +67,7 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
         }
 
         if (clrType.IsImplementOf(typeof(IConcurrencyEntity<>)))
-            builder.Property(nameof(IConcurrencyEntity<dynamic>.RowVersion))
+            builder.Property(nameof(IConcurrencyEntity<>.RowVersion))
                 .IsConcurrencyToken()
                 .IsRowVersion()
                 .ValueGeneratedOnAddOrUpdate();
@@ -77,4 +75,3 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
 
     #endregion
 }
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

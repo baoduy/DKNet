@@ -19,41 +19,37 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class SlimBusEfCoreSetup
 {
-    #region Methods
-
-    /// <summary>
-    ///     Registers <see cref="SlimBusEventPublisher" /> as the event publisher for the specified
-    ///     <typeparamref name="TDbContext" />.
-    ///     The publisher uses SlimMessageBus to publish domain events.
-    /// </summary>
-    /// <typeparam name="TDbContext">The application's <see cref="DbContext" /> type.</typeparam>
     /// <param name="serviceCollection">The service collection to register services into.</param>
-    /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
-    public static IServiceCollection AddSlimBusEventPublisher<TDbContext>(this IServiceCollection serviceCollection)
-        where TDbContext : DbContext
+    extension(IServiceCollection serviceCollection)
     {
-        serviceCollection
-            .AddEventPublisher<TDbContext, SlimBusEventPublisher>();
-        return serviceCollection;
-    }
+        /// <summary>
+        ///     Registers <see cref="SlimBusEventPublisher" /> as the event publisher for the specified
+        ///     <typeparamref name="TDbContext" />.
+        ///     The publisher uses SlimMessageBus to publish domain events.
+        /// </summary>
+        /// <typeparam name="TDbContext">The application's <see cref="DbContext" /> type.</typeparam>
+        /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
+        public IServiceCollection AddSlimBusEventPublisher<TDbContext>()
+            where TDbContext : DbContext
+        {
+            serviceCollection
+                .AddEventPublisher<TDbContext, SlimBusEventPublisher>();
+            return serviceCollection;
+        }
 
-    /// <summary>
-    ///     Adds SlimMessageBus and EF Core integration services required for auto-saving the DbContext after
-    ///     request handlers run. Registers the <see cref="EfAutoSavePostProcessor{TRequest,TResponse}" />
-    ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
-    /// </summary>
-    /// <param name="serviceCollection">The service collection to configure.</param>
-    /// <param name="configure">A callback to configure the SlimMessageBus <see cref="MessageBusBuilder" />.</param>
-    /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
-    public static IServiceCollection AddSlimBusForEfCore(
-        this IServiceCollection serviceCollection,
-        Action<MessageBusBuilder> configure)
-    {
-        serviceCollection
-            .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>))
-            .AddSlimMessageBus(configure);
-        return serviceCollection;
+        /// <summary>
+        ///     Adds SlimMessageBus and EF Core integration services required for auto-saving the DbContext after
+        ///     request handlers run. Registers the <see cref="EfAutoSavePostProcessor{TRequest,TResponse}" />
+        ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
+        /// </summary>
+        /// <param name="configure">A callback to configure the SlimMessageBus <see cref="MessageBusBuilder" />.</param>
+        /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
+        public IServiceCollection AddSlimBusForEfCore(Action<MessageBusBuilder> configure)
+        {
+            serviceCollection
+                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>))
+                .AddSlimMessageBus(configure);
+            return serviceCollection;
+        }
     }
-
-    #endregion
 }

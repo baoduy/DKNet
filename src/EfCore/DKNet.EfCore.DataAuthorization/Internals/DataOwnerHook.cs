@@ -31,7 +31,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     /// <returns>A task representing the asynchronous operation.</returns>
     public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        this.UpdatingOwner(context);
+        UpdatingOwner(context);
         return Task.CompletedTask;
     }
 
@@ -48,10 +48,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             .Select(e => e.Entity);
 
         var ownerKey = dataOwnerProvider.GetOwnershipKey();
-        if (string.IsNullOrEmpty(ownerKey))
-        {
-            return;
-        }
+        if (string.IsNullOrEmpty(ownerKey)) return;
 
         foreach (var entity in dataKeyEntities)
         {
@@ -62,9 +59,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             }
 
             if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-            {
                 own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
-            }
         }
     }
 

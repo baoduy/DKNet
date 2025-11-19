@@ -46,11 +46,9 @@ internal class TypeExtractor : ITypeExtractor
     public TypeExtractor(Assembly[] assemblies)
     {
         if (assemblies == null || assemblies.Length == 0)
-        {
             throw new ArgumentException("Assemblies collection cannot be null or empty.", nameof(assemblies));
-        }
 
-        this._assemblies = [.. assemblies.Distinct()];
+        _assemblies = [.. assemblies.Distinct()];
     }
 
     #endregion
@@ -60,27 +58,24 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     public ITypeExtractor Abstract()
     {
-        return this.FilterBy(t => t.IsAbstract);
+        return FilterBy(t => t.IsAbstract);
     }
 
     /// <inheritdoc />
     public ITypeExtractor Classes()
     {
-        return this.FilterBy(t => t.IsClass);
+        return FilterBy(t => t.IsClass);
     }
 
     /// <inheritdoc />
     public ITypeExtractor Enums()
     {
-        return this.FilterBy(t => t.IsEnum);
+        return FilterBy(t => t.IsEnum);
     }
 
     private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
     {
-        if (predicate != null)
-        {
-            this._predicates.Add(predicate);
-        }
+        if (predicate != null) _predicates.Add(predicate);
 
         return this;
     }
@@ -88,123 +83,120 @@ internal class TypeExtractor : ITypeExtractor
     /// <inheritdoc />
     public ITypeExtractor Generic()
     {
-        return this.FilterBy(t => t.IsGenericType);
+        return FilterBy(t => t.IsGenericType);
     }
 
     /// <inheritdoc />
     public IEnumerator<Type> GetEnumerator()
     {
-        var query = this._assemblies.SelectMany(a => a.GetTypes()).AsQueryable();
-        foreach (var predicate in this._predicates)
-        {
-            query = query.Where(predicate);
-        }
+        var query = _assemblies.SelectMany(a => a.GetTypes()).AsQueryable();
+        foreach (var predicate in _predicates) query = query.Where(predicate);
 
         return query.GetEnumerator();
     }
 
     /// <inheritdoc />
-    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute<TAttribute>()
         where TAttribute : Attribute
     {
-        return this.FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
+        return FilterBy(t => t.GetCustomAttributes(typeof(TAttribute), false).Length != 0);
     }
 
     /// <inheritdoc />
     public ITypeExtractor HasAttribute(Type attributeType)
     {
-        return this.FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
+        return FilterBy(t => t.GetCustomAttributes(attributeType, false).Length != 0);
     }
 
     /// <inheritdoc />
     public ITypeExtractor Interfaces()
     {
-        return this.FilterBy(t => t.IsInterface);
+        return FilterBy(t => t.IsInterface);
     }
 
     /// <inheritdoc />
     public ITypeExtractor IsInstanceOf(Type? type)
     {
-        return type == null ? this : this.FilterBy(t => t.IsImplementOf(type));
+        return type == null ? this : FilterBy(t => t.IsImplementOf(type));
     }
 
     /// <inheritdoc />
-    public ITypeExtractor IsInstanceOf<T>() => this.IsInstanceOf(typeof(T));
+    public ITypeExtractor IsInstanceOf<T>() => IsInstanceOf(typeof(T));
 
     /// <inheritdoc />
     public ITypeExtractor IsInstanceOfAny(params Type[] types)
     {
-        return this.FilterBy(t => types.Any(t.IsImplementOf));
+        return FilterBy(t => types.Any(t.IsImplementOf));
     }
 
     /// <inheritdoc />
     public ITypeExtractor Nested()
     {
-        return this.FilterBy(t => t.IsNested);
+        return FilterBy(t => t.IsNested);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotAbstract()
     {
-        return this.FilterBy(t => !t.IsAbstract);
+        return FilterBy(t => !t.IsAbstract);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotClass()
     {
-        return this.FilterBy(t => !t.IsClass);
+        return FilterBy(t => !t.IsClass);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotEnum()
     {
-        return this.FilterBy(t => !t.IsEnum);
+        return FilterBy(t => !t.IsEnum);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotGeneric()
     {
-        return this.FilterBy(t => !t.IsGenericType);
+        return FilterBy(t => !t.IsGenericType);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotInstanceOf(Type? type)
     {
-        return type == null ? this : this.FilterBy(t => !t.IsImplementOf(type));
+        return type == null ? this : FilterBy(t => !t.IsImplementOf(type));
     }
 
     /// <inheritdoc />
-    public ITypeExtractor NotInstanceOf<T>() => this.NotInstanceOf(typeof(T));
+    public ITypeExtractor NotInstanceOf<T>() => NotInstanceOf(typeof(T));
 
     /// <inheritdoc />
     public ITypeExtractor NotInterface()
     {
-        return this.FilterBy(t => !t.IsInterface);
+        return FilterBy(t => !t.IsInterface);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotNested()
     {
-        return this.FilterBy(t => !t.IsNested);
+        return FilterBy(t => !t.IsNested);
     }
 
     /// <inheritdoc />
     public ITypeExtractor NotPublic()
     {
-        return this.FilterBy(t => !t.IsPublic);
+        return FilterBy(t => !t.IsPublic);
     }
 
     /// <inheritdoc />
     public ITypeExtractor Publics()
     {
-        return this.FilterBy(t => t.IsPublic);
+        return FilterBy(t => t.IsPublic);
     }
 
     /// <inheritdoc />
-    public ITypeExtractor Where(Expression<Func<Type, bool>>? predicate) => this.FilterBy(predicate);
+    public ITypeExtractor Where(Expression<Func<Type, bool>>? predicate) => FilterBy(predicate);
 
     #endregion
 }

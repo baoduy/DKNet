@@ -15,7 +15,7 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
         logger.LogInformation("Background job host started");
         await using var scope = provider.CreateAsyncScope();
         var jobs = scope.ServiceProvider.GetServices<IBackgroundTask>();
-        await Task.WhenAll(jobs.Select(j => this.ExecuteJobAsync(j, stoppingToken)));
+        await Task.WhenAll(jobs.Select(j => ExecuteJobAsync(j, stoppingToken)));
         logger.LogInformation("Background job host finished");
     }
 
@@ -28,7 +28,12 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while executing job `{JobType}`", task.GetType().FullName);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                var jobType = task.GetType().FullName;
+                // Use the precompiled delegate to reduce allocations.
+                logger.LogError(ex, $"{jobType} job failed");
+            }
         }
     }
 

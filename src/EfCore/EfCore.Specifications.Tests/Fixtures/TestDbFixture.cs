@@ -95,6 +95,34 @@ public class TestDbFixture : IAsyncLifetime
         // Create products
         var products = _productFaker.Generate(20);
         for (var i = 0; i < products.Count; i++) products[i].CategoryId = categories[i % categories.Count].Id;
+
+        // Ensure specific products for test scenarios
+        // Product with Price < 10
+        if (products.Count > 0)
+        {
+            products[0].Price = 5.99m;
+            products[0].Name = "Cheap Product";
+            products[0].IsActive = true;
+        }
+
+        // Product with Name starting with "Special"
+        if (products.Count > 1)
+        {
+            products[1].Name = "Special Edition Product";
+            products[1].Price = 99.99m;
+            products[1].StockQuantity = 50;
+            products[1].IsActive = true;
+        }
+
+        // Product with StockQuantity = 0
+        if (products.Count > 2)
+        {
+            products[2].StockQuantity = 0;
+            products[2].Name = "Out of Stock Product";
+            products[2].Price = 49.99m;
+            products[2].IsActive = true;
+        }
+
         await Db.Products.AddRangeAsync(products);
         await Db.SaveChangesAsync();
 
@@ -114,6 +142,10 @@ public class TestDbFixture : IAsyncLifetime
 
         // Create orders
         var orders = _orderFaker.Generate(15);
+
+        // Ensure first order has Pending status for enum tests
+        if (orders.Count > 0) orders[0].Status = OrderStatus.Pending;
+
         await Db.Orders.AddRangeAsync(orders);
         await Db.SaveChangesAsync();
 

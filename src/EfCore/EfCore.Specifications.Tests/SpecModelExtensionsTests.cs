@@ -1,3 +1,4 @@
+using DKNet.EfCore.Specifications.Extensions;
 using Mapster;
 using MapsterMapper;
 
@@ -39,6 +40,7 @@ internal sealed class NonExistingProductModelSpecification : ModelSpecification<
     public NonExistingProductModelSpecification()
     {
         WithFilter(p => p.Name == "__NO_PRODUCT__");
+        AddOrderBy(p => p.Name);
     }
 
     #endregion
