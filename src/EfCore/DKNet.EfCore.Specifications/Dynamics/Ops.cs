@@ -3,7 +3,7 @@ namespace DKNet.EfCore.Specifications.Dynamics;
 /// <summary>
 ///     Defines the supported operations for building dynamic predicates.
 /// </summary>
-public enum DynamicOperations
+public enum Ops
 {
     /// <summary>
     ///     Equality comparison (==)
@@ -53,5 +53,21 @@ public enum DynamicOperations
     /// <summary>
     ///     String ends with operation
     /// </summary>
-    EndsWith
+    EndsWith,
+
+    /// <summary>
+    ///     Checks if the property value is contained in a collection of values.
+    ///     Requires value to be an array or IEnumerable (excluding string).
+    ///     Translates to SQL IN clause.
+    ///     Example: CategoryId IN (1, 2, 3)
+    /// </summary>
+    In,
+
+    /// <summary>
+    ///     Checks if the property value is NOT contained in a collection of values.
+    ///     Requires value to be an array or IEnumerable (excluding string).
+    ///     Translates to SQL NOT IN clause.
+    ///     Example: CategoryId NOT IN (1, 2, 3)
+    /// </summary>
+    NotIn
 }

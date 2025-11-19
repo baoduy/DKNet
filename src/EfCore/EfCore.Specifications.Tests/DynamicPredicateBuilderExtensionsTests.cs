@@ -28,7 +28,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var boolType = typeof(bool);
 
         // Act & Assert
-        boolType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Equal);
+        boolType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Equal);
     }
 
     [Fact]
@@ -38,10 +38,10 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var intType = typeof(int);
 
         // Act & Assert: Comparison operations should not change
-        intType.AdjustOperationForValueType(DynamicOperations.Equal).ShouldBe(DynamicOperations.Equal);
-        intType.AdjustOperationForValueType(DynamicOperations.NotEqual).ShouldBe(DynamicOperations.NotEqual);
-        intType.AdjustOperationForValueType(DynamicOperations.GreaterThan).ShouldBe(DynamicOperations.GreaterThan);
-        intType.AdjustOperationForValueType(DynamicOperations.LessThan).ShouldBe(DynamicOperations.LessThan);
+        intType.AdjustOperationForValueType(Ops.Equal).ShouldBe(Ops.Equal);
+        intType.AdjustOperationForValueType(Ops.NotEqual).ShouldBe(Ops.NotEqual);
+        intType.AdjustOperationForValueType(Ops.GreaterThan).ShouldBe(Ops.GreaterThan);
+        intType.AdjustOperationForValueType(Ops.LessThan).ShouldBe(Ops.LessThan);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var decimalType = typeof(decimal);
 
         // Act & Assert
-        decimalType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Equal);
+        decimalType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Equal);
     }
 
     [Fact]
@@ -61,8 +61,8 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var enumType = typeof(OrderStatus);
 
         // Act & Assert
-        enumType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Equal);
-        enumType.AdjustOperationForValueType(DynamicOperations.NotContains).ShouldBe(DynamicOperations.NotEqual);
+        enumType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Equal);
+        enumType.AdjustOperationForValueType(Ops.NotContains).ShouldBe(Ops.NotEqual);
     }
 
     [Fact]
@@ -72,10 +72,10 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var intType = typeof(int);
 
         // Act & Assert
-        intType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Equal);
-        intType.AdjustOperationForValueType(DynamicOperations.NotContains).ShouldBe(DynamicOperations.NotEqual);
-        intType.AdjustOperationForValueType(DynamicOperations.StartsWith).ShouldBe(DynamicOperations.Equal);
-        intType.AdjustOperationForValueType(DynamicOperations.EndsWith).ShouldBe(DynamicOperations.Equal);
+        intType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Equal);
+        intType.AdjustOperationForValueType(Ops.NotContains).ShouldBe(Ops.NotEqual);
+        intType.AdjustOperationForValueType(Ops.StartsWith).ShouldBe(Ops.Equal);
+        intType.AdjustOperationForValueType(Ops.EndsWith).ShouldBe(Ops.Equal);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var nullableStringType = typeof(string);
 
         // Act & Assert
-        nullableStringType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Contains);
+        nullableStringType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Contains);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         Type? nullType = null;
 
         // Act & Assert
-        nullType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Contains);
+        nullType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Contains);
     }
 
     [Fact]
@@ -105,17 +105,17 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var stringType = typeof(string);
 
         // Act & Assert: String operations should remain unchanged
-        stringType.AdjustOperationForValueType(DynamicOperations.Contains).ShouldBe(DynamicOperations.Contains);
-        stringType.AdjustOperationForValueType(DynamicOperations.StartsWith).ShouldBe(DynamicOperations.StartsWith);
-        stringType.AdjustOperationForValueType(DynamicOperations.EndsWith).ShouldBe(DynamicOperations.EndsWith);
-        stringType.AdjustOperationForValueType(DynamicOperations.NotContains).ShouldBe(DynamicOperations.NotContains);
+        stringType.AdjustOperationForValueType(Ops.Contains).ShouldBe(Ops.Contains);
+        stringType.AdjustOperationForValueType(Ops.StartsWith).ShouldBe(Ops.StartsWith);
+        stringType.AdjustOperationForValueType(Ops.EndsWith).ShouldBe(Ops.EndsWith);
+        stringType.AdjustOperationForValueType(Ops.NotContains).ShouldBe(Ops.NotContains);
     }
 
     [Fact]
     public void BuildClause_Contains_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.Contains, "test", 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.Contains, "test", 0);
 
         // Assert
         clause.ShouldBe("Name.Contains(@0)");
@@ -125,7 +125,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_EndsWith_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.EndsWith, "test", 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.EndsWith, "test", 0);
 
         // Assert
         clause.ShouldBe("Name.EndsWith(@0)");
@@ -135,7 +135,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_Equal_WithNull_GeneratesNullCheck()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.Equal, null, 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.Equal, null, 0);
 
         // Assert
         clause.ShouldBe("Name == null");
@@ -145,7 +145,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_Equal_WithValue_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.Equal, "test", 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.Equal, "test", 0);
 
         // Assert
         clause.ShouldBe("Name == @0");
@@ -155,7 +155,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_GreaterThan_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Price", DynamicOperations.GreaterThan, 100, 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Price", Ops.GreaterThan, 100, 0);
 
         // Assert
         clause.ShouldBe("Price > @0");
@@ -165,7 +165,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_LessThan_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Price", DynamicOperations.LessThan, 100, 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Price", Ops.LessThan, 100, 0);
 
         // Assert
         clause.ShouldBe("Price < @0");
@@ -175,9 +175,9 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_MultipleParameters_UsesCorrectIndex()
     {
         // Arrange & Act
-        var clause1 = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.Equal, "test", 0);
-        var clause2 = DynamicPredicateBuilderExtensions.BuildClause("Price", DynamicOperations.GreaterThan, 100, 1);
-        var clause3 = DynamicPredicateBuilderExtensions.BuildClause("IsActive", DynamicOperations.Equal, true, 2);
+        var clause1 = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.Equal, "test", 0);
+        var clause2 = DynamicPredicateBuilderExtensions.BuildClause("Price", Ops.GreaterThan, 100, 1);
+        var clause3 = DynamicPredicateBuilderExtensions.BuildClause("IsActive", Ops.Equal, true, 2);
 
         // Assert
         clause1.ShouldBe("Name == @0");
@@ -189,7 +189,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_NotContains_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.NotContains, "test", 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.NotContains, "test", 0);
 
         // Assert
         clause.ShouldBe("!Name.Contains(@0)");
@@ -199,7 +199,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_NotEqual_WithNull_GeneratesNotNullCheck()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.NotEqual, null, 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.NotEqual, null, 0);
 
         // Assert
         clause.ShouldBe("Name != null");
@@ -209,7 +209,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     public void BuildClause_StartsWith_GeneratesCorrectClause()
     {
         // Arrange & Act
-        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", DynamicOperations.StartsWith, "test", 0);
+        var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.StartsWith, "test", 0);
 
         // Assert
         clause.ShouldBe("Name.StartsWith(@0)");
@@ -220,7 +220,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     {
         // Arrange & Act & Assert
         Should.Throw<NotSupportedException>(() =>
-            DynamicPredicateBuilderExtensions.BuildClause("Name", (DynamicOperations)999, "test", 0));
+            DynamicPredicateBuilderExtensions.BuildClause("Name", (Ops)999, "test", 0));
     }
 
     [Fact]
@@ -231,9 +231,9 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
 
         // Act: Test case-insensitive property names
         var result = predicate
-            .DynamicAnd("name", DynamicOperations.Contains, "test") // lowercase
-            .DynamicAnd("PRICE", DynamicOperations.GreaterThan, 100) // uppercase
-            .DynamicAnd("IsActive", DynamicOperations.Equal, true); // PascalCase
+            .DynamicAnd("name", Ops.Contains, "test") // lowercase
+            .DynamicAnd("PRICE", Ops.GreaterThan, 100) // uppercase
+            .DynamicAnd("IsActive", Ops.Equal, true); // PascalCase
 
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
@@ -250,7 +250,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var predicate = PredicateBuilder.New<Order>(o => o.Id > 0);
 
         // Act: Try to filter with invalid enum value
-        var result = predicate.DynamicAnd("Status", DynamicOperations.Equal, "InvalidEnumValue");
+        var result = predicate.DynamicAnd("Status", Ops.Equal, "InvalidEnumValue");
 
         // Assert: Should ignore invalid enum
         var query = _context.Orders.AsExpandable().Where(result);
@@ -265,7 +265,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var predicate = PredicateBuilder.New<Product>(p => p.IsActive);
 
         // Act
-        var result = predicate.DynamicAnd("NonExistentProperty", DynamicOperations.Equal, "test");
+        var result = predicate.DynamicAnd("NonExistentProperty", Ops.Equal, "test");
 
         // Assert: Should return original predicate unchanged
         var query = _context.Products.AsExpandable().Where(result);
@@ -281,7 +281,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var predicate = PredicateBuilder.New<Product>(p => p.IsActive);
 
         // Act
-        var result = predicate.DynamicOr("NonExistentProperty", DynamicOperations.Equal, "test");
+        var result = predicate.DynamicOr("NonExistentProperty", Ops.Equal, "test");
 
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
