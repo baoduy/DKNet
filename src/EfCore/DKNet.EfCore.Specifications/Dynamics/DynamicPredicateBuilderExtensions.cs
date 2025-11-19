@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Collections;
 using System.Reflection;
 using DKNet.Fw.Extensions;
 
@@ -24,7 +25,7 @@ internal static class DynamicPredicateBuilderExtensions
     /// <param name="propValueType">The type of the property value.</param>
     /// <param name="op">The requested operation.</param>
     /// <returns>The adjusted operation appropriate for the property type.</returns>
-    internal static DynamicOperations AdjustOperationForValueType(this Type? propValueType, DynamicOperations op)
+    internal static Ops AdjustOperationForValueType(this Type? propValueType, Ops op)
     {
         if (propValueType == null || propValueType == typeof(string) ||
             Nullable.GetUnderlyingType(propValueType) == typeof(string)) return op;
@@ -32,9 +33,9 @@ internal static class DynamicPredicateBuilderExtensions
         // For all non-string types, switch Contains/NotContains to Equal/NotEqual
         return op switch
         {
-            DynamicOperations.Contains => DynamicOperations.Equal,
-            DynamicOperations.NotContains => DynamicOperations.NotEqual,
-            DynamicOperations.StartsWith or DynamicOperations.EndsWith => DynamicOperations.Equal,
+            Ops.Contains => Ops.Equal,
+            Ops.NotContains => Ops.NotEqual,
+            Ops.StartsWith or Ops.EndsWith => Ops.Equal,
             _ => op
         };
     }
@@ -48,24 +49,26 @@ internal static class DynamicPredicateBuilderExtensions
     /// <param name="val">The value to compare against (can be null).</param>
     /// <param name="paramIndex">The parameter index for the @N placeholder.</param>
     /// <returns>A string representing the dynamic LINQ clause.</returns>
-    internal static string BuildClause(string prop, DynamicOperations op, object? val, int paramIndex)
+    internal static string BuildClause(string prop, Ops op, object? val, int paramIndex)
     {
         return val switch
         {
-            null when op is DynamicOperations.Equal => $"{prop} == null",
-            null when op is DynamicOperations.NotEqual => $"{prop} != null",
+            null when op is Ops.Equal => $"{prop} == null",
+            null when op is Ops.NotEqual => $"{prop} != null",
             _ => op switch
             {
-                DynamicOperations.Equal => $"{prop} == @{paramIndex}",
-                DynamicOperations.NotEqual => $"{prop} != @{paramIndex}",
-                DynamicOperations.GreaterThan => $"{prop} > @{paramIndex}",
-                DynamicOperations.GreaterThanOrEqual => $"{prop} >= @{paramIndex}",
-                DynamicOperations.LessThan => $"{prop} < @{paramIndex}",
-                DynamicOperations.LessThanOrEqual => $"{prop} <= @{paramIndex}",
-                DynamicOperations.Contains => $"{prop}.Contains(@{paramIndex})",
-                DynamicOperations.NotContains => $"!{prop}.Contains(@{paramIndex})",
-                DynamicOperations.StartsWith => $"{prop}.StartsWith(@{paramIndex})",
-                DynamicOperations.EndsWith => $"{prop}.EndsWith(@{paramIndex})",
+                Ops.Equal => $"{prop} == @{paramIndex}",
+                Ops.NotEqual => $"{prop} != @{paramIndex}",
+                Ops.GreaterThan => $"{prop} > @{paramIndex}",
+                Ops.GreaterThanOrEqual => $"{prop} >= @{paramIndex}",
+                Ops.LessThan => $"{prop} < @{paramIndex}",
+                Ops.LessThanOrEqual => $"{prop} <= @{paramIndex}",
+                Ops.Contains => $"{prop}.Contains(@{paramIndex})",
+                Ops.NotContains => $"!{prop}.Contains(@{paramIndex})",
+                Ops.StartsWith => $"{prop}.StartsWith(@{paramIndex})",
+                Ops.EndsWith => $"{prop}.EndsWith(@{paramIndex})",
+                Ops.In => $"@{paramIndex}.Contains({prop})",
+                Ops.NotIn => $"!@{paramIndex}.Contains({prop})",
                 _ => throw new NotSupportedException($"Operation {op} not supported.")
             }
         };
@@ -94,11 +97,48 @@ internal static class DynamicPredicateBuilderExtensions
     }
 
     /// <summary>
+    ///     Validates if a value is a valid array/collection for In/NotIn operations.
+    ///     Returns false for null, empty collections, or non-enumerable types (including string).
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <param name="operation">The operation being performed</param>
+    /// <returns>True if value is valid for the operation, false otherwise</returns>
+    internal static bool ValidateArrayValue(object? value, Ops operation)
+    {
+        // Only validate for In/NotIn operations
+        if (operation is not (Ops.In or Ops.NotIn))
+            return true;
+
+        if (value == null)
+            return false;
+
+        // String implements IEnumerable but should not be treated as array
+        if (value is string)
+            return false;
+
+        // Check if value is enumerable
+        if (value is not IEnumerable enumerable)
+            return false;
+
+        // Check if collection is non-empty
+        var enumerator = enumerable.GetEnumerator();
+        try
+        {
+            return enumerator.MoveNext();
+        }
+        finally
+        {
+            (enumerator as IDisposable)?.Dispose();
+        }
+    }
+
+    /// <summary>
     ///     Validates if a value can be used with an enum property.
     ///     For non-nullable enums with null values, or invalid enum values, returns false.
+    ///     Supports both single enum values and arrays of enum values (for In/NotIn operations).
     /// </summary>
     /// <param name="type">The property type (can be nullable enum or null if property not found).</param>
-    /// <param name="value">The value to validate.</param>
+    /// <param name="value">The value to validate (can be single value or array/collection).</param>
     /// <returns>True if the value is valid for the enum type; otherwise, false.</returns>
     internal static bool ValidateEnumValue(this Type? type, object? value)
     {
@@ -108,9 +148,13 @@ internal static class DynamicPredicateBuilderExtensions
             // Null is valid for nullable enum
             return Nullable.GetUnderlyingType(type) != null;
 
-        // Try to convert value to enum
         var enumType = type.GetNonNullableType();
-        return enumType.TryConvertToEnum(value, out _);
+
+        // Handle array/collection of values (for In/NotIn operations)
+        if (value is not (IEnumerable enumerable and not string)) return enumType.TryConvertToEnum(value, out _);
+        return enumerable.OfType<object>().All(item => enumType.TryConvertToEnum(item, out _));
+
+        // Handle single value
     }
 
     #endregion

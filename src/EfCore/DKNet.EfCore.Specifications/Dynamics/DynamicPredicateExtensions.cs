@@ -20,6 +20,30 @@ public static class DynamicPredicateExtensions
     #region Methods
 
     /// <summary>
+    ///     Converts an array of values to a properly typed enum array for In/NotIn operations.
+    ///     This ensures EF Core can properly translate the Contains expression.
+    /// </summary>
+    /// <param name="enumerable">The source enumerable containing values to convert</param>
+    /// <param name="enumType">The target enum type</param>
+    /// <returns>A properly typed array of enum values</returns>
+    // private static object ConvertToEnumArray(IEnumerable enumerable, Type enumType)
+    // {
+    //     var convertedList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(enumType))!;
+    //
+    //     foreach (var item in enumerable)
+    //     {
+    //         if (item != null && enumType.TryConvertToEnum(item, out var enumValue))
+    //         {
+    //             convertedList.Add(enumValue!); // TryConvertToEnum guarantees non-null on success
+    //         }
+    //     }
+    //
+    //     // Convert List<TEnum> to TEnum[] using reflection to maintain generic type info
+    //     var toArrayMethod = typeof(Enumerable).GetMethod("ToArray")!.MakeGenericMethod(enumType);
+    //     return toArrayMethod.Invoke(null, [convertedList])!;
+    // }
+
+    /// <summary>
     ///     Builds a dynamic predicate expression for the given property, operation, and value using System.Linq.Dynamic.Core.
     ///     Returns null if the property is not found or the value is invalid for the property type.
     /// </summary>
@@ -29,13 +53,17 @@ public static class DynamicPredicateExtensions
     /// <param name="value">Value to compare</param>
     /// <returns>Expression or null if not valid</returns>
     private static Expression<Func<T, bool>>? BuildDynamicExpression<T>(string propertyName,
-        DynamicOperations operation, object? value)
+        Ops operation, object? value)
     {
         // Normalize property path using PropertyNameExtensions (PascalCase each segment)
         var normalizedPath = propertyName.ToPascalCase();
 
         var propType = typeof(T).ResolvePropertyType(normalizedPath);
         if (propType == null)
+            return null;
+
+        // Validate array value for In/NotIn operations
+        if (!DynamicPredicateBuilderExtensions.ValidateArrayValue(value, operation))
             return null;
 
         // Adjust operation for type
@@ -48,22 +76,14 @@ public static class DynamicPredicateExtensions
         // Build the dynamic LINQ predicate string using shared BuildClause method
         var predicateString = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, op, value, 0);
 
-        try
-        {
-            // Use System.Linq.Dynamic.Core to parse the predicate string
-            var lambda = value == null
-                ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
-                : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString, value);
 
-            return lambda;
-        }
-#pragma warning disable CA1031 // Do not catch general exception types - DynamicExpressionParser can throw various exception types
-        catch (Exception)
-#pragma warning restore CA1031 // Do not catch general exception types
-        {
-            // If parsing fails, return null (invalid expression)
-            return null;
-        }
+        // Use System.Linq.Dynamic.Core to parse the predicate string
+        // For In/NotIn, value is the array passed as @0 parameter
+        var lambda = value == null
+            ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
+            : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString, value);
+
+        return lambda;
     }
 
     /// <summary>
@@ -88,7 +108,7 @@ public static class DynamicPredicateExtensions
     ///     dynamic expression is null
     /// </returns>
     public static Expression<Func<T, bool>> DynamicAnd<T>(this ExpressionStarter<T> predicate,
-        string propertyName, DynamicOperations operation, object? value)
+        string propertyName, Ops operation, object? value)
     {
         var dynamicExpression = BuildDynamicExpression<T>(propertyName, operation, value);
         return dynamicExpression == null ? predicate : predicate.And(dynamicExpression);
@@ -116,7 +136,7 @@ public static class DynamicPredicateExtensions
     ///     dynamic expression is null
     /// </returns>
     public static Expression<Func<T, bool>> DynamicAnd<T>(this Expression<Func<T, bool>> predicate,
-        string propertyName, DynamicOperations operation, object? value)
+        string propertyName, Ops operation, object? value)
     {
         var dynamicExpression = BuildDynamicExpression<T>(propertyName, operation, value);
         return dynamicExpression == null ? predicate : predicate.And(dynamicExpression);
@@ -145,7 +165,7 @@ public static class DynamicPredicateExtensions
     /// </returns>
     public static Expression<Func<T, bool>> DynamicOr<T>(
         this ExpressionStarter<T> predicate,
-        string propertyName, DynamicOperations operation, object? value)
+        string propertyName, Ops operation, object? value)
     {
         var dynamicExpression = BuildDynamicExpression<T>(propertyName, operation, value);
         return dynamicExpression == null ? predicate : predicate.Or(dynamicExpression);
@@ -174,7 +194,7 @@ public static class DynamicPredicateExtensions
     /// </returns>
     public static Expression<Func<T, bool>> DynamicOr<T>(
         this Expression<Func<T, bool>> predicate,
-        string propertyName, DynamicOperations operation, object? value)
+        string propertyName, Ops operation, object? value)
     {
         var dynamicExpression = BuildDynamicExpression<T>(propertyName, operation, value);
         return dynamicExpression == null ? predicate : predicate.Or(dynamicExpression);

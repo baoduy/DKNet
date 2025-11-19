@@ -28,7 +28,7 @@ internal sealed class ProductFilterSpecification : Specification<Product>
         // Build sub-predicate for all fields
         var searchPredicator = PredicateBuilder.New<Product>();
         foreach (var f in fields)
-            searchPredicator = searchPredicator.DynamicOr(f, DynamicOperations.Contains, searchString);
+            searchPredicator = searchPredicator.DynamicOr(f, Ops.Contains, searchString);
 
         predicate = predicate.And(searchPredicator);
         WithFilter(predicate);
