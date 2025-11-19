@@ -1,4 +1,5 @@
 using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Extensions;
 using X.PagedList;
 using X.PagedList.EF;
 
