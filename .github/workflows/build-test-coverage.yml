@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: [ "9.0.x" ]
+        dotnet-version: [ "10.x.x" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +32,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
-            8.0.x
-            9.0.x
+            10.x.x
 
       - name: Install SonarCloud Tools
         run: dotnet tool install --global dotnet-sonarscanner
