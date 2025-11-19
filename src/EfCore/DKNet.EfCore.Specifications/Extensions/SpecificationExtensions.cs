@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace DKNet.EfCore.Specifications;
+namespace DKNet.EfCore.Specifications.Extensions;
 
 /// <summary>
 ///     Provides extension methods for applying specifications to repositories and queries.

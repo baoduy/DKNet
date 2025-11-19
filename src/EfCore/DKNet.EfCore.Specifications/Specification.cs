@@ -6,6 +6,7 @@
 
 using System.ComponentModel;
 using System.Linq.Expressions;
+using DKNet.EfCore.Specifications.Extensions;
 using LinqKit;
 
 namespace DKNet.EfCore.Specifications;

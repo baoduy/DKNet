@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using X.PagedList;
 using X.PagedList.EF;
 
-namespace DKNet.EfCore.Specifications;
+namespace DKNet.EfCore.Specifications.Extensions;
 
 /// <summary>
 ///     Provides extension methods for applying <see cref="IModelSpecification{TEntity,TModel}" /> instances to an

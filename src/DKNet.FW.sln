@@ -7,6 +7,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.Fw.Extensions", "Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj", "{4F6257FB-B6B4-4D6F-933D-31D0E009CBCE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EfCore", "EfCore", "{79AB749C-6325-4718-9BE0-36C750367F00}"
+	ProjectSection(SolutionItems) = preProject
+		EfCore\MERGE_SUMMARY.md = EfCore\MERGE_SUMMARY.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DataAuthorization.Tests", "EfCore\EfCore.DataAuthorization.Tests\EfCore.DataAuthorization.Tests.csproj", "{24070CA1-ACF8-42E6-ACDE-48BFA17D85D1}"
 EndProject

@@ -1,12 +1,12 @@
+using System.Linq.Expressions;
 using DKNet.EfCore.Extensions.Extensions;
+using DKNet.EfCore.Specifications.Extensions;
 using LinqKit;
 using Mapster;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
-
-// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 
 namespace DKNet.EfCore.Specifications;
 
@@ -55,7 +55,20 @@ public interface IRepositorySpec
     /// </summary>
     /// <typeparam name="TEntity">The entity type.</typeparam>
     /// <param name="entities">The entities to delete.</param>
+    [Obsolete(
+        "Using the BulkDeleteRangeAsync <see cref=\"BulkDeleteRangeAsync{TEntity}(IEnumerable{TEntity}, CancellationToken)\" />")]
     void DeleteRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class;
+
+    /// <summary>
+    ///     The bulk deletes a collection of entities asynchronously.
+    /// </summary>
+    /// <param name="predicate"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <returns></returns>
+    Task<int> BulkDeleteAsync<TEntity>(Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default)
+        where TEntity : class;
 
     /// <summary>
     ///     Gets the entity entry for the specified entity, providing access to change tracking information.
@@ -135,83 +148,47 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
 
     #region Methods
 
-    /// <summary>
-    ///     Adds a new entity to the repository asynchronously.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entity">The entity to add.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <inheritdoc />
     public virtual async ValueTask AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
         => await dbContext.AddAsync(entity, cancellationToken);
 
-    /// <summary>
-    ///     Adds a collection of entities to the repository asynchronously.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entities">The entities to add.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <inheritdoc />
     public virtual async ValueTask AddRangeAsync<TEntity>(
         IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default)
         where TEntity : class
         => await dbContext.AddRangeAsync(entities, cancellationToken);
 
-    /// <summary>
-    ///     Begins a new database transaction asynchronously.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation that returns a database context transaction.</returns>
+    /// <inheritdoc />
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-    /// <summary>
-    ///     Marks an entity for deletion.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entity">The entity to delete.</param>
+    /// <inheritdoc />
+    public Task<int> BulkDeleteAsync<TEntity>(Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default) where TEntity : class
+        => dbContext.Set<TEntity>().Where(predicate).ExecuteDeleteAsync(cancellationToken);
+
+    /// <inheritdoc />
     public virtual void Delete<TEntity>(TEntity entity)
         where TEntity : class
         => dbContext.Set<TEntity>().Remove(entity);
 
-    /// <summary>
-    ///     Marks a collection of entities for deletion.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entities">The entities to delete.</param>
+    /// <inheritdoc />
     public virtual void DeleteRange<TEntity>(IEnumerable<TEntity> entities)
         where TEntity : class
         => dbContext.Set<TEntity>().RemoveRange(entities);
 
-    /// <summary>
-    ///     Gets the entity entry for the specified entity, providing access to change tracking information.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entity">The entity instance.</param>
-    /// <returns>The entity entry for the specified entity.</returns>
+
+    /// <inheritdoc />
     public EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
         => dbContext.Entry(entity);
 
-    /// <summary>
-    ///     Queries entities of type <typeparamref name="TEntity" /> using the provided specification.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type to query.</typeparam>
-    /// <param name="spec">The specification to apply to the query.</param>
-    /// <returns>A queryable collection of entities matching the specification.</returns>
+    /// <inheritdoc />
     public IQueryable<TEntity> Query<TEntity>(ISpecification<TEntity> spec) where TEntity : class =>
         dbContext.Set<TEntity>().AsExpandable().ApplySpecs(spec);
 
-    /// <summary>
-    ///     Queries entities of type <typeparamref name="TEntity" /> using the provided specification and projects them to
-    ///     <typeparamref name="TModel" />.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type to query.</typeparam>
-    /// <typeparam name="TModel">The model type to project to.</typeparam>
-    /// <param name="spec">The specification to apply to the query.</param>
-    /// <returns>A queryable collection of projected models.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when no mapper instance is available for projection.</exception>
+    /// <inheritdoc />
     public IQueryable<TModel> Query<TEntity, TModel>(ISpecification<TEntity> spec)
         where TEntity : class
         where TModel : class
@@ -222,27 +199,14 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
         return Query(spec).AsNoTracking().ProjectToType<TModel>(_mapper.Config);
     }
 
-    /// <summary>
-    ///     Saves all changes made in this repository to the underlying database asynchronously.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>
-    ///     A task representing the asynchronous operation that returns the number of state entries written to the
-    ///     database.
-    /// </returns>
+    /// <inheritdoc />
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await dbContext.AddNewEntitiesFromNavigations(cancellationToken);
         return await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>
-    ///     Updates an existing entity asynchronously and adds any new entities found in navigation properties.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entity">The entity to update.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation that returns the number of new entities added from navigations.</returns>
+    /// <inheritdoc />
     public virtual async Task<int> UpdateAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
     {
@@ -253,13 +217,7 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
         return newEntities.Count;
     }
 
-    /// <summary>
-    ///     Updates a collection of entities asynchronously.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entities">The entities to update.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task UpdateRangeAsync<TEntity>(
         IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default)

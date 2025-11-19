@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using X.PagedList;
 using X.PagedList.EF;
 
-namespace DKNet.EfCore.Specifications;
+namespace DKNet.EfCore.Specifications.Extensions;
 
 /// <summary>
 ///     Provides extension methods for applying specifications to repositories and queries.
@@ -161,7 +161,7 @@ public static class SpecRepoExtensions
             where TModel : class
         {
             specification.EnsureSpecHasOrdering();
-            var query = repo.Query<TEntity,TModel>(specification);
+            var query = repo.Query<TEntity, TModel>(specification);
             return query.ToPageEnumerable();
         }
     }

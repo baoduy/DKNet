@@ -3,20 +3,8 @@ using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 
-public class EmbeddedResourceServiceTests
+public class EmbeddedResourceServiceTests(ITestOutputHelper testOutputHelper)
 {
-    #region Fields
-
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    #endregion
-
-    #region Constructors
-
-    public EmbeddedResourceServiceTests(ITestOutputHelper testOutputHelper) => _testOutputHelper = testOutputHelper;
-
-    #endregion
-
     #region Methods
 
     [Fact]
@@ -91,7 +79,7 @@ public class EmbeddedResourceServiceTests
 
             // CSS files typically contain selectors and properties
             Assert.Contains(".", content); // CSS class or property
-            _testOutputHelper.WriteLine($"CSS resource length: {content.Length}");
+            testOutputHelper.WriteLine($"CSS resource length: {content.Length}");
         }
         catch (InvalidOperationException)
         {
@@ -129,7 +117,7 @@ public class EmbeddedResourceServiceTests
 
             // HTML resources should contain HTML tags
             Assert.True(content.Contains("<") || content.Contains(">"));
-            _testOutputHelper.WriteLine($"HTML resource length: {content.Length}");
+            testOutputHelper.WriteLine($"HTML resource length: {content.Length}");
         }
         catch (InvalidOperationException)
         {
@@ -192,7 +180,7 @@ public class EmbeddedResourceServiceTests
             // Assert
             Assert.False(string.IsNullOrEmpty(content));
             Assert.Contains("<html>", content);
-            _testOutputHelper.WriteLine($"Resource content length: {content.Length}");
+            testOutputHelper.WriteLine($"Resource content length: {content.Length}");
         }
         catch (InvalidOperationException)
         {

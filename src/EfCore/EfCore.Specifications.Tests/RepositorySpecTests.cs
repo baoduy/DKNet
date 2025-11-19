@@ -160,8 +160,8 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
         await _context.SaveChangesAsync();
 
         // Act
-        _repository.DeleteRange(products);
-        await _repository.SaveChangesAsync();
+        var ids = products.Select(u => u.Id);
+        await _repository.BulkDeleteAsync<Product>(x => ids.Contains(x.Id));
 
         // Assert
         var count = await _context.Products.Where(p =>

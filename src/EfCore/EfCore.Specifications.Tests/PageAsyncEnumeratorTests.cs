@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using DKNet.EfCore.Specifications.Extensions;
 using Mapster;
 using MapsterMapper;
 

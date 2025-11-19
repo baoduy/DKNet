@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace DKNet.EfCore.Specifications;
+namespace DKNet.EfCore.Specifications.Extensions;
 
 /// <summary>
 ///     Extension methods for normalizing property path strings (camelCase, snake_case, kebab-case) into

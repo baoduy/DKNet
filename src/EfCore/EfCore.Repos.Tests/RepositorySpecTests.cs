@@ -101,8 +101,8 @@ public class RepositorySpecTests : IAsyncLifetime
         await _repository.SaveChangesAsync();
 
         // Act
-        _repository.DeleteRange(users);
-        await _repository.SaveChangesAsync();
+        var ids = users.Select(u => u.Id);
+        await _repository.BulkDeleteAsync<User>(x => ids.Contains(x.Id));
 
         // Assert
         var result = await _context.Users.ToListAsync();
