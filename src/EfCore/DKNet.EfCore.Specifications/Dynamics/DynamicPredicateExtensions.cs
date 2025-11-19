@@ -20,30 +20,6 @@ public static class DynamicPredicateExtensions
     #region Methods
 
     /// <summary>
-    ///     Converts an array of values to a properly typed enum array for In/NotIn operations.
-    ///     This ensures EF Core can properly translate the Contains expression.
-    /// </summary>
-    /// <param name="enumerable">The source enumerable containing values to convert</param>
-    /// <param name="enumType">The target enum type</param>
-    /// <returns>A properly typed array of enum values</returns>
-    // private static object ConvertToEnumArray(IEnumerable enumerable, Type enumType)
-    // {
-    //     var convertedList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(enumType))!;
-    //
-    //     foreach (var item in enumerable)
-    //     {
-    //         if (item != null && enumType.TryConvertToEnum(item, out var enumValue))
-    //         {
-    //             convertedList.Add(enumValue!); // TryConvertToEnum guarantees non-null on success
-    //         }
-    //     }
-    //
-    //     // Convert List<TEnum> to TEnum[] using reflection to maintain generic type info
-    //     var toArrayMethod = typeof(Enumerable).GetMethod("ToArray")!.MakeGenericMethod(enumType);
-    //     return toArrayMethod.Invoke(null, [convertedList])!;
-    // }
-
-    /// <summary>
     ///     Builds a dynamic predicate expression for the given property, operation, and value using System.Linq.Dynamic.Core.
     ///     Returns null if the property is not found or the value is invalid for the property type.
     /// </summary>
