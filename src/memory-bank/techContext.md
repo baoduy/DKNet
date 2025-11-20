@@ -8,6 +8,14 @@
 - **Nullable Reference Types**: Enabled globally (`<Nullable>enable</Nullable>`)
 - **LangVersion**: `latest` for all projects
 
+#### C# 14 Features in Use
+- **Params collections**: Enhanced params support for span and collection types
+- **Improved overload resolution**: More precise method resolution with better performance
+- **Enhanced pattern matching**: Additional pattern matching capabilities
+- **Lock object improvements**: More efficient locking mechanisms
+- **Inline arrays enhancements**: Better performance for fixed-size buffers
+- **Primary constructors**: Simplified constructor syntax (already leveraged in domain entities)
+
 ### Key Dependencies
 
 #### EF Core Stack

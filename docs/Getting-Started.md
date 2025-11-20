@@ -91,6 +91,14 @@ DKNet follows the **Onion Architecture** pattern with clear separation of concer
 🗄️ Infrastructure Layer (Data Access, External Services)
 ```
 
+### Modern Language Features
+
+DKNet leverages the latest **C# 14** features for improved performance and developer experience:
+- **Params collections** for flexible method parameters
+- **Enhanced pattern matching** for cleaner business logic
+- **Primary constructors** in domain entities for concise code
+- **Lock object improvements** for better concurrency
+
 ## 📚 Next Steps
 
 1. **[Choose Your Components](README.md)** - Review available packages

@@ -76,6 +76,41 @@ dotnet list package --include-transitive | grep DKNet
 <PackageReference Include="Microsoft.AspNetCore.App" />
 ```
 
+**C# 14 Language Features**
+
+Take advantage of new C# 14 features in your code:
+
+```csharp
+// Params collections - more efficient parameter passing
+public static void ProcessItems(params ReadOnlySpan<string> items)
+{
+    foreach (var item in items)
+    {
+        // Process item
+    }
+}
+
+// Enhanced pattern matching
+public decimal CalculateDiscount(Order order) => order switch
+{
+    { Total: > 1000, IsPremium: true } => 0.20m,
+    { Total: > 500 } => 0.10m,
+    { ItemCount: > 10 } => 0.05m,
+    _ => 0m
+};
+
+// Lock object improvements - better performance
+private readonly Lock _lock = new();
+
+public void SafeOperation()
+{
+    lock (_lock)
+    {
+        // Thread-safe operations
+    }
+}
+```
+
 ### Entity Framework Core Migration
 
 **Before (Legacy)**
