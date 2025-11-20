@@ -1,6 +1,9 @@
 name: .NET nuget release
 
 on:
+  push:
+    branches:
+      - 'main'
   workflow_call:
     inputs:
       Project_Path:
@@ -24,6 +27,10 @@ on:
       NUGET_PACKAGE_TOKEN:
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,7 +48,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ inputs.Dotnet_Version }}
+          dotnet-version: ${{ inputs.Dotnet_Version || '9.x' }}
           #global-json-file: global.json
 
       # Build
@@ -51,13 +58,13 @@ jobs:
           -n github -u baoduy -p ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
 
       - name: Restore dependencies
-        run: dotnet restore ${{ inputs.Project_Path }}
+        run: dotnet restore ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }}
       - name: Build
-        run: dotnet build ${{ inputs.Project_Path }} --no-restore --configuration Release
+        run: dotnet build ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --no-restore --configuration Release
       - name: Test
         continue-on-error: true
-        if: ${{ inputs.Enable_Release != 'true' && inputs.Enable_Nuget_Release != 'true' }}
-        run: dotnet test ${{ inputs.Project_Path }} --collect "Code Coverage" --verbosity normal
+        if: ${{ inputs.Enable_Release != 'true' && inputs.Enable_Nuget_Release != 'true' && github.ref != 'refs/heads/main' }}
+        run: dotnet test ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --collect "Code Coverage" --verbosity normal
 
       # Versioning
       - name: Calculate version
@@ -79,12 +86,12 @@ jobs:
 
       # Ensure the project able to Package
       - name: Package
-        run: dotnet pack ${{ inputs.Project_Path }} --no-build --no-restore --configuration Release --output ${{ runner.WORKSPACE }}/nupkgs -p:PackageVersion=${{ env.NEXT_VERSION }}
+        run: dotnet pack ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --no-build --no-restore --configuration Release --output ${{ runner.WORKSPACE }}/nupkgs -p:PackageVersion=${{ env.NEXT_VERSION }}
       - name: List Package
         run: ls ${{ runner.WORKSPACE }}/nupkgs
 
       - name: Zip Release
-        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true'}}
+        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
         uses: thedoctor0/zip-release@0.7.5
         with:
           # Filename for archive
@@ -100,7 +107,7 @@ jobs:
       # Create Release
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true' }}
+        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
         with:
           generate_release_notes: true
           make_latest: true
@@ -110,6 +117,6 @@ jobs:
 
       # Publish to NUGET.ORG
       - name: Publish Nuget
-        if: ${{ inputs.Enable_Nuget_Release == 'true' }}
+        if: ${{ inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
         continue-on-error: true
         run: dotnet nuget push ${{ runner.WORKSPACE }}/nupkgs/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_PACKAGE_TOKEN }}
