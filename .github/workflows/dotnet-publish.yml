@@ -1,122 +1,27 @@
-name: .NET nuget release
+name: .NET
+
+permissions:
+  contents: read
+  packages: write
 
 on:
   push:
     branches:
       - 'main'
-  workflow_call:
-    inputs:
-      Project_Path:
-        required: true
-        type: string
-      Enable_Release:
-        required: false
-        type: string
-        default: false
-      Enable_Nuget_Release:
-        required: false
-        type: string
-        default: false
-      Dotnet_Version:
-        required: false
-        type: string
-        default: 9.x
-    secrets:
-      PACKAGE_TOKEN:
-        required: true
-      NUGET_PACKAGE_TOKEN:
-        required: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-        #https://github.com/actions/setup-dotnet
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ inputs.Dotnet_Version || '9.x' }}
-          #global-json-file: global.json
-
-      # Build
-      - name: Ensure GitHub NuGet Source
-        run: |
-          dotnet nuget add source 'https://nuget.pkg.github.com/baoduy/index.json' \
-          -n github -u baoduy -p ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
-
-      - name: Restore dependencies
-        run: dotnet restore ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }}
-      - name: Build
-        run: dotnet build ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --no-restore --configuration Release
-      - name: Test
-        continue-on-error: true
-        if: ${{ inputs.Enable_Release != 'true' && inputs.Enable_Nuget_Release != 'true' && github.ref != 'refs/heads/main' }}
-        run: dotnet test ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --collect "Code Coverage" --verbosity normal
-
-      # Versioning
-      - name: Calculate version
-        id: version
-        uses: paulhatch/semantic-version@v5.4.0
-        with:
-          tag_prefix: "v"
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: "${major}.${minor}.${patch}"
-          bump_each_commit: false
-          search_commit_body: false
-
-      - name: Set NEXT_VERSION
-        run: echo "NEXT_VERSION=${{ steps.version.outputs.version }}" >> $GITHUB_ENV
-
-      - name: Print the version
-        run: echo ${{ steps.version.outputs.version }}
-
-      # Ensure the project able to Package
-      - name: Package
-        run: dotnet pack ${{ inputs.Project_Path || 'src/DKNet.FW.sln' }} --no-build --no-restore --configuration Release --output ${{ runner.WORKSPACE }}/nupkgs -p:PackageVersion=${{ env.NEXT_VERSION }}
-      - name: List Package
-        run: ls ${{ runner.WORKSPACE }}/nupkgs
-
-      - name: Zip Release
-        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
-        uses: thedoctor0/zip-release@0.7.5
-        with:
-          # Filename for archive
-          filename: release.zip
-          directory: ${{ runner.WORKSPACE }}/nupkgs
-
-      # Push nuget packages to Github Repository
-      - name: Publish
-        if: ${{ inputs.Enable_Release == 'true' }}
-        continue-on-error: true
-        run: dotnet nuget push ${{ runner.WORKSPACE }}/nupkgs/*.nupkg --skip-duplicate --source github --api-key ${{ secrets.PACKAGE_TOKEN }}
-
-      # Create Release
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ inputs.Enable_Release == 'true' || inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
-        with:
-          generate_release_notes: true
-          make_latest: true
-          files: ${{ runner.WORKSPACE }}/nupkgs/release.zip
-          token: ${{ secrets.PACKAGE_TOKEN }}
-          tag_name: v${{ env.NEXT_VERSION }}
-
-      # Publish to NUGET.ORG
-      - name: Publish Nuget
-        if: ${{ inputs.Enable_Nuget_Release == 'true' || github.ref == 'refs/heads/main' }}
-        continue-on-error: true
-        run: dotnet nuget push ${{ runner.WORKSPACE }}/nupkgs/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_PACKAGE_TOKEN }}
+  ## Only build nuget package and release to Nuget.org when running on main branch
+  dotnet_pack_release_job:
+    uses: baoduy/ShareWorkflows/.github/workflows/dotnet-nuget-release.yml@main
+    with:
+      Project_Path: 'src/DKNet.FW.sln'
+      Enable_Release: false ## ${{ github.ref  == 'refs/heads/main'}}
+      Enable_Nuget_Release: ${{ github.ref  == 'refs/heads/main'}}
+      Dotnet_Version: 9.x
+    secrets:
+      PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
+      NUGET_PACKAGE_TOKEN: ${{ secrets.NUGET_PACKAGE_TOKEN }}
