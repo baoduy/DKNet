@@ -30,7 +30,7 @@
 ### 2. Tech Context Expansion
 **Before**: Empty template  
 **After**: Complete technical documentation:
-- Technology stack (.NET 9, EF Core 9, xUnit, TestContainers)
+- Technology stack (.NET 10, EF Core 10, xUnit, TestContainers)
 - Build and code quality configuration
 - Architecture constraints
 - Performance guidelines
@@ -129,8 +129,8 @@ Developer-friendly quick reference:
 - [x] Performance optimization patterns
 
 ### Technology Stack
-- [x] .NET 9 and C# 13 features
-- [x] Entity Framework Core 9
+- [x] .NET 10 and C# 14 features
+- [x] Entity Framework Core 10
 - [x] xUnit testing framework
 - [x] TestContainers for integration testing
 - [x] LinqKit for expression composition

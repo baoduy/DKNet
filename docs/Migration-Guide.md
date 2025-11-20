@@ -21,7 +21,7 @@ This is a **major architectural migration** from legacy packages to the new Doma
 
 #### Key Changes
 - **Architecture**: Complete shift to DDD/Onion Architecture
-- **Technology**: Upgrade to .NET 9.0
+- **Technology**: Upgrade to .NET 10.0 with C# 14 features
 - **Patterns**: Introduction of CQRS, Repository patterns, Domain Events
 - **Testing**: New testing strategy with TestContainers
 
@@ -51,17 +51,17 @@ dotnet list package --include-transitive | grep DKNet
 
 ## 📦 Version-Specific Migrations
 
-### Upgrading to .NET 9.0
+### Upgrading to .NET 10.0
 
 **Prerequisites**
 ```bash
-# Install .NET 9.0 SDK
-./src/dotnet-install.sh --version 9.0.100
+# Install .NET 10.0 SDK
+./src/dotnet-install.sh --version 10.0.100
 
 # Update global.json
 {
   "sdk": {
-    "version": "9.0.100"
+    "version": "10.0.100"
   }
 }
 ```
@@ -69,11 +69,46 @@ dotnet list package --include-transitive | grep DKNet
 **Project Files**
 ```xml
 <!-- Update target framework -->
-<TargetFramework>net9.0</TargetFramework>
+<TargetFramework>net10.0</TargetFramework>
 
 <!-- Update package references -->
-<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
 <PackageReference Include="Microsoft.AspNetCore.App" />
+```
+
+**C# 14 Language Features**
+
+Take advantage of new C# 14 features in your code:
+
+```csharp
+// Params collections - more efficient parameter passing
+public static void ProcessItems(params ReadOnlySpan<string> items)
+{
+    foreach (var item in items)
+    {
+        // Process item
+    }
+}
+
+// Enhanced pattern matching
+public decimal CalculateDiscount(Order order) => order switch
+{
+    { Total: > 1000, IsPremium: true } => 0.20m,
+    { Total: > 500 } => 0.10m,
+    { ItemCount: > 10 } => 0.05m,
+    _ => 0m
+};
+
+// Lock object improvements - better performance
+private readonly Lock _lock = new();
+
+public void SafeOperation()
+{
+    lock (_lock)
+    {
+        // Thread-safe operations
+    }
+}
 ```
 
 ### Entity Framework Core Migration

@@ -1,7 +1,7 @@
 # DKNet.Svc.PdfGenerators
 
 A comprehensive PDF generation toolkit that combines HTML, Markdown, and Razor-friendly templates with
-PuppeteerSharp-driven rendering. The package targets .NET 9.0 and focuses on documentation, reporting, and
+PuppeteerSharp-driven rendering. The package targets .NET 10.0 and focuses on documentation, reporting, and
 knowledge-base publishing scenarios.
 
 ## 🧰 Feature Set

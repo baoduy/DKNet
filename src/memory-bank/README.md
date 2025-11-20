@@ -34,7 +34,7 @@ This directory contains comprehensive documentation to help AI Copilot and devel
    - Core features
 
 5. **[techContext.md](techContext.md)** - Technology stack
-   - .NET 9, C# 13, EF Core 9
+   - .NET 10, C# 14, EF Core 10
    - Testing frameworks
    - Build configuration
    - Architecture constraints

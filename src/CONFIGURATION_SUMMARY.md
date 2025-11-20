@@ -117,7 +117,7 @@ Test entity projects (like DKNet.EfCore.DtoEntities) can opt out of documentatio
 
 ---
 
-**Last Updated:** October 29, 2025
-**Configuration Version:** 1.0
-**Status:** In Progress
+**Last Updated:** November 20, 2025
+**Configuration Version:** 1.1
+**Status:** Active
 
