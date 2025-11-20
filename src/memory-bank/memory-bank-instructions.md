@@ -18,7 +18,7 @@ This document defines how GitHub Copilot maintains project memory and context ac
   * [ ] Read `copilot-quick-reference.md` (Quick patterns & snippets)
   * [ ] Read `systemPatterns.md` (Specification Pattern, Repository, etc.)
   * [ ] Read `copilot-rules.md` (Complete coding standards - 8000+ words)
-  * [ ] Read `techContext.md` (.NET 9, EF Core 9, TestContainers)
+  * [ ] Read `techContext.md` (.NET 10, EF Core 10, TestContainers)
   * [ ] Read `productContext.md` (DKNet Framework purpose & features)
   * [ ] Read `progress-detailed.md` (Roadmap & metrics)
   * [ ] Read any additional context files in `/memory-bank/`

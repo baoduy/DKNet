@@ -23,7 +23,7 @@ DKNet is a comprehensive .NET framework designed to enhance enterprise applicati
 
 ### Which .NET versions are supported?
 
-DKNet Framework requires **.NET 9.0** or later. All packages are built and tested against .NET 9.0.
+DKNet Framework requires **.NET 10.0** or later. All packages are built and tested against .NET 10.0.
 
 ### Is DKNet Framework free to use?
 

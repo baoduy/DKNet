@@ -22,9 +22,9 @@ This project adheres to the [Microsoft Open Source Code of Conduct](https://open
 
 ### Prerequisites
 
-- .NET 9.0 SDK or later
+- .NET 10.0 SDK or later
 - Git
-- Visual Studio 2022, Visual Studio Code, or JetBrains Rider (recommended)
+- Visual Studio 2022 (17.13+), Visual Studio Code, or JetBrains Rider (recommended)
 - SQL Server or SQL Server LocalDB (for integration tests)
 
 ### Fork and Clone
@@ -44,10 +44,10 @@ This project adheres to the [Microsoft Open Source Code of Conduct](https://open
 
 ### Initial Setup
 
-1. **Install .NET 9.0 SDK**:
+1. **Install .NET 10.0 SDK**:
    ```bash
    # Use the provided script
-   ./src/dotnet-install.sh --version 9.0.100
+   ./src/dotnet-install.sh --version 10.0.100
    ```
 
 2. **Restore NuGet packages**:
@@ -64,19 +64,19 @@ This project adheres to the [Microsoft Open Source Code of Conduct](https://open
 ### IDE Configuration
 
 #### Visual Studio 2022
-- Install the latest version with .NET 9.0 support
+- Install version 17.13 or later with .NET 10.0 support
 - Recommended extensions:
   - CodeMaid (code cleanup)
   - SonarLint (code quality)
   - Meziantou.Analyzer (already included in projects)
 
 #### Visual Studio Code
-- Install the C# extension
+- Install the C# extension (with .NET 10 SDK support)
 - Install the .NET Core Test Explorer extension
 - Configure EditorConfig support
 
 #### JetBrains Rider
-- Use the latest version with .NET 9.0 support
+- Use the latest version with .NET 10.0 support
 - Enable EditorConfig support
 - Configure code style according to `.editorconfig`
 
@@ -136,7 +136,7 @@ dotnet test --configuration Release
 
 Follow the [DKNet Coding Guidelines](.github/copilot-instructions.md) and Microsoft .NET guidelines:
 
-- Use C# 12.0+ language features appropriately
+- Use C# 14.0 language features appropriately
 - Follow `.editorconfig` rules
 - Write self-documenting code with meaningful names
 - Add XML documentation for all public APIs

@@ -228,8 +228,8 @@ public class Product : AggregateRoot, ITenantEntity
 ### Local Development Setup
 
 ```bash
-# Install .NET 9.0 SDK
-./src/dotnet-install.sh --version 9.0.100
+# Install .NET 10.0 SDK
+./src/dotnet-install.sh --version 10.0.100
 
 # Restore packages
 cd src
@@ -260,12 +260,12 @@ dotnet run --environment Development
 ### Docker Development
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["*.csproj", "./"]
 RUN dotnet restore

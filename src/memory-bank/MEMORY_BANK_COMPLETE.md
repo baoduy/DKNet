@@ -120,8 +120,8 @@ memory-bank/
 
 ### 4. Technical Context (techContext.md)
 **1200+ words** explaining:
-- .NET 9 & C# 13 features
-- EF Core 9 configuration
+- .NET 10 & C# 14 features
+- EF Core 10 configuration
 - Testing frameworks (xUnit, TestContainers)
 - Build & analyzer setup
 - Performance guidelines

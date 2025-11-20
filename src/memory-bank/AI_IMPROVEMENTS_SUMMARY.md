@@ -235,8 +235,8 @@ public static class TypeExtensions
 - Zero warnings policy enforced
 
 #### 2. Technology Stack
-- .NET 9 with C# 13
-- EF Core 9.0
+- .NET 10 with C# 14
+- EF Core 10.0
 - xUnit, Shouldly, TestContainers.MsSql
 - LinqKit, System.Linq.Dynamic.Core
 - Bogus for test data

@@ -4,8 +4,8 @@ Welcome to DKNet Framework! This guide will help you get started with the compre
 
 ## 📋 Prerequisites
 
-- **.NET 9.0 SDK** or later
-- **Visual Studio 2022**, **Visual Studio Code**, or **JetBrains Rider**
+- **.NET 10.0 SDK** or later
+- **Visual Studio 2022** (17.13+), **Visual Studio Code**, or **JetBrains Rider**
 - **SQL Server** or **SQL Server LocalDB** (for EF Core features)
 - Basic understanding of **Domain-Driven Design** concepts
 
@@ -90,6 +90,14 @@ DKNet follows the **Onion Architecture** pattern with clear separation of concer
     ↓
 🗄️ Infrastructure Layer (Data Access, External Services)
 ```
+
+### Modern Language Features
+
+DKNet leverages the latest **C# 14** features for improved performance and developer experience:
+- **Params collections** for flexible method parameters
+- **Enhanced pattern matching** for cleaner business logic
+- **Primary constructors** in domain entities for concise code
+- **Lock object improvements** for better concurrency
 
 ## 📚 Next Steps
 

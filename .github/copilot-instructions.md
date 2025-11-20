@@ -169,7 +169,7 @@ applications using Domain-Driven Design (DDD) principles and CQRS patterns.
 - **Configuration**: Centralized configuration through `appsettings.json`, dependency injection, and options pattern
 - **Core Workflow**: Request → Endpoint → Command/Query Handler → Domain Logic → Repository → Database
 - **Extensibility Points**: Custom validators, event handlers, mapping configurations, and domain services
-- **Supported Platforms/Frameworks**: .NET 9.0+, ASP.NET Core, Entity Framework Core, FluentValidation
+- **Supported Platforms/Frameworks**: .NET 10.0+, ASP.NET Core, Entity Framework Core, FluentValidation
 
 ### Architecture Layers
 
