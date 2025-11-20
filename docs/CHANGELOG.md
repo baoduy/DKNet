@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Data authorization and tenant-aware filtering
 - Blob storage abstractions for Azure, AWS S3, and local storage
 - Comprehensive testing strategy with 99% coverage goals
-- .NET 9.0 support across all packages
+- .NET 10.0 support across all packages with C# 14 language features
 
 ### Core Framework (DKNet.Fw.Extensions)
 - Added comprehensive extension methods for types, properties, and enums
@@ -124,7 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This represents a complete rewrite of the framework with focus on:
 
 1. **Architecture**: Migration to Domain-Driven Design and Onion Architecture
-2. **Technology**: Upgrade to .NET 9.0 with modern C# features
+2. **Technology**: Upgrade to .NET 10.0 with C# 14 language features
 3. **Patterns**: Introduction of CQRS, Event Sourcing, and Repository patterns
 4. **Testing**: Comprehensive test coverage with modern testing approaches
 5. **Documentation**: Complete documentation overhaul with practical examples

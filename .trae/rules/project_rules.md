@@ -1,7 +1,7 @@
 # WIXO.FW Project Rules
 
 ## 1. Coding Standards
-- Follow .NET 9 conventions for all code.
+- Follow .NET 10 conventions for all code.
 - Use **PascalCase** for class and method names, **camelCase** for local variables and parameters.
 - Prefix interfaces with 'I' (e.g., `IService`).
 - Provide XML documentation for all public members.
@@ -39,7 +39,7 @@
 - All code and templates must be licensed under MIT License.
 
 ## 6. Build & CI
-- All projects must target .NET 9.0.
+- All projects must target .NET 10.0.
 - The solution must build without errors or warnings.
 - All tests must pass in CI before merging.
 

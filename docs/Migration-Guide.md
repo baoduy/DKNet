@@ -21,7 +21,7 @@ This is a **major architectural migration** from legacy packages to the new Doma
 
 #### Key Changes
 - **Architecture**: Complete shift to DDD/Onion Architecture
-- **Technology**: Upgrade to .NET 9.0
+- **Technology**: Upgrade to .NET 10.0 with C# 14 features
 - **Patterns**: Introduction of CQRS, Repository patterns, Domain Events
 - **Testing**: New testing strategy with TestContainers
 
@@ -51,17 +51,17 @@ dotnet list package --include-transitive | grep DKNet
 
 ## 📦 Version-Specific Migrations
 
-### Upgrading to .NET 9.0
+### Upgrading to .NET 10.0
 
 **Prerequisites**
 ```bash
-# Install .NET 9.0 SDK
-./src/dotnet-install.sh --version 9.0.100
+# Install .NET 10.0 SDK
+./src/dotnet-install.sh --version 10.0.100
 
 # Update global.json
 {
   "sdk": {
-    "version": "9.0.100"
+    "version": "10.0.100"
   }
 }
 ```
@@ -69,10 +69,10 @@ dotnet list package --include-transitive | grep DKNet
 **Project Files**
 ```xml
 <!-- Update target framework -->
-<TargetFramework>net9.0</TargetFramework>
+<TargetFramework>net10.0</TargetFramework>
 
 <!-- Update package references -->
-<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
 <PackageReference Include="Microsoft.AspNetCore.App" />
 ```
 

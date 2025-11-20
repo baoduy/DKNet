@@ -3,15 +3,15 @@
 ## Technology Stack
 
 ### Core Framework
-- **.NET 9.0**: Latest LTS version with C# 13 language features
-- **C# Language Version**: Latest (13.0)
+- **.NET 10.0**: Latest version with C# 14 language features
+- **C# Language Version**: Latest (14.0)
 - **Nullable Reference Types**: Enabled globally (`<Nullable>enable</Nullable>`)
 - **LangVersion**: `latest` for all projects
 
 ### Key Dependencies
 
 #### EF Core Stack
-- **Microsoft.EntityFrameworkCore**: 9.0.0
+- **Microsoft.EntityFrameworkCore**: 10.0.0
 - **Microsoft.EntityFrameworkCore.SqlServer**: SQL Server provider
 - **Microsoft.EntityFrameworkCore.Relational**: Base for relational providers
 - **LinqKit.Microsoft.EntityFrameworkCore**: Expression composition and dynamic queries
@@ -61,9 +61,9 @@
 ### Development Tools & Constraints
 
 #### IDE Support
-- **JetBrains Rider**: Primary IDE (ReSharper settings included)
-- **Visual Studio 2022**: Full support
-- **Visual Studio Code**: With C# extension
+- **JetBrains Rider**: Primary IDE (ReSharper settings included) - Latest version with .NET 10 support
+- **Visual Studio 2022**: Full support - Version 17.13 or later recommended for .NET 10
+- **Visual Studio Code**: With C# extension and .NET 10 SDK
 
 #### Version Control
 - **Git**: Primary VCS
@@ -106,7 +106,7 @@
 - Audit logging for compliance requirements
 
 ### Platform Targets
-- **Runtime**: .NET 9.0+
+- **Runtime**: .NET 10.0+
 - **OS**: Cross-platform (Windows, Linux, macOS)
 - **Databases**: SQL Server (primary), potentially other EF Core providers
 - **Containers**: Docker support via TestContainers and Aspire

@@ -4,8 +4,8 @@ Welcome to DKNet Framework! This guide will help you get started with the compre
 
 ## 📋 Prerequisites
 
-- **.NET 9.0 SDK** or later
-- **Visual Studio 2022**, **Visual Studio Code**, or **JetBrains Rider**
+- **.NET 10.0 SDK** or later
+- **Visual Studio 2022** (17.13+), **Visual Studio Code**, or **JetBrains Rider**
 - **SQL Server** or **SQL Server LocalDB** (for EF Core features)
 - Basic understanding of **Domain-Driven Design** concepts
 
