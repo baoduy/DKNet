@@ -7,7 +7,6 @@
 using DKNet.SlimBus.Extensions.Behaviors;
 using DKNet.SlimBus.Extensions.Handlers;
 using Microsoft.EntityFrameworkCore;
-using SlimMessageBus.Host;
 using SlimMessageBus.Host.Interceptor;
 
 // ReSharper disable once CheckNamespace
@@ -42,13 +41,18 @@ public static class SlimBusEfCoreSetup
         ///     request handlers run. Registers the <see cref="EfAutoSavePostProcessor{TRequest,TResponse}" />
         ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
         /// </summary>
-        /// <param name="configure">A callback to configure the SlimMessageBus <see cref="MessageBusBuilder" />.</param>
         /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
-        public IServiceCollection AddSlimBusForEfCore(Action<MessageBusBuilder> configure)
+        public IServiceCollection AddSlimBusEfCoreInterceptor<TDbContext>()
+            where TDbContext : DbContext
         {
+            EfAutoSavePostProcessorRegistration.RegisterDbContextType<TDbContext>();
+
+            if (serviceCollection.Any(serviceDescriptor =>
+                    serviceDescriptor.ServiceType == typeof(IRequestHandlerInterceptor<,>)))
+                return serviceCollection;
+
             serviceCollection
-                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>))
-                .AddSlimMessageBus(configure);
+                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>));
             return serviceCollection;
         }
     }

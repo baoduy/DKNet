@@ -17,7 +17,8 @@ public sealed class Fixture : IAsyncDisposable
             .AddScoped<IMapper, ServiceMapper>()
             .AddDbContext<TestDbContext>(b => b.UseInMemoryDatabase(nameof(TestDbContext)))
             .AddScoped<DbContext>(p => p.GetRequiredService<TestDbContext>())
-            .AddSlimBusForEfCore(mmb =>
+            .AddSlimBusEfCoreInterceptor<TestDbContext>()
+            .AddSlimMessageBus(mmb =>
             {
                 //This is a global config for all the child busses
                 mmb.AddJsonSerializer()
