@@ -24,26 +24,21 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(IServiceProvi
         var response = await next();
 
         //If response is null or failed, do not save changes
-        if (response is null || response is IResultBase { IsSuccess: false })
-        {
-            return response;
-        }
+        if (response is null || response is IResultBase { IsSuccess: false }) return response;
 
         //If request is a query type, do not save changes
         if (request is Fluents.Queries.IWitResponse<TResponse> ||
             request is Fluents.Queries.IWitPageResponse<TResponse>
             || request is Fluents.EventsConsumers.IHandler<IRequest>)
-        {
             return response;
-        }
 
-        // Save changes for all DbContexts with changes
-        var dbContexts = serviceProvider.GetServices<DbContext>().Distinct();
+        var dbContexts = serviceProvider.GetServices<DbContext>();
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
             await db.AddNewEntitiesFromNavigations(context.CancellationToken);
             await db.SaveChangesAsync(context.CancellationToken);
         }
+
 
         return response;
     }
