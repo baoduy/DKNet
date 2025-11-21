@@ -1,11 +1,29 @@
 using DKNet.EfCore.Extensions.Extensions;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using SlimMessageBus;
 using SlimMessageBus.Host.Interceptor;
 
 namespace DKNet.SlimBus.Extensions.Behaviors;
+
+internal static class EfAutoSavePostProcessorRegistration
+{
+    #region Properties
+
+    public static HashSet<Type> DbContextTypes { get; } = [];
+
+    #endregion
+
+    #region Methods
+
+    public static void RegisterDbContextType<TDbContext>()
+        where TDbContext : DbContext
+    {
+        DbContextTypes.Add(typeof(TDbContext));
+    }
+
+    #endregion
+}
 
 internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(IServiceProvider serviceProvider)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
@@ -32,7 +50,9 @@ internal sealed class EfAutoSavePostProcessor<TRequest, TResponse>(IServiceProvi
             || request is Fluents.EventsConsumers.IHandler<IRequest>)
             return response;
 
-        var dbContexts = serviceProvider.GetServices<DbContext>();
+        var dbContexts = EfAutoSavePostProcessorRegistration.DbContextTypes
+            .Select(serviceProvider.GetService).OfType<DbContext>().ToArray();
+
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
             await db.AddNewEntitiesFromNavigations(context.CancellationToken);
