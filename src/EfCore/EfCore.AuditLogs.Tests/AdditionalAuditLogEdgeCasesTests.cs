@@ -13,9 +13,11 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "DelUser", Age = 5, IsActive = true, Balance = 10m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
+
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
+
         ctx.Remove(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
@@ -29,7 +31,7 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "NoDiff", Age = 8, IsActive = true, Balance = 5m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         var entry = ctx.Entry(e);
@@ -38,10 +40,7 @@ public class AdditionalAuditLogEdgeCasesTests
         entry.State = EntityState.Modified;
 
         // Ensure none of the properties marked modified
-        foreach (var p in entry.Properties)
-        {
-            p.IsModified = false;
-        }
+        foreach (var p in entry.Properties) p.IsModified = false;
 
         var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
         log.Changes.ShouldBeEmpty();
@@ -52,7 +51,7 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "NullSkip", Age = 4, IsActive = true, Balance = 2m, Notes = null };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
 
@@ -69,7 +68,7 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "EqualUser", Age = 7, IsActive = true, Balance = 9m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
 
@@ -86,7 +85,7 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "SkipUser", Age = 2, IsActive = false, Balance = 3.3m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
 
@@ -110,7 +109,7 @@ public class AdditionalAuditLogEdgeCasesTests
     {
         await using var ctx = await InitAsync();
         var e = new TestAuditEntity { Name = "ClearUser", Age = 3, IsActive = true, Balance = 1m, Notes = "original" };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         e.Notes = null; // clear value

@@ -22,6 +22,13 @@ internal sealed class AttributedAuditEntity : AuditedEntity<Guid>
     public int Value { get; set; }
 
     #endregion
+
+    #region Methods
+
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
+
+    #endregion
 }
 
 // Intentionally NOT decorated with [AuditLog]
@@ -32,6 +39,13 @@ internal sealed class UnattributedAuditEntity : AuditedEntity<Guid>
     public string Name { get; set; } = string.Empty;
 
     public int Value { get; set; }
+
+    #endregion
+
+    #region Methods
+
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
 
     #endregion
 }
@@ -116,9 +130,9 @@ public class AuditLogBehaviourTests
         {
             var ctx = scope.ServiceProvider.GetRequiredService<BehaviourDbContext>();
             var a = new AttributedAuditEntity { Name = "A2", Value = 2 };
-            a.SetCreatedBy("creator");
+            a.SetCreatedOn("creator");
             var u = new UnattributedAuditEntity { Name = "U2", Value = 20 };
-            u.SetCreatedBy("creator");
+            u.SetCreatedOn("creator");
             ctx.AddRange(a, u);
             await ctx.SaveChangesAsync();
             attributedId = a.Id;
@@ -135,9 +149,9 @@ public class AuditLogBehaviourTests
             var a = await ctx.Attributed.FirstAsync(x => x.Id == attributedId);
             var u = await ctx.Unattributed.FirstAsync(x => x.Id == unattributedId);
             a.Value = 22;
-            a.SetUpdatedBy("upd");
+            a.SetUpdatedOn("upd");
             u.Value = 220;
-            u.SetUpdatedBy("upd");
+            u.SetUpdatedOn("upd");
             await ctx.SaveChangesAsync();
         }
 
@@ -170,9 +184,9 @@ public class AuditLogBehaviourTests
         {
             var ctx = scope.ServiceProvider.GetRequiredService<BehaviourDbContext>();
             var a = new AttributedAuditEntity { Name = "A1", Value = 1 };
-            a.SetCreatedBy("creator");
+            a.SetCreatedOn("creator");
             var u = new UnattributedAuditEntity { Name = "U1", Value = 10 };
-            u.SetCreatedBy("creator");
+            u.SetCreatedOn("creator");
             ctx.AddRange(a, u);
             await ctx.SaveChangesAsync();
             attributedId = a.Id;
@@ -190,9 +204,9 @@ public class AuditLogBehaviourTests
             var a = await ctx.Attributed.FirstAsync(x => x.Id == attributedId);
             var u = await ctx.Unattributed.FirstAsync(x => x.Id == unattributedId);
             a.Value = 2;
-            a.SetUpdatedBy("upd");
+            a.SetUpdatedOn("upd");
             u.Value = 11;
-            u.SetUpdatedBy("upd");
+            u.SetUpdatedOn("upd");
             await ctx.SaveChangesAsync();
         }
 
@@ -221,9 +235,9 @@ public class AuditLogBehaviourTests
         {
             var ctx = scope.ServiceProvider.GetRequiredService<BehaviourDbContext>();
             var a = new AttributedAuditEntity { Name = "A3", Value = 3 };
-            a.SetCreatedBy("creator");
+            a.SetCreatedOn("creator");
             var u = new UnattributedAuditEntity { Name = "U3", Value = 30 };
-            u.SetCreatedBy("creator");
+            u.SetCreatedOn("creator");
             ctx.AddRange(a, u);
             await ctx.SaveChangesAsync();
             unattributedId = u.Id;
@@ -239,9 +253,9 @@ public class AuditLogBehaviourTests
             var a = await ctx.Attributed.FirstAsync(e => e.Id == attributedId);
             var u = await ctx.Unattributed.FirstAsync(e => e.Id == unattributedId);
             a.Value = 300;
-            a.SetUpdatedBy("upd");
+            a.SetUpdatedOn("upd");
             u.Value = 400;
-            u.SetUpdatedBy("upd");
+            u.SetUpdatedOn("upd");
             await ctx.SaveChangesAsync();
         }
 

@@ -21,6 +21,13 @@ internal class IgnoredAuditEntity : AuditedEntity<Guid>
     public int Value { get; set; }
 
     #endregion
+
+    #region Methods
+
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
+
+    #endregion
 }
 
 public sealed class TestIgnoredPublisher : IAuditLogPublisher
@@ -92,7 +99,7 @@ public class IgnoredAuditLogTests : IAsyncLifetime
         TestIgnoredPublisher.Clear();
         var ctx = CreateContext();
         var e = new IgnoredAuditEntity { Name = "Add", Value = 1 };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.IgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
         await Task.Delay(150);
@@ -110,7 +117,7 @@ public class IgnoredAuditLogTests : IAsyncLifetime
     {
         var ctx = CreateContext();
         var e = new IgnoredAuditEntity { Name = "Del", Value = 5 };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.IgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
         TestIgnoredPublisher.Clear();
@@ -159,12 +166,12 @@ public class IgnoredAuditLogTests : IAsyncLifetime
     {
         var ctx = CreateContext();
         var e = new IgnoredAuditEntity { Name = "Upd", Value = 2 };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.IgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
         TestIgnoredPublisher.Clear();
         e.Value = 3;
-        e.SetUpdatedBy("updater");
+        e.SetUpdatedOn("updater");
         await ctx.SaveChangesAsync();
         await Task.Delay(150);
         TestIgnoredPublisher.Received.ShouldBeEmpty();

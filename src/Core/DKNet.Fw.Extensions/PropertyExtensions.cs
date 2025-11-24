@@ -152,8 +152,8 @@ public static class PropertyExtensions
         /// </exception>
         public void TrySetPropertyValue(string propertyName, object value)
         {
-            if (string.IsNullOrEmpty(propertyName))
-                throw new ArgumentNullException(nameof(propertyName), "The property name cannot be null or empty.");
+            ArgumentException.ThrowIfNullOrEmpty(propertyName);
+            ArgumentNullException.ThrowIfNull(obj);
 
             try
             {
@@ -179,8 +179,8 @@ public static class PropertyExtensions
         /// </exception>
         public void TrySetPropertyValue(PropertyInfo property, object? value)
         {
-            if (property == null)
-                throw new ArgumentNullException(nameof(property), "The property info cannot be null.");
+            ArgumentNullException.ThrowIfNull(property);
+            ArgumentNullException.ThrowIfNull(obj);
 
             try
             {

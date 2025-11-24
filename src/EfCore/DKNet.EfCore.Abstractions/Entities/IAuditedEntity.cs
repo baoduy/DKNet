@@ -13,21 +13,21 @@ namespace DKNet.EfCore.Abstractions.Entities;
 /// </remarks>
 public interface IAuditedEntity<out TKey> : IEntity<TKey>, IAuditedProperties
 {
-    #region Methods
-
-    /// <summary>
-    ///     Sets the creation audit information for the entity.
-    /// </summary>
-    /// <param name="userName">The identifier of the creating user.</param>
-    /// <param name="createdOn">Optional creation timestamp.</param>
-    void SetCreatedBy(string userName, DateTimeOffset? createdOn = null);
-
-    /// <summary>
-    ///     Sets the update audit information for the entity.
-    /// </summary>
-    /// <param name="userName">The identifier of the updating user.</param>
-    /// <param name="updatedOn">Optional update timestamp.</param>
-    void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null);
-
-    #endregion
+    // #region Methods
+    //
+    // /// <summary>
+    // ///     Sets the creation audit information for the entity.
+    // /// </summary>
+    // /// <param name="userName">The identifier of the creating user.</param>
+    // /// <param name="createdOn">Optional creation timestamp.</param>
+    // protected void SetCreatedBy(string userName, DateTimeOffset? createdOn = null);
+    //
+    // /// <summary>
+    // ///     Sets the update audit information for the entity.
+    // /// </summary>
+    // /// <param name="userName">The identifier of the updating user.</param>
+    // /// <param name="updatedOn">Optional update timestamp.</param>
+    // protected void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null);
+    //
+    // #endregion
 }

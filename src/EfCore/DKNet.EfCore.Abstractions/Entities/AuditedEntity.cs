@@ -89,9 +89,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <param name="userName">The username of the creator.</param>
     /// <param name="createdOn">Optional creation timestamp. Defaults to UTC now if not specified.</param>
     /// <exception cref="ArgumentNullException">Thrown when userName is null.</exception>
-    public void SetCreatedBy(string userName, DateTimeOffset? createdOn = null)
+    protected void SetCreatedBy(string userName, DateTimeOffset? createdOn = null)
     {
         if (!string.IsNullOrEmpty(CreatedBy)) return;
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
 
         CreatedBy = userName;
         CreatedOn = createdOn ?? DateTimeOffset.UtcNow;
@@ -103,9 +104,10 @@ public abstract class AuditedEntity<TKey> : Entity<TKey>,
     /// <param name="userName">The username of the modifier.</param>
     /// <param name="updatedOn">Optional modification timestamp. Defaults to UTC now if not specified.</param>
     /// <exception cref="ArgumentNullException">Thrown when userName is null or empty.</exception>
-    public void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null)
+    protected void SetUpdatedBy(string userName, DateTimeOffset? updatedOn = null)
     {
         if (updatedOn < UpdatedOn) return;
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
 
         UpdatedBy = userName;
         UpdatedOn = updatedOn ?? DateTimeOffset.UtcNow;

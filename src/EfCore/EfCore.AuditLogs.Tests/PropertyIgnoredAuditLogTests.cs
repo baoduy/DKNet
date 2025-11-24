@@ -23,6 +23,13 @@ public class PropertyIgnoredAuditEntity : AuditedEntity<Guid>
     [IgnoreAuditLog] [MaxLength(200)] public string Secret { get; set; } = string.Empty;
 
     #endregion
+
+    #region Methods
+
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
+
+    #endregion
 }
 
 // Dedicated publisher for these tests to isolate static state
@@ -90,7 +97,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
         DedicatedRecordingPublisher.Reset(); // changed
         var ctx = CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Add", Secret = "S1" };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.PropIgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
         await Task.Delay(300); // allow async publish
@@ -114,13 +121,13 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
     {
         var ctx = CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Del", Secret = "S4" };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.PropIgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
 
         DedicatedRecordingPublisher.Reset(); // changed
         ctx.PropIgnoredEntities.Remove(e);
-        e.SetUpdatedBy("deleter");
+        e.SetUpdatedOn("deleter");
         await ctx.SaveChangesAsync();
         await Task.Delay(300);
 
@@ -169,14 +176,14 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
     {
         var ctx = CreateContext();
         var e = new PropertyIgnoredAuditEntity { Name = "Upd", Secret = "S2" };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         ctx.PropIgnoredEntities.Add(e);
         await ctx.SaveChangesAsync();
 
         DedicatedRecordingPublisher.Reset(); // changed
         e.Name = "Upd2";
         e.Secret = "S3"; // should be ignored
-        e.SetUpdatedBy("updater");
+        e.SetUpdatedOn("updater");
         await ctx.SaveChangesAsync();
         await Task.Delay(300);
 
