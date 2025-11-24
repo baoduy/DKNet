@@ -56,7 +56,7 @@ public class PageAsyncEnumeratorTests : IClassFixture<TestDbFixture>
             await foreach (var p in _repository.ToPageEnumerable(spec).WithCancellation(cts.Token))
             {
                 enumerated.Add(p);
-                cts.Cancel(); // cancel after first item
+                await cts.CancelAsync(); // cancel after first item
             }
         });
 
