@@ -25,6 +25,9 @@ public sealed class TestAuditEntity() : AuditedEntity<Guid>(Guid.NewGuid())
 
     #region Methods
 
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
+
     // Helper to simulate an update cycle in tests
     public void UpdateProfile(string updater, string? notes = null, DateTimeOffset? updatedOn = null)
     {

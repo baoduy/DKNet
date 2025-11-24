@@ -15,7 +15,7 @@ public class TestAuditedEntity : AuditedEntity<int>
 
     public TestAuditedEntity(int id, string createdBy, DateTimeOffset? createdOn = null) : base(id)
     {
-        SetCreatedBy(createdBy, createdOn);
+        SetCreatedOn(createdBy, createdOn);
     }
 
     #endregion
@@ -23,6 +23,13 @@ public class TestAuditedEntity : AuditedEntity<int>
     #region Properties
 
     public string Name { get; set; } = string.Empty;
+
+    #endregion
+
+    #region Methods
+
+    public void SetCreatedOn(string byUser, DateTimeOffset? on = null) => SetCreatedBy(byUser, on);
+    public void SetUpdatedOn(string byUser, DateTimeOffset? on = null) => SetUpdatedBy(byUser, on);
 
     #endregion
 }
@@ -172,7 +179,7 @@ public class AuditedEntityTests
         // Arrange
         var entity = new TestAuditedEntity();
         const string createdBy = "creator";
-        entity.SetCreatedBy(createdBy);
+        entity.SetCreatedOn(createdBy);
 
         // Act & Assert
         entity.LastModifiedBy.ShouldBe(createdBy);
@@ -186,8 +193,8 @@ public class AuditedEntityTests
         const string createdBy = "creator";
         const string updatedBy = "updater";
 
-        entity.SetCreatedBy(createdBy);
-        entity.SetUpdatedBy(updatedBy);
+        entity.SetCreatedOn(createdBy);
+        entity.SetUpdatedOn(updatedBy);
 
         // Act & Assert
         entity.LastModifiedBy.ShouldBe(updatedBy);
@@ -199,7 +206,7 @@ public class AuditedEntityTests
         // Arrange
         var entity = new TestAuditedEntity();
         var createdOn = DateTimeOffset.UtcNow.AddMinutes(-10);
-        entity.SetCreatedBy("creator", createdOn);
+        entity.SetCreatedOn("creator", createdOn);
 
         // Act & Assert
         entity.LastModifiedOn.ShouldBe(createdOn);
@@ -213,15 +220,15 @@ public class AuditedEntityTests
         var createdOn = DateTimeOffset.UtcNow.AddMinutes(-10);
         var updatedOn = DateTimeOffset.UtcNow.AddMinutes(-5);
 
-        entity.SetCreatedBy("creator", createdOn);
-        entity.SetUpdatedBy("updater", updatedOn);
+        entity.SetCreatedOn("creator", createdOn);
+        entity.SetUpdatedOn("updater", updatedOn);
 
         // Act & Assert
         entity.LastModifiedOn.ShouldBe(updatedOn);
     }
 
     [Fact]
-    public void SetCreatedBy_WhenAlreadySet_ShouldNotChange()
+    public void SetCreatedOn_WhenAlreadySet_ShouldNotChange()
     {
         // Arrange
         var entity = new TestAuditedEntity();
@@ -229,10 +236,10 @@ public class AuditedEntityTests
         const string newUser = "newuser";
         var originalTimestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
 
-        entity.SetCreatedBy(originalUser, originalTimestamp);
+        entity.SetCreatedOn(originalUser, originalTimestamp);
 
         // Act
-        entity.SetCreatedBy(newUser);
+        entity.SetCreatedOn(newUser);
 
         // Assert
         entity.CreatedBy.ShouldBe(originalUser);
@@ -240,17 +247,17 @@ public class AuditedEntityTests
     }
 
     [Fact]
-    public void SetCreatedBy_WithNullUserName_ShouldThrowArgumentNullException()
+    public void SetCreatedOn_WithNullUserName_ShouldThrowArgumentNullException()
     {
         // Arrange
         var entity = new TestAuditedEntity();
 
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => entity.SetCreatedBy(null!));
+        Should.Throw<ArgumentNullException>(() => entity.SetCreatedOn(null!));
     }
 
     [Fact]
-    public void SetCreatedBy_WithUserName_ShouldSetCreatedByAndCreatedOn()
+    public void SetCreatedOn_WithUserName_ShouldSetCreatedOnAndCreatedOn()
     {
         // Arrange
         var entity = new TestAuditedEntity();
@@ -258,7 +265,7 @@ public class AuditedEntityTests
         var beforeCall = DateTimeOffset.UtcNow;
 
         // Act
-        entity.SetCreatedBy(userName);
+        entity.SetCreatedOn(userName);
         var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
@@ -268,7 +275,7 @@ public class AuditedEntityTests
     }
 
     [Fact]
-    public void SetCreatedBy_WithUserNameAndTimestamp_ShouldSetBoth()
+    public void SetCreatedOn_WithUserNameAndTimestamp_ShouldSetBoth()
     {
         // Arrange
         var entity = new TestAuditedEntity();
@@ -276,7 +283,7 @@ public class AuditedEntityTests
         var timestamp = DateTimeOffset.UtcNow.AddMinutes(-10);
 
         // Act
-        entity.SetCreatedBy(userName, timestamp);
+        entity.SetCreatedOn(userName, timestamp);
 
         // Assert
         entity.CreatedBy.ShouldBe(userName);
@@ -290,8 +297,8 @@ public class AuditedEntityTests
         var entity = new TestAuditedEntity();
 
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(null!));
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(string.Empty));
+        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedOn(null!));
+        Should.Throw<ArgumentException>(() => entity.SetUpdatedOn(string.Empty));
     }
 
     [Fact]
@@ -303,7 +310,7 @@ public class AuditedEntityTests
         var beforeCall = DateTimeOffset.UtcNow;
 
         // Act
-        entity.SetUpdatedBy(userName);
+        entity.SetUpdatedOn(userName);
         var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
@@ -322,7 +329,7 @@ public class AuditedEntityTests
         var timestamp = DateTimeOffset.UtcNow.AddMinutes(-5);
 
         // Act
-        entity.SetUpdatedBy(userName, timestamp);
+        entity.SetUpdatedOn(userName, timestamp);
 
         // Assert
         entity.UpdatedBy.ShouldBe(userName);

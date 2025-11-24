@@ -69,7 +69,7 @@ public class AdditionalAuditLogTests
         await using var ctx = new TestAuditDbContext(BuildInMemoryOpts());
         await ctx.Database.EnsureCreatedAsync();
         var e = new TestAuditEntity { Name = "A", Age = 5, IsActive = true, Balance = 1m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         e.Notes = "note"; // new value from null
@@ -91,7 +91,7 @@ public class AdditionalAuditLogTests
         await using var ctx = new TestAuditDbContext(BuildInMemoryOpts());
         await ctx.Database.EnsureCreatedAsync();
         var e = new TestAuditEntity { Name = "Del", Age = 1, IsActive = false, Balance = 0m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         ctx.Remove(e);
@@ -152,7 +152,7 @@ public class AdditionalAuditLogTests
         for (var i = 0; i < 10; i++)
         {
             var e = new TestAuditEntity { Name = $"CC{i}", Age = i, IsActive = true, Balance = i };
-            e.SetCreatedBy("seed");
+            e.SetCreatedOn("seed");
             await seedCtx.AddAsync(e);
         }
 
@@ -201,7 +201,7 @@ public class AdditionalAuditLogTests
         RecordingPublisher.Reset();
 
         var e = new TestAuditEntity { Name = "C", Age = 2, IsActive = true, Balance = 3.2m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
 
@@ -234,7 +234,7 @@ public class AdditionalAuditLogTests
 
         RecordingPublisher.Reset();
         var e = new TestAuditEntity { Name = "F", Age = 1, IsActive = true, Balance = 1m };
-        e.SetCreatedBy("creator");
+        e.SetCreatedOn("creator");
         await ctx.AddAsync(e);
         await ctx.SaveChangesAsync();
         e.Age = 2;

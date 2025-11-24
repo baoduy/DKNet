@@ -23,22 +23,22 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     #region Methods
 
     [Fact]
-    public void AuditedEntity_SetCreatedBy_Is_Idempotent()
+    public void AuditedEntity_SetCreatedOn_Is_Idempotent()
     {
         var entity = new TestAuditEntity { Name = "Idem", Age = 1, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("first");
+        entity.SetCreatedOn("first");
         var firstOn = entity.CreatedOn;
-        entity.SetCreatedBy("second", DateTimeOffset.UtcNow.AddDays(-1));
+        entity.SetCreatedOn("second", DateTimeOffset.UtcNow.AddDays(-1));
         entity.CreatedBy.ShouldBe("first");
         entity.CreatedOn.ShouldBe(firstOn);
     }
 
     [Fact]
-    public void AuditedEntity_SetUpdatedBy_Throws_On_Empty()
+    public void AuditedEntity_SetUpdatedOn_Throws_On_Empty()
     {
         var entity = new TestAuditEntity { Name = "Err", Age = 1, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("creator");
-        Should.Throw<ArgumentNullException>(() => entity.SetUpdatedBy(""));
+        entity.SetCreatedOn("creator");
+        Should.Throw<ArgumentException>(() => entity.SetUpdatedOn(""));
     }
 
     private Task<(TestAuditDbContext ctx, TestPublisher publisher)> CreateScopeAsync()
@@ -67,7 +67,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         TestPublisher.Clear();
         var (ctx, _) = await CreateScopeAsync();
         var entity = new TestAuditEntity { Name = "User1", Age = 30, IsActive = true, Balance = 123.45m };
-        entity.SetCreatedBy("creator-1");
+        entity.SetCreatedOn("creator-1");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
         TestPublisher.Received.Count(c => c.Action == AuditLogAction.Created && c.Keys.Values.Contains(entity.Id))
@@ -81,7 +81,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         var (ctx, _) = await CreateScopeAsync();
 
         var entity = new TestAuditEntity { Name = "User3", Age = 40, IsActive = false, Balance = 0m };
-        entity.SetCreatedBy("creator-3");
+        entity.SetCreatedOn("creator-3");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
         await Task.Delay(500); // Wait for create audit log to be published
@@ -152,7 +152,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         await ctx.Database.EnsureCreatedAsync();
 
         var entity = new TestAuditEntity { Name = "UserEX", Age = 10, IsActive = true, Balance = 1m };
-        entity.SetCreatedBy("creator-ex");
+        entity.SetCreatedOn("creator-ex");
         ctx.Add(entity);
         await ctx.SaveChangesAsync();
         TestPublisher.Clear();
@@ -192,10 +192,10 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     public void LastModified_Properties_Reflect_Created_Then_Updated()
     {
         var entity = new TestAuditEntity { Name = "LM", Age = 2, IsActive = true, Balance = 0m };
-        entity.SetCreatedBy("creator");
+        entity.SetCreatedOn("creator");
         entity.LastModifiedBy.ShouldBe("creator");
         entity.LastModifiedOn.ShouldBe(entity.CreatedOn);
-        entity.SetUpdatedBy("updater");
+        entity.SetUpdatedOn("updater");
         entity.LastModifiedBy.ShouldBe("updater");
         entity.LastModifiedOn.ShouldBe(entity.UpdatedOn!.Value);
     }
@@ -206,8 +206,8 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         var (ctx, _) = await CreateScopeAsync();
         var e1 = new TestAuditEntity { Name = "UserA", Age = 20, IsActive = true, Balance = 10m };
         var e2 = new TestAuditEntity { Name = "UserB", Age = 21, IsActive = true, Balance = 11m };
-        e1.SetCreatedBy("creator-a");
-        e2.SetCreatedBy("creator-b");
+        e1.SetCreatedOn("creator-a");
+        e2.SetCreatedOn("creator-b");
         ctx.AddRange(e1, e2);
         await ctx.SaveChangesAsync();
         TestPublisher.Clear();
@@ -235,7 +235,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     {
         var (ctx, _) = await CreateScopeAsync();
         var entity = new TestAuditEntity { Name = "UserNC", Age = 10, IsActive = true, Balance = 1m };
-        entity.SetCreatedBy("creator-nc");
+        entity.SetCreatedOn("creator-nc");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
         await Task.Delay(500); // Wait for audit log to be published
@@ -252,7 +252,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
     {
         var (ctx, _) = await CreateScopeAsync();
         var entity = new TestAuditEntity { Name = "User2", Age = 25, IsActive = true, Balance = 50m };
-        entity.SetCreatedBy("creator-2");
+        entity.SetCreatedOn("creator-2");
         ctx.AuditEntities.Add(entity);
         await ctx.SaveChangesAsync();
         TestPublisher.Clear();

@@ -187,8 +187,12 @@ public class RepoSpecExtensionsTests : IAsyncLifetime
 
     #endregion
 
-    public class ActiveEntitySpec() : Specification<TestEntity>(e => e.IsActive)
+    public class ActiveEntitySpec : Specification<TestEntity>
     {
+        public ActiveEntitySpec() : base(e => e.IsActive)
+        {
+            AddOrderBy(e => e.Id);
+        }
     }
 
     public class NameContainsSpec(string name) : Specification<TestEntity>(e => e.Name.Contains(name))
