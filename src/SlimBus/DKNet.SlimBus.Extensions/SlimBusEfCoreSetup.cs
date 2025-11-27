@@ -38,7 +38,7 @@ public static class SlimBusEfCoreSetup
 
         /// <summary>
         ///     Adds SlimMessageBus and EF Core integration services required for auto-saving the DbContext after
-        ///     request handlers run. Registers the <see cref="EfAutoSavePostProcessor{TRequest,TResponse}" />
+        ///     request handlers run. Registers the <see cref="EfAutoSavePostInterceptor{TRequest,TResponse}" />
         ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
         /// </summary>
         /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
@@ -52,7 +52,7 @@ public static class SlimBusEfCoreSetup
                 return serviceCollection;
 
             serviceCollection
-                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostProcessor<,>));
+                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostInterceptor<,>));
             return serviceCollection;
         }
     }
