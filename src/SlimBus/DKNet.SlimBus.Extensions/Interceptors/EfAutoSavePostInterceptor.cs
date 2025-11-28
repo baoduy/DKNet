@@ -1,6 +1,7 @@
 using DKNet.EfCore.Extensions.Extensions;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SlimMessageBus;
 using SlimMessageBus.Host.Interceptor;
@@ -47,7 +48,8 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
             return response;
         }
 
-        var exceptionHandler = serviceProvider.GetService(typeof(IEfCoreExceptionHandler)) as IEfCoreExceptionHandler;
+        //Global exception handling.
+        var exceptionHandler = serviceProvider.GetService<IEfCoreExceptionHandler>();
         var dbContexts = EfAutoSavePostProcessorRegistration.DbContextTypes
             .Select(serviceProvider.GetService).OfType<DbContext>().ToArray();
 
@@ -56,11 +58,15 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
 
         foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
+            //Context level exception handling
+            var contextExceptionHandler =
+                serviceProvider.GetKeyedService<IEfCoreExceptionHandler>(db.GetType().FullName);
             var dbContextTypeName = db.GetType().Name;
             logger.LogDebug("DbContext {DbContextType} has changes. Saving...", dbContextTypeName);
 
             await db.AddNewEntitiesFromNavigations(context.CancellationToken).ConfigureAwait(false);
-            await db.SaveChangesWithConcurrencyHandlingAsync(exceptionHandler, context.CancellationToken)
+            await db.SaveChangesWithConcurrencyHandlingAsync(contextExceptionHandler ?? exceptionHandler,
+                    context.CancellationToken)
                 .ConfigureAwait(false);
 
             logger.LogDebug("DbContext {DbContextType} changes saved.", dbContextTypeName);

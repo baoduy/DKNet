@@ -37,6 +37,18 @@ public static class SlimBusEfCoreSetup
         }
 
         /// <summary>
+        ///     Registers a custom EF Core exception handler for the specified <typeparamref name="TDbContext" />.
+        /// </summary>
+        /// <typeparam name="TDbContext"></typeparam>
+        /// <typeparam name="TExceptionHandler"></typeparam>
+        /// <returns></returns>
+        public IServiceCollection AddSlimBusEfCoreExceptionHandler<TDbContext, TExceptionHandler>()
+            where TDbContext : DbContext
+            where TExceptionHandler : class, IEfCoreExceptionHandler =>
+            serviceCollection.AddKeyedTransient<IEfCoreExceptionHandler, TExceptionHandler>(typeof(TDbContext)
+                .FullName);
+
+        /// <summary>
         ///     Adds SlimMessageBus and EF Core integration services required for auto-saving the DbContext after
         ///     request handlers run. Registers the <see cref="EfAutoSavePostInterceptor{TRequest,TResponse}" />
         ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
