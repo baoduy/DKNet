@@ -5,30 +5,7 @@ using Microsoft.Extensions.Logging;
 using SlimMessageBus;
 using SlimMessageBus.Host.Interceptor;
 
-namespace DKNet.SlimBus.Extensions.Behaviors;
-
-internal static class EfAutoSavePostProcessorRegistration
-{
-    #region Properties
-
-    public static HashSet<Type> DbContextTypes { get; } = [];
-    /// <summary>
-    ///     Ensures DbContext save operations are executed with async locking to prevent concurrent saves.
-    /// </summary>
-    public static readonly SemaphoreSlim SaveLock = new(1, 1);
-
-    #endregion
-
-    #region Methods
-
-    public static void RegisterDbContextType<TDbContext>()
-        where TDbContext : DbContext
-    {
-        DbContextTypes.Add(typeof(TDbContext));
-    }
-
-    #endregion
-}
+namespace DKNet.SlimBus.Extensions.Interceptors;
 
 internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
     IServiceProvider serviceProvider,
@@ -48,7 +25,7 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
         var requestTypeName = typeof(TRequest).Name;
         logger.LogDebug("Handling request of type {RequestType}", requestTypeName);
 
-        var response = await next();
+        var response = await next().ConfigureAwait(false);
 
         if (response is null)
         {
@@ -70,27 +47,23 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
             return response;
         }
 
-        await EfAutoSavePostProcessorRegistration.SaveLock.WaitAsync(context.CancellationToken);
-        try
-        {
-            var dbContexts = EfAutoSavePostProcessorRegistration.DbContextTypes
-                .Select(serviceProvider.GetService).OfType<DbContext>().ToArray();
+        var exceptionHandler = serviceProvider.GetService(typeof(IEfCoreExceptionHandler)) as IEfCoreExceptionHandler;
+        var dbContexts = EfAutoSavePostProcessorRegistration.DbContextTypes
+            .Select(serviceProvider.GetService).OfType<DbContext>().ToArray();
 
-            var dbContextCount = dbContexts.Length;
-            logger.LogDebug("Found {DbContextCount} DbContext(s) for auto-save.", dbContextCount);
+        var dbContextCount = dbContexts.Length;
+        logger.LogDebug("Found {DbContextCount} DbContext(s) for auto-save.", dbContextCount);
 
-            foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
-            {
-                var dbContextTypeName = db.GetType().Name;
-                logger.LogDebug("DbContext {DbContextType} has changes. Saving...", dbContextTypeName);
-                await db.AddNewEntitiesFromNavigations(context.CancellationToken);
-                await db.SaveChangesAsync(context.CancellationToken);
-                logger.LogDebug("DbContext {DbContextType} changes saved.", dbContextTypeName);
-            }
-        }
-        finally
+        foreach (var db in dbContexts.Where(db => db.ChangeTracker.HasChanges()))
         {
-            EfAutoSavePostProcessorRegistration.SaveLock.Release();
+            var dbContextTypeName = db.GetType().Name;
+            logger.LogDebug("DbContext {DbContextType} has changes. Saving...", dbContextTypeName);
+
+            await db.AddNewEntitiesFromNavigations(context.CancellationToken).ConfigureAwait(false);
+            await db.SaveChangesWithConcurrencyHandlingAsync(exceptionHandler, context.CancellationToken)
+                .ConfigureAwait(false);
+
+            logger.LogDebug("DbContext {DbContextType} changes saved.", dbContextTypeName);
         }
 
         logger.LogDebug("Auto-save post-processing complete for request {RequestType}.", requestTypeName);

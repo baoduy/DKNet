@@ -591,6 +591,9 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=741f3bef_002D9e13_002D4160_002D8efd_002D6460b3b44d61/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;SlimBus&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=964034e5_002Dde7d_002D4983_002D9106_002D426b33d8b8f6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;SlimBus&amp;gt;\&amp;lt;SlimBus.Extensions.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/SlimBus/SlimBus.Extensions.Tests" Presentation="&amp;lt;SlimBus&amp;gt;\&amp;lt;SlimBus.Extensions.Tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
 	
 	
 	
