@@ -4,8 +4,8 @@
 // File: SlimBusEfCoreSetup.cs
 // Description: DI helpers to wire SlimMessageBus integrations for EF Core (event publisher and auto-save behavior).
 
-using DKNet.SlimBus.Extensions.Behaviors;
 using DKNet.SlimBus.Extensions.Handlers;
+using DKNet.SlimBus.Extensions.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using SlimMessageBus.Host.Interceptor;
 

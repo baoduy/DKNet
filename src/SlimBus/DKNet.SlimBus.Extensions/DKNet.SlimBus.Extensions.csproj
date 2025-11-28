@@ -17,10 +17,12 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="X.PagedList.EF" />
+        <PackageReference Include="X.PagedList.EF"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj"/>
     </ItemGroup>
-
+    <ItemGroup>
+        <InternalsVisibleTo Include="SlimBus.Extensions.Tests"/>
+    </ItemGroup>
 </Project>
