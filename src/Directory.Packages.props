@@ -127,7 +127,7 @@
     <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.3.5" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
-    <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.0" />
+    <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.1" />
     <PackageVersion Include="System.Memory.Data" Version="10.0.0" />
     <PackageVersion Include="Testcontainers.Azurite" Version="4.9.0" />
     <PackageVersion Include="TestContainers.Container.Database.MsSql" Version="1.5.4" />
