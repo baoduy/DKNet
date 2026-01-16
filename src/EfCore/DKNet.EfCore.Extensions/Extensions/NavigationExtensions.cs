@@ -168,6 +168,7 @@ public static class NavigationExtensions
         /// <returns>An enumerable of potentially updating <see cref="EntityEntry" /> instances.</returns>
         public IEnumerable<EntityEntry> GetPossibleUpdatingEntities()
         {
+            if (context.ChangeTracker is null) return [];
             context.ChangeTracker.DetectChanges();
             return context.ChangeTracker.Entries().Where(e =>
                 e.State is EntityState.Detached or EntityState.Modified or EntityState.Unchanged);
