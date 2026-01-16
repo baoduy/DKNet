@@ -3,6 +3,7 @@ using DKNet.EfCore.Repos.Abstractions;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Repos.Tests;
 
@@ -60,8 +61,8 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         // Create repositories with and without mappers
         ReadRepositoryWithMapper = new ReadRepository<User>(DbContext, mappers);
         ReadRepositoryWithoutMapper = new ReadRepository<User>(DbContext);
-        RepositoryWithMapper = new Repository<User>(DbContext, mappers);
-        RepositoryWithoutMapper = new Repository<User>(DbContext);
+        RepositoryWithMapper = new Repository<User>(DbContext, new ServiceCollection().BuildServiceProvider(), mappers);
+        RepositoryWithoutMapper = new Repository<User>(DbContext, new ServiceCollection().BuildServiceProvider());
     }
 
     #endregion

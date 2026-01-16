@@ -31,7 +31,7 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _container = new MsSqlBuilder()
+        _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
             .WithPassword("a1ckZmGjwV8VqNdBUexV")
 
             //.WithReuse(true)

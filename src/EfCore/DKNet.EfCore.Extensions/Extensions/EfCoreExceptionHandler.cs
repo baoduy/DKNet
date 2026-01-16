@@ -3,9 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
-using Microsoft.EntityFrameworkCore;
-
-namespace DKNet.SlimBus.Extensions.Interceptors;
+namespace DKNet.EfCore.Extensions.Extensions;
 
 /// <summary>
 ///     Represents the possible resolutions for EF Core concurrency exceptions.

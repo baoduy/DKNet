@@ -58,8 +58,7 @@ public class TestDbFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Start SQL Server container
-        _msSqlContainer = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        _msSqlContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
             .WithPassword("YourStrong@Passw0rd")
             .WithCleanUp(true)
             .Build();

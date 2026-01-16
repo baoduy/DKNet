@@ -1,4 +1,5 @@
 using DKNet.EfCore.Extensions.Configurations;
+using DKNet.EfCore.Extensions.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Extensions.Tests;
@@ -35,6 +36,26 @@ public class EfCoreSetupTests
         EfCoreSetup.GlobalModelBuilders.ShouldContain(typeof(TestGlobalQueryFilter));
     }
 
+    /// <summary>
+    ///     Verifies AddSlimBusEfCoreExceptionHandler registers the correct handler keyed by DbContext type.
+    /// </summary>
+    [Fact]
+    public void AddSlimBusEfCoreExceptionHandler_RegistersKeyedHandler_CanResolveByKey()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddEfCoreExceptionHandler<MyDbContext, TestExceptionHandler>();
+        var provider = services.BuildServiceProvider();
+        var key = typeof(MyDbContext).FullName;
+
+        // Act
+        var handler = provider.GetKeyedService<IEfCoreExceptionHandler>(key!);
+
+        // Assert
+        handler.ShouldNotBeNull();
+        handler.ShouldBeOfType<TestExceptionHandler>();
+    }
+
     [Fact]
     public void UseAutoConfigModel_GenericDbContext_ShouldReturnTypedBuilder()
     {
@@ -59,4 +80,15 @@ public class EfCoreSetupTests
     }
 
     #endregion
+
+    private class TestExceptionHandler : IEfCoreExceptionHandler
+    {
+        #region Methods
+
+        public Task<EfConcurrencyResolution> HandlingAsync(DbContext context, DbUpdateConcurrencyException exception,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(EfConcurrencyResolution.IgnoreChanges);
+
+        #endregion
+    }
 }

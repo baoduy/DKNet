@@ -12,31 +12,15 @@ namespace DKNet.EfCore.Repos;
 ///     and will dispose it when the factory is disposed.
 /// </summary>
 /// <typeparam name="TDbContext">The DbContext type used by repositories created by this factory.</typeparam>
-public sealed class RepositoryFactory<TDbContext> : IRepositoryFactory
+public sealed class RepositoryFactory<TDbContext>(
+    IDbContextFactory<TDbContext> dbFactory,
+    IServiceProvider provider,
+    IEnumerable<IMapper>? mappers = null) : IRepositoryFactory
     where TDbContext : DbContext
 {
     #region Fields
 
-    private readonly TDbContext _db;
-    private readonly IEnumerable<IMapper>? _mappers;
-
-    #endregion
-
-    #region Constructors
-
-    /// <summary>
-    ///     Initializes a new instance of <see cref="RepositoryFactory{TDbContext}" /> using the provided
-    ///     <paramref name="dbFactory" /> to create a DbContext instance.
-    /// </summary>
-    /// <param name="dbFactory">Factory used to create a <typeparamref name="TDbContext" /> instance.</param>
-    /// <param name="mappers">Optional collection of mappers to pass to created repositories.</param>
-    public RepositoryFactory(IDbContextFactory<TDbContext> dbFactory, IEnumerable<IMapper>? mappers = null)
-    {
-        ArgumentNullException.ThrowIfNull(dbFactory);
-
-        _db = dbFactory.CreateDbContext();
-        _mappers = mappers;
-    }
+    private readonly TDbContext _db = dbFactory.CreateDbContext();
 
     #endregion
 
@@ -47,7 +31,8 @@ public sealed class RepositoryFactory<TDbContext> : IRepositoryFactory
     /// </summary>
     /// <typeparam name="TEntity">The entity type for the repository.</typeparam>
     /// <returns>A new <see cref="IRepository{TEntity}" /> instance.</returns>
-    public IRepository<TEntity> Create<TEntity>() where TEntity : class => new Repository<TEntity>(_db, _mappers);
+    public IRepository<TEntity> Create<TEntity>() where TEntity : class =>
+        new Repository<TEntity>(_db, provider, mappers);
 
     /// <summary>
     ///     Creates a read-only repository for <typeparamref name="TEntity" />.
@@ -55,7 +40,7 @@ public sealed class RepositoryFactory<TDbContext> : IRepositoryFactory
     /// <typeparam name="TEntity">The entity type for the repository.</typeparam>
     /// <returns>A new <see cref="IReadRepository{TEntity}" /> instance.</returns>
     public IReadRepository<TEntity> CreateRead<TEntity>() where TEntity : class =>
-        new ReadRepository<TEntity>(_db, _mappers);
+        new ReadRepository<TEntity>(_db, mappers);
 
     /// <summary>
     ///     Creates a write-capable repository for <typeparamref name="TEntity" />.
@@ -63,7 +48,7 @@ public sealed class RepositoryFactory<TDbContext> : IRepositoryFactory
     /// <typeparam name="TEntity">The entity type for the repository.</typeparam>
     /// <returns>A new <see cref="IWriteRepository{TEntity}" /> instance.</returns>
     public IWriteRepository<TEntity> CreateWrite<TEntity>() where TEntity : class =>
-        new WriteRepository<TEntity>(_db);
+        new WriteRepository<TEntity>(_db, provider);
 
     /// <summary>
     ///     Disposes the created DbContext instance held by the factory.

@@ -11,31 +11,13 @@ namespace DKNet.EfCore.Repos;
 ///     The repository operates in read-only mode and uses the provided <see cref="DbContext" /> for queries.
 /// </summary>
 /// <typeparam name="TEntity">The entity CLR type.</typeparam>
-public class ReadRepository<TEntity> : IReadRepository<TEntity>
+public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
+    : IReadRepository<TEntity>
     where TEntity : class
 {
     #region Fields
 
-    private readonly DbContext _dbContext;
-    private readonly IMapper? _mapper;
-
-    #endregion
-
-    #region Constructors
-
-    /// <summary>
-    ///     Creates a new <see cref="ReadRepository{TEntity}" /> using the supplied <see cref="DbContext" />.
-    /// </summary>
-    /// <param name="dbContext">The EF Core <see cref="DbContext" /> used to run queries. Must not be null.</param>
-    /// <param name="mappers">
-    ///     Optional collection of <see cref="IMapper" /> instances; the first mapper is used when mapping is
-    ///     required.
-    /// </param>
-    public ReadRepository(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
-    {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _mapper = mappers?.FirstOrDefault();
-    }
+    private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
     #endregion
 
@@ -59,7 +41,7 @@ public class ReadRepository<TEntity> : IReadRepository<TEntity>
 
     /// <inheritdoc />
     public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default) =>
-        await _dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
+        await dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
 
     /// <inheritdoc />
     public Task<TEntity?> FindAsync(
@@ -68,7 +50,7 @@ public class ReadRepository<TEntity> : IReadRepository<TEntity>
         Query(filter).FirstOrDefaultAsync(cancellationToken);
 
     /// <inheritdoc />
-    public virtual IQueryable<TEntity> Query() => _dbContext.Set<TEntity>().AsNoTracking();
+    public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>().AsNoTracking();
 
     /// <inheritdoc />
     public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);

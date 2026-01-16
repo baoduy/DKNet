@@ -168,7 +168,8 @@ public class RepositorySpecTests : IAsyncLifetime
             .Map(dest => dest.FullName, src => $"{src.FirstName} {src.LastName}");
         _mapper = new Mapper(config);
 
-        _repository = new RepositorySpec<TestDbContext>(_context, [_mapper]);
+        _repository =
+            new RepositorySpec<TestDbContext>(_context, [_mapper]);
     }
 
     [Fact]
@@ -195,7 +196,8 @@ public class RepositorySpecTests : IAsyncLifetime
     public void Query_WithProjection_NoMapperAvailable_ShouldThrowException()
     {
         // Arrange
-        var repositoryNoMapper = new RepositorySpec<TestDbContext>(_context, []);
+        var repositoryNoMapper =
+            new RepositorySpec<TestDbContext>(_context, []);
         var spec = new ActiveUsersSpecification();
 
         // Act & Assert

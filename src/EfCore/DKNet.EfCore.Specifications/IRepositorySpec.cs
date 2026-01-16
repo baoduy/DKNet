@@ -7,6 +7,7 @@ using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -137,12 +138,16 @@ public interface IRepositorySpec
 /// <typeparam name="TDbContext">The type of the database context.</typeparam>
 /// <param name="dbContext">The database context instance.</param>
 /// <param name="mappers">Collection of mappers for entity-to-model projections.</param>
-public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMapper> mappers)
+/// <param name="provider">The optional service provider that will be used to get <see cref="IEfCoreExceptionHandler" />.</param>
+public class RepositorySpec<TDbContext>(
+    TDbContext dbContext,
+    IEnumerable<IMapper>? mappers = null,
+    IServiceProvider? provider = null)
     : IRepositorySpec where TDbContext : DbContext
 {
     #region Fields
 
-    private readonly IMapper? _mapper = mappers.FirstOrDefault();
+    private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
     #endregion
 
@@ -203,7 +208,8 @@ public class RepositorySpec<TDbContext>(TDbContext dbContext, IEnumerable<IMappe
     public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await dbContext.AddNewEntitiesFromNavigations(cancellationToken);
-        return await dbContext.SaveChangesAsync(cancellationToken);
+        var handler = provider?.GetKeyedService<IEfCoreExceptionHandler>(dbContext.GetType().FullName);
+        return await dbContext.SaveChangesWithConcurrencyHandlingAsync(handler, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -519,7 +519,7 @@ public class PropertyExtensionsTests
         // Act & Assert
         Should.Throw<ArgumentNullException>(() =>
             item.TrySetPropertyValue((string)null!, value));
-        Should.Throw<ArgumentNullException>(() =>
+        Should.Throw<ArgumentException>(() =>
             item.TrySetPropertyValue("", value));
     }
 
