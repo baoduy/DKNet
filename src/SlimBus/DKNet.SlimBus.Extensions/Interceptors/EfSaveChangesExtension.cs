@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.SlimBus.Extensions.Interceptors;
 
-internal static class EfSaveChangesExtension
+public static class EfSaveChangesExtension
 {
     #region Methods
 
