@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DKNet.EfCore.Extensions.Configurations;
+using DKNet.EfCore.Extensions.Extensions;
 using DKNet.EfCore.Extensions.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,19 +12,6 @@ namespace Microsoft.EntityFrameworkCore;
 public static class EfCoreSetup
 {
     #region Methods
-
-    /// <summary>
-    ///     Register the GlobalModelBuilderRegister to the service collection.
-    /// </summary>
-    /// <typeparam name="TImplementation"></typeparam>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    public static IServiceCollection AddGlobalModelBuilder<TImplementation>(this IServiceCollection services)
-        where TImplementation : class, IGlobalModelBuilder
-    {
-        GlobalModelBuilders.Add(typeof(TImplementation));
-        return services;
-    }
 
     /// <summary>
     ///     Get or Create the EntityMappingRegister from the DbContextOptionsBuilder.
@@ -73,6 +61,34 @@ public static class EfCoreSetup
     }
 
     #endregion
+
+    /// <param name="serviceCollection"></param>
+    extension(IServiceCollection serviceCollection)
+    {
+        /// <summary>
+        ///     Registers a custom EF Core exception handler for the specified <typeparamref name="TDbContext" />.
+        /// </summary>
+        /// <typeparam name="TDbContext"></typeparam>
+        /// <typeparam name="TExceptionHandler"></typeparam>
+        /// <returns></returns>
+        public IServiceCollection AddEfCoreExceptionHandler<TDbContext, TExceptionHandler>()
+            where TDbContext : DbContext
+            where TExceptionHandler : class, IEfCoreExceptionHandler =>
+            serviceCollection.AddKeyedTransient<IEfCoreExceptionHandler, TExceptionHandler>(typeof(TDbContext)
+                .FullName);
+
+        /// <summary>
+        ///     Register the GlobalModelBuilderRegister to the service collection.
+        /// </summary>
+        /// <typeparam name="TImplementation"></typeparam>
+        /// <returns></returns>
+        public IServiceCollection AddGlobalModelBuilder<TImplementation>()
+            where TImplementation : class, IGlobalModelBuilder
+        {
+            GlobalModelBuilders.Add(typeof(TImplementation));
+            return serviceCollection;
+        }
+    }
 
     internal static readonly ConcurrentBag<Type> GlobalModelBuilders = [];
 }

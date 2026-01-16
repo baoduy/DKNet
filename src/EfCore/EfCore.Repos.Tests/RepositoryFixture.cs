@@ -1,6 +1,7 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EfCore.Repos.Tests;
 
@@ -53,7 +54,7 @@ public class RepositoryFixture : IAsyncLifetime
         await DbContext.Database.EnsureCreatedAsync();
 
         ReadRepository = new ReadRepository<User>(DbContext);
-        Repository = new Repository<User>(DbContext);
+        Repository = new Repository<User>(DbContext, new ServiceCollection().BuildServiceProvider());
     }
 
     #endregion

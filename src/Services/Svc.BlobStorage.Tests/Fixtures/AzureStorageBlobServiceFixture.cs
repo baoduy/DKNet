@@ -14,7 +14,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
 
     public AzureStorageBlobServiceFixture()
     {
-        _azureContainer = new AzuriteBuilder()
+        _azureContainer = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.28.0")
             .WithCommand("--skipApiVersionCheck")
             .WithPortBinding(10000)
             .WithAutoRemove(true)

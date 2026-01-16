@@ -10,29 +10,13 @@ namespace DKNet.EfCore.Repos;
 ///     Default repository implementation that provides read helpers on top of <see cref="WriteRepository{TEntity}" />.
 /// </summary>
 /// <typeparam name="TEntity">Entity CLR type.</typeparam>
-public class Repository<TEntity> : WriteRepository<TEntity>, IRepository<TEntity>
+public class Repository<TEntity>(DbContext dbContext, IServiceProvider provider, IEnumerable<IMapper>? mappers = null)
+    : WriteRepository<TEntity>(dbContext, provider), IRepository<TEntity>
     where TEntity : class
 {
     #region Fields
 
-    private readonly DbContext _dbContext;
-    private readonly IMapper? _mapper;
-
-    #endregion
-
-    #region Constructors
-
-    /// <summary>
-    ///     Creates a new repository instance.
-    /// </summary>
-    /// <param name="dbContext">EF Core DbContext used by the repository.</param>
-    /// <param name="mappers">Optional mappers collection; the first mapper is used when mapping is required.</param>
-    public Repository(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
-        : base(dbContext)
-    {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _mapper = mappers?.FirstOrDefault();
-    }
+    private readonly IMapper? _mapper = mappers?.FirstOrDefault();
 
     #endregion
 
@@ -74,7 +58,7 @@ public class Repository<TEntity> : WriteRepository<TEntity>, IRepository<TEntity
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The found entity or <c>null</c> when not found.</returns>
     public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default)
-        => await _dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
+        => await dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
 
     /// <summary>
     ///     Finds the first entity that satisfies the provided <paramref name="filter" />, or <c>null</c> if none match.
@@ -107,7 +91,7 @@ public class Repository<TEntity> : WriteRepository<TEntity>, IRepository<TEntity
     /// <summary>
     ///     Returns a queryable for the entity type. Implementations may override to apply default includes or filters.
     /// </summary>
-    public virtual IQueryable<TEntity> Query() => _dbContext.Set<TEntity>();
+    public virtual IQueryable<TEntity> Query() => dbContext.Set<TEntity>();
 
     /// <summary>
     ///     Returns a queryable filtered by the provided <paramref name="filter" />.

@@ -4,8 +4,7 @@ public class SqlServerFixture : IAsyncLifetime
 {
     #region Fields
 
-    private readonly MsSqlContainer _sql = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _sql = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     #endregion
