@@ -7,6 +7,8 @@
 using DKNet.EfCore.Abstractions.Events;
 using SlimMessageBus;
 
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
+
 namespace DKNet.SlimBus.Extensions.Handlers;
 
 /// <summary>
@@ -28,24 +30,20 @@ public class SlimBusEventPublisher(IMessageBus bus) : IEventPublisher
 
     #region Methods
 
-    /// <summary>
-    ///     Publishes the provided <paramref name="eventObj" /> to the message bus.
-    ///     When <paramref name="eventObj" /> implements <see cref="IEventItem" />, any <c>AdditionalData</c>
-    ///     will be forwarded as headers (case-insensitive keys).
-    /// </summary>
-    /// <param name="eventObj">The event object to publish.</param>
-    /// <param name="cancellationToken">A cancellation token to cancel publishing.</param>
-    /// <returns>A task that completes when publishing has finished.</returns>
+    /// <inheritdoc />
     public virtual Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
         if (eventObj is not IEventItem item) return _bus.Publish(eventObj, cancellationToken: cancellationToken);
 
-        // Map AdditionalData to a headers dictionary (case-insensitive keys). Guard against null.
         var headers =
             item.AdditionalData.ToDictionary(kv => kv.Key, object (kv) => kv.Value, StringComparer.OrdinalIgnoreCase);
 
         return _bus.Publish(item, headers: headers, cancellationToken: cancellationToken);
     }
+
+    /// <inheritdoc />
+    public virtual Task PublishAsync(IEnumerable<object> eventList, CancellationToken cancellationToken = default) =>
+        _bus.Publish(eventList, cancellationToken: cancellationToken);
 
     #endregion
 }

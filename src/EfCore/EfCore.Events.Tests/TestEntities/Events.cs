@@ -2,7 +2,7 @@ using DKNet.EfCore.Abstractions.Events;
 
 namespace EfCore.Events.Tests.TestEntities;
 
-public class TestEventPublisher : IEventPublisher
+public class TestEventPublisher : DefaultEventPublisher
 {
     #region Properties
 
@@ -12,7 +12,7 @@ public class TestEventPublisher : IEventPublisher
 
     #region Methods
 
-    public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
+    public override Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
         Events.Add(eventObj);
         return Task.CompletedTask;

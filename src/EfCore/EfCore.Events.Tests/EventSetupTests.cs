@@ -166,16 +166,19 @@ public class EventSetupTests
     }
 
     // Helper classes for testing
-    private class AnotherTestEventPublisher : IEventPublisher
+    /// <inheritdoc />
+    private class AnotherTestEventPublisher : DefaultEventPublisher
     {
         #region Methods
 
-        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         #endregion
     }
 
-    private class CustomEventPublisher : IEventPublisher
+    /// <inheritdoc />
+    private class CustomEventPublisher : DefaultEventPublisher
     {
         #region Properties
 
@@ -185,7 +188,8 @@ public class EventSetupTests
 
         #region Methods
 
-        public Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task PublishAsync(object eventObj, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         #endregion
     }
