@@ -20,7 +20,6 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
     private readonly List<SnapshotEntityEntry> _snapshotEntities = [];
     private bool _disposed;
     private bool _isInitialized;
-    private bool _previousAutoDetectChangesEnabled;
 
     #endregion
 
@@ -65,15 +64,6 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
     /// </summary>
     public void Dispose()
     {
-        // Restore tracking before clearing snapshot
-        try
-        {
-            context.ChangeTracker.AutoDetectChangesEnabled = _previousAutoDetectChangesEnabled;
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-
         _snapshotEntities.Clear();
         _disposed = true;
     }
@@ -98,8 +88,6 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
 
         // Ensure the change tracker is up to date before capturing state
         DbContext.ChangeTracker.DetectChanges();
-        // Capture whether auto-detect-changes was enabled so we can restore it later
-        _previousAutoDetectChangesEnabled = DbContext.ChangeTracker.AutoDetectChangesEnabled;
 
         // Capture only entities that are Added or Modified
         var entities = DbContext.ChangeTracker
@@ -108,8 +96,6 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
             .Select(e => new SnapshotEntityEntry(e));
 
         _snapshotEntities.AddRange(entities);
-        // Turn off automatic DetectChanges while snapshot is active to reduce overhead
-        DbContext.ChangeTracker.AutoDetectChangesEnabled = false;
         _isInitialized = true;
     }
 
