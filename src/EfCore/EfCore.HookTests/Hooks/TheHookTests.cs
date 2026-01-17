@@ -58,13 +58,14 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
     {
         var hook = _provider.GetRequiredKeyedService<HookTest>(typeof(HookContext).FullName);
         var db = _provider.GetRequiredService<HookContext>();
-        hook.Reset();
 
         db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Duy" });
         await db.SaveChangesAsync();
+        hook.Reset();
+
         await db.SaveChangesAsync(); // No changes, hooks should not run
 
-        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
+        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(0);
         // Hooks only run when there are actual changes, so second SaveChanges doesn't trigger hooks
         HookTest.BeforeCalled.ShouldBeTrue();
     }

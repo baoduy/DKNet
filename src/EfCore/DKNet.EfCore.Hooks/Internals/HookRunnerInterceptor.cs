@@ -72,6 +72,13 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         RunningTypes type,
         CancellationToken cancellationToken = default)
     {
+        if (HookDisablingContext.IsHookDisabled(context.Snapshot.DbContext))
+        {
+            logger.LogInformation("The {Type} hooks is disabled for DbContext {ContextId}",
+                type, context.Snapshot.DbContext.ContextId);
+            return;
+        }
+
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation(
                 "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
@@ -82,13 +89,12 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         context.Snapshot.Initialize();
         if (context.Snapshot.Entities.Count == 0) return;
 
-        var tasks = new List<Task>();
-        tasks.AddRange(
-            type == RunningTypes.BeforeSave
-                ? context.BeforeSaveHooks.Select(h => h.BeforeSaveAsync(context.Snapshot, cancellationToken))
-                : context.AfterSaveHooks.Select(h => h.AfterSaveAsync(context.Snapshot, cancellationToken)));
-
-        await Task.WhenAll(tasks);
+        if (type == RunningTypes.BeforeSave)
+            foreach (var hook in context.BeforeSaveHooks)
+                await hook.BeforeSaveAsync(context.Snapshot, cancellationToken);
+        else
+            foreach (var hook in context.AfterSaveHooks)
+                await hook.AfterSaveAsync(context.Snapshot, cancellationToken);
     }
 
     public override async Task SaveChangesFailedAsync(
@@ -112,9 +118,6 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("{Name}:SavedChangesAsync called with result: {EventId}, {EventIdCode}",
                 nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
-
-        if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
-            return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
         try
         {
@@ -148,9 +151,6 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("{Name}:SavingChangesAsync called with result: {EventId}, {EventIdCode}",
                 nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
-
-        if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
-            return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
         var context = GetContext(eventData);
         await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
