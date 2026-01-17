@@ -80,6 +80,11 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation(
+                "{Name}:SaveChangesFailedAsync {EventId}, {EventIdCode}",
+                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
+
         await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
@@ -90,8 +95,8 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         CancellationToken cancellationToken = default)
     {
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{Name}:SavedChangesAsync called with result: {EventId}",
-                nameof(HookRunnerInterceptor), eventData.EventId);
+            logger.LogInformation("{Name}:SavedChangesAsync called with result: {EventId}, {EventIdCode}",
+                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
 
         if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -105,8 +110,9 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         {
             await RemoveContext(eventData);
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("{Name}:SavedChangesAsync the event context was removed: {EventId}",
-                    nameof(HookRunnerInterceptor), eventData.EventId);
+                logger.LogInformation(
+                    "{Name}:SavedChangesAsync the event context was removed: {EventId}, {EventIdCode}",
+                    nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -125,8 +131,8 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         CancellationToken cancellationToken = default)
     {
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{Name}:SavingChangesAsync called with result: {EventId}",
-                nameof(HookRunnerInterceptor), eventData.EventId);
+            logger.LogInformation("{Name}:SavingChangesAsync called with result: {EventId}, {EventIdCode}",
+                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
 
         if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
