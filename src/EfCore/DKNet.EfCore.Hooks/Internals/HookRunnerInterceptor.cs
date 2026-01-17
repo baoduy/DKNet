@@ -89,9 +89,11 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         int result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context == null) return await base.SavedChangesAsync(eventData, result, cancellationToken);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{Name}:SavedChangesAsync called with result: {EventId}",
+                nameof(HookRunnerInterceptor), eventData.EventId);
 
-        if (HookDisablingContext.IsHookDisabled(eventData.Context!))
+        if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
         try
@@ -102,6 +104,9 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         finally
         {
             await RemoveContext(eventData);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("{Name}:SavedChangesAsync the event context was removed: {EventId}",
+                    nameof(HookRunnerInterceptor), eventData.EventId);
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -119,6 +124,10 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{Name}:SavingChangesAsync called with result: {EventId}",
+                nameof(HookRunnerInterceptor), eventData.EventId);
+
         if (eventData.Context == null || HookDisablingContext.IsHookDisabled(eventData.Context!))
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
