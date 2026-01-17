@@ -16,7 +16,7 @@ public interface IEventEntity
     /// </summary>
     /// <param name="eventObj">The event objects to be queued.</param>
     /// <exception cref="ArgumentNullException">Thrown when eventObj is null.</exception>
-    void AddEvent(object eventObj);
+    protected void AddEvent(object eventObj);
 
     /// <summary>
     ///     Adds an event type to the queue for later instantiation and processing.
@@ -26,7 +26,7 @@ public interface IEventEntity
     ///     This method is useful when the event instance will be created from the entity state
     ///     at the time of event processing.
     /// </remarks>
-    void AddEvent<TEvent>()
+    protected void AddEvent<TEvent>()
         where TEvent : class;
 
     /// <summary>

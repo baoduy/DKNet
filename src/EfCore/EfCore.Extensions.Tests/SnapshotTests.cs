@@ -41,6 +41,7 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
     {
         // Arrange
         await using var snapshot = new SnapshotContext(_db);
+        snapshot.Initialize();
 
         // Act
         var firstAccess = snapshot.Entities;
@@ -59,6 +60,8 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
 
         // Act
         await using var snapshot = new SnapshotContext(_db);
+        snapshot.Initialize();
+
         var snapshotEntities = snapshot.Entities;
 
         // Assert
@@ -74,6 +77,8 @@ public class SnapshotTests(MemoryFixture fixture) : IClassFixture<MemoryFixture>
         _db.Set<User>().Add(user);
 
         await using var snapshot = new SnapshotContext(_db);
+        snapshot.Initialize();
+
         var entry = snapshot.Entities.First();
 
         // Assert

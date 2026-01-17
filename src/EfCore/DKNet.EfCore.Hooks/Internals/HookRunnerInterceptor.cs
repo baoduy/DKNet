@@ -26,7 +26,7 @@ public enum RunningTypes
 /// <param name="provider">the IServiceProvider of HookRunner</param>
 /// <param name="logger">the logger of HookRunner</param>
 internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<HookRunnerInterceptor> logger)
-    : SaveChangesInterceptor
+    : SaveChangesInterceptor, IAsyncDisposable, IDisposable
 {
     #region Fields
 
@@ -36,15 +36,29 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
 
     #region Methods
 
+    public void Dispose()
+    {
+        var contexts = _cache.Values;
+        _cache.Clear();
+        foreach (var context in contexts) context.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        var contexts = _cache.Values;
+        _cache.Clear();
+        foreach (var context in contexts) await context.DisposeAsync();
+    }
+
     private HookContext GetContext(DbContextEventData eventData) =>
         _cache.GetOrAdd(
             eventData.Context!.ContextId.InstanceId,
             _ => new HookContext(provider, eventData.Context!));
 
-    private async Task RemoveContext(DbContextEventData eventData)
-    {
-        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context)) await context.DisposeAsync();
-    }
+    // private async Task RemoveContext(DbContextEventData eventData)
+    // {
+    //     if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context)) await context.DisposeAsync();
+    // }
 
     /// <summary>
     ///     Runs hooks before and after save operations.
@@ -65,6 +79,7 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
                 context.BeforeSaveHooks.Count,
                 context.AfterSaveHooks.Count);
 
+        context.Snapshot.Initialize();
         if (context.Snapshot.Entities.Count == 0) return;
 
         var tasks = new List<Task>();
@@ -85,7 +100,7 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
                 "{Name}:SaveChangesFailedAsync {EventId}, {EventIdCode}",
                 nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
 
-        await RemoveContext(eventData);
+        //await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
@@ -108,7 +123,7 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         }
         finally
         {
-            await RemoveContext(eventData);
+            //await RemoveContext(eventData);
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation(
                     "{Name}:SavedChangesAsync the event context was removed: {EventId}, {EventIdCode}",

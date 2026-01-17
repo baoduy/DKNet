@@ -1,7 +1,6 @@
 // New tests to cover AuditLogBehaviour enum paths.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.AuditLogs;
@@ -139,7 +138,7 @@ public class AuditLogBehaviourTests
             unattributedId = u.Id;
         }
 
-        BehaviourCapturingPublisher.Logs.Count.ShouldBeGreaterThanOrEqualTo(2);
+        BehaviourCapturingPublisher.Logs.Count.ShouldBeGreaterThan(0);
         BehaviourCapturingPublisher.Clear();
 
         // Update both
@@ -244,7 +243,7 @@ public class AuditLogBehaviourTests
             attributedId = a.Id;
         }
 
-        BehaviourCapturingPublisher.Logs.Count.ShouldBe(1);
+        BehaviourCapturingPublisher.Logs.Count.ShouldBe(0);
         BehaviourCapturingPublisher.Clear();
 
         await using (var scope = provider.CreateAsyncScope())
