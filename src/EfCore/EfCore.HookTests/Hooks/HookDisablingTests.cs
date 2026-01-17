@@ -75,8 +75,8 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
 
         HookTest.BeforeCalled.ShouldBeTrue();
         HookTest.AfterCalled.ShouldBeTrue();
-        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
-        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
+        HookTest.BeforeCallCount.ShouldBeGreaterThan(0);
+        HookTest.AfterCallCount.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -111,8 +111,8 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
 
         HookTest.BeforeCalled.ShouldBeTrue();
         HookTest.AfterCalled.ShouldBeTrue();
-        HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(1);
-        HookTest.AfterCallCount.ShouldBeGreaterThanOrEqualTo(1);
+        HookTest.BeforeCallCount.ShouldBeGreaterThan(0);
+        HookTest.AfterCallCount.ShouldBeGreaterThan(0);
     }
 
     #endregion

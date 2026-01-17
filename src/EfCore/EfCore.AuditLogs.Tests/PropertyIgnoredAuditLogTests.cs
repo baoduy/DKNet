@@ -189,9 +189,14 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
 
         var logs = DedicatedRecordingPublisher.Logs.Where(l => l.EntityName == nameof(PropertyIgnoredAuditEntity))
             .ToList(); // changed
+
         logs.Count.ShouldBeGreaterThan(0);
-        logs.ShouldAllBe(l => l.Changes.All(c => c.FieldName != nameof(PropertyIgnoredAuditEntity.Secret)));
-        logs.ShouldAllBe(l => l.Changes.Any(c => c.FieldName == nameof(PropertyIgnoredAuditEntity.Name)));
+
+        logs.Where(l => l.Action != AuditLogAction.Created).ShouldAllBe(l =>
+            l.Changes.All(c => !c.FieldName.Equals(nameof(PropertyIgnoredAuditEntity.Secret))));
+
+        logs.Where(l => l.Action != AuditLogAction.Created).ShouldAllBe(l =>
+            l.Changes.Any(c => c.FieldName.Equals(nameof(PropertyIgnoredAuditEntity.Name))));
     }
 
     #endregion

@@ -33,6 +33,7 @@ public class EventHookTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 
@@ -78,6 +79,7 @@ public class EventHookTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 
@@ -120,6 +122,7 @@ public class EventHookTests
         context.Set<Root>().AddRange(root1, root2);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 
@@ -160,6 +163,7 @@ public class EventHookTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 
@@ -190,11 +194,13 @@ public class EventHookTests
             null);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 
         // Act
         await eventHook.AfterSaveAsync(snapshot, CancellationToken.None);
+        snapshot.Initialize();
 
         // Assert
         TestEventPublisher.Events.ShouldBeEmpty();
@@ -222,6 +228,7 @@ public class EventHookTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         TestEventPublisher.Events.Clear();
 

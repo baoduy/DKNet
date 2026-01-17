@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Hooks.Internals;
 
-internal sealed class HookContext : IAsyncDisposable
+internal sealed class HookContext : IDisposable, IAsyncDisposable
 {
     #region Fields
 
@@ -37,6 +37,12 @@ internal sealed class HookContext : IAsyncDisposable
     #endregion
 
     #region Methods
+
+    public void Dispose()
+    {
+        _scope.Dispose();
+        Snapshot.Dispose();
+    }
 
     public async ValueTask DisposeAsync()
     {

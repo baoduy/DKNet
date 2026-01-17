@@ -182,7 +182,7 @@ public class EventExtensionsTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
-
+        snapshot.Initialize();
         // Act
         var eventObjects = snapshot.GetEventObjects(mapper).ToList();
 
@@ -218,6 +218,7 @@ public class EventExtensionsTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -265,6 +266,7 @@ public class EventExtensionsTests
         context.Set<Root>().Add(root);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         // Act
         var eventObjects = snapshot.GetEventObjects(mapper).ToList();
@@ -301,6 +303,7 @@ public class EventExtensionsTests
         context.Set<Root>().AddRange(root1, root2);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -329,6 +332,7 @@ public class EventExtensionsTests
             null);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
@@ -359,6 +363,7 @@ public class EventExtensionsTests
         context.Set<Entity>().Add(entity);
 
         await using var snapshot = new SnapshotContext(context);
+        snapshot.Initialize();
 
         // Act
         var eventObjects = snapshot.GetEventObjects(null).ToList();
