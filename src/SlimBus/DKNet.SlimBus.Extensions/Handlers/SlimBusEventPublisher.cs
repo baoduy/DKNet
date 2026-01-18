@@ -42,8 +42,13 @@ public class SlimBusEventPublisher(IMessageBus bus) : IEventPublisher
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync(IEnumerable<object> eventList, CancellationToken cancellationToken = default) =>
-        _bus.Publish(eventList, cancellationToken: cancellationToken);
+    public virtual async Task PublishAsync(IEnumerable<object> eventList, CancellationToken cancellationToken = default)
+    {
+        foreach (var @event in eventList)
+        {
+            await PublishAsync(@event, cancellationToken);
+        }
+    }
 
     #endregion
 }

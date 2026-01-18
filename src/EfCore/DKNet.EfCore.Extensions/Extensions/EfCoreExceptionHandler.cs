@@ -58,6 +58,8 @@ public sealed class EfCoreExceptionHandler : IEfCoreExceptionHandler
     public async Task<EfConcurrencyResolution> HandlingAsync(DbContext context, DbUpdateConcurrencyException exception,
         CancellationToken cancellationToken = default)
     {
+        Console.WriteLine($"EfCoreExceptionHandler:HandlingAsync - {exception.Message}");
+
         if (!exception.Message.Contains("but actually affected 0 row(s)", StringComparison.OrdinalIgnoreCase))
             return EfConcurrencyResolution.RethrowException;
 

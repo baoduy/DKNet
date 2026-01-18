@@ -12,8 +12,8 @@ internal sealed class EventHook(
 {
     #region Fields
 
-    private static readonly HashSet<object> _eventList = [];
-    private static readonly SemaphoreSlim _eventListLock = new(1, 1);
+    private static readonly HashSet<object> EventList = [];
+    private static readonly SemaphoreSlim EventListLock = new(1, 1);
     private readonly IMapper? _mapper = mappers.FirstOrDefault();
 
     #endregion
@@ -31,36 +31,41 @@ internal sealed class EventHook(
             logger.LogInformation("{Name}:AfterSaveAsync for {ContextId}", nameof(EventHook),
                 context.DbContext.ContextId);
 
-        await _eventListLock.WaitAsync(cancellationToken);
+        await EventListLock.WaitAsync(cancellationToken);
         try
         {
-            if (_eventList.Count > 0)
+            if (EventList.Count > 0)
                 foreach (var publisher in eventPublishers)
-                    await publisher.PublishAsync(_eventList, cancellationToken);
-            _eventList.Clear();
+                    await publisher.PublishAsync(EventList, cancellationToken);
+            EventList.Clear();
         }
         finally
         {
-            _eventListLock.Release();
+            EventListLock.Release();
         }
     }
 
     public override async Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         if (logger is not null && logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{Name}:BeforeSaveAsync for {ContextId}", nameof(EventHook),
-                context.DbContext.ContextId);
+            logger.LogInformation("{Name}:BeforeSaveAsync for DbContextId {ContextId}", nameof(EventHook),
+                context.DbContext.ContextId.InstanceId);
 
-        await _eventListLock.WaitAsync(cancellationToken);
+        await EventListLock.WaitAsync(cancellationToken);
         try
         {
             var events = context.GetEventObjects(_mapper);
-            _eventList.AddRange(events);
+            EventList.AddRange(events);
         }
         finally
         {
-            _eventListLock.Release();
+            EventListLock.Release();
         }
+
+        if (logger is not null && logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{Name}:BeforeSaveAsync there are {Count} events found DbContextId {ContextId}",
+                nameof(EventHook), EventList.Count,
+                context.DbContext.ContextId);
 
         await base.BeforeSaveAsync(context, cancellationToken);
     }
