@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations.Schema;
+using DKNet.EfCore.Abstractions.Events;
 
 namespace DKNet.EfCore.Abstractions.Entities;
 
@@ -59,31 +60,26 @@ public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 
     #region Methods
 
-    /// <summary>
-    ///     Adds a domain event to be published.
-    /// </summary>
-    /// <param name="eventObj">The event object to add.</param>
+    /// <inheritdoc />
     public void AddEvent(object eventObj) => _events.Add(eventObj);
 
-    /// <summary>
-    ///     Adds a domain event type to be created and published.
-    /// </summary>
-    /// <typeparam name="TEvent">The type of event to add.</typeparam>
+    /// <inheritdoc />
     public void AddEvent<TEvent>()
         where TEvent : class
         => _eventTypes.Add(typeof(TEvent));
 
-    /// <summary>
-    ///     Gets all pending events and event types, then clears them from this entity.
-    /// </summary>
-    /// <returns>A tuple containing arrays of events and event types.</returns>
-    public (object[] Events, Type[] EventTypes) GetEventsAndClear()
+    /// <inheritdoc />
+    public void ClearEvents()
+    {
+        _events.Clear();
+        _eventTypes.Clear();
+    }
+
+    /// <inheritdoc />
+    public (object[] Events, Type[] EventTypes) GetEvents()
     {
         var events = _events.ToArray();
         var eventTypes = _eventTypes.ToArray();
-        _events.Clear();
-        _eventTypes.Clear();
-
         return (events, eventTypes);
     }
 

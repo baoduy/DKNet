@@ -1,4 +1,4 @@
-namespace DKNet.EfCore.Abstractions.Entities;
+namespace DKNet.EfCore.Abstractions.Events;
 
 /// <summary>
 ///     Defines a contract for domain entities that support event raising capabilities.
@@ -16,7 +16,7 @@ public interface IEventEntity
     /// </summary>
     /// <param name="eventObj">The event objects to be queued.</param>
     /// <exception cref="ArgumentNullException">Thrown when eventObj is null.</exception>
-    protected void AddEvent(object eventObj);
+    void AddEvent(object eventObj);
 
     /// <summary>
     ///     Adds an event type to the queue for later instantiation and processing.
@@ -26,7 +26,7 @@ public interface IEventEntity
     ///     This method is useful when the event instance will be created from the entity state
     ///     at the time of event processing.
     /// </remarks>
-    protected void AddEvent<TEvent>()
+    void AddEvent<TEvent>()
         where TEvent : class;
 
     /// <summary>
@@ -37,7 +37,12 @@ public interface IEventEntity
     ///     The first element of the tuple contains instantiated event objects.
     ///     The second element contains event types that need to be instantiated.
     /// </remarks>
-    (object[] Events, Type[] EventTypes) GetEventsAndClear();
+    (object[] Events, Type[] EventTypes) GetEvents();
+
+    /// <summary>
+    ///     Clears all queued events and event types without retrieving them.
+    /// </summary>
+    void ClearEvents();
 
     #endregion
 }
