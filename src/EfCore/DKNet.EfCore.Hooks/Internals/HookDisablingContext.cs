@@ -27,7 +27,7 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     /// <summary>
     ///     Ref-count dictionary storing how many active disable contexts exist per DbContext CLR type.
     /// </summary>
-    private static readonly ConcurrentDictionary<Type, int> DisabledHooks = new();
+    private static readonly ConcurrentDictionary<string, int> DisabledHooks = new();
 
     private readonly DbContext _context;
 
@@ -42,10 +42,8 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     public HookDisablingContext(DbContext context)
     {
         _ = context ?? throw new ArgumentNullException(nameof(context));
-
         _context = context;
-
-        DisabledHooks.AddOrUpdate(context.GetType(), 1, (_, oldValue) => oldValue + 1);
+        DisabledHooks.AddOrUpdate(context.GetType().FullName!, 1, (_, oldValue) => oldValue + 1);
     }
 
     #endregion
@@ -58,7 +56,7 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     /// </summary>
     public void Dispose()
     {
-        DisabledHooks.AddOrUpdate(_context.GetType(), 0, (_, oldValue) => Math.Max(0, oldValue - 1));
+        DisabledHooks.AddOrUpdate(_context.GetType().FullName!, 0, (_, oldValue) => Math.Max(0, oldValue - 1));
     }
 
     /// <summary>
@@ -79,8 +77,7 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     public static bool IsHookDisabled(DbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-
-        return DisabledHooks.TryGetValue(context.GetType(), out var count) && count > 0;
+        return DisabledHooks.TryGetValue(context.GetType().FullName!, out var count) && count > 0;
     }
 
     #endregion

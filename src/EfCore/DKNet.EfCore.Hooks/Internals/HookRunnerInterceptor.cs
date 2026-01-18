@@ -55,10 +55,11 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
             eventData.Context!.ContextId.InstanceId,
             _ => new HookContext(provider, eventData.Context!));
 
-    // private async Task RemoveContext(DbContextEventData eventData)
-    // {
-    //     if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context)) await context.DisposeAsync();
-    // }
+    private async Task RemoveContext(DbContextEventData eventData)
+    {
+        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
+            await context.DisposeAsync();
+    }
 
     /// <summary>
     ///     Runs hooks before and after save operations.
@@ -106,7 +107,7 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
                 "{Name}:SaveChangesFailedAsync {EventId}, {EventIdCode}",
                 nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
 
-        //await RemoveContext(eventData);
+        await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
@@ -126,7 +127,7 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
         }
         finally
         {
-            //await RemoveContext(eventData);
+            await RemoveContext(eventData);
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation(
                     "{Name}:SavedChangesAsync the event context was removed: {EventId}, {EventIdCode}",

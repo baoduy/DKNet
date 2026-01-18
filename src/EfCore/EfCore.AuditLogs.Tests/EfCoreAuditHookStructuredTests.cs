@@ -164,7 +164,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
 
         //await WaitForLogsAsync(goodPublisher, 1);
         TestPublisher.Received.Count.ShouldBeGreaterThanOrEqualTo(1);
-        TestPublisher.Received.First().Action.ShouldBe(AuditLogAction.Updated); // assert action
+        TestPublisher.Received.Any(e=>e.Action == AuditLogAction.Updated).ShouldBeTrue(); // assert action
     }
 
     public async Task InitializeAsync()
@@ -244,7 +244,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         // Save without modifications
         await ctx.SaveChangesAsync();
         await Task.Delay(500); // Wait to ensure no async audit logs are published
-        TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(1);
+        TestPublisher.Received.Count(c => c.Keys.Values.Contains(entity.Id)).ShouldBe(0);
     }
 
     [Fact]

@@ -12,8 +12,8 @@ internal sealed class EventHook(
 {
     #region Fields
 
-    private readonly HashSet<object> _eventList = [];
-
+    private static readonly HashSet<object> _eventList = [];
+    private static readonly SemaphoreSlim _eventListLock = new(1, 1);
     private readonly IMapper? _mapper = mappers.FirstOrDefault();
 
     #endregion
@@ -31,21 +31,38 @@ internal sealed class EventHook(
             logger.LogInformation("{Name}:AfterSaveAsync for {ContextId}", nameof(EventHook),
                 context.DbContext.ContextId);
 
-        if (_eventList.Count > 0)
-            foreach (var publisher in eventPublishers)
-                await publisher.PublishAsync(_eventList, cancellationToken);
-        _eventList.Clear();
+        await _eventListLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_eventList.Count > 0)
+                foreach (var publisher in eventPublishers)
+                    await publisher.PublishAsync(_eventList, cancellationToken);
+            _eventList.Clear();
+        }
+        finally
+        {
+            _eventListLock.Release();
+        }
     }
 
-    public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    public override async Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         if (logger is not null && logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("{Name}:BeforeSaveAsync for {ContextId}", nameof(EventHook),
                 context.DbContext.ContextId);
 
-        var events = context.GetEventObjects(_mapper);
-        _eventList.AddRange(events);
-        return base.BeforeSaveAsync(context, cancellationToken);
+        await _eventListLock.WaitAsync(cancellationToken);
+        try
+        {
+            var events = context.GetEventObjects(_mapper);
+            _eventList.AddRange(events);
+        }
+        finally
+        {
+            _eventListLock.Release();
+        }
+
+        await base.BeforeSaveAsync(context, cancellationToken);
     }
 
     #endregion

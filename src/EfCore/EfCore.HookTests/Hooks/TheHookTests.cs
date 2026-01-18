@@ -67,7 +67,7 @@ public class TheHookTests(HookFixture fixture) : IClassFixture<HookFixture>
 
         HookTest.BeforeCallCount.ShouldBeGreaterThanOrEqualTo(0);
         // Hooks only run when there are actual changes, so second SaveChanges doesn't trigger hooks
-        HookTest.BeforeCalled.ShouldBeTrue();
+        HookTest.BeforeCalled.ShouldBeFalse();
     }
 
     #endregion

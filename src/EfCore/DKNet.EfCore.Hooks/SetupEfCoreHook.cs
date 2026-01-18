@@ -130,7 +130,7 @@ public static class SetupEfCoreHook
 
             return services
                 .AddScoped<HookFactory>()
-                .AddKeyedScoped<HookRunnerInterceptor>(fullName);
+                .AddKeyedSingleton<HookRunnerInterceptor>(fullName);
         }
     }
 }
