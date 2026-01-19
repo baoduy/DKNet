@@ -61,7 +61,7 @@ public class RepositoryAdvancedFixture : IAsyncLifetime
         // Create repositories with and without mappers
         ReadRepositoryWithMapper = new ReadRepository<User>(DbContext, mappers);
         ReadRepositoryWithoutMapper = new ReadRepository<User>(DbContext);
-        RepositoryWithMapper = new Repository<User>(DbContext, new ServiceCollection().BuildServiceProvider(), mappers);
+        RepositoryWithMapper = new Repository<User>(DbContext, mapper);
         RepositoryWithoutMapper = new Repository<User>(DbContext, new ServiceCollection().BuildServiceProvider());
     }
 

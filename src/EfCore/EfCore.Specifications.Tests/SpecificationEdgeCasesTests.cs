@@ -25,7 +25,7 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
     public SpecificationEdgeCasesTests(TestDbFixture fixture)
     {
         _context = fixture.Db!;
-        _repository = new RepositorySpec<TestDbContext>(_context, []);
+        _repository = new RepositorySpec<TestDbContext>(_context, (IServiceProvider?)null);
     }
 
     #endregion

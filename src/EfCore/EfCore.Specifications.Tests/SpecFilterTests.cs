@@ -54,7 +54,7 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
     {
         _output = output;
         var context = fixture.Db!;
-        _repository = new RepositorySpec<TestDbContext>(context, []);
+        _repository = new RepositorySpec<TestDbContext>(context, (IServiceProvider?)null);
     }
 
     #endregion
@@ -97,7 +97,8 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         sql.ShouldContain("[p].[Name] LIKE");
         sql.ShouldContain("[p].[Description] LIKE");
         sql.ShouldContain("ORDER BY [p].[Name]");
-        sql.ShouldContain("WHERE [p].[IsActive] = CAST(1 AS bit) AND ([p].[Name] LIKE N'%a%' OR [p].[Description] LIKE N'%a%')");
+        sql.ShouldContain(
+            "WHERE [p].[IsActive] = CAST(1 AS bit) AND ([p].[Name] LIKE N'%a%' OR [p].[Description] LIKE N'%a%')");
     }
 
     #endregion

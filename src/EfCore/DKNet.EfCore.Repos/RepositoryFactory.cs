@@ -14,13 +14,13 @@ namespace DKNet.EfCore.Repos;
 /// <typeparam name="TDbContext">The DbContext type used by repositories created by this factory.</typeparam>
 public sealed class RepositoryFactory<TDbContext>(
     IDbContextFactory<TDbContext> dbFactory,
-    IServiceProvider provider,
-    IEnumerable<IMapper>? mappers = null) : IRepositoryFactory
+    IServiceProvider provider) : IRepositoryFactory
     where TDbContext : DbContext
 {
     #region Fields
 
     private readonly TDbContext _db = dbFactory.CreateDbContext();
+    private readonly IMapper? _mapper = provider.GetService(typeof(IMapper)) as IMapper;
 
     #endregion
 
@@ -32,7 +32,7 @@ public sealed class RepositoryFactory<TDbContext>(
     /// <typeparam name="TEntity">The entity type for the repository.</typeparam>
     /// <returns>A new <see cref="IRepository{TEntity}" /> instance.</returns>
     public IRepository<TEntity> Create<TEntity>() where TEntity : class =>
-        new Repository<TEntity>(_db, provider, mappers);
+        new Repository<TEntity>(_db, provider);
 
     /// <summary>
     ///     Creates a read-only repository for <typeparamref name="TEntity" />.
@@ -40,7 +40,7 @@ public sealed class RepositoryFactory<TDbContext>(
     /// <typeparam name="TEntity">The entity type for the repository.</typeparam>
     /// <returns>A new <see cref="IReadRepository{TEntity}" /> instance.</returns>
     public IReadRepository<TEntity> CreateRead<TEntity>() where TEntity : class =>
-        new ReadRepository<TEntity>(_db, mappers);
+        new ReadRepository<TEntity>(_db, _mapper is not null ? [_mapper] : []);
 
     /// <summary>
     ///     Creates a write-capable repository for <typeparamref name="TEntity" />.

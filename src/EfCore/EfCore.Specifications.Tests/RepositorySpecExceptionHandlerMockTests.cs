@@ -4,14 +4,15 @@
 // </copyright>
 
 using DKNet.EfCore.Extensions.Extensions;
+using Mapster;
 using MapsterMapper;
 using Xunit.Abstractions;
 
 namespace EfCore.Specifications.Tests;
 
 /// <summary>
-///     Tests to verify that <see cref="IEfCoreExceptionHandler"/> properly handles
-///     <see cref="DbUpdateConcurrencyException"/> when thrown from a mocked DbContext in RepositorySpec.
+///     Tests to verify that <see cref="IEfCoreExceptionHandler" /> properly handles
+///     <see cref="DbUpdateConcurrencyException" /> when thrown from a mocked DbContext in RepositorySpec.
 /// </summary>
 public class RepositorySpecExceptionHandlerMockTests(ITestOutputHelper output)
 {
@@ -38,20 +39,18 @@ public class RepositorySpecExceptionHandlerMockTests(ITestOutputHelper output)
 
         // 2. Create a test exception handler to track invocations
         var testHandler = new RepositorySpecTestExceptionHandler();
-
+        // Create a mapper instance
+        var mapper = new Mapper(new TypeAdapterConfig());
         // 3. Add DbContext and RepositorySpec to ServiceCollection
-        var services = new ServiceCollection();
+        var services = new ServiceCollection().AddSingleton(mapper);
         services.AddKeyedTransient<IEfCoreExceptionHandler, RepositorySpecTestExceptionHandler>(
             mockDbContext.Object.GetType().FullName,
             (_, _) => testHandler);
 
         var serviceProvider = services.BuildServiceProvider();
 
-        // Create a mapper instance
-        var mapper = new Mapper(new Mapster.TypeAdapterConfig());
-
         // 4. Create repository with mocked DbContext and service provider
-        var repository = new RepositorySpec<DbContext>(mockDbContext.Object, [mapper], serviceProvider);
+        var repository = new RepositorySpec<DbContext>(mockDbContext.Object, serviceProvider);
 
         // Act
         // Add a product and trigger SaveChangesAsync
@@ -65,6 +64,26 @@ public class RepositorySpecExceptionHandlerMockTests(ITestOutputHelper output)
         // 5. Ensure the ExceptionHandler.HandlingAsync got called
         testHandler.WasCalled.ShouldBeTrue();
         output.WriteLine("RepositorySpec exception handler was successfully called!");
+    }
+
+    [Fact]
+    public async Task RepositorySpec_WithNullServiceProvider_ShouldNotThrow()
+    {
+        // Arrange
+        var mockDbContext = new Mock<DbContext>();
+        var mapper = new Mapper(new TypeAdapterConfig());
+
+        mockDbContext
+            .Setup(x => x.Set<Product>())
+            .Returns(new Mock<DbSet<Product>>().Object);
+
+        // Act & Assert - Should not throw even with null provider
+        var repository = new RepositorySpec<DbContext>(mockDbContext.Object, mapper);
+        var product = new Product { Name = "TestProduct", Price = 99.99m, IsActive = true, CategoryId = 1 };
+
+        await Should.NotThrowAsync(async () => { await repository.AddAsync(product); });
+
+        output.WriteLine("RepositorySpec handles null service provider correctly!");
     }
 
     [Fact]
@@ -91,34 +110,11 @@ public class RepositorySpecExceptionHandlerMockTests(ITestOutputHelper output)
         output.WriteLine("RepositorySpec exception handler was correctly resolved from service provider!");
     }
 
-    [Fact]
-    public async Task RepositorySpec_WithNullServiceProvider_ShouldNotThrow()
-    {
-        // Arrange
-        var mockDbContext = new Mock<DbContext>();
-        var mapper = new Mapper(new Mapster.TypeAdapterConfig());
-
-        mockDbContext
-            .Setup(x => x.Set<Product>())
-            .Returns(new Mock<DbSet<Product>>().Object);
-
-        // Act & Assert - Should not throw even with null provider
-        var repository = new RepositorySpec<DbContext>(mockDbContext.Object, [mapper], provider: null);
-        var product = new Product { Name = "TestProduct", Price = 99.99m, IsActive = true, CategoryId = 1 };
-
-        await Should.NotThrowAsync(async () =>
-        {
-            await repository.AddAsync(product);
-        });
-
-        output.WriteLine("RepositorySpec handles null service provider correctly!");
-    }
-
     #endregion
 }
 
 /// <summary>
-///     Test implementation of <see cref="IEfCoreExceptionHandler"/> for RepositorySpec testing.
+///     Test implementation of <see cref="IEfCoreExceptionHandler" /> for RepositorySpec testing.
 /// </summary>
 internal class RepositorySpecTestExceptionHandler : IEfCoreExceptionHandler
 {
@@ -203,7 +199,8 @@ public class RepositorySpecExceptionHandlerServiceResolutionTests
     public async Task MockHandler_ShouldTrackInvocationsForRepositorySpec()
     {
         // Arrange
-        var handler = new MockRepositorySpecExceptionHandler { ConfiguredResolution = EfConcurrencyResolution.IgnoreChanges };
+        var handler = new MockRepositorySpecExceptionHandler
+            { ConfiguredResolution = EfConcurrencyResolution.IgnoreChanges };
         var mockDbContext = new Mock<DbContext>();
         var exception = new DbUpdateConcurrencyException("Test exception");
 

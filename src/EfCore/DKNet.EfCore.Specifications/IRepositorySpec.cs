@@ -136,62 +136,81 @@ public interface IRepositorySpec
 ///     Entity Framework Core.
 /// </summary>
 /// <typeparam name="TDbContext">The type of the database context.</typeparam>
-/// <param name="dbContext">The database context instance.</param>
-/// <param name="mappers">Collection of mappers for entity-to-model projections.</param>
-/// <param name="provider">The optional service provider that will be used to get <see cref="IEfCoreExceptionHandler" />.</param>
-public class RepositorySpec<TDbContext>(
-    TDbContext dbContext,
-    IEnumerable<IMapper>? mappers = null,
-    IServiceProvider? provider = null)
-    : IRepositorySpec where TDbContext : DbContext
+public sealed class RepositorySpec<TDbContext> : IRepositorySpec where TDbContext : DbContext
 {
     #region Fields
 
-    private readonly IMapper? _mapper = mappers?.FirstOrDefault();
+    private readonly TDbContext _dbContext;
+
+    private readonly IMapper? _mapper;
+    private readonly IServiceProvider? _provider;
+
+    #endregion
+
+    #region Constructors
+
+    internal RepositorySpec(TDbContext dbContext, IMapper? mapper = null)
+    {
+        _dbContext = dbContext;
+        _mapper = mapper;
+    }
+
+    /// <summary>
+    ///     The constructor for the repository specification.
+    /// </summary>
+    /// <param name="dbContext"></param>
+    /// <param name="provider"></param>
+    public RepositorySpec(TDbContext dbContext,
+        IServiceProvider? provider = null)
+    {
+        _dbContext = dbContext;
+        _provider = provider;
+        _mapper = provider?.GetService<IMapper>();
+    }
 
     #endregion
 
     #region Methods
 
     /// <inheritdoc />
-    public virtual async ValueTask AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
+    public async ValueTask AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
-        => await dbContext.AddAsync(entity, cancellationToken);
+        => await _dbContext.AddAsync(entity, cancellationToken);
 
     /// <inheritdoc />
-    public virtual async ValueTask AddRangeAsync<TEntity>(
+    public async ValueTask AddRangeAsync<TEntity>(
         IEnumerable<TEntity> entities,
         CancellationToken cancellationToken = default)
         where TEntity : class
-        => await dbContext.AddRangeAsync(entities, cancellationToken);
+        => await _dbContext.AddRangeAsync(entities, cancellationToken);
 
     /// <inheritdoc />
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
-        => dbContext.Database.BeginTransactionAsync(cancellationToken);
+        => _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
     /// <inheritdoc />
     public Task<int> BulkDeleteAsync<TEntity>(Expression<Func<TEntity, bool>> predicate,
         CancellationToken cancellationToken = default) where TEntity : class
-        => dbContext.Set<TEntity>().Where(predicate).ExecuteDeleteAsync(cancellationToken);
+        => _dbContext.Set<TEntity>().Where(predicate).ExecuteDeleteAsync(cancellationToken);
 
     /// <inheritdoc />
-    public virtual void Delete<TEntity>(TEntity entity)
+    public void Delete<TEntity>(TEntity entity)
         where TEntity : class
-        => dbContext.Set<TEntity>().Remove(entity);
+        => _dbContext.Set<TEntity>().Remove(entity);
 
     /// <inheritdoc />
-    public virtual void DeleteRange<TEntity>(IEnumerable<TEntity> entities)
+    public void DeleteRange<TEntity>(IEnumerable<TEntity> entities)
         where TEntity : class
-        => dbContext.Set<TEntity>().RemoveRange(entities);
+        => _dbContext.Set<TEntity>().RemoveRange(entities);
 
 
     /// <inheritdoc />
     public EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
-        => dbContext.Entry(entity);
+        => _dbContext.Entry(entity);
 
     /// <inheritdoc />
     public IQueryable<TEntity> Query<TEntity>(ISpecification<TEntity> spec) where TEntity : class =>
-        dbContext.Set<TEntity>().AsExpandable().ApplySpecs(spec);
+        _dbContext.Set<TEntity>().AsExpandable().ApplySpecs(spec);
 
     /// <inheritdoc />
     public IQueryable<TModel> Query<TEntity, TModel>(ISpecification<TEntity> spec)
@@ -205,21 +224,21 @@ public class RepositorySpec<TDbContext>(
     }
 
     /// <inheritdoc />
-    public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.AddNewEntitiesFromNavigations(cancellationToken);
-        var handler = provider?.GetKeyedService<IEfCoreExceptionHandler>(dbContext.GetType().FullName);
-        return await dbContext.SaveChangesWithConcurrencyHandlingAsync(handler, cancellationToken);
+        await _dbContext.AddNewEntitiesFromNavigations(cancellationToken);
+        var handler = _provider?.GetKeyedService<IEfCoreExceptionHandler>(_dbContext.GetType().FullName);
+        return await _dbContext.SaveChangesWithConcurrencyHandlingAsync(handler, cancellationToken);
     }
 
     /// <inheritdoc />
-    public virtual async Task<int> UpdateAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
+    public async Task<int> UpdateAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
     {
-        dbContext.Entry(entity).State = EntityState.Modified;
+        _dbContext.Entry(entity).State = EntityState.Modified;
 
-        var newEntities = dbContext.GetNewEntitiesFromNavigations(dbContext.Entry(entity)).ToList();
-        await dbContext.AddRangeAsync(newEntities, cancellationToken);
+        var newEntities = _dbContext.GetNewEntitiesFromNavigations(_dbContext.Entry(entity)).ToList();
+        await _dbContext.AddRangeAsync(newEntities, cancellationToken);
         return newEntities.Count;
     }
 

@@ -24,7 +24,7 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
 
         var config = new TypeAdapterConfig();
         var mapper = new Mapper(config);
-        _repository = new RepositorySpec<TestDbContext>(_context, [mapper]);
+        _repository = new RepositorySpec<TestDbContext>(_context, mapper);
     }
 
     #endregion
@@ -213,7 +213,7 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.FullDescription, src => $"{src.Name} - {src.Description}");
         var mapper = new Mapper(config);
-        var repo = new RepositorySpec<TestDbContext>(_context, [mapper]);
+        var repo = new RepositorySpec<TestDbContext>(_context, mapper);
 
         var spec = new ActiveProductsSpecification();
 

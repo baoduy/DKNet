@@ -29,7 +29,7 @@ public class SpecRepoExtensionsTests : IClassFixture<TestDbFixture>
             .Map(dest => dest.FullDescription, src => $"{src.Name} - {src.Description}");
         IMapper mapper = new Mapper(config);
 
-        _repository = new RepositorySpec<TestDbContext>(_context, [mapper]);
+        _repository = new RepositorySpec<TestDbContext>(_context, mapper);
     }
 
     #endregion

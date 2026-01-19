@@ -169,7 +169,7 @@ public class RepositorySpecTests : IAsyncLifetime
         _mapper = new Mapper(config);
 
         _repository =
-            new RepositorySpec<TestDbContext>(_context, [_mapper]);
+            new RepositorySpec<TestDbContext>(_context, _mapper);
     }
 
     [Fact]
@@ -197,7 +197,7 @@ public class RepositorySpecTests : IAsyncLifetime
     {
         // Arrange
         var repositoryNoMapper =
-            new RepositorySpec<TestDbContext>(_context, []);
+            new RepositorySpec<TestDbContext>(_context, (IServiceProvider?)null);
         var spec = new ActiveUsersSpecification();
 
         // Act & Assert

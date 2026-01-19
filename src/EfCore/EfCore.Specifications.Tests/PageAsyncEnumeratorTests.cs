@@ -32,7 +32,7 @@ public class PageAsyncEnumeratorTests : IClassFixture<TestDbFixture>
         config.NewConfig<Product, ProductDto>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.FullDescription, src => $"{src.Name} - {src.Description}");
-        _repository = new RepositorySpec<TestDbContext>(_context, [new Mapper(config)]);
+        _repository = new RepositorySpec<TestDbContext>(_context, new Mapper(config));
     }
 
     #endregion

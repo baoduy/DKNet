@@ -27,7 +27,8 @@ public static class SpecSetup
     /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
     public static IServiceCollection AddSpecRepo<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext =>
-        services.AddScoped<IRepositorySpec, RepositorySpec<TDbContext>>();
+        services.AddScoped<IRepositorySpec, RepositorySpec<TDbContext>>()
+            .AddSingleton<IRepositorySpecFactory,RepositorySpecFactory>();
 
     #endregion
 }
