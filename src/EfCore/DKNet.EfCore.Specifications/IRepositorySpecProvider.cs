@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -13,13 +14,31 @@ public interface IRepositorySpecProvider : IAsyncDisposable, IDisposable
     public IRepositorySpec Repository { get; }
 }
 
-internal sealed class RepositorySpecProvider<TDbContext>(TDbContext dbContext, IServiceProvider provider)
+internal sealed class RepositorySpecProvider<TDbContext>
     : IRepositorySpecProvider
     where TDbContext : DbContext
 {
+    #region Fields
+
+    private readonly TDbContext _dbContext;
+    private readonly IServiceScope _provider;
+
+    #endregion
+
+    #region Constructors
+
+    public RepositorySpecProvider(IServiceProvider provider)
+    {
+        _provider = provider.CreateScope();
+        _dbContext = _provider.ServiceProvider.GetRequiredService<IDbContextFactory<TDbContext>>().CreateDbContext();
+        Repository = new RepositorySpec<TDbContext>(_dbContext, provider);
+    }
+
+    #endregion
+
     #region Properties
 
-    public IRepositorySpec Repository { get; } = new RepositorySpec<TDbContext>(dbContext, provider);
+    public IRepositorySpec Repository { get; }
 
     #endregion
 
@@ -27,10 +46,16 @@ internal sealed class RepositorySpecProvider<TDbContext>(TDbContext dbContext, I
 
     public void Dispose()
     {
-        dbContext.Dispose();
+        _dbContext.Dispose();
+        _provider.Dispose();
     }
 
-    public ValueTask DisposeAsync() => dbContext.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _dbContext.DisposeAsync().ConfigureAwait(false);
+        if (_provider is IAsyncDisposable p) await p.DisposeAsync().ConfigureAwait(false);
+        else _provider.Dispose();
+    }
 
     #endregion
 }

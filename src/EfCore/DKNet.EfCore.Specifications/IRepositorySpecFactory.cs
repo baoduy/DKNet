@@ -23,9 +23,7 @@ internal sealed class RepositorySpecFactory(IServiceProvider provider) : IReposi
     /// <inheritdoc />
     public IRepositorySpecProvider CreateAsync<TDbContext>() where TDbContext : DbContext
     {
-        var dbFactory = provider.GetRequiredService<IDbContextFactory<TDbContext>>();
-        var dbContext = dbFactory.CreateDbContext();
-        return new RepositorySpecProvider<TDbContext>(dbContext, provider);
+        return new RepositorySpecProvider<TDbContext>(provider);
     }
 
     #endregion
