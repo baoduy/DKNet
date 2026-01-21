@@ -31,7 +31,7 @@ internal sealed class RepositorySpecProvider<TDbContext>
     {
         _provider = provider.CreateScope();
         _dbContext = _provider.ServiceProvider.GetRequiredService<IDbContextFactory<TDbContext>>().CreateDbContext();
-        Repository = new RepositorySpec<TDbContext>(_dbContext, provider);
+        Repository = new RepositorySpec<TDbContext>(_dbContext, _provider.ServiceProvider);
     }
 
     #endregion
