@@ -7,6 +7,7 @@
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Convertors;
 using DKNet.Fw.Extensions;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DKNet.EfCore.Extensions.Configurations;
@@ -55,10 +56,12 @@ public abstract class DefaultEntityTypeConfiguration<TEntity> : IEntityTypeConfi
         {
             builder.Property(nameof(IAuditedProperties.CreatedBy))
                 .IsRequired()
-                .HasMaxLength(255);
+                .HasMaxLength(255)
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
             builder.Property(nameof(IAuditedProperties.CreatedOn))
-                .IsRequired();
+                .IsRequired()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
             builder.Property(nameof(IAuditedProperties.UpdatedBy))
                 .HasMaxLength(255);
