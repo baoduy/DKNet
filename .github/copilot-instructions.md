@@ -1,627 +1,300 @@
-# DKNet – GitHub Copilot Instructions
+# GitHub Copilot Agent Configuration for DKNet Framework
 
-- 🧠 Read `/memory-bank/memory-bank-instructions.md` first.
-- 🗂 Load all `/memory-bank/*.md` before any task.
-- 🚦 Use the Kiro-Lite workflow: PRD → Design → Tasks → Code.
-- 🔒 Follow security & style rules in `copilot-rules.md`.
-- 📝 On "/update memory bank", refresh activeContext.md & progress.md.
+## Agent Identity
+- **Project**: DKNet Framework
+- **Type**: .NET 9 Library Collection
+- **Focus**: EF Core Extensions, Specifications, Dynamic Predicates
+- **Standards**: Enterprise-grade, production-ready code
 
-This document provides guidance for GitHub Copilot when generating code for the DKNet project. Follow these guidelines
-to ensure that generated code aligns with the project's coding standards, architecture, and best practices.
+## Core Instructions for AI Agent
 
-If you are not sure, do not guess—ask clarifying questions or state that you don't know. Do not copy code that only
-follows a pattern from a different context. Do not rely solely on names; always evaluate the intent and logic.
-
----
-
-## Code Style
-
-### General Guidelines
-
-- Follow the language/platform's standard coding guidelines (e.g., for .NET,
-  see [Microsoft .NET Coding Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md);
-  for other languages, use their official style guides).
-- Adhere to rules defined in the `.editorconfig` or equivalent configuration files.
-- Write code that is clean, maintainable, and easy to understand.
-- Favor readability over brevity. Keep methods focused and concise.
-- Add comments only when necessary to explain non-obvious solutions; otherwise, code should be self-explanatory.
-- Add the appropriate license header to all files, if applicable.
-- Do not add UTF-8 BOM unless required for non-ASCII files.
-- Avoid breaking public APIs. If you must, mark the old API as obsolete and provide a migration path.
-
-### Formatting
-
-- Use spaces for indentation (4 spaces unless otherwise specified).
-- Use braces for all code blocks, including single-line blocks.
-- Place braces on new lines.
-- Limit line length to 140 characters.
-- Trim trailing whitespace.
-- Begin all declarations on a new line.
-- Use a single blank line to separate logical code sections.
-- Insert a final newline at the end of each file.
-
-### Language-Specific Guidelines
-
-- Use file-scoped namespace declarations (for C#).
-- Use `var` for local variables (for C# or similar conventions in other languages).
-- Use expression-bodied members where appropriate.
-- Prefer modern language features (e.g., pattern matching, range/index operators) when available and beneficial.
-- Prefer concise property and method declarations.
-- Avoid redundant using/import statements.
-
-### Naming Conventions
-
-- Use PascalCase for: Classes, structs, enums, properties, methods, events, namespaces, delegates, public fields, static
-  private fields, constants.
-- Use camelCase for: Parameters, local variables.
-- Use `_camelCase` for private instance fields.
-- Prefix interfaces with `I`.
-- Prefix type parameters with `T`.
-- Use meaningful and descriptive names.
-
-### Nullability
-
-- Use nullable reference types where supported.
-- Use proper null-checking patterns.
-- Use null-conditional (`?.`) and null-coalescing (`??`) operators when appropriate.
-
----
-
-## NuGet Package Management
-
-- Use centralized package version management (e.g., `Directory.Packages.props` or equivalent).
-- **Do not specify the `Version` attribute in individual project/package references.**
-- When adding or updating NuGet package references, only include the package name; versioning is handled centrally.
-- Ensure all new dependencies are added to the central configuration file as needed.
-
----
-
-## Architecture and Design Patterns
-
-- Favor dependency injection for services or components that may need to be replaced, mocked, or extended.
-- Structure the codebase for modularity and separation of concerns.
-- Use records/DTOs for immutable data transfer where appropriate.
-- For internal APIs or infrastructure code, clearly document their intended limited use.
-
----
-
-## Testing
-
-- Follow existing test patterns and conventions.
-- Write both unit and integration tests where appropriate.
-- Ensure tests are isolated and reproducible.
-- **When writing unit tests, prefer using [TestContainer](https://testcontainers.com/)
-  or [Aspire host](https://learn.microsoft.com/en-us/dotnet/aspire/) for orchestrating dependencies and infrastructure.
-  **
-- **Only fall back to dummy or fake object frameworks (such as Moq, NSubstitute, etc.) if TestContainer or Aspire host
-  are not practical or applicable for the scenario.**
-- Use mocks or fakes for external dependencies when containerized or Aspire-based approaches are not feasible.
-- Keep test methods focused and descriptive.
-- Try to use `Shouldly` for all assertions in tests.
-- For Collection assertions, prefer using `ShouldBeEquivalentTo` for comparing collections.
-
----
-
-## Documentation
-
-- Include XML/Docstring/documentation comments for all public APIs.
-- Use `<inheritdoc />` where appropriate for overriding documentation.
-- Add code examples in documentation when helpful.
-- For key concepts or non-trivial logic, link to relevant external docs or project wiki.
-
----
-
-## Error Handling
-
-- Use appropriate exception types.
-- Provide helpful error messages.
-- Avoid catching exceptions without rethrowing or handling them.
-- Log errors where relevant, but avoid exposing sensitive data.
-
----
-
-## Asynchronous Programming
-
-- Provide both synchronous and asynchronous methods where appropriate.
-- Use the `Async` suffix for asynchronous methods.
-- Return `Task`/`ValueTask`/Promise/etc. from async methods.
-- Support cancellation tokens or equivalents.
-- Avoid `async void` methods except for event handlers.
-
----
-
-## Performance Considerations
-
-- Be mindful of performance, especially in I/O, networking, and database operations.
-- Avoid unnecessary allocations and expensive operations in performance-critical code.
-- Optimize hot paths, but not at the expense of clarity elsewhere.
-
----
-
-## Implementation Guidelines
-
-- Write secure code by default; avoid exposing sensitive data.
-- Make the code compatible with relevant deployment targets (e.g., AOT, cloud, cross-platform).
-- Avoid dynamic code generation/reflection unless required and document such usage.
-
----
-
-## Repository Structure
-
-- `src/`: Main product source code.
-- `test/`: All test projects, including unit and integration tests.
-- `docs/`: Documentation files for contributors and users.
-- `.github/`: GitHub-specific files, workflows, and Copilot instructions.
-- `tools/`: Utility scripts and developer resources.
-- `eng/` or equivalent: Build/test infrastructure files.
-- Add or adapt sections as needed for your repo.
-
----
-
-## DKNet Overview
-
-DKNet is a comprehensive .NET framework providing extensions, templates, and tools for building modern, scalable
-applications using Domain-Driven Design (DDD) principles and CQRS patterns.
-
-### Main Concepts
-
-- **Main API/Entry Point**: SlimBus template provides a complete API template with minimal endpoints using ASP.NET Core
-- **Configuration**: Centralized configuration through `appsettings.json`, dependency injection, and options pattern
-- **Core Workflow**: Request → Endpoint → Command/Query Handler → Domain Logic → Repository → Database
-- **Extensibility Points**: Custom validators, event handlers, mapping configurations, and domain services
-- **Supported Platforms/Frameworks**: .NET 10.0+, ASP.NET Core, Entity Framework Core, FluentValidation
-
-### Architecture Layers
-
-- **API Layer**: Minimal API endpoints with versioning and documentation
-- **Application Services**: Command/Query handlers, validation, and business orchestration
-- **Domain Layer**: Entities, value objects, domain events, and business rules
-- **Infrastructure Layer**: Data access, external services, and cross-cutting concerns
-
-### Key Technologies
-
-- **SlimBus**: Lightweight message bus for CQRS implementation
-- **Entity Framework Core**: ORM for data persistence
-- **FluentValidation**: Input validation framework
-- **Mapster**: Object-to-object mapping
-- **Result Pattern**: Error handling without exceptions
-- **Domain Events**: Decoupled business event handling
-
----
-
-## SlimBus Template CRUD Conventions
-
-When generating CRUD operations for the SlimBus template, follow these established patterns and conventions. All
-examples are based on the Profile feature implementation in `src/Templates/SlimBus.ApiEndpoints/`.
-
-### File Organization Structure
-
-Organize CRUD components using this feature-based structure:
-
+### 1. ALWAYS Load Context First
+Before generating ANY code, you MUST:
 ```
-SlimBus.Api/ApiEndpoints/{Feature}Endpoints.cs
-SlimBus.AppServices/{Feature}/V1/
-├── Actions/
-│   ├── Create.cs
-│   ├── Update.cs
-│   └── Delete.cs
-├── Queries/
-│   ├── {Feature}Result.cs
-│   ├── Page{Feature}sHandler.cs
-│   └── Single{Feature}Handler.cs
-└── Events/
-    └── {Feature}CreatedHandler.cs
-SlimBus.Domains/Features/{Feature}/
-├── Entities/{Feature}.cs
-└── Repos/I{Feature}Repo.cs
-SlimBus.Infra/Features/{Feature}/
-├── Repos/{Feature}Repo.cs
-└── Mappers/{Feature}Mapper.cs
+1. Read /memory-bank/README.md (navigation)
+2. Read /memory-bank/activeContext.md (current focus)
+3. Read /memory-bank/copilot-quick-reference.md (patterns)
+4. Read /memory-bank/systemPatterns.md (detailed patterns)
+5. Read /memory-bank/copilot-rules.md (complete standards)
 ```
 
-**Schema Organization:**
+**Priority**: README → activeContext → quick-reference → systemPatterns → copilot-rules
 
-- Define database schemas in `SlimBus.Domains/Share/DomainSchemas.cs`
-- Use short, meaningful schema names (e.g., "pro" for Profile, "ord" for Orders)
-- Group related entities under the same schema
+### 2. Project-Specific Knowledge
 
-### 1. API Endpoint Conventions
+#### Current Development Focus
+- **Active Area**: EfCore.Specifications - Dynamic Predicate System
+- **Key Features**: 
+  - Dynamic predicate building with `DynamicPredicateBuilder<T>`
+  - Specification Pattern implementation
+  - LinqKit integration for expression composition
+  - TestContainers for integration testing
+  - Enum validation and type safety
 
-Create endpoint classes that implement `IEndpointConfig`:
+#### Technology Stack
+- **.NET**: 9.0 with C# 13
+- **EF Core**: 9.0
+- **Testing**: xUnit, Shouldly, TestContainers.MsSql, Bogus
+- **Dynamic LINQ**: System.Linq.Dynamic.Core, LinqKit
 
+#### Code Quality Requirements
+- `TreatWarningsAsErrors=true` - ZERO warnings allowed
+- `<Nullable>enable</Nullable>` - Nullable reference types mandatory
+- XML documentation required for all public APIs
+- Test coverage: 85%+ target
+
+### 3. Pattern Recognition Rules
+
+When you see code involving:
+
+#### Dynamic Predicates
+→ Use: `PredicateBuilder.New<T>()`, `.DynamicAnd()`, `.DynamicOr()`
+→ Always: Include `.AsExpandable()` before `.Where()`
+→ Pattern: Null-safe dynamic expression building
 ```csharp
-internal sealed class {Feature}V1Endpoint : IEndpointConfig
-{
-    public string GroupEndpoint => "/{features}"; // lowercase plural
-    public int Version => 1;
-
-    public void Map(RouteGroupBuilder group)
-    {
-        // Standard CRUD mappings
-        group.MapGetPage<Page{Feature}PageQuery, {Feature}Result>("")
-            .WithDescription("Get all {features}");
-        group.MapGet<{Feature}Query, {Feature}Result?>("{id:guid}")
-            .WithDescription("Get {feature} by id");
-        group.MapPost<Create{Feature}, {Feature}Result>("")
-            .AddIdempotencyFilter()
-            .WithDescription("Create {feature}. <br/><br/> Note: Idempotency key is required in the header. <br/>" +
-                             "X-Idempotency-Key: {IdempotencyKey} <br/>");
-        group.MapPut<Update{Feature}, {Feature}Result>("{id:guid}")
-            .WithDescription("Update {feature} by id");
-        group.MapDelete<Delete{Feature}>("{id:guid}")
-            .WithDescription("Delete {feature} by id");
-    }
-}
+var predicate = PredicateBuilder.New<Product>()
+    .And(p => p.IsActive)
+    .DynamicAnd(builder => builder
+        .With("PropertyName", FilterOperations.Operator, value));
 ```
 
-**Key Patterns:**
+#### EF Core Queries
+→ Use: `.AsNoTracking()` for read-only
+→ Use: `async`/`await` for all database operations
+→ Filter: Push to database with `.Where()` before `.ToListAsync()`
+→ Avoid: N+1 queries (use `.Include()` or projections)
 
-- Use lowercase plural endpoint paths
-- Always include descriptive documentation
-- Add idempotency filter for creation operations using `.AddIdempotencyFilter()`
-- Use Guid route constraints for ID parameters (`{id:guid}`)
-- Version endpoints with separate classes for each version
-- Standard HTTP status codes are automatically configured via `.ProducesCommons()`
-- Endpoints return appropriate HTTP status codes (200, 404, 400, 500, etc.)
+#### Tests
+→ Framework: xUnit with Shouldly assertions
+→ Integration: TestContainers.MsSql (real SQL Server)
+→ Naming: `MethodName_Scenario_ExpectedBehavior`
+→ Structure: Arrange-Act-Assert
 
-### 2. Command/Action Conventions
+#### Extension Methods
+→ Location: Static classes in `/Extensions` folder
+→ Documentation: XML docs with `<summary>`, `<param>`, `<returns>`
+→ Naming: Verb-based (e.g., `TryConvertToEnum`, `DynamicAnd`)
 
-#### Create Command Pattern
+### 4. Code Generation Rules
 
+#### When Generating Classes
 ```csharp
-[MapsTo(typeof({Feature}))]
-public sealed record Create{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+// <copyright file="ClassName.cs" company="https://drunkcoding.net">
+// Copyright (c) 2025 Steven Hoang. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// </copyright>
+
+/// <summary>
+///     Brief description of the class purpose.
+/// </summary>
+public class ClassName
 {
-    [Required] public string RequiredProperty { get; set; } = null!;
-    [Optional] public string? OptionalProperty { get; set; }
+    private readonly IService _service;
     
-    [JsonIgnore]
-    [Description("Property set by business logic, not user input")]
-    public string SystemProperty { get; set; } = null!;
-}
-
-internal sealed class Create{Feature}Validator : AbstractValidator<Create{Feature}>
-{
-    public Create{Feature}Validator()
+    /// <summary>
+    ///     Description of what this constructor does.
+    /// </summary>
+    public ClassName(IService service)
     {
-        RuleFor(a => a.RequiredProperty).NotEmpty().Length(1, 150);
-        RuleFor(a => a.OptionalProperty).Length(0, 100).When(x => x.OptionalProperty != null);
-    }
-}
-
-internal sealed class Create{Feature}Handler(
-    I{Feature}Repo repository,
-    IRequiredService requiredService,
-    IMapper mapper)
-    : Fluents.Requests.IHandler<Create{Feature}, {Feature}Result>
-{
-    public async Task<IResult<{Feature}Result>> OnHandle(Create{Feature} request,
-        CancellationToken cancellationToken)
-    {
-        // Business logic validation
-        if (await repository.IsDuplicateAsync(request.UniqueProperty))
-            return Result.Fail<{Feature}Result>($"{request.UniqueProperty} already exists.");
-
-        // Map and create entity
-        var entity = mapper.Map<{Feature}>(request);
-        
-        // Add to repository
-        await repository.AddAsync(entity, cancellationToken);
-
-        // Add domain event
-        entity.AddEvent(new {Feature}CreatedEvent(entity.Id, entity.Name));
-
-        // Return lazy mapped result
-        return mapper.ResultOf<{Feature}Result>(entity);
+        _service = service;
     }
 }
 ```
 
-#### Update Command Pattern
-
+#### When Generating Methods
 ```csharp
-[MapsTo(typeof({Feature}))]
-public record Update{Feature} : BaseCommand, Fluents.Requests.IWitResponse<{Feature}Result>
+/// <summary>
+///     Description of what the method does.
+/// </summary>
+/// <typeparam name="T">Description of generic parameter</typeparam>
+/// <param name="paramName">Description of parameter</param>
+/// <returns>Description of return value</returns>
+/// <exception cref="ArgumentNullException">When paramName is null</exception>
+public async Task<Result<T>> MethodNameAsync<T>(string paramName)
 {
-    public required Guid Id { get; init; }
-    public string? PropertyToUpdate { get; init; }
-    // Only include properties that can be updated
-}
-
-internal sealed class Update{Feature}Handler(
-    IMapper mapper,
-    I{Feature}Repo repo) : Fluents.Requests.IHandler<Update{Feature}, {Feature}Result>
-{
-    public async Task<IResult<{Feature}Result>> OnHandle(Update{Feature} request,
-        CancellationToken cancellationToken)
-    {
-        if (request.Id == Guid.Empty)
-            return Result.Fail<{Feature}Result>("The Id is invalid.");
-
-        var entity = await repo.FindAsync(request.Id, cancellationToken);
-        if (entity == null)
-            return Result.Fail<{Feature}Result>($"The {Feature} {request.Id} is not found.");
-
-        // Call domain method for updates
-        entity.Update(request.PropertyToUpdate, request.ByUser!);
-
-        // Add events if needed
-        // entity.AddEvent(new {Feature}UpdatedEvent(entity.Id));
-
-        return Result.Ok(mapper.Map<{Feature}Result>(entity));
-    }
+    // Implementation with proper error handling
 }
 ```
 
-#### Delete Command Pattern
-
+#### When Generating Tests
 ```csharp
-public record Delete{Feature} : BaseCommand, Fluents.Requests.INoResponse
+[Fact]
+public void MethodName_WhenScenarioOccurs_ThenExpectedOutcome()
 {
-    public required Guid Id { get; init; }
-}
-
-internal sealed class Delete{Feature}Handler(I{Feature}Repo repository)
-    : Fluents.Requests.IHandler<Delete{Feature}>
-{
-    public async Task<IResultBase> OnHandle(Delete{Feature} request, CancellationToken cancellationToken)
-    {
-        if (request.Id == Guid.Empty)
-            return Result.Fail("The Id is invalid.")
-                .WithError(new Error("The Id is invalid.") { Metadata = { ["field"] = nameof(request.Id) } });
-
-        var entity = await repository.FindAsync(request.Id, cancellationToken);
-        if (entity == null)
-            return Result.Fail($"The {Feature} {request.Id} is not found.");
-
-        repository.Delete(entity);
-        return Result.Ok();
-    }
+    // Arrange: Setup test data and dependencies
+    var testData = CreateTestData();
+    
+    // Act: Execute the operation under test
+    var result = _sut.MethodUnderTest(testData);
+    
+    // Assert: Verify expected outcomes
+    result.ShouldNotBeNull();
+    result.ShouldBe(expectedValue);
 }
 ```
 
-### 3. Query Conventions
+### 5. Anti-Patterns to NEVER Generate
 
-#### Result DTO Pattern
+❌ **NEVER** use InMemory database for EF Core tests (use TestContainers)
+❌ **NEVER** mix sync and async code (`result = asyncMethod().Result`)
+❌ **NEVER** materialize queries early (`.ToList()` then `.Where()`)
+❌ **NEVER** forget `.AsExpandable()` with LinqKit predicates
+❌ **NEVER** omit XML documentation on public APIs
+❌ **NEVER** include secrets or credentials in code
+❌ **NEVER** use `async void` (except event handlers)
+❌ **NEVER** catch exceptions without logging
+❌ **NEVER** ignore nullable warnings
+❌ **NEVER** violate the Single Responsibility Principle
 
-```csharp
-public record {Feature}Result
-{
-    public required Guid Id { get; init; }
-    public required string Name { get; init; }
-    public required string RequiredProperty { get; init; }
-    public string? OptionalProperty { get; init; }
-}
-```
+### 6. Decision Making Guidelines
 
-#### Paginated Query Pattern
+#### When Asked to Implement a Feature
+1. **Check** `activeContext.md` - Is this aligned with current focus?
+2. **Review** `systemPatterns.md` - What pattern should be used?
+3. **Reference** `copilot-quick-reference.md` - Are there templates?
+4. **Generate** code following established patterns
+5. **Include** comprehensive tests (arrange-act-assert)
+6. **Document** with XML comments
+7. **Verify** zero warnings after build
 
-```csharp
-public class Page{Feature}PageQuery : Fluents.Queries.IWitPageResponse<{Feature}Result>
-{
-    public int PageSize { get; init; } = 100;
-    public int PageIndex { get; init; }
-}
+#### When Asked to Fix a Bug
+1. **Understand** the issue (read error messages, stack traces)
+2. **Check** existing tests - Do they cover this scenario?
+3. **Add** test that reproduces the bug (TDD approach)
+4. **Fix** the code to make test pass
+5. **Verify** all tests still pass
+6. **Document** the fix in comments if non-obvious
 
-internal sealed class {Feature}PageableValidator : AbstractValidator<Page{Feature}PageQuery>
-{
-    public {Feature}PageableValidator()
-    {
-        RuleFor(x => x.PageSize).NotNull().InclusiveBetween(1, 1000);
-        RuleFor(x => x.PageIndex).NotNull().InclusiveBetween(0, 1000);
-    }
-}
+#### When Asked to Refactor
+1. **Ensure** tests exist and pass before refactoring
+2. **Make** small, incremental changes
+3. **Run** tests after each change
+4. **Keep** functionality identical (tests prove this)
+5. **Improve** code quality, readability, performance
+6. **Update** documentation if patterns change
 
-internal sealed class Page{Feature}sHandler(
-    IReadRepository<{Feature}> repo,
-    IMapper mapper) : Fluents.Queries.IPageHandler<Page{Feature}PageQuery, {Feature}Result>
-{
-    public async Task<IPagedList<{Feature}Result>> OnHandle(Page{Feature}PageQuery request,
-        CancellationToken cancellationToken)
-    {
-        return await repo.Gets()
-            .ProjectToType<{Feature}Result>(mapper.Config)
-            .OrderBy(p => p.Name) // Default ordering
-            .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);
-    }
-}
-```
+### 7. Quality Checklist
 
-#### Single Item Query Pattern
+Before considering code complete, verify:
+- [ ] Compiles without warnings
+- [ ] All tests pass
+- [ ] XML documentation on public APIs
+- [ ] File header present
+- [ ] Follows naming conventions
+- [ ] Null safety considered
+- [ ] Error handling implemented
+- [ ] Performance considered (async, filtering)
+- [ ] Security considered (no secrets, validation)
+- [ ] Patterns followed (Specification, Repository, etc.)
 
-```csharp
-public record {Feature}Query : Fluents.Queries.IWitResponse<{Feature}Result>
-{
-    public required Guid Id { get; init; }
-}
+### 8. Communication Guidelines
 
-internal sealed class Single{Feature}Handler(
-    IReadRepository<{Feature}> repo)
-    : Fluents.Queries.IHandler<{Feature}Query, {Feature}Result>
-{
-    public async Task<{Feature}Result?> OnHandle({Feature}Query request, CancellationToken cancellationToken)
-    {
-        return await repo.GetDto<{Feature}Result>()
-            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
-    }
-}
-```
+#### When Explaining Code
+- Reference the specific pattern from `systemPatterns.md`
+- Include code examples from actual codebase
+- Explain WHY, not just WHAT
+- Link to relevant documentation
 
-### 4. Event and Handler Conventions
+#### When Suggesting Improvements
+- Reference quality standards from `copilot-rules.md`
+- Show before/after comparisons
+- Explain benefits (performance, maintainability, etc.)
+- Consider impact on existing code
 
-```csharp
-public sealed record {Feature}CreatedEvent(Guid Id, string Name);
+#### When Reporting Issues
+- Provide error messages and stack traces
+- Show relevant code context
+- Suggest potential solutions
+- Reference similar solved issues if available
 
-internal sealed class {Feature}CreatedHandler : Fluents.EventsConsumers.IHandler<{Feature}CreatedEvent>
-{
-    public Task OnHandle({Feature}CreatedEvent notification, CancellationToken cancellationToken)
-    {
-        // Handle the event (logging, notifications, integration, etc.)
-        return Task.CompletedTask;
-    }
-}
-```
+### 9. Special DKNet Framework Features
 
-### 5. DDD Entity Conventions
+#### Dynamic Predicate Builder
+- **Purpose**: Build EF Core queries from runtime conditions
+- **Usage**: `.DynamicAnd(builder => builder.With(...))`
+- **Key**: Type-safe, null-safe, composable
+- **Gotcha**: Always use `.AsExpandable()` with LinqKit
 
-```csharp
-[Table("{Feature}s", Schema = DomainSchemas.{FeatureArea})]
-public class {Feature} : AggregateRoot
-{
-    public {Feature}(string name, string requiredProperty, string byUser)
-        : this(Guid.Empty, name, requiredProperty, byUser)
-    {
-    }
+#### Specification Pattern
+- **Purpose**: Encapsulate query logic in reusable specifications
+- **Base Class**: `Specification<TEntity>`
+- **Features**: Criteria, Includes, OrderBy
+- **Usage**: Compose with `.And()`, `.Or()` using LinqKit
 
-    internal {Feature}(Guid id, string name, string requiredProperty, string createdBy)
-        : base(id, createdBy)
-    {
-        Name = name;
-        RequiredProperty = requiredProperty;
-    }
+#### Type Extensions
+- **Purpose**: Type checking and conversion utilities
+- **Key Method**: `TryConvertToEnum<TEnum>` with validation
+- **Usage**: Safe enum conversion with culture-invariant parsing
+- **Pattern**: Return `bool`, `out` parameter for result
 
-    public string Name { get; private set; }
-    public string RequiredProperty { get; private set; }
-    public string? OptionalProperty { get; private set; }
+#### TestContainers Integration
+- **Purpose**: Real SQL Server for integration tests
+- **Setup**: `IAsyncLifetime` fixture pattern
+- **Benefits**: Catches SQL-specific issues, accurate testing
+- **Usage**: One container per test class, dispose properly
 
-    public void Update(string? name, string? optionalProperty, string userId)
-    {
-        if (!string.IsNullOrEmpty(name))
-            Name = name;
-        
-        OptionalProperty = optionalProperty;
-        SetUpdatedBy(userId);
-    }
-}
-```
+### 10. Context-Aware Responses
 
-**Key Patterns:**
+When the user asks about:
 
-- Private setters for all properties
-- Constructor overloads (public with Guid.Empty, internal with explicit ID)
-- Update methods that call `SetUpdatedBy(userId)`
-- Use `[Table]` attribute with appropriate schema
-- Domain behavior encapsulated in methods
+**"How do I..."**
+→ Check `copilot-quick-reference.md` for templates
+→ Provide code example following DKNet patterns
+→ Include test example
+→ Reference full documentation
 
-### 6. Repository Conventions
+**"Why does..."**
+→ Explain based on patterns in `systemPatterns.md`
+→ Reference technical constraints in `techContext.md`
+→ Show alternatives if applicable
 
-#### Interface Pattern
+**"Is this correct..."**
+→ Compare against `copilot-rules.md` standards
+→ Check pattern usage in `systemPatterns.md`
+→ Suggest improvements if needed
+→ Explain reasoning
 
-```csharp
-public interface I{Feature}Repo : IRepository<{Feature}>
-{
-    Task<bool> IsDuplicateAsync(string uniqueProperty);
-    // Add other custom query methods
-}
-```
-
-#### Implementation Pattern
-
-```csharp
-internal sealed class {Feature}Repo(CoreDbContext dbContext)
-    : Repository<{Feature}>(dbContext), I{Feature}Repo
-{
-    public Task<bool> IsDuplicateAsync(string uniqueProperty)
-    {
-        return Gets().AnyAsync(f => f.UniqueProperty == uniqueProperty);
-    }
-}
-```
-
-### 7. EfCore Configuration Conventions
-
-```csharp
-internal sealed class {Feature}Mapper : DefaultEntityTypeConfiguration<{Feature}>
-{
-    public override void Configure(EntityTypeBuilder<{Feature}> builder)
-    {
-        base.Configure(builder);
-
-        // Indexes
-        builder.HasIndex(p => p.UniqueProperty).IsUnique();
-        
-        // Property configurations
-        builder.Property(p => p.Name).HasMaxLength(150).IsRequired();
-        builder.Property(p => p.RequiredProperty).HasMaxLength(100).IsRequired();
-        builder.Property(p => p.OptionalProperty).HasMaxLength(50).IsRequired(false);
-        
-        // Special column types
-        builder.Property(p => p.DateProperty).HasColumnType("Date");
-        
-        // Table mapping
-        builder.ToTable("{Feature}s", DomainSchemas.{FeatureArea});
-    }
-}
-```
-
-### Common Imports and Attributes
-
-Always include these common using statements based on the layer:
-
-**Actions:**
-
-```csharp
-using System.ComponentModel;
-using System.Text.Json.Serialization;
-using SlimBus.AppServices.Extensions.LazyMapper;
-using SlimBus.Domains.Features.{Feature}.Entities;
-```
-
-**Queries:**
-
-```csharp
-using DKNet.EfCore.Repos.Abstractions;
-using Microsoft.EntityFrameworkCore;
-using X.PagedList;
-using X.PagedList.EF;
-```
-
-**Repositories:**
-
-```csharp
-using DKNet.EfCore.Repos;
-using SlimBus.Domains.Features.{Feature}.Entities;
-using SlimBus.Domains.Features.{Feature}.Repos;
-using SlimBus.Infra.Contexts;
-```
-
-### Validation Patterns
-
-- Use `FluentValidation` with `AbstractValidator<T>` for input validation
-- Include appropriate length constraints and business rules
-- Use `.When()` for conditional validation
-- Validate business rules in action handlers, not validators
-- Use `Result.Fail<T>()` for business rule violations
-- Include field metadata in error results for better client experience:
-  ```csharp
-  return Result.Fail("The Id is invalid.")
-      .WithError(new Error("The Id is invalid.") { Metadata = { ["field"] = nameof(request.Id) } });
-  ```
-- Return `IResult<T>` from action handlers for consistent error handling
-
-### Naming Conventions
-
-- **Commands**: `{Action}{Feature}` (e.g., `CreateProfile`)
-- **Queries**: `{Feature}Query` for single, `Page{Feature}PageQuery` for collections
-- **Results**: `{Feature}Result`
-- **Events**: `{Feature}{Action}Event` (e.g., `ProfileCreatedEvent`)
-- **Handlers**: `{Action}{Feature}Handler`, `{Feature}Handler` for queries/events
-- **Validators**: `{Action}{Feature}Validator`
-- **Repositories**: `{Feature}Repo` and `I{Feature}Repo`
-- **Mappers**: `{Feature}Mapper`
+**"What should I do next..."**
+→ Check `activeContext.md` for current priorities
+→ Reference `progress-detailed.md` for roadmap
+→ Suggest aligned with project goals
 
 ---
 
-## Additional DKNet-Specific Guidelines
+## Quick Reference for Agent
 
-- Follow Domain-Driven Design principles in entity design
-- Use the Result pattern for error handling instead of exceptions
-- Implement idempotency for creation operations
-- Add domain events for significant business operations
-- Use lazy mapping for command results to improve performance
-- Prefer composition over inheritance in service design
-- Use schema-based table organization for better database management
+### File Priority (Load Order)
+1. `/memory-bank/README.md` - Navigation
+2. `/memory-bank/activeContext.md` - Current work
+3. `/memory-bank/copilot-quick-reference.md` - Quick patterns
+4. `/memory-bank/systemPatterns.md` - Detailed patterns
+5. `/memory-bank/copilot-rules.md` - Complete standards
+
+### Critical Patterns
+- **Specification Pattern**: Reusable query specifications
+- **Dynamic Predicates**: Runtime query building
+- **Repository Pattern**: Data access abstraction
+- **TestContainers**: Real database testing
+- **Arrange-Act-Assert**: Test structure
+
+### Non-Negotiable Standards
+- Zero warnings (`TreatWarningsAsErrors=true`)
+- Nullable types enabled
+- XML docs on public APIs
+- Async/await for I/O
+- TestContainers for integration tests
+
+### Common Tasks
+- Adding filter operation → Update `DynamicPredicateBuilder`, add tests
+- Creating specification → Inherit from `Specification<T>`, implement `Criteria`
+- Writing test → xUnit, Shouldly, `MethodName_Scenario_Outcome` naming
+- Adding extension → Static class, XML docs, comprehensive tests
 
 ---
 
-_Keep this document up-to-date as the project and its conventions evolve._
+**Agent Version**: 1.0  
+**Last Updated**: November 5, 2025  
+**Status**: Production Ready
+
+**Remember**: This configuration ensures consistent, high-quality code generation aligned with DKNet Framework standards and patterns.
+

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <InternalsVisibleTo Include="AspCore.Idempotents.Tests"/>
+    </ItemGroup>
+
+</Project>
