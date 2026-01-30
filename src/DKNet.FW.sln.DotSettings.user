@@ -585,7 +585,10 @@
 	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=_002ATests_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EPsi_002ECSharp_002ECodeStyle_002EMemberReordering_002EMigrations_002ECSharpFileLayoutPatternRemoveIsAttributeUpgrade/@EntryIndexedValue">True</s:Boolean>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=076f3db0_002D9c90_002D464c_002Da713_002Df7c36319c497/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;AspNet&amp;gt;\&amp;lt;AspCore.Idempotency.Tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/AspNet/AspCore.Idempotency.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;AspCore.Idempotency.Tests&amp;gt;" /&gt;
+  &lt;Or&gt;
+    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/AspNet/AspCore.Idempotency.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;AspCore.Idempotency.Tests&amp;gt;" /&gt;
+    &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src/AspNet/AspCore.Idempotency.MsSqlStore.Tests" Presentation="&amp;lt;AspNet&amp;gt;\&amp;lt;AspCore.Idempotency.MsSqlStore.Tests&amp;gt;" /&gt;
+  &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=bd972a6a_002D73e3_002D4962_002D9e9b_002Dc5100a3f62e4/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Or&gt;
@@ -596,6 +599,7 @@
     &lt;Project Location="/Users/steven/_CODE/DRUNK/DKNet/src" Presentation="&amp;lt;SlimBus&amp;gt;" /&gt;
   &lt;/Or&gt;
 &lt;/SessionState&gt;</s:String>
+	
 	
 	
 	

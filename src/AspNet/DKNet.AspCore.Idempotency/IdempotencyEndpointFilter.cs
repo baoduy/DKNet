@@ -71,8 +71,7 @@ internal sealed class IdempotencyEndpointFilter(
                 Body = serializedResult,
                 ContentType = context.HttpContext.Response.ContentType ?? "application/json",
                 CreatedAt = now,
-                ExpiresAt = now.Add(_options.Expiration),
-                RequestBodyHash = null
+                ExpiresAt = now.Add(_options.Expiration)
             };
 
             await store.MarkKeyAsProcessedAsync(compositeKey, cachedResponse).ConfigureAwait(false);

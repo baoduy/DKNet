@@ -49,8 +49,8 @@
         <PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.2"/>
         <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0"/>
         <PackageVersion Include="AutoBogus" Version="2.13.1"/>
-        <PackageVersion Include="AWSSDK.Core" Version="4.0.3.10"/>
-        <PackageVersion Include="AWSSDK.S3" Version="4.0.17.3"/>
+        <PackageVersion Include="AWSSDK.Core" Version="4.0.3.12"/>
+        <PackageVersion Include="AWSSDK.S3" Version="4.0.18.1"/>
         <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0"/>
         <PackageVersion Include="Azure.Storage.Blobs" Version="12.27.0"/>
         <PackageVersion Include="Bogus" Version="35.6.5"/>
@@ -58,7 +58,7 @@
         <PackageVersion Include="FluentResults" Version="4.0.0"/>
         <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0"/>
         <PackageVersion Include="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26"/>
-        <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.9"/>
+        <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.10"/>
         <PackageVersion Include="Mapster" Version="7.4.0"/>
         <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1"/>
         <PackageVersion Include="Mapster.EFCore" Version="5.1.1"/>
@@ -70,7 +70,7 @@
         <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0"/>
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10"/>
-        <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.10"/>
+        <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10"/>
         <PackageVersion Include="Microsoft.CodeAnalysis" Version="5.0.0"/>
         <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0"/>
@@ -80,7 +80,7 @@
         <PackageVersion Include="Microsoft.CSharp" Version="4.7.0"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.2"/>
-        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10"/>
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.2"/>
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2"/>
@@ -144,7 +144,7 @@
         <PackageVersion Include="YamlDotNet" Version="16.3.0"/>
     </ItemGroup>
     <ItemGroup>
-        <PackageVersion Include="Meziantou.Analyzer" Version="2.0.283">
+        <PackageVersion Include="Meziantou.Analyzer" Version="2.0.286">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageVersion>

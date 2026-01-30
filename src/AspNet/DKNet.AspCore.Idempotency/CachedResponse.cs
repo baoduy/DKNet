@@ -39,16 +39,16 @@ public sealed record CachedResponse
     ///     Gets the timestamp when the cached response expires (UTC).
     ///     The cache system will remove or ignore entries after this timestamp.
     /// </summary>
-    public required DateTimeOffset ExpiresAt { get; init; }
+    public required DateTimeOffset? ExpiresAt { get; init; }
 
-    /// <summary>
-    ///     Gets the optional hash of the request body for fingerprinting.
-    ///     Can be used to detect if a duplicate request has a different payload.
-    /// </summary>
-    public string? RequestBodyHash { get; init; }
+    // /// <summary>
+    // ///     Gets the optional hash of the request body for fingerprinting.
+    // ///     Can be used to detect if a duplicate request has a different payload.
+    // /// </summary>
+    // public string? RequestBodyHash { get; init; }
 
     /// <summary>
     ///     Determines if the cached response has expired based on the current UTC time.
     /// </summary>
-    public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresAt;
+    public bool IsExpired => ExpiresAt is not null && DateTimeOffset.UtcNow >= ExpiresAt;
 }

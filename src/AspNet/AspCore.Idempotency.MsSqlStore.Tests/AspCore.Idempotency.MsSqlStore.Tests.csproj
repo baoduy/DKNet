@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -16,16 +16,27 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Bogus"/>
+        <PackageReference Include="coverlet.collector"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Shouldly"/>
+        <PackageReference Include="Testcontainers.MsSql"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio"/>
-        <PackageReference Include="Shouldly"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\AspCore.Idempotency.ApiTests\AspCore.Idempotency.ApiTests.csproj"/>
-        <ProjectReference Include="..\DKNet.AspCore.Idempotency\DKNet.AspCore.Idempotency.csproj"/>
+        <ProjectReference Include="..\DKNet.AspCore.Idempotency.MsSqlStore\DKNet.AspCore.Idempotency.MsSqlStore.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Store\"/>
     </ItemGroup>
 
 </Project>

@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
-global using Microsoft.AspNetCore.Mvc.Testing;
-global using Microsoft.Extensions.DependencyInjection;
-global using Microsoft.Extensions.Options;
-global using Shouldly;
 global using Xunit;
+global using Shouldly;
+global using DKNet.AspCore.Idempotency.MsSqlStore;
+global using DKNet.AspCore.Idempotency.MsSqlStore.Data;
+global using Microsoft.EntityFrameworkCore;

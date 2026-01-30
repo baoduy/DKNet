@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IdempotencyKey Entity Schema",
+  "description": "JSON Schema for the IdempotencyKey entity used in MS SQL storage",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for the idempotency record",
+      "example": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9\\-]+$",
+      "description": "The user-provided idempotency key (UUID or custom alphanumeric string)",
+      "example": "order-123-abc"
+    },
+    "route": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^/[a-zA-Z0-9/_-]*$",
+      "description": "The API route/endpoint path",
+      "example": "/api/v1/orders"
+    },
+    "httpMethod": {
+      "type": "string",
+      "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+      "description": "The HTTP method used for the request",
+      "example": "POST"
+    },
+    "statusCode": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599,
+      "description": "The HTTP response status code from the cached response",
+      "example": 201
+    },
+    "responseBody": {
+      "type": ["string", "null"],
+      "maxLength": 1048576,
+      "description": "The cached response body (typically JSON, serialized as string)",
+      "example": "{\"id\": 123, \"name\": \"Order\", \"status\": \"created\"}"
+    },
+    "contentType": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "pattern": "^[a-z]+/[a-z0-9+\\-]+$",
+      "description": "The MIME type of the cached response",
+      "example": "application/json"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the idempotency key was first processed",
+      "example": "2026-01-30T15:30:45.1234567Z"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the idempotency key expires",
+      "example": "2026-01-31T15:30:45.1234567Z"
+    },
+    "isProcessed": {
+      "type": "boolean",
+      "description": "Flag indicating whether the original request completed successfully",
+      "example": true
+    },
+    "processingCompletedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "UTC timestamp when the original request processing was completed",
+      "example": "2026-01-30T15:30:50.1234567Z"
+    }
+  },
+  "required": [
+    "id",
+    "key",
+    "route",
+    "httpMethod",
+    "statusCode",
+    "createdAt",
+    "expiresAt",
+    "isProcessed"
+  ],
+  "additionalProperties": false
+}
