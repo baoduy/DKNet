@@ -17,6 +17,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio"/>
         <PackageReference Include="Shouldly"/>
@@ -24,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AspCore.Idempotency.ApiTests\AspCore.Idempotency.ApiTests.csproj"/>
         <ProjectReference Include="..\DKNet.AspCore.Idempotency\DKNet.AspCore.Idempotency.csproj"/>
     </ItemGroup>
 

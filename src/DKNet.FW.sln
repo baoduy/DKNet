@@ -139,6 +139,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Idempotency",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Idempotency.Tests", "AspNet\AspCore.Idempotency.Tests\AspCore.Idempotency.Tests.csproj", "{22FD41D5-4DB7-4D47-BD5F-2E91CC62F595}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Idempotency.ApiTests", "AspNet\AspCore.Idempotency.ApiTests\AspCore.Idempotency.ApiTests.csproj", "{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -725,6 +727,18 @@ Global
 		{22FD41D5-4DB7-4D47-BD5F-2E91CC62F595}.Release|x64.Build.0 = Release|Any CPU
 		{22FD41D5-4DB7-4D47-BD5F-2E91CC62F595}.Release|x86.ActiveCfg = Release|Any CPU
 		{22FD41D5-4DB7-4D47-BD5F-2E91CC62F595}.Release|x86.Build.0 = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|x64.Build.0 = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Debug|x86.Build.0 = Debug|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|x64.ActiveCfg = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|x64.Build.0 = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|x86.ActiveCfg = Release|Any CPU
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -781,5 +795,6 @@ Global
 		{EDA9A512-64EE-4B7F-B418-76E8287FFEBE} = {8B984881-D667-4AA9-B3FA-2B3F0CFDAF55}
 		{01291F54-08FA-4356-8B72-D16E865162DE} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{22FD41D5-4DB7-4D47-BD5F-2E91CC62F595} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
+		{BB197E60-EADA-4AE6-9057-2188A1DB2B4A} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 	EndGlobalSection
 EndGlobal

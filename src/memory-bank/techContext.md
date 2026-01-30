@@ -1,3 +1,4 @@
 # Tech Context
 
-_The tech stack, tools, and constraints._
+- Target framework: .NET 10+ (all implementations and docs)
+- C#: 13
