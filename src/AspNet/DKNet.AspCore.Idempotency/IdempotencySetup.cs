@@ -45,20 +45,44 @@ public static class IdempotencySetup
     ///     implementation
     ///     - Configuration options as a singleton
     /// </remarks>
-    public static IServiceCollection AddIdempotentKey(this IServiceCollection services,
-        Action<IdempotencyOptions>? config = null)
+    public static IServiceCollection AddIdempotentKey<TSoreImplement>(this IServiceCollection services,
+        Action<IdempotencyOptions>? config = null) where TSoreImplement : class, IIdempotencyKeyStore
     {
         var options = new IdempotencyOptions();
         config?.Invoke(options);
 
+        // Validate configuration
+        ValidateOptions(options);
+
         services
-            .AddSingleton<IIdempotencyKeyStore, IdempotencyDistributedCacheStore>()
+            .AddSingleton<IIdempotencyKeyStore, TSoreImplement>()
             .AddSingleton(Options.Create(options));
 
         IdempotentHeaderKey = options.IdempotencyHeaderKey;
 
         return services;
     }
+
+    /// <summary>
+    ///     Registers idempotency services into the dependency injection container.
+    ///     This includes the <see cref="IIdempotencyKeyStore" /> implementation and configuration options.
+    /// </summary>
+    /// <param name="services">The service collection to register idempotency services into.</param>
+    /// <param name="config">
+    ///     An optional action to configure <see cref="IdempotencyOptions" />.
+    ///     If null, default options are used.
+    /// </param>
+    /// <returns>The service collection for method chaining.</returns>
+    /// <remarks>
+    ///     This method must be called before adding endpoint filters that use <see cref="RequiredIdempotentKey" />.
+    ///     It registers:
+    ///     - <see cref="IdempotencyDistributedCacheStore" /> as the <see cref="IIdempotencyKeyStore" />
+    ///     implementation
+    ///     - Configuration options as a singleton
+    /// </remarks>
+    public static IServiceCollection AddIdempotentKey(this IServiceCollection services,
+        Action<IdempotencyOptions>? config = null) =>
+        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(config);
 
     /// <summary>
     ///     Adds the idempotency endpoint filter to a route handler.
@@ -80,6 +104,60 @@ public static class IdempotencySetup
     {
         builder.AddEndpointFilter<IdempotencyEndpointFilter>();
         return builder;
+    }
+
+    /// <summary>
+    ///     Validates the idempotency configuration options.
+    /// </summary>
+    /// <param name="options">The options to validate.</param>
+    /// <exception cref="ArgumentException">Thrown when validation fails.</exception>
+    private static void ValidateOptions(IdempotencyOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.IdempotencyHeaderKey))
+            throw new ArgumentException(
+                "IdempotencyHeaderKey cannot be empty or whitespace.",
+                nameof(options.IdempotencyHeaderKey));
+
+        if (string.IsNullOrWhiteSpace(options.CachePrefix))
+            throw new ArgumentException(
+                "CachePrefix cannot be empty or whitespace.",
+                nameof(options.CachePrefix));
+
+        if (options.Expiration <= TimeSpan.Zero)
+            throw new ArgumentException(
+                $"Expiration must be positive. Current value: {options.Expiration}",
+                nameof(options.Expiration));
+
+        if (options.JsonSerializerOptions is null)
+            throw new ArgumentException(
+                "JsonSerializerOptions cannot be null.",
+                nameof(options.JsonSerializerOptions));
+
+        if (options.MaxIdempotencyKeyLength < 1)
+            throw new ArgumentException(
+                "MaxIdempotencyKeyLength must be at least 1.",
+                nameof(options.MaxIdempotencyKeyLength));
+
+        if (string.IsNullOrWhiteSpace(options.IdempotencyKeyPattern))
+            throw new ArgumentException(
+                "IdempotencyKeyPattern cannot be empty.",
+                nameof(options.IdempotencyKeyPattern));
+
+        if (options.MinStatusCodeForCaching < 100)
+            throw new ArgumentException(
+                "MinStatusCodeForCaching must be >= 100.",
+                nameof(options.MinStatusCodeForCaching));
+
+        if (options.MaxStatusCodeForCaching > 599)
+            throw new ArgumentException(
+                "MaxStatusCodeForCaching must be <= 599.",
+                nameof(options.MaxStatusCodeForCaching));
+
+        if (options.MinStatusCodeForCaching > options.MaxStatusCodeForCaching)
+            throw new ArgumentException(
+                $"MinStatusCodeForCaching ({options.MinStatusCodeForCaching}) cannot be greater than " +
+                $"MaxStatusCodeForCaching ({options.MaxStatusCodeForCaching}).",
+                nameof(options.MinStatusCodeForCaching));
     }
 
     #endregion

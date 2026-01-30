@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Idempotency.Store;
 
-internal class IdempotencyDistributedCacheStore(
+internal sealed class IdempotencyDistributedCacheStore(
     IDistributedCache cache,
     IOptions<IdempotencyOptions> options,
     ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyStore
@@ -44,27 +44,19 @@ internal class IdempotencyDistributedCacheStore(
             return (false, null);
         }
 
-        try
-        {
-            var cachedResponse = JsonSerializer.Deserialize<CachedResponse>(cachedJson, _options.JsonSerializerOptions);
+        var cachedResponse = JsonSerializer.Deserialize<CachedResponse>(cachedJson, _options.JsonSerializerOptions);
 
-            // Check if the cached response has expired
-            if (cachedResponse?.IsExpired == true)
-            {
-                logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
-                await cache.RemoveAsync(cacheKey).ConfigureAwait(false);
-                return (false, null);
-            }
-
-            logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
-                cacheKey, cachedResponse?.StatusCode);
-            return (true, cachedResponse);
-        }
-        catch (JsonException ex)
+        // Check if the cached response has expired
+        if (cachedResponse?.IsExpired == true)
         {
-            logger.LogWarning(ex, "Failed to deserialize cached response for key: {CacheKey}", cacheKey);
+            logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
+            await cache.RemoveAsync(cacheKey).ConfigureAwait(false);
             return (false, null);
         }
+
+        logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
+            cacheKey, cachedResponse?.StatusCode);
+        return (true, cachedResponse);
     }
 
     /// <summary>
@@ -82,24 +74,16 @@ internal class IdempotencyDistributedCacheStore(
         logger.LogDebug("Setting cached response for cache key: {CacheKey} with status code: {StatusCode}",
             cacheKey, cachedResponse.StatusCode);
 
-        try
-        {
-            var json = JsonSerializer.Serialize(cachedResponse, _options.JsonSerializerOptions);
+        var json = JsonSerializer.Serialize(cachedResponse, _options.JsonSerializerOptions);
 
-            await cache.SetStringAsync(cacheKey, json,
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = _options.Expiration
-                }).ConfigureAwait(false);
+        await cache.SetStringAsync(cacheKey, json,
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _options.Expiration
+            }).ConfigureAwait(false);
 
-            logger.LogInformation("Response cached for key: {CacheKey} with status code: {StatusCode}",
-                cacheKey, cachedResponse.StatusCode);
-        }
-        catch (JsonException ex)
-        {
-            logger.LogError(ex, "Failed to serialize cached response for key: {CacheKey}", cacheKey);
-            throw;
-        }
+        logger.LogInformation("Response cached for key: {CacheKey} with status code: {StatusCode}",
+            cacheKey, cachedResponse.StatusCode);
     }
 
     /// <summary>

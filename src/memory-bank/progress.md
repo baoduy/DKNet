@@ -235,3 +235,44 @@ Successfully enhanced `IdempotencyKeyStore` to cache HTTP response codes along w
 - Error Handling: Graceful with logging
 
 **Status**: ✅ Complete, compiled, ready for integration
+
+---
+
+## Idempotency Framework Enhancements (January 30, 2026)
+
+### ✅ Completed: Comprehensive Framework Improvements
+
+Successfully implemented all critical and high-priority enhancements from the IDEMPOTENCY_FIXES.md analysis.
+
+**Key Enhancements**:
+1. **Configuration Validation** - Validates options at startup (fail-fast)
+2. **Cache Exception Handling** - Fail-open for reads, fail-safe for writes
+3. **Key Validation** - Length, format, and pattern validation
+4. **Composite Key Format** - `"{method}:{route}_{key}"` for uniqueness
+5. **Status Code Caching** - Flexible configuration of cacheable codes
+6. **Enhanced Logging** - RequestId tracking for full traceability
+
+**New Configuration Properties**:
+- `MaxIdempotencyKeyLength` (default: 255)
+- `IdempotencyKeyPattern` (default: alphanumeric + hyphens/underscores)
+- `MinStatusCodeForCaching` (default: 200)
+- `MaxStatusCodeForCaching` (default: 299)
+- `AdditionalCacheableStatusCodes` (read-only, empty by default)
+
+**Error Handling**:
+- Cache read timeout → Request proceeds (fail-open)
+- Cache write timeout → Request succeeds without cache (fail-safe)
+- Key validation failure → 400 Bad Request returned
+
+**Logging Improvements**:
+- All entries include RequestId for correlation
+- Structured logging at appropriate levels (DEBUG, INFO, WARN, ERROR)
+- Clear messages for debugging and monitoring
+
+**Files Modified**:
+- ✅ `IdempotencyOptions.cs` - Added 5 configuration properties
+- ✅ `IdempotencyEndpointFilter.cs` - Key validation, composite key, status code caching, logging
+- ✅ `Store/IdempotencyDistributedCacheStore.cs` - Exception handling
+- ✅ `IdempotencySetup.cs` - Configuration validation
+
+**Status**: ✅ Production Ready, All Tests Pass, Zero Warnings

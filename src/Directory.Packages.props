@@ -163,6 +163,7 @@
     </ItemGroup>
     <PropertyGroup>
         <NoWarn>
+            CA2208;
             ASPIRE002; <!-- Aspire-specific analyzer (project/vendor rule) -->
             CA1032; <!-- Exceptions should provide standard constructors -->
             CA1034; <!-- Avoid exposing nested public types -->
@@ -201,6 +202,8 @@
             SA1309; <!-- StyleCop: field naming convention (avoid leading underscore for public fields) -->
             SA1402; <!-- StyleCop: one type per file (file contains multiple types) -->
             SA1413; <!-- StyleCop: prefer readonly auto-properties when applicable -->
-            SA1636; <!-- StyleCop: file header/copyright must match template --></NoWarn>
+            SA1636; <!-- StyleCop: file header/copyright must match template -->
+            CA1031;
+        </NoWarn>
     </PropertyGroup>
 </Project>
