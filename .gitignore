@@ -22,3 +22,5 @@ CoverageReports
 *.testlog
 **/nupkgs
 src/Directory.Build.targets.bak.*
+**/bin**
+**/obj**
