@@ -23,8 +23,23 @@ internal sealed class IdempotencyKeyConfiguration : IEntityTypeConfiguration<Ide
         builder.HasKey(k => k.Id);
         builder.Property(k => k.Id);
 
-        // Key field - user-provided idempotency key
-        builder.Property(k => k.Key)
+        // Idempotency key fields
+        builder.Property(k => k.IdempotentKey)
+            .IsRequired()
+            .HasMaxLength(150)
+            .IsUnicode(false);
+
+        builder.Property(k => k.Endpoint)
+            .IsRequired()
+            .HasMaxLength(250)
+            .IsUnicode();
+
+        builder.Property(k => k.Method)
+            .IsRequired()
+            .HasMaxLength(20)
+            .IsUnicode(false);
+
+        builder.Property(k => k.CompositeKey)
             .IsRequired()
             .HasMaxLength(128)
             .IsUnicode();
@@ -52,6 +67,12 @@ internal sealed class IdempotencyKeyConfiguration : IEntityTypeConfiguration<Ide
 
         // Index for fast expiration cleanup queries
         builder.HasIndex(k => k.ExpiresAt);
+
+        // Unique constraint on CompositeKey to prevent race conditions
+        // Ensures only one entry per idempotency key per endpoint/method combination
+        builder.HasIndex(k => k.CompositeKey)
+            .IsUnique()
+            .HasDatabaseName("UX_CompositeKey");
 
         // Database constraints for data integrity
         builder.ToTable(t => { t.HasCheckConstraint("CK_StatusCode_Valid", "[StatusCode] BETWEEN 100 AND 599"); });

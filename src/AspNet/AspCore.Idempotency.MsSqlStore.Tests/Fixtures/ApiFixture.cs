@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,7 @@ namespace AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
 ///     Provides a minimal web host configured with idempotency services, TestContainers.MsSql,
 ///     and test endpoints for integration testing.
 /// </summary>
-public sealed class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsyncLifetime
 {
     #region Fields
 
@@ -54,15 +55,11 @@ public sealed class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
             services
                 .AddIdempotencyWithMsSqlStore(
                     ConnectionString,
-                    options => { options.Expiration = TimeSpan.FromHours(24); });
-        });
-
-        builder.Configure(app =>
-        {
-            // Ensure database is created and migrations are applied on startup
-            using var scope = app.ApplicationServices.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<IdempotencyDbContext>();
-            dbContext.Database.EnsureCreated(); // Use EnsureCreated for tests instead of Migrate
+                    options =>
+                    {
+                        options.ConflictHandling = IdempotentConflictHandling.CachedResult;
+                        options.Expiration = TimeSpan.FromMinutes(2);
+                    });
         });
     }
 

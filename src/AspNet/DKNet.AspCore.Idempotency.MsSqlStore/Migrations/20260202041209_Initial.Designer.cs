@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
 {
     [DbContext(typeof(IdempotencyDbContext))]
-    [Migration("20260130090409_Initial")]
+    [Migration("20260202041209_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -36,6 +36,12 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CompositeKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(128)");
+
                     b.Property<string>("ContentType")
                         .HasMaxLength(256)
                         .IsUnicode(false)
@@ -44,19 +50,35 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("IdempotentKey")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .IsUnicode(true)
-                        .HasColumnType("nvarchar(128)");
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<int>("StatusCode")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompositeKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_CompositeKey");
 
                     b.HasIndex("ExpiresAt");
 

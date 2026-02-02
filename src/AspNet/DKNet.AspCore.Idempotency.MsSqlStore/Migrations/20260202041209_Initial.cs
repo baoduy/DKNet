@@ -17,10 +17,13 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Body = table.Column<string>(type: "nvarchar(max)", maxLength: 1048576, nullable: true),
+                    CompositeKey = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     ContentType = table.Column<string>(type: "varchar(256)", unicode: false, maxLength: 256, nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    Endpoint = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    Key = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    IdempotentKey = table.Column<string>(type: "varchar(150)", unicode: false, maxLength: 150, nullable: false),
+                    Method = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
                     StatusCode = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -33,6 +36,12 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
                 name: "IX_IdempotencyKeys_ExpiresAt",
                 table: "IdempotencyKeys",
                 column: "ExpiresAt");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_CompositeKey",
+                table: "IdempotencyKeys",
+                column: "CompositeKey",
+                unique: true);
         }
 
         /// <inheritdoc />

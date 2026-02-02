@@ -10,20 +10,20 @@ public interface IIdempotencyKeyStore
     ///     Checks if the key has been processed and retrieves the cached response if available.
     ///     Returns the cached response including HTTP status code, body, and content type.
     /// </summary>
-    /// <param name="idempotencyKey">The idempotency key to check for prior processing.</param>
+    /// <param name="keyInfo">The idempotency key to check for prior processing.</param>
     /// <returns>
     ///     A tuple containing:
     ///     - A boolean indicating whether the key has been processed
     ///     - The CachedResponse if available, or null if no cached response exists
     /// </returns>
-    ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(string idempotencyKey);
+    ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo);
 
     /// <summary>
     ///     Marks the key as processed and caches the complete HTTP response.
     ///     The response includes status code, body, content type, and expiration metadata.
     /// </summary>
-    /// <param name="idempotencyKey">The idempotency key to mark as processed.</param>
+    /// <param name="keyInfo">The idempotency key to mark as processed.</param>
     /// <param name="cachedResponse">The complete cached response to store, including status code and body.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, CachedResponse cachedResponse);
+    ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse);
 }

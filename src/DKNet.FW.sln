@@ -92,6 +92,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomCreatorTests", "Core\RandomCreatorTests\RandomCreatorTests.csproj", "{786A6972-3088-4F9C-8F1D-6FDB95E170E8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AspNet", "AspNet", "{120F93FD-F47A-4370-9D13-0C33A16786D4}"
+	ProjectSection(SolutionItems) = preProject
+		AspNet\CONCURRENT_IDEMPOTENCY_FIX.md = AspNet\CONCURRENT_IDEMPOTENCY_FIX.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Tasks", "AspNet\DKNet.AspCore.Tasks\DKNet.AspCore.Tasks.csproj", "{7B01EC2A-2545-4475-91C4-E7CEF9D5976D}"
 EndProject

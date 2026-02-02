@@ -46,6 +46,14 @@ public class IdempotencyKeyRepositoryTests
         };
     }
 
+    private static IdempotentKeyInfo CreateKeyInfo(string key, string endpoint = "/api/test", string method = "POST") =>
+        new()
+        {
+            IdempotentKey = key,
+            Endpoint = endpoint,
+            Method = method
+        };
+
     private IdempotencyDistributedCacheStore CreateRepository(IdempotencyOptions? options = null)
     {
         var opts = options ?? new IdempotencyOptions();
@@ -65,8 +73,8 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, "{\"id\": 1}");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey1, cachedResponse);
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey2);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey1), cachedResponse);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey2));
 
         // Assert
         result.processed.ShouldBeTrue();
@@ -84,8 +92,8 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(204, null);
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeTrue();
@@ -101,8 +109,8 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, "{\"id\": 1, \"name\": \"test\"}");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeTrue();
@@ -129,9 +137,9 @@ public class IdempotencyKeyRepositoryTests
         };
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
         await Task.Delay(150); // Wait for expiration
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeFalse();
@@ -145,7 +153,7 @@ public class IdempotencyKeyRepositoryTests
         var idempotencyKey = Guid.NewGuid().ToString();
 
         // Act
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeFalse();
@@ -161,8 +169,8 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, "{\"id\": 1}");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeTrue();
@@ -181,8 +189,8 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, "{\"id\": 1}");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
 
         // Assert
         result.processed.ShouldBeTrue();
@@ -199,10 +207,10 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, string.Empty);
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
 
         // Assert
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
         result.processed.ShouldBeTrue();
         result.response.ShouldNotBeNull();
         result.response!.Body.ShouldBe(cachedResponse.Body);
@@ -217,10 +225,10 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(204, null);
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
 
         // Assert
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
         result.processed.ShouldBeTrue();
         result.response.ShouldNotBeNull();
     }
@@ -234,10 +242,10 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(201, "{\"id\": 1, \"message\": \"created\"}");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
 
         // Assert
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
         result.processed.ShouldBeTrue();
         result.response.ShouldNotBeNull();
         result.response!.Body.ShouldBe(cachedResponse.Body);
@@ -253,10 +261,10 @@ public class IdempotencyKeyRepositoryTests
         var cachedResponse = CreateCachedResponse(200, "   ");
 
         // Act
-        await repository.MarkKeyAsProcessedAsync(idempotencyKey, cachedResponse);
+        await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey), cachedResponse);
 
         // Assert
-        var result = await repository.IsKeyProcessedAsync(idempotencyKey);
+        var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey));
         result.processed.ShouldBeTrue();
         result.response.ShouldNotBeNull();
         result.response!.Body.ShouldBe(cachedResponse.Body);

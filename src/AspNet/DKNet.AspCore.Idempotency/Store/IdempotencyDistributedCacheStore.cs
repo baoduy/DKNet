@@ -25,15 +25,15 @@ internal sealed class IdempotencyDistributedCacheStore(
     ///     Checks if the idempotency key has been processed and retrieves its cached response if available.
     ///     The cached response includes the HTTP status code, response body, and content type for accurate replay.
     /// </summary>
-    /// <param name="idempotencyKey">The idempotency key to check in the distributed cache.</param>
+    /// <param name="keyInfo">The idempotency key to check in the distributed cache.</param>
     /// <returns>
     ///     A tuple containing:
     ///     - A boolean indicating whether the key exists in the cache (has been processed)
     ///     - The CachedResponse if available, or null if no response was cached
     /// </returns>
-    public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(string idempotencyKey)
+    public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
-        var cacheKey = SanitizeKey(idempotencyKey);
+        var cacheKey = SanitizeKey(keyInfo.CompositeKey);
         logger.LogDebug("Trying to get existing response for cache key: {CacheKey}", cacheKey);
 
         var cachedJson = await cache.GetStringAsync(cacheKey).ConfigureAwait(false);
@@ -63,14 +63,14 @@ internal sealed class IdempotencyDistributedCacheStore(
     ///     Marks an idempotency key as processed and caches the complete HTTP response.
     ///     Serializes the response (including status code, body, and content type) to JSON for distributed caching.
     /// </summary>
-    /// <param name="idempotencyKey">The idempotency key to mark as processed.</param>
+    /// <param name="keyInfo">The idempotency key to mark as processed.</param>
     /// <param name="cachedResponse">
     ///     The complete cached response containing status code, body, content type, and expiration info.
     /// </param>
     /// <returns>A task representing the asynchronous cache operation.</returns>
-    public async ValueTask MarkKeyAsProcessedAsync(string idempotencyKey, CachedResponse cachedResponse)
+    public async ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse)
     {
-        var cacheKey = SanitizeKey(idempotencyKey);
+        var cacheKey = SanitizeKey(keyInfo.CompositeKey);
         logger.LogDebug("Setting cached response for cache key: {CacheKey} with status code: {StatusCode}",
             cacheKey, cachedResponse.StatusCode);
 
@@ -103,7 +103,7 @@ internal sealed class IdempotencyDistributedCacheStore(
             .Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("\r", string.Empty, StringComparison.OrdinalIgnoreCase); // Sanitize user input
 
-        return $"{_options.CachePrefix}{k}".ToUpperInvariant();
+        return $"{_options.CachePrefix}{k}".ToLowerInvariant();
     }
 
     #endregion
