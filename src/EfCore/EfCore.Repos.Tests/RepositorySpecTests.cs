@@ -298,7 +298,7 @@ public class RepositorySpecTests : IAsyncLifetime
         var user = new User("test") { FirstName = "Transaction", LastName = "User" };
 
         // Act
-        using var transaction = await _repository.BeginTransactionAsync();
+        await using var transaction = await _repository.BeginTransactionAsync();
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();
         await transaction.CommitAsync();
@@ -316,7 +316,7 @@ public class RepositorySpecTests : IAsyncLifetime
         var user = new User("test") { FirstName = "Rollback", LastName = "User" };
 
         // Act
-        using var transaction = await _repository.BeginTransactionAsync();
+        await using var transaction = await _repository.BeginTransactionAsync();
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();
         await transaction.RollbackAsync();

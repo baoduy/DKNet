@@ -2,7 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.BlobStorage.Abstractions)](https://www.nuget.org/packages/DKNet.Svc.BlobStorage.Abstractions/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.BlobStorage.Abstractions)](https://www.nuget.org/packages/DKNet.Svc.BlobStorage.Abstractions/)
-[![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../../LICENSE)
 
 Core abstractions and interfaces for blob storage services, providing a unified API for file storage operations across
@@ -22,7 +22,7 @@ operations, data models, and configuration options.
 
 ## Supported Frameworks
 
-- .NET 9.0+
+- .NET 10.0+
 
 ## Installation
 

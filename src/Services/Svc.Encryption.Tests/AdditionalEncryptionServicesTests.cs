@@ -2,10 +2,11 @@ using System.Security.Cryptography;
 using System.Text;
 using DKNet.Svc.Encryption;
 using Shouldly;
+using Xunit.Abstractions;
 
 namespace Svc.Encryption.Tests;
 
-public class AdditionalEncryptionServicesTests
+public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
 {
     #region Methods
 
@@ -95,6 +96,7 @@ public class AdditionalEncryptionServicesTests
     {
         using IHmacHashing hmac = new HmacHashing();
         var sig = hmac.ComputeSha256("message", "secret");
+        output.WriteLine($"HMAC-SHA256 signature: {sig}");
         sig.ShouldNotBeNullOrWhiteSpace();
         hmac.VerifySha256("message", "secret", sig).ShouldBeTrue();
         hmac.VerifySha256("message2", "secret", sig).ShouldBeFalse();
@@ -116,6 +118,7 @@ public class AdditionalEncryptionServicesTests
     {
         using IHmacHashing hmac = new HmacHashing();
         var sig = hmac.ComputeSha512("message", "secret");
+        output.WriteLine($"HMAC-SHA512 signature: {sig}");
         sig.ShouldNotBeNullOrWhiteSpace();
         hmac.VerifySha512("message", "secret", sig).ShouldBeTrue();
         hmac.VerifySha512("message2", "secret", sig).ShouldBeFalse();
@@ -168,6 +171,7 @@ public class AdditionalEncryptionServicesTests
         using IShaHashing hash = new ShaHashing();
         var text = "sample";
         var h1 = hash.ComputeSha256(text);
+        output.WriteLine($"SHA256 hash: {h1}");
         h1.ShouldNotBeNullOrWhiteSpace();
         hash.VerifySha256(text, h1).ShouldBeTrue();
         hash.VerifySha256(text + "x", h1).ShouldBeFalse();
@@ -179,6 +183,7 @@ public class AdditionalEncryptionServicesTests
         using IShaHashing hash = new ShaHashing();
         var text = "sample";
         var h1 = hash.ComputeSha512(text);
+        output.WriteLine($"SHA512 hash: {h1}");
         h1.ShouldNotBeNullOrWhiteSpace();
         hash.VerifySha512(text, h1).ShouldBeTrue();
         hash.VerifySha512(text + "x", h1).ShouldBeFalse();

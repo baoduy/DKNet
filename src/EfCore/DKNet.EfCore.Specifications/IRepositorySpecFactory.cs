@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -21,10 +20,8 @@ internal sealed class RepositorySpecFactory(IServiceProvider provider) : IReposi
     #region Methods
 
     /// <inheritdoc />
-    public IRepositorySpecProvider CreateAsync<TDbContext>() where TDbContext : DbContext
-    {
-        return new RepositorySpecProvider<TDbContext>(provider);
-    }
+    public IRepositorySpecProvider CreateAsync<TDbContext>() where TDbContext : DbContext =>
+        new RepositorySpecProvider<TDbContext>(provider);
 
     #endregion
 }
