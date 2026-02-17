@@ -63,6 +63,7 @@ dotnet run --project SlimBus.Api
 | Section                                              | Description                                        |
 |------------------------------------------------------|----------------------------------------------------|
 | **[📚 Complete Documentation](docs/README.md)**      | Comprehensive guides organized by functional areas |
+| **[🤖 GitHub Copilot Skills](../Skills/README.md)**  | AI-powered code generation skills for DKNet        |
 | **[🚀 Getting Started](docs/Getting-Started.md)**    | Installation, setup, and first steps               |
 | **[🏗️ Architecture Guide](docs/Architecture.md)**   | Understanding DDD and Onion Architecture           |
 | **[⚙️ Configuration](docs/Configuration.md)**        | Setup and configuration options                    |
