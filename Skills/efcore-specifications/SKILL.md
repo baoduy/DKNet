@@ -374,6 +374,78 @@ var order = await repository.FirstOrDefaultAsync(
     cancellationToken);
 ```
 
+### Pattern 5: Keyset (Cursor-Based) Pagination
+
+Use **keyset pagination** for high-performance pagination on large tables.
+Unlike `Skip/Take` (OFFSET/FETCH), keyset pagination uses an index seek so performance
+does not degrade as the page number grows.
+
+```csharp
+// Single-key forward pagination
+var page = await context.Orders
+    .OrderBy(o => o.Id)
+    .AfterKeyset(o => o.Id, lastSeenId)   // WHERE Id > @lastSeenId
+    .Take(pageSize)
+    .ToListAsync(cancellationToken);
+
+// Composite-key forward pagination (primary + tie-breaking column)
+var page = await context.Orders
+    .OrderBy(o => o.CreatedDate)
+    .ThenBy(o => o.Id)
+    .AfterKeyset(o => o.CreatedDate, o => o.Id, lastDate, lastId)
+    // WHERE CreatedDate > @date OR (CreatedDate = @date AND Id > @id)
+    .Take(pageSize)
+    .ToListAsync(cancellationToken);
+
+// Backward navigation (previous page)
+var prevPage = await context.Orders
+    .OrderByDescending(o => o.CreatedDate)
+    .ThenByDescending(o => o.Id)
+    .BeforeKeyset(o => o.CreatedDate, o => o.Id, firstDate, firstId)
+    // WHERE CreatedDate < @date OR (CreatedDate = @date AND Id < @id)
+    .Take(pageSize)
+    .ToListAsync(cancellationToken);
+```
+
+**Using with IRepositorySpec:**
+
+```csharp
+// Single-key via repository
+var page = await repository.ToKeysetPageAsync(
+    new OrdersSpec(),
+    o => o.Id,
+    lastSeenId,
+    pageSize: 20,
+    cancellationToken);
+
+// Composite-key via repository
+var page = await repository.ToKeysetPageAsync(
+    new OrdersSpec(),
+    o => o.CreatedDate, o => o.Id,
+    lastDate, lastId,
+    pageSize: 20,
+    cancellationToken);
+```
+
+**Full pagination loop:**
+
+```csharp
+var cursor = 0;  // start before all Ids
+while (true)
+{
+    var page = await context.Products
+        .OrderBy(p => p.Id)
+        .AfterKeyset(p => p.Id, cursor)
+        .Take(100)
+        .ToListAsync();
+
+    if (page.Count == 0) break;
+
+    await ProcessBatchAsync(page);
+    cursor = page[^1].Id;  // advance cursor to last item
+}
+```
+
 ## 🚨 Critical Rules
 
 ### 1. ALWAYS Use .AsExpandable() with LinqKit Predicates
@@ -441,6 +513,19 @@ public async Task<IReadOnlyList<Product>> GetActiveProductsAsync(
         .Where(p => !p.IsDeleted && p.IsActive)
         .ToListAsync(cancellationToken);
 }
+```
+
+### 6. Prefer Keyset Pagination over Skip/Take for Large Tables
+```csharp
+// ❌ Bad - OFFSET/FETCH degrades as page number grows (scans all preceding rows)
+var page = await repository.ToPagedListAsync(spec, pageNumber: 500, pageSize: 20);
+
+// ✅ Good - Index seek; performance is constant regardless of cursor position
+var page = await context.Products
+    .OrderBy(p => p.Id)
+    .AfterKeyset(p => p.Id, lastSeenId)
+    .Take(20)
+    .ToListAsync();
 ```
 
 ## 🚫 Common Mistakes

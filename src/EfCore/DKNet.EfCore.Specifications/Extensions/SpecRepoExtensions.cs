@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using X.PagedList;
 using X.PagedList.EF;
@@ -163,6 +164,83 @@ public static class SpecRepoExtensions
             specification.EnsureSpecHasOrdering();
             var query = repo.Query<TEntity, TModel>(specification);
             return query.ToPageEnumerable();
+        }
+
+        /// <summary>
+        ///     Asynchronously returns a keyset-paginated list of entities matching the specification,
+        ///     starting after the provided single-key cursor value.
+        ///     Keyset pagination is significantly more efficient than offset pagination for large datasets
+        ///     because it uses an index seek instead of a full table scan.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of the entity.</typeparam>
+        /// <typeparam name="TKey">Type of the keyset cursor key.</typeparam>
+        /// <param name="specification">The specification that defines filtering and ordering.</param>
+        /// <param name="keySelector">Expression selecting the key column used as the cursor.</param>
+        /// <param name="cursor">The last seen cursor value; the result will contain rows after this value.</param>
+        /// <param name="pageSize">The maximum number of rows to return.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>
+        ///     A task that returns an <see cref="IList{TEntity}" /> containing up to <paramref name="pageSize" /> rows
+        ///     that come after <paramref name="cursor" /> in sort order.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
+        public async Task<IList<TEntity>> ToKeysetPageAsync<TEntity, TKey>(
+            ISpecification<TEntity> specification,
+            Expression<Func<TEntity, TKey>> keySelector,
+            TKey cursor,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+            where TEntity : class
+        {
+            if (pageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
+
+            return await repo.Query(specification)
+                .AfterKeyset(keySelector, cursor)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+        }
+
+        /// <summary>
+        ///     Asynchronously returns a keyset-paginated list of entities matching the specification,
+        ///     starting after the provided composite two-key cursor value.
+        ///     Keyset pagination is significantly more efficient than offset pagination for large datasets
+        ///     because it uses an index seek instead of a full table scan.
+        ///     The generated SQL is equivalent to the row-value comparison
+        ///     <c>(key1, key2) &gt; (cursor1, cursor2)</c>.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of the entity.</typeparam>
+        /// <typeparam name="TKey1">Type of the primary key column.</typeparam>
+        /// <typeparam name="TKey2">Type of the secondary (tie-break) key column.</typeparam>
+        /// <param name="specification">The specification that defines filtering and ordering.</param>
+        /// <param name="key1Selector">Expression selecting the primary key column.</param>
+        /// <param name="key2Selector">Expression selecting the secondary key column.</param>
+        /// <param name="cursor1">The primary cursor value from the last seen row.</param>
+        /// <param name="cursor2">The secondary cursor value from the last seen row.</param>
+        /// <param name="pageSize">The maximum number of rows to return.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>
+        ///     A task that returns an <see cref="IList{TEntity}" /> containing up to <paramref name="pageSize" /> rows
+        ///     that come after the composite cursor in sort order.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
+        public async Task<IList<TEntity>> ToKeysetPageAsync<TEntity, TKey1, TKey2>(
+            ISpecification<TEntity> specification,
+            Expression<Func<TEntity, TKey1>> key1Selector,
+            Expression<Func<TEntity, TKey2>> key2Selector,
+            TKey1 cursor1,
+            TKey2 cursor2,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+            where TEntity : class
+        {
+            if (pageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
+
+            return await repo.Query(specification)
+                .AfterKeyset(key1Selector, key2Selector, cursor1, cursor2)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
         }
     }
 }

@@ -308,6 +308,95 @@ await foreach (var product in _repository.PageAsync<Product, ProductDto>(spec))
 }
 ```
 
+### 5. Keyset (Cursor-Based) Pagination
+
+Keyset pagination is **significantly faster** than OFFSET/FETCH for large tables because it uses an index seek
+instead of scanning and skipping rows. The technique avoids the "cold start" problem of OFFSET-based queries,
+which must count and discard all preceding rows on every page request.
+
+**Single-key (integer ID):**
+
+```csharp
+// First page
+var firstPage = await context.Orders
+    .OrderBy(o => o.Id)
+    .Take(pageSize)
+    .ToListAsync();
+
+// Next page after the last seen Id
+var nextPage = await context.Orders
+    .OrderBy(o => o.Id)
+    .AfterKeyset(o => o.Id, lastSeenId)
+    .Take(pageSize)
+    .ToListAsync();
+// Generates: WHERE Id > @lastSeenId  →  efficient index seek
+```
+
+**Composite key (tie-breaking with a secondary column):**
+
+```csharp
+// Next page after the last seen (CreatedDate, Id) pair
+var nextPage = await context.Orders
+    .OrderBy(o => o.CreatedDate)
+    .ThenBy(o => o.Id)
+    .AfterKeyset(o => o.CreatedDate, o => o.Id, lastDate, lastId)
+    .Take(pageSize)
+    .ToListAsync();
+// Generates: WHERE CreatedDate > @date OR (CreatedDate = @date AND Id > @id)
+// Semantically equivalent to: (CreatedDate, Id) > (@date, @id)
+```
+
+**Backward navigation (previous page):**
+
+```csharp
+var prevPage = await context.Orders
+    .OrderByDescending(o => o.CreatedDate)
+    .ThenByDescending(o => o.Id)
+    .BeforeKeyset(o => o.CreatedDate, o => o.Id, firstDate, firstId)
+    .Take(pageSize)
+    .ToListAsync();
+// Generates: WHERE CreatedDate < @date OR (CreatedDate = @date AND Id < @id)
+```
+
+**Using with the specification repository:**
+
+```csharp
+// Single-key page via IRepositorySpec
+var spec = new OrdersOrderedByIdSpec();
+var page = await repository.ToKeysetPageAsync(spec, o => o.Id, lastSeenId, pageSize: 20);
+
+// Composite-key page via IRepositorySpec
+var spec2 = new OrdersOrderedByDateSpec();
+var page2 = await repository.ToKeysetPageAsync(
+    spec2,
+    o => o.CreatedDate, o => o.Id,
+    lastDate, lastId,
+    pageSize: 20);
+```
+
+**Full pagination loop with keyset:**
+
+```csharp
+var cursor = 0; // start before all Ids
+var pageSize = 100;
+
+while (true)
+{
+    var page = await context.Products
+        .OrderBy(p => p.Id)
+        .AfterKeyset(p => p.Id, cursor)
+        .Take(pageSize)
+        .ToListAsync();
+
+    if (page.Count == 0) break;
+
+    foreach (var product in page)
+        await ProcessAsync(product);
+
+    cursor = page[^1].Id; // advance cursor to last item
+}
+```
+
 ## Repository Extensions
 
 The library provides rich extension methods for `IRepositorySpec`:
@@ -375,7 +464,8 @@ IQueryable<EmployeeDto> query = repository.Query<Employee, EmployeeDto>(spec);
 5. **Property Naming** - Use any naming convention you prefer; it will be normalized to PascalCase
 6. **Performance** - Use `ModelSpecification<TEntity, TModel>` with projections to reduce data transfer
 7. **Large Result Sets** - Use `PageAsync()` for streaming or `ToPagedListAsync()` for pagination
-8. **Debugging** - Use `.ToQueryString()` on the query to see generated SQL
+8. **High-Volume Pagination** - Use `AfterKeyset()` / `BeforeKeyset()` for cursor-based pagination on large tables; it is far more efficient than `Skip/Take` because it avoids scanning discarded rows
+9. **Debugging** - Use `.ToQueryString()` on the query to see generated SQL
 
 ## Type-Specific Behavior
 
