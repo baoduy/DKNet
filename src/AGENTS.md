@@ -4,8 +4,8 @@
 
 ## 🎯 Quick Context
 
-**Project**: DKNet Framework - .NET 9 library collection for EF Core extensions, background tasks, and messaging  
-**Current Focus**: Dynamic Predicate System with Specification Pattern (see `activeContext.md`)  
+**Project**: DKNet Framework - .NET 10+ library collection for EF Core extensions, background tasks, and messaging  
+**Current Focus**: Idempotency framework enhancements and .NET 10+ standardization (see `activeContext.md`)  
 **Key Patterns**: Specification, Repository, Dynamic Predicate Builder, TestContainers integration  
 **Standards**: Zero warnings (`TreatWarningsAsErrors=true`), nullable types enabled, XML docs required
 

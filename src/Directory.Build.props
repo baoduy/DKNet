@@ -10,6 +10,8 @@
     <ItemGroup>
         <!-- Microsoft recommended analyzers - versions managed in Directory.Packages.props -->
         <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" PrivateAssets="all"/>
+        <!-- Pin compiler host to Roslyn 5.3.x across the solution to avoid analyzer/compiler version drift. -->
+        <PackageReference Include="Microsoft.Net.Compilers.Toolset" PrivateAssets="all"/>
         <!--        <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all"/>-->
     </ItemGroup>
     <ItemGroup>

@@ -1,322 +1,199 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0 (Deep analysis update)
+Version change: 1.1.0 -> 1.2.0
 
 Modified Principles:
-- I. Zero Warnings Tolerance - Added specific analyzer references
-- II. Test-First with Real Databases - Added TestContainers fixture pattern
-- VI. Pattern Compliance - Expanded with concrete module patterns
+- I. Zero Warnings Tolerance -> I. Runtime and SDK Baseline (.NET 10+)
+- II. Test-First with Real Databases (NON-NEGOTIABLE) -> II. Zero-Warning and Analyzer Discipline (NON-NEGOTIABLE)
+- III. Async-Everywhere -> III. Nullable Safety and Explicit Contracts (NON-NEGOTIABLE)
+- IV. Documentation & API Contracts -> IV. Public API Documentation and Packaging Contracts
+- V. Security & Null Safety -> V. Test-First and Real Infrastructure Validation (NON-NEGOTIABLE)
+- VI. Pattern Compliance -> VI. Architecture and Data Access Pattern Integrity
 
 Added Sections:
-- Solution Architecture (new section with module breakdown)
-- Module-Specific Standards (new section)
+- Principle VII. Security, Secrets, and Operational Hardening
+- Additional Constraints
 
-Removed Sections: None
+Removed Sections:
+- Solution Architecture
+- Module-Specific Standards
 
 Templates requiring updates:
-- ✅ plan-template.md - Constitution Check section aligns with principles
-- ✅ spec-template.md - Requirements align with mandatory testing/documentation
-- ✅ tasks-template.md - Task phases support foundational/test-first approach
+- ✅ updated `.specify/templates/plan-template.md`
+- ✅ updated `.specify/templates/spec-template.md`
+- ✅ updated `.specify/templates/tasks-template.md`
+- ✅ updated `.specify/templates/commands/constitution.md`
+- ✅ updated `.specify/templates/commands/plan.md`
+- ✅ updated `.specify/templates/commands/analyze.md`
+- ✅ updated `AGENTS.md`
 
-Deferred Items: None
-
-Deep Analysis Performed: 2026-01-29
-- Analyzed 40+ projects across 6 solution folders
-- Identified 14 NuGet library packages
-- Reviewed test patterns across 16 test projects
-- Validated Directory.Build.props and Directory.Packages.props
+Follow-up TODOs:
+- None
 -->
 
 # DKNet Framework Constitution
 
 ## Core Principles
 
-### I. Zero Warnings Tolerance (NON-NEGOTIABLE)
+### I. Runtime and SDK Baseline (.NET 10+)
 
-All code MUST compile with zero warnings. This is enforced via `TreatWarningsAsErrors=true` in `Directory.Build.props`.
-
-**Rules**:
-- Every build MUST pass with `-warnaserror` or equivalent (`TreatWarningsAsErrors=true`)
-- Nullable reference types MUST be enabled (`<Nullable>enable</Nullable>`)
-- All nullable warnings MUST be resolved, not suppressed without explicit justification
-- Code formatting MUST pass `dotnet format` validation before merge
-
-**Rationale**: Warnings become bugs. Zero tolerance ensures code quality at compile time and prevents technical debt accumulation.
-
-### II. Test-First with Real Databases (NON-NEGOTIABLE)
-
-Test-driven development is mandatory. Integration tests MUST use real SQL Server via TestContainers—InMemory database is prohibited for EF Core tests.
+All maintained projects MUST target the .NET 10 platform baseline and align with the
+solution SDK policy.
 
 **Rules**:
-- TDD cycle: Write test → Verify it fails → Implement → Verify it passes → Refactor
-- Integration tests MUST use `TestContainers.MsSql` for realistic SQL Server behavior
-- `InMemoryDatabase` is PROHIBITED for EF Core integration tests (catches SQL-specific issues)
-- Test naming: `MethodName_Scenario_ExpectedBehavior`
-- Test structure: Arrange-Act-Assert pattern mandatory
-- Coverage targets: 90%+ critical paths, 85%+ business logic, 80%+ utilities
+- `global.json` MUST pin a .NET 10 SDK and use controlled roll-forward behavior
+- Shared project settings MUST keep `TargetFramework` aligned with `net10.0`
+- Feature work MUST NOT introduce new .NET 9 or earlier targets unless approved as a
+  documented exception
+- Version-sensitive documentation MUST be updated in the same change when runtime targets
+  move
 
-**Rationale**: InMemory providers miss SQL-specific behaviors (transactions, collations, query translation). Real databases catch production issues during development.
+**Rationale**: A single runtime baseline prevents incompatibility drift across libraries,
+analyzers, CI behavior, and NuGet consumers.
 
-### III. Async-Everywhere
+### II. Zero-Warning and Analyzer Discipline (NON-NEGOTIABLE)
 
-All I/O operations MUST be asynchronous. Synchronous database access or blocking on async code is prohibited.
-
-**Rules**:
-- All EF Core queries MUST use async variants (`ToListAsync`, `FirstOrDefaultAsync`, etc.)
-- NEVER block on async: `.Result`, `.Wait()`, or `GetAwaiter().GetResult()` are prohibited
-- `async void` is prohibited except for event handlers
-- Use `ConfigureAwait(false)` in library code for non-UI context
-- Methods performing I/O MUST have `Async` suffix and return `Task` or `Task<T>`
-
-**Rationale**: Blocking on async causes deadlocks in ASP.NET Core. Async-everywhere ensures scalability and thread pool efficiency.
-
-### IV. Documentation & API Contracts
-
-All public APIs MUST have XML documentation. External consumers depend on clear contracts.
+Build quality is enforced at compile time. Warnings are treated as defects.
 
 **Rules**:
-- All public classes, methods, and properties MUST have `<summary>` XML documentation
-- `<param>`, `<returns>`, and `<exception>` tags MUST be present where applicable
-- File headers with copyright MUST be present in all `.cs` files (see `FILE_HEADER_TEMPLATE.md`)
-- Breaking changes MUST be clearly marked in commit messages and PR descriptions
-- Memory bank documentation MUST be updated when patterns change
+- `TreatWarningsAsErrors=true` MUST remain enabled for all buildable projects
+- `dotnet build` and CI builds MUST pass with zero warnings
+- Analyzer suppressions MUST be minimal, justified, and committed with rationale
+- `dotnet format` compliance MUST be enforced before merge
 
-**Rationale**: DKNet is a NuGet library collection. Clear documentation enables adoption and reduces support burden.
+**Rationale**: Strict analyzer enforcement prevents silent regressions and keeps libraries
+safe to consume at scale.
 
-### V. Security & Null Safety
+### III. Nullable Safety and Explicit Contracts (NON-NEGOTIABLE)
 
-No secrets in code. Null safety enforced via language features and explicit handling.
-
-**Rules**:
-- Secrets, API keys, and connection strings MUST NOT be committed to source control
-- Use configuration providers (`IConfiguration`) for sensitive values
-- Nullable reference types MUST be enabled and respected
-- Null checks MUST be explicit or use null-conditional operators (`?.`, `??`)
-- `ArgumentNullException` MUST be thrown for invalid null arguments with `nameof()`
-- NEVER catch exceptions without logging or re-throwing
-
-**Rationale**: Security vulnerabilities and null reference exceptions are the most common production issues. Prevention at code level is cheaper than runtime fixes.
-
-### VI. Pattern Compliance
-
-Code MUST follow established DKNet patterns. Consistency enables maintainability.
+Null handling and contracts MUST be explicit in all public and internal behavior.
 
 **Rules**:
-- Dynamic predicates MUST use `PredicateBuilder.New<T>()` with `.DynamicAnd()` / `.DynamicOr()`
-- LinqKit queries MUST include `.AsExpandable()` before `.Where()` with dynamic predicates
-- Specifications MUST inherit from `Specification<TEntity>` base class
-- Extension methods MUST be in static classes within `/Extensions` folder
-- Repository pattern MUST be used for data access abstraction
-- EF Core queries MUST use `.AsNoTracking()` for read-only operations
-- Filtering MUST happen on database (`.Where()` before `.ToListAsync()`)
+- `<Nullable>enable</Nullable>` MUST remain enabled solution-wide
+- Public APIs MUST validate nullable inputs and throw precise exceptions when required
+- New code MUST NOT introduce nullable warnings or latent null-reference hazards
+- Contract assumptions MUST be expressed in types and guard clauses, not comments alone
 
-**Rationale**: Consistent patterns reduce cognitive load, enable code reuse, and simplify code reviews.
+**Rationale**: DKNet is a shared library platform. Explicit null contracts reduce runtime
+failures and improve API predictability.
 
-## Quality Gates
+### IV. Public API Documentation and Packaging Contracts
 
-Pre-merge requirements that MUST pass for any code change.
+DKNet ships NuGet libraries; documentation is part of the product surface.
 
-**Build Gate**:
-- `dotnet build -c Release` with zero warnings
-- `dotnet format --verify-no-changes` passes
+**Rules**:
+- All public APIs MUST include XML documentation (`summary`, and tags as applicable)
+- New `.cs` files MUST include approved file header content
+- Package metadata and repository links MUST remain consistent with central package settings
+- Breaking changes MUST be called out in PR descriptions and release notes
 
-**Test Gate**:
-- `dotnet test` with all tests passing
-- Coverage thresholds met (see Principle II)
-- No new test failures introduced
+**Rationale**: Consumers rely on generated docs and package metadata for safe adoption and
+upgrade planning.
 
-**Documentation Gate**:
-- XML docs present for all new public APIs
-- Memory bank updated if patterns/context changed
-- File headers present on new `.cs` files
+### V. Test-First and Real Infrastructure Validation (NON-NEGOTIABLE)
 
-**Review Gate**:
-- At least one approval from module owner
-- All review comments addressed
-- Commit messages follow conventional format (`type(scope): description`)
+Behavior changes MUST be driven by tests, and data-layer integration MUST be verified on
+real providers.
+
+**Rules**:
+- Development MUST follow red-green-refactor for behavior changes
+- Unit tests MUST use xUnit with clear Arrange-Act-Assert structure
+- EF Core integration tests MUST use Testcontainers (for example, SQL Server via
+  `Testcontainers.MsSql`)
+- EF Core integration tests MUST NOT rely on InMemory provider for SQL-behavior validation
+- Test names MUST follow `MethodName_Scenario_ExpectedBehavior`
+
+**Rationale**: Real infrastructure tests expose provider-specific translation and transaction
+issues that fake providers cannot.
+
+### VI. Architecture and Data Access Pattern Integrity
+
+Core architectural patterns are mandatory for consistency across modules.
+
+**Rules**:
+- Domain-driven and onion layering boundaries MUST be preserved
+- Query logic MUST use Specification and Repository patterns where those abstractions exist
+- Dynamic predicates MUST use the project predicate builder conventions
+  (`PredicateBuilder.New<T>()`, `.DynamicAnd()`, `.DynamicOr()`)
+- LinqKit-backed dynamic predicate queries MUST call `.AsExpandable()` before `.Where(...)`
+- Read-only EF Core queries MUST use `.AsNoTracking()` and keep filtering in database
+
+**Rationale**: Pattern consistency keeps modules composable, testable, and maintainable.
+
+### VII. Security, Secrets, and Operational Hardening
+
+Security hygiene is mandatory in source, configuration, and runtime behavior.
+
+**Rules**:
+- Secrets (keys, credentials, raw connection strings) MUST NOT be committed
+- Sensitive configuration MUST come from approved configuration providers and secret stores
+- Exception handling MUST log or propagate actionable context; silent catch blocks are
+  prohibited
+- Input validation MUST be explicit at boundaries (API endpoints, handlers, data filters)
+
+**Rationale**: Secret leakage and opaque failures create avoidable operational and compliance
+risk.
+
+## Additional Constraints
+
+- Primary languages and tooling: C# 13, .NET 10 SDK, EF Core 10+, xUnit, Shouldly,
+  Testcontainers, LinqKit, System.Linq.Dynamic.Core.
+- Central package and build governance in `Directory.Packages.props` and
+  `Directory.Build.props` is authoritative for shared defaults.
+- Module placement MUST follow solution domains (`Core`, `EfCore`, `AspNet`, `Services`,
+  `SlimBus`, `Aspire`) with minimal cross-domain coupling.
 
 ## Development Workflow
 
-Standard process for feature development in DKNet Framework.
+All work MUST pass explicit gates before merge.
 
-**Branch Naming**: `###-feature-name` (e.g., `001-dynamic-predicate-enums`)
+**Build Gate**:
+- `dotnet restore DKNet.FW.sln`
+- `dotnet build DKNet.FW.sln -c Debug`
+- Zero warnings in all changed projects
 
-**Commit Format**:
-```
-<type>(<scope>): <subject>
+**Test Gate**:
+- `dotnet test DKNet.FW.sln` (or justified scoped runs during iteration)
+- New/changed behavior covered by tests
+- Integration scenarios use required real infrastructure patterns
 
-<body>
+**Documentation Gate**:
+- XML docs and file headers present for new public surface
+- Relevant memory-bank and agent guidance updated when standards or focus shift
 
-<footer>
-```
-- Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`
-- Scopes: `specifications`, `repository`, `extensions`, `tests`, `docs`, `core`
-
-**PR Requirements**:
-1. Problem statement describing the issue solved
-2. Summary of changes with key modifications
-3. Test evidence (coverage report, test results)
-4. Breaking changes clearly marked if applicable
-5. Linked issues/tasks referenced
-
-**Pre-PR Checklist**:
-- [ ] `dotnet build` passes with zero warnings
-- [ ] `dotnet test` passes with coverage maintained
-- [ ] `dotnet format` applied
-- [ ] XML docs added for public APIs
-- [ ] Memory bank updated if needed
+**Review Gate**:
+- At least one maintainer/module-owner approval for affected area
+- Constitution check in planning artifacts passes or documented exceptions are approved
 
 ## Governance
 
-**Constitution Authority**: This constitution supersedes all other development practices for DKNet Framework. Conflicts are resolved in favor of constitution principles.
+This constitution is the highest authority for development standards in this repository.
+Where guidance conflicts, this document takes precedence.
 
-**Amendment Process**:
-1. Propose change via PR modifying this constitution
-2. Document rationale for change
-3. Require approval from project maintainer
-4. Update dependent templates if principles change
-5. Increment constitution version appropriately
+**Amendment Procedure**:
+1. Submit a PR that updates `.specify/memory/constitution.md` with clear rationale.
+2. Include a Sync Impact Report describing dependent template and guidance updates.
+3. Obtain approval from project maintainers.
+4. Apply required updates to templates, command docs, and runtime guidance in the same PR.
+5. Record the resulting semantic version change and amendment date.
 
 **Versioning Policy**:
-- MAJOR: Principle removal or backward-incompatible redefinition
-- MINOR: New principle added or existing principle materially expanded
-- PATCH: Clarifications, typo fixes, non-semantic refinements
+- MAJOR: Removal/redefinition of principles or governance incompatible with prior process
+- MINOR: New principle or materially expanded mandatory constraints
+- PATCH: Wording clarifications, typo fixes, non-semantic refinements
 
-**Compliance Review**: All PRs MUST verify compliance with constitution principles. Reviewers are empowered to block merges for constitution violations.
+**Compliance Review Expectations**:
+- Every feature plan MUST include a constitution check before design/implementation.
+- Reviewers MUST block merges that violate NON-NEGOTIABLE principles.
+- Exceptions MUST be explicit, time-bound, and approved by maintainers.
 
-**Guidance Reference**: For detailed coding patterns and examples, see:
-- `/memory-bank/copilot-rules.md` - Complete coding standards
-- `/memory-bank/systemPatterns.md` - Architecture patterns
-- `/memory-bank/copilot-quick-reference.md` - Common task templates
-- `/AGENTS.md` - AI agent quick reference
+**Guidance References**:
+- `memory-bank/README.md`
+- `memory-bank/activeContext.md`
+- `memory-bank/copilot-quick-reference.md`
+- `memory-bank/systemPatterns.md`
+- `memory-bank/copilot-rules.md`
+- `AGENTS.md`
 
-## Solution Architecture
-
-**Project**: DKNet Framework  
-**SDK**: .NET 10.0 (global.json: `"version": "10.0.100"`)  
-**Target Framework**: `net10.0`  
-**Package Management**: Central Package Management via `Directory.Packages.props`
-
-### Solution Folders (6 domains, 40+ projects)
-
-| Folder | Purpose | Key Libraries |
-|--------|---------|---------------|
-| **Core** | Foundation utilities | `DKNet.Fw.Extensions`, `DKNet.RandomCreator` |
-| **EfCore** | Entity Framework Core extensions | 13 libraries (see below) |
-| **Services** | Cloud & utility services | Blob Storage (AWS/Azure/Local), PDF, Encryption, Transformation |
-| **SlimBus** | Messaging integration | SlimMessageBus extensions, ASP.NET Core integration |
-| **AspNet** | ASP.NET Core hosting | Background Tasks, health checks |
-| **Aspire** | .NET Aspire integration | Service Bus hosting |
-
-### EfCore Module Breakdown (Primary Focus)
-
-| Library | Purpose | Key Classes |
-|---------|---------|-------------|
-| `DKNet.EfCore.Abstractions` | Core interfaces | `IEntity<TKey>`, entity base contracts |
-| `DKNet.EfCore.Specifications` | Specification Pattern | `Specification<T>`, `DynamicPredicateExtensions`, `Ops` enum |
-| `DKNet.EfCore.Repos` | Repository Pattern | `ReadRepository<T>`, `WriteRepository<T>`, `Repository<T>` |
-| `DKNet.EfCore.Repos.Abstractions` | Repository interfaces | `IReadRepository<T>`, `IWriteRepository<T>` |
-| `DKNet.EfCore.Extensions` | EF Core utilities | Query extensions, DbContext helpers |
-| `DKNet.EfCore.Hooks` | Interceptor pattern | `IHook` interface, SaveChanges interception |
-| `DKNet.EfCore.Events` | Domain events | Event publishing via EF Core |
-| `DKNet.EfCore.AuditLogs` | Audit trail | `AuditLogEntry`, automatic change tracking |
-| `DKNet.EfCore.Encryption` | Field encryption | Transparent data encryption |
-| `DKNet.EfCore.DataAuthorization` | Row-level security | Data authorization filters |
-| `DKNet.EfCore.DtoGenerator` | Source generator | Automatic DTO generation |
-| `DKNet.EfCore.DtoEntities` | DTO base types | DTO entity contracts |
-| `DKNet.EfCore.Relational.Helpers` | SQL helpers | Relational database utilities |
-
-### Key Dependencies
-
-| Category | Package | Version |
-|----------|---------|---------|
-| **EF Core** | `Microsoft.EntityFrameworkCore` | 10.0.2 |
-| **Dynamic LINQ** | `System.Linq.Dynamic.Core` | 1.7.1 |
-| **LinqKit** | `LinqKit.Microsoft.EntityFrameworkCore` | 10.0.9 |
-| **Testing** | `Testcontainers.MsSql` | 4.10.0 |
-| **Assertions** | `Shouldly` | 4.3.0 |
-| **Fake Data** | `Bogus` | 35.6.5 |
-| **Mapping** | `Mapster` | 7.4.0 |
-| **Analyzers** | `Meziantou.Analyzer`, `SonarAnalyzer.CSharp` | Latest |
-
-## Module-Specific Standards
-
-### DKNet.EfCore.Specifications
-
-**Dynamic Predicate Building**:
-```csharp
-// REQUIRED: Use PredicateBuilder.New<T>() as starting point
-var predicate = PredicateBuilder.New<Product>(true);
-
-// REQUIRED: Use .DynamicAnd() / .DynamicOr() for runtime conditions
-predicate = predicate
-    .DynamicAnd("PropertyName", Ops.Equal, value)
-    .DynamicAnd("NestedProperty.Path", Ops.Contains, searchTerm);
-
-// REQUIRED: Use .AsExpandable() before .Where() with LinqKit
-var results = await _db.Products
-    .AsExpandable()
-    .Where(predicate)
-    .ToListAsync();
-```
-
-**Ops Enum** (supported operations):
-- Comparison: `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`
-- String: `Contains`, `NotContains`, `StartsWith`, `EndsWith`
-- Collection: `In`, `NotIn`
-
-**Specification Pattern**:
-```csharp
-// REQUIRED: Inherit from Specification<TEntity>
-public class ActiveProductSpec : Specification<Product>
-{
-    public ActiveProductSpec() : base(p => p.IsActive) { }
-}
-```
-
-### DKNet.EfCore.Repos
-
-**Repository Usage**:
-```csharp
-// Read operations: Use IReadRepository<T>
-public class ProductService(IReadRepository<Product> repo)
-{
-    public Task<Product?> GetByIdAsync(int id) => repo.FindAsync(id);
-    public IQueryable<Product> Query() => repo.Query();
-}
-```
-
-### Test Fixture Pattern (TestContainers)
-
-**REQUIRED** pattern for EF Core integration tests:
-```csharp
-public class TestDbFixture : IAsyncLifetime
-{
-    private MsSqlContainer? _msSqlContainer;
-    public TestDbContext? Db { get; private set; }
-
-    public async Task InitializeAsync()
-    {
-        _msSqlContainer = new MsSqlBuilder()
-            .WithPassword("YourStrong@Passw0rd")
-            .Build();
-        await _msSqlContainer.StartAsync();
-        
-        // Create DbContext with container connection string
-        var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(_msSqlContainer.GetConnectionString())
-            .Options;
-        Db = new TestDbContext(options);
-        await Db.Database.EnsureCreatedAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        if (Db != null) await Db.DisposeAsync();
-        if (_msSqlContainer != null) await _msSqlContainer.DisposeAsync();
-    }
-}
-```
-
-**Version**: 1.1.0 | **Ratified**: 2026-01-29 | **Last Amended**: 2026-01-29
+**Version**: 1.2.0 | **Ratified**: 2026-01-29 | **Last Amended**: 2026-03-16
