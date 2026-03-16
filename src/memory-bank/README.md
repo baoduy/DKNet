@@ -29,6 +29,7 @@ The Memory Bank is a structured collection of Markdown documents that capture al
 | Directory | Purpose |
 |-----------|---------|
 | **[feature-template/](feature-template/)** | Templates for feature specs, designs, tasks, and context |
+| **[libraries/](libraries/)** | AI-ready per-library skills for DKNet package selection and correct usage |
 
 ---
 
@@ -44,6 +45,7 @@ The Memory Bank is a structured collection of Markdown documents that capture al
 4. ✅ **systemPatterns.md** - Design patterns
 5. ✅ **copilot-rules.md** - Code standards
 6. ✅ **progress.md** - Current status
+7. ✅ **libraries/README.md** - Scenario-to-library routing for API work
 
 ### For Developers
 
@@ -56,6 +58,7 @@ The Memory Bank is a structured collection of Markdown documents that capture al
 - Review `systemPatterns.md` for design patterns
 - Check `techContext.md` for technology constraints
 - Use templates in `feature-template/` for consistency
+- For API implementation tasks, start with `libraries/README.md` then load the specific skill files
 
 **When updating context:**
 - Update `activeContext.md` when switching focus areas

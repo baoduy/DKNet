@@ -65,6 +65,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Files", "_Files", "{9F7203
 		.aspire\settings.json = .aspire\settings.json
 		stylecop.json = stylecop.json
 		global.json = global.json
+		AGENTS.md = AGENTS.md
+		SPEC-KIT.md = SPEC-KIT.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SlimBus", "SlimBus", "{C2686F33-39EF-4995-AA5B-E256F5130F9B}"

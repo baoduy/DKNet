@@ -16,6 +16,7 @@
 3. **Learn Patterns**: `/memory-bank/systemPatterns.md` → how we code
 4. **Follow Rules**: `/memory-bank/copilot-rules.md` → coding standards (8000+ words)
 5. **Quick Reference**: `/memory-bank/copilot-quick-reference.md` → common tasks
+6. **Library Skills Index** (API work): `/memory-bank/libraries/README.md` → choose correct DKNet packages per scenario
 
 ## Project Structure & Module Organization
 - `DKNet.FW.sln` aggregates the libraries under `Core`, `Services`, `EfCore`, `SlimBus`, and the ASP.NET host in `DKNet.AspCore.Tasks`. Keep shared abstractions in `Core` and feature-specific code near its consumer to limit cross-module coupling.
@@ -397,6 +398,7 @@ dotnet build /p:TreatWarningsAsErrors=true
 ## 📚 Additional Resources
 
 - **Memory Bank**: `/memory-bank/README.md` - Start here!
+- **Library Skills**: `/memory-bank/libraries/README.md` - Scenario-to-library routing for API implementation
 - **Quick Reference**: `/memory-bank/copilot-quick-reference.md`
 - **Patterns**: `/memory-bank/systemPatterns.md`
 - **Full Rules**: `/memory-bank/copilot-rules.md` (8000+ words)
