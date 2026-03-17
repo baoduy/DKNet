@@ -95,6 +95,19 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### Constitution Alignment *(mandatory)*
+
+- **CA-001 Runtime Baseline**: The feature MUST remain compatible with .NET 10+ and `net10.0` targets.
+- **CA-002 Build Quality**: The feature MUST preserve zero-warning builds with analyzers enabled.
+- **CA-003 Nullability**: The feature MUST define nullable/validation behavior for new inputs and outputs.
+- **CA-004 Documentation**: New public APIs MUST include XML docs and required file headers.
+- **CA-005 Testing**: Behavior changes MUST define tests first; EF Core integration coverage MUST use
+  Testcontainers when database behavior is involved.
+- **CA-006 Patterns**: If applicable, the feature MUST follow Specification/Repository and dynamic
+  predicate rules (`PredicateBuilder`, `.DynamicAnd/.DynamicOr`, `.AsExpandable()`).
+- **CA-007 Security**: The feature MUST document secret handling, boundary validation, and error
+  handling expectations.
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]

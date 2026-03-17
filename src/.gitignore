@@ -1,0 +1,34 @@
+# DKNet source workspace ignores
+
+# .NET build artifacts
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+
+# User/IDE files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/
+.idea/
+
+# NuGet/artifacts
+packages/
+*.nupkg
+*.snupkg
+nupkgs/
+
+# Test and coverage artifacts
+TestResults/
+coverage/
+coverage-report*/
+*.trx
+
+# OS/temp
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
