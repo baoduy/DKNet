@@ -67,7 +67,6 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using AND.
         /// </summary>
-        /// <typeparam name="T">Entity type.</typeparam>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -81,7 +80,6 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using OR.
         /// </summary>
-        /// <typeparam name="T">Entity type.</typeparam>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -126,7 +124,6 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using AND.
         /// </summary>
-        /// <typeparam name="T">Entity type.</typeparam>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -140,7 +137,6 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using OR.
         /// </summary>
-        /// <typeparam name="T">Entity type.</typeparam>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
