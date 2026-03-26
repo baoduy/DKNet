@@ -3,9 +3,6 @@
     <PropertyGroup>
         <!-- Source generators must target netstandard2.0 -->
         <TargetFramework>netstandard2.0</TargetFramework>
-        <LangVersion>latest</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
 
@@ -29,10 +26,10 @@
 
     <ItemGroup>
         <!-- Pack the generator DLL as an analyzer -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <!--        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>-->
 
         <!-- Include the attribute file in consuming projects -->
-        <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
+        <!--        <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>-->
 
         <!-- Standard package files -->
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
