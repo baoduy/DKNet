@@ -14,22 +14,16 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         var assemblies = GetAssemblies(dbContext);
 
         //Register Entities
-        foreach (var assembly in assemblies)
-        {
-            modelBuilder.ApplyConfigurationsFromAssembly(assembly);
-        }
+        foreach (var assembly in assemblies) modelBuilder.ApplyConfigurationsFromAssembly(assembly);
 
         //Register StaticData Of
-        modelBuilder.RegisterDataSeeding(assemblies);
+        //modelBuilder.RegisterDataSeeding(assemblies);
 
         //Register Global Filter
         modelBuilder.RegisterGlobalModelBuilders(assemblies, dbContext);
 
         //Register Sequence
-        if (dbContext.IsSqlServer())
-        {
-            modelBuilder.RegisterSequences(assemblies);
-        }
+        if (dbContext.IsSqlServer()) modelBuilder.RegisterSequences(assemblies);
     }
 
     public void Customize(ModelBuilder modelBuilder, DbContext context)
@@ -44,10 +38,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         var register = options.FindExtension<EntityAutoConfigRegister>();
         var assemblies = register?.Assemblies ?? [];
 
-        if (assemblies.Length <= 0)
-        {
-            assemblies = [dbContext.GetType().Assembly];
-        }
+        if (assemblies.Length <= 0) assemblies = [dbContext.GetType().Assembly];
 
         return assemblies;
     }

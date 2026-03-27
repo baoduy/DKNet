@@ -8,7 +8,7 @@ namespace DKNet.EfCore.Extensions.Configurations;
 
 /// <summary>
 ///     Describes a data seeding configuration for an entity type. Implementations may provide a synchronous
-///     list of data via <see cref="HasData" />, and/or an asynchronous seeding callback via <see cref="SeedAsync" />.
+///     list of data asynchronous seeding callback via <see cref="SeedAsync" />.
 /// </summary>
 public interface IDataSeedingConfiguration
 {
@@ -30,13 +30,6 @@ public interface IDataSeedingConfiguration
     Func<DbContext, bool, CancellationToken, Task>? SeedAsync { get; }
 
     /// <summary>
-    ///     Model-managed seed data (collection of anonymous/dynamic objects) that will be used by EF Core's model seeding
-    ///     support.
-    ///     Implementations may expose strongly typed collections via the generic base class and map them to this property.
-    /// </summary>
-    IEnumerable<dynamic> HasData { get; }
-
-    /// <summary>
     ///     The CLR <see cref="Type" /> of the entity that this seeding configuration targets.
     /// </summary>
     Type EntityType { get; }
@@ -46,7 +39,7 @@ public interface IDataSeedingConfiguration
 
 /// <summary>
 ///     Generic base class for data seeding configurations. Implementers can provide model-managed seed data via
-///     <see cref="GetData" /> or an asynchronous seed routine via <see cref="SeedAsync" />.
+///     <see cref="GetDataAsync" /> or an asynchronous seed routine via <see cref="SeedAsync" />.
 /// </summary>
 /// <typeparam name="TEntity">The entity type to seed.</typeparam>
 public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfiguration where TEntity : class
@@ -57,14 +50,27 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     public Type EntityType => typeof(TEntity);
 
     /// <inheritdoc />
-    public IEnumerable<dynamic> HasData => GetData();
-
-    /// <inheritdoc />
     public virtual int Order => 0;
 
-
     /// <inheritdoc />
-    public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync => null;
+    public virtual Func<DbContext, bool, CancellationToken, Task> SeedAsync =>
+        async (context, isMigration, cancellation) =>
+        {
+            var data = await GetDataAsync(cancellation).ConfigureAwait(false);
+            if (data.Count == 0)
+                return;
+
+            var dbSet = context.Set<TEntity>();
+            foreach (var item in data)
+            {
+                // Check if the item already exists in the database to avoid duplicates
+                var exists = await dbSet.AnyAsync(e => e.Equals(item), cancellation).ConfigureAwait(false);
+                if (!exists)
+                    await dbSet.AddAsync(item, cancellation).ConfigureAwait(false);
+            }
+
+            await context.SaveChangesAsync(cancellation).ConfigureAwait(false);
+        };
 
     #endregion
 
@@ -74,7 +80,7 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     ///     Gets the collection of seed data for the target entity type./>
     /// </summary>
     /// <returns></returns>
-    protected abstract ICollection<TEntity> GetData();
+    protected abstract ValueTask<ICollection<TEntity>> GetDataAsync(CancellationToken cancellation = default);
 
     #endregion
 }

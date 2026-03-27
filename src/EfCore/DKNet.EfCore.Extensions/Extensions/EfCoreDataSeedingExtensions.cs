@@ -36,33 +36,6 @@ public static class EfCoreDataSeedingExtensions
     }
 
     /// <summary>
-    ///     Registers model-managed seed data from discovered <see cref="IDataSeedingConfiguration" /> types.
-    ///     This will call HasData on the model for any configuration that exposes non-empty HasData collections.
-    /// </summary>
-    /// <param name="modelBuilder">The model builder to register seed data on.</param>
-    /// <param name="assemblies">Assemblies to scan for IDataSeedingConfiguration implementations.</param>
-    internal static void RegisterDataSeeding(this ModelBuilder modelBuilder, params Assembly[] assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(modelBuilder);
-
-        var seedingTypes = assemblies.GetDataSeedingTypes();
-        var instances = seedingTypes
-            .Select(t => Activator.CreateInstance(t) as IDataSeedingConfiguration)
-            .OfType<IDataSeedingConfiguration>()
-            .OrderBy(s => s.Order);
-
-        foreach (var item in instances)
-        {
-            var data = item.HasData?.ToList() ?? [];
-            if (data.Count == 0) continue;
-
-            var entityType = item.EntityType;
-            // ModelBuilder.Entity(Type).HasData accepts params object[]
-            modelBuilder.Entity(entityType).HasData(data.ToArray());
-        }
-    }
-
-    /// <summary>
     ///     Configure the <see cref="DbContextOptionsBuilder" /> to automatically run data seeding callbacks
     ///     discovered in the provided assemblies during migrations or startup.
     /// </summary>
