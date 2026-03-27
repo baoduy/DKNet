@@ -24,3 +24,6 @@ CoverageReports
 src/Directory.Build.targets.bak.*
 **/bin**
 **/obj**
+*.user
+*.suo
+packages/

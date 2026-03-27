@@ -71,8 +71,8 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         var sql = _repository.Query(spec).ToQueryString();
 
         // Assert
-        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
-        normalizedSql.ShouldContain("order by p.name");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("ORDER BY p.Name", Case.Insensitive);
     }
 
     [Fact]
@@ -95,13 +95,13 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         _output.WriteLine(sql);
 
         // Assert
-        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
-        normalizedSql.ShouldContain("where");
-        normalizedSql.ShouldContain("p.isactive");
-        normalizedSql.ShouldContain("p.name");
-        normalizedSql.ShouldContain("p.description");
-        normalizedSql.ShouldContain("or");
-        normalizedSql.ShouldContain("order by p.name");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.IsActive", Case.Insensitive);
+        normalizedSql.ShouldContain("p.Name", Case.Insensitive);
+        normalizedSql.ShouldContain("p.Description", Case.Insensitive);
+        normalizedSql.ShouldContain("OR", Case.Insensitive);
+        normalizedSql.ShouldContain("ORDER BY p.Name", Case.Insensitive);
     }
 
     private static string NormalizeSql(string sql)

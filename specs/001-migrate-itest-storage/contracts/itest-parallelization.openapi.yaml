@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Integration Test Migration and Parallel Validation Contract
+  version: 0.1.0
+  description: >-
+    Contract for managing SQL-integration-test migration status, data-store profiles,
+    exception handling, and parallel execution validation evidence.
+servers:
+  - url: https://ci.internal.dknet.local
+paths:
+  /itest-projects:
+    get:
+      summary: List integration test projects and migration status
+      operationId: listIntegrationTestProjects
+      responses:
+        '200':
+          description: Current project migration state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IntegrationTestProject'
+                required: [projects]
+  /itest-projects/{projectId}/store-profile:
+    put:
+      summary: Set or update test store profile for a project
+      operationId: upsertTestStoreProfile
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestStoreProfile'
+      responses:
+        '200':
+          description: Store profile updated
+        '400':
+          description: Invalid profile configuration
+  /parallel-runs:
+    post:
+      summary: Register and execute a parallel validation run
+      operationId: createParallelExecutionRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commitSha:
+                  type: string
+                targetProjectIds:
+                  type: array
+                  items:
+                    type: string
+                parallelEnabled:
+                  type: boolean
+              required: [commitSha, targetProjectIds, parallelEnabled]
+      responses:
+        '201':
+          description: Run accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParallelExecutionRun'
+  /parallel-runs/{runId}:
+    get:
+      summary: Fetch a single parallel execution run report
+      operationId: getParallelExecutionRun
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Run report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParallelExecutionRun'
+        '404':
+          description: Run not found
+  /migration-exceptions:
+    post:
+      summary: Record an approved migration exception
+      operationId: createMigrationException
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MigrationExceptionRecord'
+      responses:
+        '201':
+          description: Exception recorded
+        '400':
+          description: Missing mitigation or approval data
+components:
+  schemas:
+    IntegrationTestProject:
+      type: object
+      properties:
+        projectId:
+          type: string
+        projectPath:
+          type: string
+        moduleArea:
+          type: string
+          enum: [AspNet, EfCore]
+        currentStoreType:
+          type: string
+          enum: [SqlServerContainer, SqlServerConnection, SQLite, InMemory]
+        targetStoreType:
+          type: string
+          enum: [SQLite, InMemory]
+        requiresSqlContractLane:
+          type: boolean
+        migrationState:
+          type: string
+          enum: [Discovered, Assessed, Migrating, Validated, Exceptioned]
+      required:
+        - projectId
+        - projectPath
+        - moduleArea
+        - currentStoreType
+        - targetStoreType
+        - requiresSqlContractLane
+        - migrationState
+    TestStoreProfile:
+      type: object
+      properties:
+        profileId:
+          type: string
+        projectId:
+          type: string
+        provider:
+          type: string
+          enum: [SQLite, InMemory, SqlServerContainer]
+        isolationMode:
+          type: string
+          enum: [PerTest, PerClass, PerRun]
+        databaseNameStrategy:
+          type: string
+          enum: [GuidPerTest, TimestampedPerClass, Fixed]
+        setupStrategy:
+          type: string
+          enum: [Fixture, Factory, Inline]
+        teardownStrategy:
+          type: string
+          enum: [DisposeContext, DropDatabase, ContainerStop]
+        parallelSafe:
+          type: boolean
+      required:
+        - profileId
+        - projectId
+        - provider
+        - isolationMode
+        - databaseNameStrategy
+        - setupStrategy
+        - teardownStrategy
+        - parallelSafe
+    ParallelExecutionRun:
+      type: object
+      properties:
+        runId:
+          type: string
+        commitSha:
+          type: string
+        startedAtUtc:
+          type: string
+          format: date-time
+        endedAtUtc:
+          type: string
+          format: date-time
+        targetProjects:
+          type: array
+          items:
+            type: string
+        parallelEnabled:
+          type: boolean
+        passCount:
+          type: integer
+          minimum: 0
+        failCount:
+          type: integer
+          minimum: 0
+        contentionFailureCount:
+          type: integer
+          minimum: 0
+        durationSeconds:
+          type: integer
+          minimum: 0
+      required:
+        - runId
+        - commitSha
+        - startedAtUtc
+        - endedAtUtc
+        - targetProjects
+        - parallelEnabled
+        - passCount
+        - failCount
+        - contentionFailureCount
+        - durationSeconds
+    MigrationExceptionRecord:
+      type: object
+      properties:
+        exceptionId:
+          type: string
+        projectId:
+          type: string
+        reasonCode:
+          type: string
+          enum: [ProviderSpecificSql, TransactionSemantics, UnsupportedTranslation, Other]
+        description:
+          type: string
+        approvedBy:
+          type: string
+        reviewByDate:
+          type: string
+          format: date
+        mitigation:
+          type: string
+      required:
+        - exceptionId
+        - projectId
+        - reasonCode
+        - description
+        - approvedBy
+        - reviewByDate
+        - mitigation
+      example:
+        exceptionId: ex-efcore-relhelper-001
+        projectId: src/EfCore/EfCore.Relational.Helpers.Tests
+        reasonCode: ProviderSpecificSql
+        description: Test validates SQL Server metadata behavior unavailable in SQLite.
+        approvedBy: module-owner
+        reviewByDate: 2026-06-25
+        mitigation: Retain SQL contract-lane tests in targeted pipeline runs.

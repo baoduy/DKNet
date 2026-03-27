@@ -23,6 +23,17 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     }
 
     [Fact]
+    public async Task ConnectionString_ShouldUseIsolatedDatabaseName()
+    {
+        await fixture.EnsureSqlReadyAsync();
+
+        var connectionString = fixture.GetConnectionString();
+
+        connectionString.ShouldContain("Database=TestDb_");
+        connectionString.ShouldNotContain("Database=master");
+    }
+
+    [Fact]
     public async Task CreateTable()
     {
         await fixture.EnsureSqlReadyAsync();

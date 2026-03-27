@@ -20,6 +20,23 @@ jobs:
       - checkout: self
         persistCredentials: true
 
+      - task: UseDotNet@2
+        displayName: Install dotnet
+        inputs:
+          packageType: 'sdk'
+          version: '10.x'
+          includePreviewVersions: false
+
+      - task: DotNetCoreCLI@2
+        displayName: Run targeted parallel integration tests
+        inputs:
+          command: 'test'
+          projects: |
+            src/AspNet/AspCore.Idempotency.MsSqlStore.Tests/AspCore.Idempotency.MsSqlStore.Tests.csproj
+            src/EfCore/EfCore.Specifications.Tests/EfCore.Specifications.Tests.csproj
+            src/EfCore/EfCore.Relational.Helpers.Tests/EfCore.Relational.Helpers.Tests.csproj
+          arguments: '--configuration Release -- RunConfiguration.MaxCpuCount=0'
+
       - task: GPTPullRequestReview@0
         inputs:
           api_key: '$(open-ai-key)'

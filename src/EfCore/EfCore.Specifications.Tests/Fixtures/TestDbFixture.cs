@@ -1,5 +1,5 @@
 using Bogus;
-using Testcontainers.MsSql;
+using Microsoft.Data.Sqlite;
 
 namespace EfCore.Specifications.Tests.Fixtures;
 
@@ -10,7 +10,7 @@ public class TestDbFixture : IAsyncLifetime
     private readonly Faker<Category> _categoryFaker;
     private readonly Faker<Order> _orderFaker;
     private readonly Faker<Product> _productFaker;
-    private MsSqlContainer? _msSqlContainer;
+    private SqliteConnection? _sqliteConnection;
 
     #endregion
 
@@ -52,22 +52,18 @@ public class TestDbFixture : IAsyncLifetime
     {
         if (Db != null) await Db.DisposeAsync();
 
-        if (_msSqlContainer != null) await _msSqlContainer.DisposeAsync();
+        if (_sqliteConnection != null) await _sqliteConnection.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        // Start SQL Server container
-        _msSqlContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
-            .WithPassword("YourStrong@Passw0rd")
-            .WithCleanUp(true)
-            .Build();
+        // Keep the shared connection open so SQLite in-memory state survives for the fixture lifetime.
+        _sqliteConnection = new SqliteConnection($"Data Source=file:specs-{Guid.NewGuid():N}?mode=memory&cache=shared");
+        await _sqliteConnection.OpenAsync();
 
-        await _msSqlContainer.StartAsync();
-
-        // Create DbContext with SQL Server connection
+        // Create DbContext with SQLite connection
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlServer(_msSqlContainer.GetConnectionString())
+            .UseSqlite(_sqliteConnection)
             .EnableSensitiveDataLogging()
             .EnableDetailedErrors()
             .LogTo(Console.WriteLine, LogLevel.Information)
