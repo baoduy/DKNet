@@ -35,7 +35,7 @@ namespace DKNet.EfCore.DtoGenerator;
 /// are automatically excluded, including both single entity properties and collection properties.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public sealed class GenerateDtoAttribute : Attribute
+internal sealed class GenerateDtoAttribute : Attribute
 {
     /// <summary>
     /// Gets the entity type to generate a DTO for.
