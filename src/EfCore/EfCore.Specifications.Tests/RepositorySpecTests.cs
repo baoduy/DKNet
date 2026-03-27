@@ -132,6 +132,7 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
     public async Task Delete_WithExistingEntity_ShouldMarkForDeletion()
     {
         // Arrange
+        _context.ChangeTracker.Clear();
         var categoryId = _context.Categories.First().Id;
         var product = new Product { Name = "ToDelete", Price = 50m, CategoryId = categoryId };
         await _context.Products.AddAsync(product);

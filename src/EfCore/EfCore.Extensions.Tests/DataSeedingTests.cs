@@ -6,11 +6,12 @@ namespace EfCore.Extensions.Tests;
 // Test seeding configuration for testing
 public class UserSeedingConfiguration : DataSeedingConfiguration<User>
 {
-    #region Properties
+    #region Methods
 
-    protected override ICollection<User> HasData =>
+    protected override ICollection<User> GetData() =>
     [
-        new(1, "seeded1")
+        new(
+            1, "seeded1")
         {
             FirstName = "Seeded", LastName = "User1"
         },

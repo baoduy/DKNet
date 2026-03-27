@@ -119,7 +119,7 @@ jobs:
         inputs:
           command: "test"
           projects: "$(BuildParameters.TestProjects)"
-          arguments: '--configuration $(BuildConfiguration) --settings coverage.runsettings --collect "XPlat Code Coverage"'
+          arguments: '--configuration $(BuildConfiguration) --settings coverage.runsettings --collect "XPlat Code Coverage" -- RunConfiguration.MaxCpuCount=0'
 
       - task: PublishCodeCoverageResults@2
         displayName: Publish Code Coverage

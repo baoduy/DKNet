@@ -46,14 +46,17 @@ public static class EfCoreDataSeedingExtensions
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
         var seedingTypes = assemblies.GetDataSeedingTypes();
-        foreach (var seedingType in seedingTypes)
-        {
-            if (Activator.CreateInstance(seedingType) is not IDataSeedingConfiguration seedingInstance) continue;
+        var instances = seedingTypes
+            .Select(t => Activator.CreateInstance(t) as IDataSeedingConfiguration)
+            .OfType<IDataSeedingConfiguration>()
+            .OrderBy(s => s.Order);
 
-            var data = seedingInstance.HasData?.ToList() ?? [];
+        foreach (var item in instances)
+        {
+            var data = item.HasData?.ToList() ?? [];
             if (data.Count == 0) continue;
 
-            var entityType = seedingInstance.EntityType;
+            var entityType = item.EntityType;
             // ModelBuilder.Entity(Type).HasData accepts params object[]
             modelBuilder.Entity(entityType).HasData(data.ToArray());
         }

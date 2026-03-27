@@ -5,7 +5,6 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using AspCore.Idempotency.ApiTests;
 using AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
 
@@ -30,6 +29,21 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         var content = await response.Content.ReadAsStringAsync();
         content.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task ApiFixture_UsesIsolatedDatabaseConnectionString()
+    {
+        // Arrange
+        await using var dbContext = fixture.GetDbContext();
+
+        // Act
+        var connectionString = dbContext.Database.GetConnectionString();
+
+        // Assert
+        connectionString.ShouldNotBeNullOrWhiteSpace();
+        connectionString.ShouldContain($"Database={fixture.DatabaseName}");
+        connectionString.ShouldNotContain("Database=master");
     }
 
     [Fact]
@@ -245,8 +259,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
             Headers = { { "X-Idempotency-Key", idempotencyKey } },
             Content = JsonContent.Create(request)
         };
-        var response1 = await fixture.HttpClient!.SendAsync(httpRequest1);
-        var item1 = await response1.Content.ReadAsStringAsync();
+        await fixture.HttpClient!.SendAsync(httpRequest1);
 
         // Act - Second request with same idempotency key
         var httpRequest2 = new HttpRequestMessage(HttpMethod.Post, "/api/items")

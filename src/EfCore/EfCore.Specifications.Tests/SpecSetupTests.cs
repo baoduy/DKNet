@@ -13,7 +13,7 @@ public class SpecSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options =>
-            options.UseSqlServer("Server=localhost;Database=Test;"));
+            options.UseSqlite("Data Source=:memory:"));
 
         // Act
         services.AddSpecRepo<TestDbContext>();
@@ -31,7 +31,7 @@ public class SpecSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options =>
-            options.UseSqlServer("Server=localhost;Database=Test;"));
+            options.UseSqlite("Data Source=:memory:"));
 
         // Act
         services.AddSpecRepo<TestDbContext>();
@@ -48,7 +48,7 @@ public class SpecSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options =>
-            options.UseSqlServer("Server=localhost;Database=Test;"));
+            options.UseSqlite("Data Source=:memory:"));
 
         // Act
         services.AddSpecRepo<TestDbContext>();
@@ -67,7 +67,7 @@ public class SpecSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options =>
-            options.UseSqlServer("Server=localhost;Database=Test;"));
+            options.UseSqlite("Data Source=:memory:"));
 
         // Act
         var result = services.AddSpecRepo<TestDbContext>();
@@ -82,7 +82,7 @@ public class SpecSetupTests
         // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options =>
-            options.UseSqlServer("Server=localhost;Database=Test;"));
+            options.UseSqlite("Data Source=:memory:"));
 
         // Act
         services.AddSpecRepo<TestDbContext>();

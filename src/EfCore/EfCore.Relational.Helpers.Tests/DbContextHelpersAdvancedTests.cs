@@ -50,9 +50,8 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
         // Arrange
         await fixture.EnsureSqlReadyAsync();
 
-        // Create a unique database name to ensure it doesn't exist
-        var uniqueConnectionString = fixture.GetConnectionString()
-            .Replace("master", $"TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase);
+        // Create a unique database name to ensure it doesn't exist.
+        var uniqueConnectionString = fixture.CreateIsolatedConnectionString();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
