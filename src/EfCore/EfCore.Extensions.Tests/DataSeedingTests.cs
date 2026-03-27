@@ -8,19 +8,20 @@ public class UserSeedingConfiguration : DataSeedingConfiguration<User>
 {
     #region Methods
 
-    protected override ICollection<User> GetData() =>
-    [
-        new(
-            1, "seeded1")
-        {
-            FirstName = "Seeded", LastName = "User1"
-        },
-        new(2, "seeded2")
-        {
-            FirstName = "Seeded",
-            LastName = "User2"
-        }
-    ];
+    protected override ValueTask<ICollection<User>> GetDataAsync(CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult<ICollection<User>>(
+        [
+            new User(
+                1, "seeded1")
+            {
+                FirstName = "Seeded", LastName = "User1"
+            },
+            new User(2, "seeded2")
+            {
+                FirstName = "Seeded",
+                LastName = "User2"
+            }
+        ]);
 
     #endregion
 }
