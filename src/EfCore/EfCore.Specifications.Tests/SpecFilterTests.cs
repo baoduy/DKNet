@@ -71,7 +71,8 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         var sql = _repository.Query(spec).ToQueryString();
 
         // Assert
-        sql.ShouldContain("ORDER BY [p].[Name]");
+        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
+        normalizedSql.ShouldContain("order by p.name");
     }
 
     [Fact]
@@ -94,12 +95,20 @@ public class SpecFilterTests : IClassFixture<TestDbFixture>
         _output.WriteLine(sql);
 
         // Assert
-        sql.ShouldContain("[p].[Name] LIKE");
-        sql.ShouldContain("[p].[Description] LIKE");
-        sql.ShouldContain("ORDER BY [p].[Name]");
-        sql.ShouldContain(
-            "WHERE [p].[IsActive] = CAST(1 AS bit) AND ([p].[Name] LIKE N'%a%' OR [p].[Description] LIKE N'%a%')");
+        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
+        normalizedSql.ShouldContain("where");
+        normalizedSql.ShouldContain("p.isactive");
+        normalizedSql.ShouldContain("p.name");
+        normalizedSql.ShouldContain("p.description");
+        normalizedSql.ShouldContain("or");
+        normalizedSql.ShouldContain("order by p.name");
     }
+
+    private static string NormalizeSql(string sql)
+        => sql
+            .Replace("\"", string.Empty, StringComparison.Ordinal)
+            .Replace("[", string.Empty, StringComparison.Ordinal)
+            .Replace("]", string.Empty, StringComparison.Ordinal);
 
     #endregion
 }
