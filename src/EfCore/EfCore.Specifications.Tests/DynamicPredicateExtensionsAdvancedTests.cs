@@ -38,10 +38,12 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[IsActive]");
-        sql.ShouldContain("[Price]");
-        sql.ShouldContain("[Name]");
-        sql.ShouldContain("[StockQuantity]");
+        // SQLite uses double-quote identifiers; normalize for db-agnostic assertions
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("IsActive");
+        normalizedSql.ShouldContain("Price");
+        normalizedSql.ShouldContain("Name");
+        normalizedSql.ShouldContain("StockQuantity");
     }
 
     [Fact]
@@ -92,6 +94,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
     public void DynamicAnd_WithAllOperations_GeneratesCorrectSQL()
     {
         // Arrange & Act & Assert for each operation
+        // SQLite uses ef_compare() for decimal inequality comparisons; normalize for db-agnostic check
         var operations = new[]
         {
             (Ops.Equal, "="),
@@ -108,7 +111,9 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
             var result = predicate.DynamicAnd("Price", op, 100m);
             var query = _context.Products.AsExpandable().Where(result);
             var sql = query.ToQueryString();
-            sql.ShouldContain($"[Price] {sqlOp}");
+            var normalizedSql = NormalizeSql(sql);
+            normalizedSql.ShouldContain("Price");  // Column is referenced
+            sql.ShouldContain(sqlOp);               // Operator appears somewhere in the SQL
         }
     }
 
@@ -138,7 +143,10 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.OrderItems.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[c].[Name] LIKE N'%Elect%'");
+        // SQLite uses instr() for Contains; normalize identifiers for db-agnostic check
+        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
+        normalizedSql.ShouldContain("c.name");
+        normalizedSql.ShouldContain("elect");
     }
 
     [Fact]
@@ -199,7 +207,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[Name] = N''");
+        sql.ShouldContain("\"Name\" = ''");
     }
 
     [Fact]
@@ -245,7 +253,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
         sql.ShouldNotContain("IN"); // Should not have IN clause
-        sql.ShouldContain("[IsActive]"); // Should only have original condition
+        sql.ShouldContain("\"IsActive\""); // Should only have original condition
     }
 
     [Fact]
@@ -288,11 +296,11 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert - Verify SQL contains IN clause (EF Core may inline small constant arrays)
         output.WriteLine(sql);
         sql.ShouldContain("IN"); // Has IN clause
-        sql.ShouldContain("[CategoryId] IN (1, 2, 3)"); // EF Core optimizes small constant arrays
+        sql.ShouldContain("\"CategoryId\" IN (1, 2, 3)"); // EF Core optimizes small constant arrays
 
         // Verify it's a valid SQL query
         sql.ShouldContain("SELECT");
-        sql.ShouldContain("FROM [Products]");
+        sql.ShouldContain("FROM \"Products\"");
     }
 
     [Fact]
@@ -382,7 +390,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
         sql.ShouldNotContain("IN");
-        sql.ShouldContain("[IsActive]");
+        sql.ShouldContain("\"IsActive\"");
     }
 
     [Fact]
@@ -417,7 +425,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
         sql.ShouldNotContain("IN");
-        sql.ShouldContain("[IsActive]");
+        sql.ShouldContain("\"IsActive\"");
     }
 
     [Fact]
@@ -477,8 +485,8 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("JOIN [Categories]");
-        sql.ShouldContain("[c].[Name] = N'Electronics'");
+        sql.ShouldContain("JOIN \"Categories\"");
+        sql.ShouldContain("\"c\".\"Name\" = 'Electronics'");
     }
 
     [Fact]
@@ -493,8 +501,9 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("NOT");
-        sql.ShouldContain("LIKE");
+        // SQLite uses instr() for string search instead of LIKE; NotContains = instr() <= 0
+        sql.ShouldContain("instr(");
+        sql.ShouldContain("<= 0");
     }
 
     [Fact]
@@ -509,7 +518,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[Description] IS NOT NULL");
+        sql.ShouldContain("\"Description\" IS NOT NULL");
     }
 
     [Fact]
@@ -543,7 +552,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[Description] IS NULL");
+        sql.ShouldContain("\"Description\" IS NULL");
     }
 
     [Fact]
@@ -566,11 +575,12 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
     public void DynamicAnd_WithStringOperations_GeneratesCorrectSQL()
     {
         // Arrange & Act & Assert for each string operation
+        // SQLite uses instr() for Contains but LIKE for StartsWith/EndsWith
         var operations = new[]
         {
-            (Ops.Contains, "LIKE"),
-            (Ops.StartsWith, "LIKE"),
-            (Ops.EndsWith, "LIKE")
+            (Ops.Contains, "instr("),  // SQLite translates Contains to instr() > 0
+            (Ops.StartsWith, "LIKE"),  // StartsWith still uses LIKE
+            (Ops.EndsWith, "LIKE")     // EndsWith still uses LIKE
         };
 
         foreach (var (op, sqlPattern) in operations)
@@ -609,7 +619,8 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("WHERE [p].[Name] LIKE N'%   %'");
+        sql.ShouldContain("WHERE");
+        sql.ShouldContain("instr(\"p\".\"Name\", '   ')");
     }
 
     [Fact]
@@ -692,7 +703,7 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[Description] IS NULL");
+        sql.ShouldContain("\"Description\" IS NULL");
         sql.ShouldContain("OR");
     }
 
@@ -739,8 +750,15 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         result.ShouldNotBeNull();
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[p].[Name] LIKE N'%test%'");
+        sql.ShouldContain("instr(\"p\".\"Name\", 'test')");
     }
+
+    /// <summary>Normalizes SQL by removing database-specific identifier quoting ([ ] for SQL Server, " " for SQLite).</summary>
+    private static string NormalizeSql(string sql)
+        => sql
+            .Replace("\"", string.Empty, StringComparison.Ordinal)
+            .Replace("[", string.Empty, StringComparison.Ordinal)
+            .Replace("]", string.Empty, StringComparison.Ordinal);
 
     #endregion
 }

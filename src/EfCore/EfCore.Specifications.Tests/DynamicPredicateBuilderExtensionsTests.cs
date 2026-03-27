@@ -238,11 +238,11 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
-        normalizedSql.ShouldContain("where");
-        normalizedSql.ShouldContain("p.name");
-        normalizedSql.ShouldContain("p.price");
-        normalizedSql.ShouldContain("p.isactive");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.name", Case.Insensitive);
+        normalizedSql.ShouldContain("p.price", Case.Insensitive);
+        normalizedSql.ShouldContain("p.isactive", Case.Insensitive);
     }
 
     [Fact]
@@ -272,10 +272,10 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         // Assert: Should return original predicate unchanged
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        var normalizedSql = NormalizeSql(sql).ToLowerInvariant();
-        normalizedSql.ShouldNotContain("nonexistent");
-        normalizedSql.ShouldContain("where");
-        normalizedSql.ShouldContain("p.isactive");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldNotContain("nonexistent", Case.Insensitive);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.isactive", Case.Insensitive);
     }
 
     private static string NormalizeSql(string sql)
