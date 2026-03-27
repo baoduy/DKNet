@@ -15,6 +15,12 @@ public interface IDataSeedingConfiguration
     #region Properties
 
     /// <summary>
+    ///     The order in which this seeding configuration should be applied relative to other configurations. Configurations
+    ///     with
+    /// </summary>
+    int Order { get; }
+
+    /// <summary>
     ///     Optional asynchronous seeding callback. The function receives the current <see cref="DbContext" />, a boolean
     ///     indicating whether the seeding call should run as part of migrations/initialization, a
     ///     <see cref="CancellationToken" />,
@@ -40,7 +46,7 @@ public interface IDataSeedingConfiguration
 
 /// <summary>
 ///     Generic base class for data seeding configurations. Implementers can provide model-managed seed data via
-///     <see cref="HasData" /> or an asynchronous seed routine via <see cref="SeedAsync" />.
+///     <see cref="GetData" /> or an asynchronous seed routine via <see cref="SeedAsync" />.
 /// </summary>
 /// <typeparam name="TEntity">The entity type to seed.</typeparam>
 public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfiguration where TEntity : class
@@ -50,21 +56,25 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     /// <inheritdoc />
     public Type EntityType => typeof(TEntity);
 
-    /// <summary>
-    ///     Strongly typed collection of seed data for the entity. Implementations may populate this collection with
-    ///     instances of <typeparamref name="TEntity" /> to be used as model-managed seed data.
-    /// </summary>
-    protected virtual ICollection<TEntity> HasData { get; } = [];
+    /// <inheritdoc />
+    public IEnumerable<dynamic> HasData => GetData();
 
     /// <inheritdoc />
-    IEnumerable<dynamic> IDataSeedingConfiguration.HasData => HasData;
+    public virtual int Order => 0;
+
+
+    /// <inheritdoc />
+    public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync => null;
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
-    ///     Optional asynchronous seed callback. By defaults this is <c>null</c> which means no runtime seeding action is
-    ///     provided.
-    ///     Override to supply an async seeding routine.
+    ///     Gets the collection of seed data for the target entity type./>
     /// </summary>
-    public virtual Func<DbContext, bool, CancellationToken, Task>? SeedAsync => null;
+    /// <returns></returns>
+    protected abstract ICollection<TEntity> GetData();
 
     #endregion
 }

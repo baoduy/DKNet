@@ -238,9 +238,11 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("[Name]");
-        sql.ShouldContain("[Price]");
-        sql.ShouldContain("[IsActive]");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.name", Case.Insensitive);
+        normalizedSql.ShouldContain("p.price", Case.Insensitive);
+        normalizedSql.ShouldContain("p.isactive", Case.Insensitive);
     }
 
     [Fact]
@@ -270,9 +272,17 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         // Assert: Should return original predicate unchanged
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldNotContain("NonExistent");
-        sql.ShouldContain("[IsActive]");
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldNotContain("nonexistent", Case.Insensitive);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.isactive", Case.Insensitive);
     }
+
+    private static string NormalizeSql(string sql)
+        => sql
+            .Replace("\"", string.Empty, StringComparison.Ordinal)
+            .Replace("[", string.Empty, StringComparison.Ordinal)
+            .Replace("]", string.Empty, StringComparison.Ordinal);
 
     [Fact]
     public void DynamicOr_WithInvalidPropertyName_ReturnsUnchangedPredicate()

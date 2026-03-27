@@ -7,13 +7,20 @@ public class SqlServerFixture : IAsyncLifetime
 {
     #region Fields
 
+    private readonly string _databaseName = $"TestDb_{Guid.NewGuid():N}";
     private MsSqlContainer? _container;
 
     #endregion
 
     #region Methods
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public async Task DisposeAsync()
+    {
+        if (_container == null) return;
+
+        await _container.StopAsync();
+        await _container.DisposeAsync();
+    }
 
     public async Task EnsureSqlReadyAsync()
     {
@@ -26,13 +33,18 @@ public class SqlServerFixture : IAsyncLifetime
 
     public string GetConnectionString() =>
         _container?.GetConnectionString()
-            .Replace("Database=master", "Database=TestDb", StringComparison.OrdinalIgnoreCase) ??
+            .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase) ??
+        throw new InvalidOperationException("SQL Server container is not initialized.");
+
+    public string CreateIsolatedConnectionString() =>
+        _container?.GetConnectionString()
+            .Replace("Database=master", $"Database=TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase) ??
         throw new InvalidOperationException("SQL Server container is not initialized.");
 
     public async Task InitializeAsync()
     {
         _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
-            .WithPassword("a1ckZmGjwV8VqNdBUexV")
+            .WithPassword($"A{Guid.NewGuid():N}a!")
 
             //.WithReuse(true)
             .Build();

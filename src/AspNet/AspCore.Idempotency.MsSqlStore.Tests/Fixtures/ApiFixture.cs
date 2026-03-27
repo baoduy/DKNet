@@ -21,6 +21,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
 {
     #region Fields
 
+    private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
     private MsSqlContainer? _container;
 
     #endregion
@@ -31,6 +32,8 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     ///     Gets the SQL Server connection string.
     /// </summary>
     public string ConnectionString { get; private set; } = string.Empty;
+
+    internal string DatabaseName => _databaseName;
 
     /// <summary>
     ///     Gets the HTTP client for making requests to the test application.
@@ -90,12 +93,13 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     {
         // Create and start SQL Server container
         _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
-            .WithPassword("DKNetTest@123!")
+            .WithPassword($"A{Guid.NewGuid():N}a!")
             .WithCleanUp(true)
             .Build();
 
         await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        ConnectionString = _container.GetConnectionString()
+            .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
 
         // Create the HTTP client
         HttpClient ??= CreateClient();
