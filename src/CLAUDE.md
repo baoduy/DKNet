@@ -17,7 +17,7 @@ When the user asks for a feature in a specific area, load the relevant memory-ba
 
 ## Common Commands
 
-Run from `/Users/steven/_CODE/DRUNK/DKNet/src` (where `DKNet.FW.sln` lives):
+Run from `src/` (where `DKNet.FW.sln` lives):
 
 ```bash
 dotnet restore DKNet.FW.sln
