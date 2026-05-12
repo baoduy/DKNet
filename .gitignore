@@ -27,3 +27,4 @@ src/Directory.Build.targets.bak.*
 *.user
 *.suo
 packages/
+.gitnexus
