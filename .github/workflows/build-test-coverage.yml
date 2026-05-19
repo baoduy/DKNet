@@ -35,9 +35,11 @@ jobs:
             10.x.x
 
       - name: Install SonarCloud Tools
+        continue-on-error: true
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Prepare SonarCloud Scan
+        continue-on-error: true
         run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Restore dependencies
@@ -52,9 +54,11 @@ jobs:
         run: dotnet test src/DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings src/coverage.runsettings --verbosity minimal
 
       - name: Install ReportGenerator
+        continue-on-error: true
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate Coverage Report
+        continue-on-error: true
         run: reportgenerator -reports:"**/coverage.*.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
 
       - name: Upload to CodeCov
