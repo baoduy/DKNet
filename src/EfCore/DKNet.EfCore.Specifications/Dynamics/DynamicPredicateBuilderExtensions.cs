@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using DKNet.EfCore.Specifications.Extensions;
 using DKNet.Fw.Extensions;
 
 namespace DKNet.EfCore.Specifications.Dynamics;
@@ -23,7 +24,7 @@ internal static class DynamicPredicateBuilderExtensions
     ///     Prevents injection of arbitrary Dynamic LINQ syntax via property name parameters.
     /// </summary>
     private static readonly Regex ValidPropertyPathPattern = new(
-        @"^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+        @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     /// <summary>
@@ -56,8 +57,13 @@ internal static class DynamicPredicateBuilderExtensions
         if (string.IsNullOrWhiteSpace(propertyName))
             return false;
 
-        return propertyName.Length <= 256 &&
-               ValidPropertyPathPattern.IsMatch(propertyName);
+        if (propertyName.Length > 256 ||
+            propertyName.Any(c => !char.IsLetterOrDigit(c) && c is not '.' and not '_' and not '-'))
+            return false;
+
+        var normalizedPath = propertyName.ToPascalCase();
+        return !string.IsNullOrWhiteSpace(normalizedPath) &&
+               ValidPropertyPathPattern.IsMatch(normalizedPath);
     }
 
     /// <summary>
@@ -65,7 +71,6 @@ internal static class DynamicPredicateBuilderExtensions
     ///     that could enable arbitrary code execution or information disclosure.
     /// </summary>
     /// <param name="expression">The Dynamic LINQ expression to validate.</param>
-    /// <remarks>Throws <see cref="ArgumentException" /> when the expression is null, empty, or contains blocked patterns.</remarks>
     /// <exception cref="ArgumentException">Thrown when the expression contains dangerous patterns.</exception>
     internal static void ValidateExpression(string expression)
     {
