@@ -140,15 +140,26 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
     /// <summary>
     ///     Computes the absolute file system path for the provided <paramref name="blob" /> relative to the configured root.
+    ///     Validates that the resolved path remains within the configured root directory to prevent path traversal attacks.
     /// </summary>
     /// <param name="blob">The blob request containing the name to convert.</param>
     /// <returns>The absolute file system path.</returns>
+    /// <exception cref="UnauthorizedAccessException">
+    ///     Thrown when the resolved path escapes the configured root directory (path traversal attempt).
+    /// </exception>
     private string GetFinalPath(BlobRequest blob)
     {
         var name = blob.Name;
         if (name.StartsWith('/')) name = name[1..];
 
-        return Path.GetFullPath(Path.Combine(_rootFolder, name));
+        var rootFullPath = Path.GetFullPath(_rootFolder + Path.DirectorySeparatorChar);
+        var resolvedPath = Path.GetFullPath(Path.Combine(_rootFolder, name));
+
+        if (!resolvedPath.StartsWith(rootFullPath, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException(
+                $"Access denied. The path '{blob.Name}' resolves outside the configured root directory.");
+
+        return resolvedPath;
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ namespace DKNet.Svc.Encryption;
 /// <summary>
 ///     Interface for AES encryption operations.
 /// </summary>
+[Obsolete("Uses AES-CBC which is vulnerable to padding oracle attacks. Use IAesGcmEncryption instead.")]
 public interface IAesEncryption
 {
     #region Properties
@@ -38,6 +39,7 @@ public interface IAesEncryption
 /// <summary>
 ///     Provides AES encryption and decryption functionality.
 /// </summary>
+[Obsolete("Uses AES-CBC which is vulnerable to padding oracle attacks. Use AesGcmEncryption instead.")]
 public sealed class AesEncryption : IAesEncryption, IDisposable
 {
     #region Fields

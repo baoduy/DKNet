@@ -21,7 +21,8 @@ internal sealed class IdempotencySqlServerStore(
 {
     #region Fields
 
-    private static bool _dbMigrationsEnsured;
+    private static int _dbMigrationsEnsured;
+    private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
     private readonly AsyncServiceScope _scope = serviceProvider.CreateAsyncScope();
 
@@ -37,10 +38,22 @@ internal sealed class IdempotencySqlServerStore(
     private static async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
         CancellationToken cancellationToken = default)
     {
-        if (_dbMigrationsEnsured) return;
-        if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
-            await dbContext.Database.MigrateAsync(cancellationToken);
-        _dbMigrationsEnsured = true;
+        if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+
+        await MigrationLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+
+            if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
+                await dbContext.Database.MigrateAsync(cancellationToken);
+
+            Interlocked.Exchange(ref _dbMigrationsEnsured, 1);
+        }
+        finally
+        {
+            MigrationLock.Release();
+        }
     }
 
     /// <inheritdoc />

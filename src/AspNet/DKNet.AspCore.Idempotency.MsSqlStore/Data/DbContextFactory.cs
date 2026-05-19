@@ -7,12 +7,11 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Data;
 [ExcludeFromCodeCoverage]
 internal sealed class DbContextFactory : IDesignTimeDbContextFactory<IdempotencyDbContext>
 {
-    #region Methods
-
     public IdempotencyDbContext CreateDbContext(string[] args)
     {
-        var conn =
-            "Server=localhost;User ID=sa;Password=Pass@word1;Database=SampleDb;TrustServerCertificate=Yes;Encrypt=True;";
+        var conn = Environment.GetEnvironmentVariable("IDEMPOTENCY_MSSQL_CONNECTION")
+                   ?? throw new InvalidOperationException(
+                       "Set the IDEMPOTENCY_MSSQL_CONNECTION environment variable to run EF Core design-time tools.");
 
         var service = new ServiceCollection()
             .AddLogging()
@@ -21,6 +20,4 @@ internal sealed class DbContextFactory : IDesignTimeDbContextFactory<Idempotency
 
         return service.GetRequiredService<IdempotencyDbContext>();
     }
-
-    #endregion
 }
