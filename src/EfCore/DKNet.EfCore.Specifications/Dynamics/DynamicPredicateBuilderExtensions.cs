@@ -5,6 +5,8 @@
 
 using System.Collections;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using DKNet.EfCore.Specifications.Extensions;
 using DKNet.Fw.Extensions;
 
 namespace DKNet.EfCore.Specifications.Dynamics;
@@ -15,7 +17,74 @@ namespace DKNet.EfCore.Specifications.Dynamics;
 /// </summary>
 internal static class DynamicPredicateBuilderExtensions
 {
+    #region Constants
+
+    /// <summary>
+    ///     Regex pattern that matches valid property paths: alphanumeric segments joined by dots.
+    ///     Prevents injection of arbitrary Dynamic LINQ syntax via property name parameters.
+    /// </summary>
+    private static readonly Regex ValidPropertyPathPattern = new(
+        @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    ///     Characters and keywords that are disallowed in raw Dynamic LINQ expressions
+    ///     to prevent injection of dangerous constructs (method calls on arbitrary types, etc.).
+    /// </summary>
+    private static readonly string[] DangerousExpressionPatterns =
+    [
+        "System.", "Microsoft.", "Reflection.", "Process.", "Assembly.",
+        "GetType(", "typeof(", "Activator.", "Environment.",
+        "File.", "Directory.", "Path.", "Stream.",
+        "SqlCommand", "SqlConnection", "DbCommand",
+        "Runtime.", "Unsafe.", "Marshal.",
+        "AppDomain.", "Thread.", "Task.Run"
+    ];
+
+    #endregion
+
     #region Methods
+
+    /// <summary>
+    ///     Validates that a property name/path contains only safe characters (letters, digits, underscores,
+    ///     hyphens, and dots for path separators). Returns false for null/empty or any string containing
+    ///     characters that could be used for Dynamic LINQ injection.
+    /// </summary>
+    /// <param name="propertyName">The raw property name or path to validate.</param>
+    /// <returns>True if the property name is safe to use in a dynamic expression; otherwise, false.</returns>
+    internal static bool IsValidPropertyName(string? propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            return false;
+
+        if (propertyName.Length > 256 ||
+            propertyName.Any(c => !char.IsLetterOrDigit(c) && c is not '.' and not '_' and not '-'))
+            return false;
+
+        var normalizedPath = propertyName.ToPascalCase();
+        return !string.IsNullOrWhiteSpace(normalizedPath) &&
+               ValidPropertyPathPattern.IsMatch(normalizedPath);
+    }
+
+    /// <summary>
+    ///     Validates that a raw Dynamic LINQ expression string does not contain dangerous patterns
+    ///     that could enable arbitrary code execution or information disclosure.
+    /// </summary>
+    /// <param name="expression">The Dynamic LINQ expression to validate.</param>
+    /// <exception cref="ArgumentException">Thrown when the expression contains dangerous patterns.</exception>
+    internal static void ValidateExpression(string expression)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+
+        foreach (var pattern in DangerousExpressionPatterns)
+        {
+            if (expression.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    $"Dynamic LINQ expression contains disallowed pattern '{pattern}'. " +
+                    "Only property access, comparison operators, and standard LINQ methods are permitted.",
+                    nameof(expression));
+        }
+    }
 
     /// <summary>
     ///     Adjusts the operation based on the property value type.

@@ -35,11 +35,11 @@ jobs:
             10.x.x
 
       - name: Install SonarCloud Tools
-        continue-on-error: true
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Prepare SonarCloud Scan
-        continue-on-error: true
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Restore dependencies
@@ -73,7 +73,7 @@ jobs:
           verbose: true
 
       - name: Commit SonarCloud Results
-        continue-on-error: true
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Coverage Report

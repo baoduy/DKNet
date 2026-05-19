@@ -61,14 +61,16 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
                 return;
 
             var dbSet = context.Set<TEntity>();
-            foreach (var item in data)
-            {
-                // Check if the item already exists in the database to avoid duplicates
-                var exists = await dbSet.AnyAsync(e => e.Equals(item), cancellation).ConfigureAwait(false);
-                if (!exists)
-                    await dbSet.AddAsync(item, cancellation).ConfigureAwait(false);
-            }
 
+            // Load all existing entities once to avoid N+1 queries
+            var existing = await dbSet.AsNoTracking().ToListAsync(cancellation).ConfigureAwait(false);
+            var existingSet = new HashSet<TEntity>(existing, EqualityComparer<TEntity>.Default);
+
+            var toAdd = data.Where(item => !existingSet.Contains(item)).ToList();
+            if (toAdd.Count == 0)
+                return;
+
+            await dbSet.AddRangeAsync(toAdd, cancellation).ConfigureAwait(false);
             await context.SaveChangesAsync(cancellation).ConfigureAwait(false);
         };
 

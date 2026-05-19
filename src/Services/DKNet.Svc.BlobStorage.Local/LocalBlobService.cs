@@ -140,15 +140,30 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
     /// <summary>
     ///     Computes the absolute file system path for the provided <paramref name="blob" /> relative to the configured root.
+    ///     Validates that the resolved path remains within the configured root directory to prevent path traversal attacks.
     /// </summary>
     /// <param name="blob">The blob request containing the name to convert.</param>
     /// <returns>The absolute file system path.</returns>
+    /// <exception cref="UnauthorizedAccessException">
+    ///     Thrown when the resolved path escapes the configured root directory (path traversal attempt).
+    /// </exception>
     private string GetFinalPath(BlobRequest blob)
     {
         var name = blob.Name;
         if (name.StartsWith('/')) name = name[1..];
 
-        return Path.GetFullPath(Path.Combine(_rootFolder, name));
+        var rootFullPath = Path.GetFullPath(_rootFolder + Path.DirectorySeparatorChar);
+        var resolvedPath = Path.GetFullPath(Path.Combine(_rootFolder, name));
+
+        var pathComparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (!resolvedPath.StartsWith(rootFullPath, pathComparison))
+            throw new UnauthorizedAccessException(
+                $"Access denied. The path '{blob.Name}' resolves outside the configured root directory.");
+
+        return resolvedPath;
     }
 
     /// <summary>
@@ -173,7 +188,10 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     /// <param name="fullPath">The full file system path.</param>
     /// <returns>The path relative to the configured root folder.</returns>
     private string GetRelativePath(string fullPath) =>
-        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
+        fullPath.Replace(
+            _rootFolder,
+            string.Empty,
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     /// <summary>
     ///     Lists items beneath the requested path. Yields files first and then folders encountered when listing a directory.

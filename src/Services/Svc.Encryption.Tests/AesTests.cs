@@ -5,6 +5,7 @@ using Shouldly;
 
 namespace Svc.Encryption.Tests;
 
+#pragma warning disable CS0618
 public class AesTests
 {
     #region Methods
@@ -126,3 +127,4 @@ public class AesTests
 
     #endregion
 }
+#pragma warning restore CS0618
