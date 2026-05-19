@@ -59,9 +59,9 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="ForEvolve.FluentValidation.AspNetCore.Http" Version="1.0.26" />
     <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.11" />
-    <PackageVersion Include="Mapster" Version="10.0.8" />
-    <PackageVersion Include="Mapster.DependencyInjection" Version="10.0.8" />
-    <PackageVersion Include="Mapster.EFCore" Version="10.0.8" />
+    <PackageVersion Include="Mapster" Version="10.0.7" />
+    <PackageVersion Include="Mapster.DependencyInjection" Version="10.0.7" />
+    <PackageVersion Include="Mapster.EFCore" Version="10.0.7" />
     <PackageVersion Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Routing" Version="2.3.0" />
