@@ -5,6 +5,7 @@ using Shouldly;
 
 namespace Svc.Encryption.Tests;
 
+#pragma warning disable CS0618
 public class EdgeCaseTests
 {
     #region Methods
@@ -225,3 +226,4 @@ public class EdgeCaseTests
 
     #endregion
 }
+#pragma warning restore CS0618

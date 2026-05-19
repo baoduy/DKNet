@@ -155,7 +155,11 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         var rootFullPath = Path.GetFullPath(_rootFolder + Path.DirectorySeparatorChar);
         var resolvedPath = Path.GetFullPath(Path.Combine(_rootFolder, name));
 
-        if (!resolvedPath.StartsWith(rootFullPath, StringComparison.OrdinalIgnoreCase))
+        var pathComparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (!resolvedPath.StartsWith(rootFullPath, pathComparison))
             throw new UnauthorizedAccessException(
                 $"Access denied. The path '{blob.Name}' resolves outside the configured root directory.");
 
@@ -184,7 +188,10 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     /// <param name="fullPath">The full file system path.</param>
     /// <returns>The path relative to the configured root folder.</returns>
     private string GetRelativePath(string fullPath) =>
-        fullPath.Replace(_rootFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
+        fullPath.Replace(
+            _rootFolder,
+            string.Empty,
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     /// <summary>
     ///     Lists items beneath the requested path. Yields files first and then folders encountered when listing a directory.

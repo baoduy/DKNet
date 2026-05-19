@@ -23,7 +23,7 @@ internal static class DynamicPredicateBuilderExtensions
     ///     Prevents injection of arbitrary Dynamic LINQ syntax via property name parameters.
     /// </summary>
     private static readonly Regex ValidPropertyPathPattern = new(
-        @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$",
+        @"^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     /// <summary>
@@ -56,11 +56,8 @@ internal static class DynamicPredicateBuilderExtensions
         if (string.IsNullOrWhiteSpace(propertyName))
             return false;
 
-        // After ToPascalCase normalization, the result should match alphanumeric dot-separated segments.
-        // But we validate the RAW input to catch injection attempts before normalization.
-        // Allow hyphens and underscores (they get normalized by ToPascalCase) but nothing else exotic.
         return propertyName.Length <= 256 &&
-               propertyName.All(c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-');
+               ValidPropertyPathPattern.IsMatch(propertyName);
     }
 
     /// <summary>
@@ -68,7 +65,7 @@ internal static class DynamicPredicateBuilderExtensions
     ///     that could enable arbitrary code execution or information disclosure.
     /// </summary>
     /// <param name="expression">The Dynamic LINQ expression to validate.</param>
-    /// <returns>True if the expression appears safe; otherwise, false.</returns>
+    /// <remarks>Throws <see cref="ArgumentException" /> when the expression is null, empty, or contains blocked patterns.</remarks>
     /// <exception cref="ArgumentException">Thrown when the expression contains dangerous patterns.</exception>
     internal static void ValidateExpression(string expression)
     {

@@ -40,13 +40,13 @@ internal sealed class IdempotencySqlServerStore(
     {
         if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
 
-        await MigrationLock.WaitAsync(cancellationToken);
+        await MigrationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
 
-            if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
-                await dbContext.Database.MigrateAsync(cancellationToken);
+            if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false)).Any())
+                await dbContext.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
 
             Interlocked.Exchange(ref _dbMigrationsEnsured, 1);
         }

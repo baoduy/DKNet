@@ -63,7 +63,7 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
             var dbSet = context.Set<TEntity>();
 
             // Load all existing entities once to avoid N+1 queries
-            var existing = await dbSet.ToListAsync(cancellation).ConfigureAwait(false);
+            var existing = await dbSet.AsNoTracking().ToListAsync(cancellation).ConfigureAwait(false);
             var existingSet = new HashSet<TEntity>(existing, EqualityComparer<TEntity>.Default);
 
             var toAdd = data.Where(item => !existingSet.Contains(item)).ToList();
