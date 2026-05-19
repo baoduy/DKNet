@@ -29,6 +29,10 @@ public static class DynamicPredicateExtensions
     private static Expression<Func<T, bool>>? BuildDynamicExpression<T>(string propertyName,
         Ops operation, object? value)
     {
+        // Validate property name contains only safe characters before any processing
+        if (!DynamicPredicateBuilderExtensions.IsValidPropertyName(propertyName))
+            return null;
+
         // Normalize property path using PropertyNameExtensions (PascalCase each segment)
         var normalizedPath = propertyName.ToPascalCase();
 
@@ -99,6 +103,7 @@ public static class DynamicPredicateExtensions
         public ExpressionStarter<T> DynamicAnd(string expression,
             params object?[] values)
         {
+            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
             var dynamicExpr =
                 DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
             return predicate.And(dynamicExpr);
@@ -113,6 +118,7 @@ public static class DynamicPredicateExtensions
         public ExpressionStarter<T> DynamicOr(string expression,
             params object?[] values)
         {
+            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
             var dynamicExpr =
                 DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
             return predicate.Or(dynamicExpr);
@@ -156,6 +162,7 @@ public static class DynamicPredicateExtensions
         public ExpressionStarter<T> DynamicAnd(string expression,
             params object?[] values)
         {
+            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
             var dynamicExpr =
                 DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
             return predicate.And(dynamicExpr);
@@ -170,6 +177,7 @@ public static class DynamicPredicateExtensions
         public ExpressionStarter<T> DynamicOr(string expression,
             params object?[] values)
         {
+            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
             var dynamicExpr =
                 DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
             return predicate.Or(dynamicExpr);

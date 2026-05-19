@@ -17,7 +17,7 @@ public static class TaskSetups
 {
     #region Fields
 
-    private static bool _added;
+    private static int _added;
 
     #endregion
 
@@ -51,10 +51,9 @@ public static class TaskSetups
 
         private IServiceCollection AddHost()
         {
-            if (_added) return services;
+            if (Interlocked.CompareExchange(ref _added, 1, 0) == 1) return services;
 
             services.AddHostedService<BackgroundJobHost>();
-            _added = true;
             return services;
         }
     }
