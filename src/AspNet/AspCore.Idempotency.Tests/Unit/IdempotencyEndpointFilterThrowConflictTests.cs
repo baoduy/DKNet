@@ -173,5 +173,39 @@ public class IdempotencyEndpointFilterThrowConflictTests(ApiFixtureThrowConflict
         response.Headers.ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task InvokeAsync_WhenKeyIsTooLong_Returns400BadRequest()
+    {
+        // Arrange
+        var client = fixture.CreateClient();
+        var json = JsonSerializer.Serialize(new { name = "test item" });
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/items") { Content = content };
+        request.Headers.Add("X-Idempotency-Key", new string('a', 256)); // Exceeds default 255 char limit
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        ((int)response.StatusCode).ShouldBe((int)HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenKeyHasInvalidFormat_Returns400BadRequest()
+    {
+        // Arrange
+        var client = fixture.CreateClient();
+        var json = JsonSerializer.Serialize(new { name = "test item" });
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/items") { Content = content };
+        request.Headers.Add("X-Idempotency-Key", "invalid!@#$key"); // Contains invalid characters
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        ((int)response.StatusCode).ShouldBe((int)HttpStatusCode.BadRequest);
+    }
+
     #endregion
 }
