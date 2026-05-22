@@ -47,7 +47,6 @@ jobs:
         run: dotnet restore src/DKNet.FW.sln
 
       - name: Build
-        continue-on-error: true
         run: dotnet build src/DKNet.FW.sln --no-restore --configuration Release
 
       - name: Test
@@ -74,7 +73,7 @@ jobs:
           verbose: true
 
       - name: Commit SonarCloud Results
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        continue-on-error: true
         run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Coverage Report
