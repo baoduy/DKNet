@@ -8,6 +8,10 @@
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
+        <InternalsVisibleTo Include="EfCore.DataAuthorization.Tests"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
     </ItemGroup>

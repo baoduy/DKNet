@@ -1,6 +1,7 @@
 name: Build, Test, Coverage & Check
 
 on:
+  workflow_dispatch: {}
   push:
     branches: [ dev ]
   pull_request:
@@ -35,18 +36,17 @@ jobs:
             10.x.x
 
       - name: Install SonarCloud Tools
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        continue-on-error: true
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Prepare SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        continue-on-error: true
         run: dotnet sonarscanner begin /o:"baoduy2412" /k:"baoduy_DKNet" /d:sonar.cs.opencover.reportsPaths="**/coverage.*.xml" /d:sonar.scanner.scanAll=false /d:sonar.host.url="https://sonarcloud.io" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Restore dependencies
         run: dotnet restore src/DKNet.FW.sln
 
       - name: Build
-        continue-on-error: true
         run: dotnet build src/DKNet.FW.sln --no-restore --configuration Release
 
       - name: Test
@@ -73,7 +73,7 @@ jobs:
           verbose: true
 
       - name: Commit SonarCloud Results
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        continue-on-error: true
         run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Coverage Report
