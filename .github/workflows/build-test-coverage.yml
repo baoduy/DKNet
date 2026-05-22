@@ -1,11 +1,11 @@
 name: Build, Test, Coverage & Check
 
 on:
+  workflow_dispatch: {}
   push:
     branches: [ dev ]
   pull_request:
     branches: [ main, dev ]
-  workflow_dispatch: 
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
