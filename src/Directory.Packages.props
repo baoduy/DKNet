@@ -62,6 +62,7 @@
     <PackageVersion Include="Mapster" Version="10.0.7" />
     <PackageVersion Include="Mapster.DependencyInjection" Version="10.0.7" />
     <PackageVersion Include="Mapster.EFCore" Version="10.0.7" />
+    <PackageVersion Include="MessagePack" Version="2.5.301" />
     <PackageVersion Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Routing" Version="2.3.0" />
