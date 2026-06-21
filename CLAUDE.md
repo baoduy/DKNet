@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code (claude.ai/code) when working in this repository. The same applies to any AI coding assistant — for finer-grained DKNet-specific rules, see `src/CLAUDE.md`, `src/AGENTS.md`, and `src/memory-bank/`.
+Guidance for Claude Code (claude.ai/code) when working in this repository. The same applies to any AI coding assistant — for finer-grained DKNet-specific rules, see `src/CLAUDE.md`
 
 ## Repository at a Glance
 
@@ -51,8 +51,8 @@ Treat these as primary sources — Claude should read the relevant ones before g
 | `src/AGENTS.md` | Full coding/testing/PR conventions: commit format, naming, anti-patterns. |
 | `src/memory-bank/README.md` | Index into the AI knowledge base. |
 | `src/memory-bank/activeContext.md` | What is actively being worked on right now. |
-| `src/memory-bank/copilot-rules.md` | 8000+ words of project-specific standards. |
-| `src/memory-bank/copilot-quick-reference.md` | Code templates for common tasks. |
+| `src/memory-bank/copilot-quick-reference.md` | Largest knowledge file (~22K) — code templates for common tasks. |
+| `src/memory-bank/copilot-rules.md` | Project standards (currently a short stub — check before relying on it). |
 | `src/memory-bank/systemPatterns.md` | Architectural patterns and component relationships. |
 | `src/memory-bank/libraries/README.md` | Scenario → DKNet package routing for API work. |
 | `.github/copilot-instructions.md` | Mostly overlaps with AGENTS.md. |
@@ -71,7 +71,7 @@ dotnet test    DKNet.FW.sln --settings coverage.runsettings --collect:"XPlat Cod
 dotnet test    EfCore.Specifications.Tests       # single project
 dotnet test    --filter "FullyQualifiedName~DynamicAnd_WithMultipleConditions"
 dotnet format                                    # before committing
-./nuget.sh pack && ./verify_nuget_package.sh     # build + sanity-check NuGet packages
+./verify_nuget_package.sh                        # pack solution to ./nupkgs (Release), then verify at nuget.info
 ```
 
 `Directory.Build.props` enables `TreatWarningsAsErrors=true`, `Nullable=enable`, `LangVersion=latest`, and `GenerateDocumentationFile=true` solution-wide. Any new warning, missing XML doc, or nullable mismatch breaks the build.
