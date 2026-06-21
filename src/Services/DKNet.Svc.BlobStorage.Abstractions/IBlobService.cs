@@ -210,7 +210,7 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
 
         if (_options.MaxFileSizeInMb > 0)
         {
-            var fileLength = item.Data.ToArray().LongLength;
+            var fileLength = item.Data.ToMemory().Length; // Length without copying the whole payload
             var limitLength = _options.MaxFileSizeInMb * 1000000; //Convert Mb to Byte
             if (fileLength > limitLength) throw new FileLoadException("File size is invalid.");
         }
