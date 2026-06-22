@@ -18,6 +18,8 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
+        <!-- Force fixed SQLitePCLRaw (EF Sqlite pulls vulnerable 2.1.11, GHSA-2m69-gcr7-jv3q) -->
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">
