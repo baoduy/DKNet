@@ -1,4 +1,4 @@
-name: .NET
+name: Publish Nuget Packages
 
 permissions:
   contents: write
@@ -26,4 +26,4 @@ jobs:
     secrets:
       NUGET_USER: ${{ secrets.NUGET_USER }}
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
-      NUGET_PACKAGE_TOKEN: ${{ secrets.NUGET_PACKAGE_TOKEN }}
+      #NUGET_PACKAGE_TOKEN: ${{ secrets.NUGET_PACKAGE_TOKEN }}
