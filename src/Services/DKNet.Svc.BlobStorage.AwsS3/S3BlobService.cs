@@ -120,11 +120,18 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
             if (info?.S3Objects is null || info.S3Objects.Count == 0) break;
 
-            foreach (var obj in info.S3Objects)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await client.DeleteObjectAsync(obj.BucketName, obj.Key, cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Delete the whole page in a single request. A ListObjectsV2 page holds at most
+            // 1000 keys, which is exactly the S3 batch-delete limit, so one call per page suffices
+            // instead of one round-trip per object.
+            await client.DeleteObjectsAsync(
+                new DeleteObjectsRequest
+                {
+                    BucketName = _options.BucketName,
+                    Objects = info.S3Objects.Select(o => new KeyVersion { Key = o.Key }).ToList()
+                },
+                cancellationToken);
         } while (true);
 
         await client.DeleteObjectAsync(_options.BucketName, folderLocation, cancellationToken);
