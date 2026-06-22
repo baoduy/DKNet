@@ -1,6 +1,7 @@
 name: Publish Nuget Packages
 
 permissions:
+  id-token: write
   contents: write
   packages: write
 
