@@ -1,7 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using DKNet.EfCore.Abstractions.Attributes;
-using DKNet.EfCore.DtoEntities.Share;
-
 namespace DKNet.EfCore.DtoEntities.Features.Merchants;
 
 public enum MerchantStatus

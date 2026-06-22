@@ -1,3 +1,5 @@
+
+
 namespace DKNet.EfCore.DtoEntities;
 
 public sealed class Order() : EntityBase("Tester")

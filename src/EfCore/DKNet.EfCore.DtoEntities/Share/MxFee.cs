@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace DKNet.EfCore.DtoEntities.Share;
 
 public enum FeeTypes
