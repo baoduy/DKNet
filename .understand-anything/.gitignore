@@ -1,0 +1,4 @@
+# Understand-Anything scratch — never commit these
+intermediate/
+tmp/
+.trash-*/

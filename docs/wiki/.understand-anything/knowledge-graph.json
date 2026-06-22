@@ -1,0 +1,2647 @@
+{
+  "version": "1.0.0",
+  "kind": "knowledge",
+  "project": {
+    "name": "DKNet Wiki — Content Catalog",
+    "languages": [
+      "markdown"
+    ],
+    "frameworks": [
+      "karpathy-wiki"
+    ],
+    "description": "Knowledge graph for DKNet Wiki — Content Catalog",
+    "analyzedAt": "2026-06-21T09:14:23.043745+00:00",
+    "gitCommitHash": "ac06bf6b358bba2d65da3a8e2fcbc733f263e22d"
+  },
+  "nodes": [
+    {
+      "id": "article:aggregate-root",
+      "type": "article",
+      "name": "aggregate-root",
+      "filePath": "aggregate-root.md",
+      "summary": "`AggregateRoot` is the abstract base class in `DKNet.EfCore.Abstractions` that marks the consistency boundary of an aggregate. It extends `DomainEntity` to add audit and concurrency support, and it...",
+      "tags": [
+        "[ddd",
+        "abstractions]",
+        "aggregate-root",
+        "architecture & concepts",
+        "domain"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "audit-logs",
+          "domain-events",
+          "efcore-abstractions",
+          "domain-events",
+          "savechanges-hooks",
+          "repositories"
+        ],
+        "category": "Architecture & Concepts",
+        "content": "---\ntitle: AggregateRoot\ncategory: Architecture & Concepts\ntags: [ddd, aggregate-root, domain, abstractions]\n---\n\n## Summary\n\n`AggregateRoot` is the abstract base class in `DKNet.EfCore.Abstractions` that marks\nthe consistency boundary of an aggregate. It extends `DomainEntity` to add audit and\nconcurrency support, and it carries the domain events raised while business methods\nexecute. Rich domain entities derive from it and mutate state through methods that\ncall `AddEvent(...)`.\n\n## What it provides\n\n- **Consistency boundary** — an aggregate root is the single entry point for changing\n  the entities inside its aggregate, ensuring invariants hold on every change.\n- **Audit and concurrency** — by extending `DomainEntity`, it inherits created/updated\n  tracking (`SetUpdatedBy`) and concurrency support, which integrates with the\n  [[audit-logs]] feature.\n- **Event collection** — it accumulates uncommitted [[domain-events]] added during\n  business operations and exposes them so the persistence layer can dispatch them.\n\n## Raising events from behavior\n\nEntities call `AddEvent(...)` inside their domain methods rather than exposing\nsetters. For example, a `Product.UpdatePrice(...)` method validates the change,\nupdates the price, records the editor via `SetUpdatedBy`, and calls\n`AddEvent(new ProductPriceChangedEvent(...))`. The events stay attached to the\naggregate until SaveChanges runs.\n\n## Where it fits\n\n`AggregateRoot` is the heart of DKNet's domain layer and is defined alongside the\nother DDD contracts in [[efcore-abstractions]]. The events it accumulates are\ndispatched automatically by the persistence pipeline — see [[domain-events]] and\n[[savechanges-hooks]] — and aggregates are loaded and saved through [[repositories]].\n",
+        "backlinks": [
+          "article:audit-logs",
+          "article:cqrs-slimbus",
+          "article:domain-driven-design",
+          "article:domain-events",
+          "article:efcore-abstractions",
+          "article:onion-architecture"
+        ]
+      }
+    },
+    {
+      "id": "article:aspcore-extensions",
+      "type": "article",
+      "name": "aspcore-extensions",
+      "filePath": "aspcore-extensions.md",
+      "summary": "`DKNet.AspCore.Extensions` is the web hosting and utility extension library for the ASP.NET Core ring of DKNet. It provides helpers that simplify configuring and bootstrapping DKNet-based web appli...",
+      "tags": [
+        "[aspnetcore",
+        "asp.net core",
+        "extensions",
+        "hosting",
+        "web]"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "idempotency",
+          "background-tasks",
+          "fw-extensions",
+          "onion-architecture",
+          "cqrs-slimbus"
+        ],
+        "category": "ASP.NET Core",
+        "content": "---\ntitle: ASP.NET Core Extensions\ncategory: ASP.NET Core\ntags: [aspnetcore, hosting, extensions, web]\n---\n\n## Summary\n\n`DKNet.AspCore.Extensions` is the web hosting and utility extension library for the\nASP.NET Core ring of DKNet. It provides helpers that simplify configuring and bootstrapping\nDKNet-based web applications, sitting alongside [[idempotency]] and [[background-tasks]]\nin the Web/API layer.\n\n## What it offers\n\nThe package collects ASP.NET Core hosting and web utility extensions — convenience\nmethods for service registration and application setup that wire DKNet features into\nthe request pipeline. As with the rest of the suite, extensions live in static classes\nunder an `/Extensions` folder, following the framework's naming conventions.\n\n## Relationship to the core layer\n\nThese web extensions build on the framework-agnostic helpers in [[fw-extensions]],\nadding the ASP.NET Core-specific glue on top. This layering keeps purely generic\nutilities reusable outside of web contexts while concentrating HTTP-aware helpers here.\n\n## Where it fits\n\n`DKNet.AspCore.Extensions` is part of the presentation/Web tier of\n[[onion-architecture]]. It helps register the application services that ultimately\ndispatch through [[cqrs-slimbus]] handlers, keeping startup code concise while\npreserving the inward dependency direction.\n",
+        "backlinks": [
+          "article:background-tasks",
+          "article:idempotency"
+        ]
+      }
+    },
+    {
+      "id": "article:aspire-servicebus",
+      "type": "article",
+      "name": "aspire-servicebus",
+      "filePath": "aspire-servicebus.md",
+      "summary": "`DKNet.Aspire.Hosting.ServiceBus` is a .NET Aspire hosting integration that orchestrates an Azure Service Bus resource — including the Service Bus emulator — as part of an Aspire app host. It lets ...",
+      "tags": [
+        "[aspire",
+        "emulator]",
+        "hosting",
+        "infrastructure & messaging",
+        "orchestration",
+        "service-bus"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "cqrs-slimbus",
+          "domain-events",
+          "onion-architecture"
+        ],
+        "category": "Infrastructure & Messaging",
+        "content": "---\ntitle: Aspire Service Bus Hosting\ncategory: Infrastructure & Messaging\ntags: [aspire, service-bus, orchestration, hosting, emulator]\n---\n\n## Summary\n\n`DKNet.Aspire.Hosting.ServiceBus` is a .NET Aspire hosting integration that orchestrates\nan Azure Service Bus resource — including the Service Bus emulator — as part of an\nAspire app host. It lets distributed DKNet applications declare and run their messaging\ninfrastructure locally and in deployment without bespoke setup.\n\n## What it provides\n\nThe package adds Service Bus emulator hosting to an Aspire AppHost, so a Service Bus\nresource can be wired into the distributed application model alongside other\norchestrated resources. This makes local development and integration testing of\nmessage-driven workflows reproducible.\n\n## Relationship to messaging\n\nAspire orchestration provisions the transport; the application's CQRS and event flow\nruns through [[cqrs-slimbus]], where the `SlimBusEventPublisher` forwards\n[[domain-events]] to SlimMessageBus. Service Bus can serve as the backing transport for\nthat bus in a distributed deployment, connecting the in-process domain model to\nout-of-process consumers.\n\n## Where it fits\n\nThis package is DKNet's Infrastructure & Orchestration layer in [[onion-architecture]]\nterms — it sits outside the domain entirely, provisioning resources rather than\nimplementing business logic. It complements the persistence and web rings without the\ndomain ever depending on it.\n",
+        "backlinks": []
+      }
+    },
+    {
+      "id": "article:audit-logs",
+      "type": "article",
+      "name": "audit-logs",
+      "filePath": "audit-logs.md",
+      "summary": "DKNet's audit-log feature provides automatic tracking of entity changes. Entities opt in with the sealed `[AuditLog]` marker attribute, and a SaveChanges interceptor records audit information when ...",
+      "tags": [
+        "[efcore",
+        "audit",
+        "ef core persistence",
+        "hooks",
+        "tracking]"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "savechanges-hooks",
+          "aggregate-root",
+          "column-encryption",
+          "data-authorization",
+          "efcore-abstractions",
+          "onion-architecture"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Audit Logs\ncategory: EF Core Persistence\ntags: [efcore, audit, hooks, tracking]\n---\n\n## Summary\n\nDKNet's audit-log feature provides automatic tracking of entity changes. Entities opt\nin with the sealed `[AuditLog]` marker attribute, and a SaveChanges interceptor records\naudit information when those entities are created or updated. It is one of the\ncross-cutting concerns built on the [[savechanges-hooks]] pipeline.\n\n## Opting in\n\nApplying `[AuditLog]` to an entity type flags it for inclusion in audit logging. The\nattribute is a sealed marker carrying no configuration — its presence alone enables\ntracking, keeping the domain model declarative and uncluttered.\n\n## How tracking works\n\nBecause `AggregateRoot` extends `DomainEntity` with audit and concurrency support (see\n[[aggregate-root]]), entities already carry created/updated metadata. The audit hook\nruns in the before-SaveChanges phase to populate or capture that information for\ntracked, flagged entities, so audit data is written consistently in the same\ntransaction as the change.\n\n## Where it fits\n\nAudit logging is independent of the other interceptor-based concerns —\n[[column-encryption]] and [[data-authorization]] — and is enabled via its own DI\nextension. The marker attribute is defined among the contracts in\n[[efcore-abstractions]], reinforcing that auditing is a domain-declared,\ninfrastructure-implemented concern in line with [[onion-architecture]].\n",
+        "backlinks": [
+          "article:aggregate-root",
+          "article:column-encryption",
+          "article:data-authorization",
+          "article:savechanges-hooks",
+          "article:savechanges-hooks"
+        ]
+      }
+    },
+    {
+      "id": "article:background-tasks",
+      "type": "article",
+      "name": "background-tasks",
+      "filePath": "background-tasks.md",
+      "summary": "`DKNet.AspCore.Tasks` provides a lightweight background job model: units of work implement the `IBackgroundTask` interface, and a hosted `BackgroundJobHost` discovers and runs them within a service...",
+      "tags": [
+        "[aspnetcore",
+        "asp.net core",
+        "background-service",
+        "hosting]",
+        "jobs"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "idempotency",
+          "aspcore-extensions",
+          "onion-architecture",
+          "repositories",
+          "domain-events"
+        ],
+        "category": "ASP.NET Core",
+        "content": "---\ntitle: Background Tasks\ncategory: ASP.NET Core\ntags: [aspnetcore, background-service, jobs, hosting]\n---\n\n## Summary\n\n`DKNet.AspCore.Tasks` provides a lightweight background job model: units of work\nimplement the `IBackgroundTask` interface, and a hosted `BackgroundJobHost` discovers\nand runs them within a service scope. It lets applications register recurring or\nstartup work without hand-rolling `BackgroundService` plumbing for each job.\n\n## The `IBackgroundTask` contract\n\n`IBackgroundTask` exposes a single `RunAsync` method representing a job to be executed.\nImplementations are registered with DI, keeping each task small and focused on one\nunit of work.\n\n## The hosting service\n\n`BackgroundJobHost` is a hosted `BackgroundService` that resolves all registered\n`IBackgroundTask` implementations and executes them inside a service scope. Running in\na scope means each job gets correctly scoped dependencies (such as a `DbContext`),\navoiding the captive-dependency problems that arise when scoped services are used from\na singleton host.\n\n## Where it fits\n\nBackground tasks complement the other ASP.NET Core utilities, [[idempotency]] and\n[[aspcore-extensions]], in the Web/API ring of [[onion-architecture]]. A job can drive\ndomain behavior by resolving [[repositories]] and invoking aggregate methods, which in\nturn emit [[domain-events]] through the persistence pipeline.\n",
+        "backlinks": [
+          "article:aspcore-extensions",
+          "article:idempotency"
+        ]
+      }
+    },
+    {
+      "id": "article:blob-storage",
+      "type": "article",
+      "name": "blob-storage",
+      "filePath": "blob-storage.md",
+      "summary": "DKNet's blob storage is a provider-agnostic abstraction: application code depends on the `IBlobService` contract, and a concrete adapter — Azure Storage, AWS S3, or the local filesystem — provides ...",
+      "tags": [
+        "[storage",
+        "adapter]",
+        "aws-s3",
+        "azure",
+        "blob",
+        "local",
+        "service adapters"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "pdf-generators",
+          "encryption-services",
+          "transformation"
+        ],
+        "category": "Service Adapters",
+        "content": "---\ntitle: Blob Storage\ncategory: Service Adapters\ntags: [storage, blob, azure, aws-s3, local, adapter]\n---\n\n## Summary\n\nDKNet's blob storage is a provider-agnostic abstraction: application code depends on\nthe `IBlobService` contract, and a concrete adapter — Azure Storage, AWS S3, or the\nlocal filesystem — provides the implementation. Swapping providers is a configuration\nand DI change rather than a code change, the hallmark of a service adapter in\n[[onion-architecture]].\n\n## The abstraction and shared options\n\nThe abstractions package defines `IBlobService` and a base `BlobServiceOptions` record\nholding validation rules — allowed extensions, maximum name length, and maximum file\nsize — that every provider inherits. Concrete option types (S3, Azure, Local) extend\nthis base, so validation behaves consistently regardless of backend.\n\n## Available adapters\n\n- **Azure Storage** (`DKNet.Svc.BlobStorage.AzureStorage`) — backed by\n  `Azure.Storage.Blobs`.\n- **AWS S3** (`DKNet.Svc.BlobStorage.AwsS3`) — backed by the AWS SDK; supports\n  pre-signed URLs, multipart uploads, and S3-compatible services such as Cloudflare R2\n  and MinIO.\n- **Local** (`DKNet.Svc.BlobStorage.Local`) — `LocalBlobService` stores blobs under a\n  configured root folder with path-safety checks and listing support.\n\n## Where it fits\n\nBlob storage is one of the pluggable service adapters, alongside [[pdf-generators]],\n[[encryption-services]], and [[transformation]]. Because consumers depend only on\n`IBlobService`, the choice of provider stays out of the domain and application layers,\nand validation rules are centralized rather than duplicated per provider.\n",
+        "backlinks": [
+          "article:encryption-services",
+          "article:pdf-generators",
+          "article:pdf-generators",
+          "article:transformation"
+        ]
+      }
+    },
+    {
+      "id": "article:column-encryption",
+      "type": "article",
+      "name": "column-encryption",
+      "filePath": "column-encryption.md",
+      "summary": "DKNet's EF Core column encryption transparently encrypts and decrypts string properties as they cross the persistence boundary. Properties opt in with the `[Encrypted]` marker attribute, and a Save...",
+      "tags": [
+        "[efcore",
+        "data-protection]",
+        "ef core persistence",
+        "encryption",
+        "hooks",
+        "security"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "savechanges-hooks",
+          "audit-logs",
+          "data-authorization",
+          "encryption-services",
+          "efcore-abstractions"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Column Encryption\ncategory: EF Core Persistence\ntags: [efcore, encryption, hooks, security, data-protection]\n---\n\n## Summary\n\nDKNet's EF Core column encryption transparently encrypts and decrypts string\nproperties as they cross the persistence boundary. Properties opt in with the\n`[Encrypted]` marker attribute, and a SaveChanges interceptor handles the\ncryptographic work — another cross-cutting concern built on [[savechanges-hooks]].\n\n## Opting in\n\n`[Encrypted]` is a marker attribute applied to string properties to enable automatic\ncolumn-level encryption. The application code continues to read and write plain string\nvalues; the framework encrypts on write and decrypts on read so the ciphertext only\nexists at rest.\n\n## How it integrates with persistence\n\nThe encryption hook runs in the SaveChanges pipeline: in the before-write phase it\nencrypts the marked properties of tracked entities, and the corresponding read path\ndecrypts them. Because it is an opt-in interceptor registered via DI, it composes with\nthe [[audit-logs]] and [[data-authorization]] concerns on the same `DbContext`.\n\n## Relationship to other crypto features\n\nColumn encryption is about protecting persisted data at the EF Core boundary. For\ngeneral-purpose application cryptography (AES, AES-GCM, RSA, SHA, HMAC) used outside of\npersistence, see the standalone [[encryption-services]] package. The `[Encrypted]`\nattribute itself is part of the domain contracts in [[efcore-abstractions]].\n",
+        "backlinks": [
+          "article:audit-logs",
+          "article:data-authorization",
+          "article:encryption-services",
+          "article:random-creator",
+          "article:savechanges-hooks",
+          "article:savechanges-hooks"
+        ]
+      }
+    },
+    {
+      "id": "article:cqrs-slimbus",
+      "type": "article",
+      "name": "cqrs-slimbus",
+      "filePath": "cqrs-slimbus.md",
+      "summary": "`DKNet.SlimBus.Extensions` provides DKNet's CQRS and messaging glue on top of SlimMessageBus. Commands and queries are dispatched to handlers implementing `IRequestHandler<TCommand, TResult>`, resu...",
+      "tags": [
+        "[cqrs",
+        "architecture & concepts",
+        "messaging",
+        "result-pattern]",
+        "slimbus",
+        "slimmessagebus"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "repositories",
+          "domain-events",
+          "aggregate-root"
+        ],
+        "category": "Architecture & Concepts",
+        "content": "---\ntitle: CQRS with SlimBus\ncategory: Architecture & Concepts\ntags: [cqrs, slimbus, slimmessagebus, messaging, result-pattern]\n---\n\n## Summary\n\n`DKNet.SlimBus.Extensions` provides DKNet's CQRS and messaging glue on top of\nSlimMessageBus. Commands and queries are dispatched to handlers implementing\n`IRequestHandler<TCommand, TResult>`, results use the FluentResults pattern, and an\nEF Core auto-save interceptor persists changes after a successful handler. It is the\napplication layer of [[onion-architecture]], sitting between presentation and the\ndomain.\n\n## Handlers and the result pattern\n\nHandlers implement `IRequestHandler<TCommand, TResult>` for writes and equivalent\nquery/paged-query handlers for reads (the package references `X.PagedList.EF` for\npaging). Commands load an aggregate through [[repositories]], invoke its behavior, and\nreturn a `FluentResults` result that signals success or failure without throwing for\nexpected business outcomes.\n\n## Automatic EF Core persistence\n\n`EfAutoSavePostInterceptor` is a SlimMessageBus post-processing interceptor that calls\n`SaveChanges` on the EF Core `DbContext` after a handler completes — but only when the\nresult indicates success, skipping persistence on failure. A registration table\ntracks which `DbContext` types have auto-save enabled, so handlers don't have to call\n`SaveChangesAsync` themselves. `SlimBusEfCoreSetup` is the DI extension that wires this\nup.\n\n## Domain events over the bus\n\nBecause the package references `DKNet.EfCore.Events`, domain events raised by\naggregates flow out through the `SlimBusEventPublisher`, which forwards them to\nSlimMessageBus with their additional data as headers. This ties command handling to\nthe event-driven design in [[domain-events]], and keeps aggregates — described in\n[[aggregate-root]] — at the center of each operation.\n",
+        "backlinks": [
+          "article:aspcore-extensions",
+          "article:aspire-servicebus",
+          "article:domain-driven-design",
+          "article:domain-events",
+          "article:dto-generator",
+          "article:onion-architecture",
+          "article:pdf-generators",
+          "article:repositories"
+        ]
+      }
+    },
+    {
+      "id": "article:data-authorization",
+      "type": "article",
+      "name": "data-authorization",
+      "filePath": "data-authorization.md",
+      "summary": "`DKNet.EfCore.DataAuthorization` enforces ownership-based, row-level data filtering through EF Core global query filters. It restricts which rows a caller can see based on ownership keys, providing...",
+      "tags": [
+        "[efcore",
+        "authorization",
+        "ef core persistence",
+        "multi-tenant",
+        "query-filters",
+        "security]"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "savechanges-hooks",
+          "specifications",
+          "dynamic-predicate-builder",
+          "audit-logs",
+          "column-encryption",
+          "efcore-abstractions",
+          "onion-architecture"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Data Authorization\ncategory: EF Core Persistence\ntags: [efcore, authorization, query-filters, multi-tenant, security]\n---\n\n## Summary\n\n`DKNet.EfCore.DataAuthorization` enforces ownership-based, row-level data filtering\nthrough EF Core global query filters. It restricts which rows a caller can see based on\nownership keys, providing multi-tenant or per-owner isolation without each query having\nto remember to filter. It references the EfCore Extensions and Hooks projects and is a\ncross-cutting concern in the [[savechanges-hooks]] family.\n\n## Ownership model\n\nAn `IDataOwnerProvider` supplies the current owner key and the set of keys the caller\nmay access. Global query filters use this provider to scope reads to authorized rows\nautomatically. The persistence pipeline also stamps ownership on entities so that\nwritten data carries the correct owner.\n\n## Query-filter translation\n\nA documented fix in the package addresses an EF Core global query-filter translation\nissue, ensuring the ownership predicate translates to SQL rather than evaluating in\nmemory. This keeps authorization both correct and efficient, consistent with DKNet's\nrule of pushing filtering to the database — the same principle behind\n[[specifications]] and the [[dynamic-predicate-builder]].\n\n## Where it fits\n\nLike [[audit-logs]] and [[column-encryption]], data authorization is opt-in via a DI\nextension and layers onto the `DbContext` without changing domain code. It operates on\nthe entities defined in [[efcore-abstractions]], upholding the inward dependency rule\nof [[onion-architecture]].\n",
+        "backlinks": [
+          "article:audit-logs",
+          "article:column-encryption",
+          "article:savechanges-hooks",
+          "article:savechanges-hooks",
+          "article:testing-strategy"
+        ]
+      }
+    },
+    {
+      "id": "article:domain-driven-design",
+      "type": "article",
+      "name": "domain-driven-design",
+      "filePath": "domain-driven-design.md",
+      "summary": "DKNet is built around Domain-Driven Design (DDD): the framework provides the primitives needed to model a rich domain — aggregate roots, entities, value objects, domain services, and domain events ...",
+      "tags": [
+        "[ddd",
+        "aggregates",
+        "architecture & concepts",
+        "ubiquitous-language]",
+        "value-objects"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "aggregate-root",
+          "domain-events",
+          "specifications",
+          "repositories",
+          "specifications",
+          "cqrs-slimbus"
+        ],
+        "category": "Architecture & Concepts",
+        "content": "---\ntitle: Domain-Driven Design in DKNet\ncategory: Architecture & Concepts\ntags: [ddd, aggregates, value-objects, ubiquitous-language]\n---\n\n## Summary\n\nDKNet is built around Domain-Driven Design (DDD): the framework provides the\nprimitives needed to model a rich domain — aggregate roots, entities, value objects,\ndomain services, and domain events — and keeps that model free of infrastructure\nconcerns. DDD pairs with [[onion-architecture]] so the domain stays at the center\nwhile persistence and messaging wrap around it.\n\n## Building blocks\n\n- **Aggregate roots** define consistency boundaries and are the only entry point for\n  changing the entities they contain. DKNet's base type is described in\n  [[aggregate-root]].\n- **Entities and value objects** model identity-bearing and immutable concepts\n  respectively (for example a `Money` record validating amount and currency).\n- **Domain events** record meaningful state changes; see [[domain-events]].\n- **Domain services** hold logic that does not belong to a single entity.\n- **Specifications** encapsulate reusable query intent; see [[specifications]].\n\n## Ubiquitous language and rich behavior\n\nDKNet favors rich entities over anemic data bags: state is mutated through\nintention-revealing methods (such as `Order.ConfirmOrder` or `Product.UpdatePrice`)\nthat enforce invariants and raise events, rather than through public setters. Code\nuses the same terminology as domain experts, keeping the model aligned with the\nbusiness.\n\n## Bounded contexts and persistence\n\nWithin a solution, models are organized into bounded contexts, each with its own\n`DbContext` and entity set. Persistence is reached only through abstractions —\n[[repositories]] consuming [[specifications]] — so domain code depends on interfaces,\nnever on EF Core directly. Application orchestration runs through [[cqrs-slimbus]]\nhandlers that load aggregates, invoke their behavior, and persist the result.\n",
+        "backlinks": [
+          "article:domain-events",
+          "article:efcore-abstractions",
+          "article:onion-architecture",
+          "article:specifications",
+          "article:testing-strategy"
+        ]
+      }
+    },
+    {
+      "id": "article:domain-events",
+      "type": "article",
+      "name": "domain-events",
+      "filePath": "domain-events.md",
+      "summary": "Domain events represent facts that have happened in the domain. In DKNet they are modeled as `DomainEvent` records (implementing `IDomainEvent`) raised by aggregates, then dispatched by `DKNet.EfCo...",
+      "tags": [
+        "[domain-events",
+        "architecture & concepts",
+        "efcore-events]",
+        "event-driven"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "aggregate-root",
+          "savechanges-hooks",
+          "cqrs-slimbus",
+          "domain-driven-design"
+        ],
+        "category": "Architecture & Concepts",
+        "content": "---\ntitle: Domain Events\ncategory: Architecture & Concepts\ntags: [domain-events, event-driven, efcore-events]\n---\n\n## Summary\n\nDomain events represent facts that have happened in the domain. In DKNet they are\nmodeled as `DomainEvent` records (implementing `IDomainEvent`) raised by aggregates,\nthen dispatched by `DKNet.EfCore.Events` during `SaveChanges`. This gives DKNet an\nevent-driven core where bounded contexts and side effects stay loosely coupled from\nthe code that triggers them.\n\n## The event type\n\n`DomainEvent` is an abstract record implementing `IDomainEvent`. It computes a lazy\n`HashId` via an abstract `GenerateHashId` hook, which supports deduplicating events.\nAggregates derive concrete events (for example `ProductPriceChangedEvent`) and attach\nthem by calling `AddEvent(...)` from inside their business methods — see\n[[aggregate-root]].\n\n## Dispatch during SaveChanges\n\n`DKNet.EfCore.Events` collects the uncommitted events from tracked aggregates,\npersists the database changes, and then publishes the events through an\n`IEventPublisher`. The `DefaultEventPublisher` base supplies the dispatch plumbing.\nBecause dispatch is wired into the SaveChanges pipeline alongside the other\ninterceptors, it composes with [[savechanges-hooks]] rather than requiring manual\ncalls in handlers.\n\n## Publishing to a message bus\n\nWhen `DKNet.SlimBus.Extensions` is in use, the `SlimBusEventPublisher` implements\n`IEventPublisher` by forwarding domain events to SlimMessageBus, mapping each event's\nadditional data onto message headers. This connects the in-process domain events to\nthe broader messaging infrastructure described in [[cqrs-slimbus]]. The events\noriginate from rich behavior modeled per [[domain-driven-design]].\n",
+        "backlinks": [
+          "article:aggregate-root",
+          "article:aggregate-root",
+          "article:aspire-servicebus",
+          "article:background-tasks",
+          "article:cqrs-slimbus",
+          "article:domain-driven-design",
+          "article:efcore-abstractions",
+          "article:onion-architecture",
+          "article:repositories",
+          "article:savechanges-hooks"
+        ]
+      }
+    },
+    {
+      "id": "article:dto-generator",
+      "type": "article",
+      "name": "dto-generator",
+      "filePath": "dto-generator.md",
+      "summary": "DKNet's DtoGenerator is a Roslyn **incremental source generator** that produces data transfer objects from entities at compile time. A partial record or class is marked with the `[GenerateDto]` att...",
+      "tags": [
+        "[efcore",
+        "codegen]",
+        "dto",
+        "ef core persistence",
+        "roslyn",
+        "source-generator"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "efcore-abstractions",
+          "cqrs-slimbus",
+          "specifications",
+          "onion-architecture"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: DTO Generator\ncategory: EF Core Persistence\ntags: [efcore, source-generator, roslyn, dto, codegen]\n---\n\n## Summary\n\nDKNet's DtoGenerator is a Roslyn **incremental source generator** that produces data\ntransfer objects from entities at compile time. A partial record or class is marked\nwith the `[GenerateDto]` attribute, and the generator emits the corresponding DTO,\nremoving hand-written, error-prone mapping boilerplate.\n\n## The `[GenerateDto]` attribute\n\n`[GenerateDto]` is an auto-included attribute carrying the target entity type plus\nconfiguration options:\n\n- **Exclude** — properties to omit from the generated DTO.\n- **Include** — properties to explicitly include.\n- **IgnoreComplexType** — control over how complex/navigation types are handled.\n\nThe README also documents global exclusions for properties that should never be\nprojected.\n\n## Why a source generator\n\nAs an incremental generator, it runs as part of compilation and regenerates only when\nrelevant inputs change, so DTOs stay in sync with their source entities without a\nruntime mapping library. The generated DTOs are produced from the domain entities\ndeclared in [[efcore-abstractions]].\n\n## How it is used in practice\n\nDTOs generated here are typically returned by query handlers in [[cqrs-slimbus]] and\nprojected from queries built with [[specifications]], so read paths return shaped\ntransfer objects rather than exposing aggregates directly. This keeps the presentation\ncontract decoupled from the domain model, consistent with [[onion-architecture]].\n",
+        "backlinks": [
+          "article:efcore-abstractions"
+        ]
+      }
+    },
+    {
+      "id": "article:dynamic-predicate-builder",
+      "type": "article",
+      "name": "dynamic-predicate-builder",
+      "filePath": "dynamic-predicate-builder.md",
+      "summary": "The Dynamic Predicate Builder is the signature feature of `DKNet.EfCore.Specifications`. It builds runtime EF Core predicates from `(propertyName, FilterOperation, value)` triples with type-, enum-...",
+      "tags": [
+        "[efcore",
+        "dynamic-query]",
+        "ef core persistence",
+        "linqkit",
+        "predicate",
+        "specifications"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "specifications",
+          "repositories",
+          "efcore-abstractions"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Dynamic Predicate Builder\ncategory: EF Core Persistence\ntags: [efcore, specifications, linqkit, predicate, dynamic-query]\n---\n\n## Summary\n\nThe Dynamic Predicate Builder is the signature feature of\n`DKNet.EfCore.Specifications`. It builds runtime EF Core predicates from\n`(propertyName, FilterOperation, value)` triples with type-, enum-, and array-safe\nconversion, letting applications construct filters whose shape is unknown at compile\ntime. It composes directly with the [[specifications]] it lives beside.\n\n## Required call shape\n\n```csharp\nvar predicate = PredicateBuilder.New<Product>()\n    .And(p => p.IsActive)\n    .DynamicAnd(b => b.With(\"Price\", FilterOperations.GreaterThan, 100m));\n\nvar results = await _db.Products.AsExpandable().Where(predicate).ToListAsync();\n```\n\n`.AsExpandable()` is **mandatory** — LinqKit cannot translate the dynamic predicate\nwithout it, and expression expansion fails otherwise. `DynamicAnd` and `DynamicOr`\nalready null-handle internally, so manual null checks should not be reintroduced.\n\n## How it works under the hood\n\n`DynamicPredicateBuilderExtensions` validates property names and expressions, resolves\neach property's type, adjusts the requested operation for the value type, and assembles\nclause strings with enum and array validation. The supported operations are defined by\nthe `FilterOperations` enumeration (equality, comparison, contains, `in`, and so on).\nIts behavior under nulls, empty inputs, and unusual operation combinations is locked\ndown by dedicated edge-case tests.\n\n## Pitfalls to avoid\n\n- Forgetting `.AsExpandable()` — expansion fails at query time.\n- Materializing early (calling `ToList()` before `.Where(...)`) — wrong results and\n  poor performance.\n- Re-adding manual null checks that `DynamicAnd`/`DynamicOr` already handle.\n\nThis builder is applied through [[repositories]] and targets entities defined in\n[[efcore-abstractions]].\n",
+        "backlinks": [
+          "article:data-authorization",
+          "article:repositories",
+          "article:specifications",
+          "article:testing-strategy"
+        ]
+      }
+    },
+    {
+      "id": "article:efcore-abstractions",
+      "type": "article",
+      "name": "efcore-abstractions",
+      "filePath": "efcore-abstractions.md",
+      "summary": "`DKNet.EfCore.Abstractions` holds the DDD contracts and primitives at the core of the DKNet domain model: the `AggregateRoot`/`Entity` base types and the domain-event base types. It is the package ...",
+      "tags": [
+        "[efcore",
+        "abstractions",
+        "aggregate-root",
+        "ddd",
+        "domain-events]",
+        "ef core persistence"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "domain-driven-design",
+          "aggregate-root",
+          "domain-events",
+          "onion-architecture",
+          "repositories",
+          "savechanges-hooks",
+          "specifications",
+          "dto-generator"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: DKNet.EfCore.Abstractions\ncategory: EF Core Persistence\ntags: [efcore, abstractions, ddd, aggregate-root, domain-events]\n---\n\n## Summary\n\n`DKNet.EfCore.Abstractions` holds the DDD contracts and primitives at the core of the\nDKNet domain model: the `AggregateRoot`/`Entity` base types and the domain-event base\ntypes. It is the package that anchors a domain in [[domain-driven-design]] terms while\nremaining free of concrete persistence logic.\n\n## Core contracts\n\n- **`AggregateRoot`** — abstract base marking an aggregate's consistency boundary,\n  extending `DomainEntity` with audit and concurrency support and carrying domain\n  events. Detailed in [[aggregate-root]].\n- **`DomainEntity`** — the entity base that `AggregateRoot` forwards construction to,\n  supplying identity and audit fields.\n- **`DomainEvent` / `IDomainEvent`** — the abstract event record (with a lazily\n  computed `HashId`) and its interface, covered in [[domain-events]].\n- **Marker attributes** such as `[AuditLog]` and `[Encrypted]` that opt entities and\n  properties into cross-cutting behaviors.\n\n## Why it is separate\n\nKeeping these contracts in their own package lets the domain layer depend on\nabstractions only. Persistence behavior — repositories, hooks, event dispatch — lives\nin sibling packages that reference these abstractions, which is the inward dependency\nrule of [[onion-architecture]].\n\n## How it is consumed\n\n[[repositories]] persist `AggregateRoot` instances; [[savechanges-hooks]] interceptors\nread the marker attributes to apply audit, encryption, and authorization; and\n[[specifications]] query objects target the entity types defined here. The DTO\ntooling in [[dto-generator]] can project these entities into transfer objects.\n",
+        "backlinks": [
+          "article:aggregate-root",
+          "article:audit-logs",
+          "article:column-encryption",
+          "article:data-authorization",
+          "article:dto-generator",
+          "article:dynamic-predicate-builder",
+          "article:onion-architecture",
+          "article:repositories",
+          "article:savechanges-hooks",
+          "article:specifications"
+        ]
+      }
+    },
+    {
+      "id": "article:encryption-services",
+      "type": "article",
+      "name": "encryption-services",
+      "filePath": "encryption-services.md",
+      "summary": "`DKNet.Svc.Encryption` is a standalone cryptographic service package offering symmetric and asymmetric encryption plus hashing primitives. A single DI extension, `AddEncryptionServices`, registers ...",
+      "tags": [
+        "[encryption",
+        "aes",
+        "hashing",
+        "hmac",
+        "rsa",
+        "security]",
+        "service adapters"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "column-encryption",
+          "random-creator",
+          "blob-storage",
+          "pdf-generators",
+          "transformation",
+          "onion-architecture"
+        ],
+        "category": "Service Adapters",
+        "content": "---\ntitle: Encryption Services\ncategory: Service Adapters\ntags: [encryption, aes, rsa, hashing, hmac, security]\n---\n\n## Summary\n\n`DKNet.Svc.Encryption` is a standalone cryptographic service package offering symmetric\nand asymmetric encryption plus hashing primitives. A single DI extension,\n`AddEncryptionServices`, registers all of the interfaces — AES, AES-GCM, RSA, SHA, and\nHMAC — as transient implementations, making application-level cryptography a\nstraightforward injected dependency.\n\n## Provided primitives\n\n- **AES and AES-GCM** — symmetric encryption, with AES-GCM supporting associated data\n  and authenticated tamper detection.\n- **RSA** — asymmetric encryption for end-to-end scenarios.\n- **SHA (256/512)** — cryptographic hashing.\n- **HMAC (256/512)** — keyed message authentication.\n\n`EncryptionSetup.AddEncryptionServices` wires all of these up at once; tests cover\nAES-GCM associated-data tampering, HMAC, SHA hashing, RSA round-trips, and\npost-dispose guards.\n\n## Distinction from EF Core column encryption\n\nThis package is for general application cryptography invoked explicitly in code. It is\ndistinct from [[column-encryption]], which transparently protects `[Encrypted]` string\nproperties at the EF Core persistence boundary. For generating unpredictable values\nrather than encrypting, see [[random-creator]].\n\n## Where it fits\n\nEncryption services are one of the pluggable service adapters alongside\n[[blob-storage]], [[pdf-generators]], and [[transformation]], sitting in the Service\nAdapters ring of [[onion-architecture]].\n",
+        "backlinks": [
+          "article:blob-storage",
+          "article:column-encryption",
+          "article:pdf-generators",
+          "article:random-creator",
+          "article:transformation"
+        ]
+      }
+    },
+    {
+      "id": "article:fw-extensions",
+      "type": "article",
+      "name": "fw-extensions",
+      "filePath": "fw-extensions.md",
+      "summary": "`DKNet.Fw.Extensions` is DKNet's foundational core utility library — a framework-agnostic package of helper extensions for String, DateTime, Enum, Type, and async enumerables that the rest of the s...",
+      "tags": [
+        "[core",
+        "core utilities",
+        "datetime",
+        "enum",
+        "extensions",
+        "string",
+        "type]"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "idempotency",
+          "random-creator",
+          "testing-strategy"
+        ],
+        "category": "Core Utilities",
+        "content": "---\ntitle: DKNet.Fw.Extensions\ncategory: Core Utilities\ntags: [core, extensions, string, datetime, enum, type]\n---\n\n## Summary\n\n`DKNet.Fw.Extensions` is DKNet's foundational core utility library — a\nframework-agnostic package of helper extensions for String, DateTime, Enum, Type, and\nasync enumerables that the rest of the suite builds upon. It carries no domain or\ninfrastructure dependencies, which is why it sits in the innermost ring of\n[[onion-architecture]].\n\n## What it provides\n\nThe library groups small, focused extension methods in static classes (per the\nproject's `/Extensions` convention):\n\n- **String helpers** — common formatting, parsing, and value-type detection utilities.\n- **DateTime helpers** — date manipulation and comparison helpers.\n- **Enum helpers** — conversion and metadata access for enum types.\n- **Type helpers** — reflection-oriented checks used across the framework.\n- **Async enumerable** support for streaming sequences.\n\nIts changelog tracks these as the String, DateTime, and Enum extension areas.\n\n## Role across the suite\n\nBecause it is dependency-light and broadly useful, `DKNet.Fw.Extensions` is referenced\nby higher-level packages — for example `DKNet.AspCore.Idempotency` depends on it (see\n[[idempotency]]). Treating it as the shared base keeps utility logic centralized\nrather than duplicated.\n\n## Relation to other core pieces\n\nIt is paired with [[random-creator]] as the two Core Foundation packages, and it\nunderpins the EF Core and ASP.NET Core layers. New cross-cutting helpers should land\nhere rather than being reinvented in feature packages; the same discipline applies to\nthe testable, well-documented public APIs described in [[testing-strategy]].\n",
+        "backlinks": [
+          "article:aspcore-extensions",
+          "article:idempotency",
+          "article:random-creator",
+          "article:transformation"
+        ]
+      }
+    },
+    {
+      "id": "article:idempotency",
+      "type": "article",
+      "name": "idempotency",
+      "filePath": "idempotency.md",
+      "summary": "`DKNet.AspCore.Idempotency` is endpoint middleware that makes HTTP operations idempotent: repeated requests carrying the same idempotency key return the original cached response instead of executin...",
+      "tags": [
+        "[aspnetcore",
+        "asp.net core",
+        "idempotency",
+        "middleware",
+        "mssql",
+        "reliability]"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "fw-extensions",
+          "background-tasks",
+          "aspcore-extensions",
+          "onion-architecture"
+        ],
+        "category": "ASP.NET Core",
+        "content": "---\ntitle: Idempotency\ncategory: ASP.NET Core\ntags: [aspnetcore, idempotency, middleware, mssql, reliability]\n---\n\n## Summary\n\n`DKNet.AspCore.Idempotency` is endpoint middleware that makes HTTP operations\nidempotent: repeated requests carrying the same idempotency key return the original\ncached response instead of executing the operation again. It is backed by a pluggable\nstore, with `DKNet.AspCore.Idempotency.MsSqlStore` providing a SQL Server-backed\nimplementation.\n\n## What the middleware does\n\nThe middleware intercepts requests bearing an idempotency key, caches the HTTP\nresponse (including the status code), and replays it on retries. It performs composite\nkey validation and wraps the cache interactions with exception handling, supporting\nfail-open and fail-closed error behaviors so applications can choose whether a cache\noutage blocks or permits the underlying operation.\n\n## The MS SQL store\n\n`MsSqlStore` persists idempotency keys using EF Core 10 with its own `DbContext` and\nschema. Concurrency is handled via a unique index combined with an insert-or-query\npattern, so two simultaneous requests with the same key resolve deterministically. The\nstore is registered in `Program.cs` alongside the middleware, and the store interface\nis pluggable — other backends can be supplied.\n\n## Where it fits\n\nIdempotency depends on the core utilities in [[fw-extensions]] and uses the\nFluentResults pattern. It pairs with the other ASP.NET Core utilities —\n[[background-tasks]] and [[aspcore-extensions]] — to harden web applications built on\nDKNet's [[onion-architecture]].\n",
+        "backlinks": [
+          "article:aspcore-extensions",
+          "article:background-tasks",
+          "article:fw-extensions"
+        ]
+      }
+    },
+    {
+      "id": "article:onion-architecture",
+      "type": "article",
+      "name": "onion-architecture",
+      "filePath": "onion-architecture.md",
+      "summary": "DKNet implements the Onion Architecture so that dependencies always flow inward toward the domain. The framework expresses this not through a single application project but at its **package boundar...",
+      "tags": [
+        "[architecture",
+        "architecture & concepts",
+        "dependency-inversion",
+        "layering]",
+        "onion"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "efcore-abstractions",
+          "aggregate-root",
+          "cqrs-slimbus",
+          "repositories",
+          "savechanges-hooks",
+          "savechanges-hooks",
+          "specifications",
+          "domain-driven-design",
+          "domain-events"
+        ],
+        "category": "Architecture & Concepts",
+        "content": "---\ntitle: Onion Architecture in DKNet\ncategory: Architecture & Concepts\ntags: [architecture, onion, dependency-inversion, layering]\n---\n\n## Summary\n\nDKNet implements the Onion Architecture so that dependencies always flow inward\ntoward the domain. The framework expresses this not through a single application\nproject but at its **package boundaries**: domain abstractions sit at the core,\npersistence and infrastructure adapters wrap around them, and consuming applications\nopt in via dependency injection. The result is business logic that is independent of\nEF Core, message buses, and storage providers.\n\n## Layers and dependency flow\n\nConcentric layers, from the inside out:\n\n1. **Domain layer (core)** — entities, value objects, and domain logic with no\n   infrastructure dependencies. Anchored by [[efcore-abstractions]] and the\n   [[aggregate-root]] base type.\n2. **Application layer** — orchestrates the domain through command/query handlers,\n   validation, and DTOs. In DKNet this is realized with [[cqrs-slimbus]].\n3. **Infrastructure layer** — implements interfaces declared by inner layers:\n   [[repositories]], [[savechanges-hooks]], and the service adapters.\n4. **Presentation layer** — API endpoints and controllers that depend only on the\n   application layer.\n\nDependencies point inward only: the domain never references EF Core, and the\npresentation layer never reaches past the application layer.\n\n## How packages encode the layers\n\nBecause DKNet is a library suite, each ring is a separate NuGet package. The domain\ncontracts live in `DKNet.EfCore.Abstractions`; persistence concerns are layered as\nopt-in EF Core interceptors ([[savechanges-hooks]]); and query logic is kept reusable\nthrough [[specifications]]. This package-level separation is what lets a consuming\napplication swap an infrastructure adapter (for example a blob provider) without\ntouching domain or application code.\n\n## Why it matters\n\nOnion layering gives DKNet its testability and flexibility: domain rules are unit\ntestable in isolation, infrastructure is replaceable, and cross-cutting concerns\n(audit, encryption, authorization) attach as interceptors rather than leaking into\nbusiness code. See [[domain-driven-design]] for the modeling concepts that fill these\nlayers and [[domain-events]] for how the rings communicate without tight coupling.\n",
+        "backlinks": [
+          "article:aspcore-extensions",
+          "article:aspire-servicebus",
+          "article:audit-logs",
+          "article:background-tasks",
+          "article:blob-storage",
+          "article:cqrs-slimbus",
+          "article:data-authorization",
+          "article:domain-driven-design",
+          "article:dto-generator",
+          "article:efcore-abstractions",
+          "article:encryption-services",
+          "article:fw-extensions",
+          "article:idempotency",
+          "article:pdf-generators",
+          "article:random-creator",
+          "article:repositories",
+          "article:transformation"
+        ]
+      }
+    },
+    {
+      "id": "article:pdf-generators",
+      "type": "article",
+      "name": "pdf-generators",
+      "filePath": "pdf-generators.md",
+      "summary": "`DKNet.Svc.PdfGenerators` is a service adapter that converts content — notably Markdown rendered through HTML templates — into PDF documents. It ships HTML page templates and supports rich renderin...",
+      "tags": [
+        "[pdf",
+        "html",
+        "markdown",
+        "rendering",
+        "service adapters",
+        "service]"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "blob-storage",
+          "encryption-services",
+          "transformation",
+          "cqrs-slimbus",
+          "blob-storage"
+        ],
+        "category": "Service Adapters",
+        "content": "---\ntitle: PDF Generators\ncategory: Service Adapters\ntags: [pdf, markdown, html, rendering, service]\n---\n\n## Summary\n\n`DKNet.Svc.PdfGenerators` is a service adapter that converts content — notably Markdown\nrendered through HTML templates — into PDF documents. It ships HTML page templates and\nsupports rich rendering features, providing document generation as a pluggable service\nin the Service Adapters ring of [[onion-architecture]].\n\n## Templates and rendering features\n\nThe package includes HTML page templates that wrap the converted body:\n\n- **`ContentTemplate.html`** — the primary template, injecting MathJax, Mermaid, and\n  highlight.js scripts plus stylesheets so generated PDFs can render math, diagrams,\n  and syntax-highlighted code.\n- **`ContentTemplate_NoScripts.html`** — a minimal, script-free template for\n  lightweight or sandboxed rendering, substituting only title, custom CSS, and body\n  content.\n\nConfiguration highlights and extensibility points let applications customize styling\nand the rendering pipeline.\n\n## Where it fits\n\nPDF generation is one of DKNet's pluggable infrastructure adapters, alongside\n[[blob-storage]], [[encryption-services]], and [[transformation]]. Generated documents\nare commonly produced inside application workflows — for example a [[cqrs-slimbus]]\nhandler that builds a report — and the resulting file can be persisted through\n[[blob-storage]].\n",
+        "backlinks": [
+          "article:blob-storage",
+          "article:encryption-services",
+          "article:transformation",
+          "article:transformation"
+        ]
+      }
+    },
+    {
+      "id": "article:random-creator",
+      "type": "article",
+      "name": "random-creator",
+      "filePath": "random-creator.md",
+      "summary": "`DKNet.RandomCreator` is a small Core Foundation package that provides secure random string and character generation. Its public facade, `RandomCreators`, exposes `NewChars` and `NewString` to prod...",
+      "tags": [
+        "[core",
+        "core utilities",
+        "random",
+        "security",
+        "strings]"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "fw-extensions",
+          "onion-architecture",
+          "encryption-services",
+          "column-encryption"
+        ],
+        "category": "Core Utilities",
+        "content": "---\ntitle: DKNet.RandomCreator\ncategory: Core Utilities\ntags: [core, random, security, strings]\n---\n\n## Summary\n\n`DKNet.RandomCreator` is a small Core Foundation package that provides secure random\nstring and character generation. Its public facade, `RandomCreators`, exposes\n`NewChars` and `NewString` to produce random char arrays or strings, wrapping a\ndisposable `StringCreator` configured by options.\n\n## API surface\n\n- **`RandomCreators.NewChars(...)`** — generates a random character array.\n- **`RandomCreators.NewString(...)`** — generates a random string.\n\nBoth delegate to an internal `StringCreator` (with a `StringCreatorOptions`-style\nconfiguration) that encapsulates the generation logic and is disposed after use.\n\n## Use cases\n\nThe package is useful anywhere a framework or application needs unpredictable values —\ntokens, identifiers, temporary secrets, or test fixtures. Being framework-agnostic and\ndependency-light, it sits alongside [[fw-extensions]] in the innermost ring of\n[[onion-architecture]].\n\n## Relation to other features\n\nFor application-grade cryptography (AES, RSA, hashing, HMAC) rather than random value\ngeneration, use the dedicated [[encryption-services]] package. For column-level data\nprotection in EF Core, see [[column-encryption]]. `RandomCreator` is intentionally\nnarrow: it just creates random characters and strings.\n",
+        "backlinks": [
+          "article:encryption-services",
+          "article:fw-extensions"
+        ]
+      }
+    },
+    {
+      "id": "article:repositories",
+      "type": "article",
+      "name": "repositories",
+      "filePath": "repositories.md",
+      "summary": "`DKNet.EfCore.Repos` provides concrete generic repository implementations that abstract persistence behind interfaces declared in `DKNet.EfCore.Repos.Abstractions`. Repositories decouple domain and...",
+      "tags": [
+        "[efcore",
+        "ef core persistence",
+        "persistence",
+        "read-write]",
+        "repository"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "specifications",
+          "onion-architecture",
+          "specifications",
+          "dynamic-predicate-builder",
+          "efcore-abstractions",
+          "savechanges-hooks",
+          "domain-events",
+          "cqrs-slimbus"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Repositories\ncategory: EF Core Persistence\ntags: [efcore, repository, persistence, read-write]\n---\n\n## Summary\n\n`DKNet.EfCore.Repos` provides concrete generic repository implementations that\nabstract persistence behind interfaces declared in `DKNet.EfCore.Repos.Abstractions`.\nRepositories decouple domain and application code from EF Core and consume\n[[specifications]] to express queries, keeping data access in the infrastructure ring\nof [[onion-architecture]].\n\n## Read/write separation\n\nThe abstractions package defines read and write repository interfaces separately, in\nkeeping with the CQRS approach. Read repositories expose query entry points\n(typically returning `IQueryable`/`AsNoTracking` sequences for projection), while write\nrepositories add/update/delete aggregates and persist changes. Consuming code depends\non the interface it needs rather than a single fat repository.\n\n## Consuming specifications and predicates\n\nRepositories accept [[specifications]] to apply `Criteria`, `Includes`, and `OrderBy`\nin one reusable unit, and they support the [[dynamic-predicate-builder]] for runtime\nfiltering. Filtering is pushed to the database, and reads default to `AsNoTracking()`\nper the framework's EF Core conventions.\n\n## Working with aggregates and events\n\nRepositories load and save `AggregateRoot` instances defined in\n[[efcore-abstractions]]. When changes are persisted, the SaveChanges pipeline applies\ncross-cutting interceptors ([[savechanges-hooks]]) and dispatches [[domain-events]]. In\na SlimBus application the auto-save interceptor described in [[cqrs-slimbus]] often\ntriggers the save, so handlers fetch through a repository, mutate the aggregate, and\nlet persistence happen automatically.\n",
+        "backlinks": [
+          "article:aggregate-root",
+          "article:background-tasks",
+          "article:cqrs-slimbus",
+          "article:domain-driven-design",
+          "article:dynamic-predicate-builder",
+          "article:efcore-abstractions",
+          "article:onion-architecture",
+          "article:specifications",
+          "article:testing-strategy"
+        ]
+      }
+    },
+    {
+      "id": "article:savechanges-hooks",
+      "type": "article",
+      "name": "savechanges-hooks",
+      "filePath": "savechanges-hooks.md",
+      "summary": "`DKNet.EfCore.Hooks` provides a before/after `SaveChanges` interceptor pipeline layered onto the `DbContext`. Hooks are the mechanism by which DKNet attaches cross-cutting concerns — [[audit-logs]]...",
+      "tags": [
+        "[efcore",
+        "cross-cutting]",
+        "ef core persistence",
+        "hooks",
+        "interceptors",
+        "savechanges"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "audit-logs",
+          "column-encryption",
+          "data-authorization",
+          "audit-logs",
+          "column-encryption",
+          "data-authorization",
+          "domain-events",
+          "efcore-abstractions"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: SaveChanges Hooks\ncategory: EF Core Persistence\ntags: [efcore, hooks, interceptors, savechanges, cross-cutting]\n---\n\n## Summary\n\n`DKNet.EfCore.Hooks` provides a before/after `SaveChanges` interceptor pipeline layered\nonto the `DbContext`. Hooks are the mechanism by which DKNet attaches cross-cutting\nconcerns — [[audit-logs]], [[column-encryption]], and [[data-authorization]] — to\npersistence without leaking that logic into domain or application code.\n\n## The interceptor pipeline\n\nHooks run around the EF Core `SaveChanges` call: a *before* phase can inspect or mutate\ntracked entities prior to writing (for example stamping audit fields or encrypting\nproperties), and an *after* phase runs once the write succeeds. Each concern is an\nindependent, opt-in hook registered via a DI extension on the consuming application,\nso an app enables only the behaviors it needs.\n\n## Cross-cutting concerns built on hooks\n\n- **[[audit-logs]]** — automatic created/updated tracking for entities marked with\n  `[AuditLog]`.\n- **[[column-encryption]]** — encrypts/decrypts string properties marked `[Encrypted]`\n  as they cross the persistence boundary.\n- **[[data-authorization]]** — ownership-based row-level filtering applied through EF\n  Core global query filters.\n\n## Relationship to domain events\n\nDomain-event dispatch (`DKNet.EfCore.Events`) participates in the same SaveChanges\nlifecycle, collecting events from aggregates and publishing them after a successful\nsave — see [[domain-events]]. Because hooks and event dispatch share the pipeline, all\nof these behaviors compose cleanly on a single `DbContext` and operate on the entities\nand attributes defined in [[efcore-abstractions]].\n",
+        "backlinks": [
+          "article:aggregate-root",
+          "article:audit-logs",
+          "article:column-encryption",
+          "article:data-authorization",
+          "article:domain-events",
+          "article:efcore-abstractions",
+          "article:onion-architecture",
+          "article:onion-architecture",
+          "article:repositories"
+        ]
+      }
+    },
+    {
+      "id": "article:specifications",
+      "type": "article",
+      "name": "specifications",
+      "filePath": "specifications.md",
+      "summary": "`DKNet.EfCore.Specifications` provides composable query objects that encapsulate query intent — `Criteria`, `Includes`, and `OrderBy` — and combine using LinqKit operators such as `.And()` and `.Or...",
+      "tags": [
+        "[efcore",
+        "ef core persistence",
+        "linqkit",
+        "query]",
+        "specifications"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "dynamic-predicate-builder",
+          "repositories",
+          "efcore-abstractions",
+          "domain-driven-design"
+        ],
+        "category": "EF Core Persistence",
+        "content": "---\ntitle: Specifications\ncategory: EF Core Persistence\ntags: [efcore, specifications, linqkit, query]\n---\n\n## Summary\n\n`DKNet.EfCore.Specifications` provides composable query objects that encapsulate query\nintent — `Criteria`, `Includes`, and `OrderBy` — and combine using LinqKit operators\nsuch as `.And()` and `.Or()`. Specifications let query logic be named, reused, and\nunit tested instead of being scattered through repositories and handlers.\n\n## Anatomy of a specification\n\nA specification bundles the parts of a query:\n\n- **Criteria** — the filtering predicate (an `Expression<Func<T, bool>>`).\n- **Includes** — related navigations to eager-load.\n- **OrderBy** — the sort order to apply.\n\nMultiple specifications compose with LinqKit's predicate operators, so small\nsingle-purpose specifications can be `.And()`/`.Or()`-ed into a larger query without\nrewriting the underlying expression trees.\n\n## Dynamic predicates\n\nFor runtime-driven filtering (for example search APIs where the criteria are not known\nat compile time), the package's signature feature is the\n[[dynamic-predicate-builder]], which builds EF Core predicates from\n`(propertyName, FilterOperation, value)` triples with type- and enum-safe conversion.\n\n## Where specifications are used\n\nSpecifications are consumed by [[repositories]], which apply them against the\n`DbContext`. Because they produce translatable EF Core expressions, they push\nfiltering to the database rather than into memory. They target the entity types\ndeclared in [[efcore-abstractions]], keeping query reuse aligned with the domain\nmodel of [[domain-driven-design]].\n",
+        "backlinks": [
+          "article:data-authorization",
+          "article:domain-driven-design",
+          "article:domain-driven-design",
+          "article:dto-generator",
+          "article:dynamic-predicate-builder",
+          "article:efcore-abstractions",
+          "article:onion-architecture",
+          "article:repositories",
+          "article:repositories",
+          "article:testing-strategy"
+        ]
+      }
+    },
+    {
+      "id": "article:testing-strategy",
+      "type": "article",
+      "name": "testing-strategy",
+      "filePath": "testing-strategy.md",
+      "summary": "DKNet's test suite uses **xUnit** with **Shouldly** assertions and **TestContainers.MsSql** for integration tests, so persistence is exercised against a real SQL Server rather than an in-memory pro...",
+      "tags": [
+        "[testing",
+        "coverage]",
+        "quality & testing",
+        "shouldly",
+        "testcontainers",
+        "xunit"
+      ],
+      "complexity": "simple",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "specifications",
+          "dynamic-predicate-builder",
+          "data-authorization",
+          "domain-driven-design",
+          "repositories"
+        ],
+        "category": "Quality & Testing",
+        "content": "---\ntitle: Testing Strategy\ncategory: Quality & Testing\ntags: [testing, xunit, shouldly, testcontainers, coverage]\n---\n\n## Summary\n\nDKNet's test suite uses **xUnit** with **Shouldly** assertions and\n**TestContainers.MsSql** for integration tests, so persistence is exercised against a\nreal SQL Server rather than an in-memory provider. Every package has a sibling\n`*.Tests` project, and coverage gates are enforced in CI to keep the framework reliable.\n\n## Conventions\n\n- **Naming**: `MethodName_Scenario_ExpectedBehavior` (for example\n  `DynamicAnd_WithMultipleConditions_CombinesCorrectly`).\n- **Stack**: xUnit + Shouldly + TestContainers.MsSql; avoid mocking the database.\n- **Isolation**: prefer `IAsyncLifetime` fixtures over shared `IClassFixture` state\n  when isolation matters.\n- **SQL verification**: assert on `query.ToQueryString()` output alongside the\n  materialized rows — a recurring pattern in the specifications tests that confirms\n  filtering is translated to SQL, not run in memory.\n\n## Why real databases\n\nIntegration tests run against TestContainers.MsSql (Docker required) rather than EF\nCore InMemory, because the in-memory provider masks SQL-specific behavior. This is what\nvalidates features such as [[specifications]], the [[dynamic-predicate-builder]]\n(including the mandatory `.AsExpandable()` expansion), and [[data-authorization]]'s\nquery-filter translation.\n\n## Coverage targets\n\n| Area | Target |\n|---|---|\n| Core libraries | 99% line |\n| EfCore libraries | 95% line |\n| Service libraries | 90% line |\n| CI gate (overall) | 80% line |\n\nThe primary CI pipeline restores, builds in Release, runs tests with OpenCover\ncoverage, runs SonarCloud analysis, enforces the 80% threshold, and comments coverage\non PRs. Tests should encode *why* behavior matters, exercising the domain rules in\n[[domain-driven-design]] and the persistence behaviors built on [[repositories]].\n",
+        "backlinks": [
+          "article:fw-extensions"
+        ]
+      }
+    },
+    {
+      "id": "article:transformation",
+      "type": "article",
+      "name": "transformation",
+      "filePath": "transformation.md",
+      "summary": "`DKNet.Svc.Transformation` provides token and data transformation capabilities: it resolves named tokens against supplied data sources and formats the resolved values into strings. It is useful for...",
+      "tags": [
+        "[transformation",
+        "formatting",
+        "service adapters",
+        "templating]",
+        "tokens"
+      ],
+      "complexity": "moderate",
+      "knowledgeMeta": {
+        "wikilinks": [
+          "onion-architecture",
+          "blob-storage",
+          "pdf-generators",
+          "encryption-services",
+          "fw-extensions",
+          "pdf-generators"
+        ],
+        "category": "Service Adapters",
+        "content": "---\ntitle: Transformation\ncategory: Service Adapters\ntags: [transformation, tokens, formatting, templating]\n---\n\n## Summary\n\n`DKNet.Svc.Transformation` provides token and data transformation capabilities: it\nresolves named tokens against supplied data sources and formats the resolved values\ninto strings. It is useful for templating scenarios — substituting placeholders in\ntext from objects, dictionaries, or collections — and is one of DKNet's pluggable\nservice adapters.\n\n## Token resolution\n\n`ITokenResolver` (implemented by `TokenResolver`) exposes synchronous and asynchronous\nresolve operations that look up a token's value from the supplied data: collections,\ndictionaries, or object properties. It returns the first matching value, so multiple\ndata sources can be layered. String helpers in the package add value-type detection and\nstring transformation utilities.\n\n## Value formatting\n\n`IValueFormatter` defines the contract for converting a resolved token value into its\nstring representation. Separating resolution from formatting lets applications control\nhow values render independently of how they are looked up.\n\n## Where it fits\n\nTransformation sits in the Service Adapters ring of [[onion-architecture]] alongside\n[[blob-storage]], [[pdf-generators]], and [[encryption-services]]. Its string helpers\ncomplement the broader core utilities in [[fw-extensions]]; resolved/templated text can\nfeed downstream services such as document generation in [[pdf-generators]].\n",
+        "backlinks": [
+          "article:blob-storage",
+          "article:encryption-services",
+          "article:pdf-generators"
+        ]
+      }
+    },
+    {
+      "id": "topic:architecture-&-concepts",
+      "type": "topic",
+      "name": "Architecture & Concepts",
+      "summary": "Category from index: Architecture & Concepts (5 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:core-utilities",
+      "type": "topic",
+      "name": "Core Utilities",
+      "summary": "Category from index: Core Utilities (2 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:ef-core-persistence",
+      "type": "topic",
+      "name": "EF Core Persistence",
+      "summary": "Category from index: EF Core Persistence (9 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:asp.net-core",
+      "type": "topic",
+      "name": "ASP.NET Core",
+      "summary": "Category from index: ASP.NET Core (3 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:service-adapters",
+      "type": "topic",
+      "name": "Service Adapters",
+      "summary": "Category from index: Service Adapters (4 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:infrastructure-&-messaging",
+      "type": "topic",
+      "name": "Infrastructure & Messaging",
+      "summary": "Category from index: Infrastructure & Messaging (1 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "topic:quality-&-testing",
+      "type": "topic",
+      "name": "Quality & Testing",
+      "summary": "Category from index: Quality & Testing (1 articles)",
+      "tags": [
+        "category"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:slimmessagebus",
+      "type": "entity",
+      "name": "SlimMessageBus",
+      "summary": "Lightweight .NET message bus library that DKNet.SlimBus.Extensions builds its CQRS and event dispatch on top of.",
+      "tags": [
+        "entity",
+        "messaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:linqkit",
+      "type": "entity",
+      "name": "LinqKit",
+      "summary": "Expression-composition library; required (via .AsExpandable()) to translate DKNet's dynamic predicates into SQL.",
+      "tags": [
+        "entity",
+        "efcore"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:fluentresults",
+      "type": "entity",
+      "name": "FluentResults",
+      "summary": "Result-pattern library used by SlimBus handlers to signal success or failure without throwing on expected business outcomes.",
+      "tags": [
+        "entity",
+        "result-pattern"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:roslyn",
+      "type": "entity",
+      "name": "Roslyn",
+      "summary": "The .NET compiler platform; DtoGenerator is implemented as a Roslyn incremental source generator.",
+      "tags": [
+        "entity",
+        "codegen"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:dotnet-aspire",
+      "type": "entity",
+      "name": ".NET Aspire",
+      "summary": "Distributed-application orchestration stack that DKNet.Aspire.Hosting.ServiceBus integrates with as an AppHost resource.",
+      "tags": [
+        "entity",
+        "orchestration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:azure-service-bus",
+      "type": "entity",
+      "name": "Azure Service Bus",
+      "summary": "Azure messaging transport (with an emulator) orchestrated by DKNet.Aspire.Hosting.ServiceBus and usable as the SlimMessageBus backing transport.",
+      "tags": [
+        "entity",
+        "messaging",
+        "azure"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:x-pagedlist-ef",
+      "type": "entity",
+      "name": "X.PagedList.EF",
+      "summary": "Paging library referenced by DKNet.SlimBus.Extensions to support paged-query handlers.",
+      "tags": [
+        "entity",
+        "paging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:azure-storage-blobs",
+      "type": "entity",
+      "name": "Azure.Storage.Blobs",
+      "summary": "Azure Blob Storage SDK backing the DKNet.Svc.BlobStorage.AzureStorage adapter.",
+      "tags": [
+        "entity",
+        "storage",
+        "azure"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:cloudflare-r2",
+      "type": "entity",
+      "name": "Cloudflare R2",
+      "summary": "S3-compatible object storage supported by the AWS S3 blob adapter.",
+      "tags": [
+        "entity",
+        "storage"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:minio",
+      "type": "entity",
+      "name": "MinIO",
+      "summary": "S3-compatible object storage supported by the AWS S3 blob adapter.",
+      "tags": [
+        "entity",
+        "storage"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:testcontainers-mssql",
+      "type": "entity",
+      "name": "TestContainers.MsSql",
+      "summary": "TestContainers package that spins up a real SQL Server in Docker for DKNet integration tests instead of an in-memory provider.",
+      "tags": [
+        "entity",
+        "library",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:xunit",
+      "type": "entity",
+      "name": "xUnit",
+      "summary": "Unit testing framework used as the test runner across all DKNet *.Tests projects.",
+      "tags": [
+        "entity",
+        "library",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:shouldly",
+      "type": "entity",
+      "name": "Shouldly",
+      "summary": "Assertion library used for readable test assertions throughout the DKNet test suite.",
+      "tags": [
+        "entity",
+        "library",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:sonarcloud",
+      "type": "entity",
+      "name": "SonarCloud",
+      "summary": "Static analysis service run in the DKNet CI pipeline alongside coverage enforcement.",
+      "tags": [
+        "entity",
+        "ci",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:opencover",
+      "type": "entity",
+      "name": "OpenCover",
+      "summary": "Code coverage collector used by the DKNet CI pipeline to measure line coverage against the gates.",
+      "tags": [
+        "entity",
+        "ci",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:docker",
+      "type": "entity",
+      "name": "Docker",
+      "summary": "Container runtime required to run TestContainers-based MsSql integration tests.",
+      "tags": [
+        "entity",
+        "infrastructure",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:mathjax",
+      "type": "entity",
+      "name": "MathJax",
+      "summary": "JavaScript library injected by the PDF ContentTemplate.html to render mathematical notation in generated PDFs.",
+      "tags": [
+        "entity",
+        "library",
+        "rendering"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "entity:highlightjs",
+      "type": "entity",
+      "name": "highlight.js",
+      "summary": "Syntax-highlighting library injected by the PDF ContentTemplate.html for code blocks in generated PDFs.",
+      "tags": [
+        "entity",
+        "library",
+        "rendering"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "article:aggregate-root",
+      "target": "article:audit-logs",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aggregate-root",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aggregate-root",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aggregate-root",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aggregate-root",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "article:idempotency",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "article:background-tasks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "article:fw-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:column-encryption",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:data-authorization",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "article:idempotency",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "article:aspcore-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "article:pdf-generators",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "article:encryption-services",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "article:transformation",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "article:audit-logs",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "article:data-authorization",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "article:encryption-services",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:dynamic-predicate-builder",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:audit-logs",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:column-encryption",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-events",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-events",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-events",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:domain-events",
+      "target": "article:domain-driven-design",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:domain-driven-design",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "article:dto-generator",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:column-encryption",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:random-creator",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:blob-storage",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:pdf-generators",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:transformation",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:fw-extensions",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:fw-extensions",
+      "target": "article:idempotency",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:fw-extensions",
+      "target": "article:random-creator",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:fw-extensions",
+      "target": "article:testing-strategy",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:idempotency",
+      "target": "article:fw-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:idempotency",
+      "target": "article:background-tasks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:idempotency",
+      "target": "article:aspcore-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:idempotency",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:aggregate-root",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:domain-driven-design",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "article:blob-storage",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "article:encryption-services",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "article:transformation",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:random-creator",
+      "target": "article:fw-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:random-creator",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:random-creator",
+      "target": "article:encryption-services",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:random-creator",
+      "target": "article:column-encryption",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:dynamic-predicate-builder",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:savechanges-hooks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:cqrs-slimbus",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:audit-logs",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:column-encryption",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:data-authorization",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:domain-events",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:specifications",
+      "target": "article:dynamic-predicate-builder",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:specifications",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:specifications",
+      "target": "article:efcore-abstractions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:specifications",
+      "target": "article:domain-driven-design",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "article:specifications",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "article:dynamic-predicate-builder",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "article:data-authorization",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "article:domain-driven-design",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "article:repositories",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:onion-architecture",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:blob-storage",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:pdf-generators",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:encryption-services",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:fw-extensions",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "article:onion-architecture",
+      "target": "topic:architecture-&-concepts",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "topic:architecture-&-concepts",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:aggregate-root",
+      "target": "topic:architecture-&-concepts",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:domain-events",
+      "target": "topic:architecture-&-concepts",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "topic:architecture-&-concepts",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:fw-extensions",
+      "target": "topic:core-utilities",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:random-creator",
+      "target": "topic:core-utilities",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:efcore-abstractions",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:specifications",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:repositories",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:audit-logs",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:column-encryption",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "topic:ef-core-persistence",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:idempotency",
+      "target": "topic:asp.net-core",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:background-tasks",
+      "target": "topic:asp.net-core",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:aspcore-extensions",
+      "target": "topic:asp.net-core",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "topic:service-adapters",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "topic:service-adapters",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "topic:service-adapters",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:transformation",
+      "target": "topic:service-adapters",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "topic:infrastructure-&-messaging",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "topic:quality-&-testing",
+      "type": "categorized_under",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "entity:slimmessagebus",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "DKNet.SlimBus.Extensions provides its CQRS and messaging glue on top of SlimMessageBus."
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "entity:fluentresults",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Handler results use the FluentResults result pattern to signal success/failure without throwing."
+    },
+    {
+      "source": "article:cqrs-slimbus",
+      "target": "entity:x-pagedlist-ef",
+      "type": "cites",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The package references X.PagedList.EF for paged-query handlers."
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "entity:linqkit",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "The dynamic predicate relies on LinqKit; .AsExpandable() is mandatory or expression expansion fails."
+    },
+    {
+      "source": "article:dto-generator",
+      "target": "entity:roslyn",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "DtoGenerator is implemented as a Roslyn incremental source generator running at compile time."
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "entity:dotnet-aspire",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Package is a .NET Aspire hosting integration adding a resource to the Aspire AppHost."
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "entity:azure-service-bus",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Orchestrates an Azure Service Bus resource including its emulator."
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "entity:azure-storage-blobs",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The Azure Storage adapter is backed by Azure.Storage.Blobs."
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "entity:cloudflare-r2",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The AWS S3 adapter supports S3-compatible services such as Cloudflare R2."
+    },
+    {
+      "source": "article:blob-storage",
+      "target": "entity:minio",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The AWS S3 adapter supports S3-compatible services such as MinIO."
+    },
+    {
+      "source": "article:domain-events",
+      "target": "entity:slimmessagebus",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "SlimBusEventPublisher forwards domain events to SlimMessageBus, mapping additional data onto headers."
+    },
+    {
+      "source": "article:aspire-servicebus",
+      "target": "entity:slimmessagebus",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Service Bus can serve as the backing transport for the SlimMessageBus that carries DKNet's CQRS/event flow."
+    },
+    {
+      "source": "article:domain-driven-design",
+      "target": "article:aggregate-root",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "AggregateRoot is DKNet's concrete base type realizing the DDD aggregate-root building block."
+    },
+    {
+      "source": "article:dynamic-predicate-builder",
+      "target": "article:specifications",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "The builder is the signature feature of DKNet.EfCore.Specifications and composes directly with the specifications it lives beside."
+    },
+    {
+      "source": "article:data-authorization",
+      "target": "article:savechanges-hooks",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Row-level filtering is implemented as a cross-cutting concern in the SaveChanges hooks family, stamping ownership in the pipeline."
+    },
+    {
+      "source": "article:specifications",
+      "target": "entity:linqkit",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Specifications compose Criteria predicates using LinqKit .And()/.Or() operators."
+    },
+    {
+      "source": "article:repositories",
+      "target": "entity:linqkit",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Repositories rely on LinqKit (via the dynamic predicate builder and .AsExpandable()) to apply specifications."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:testcontainers-mssql",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Integration tests run against a real SQL Server provided by TestContainers.MsSql."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:xunit",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The DKNet test suite uses xUnit as its test framework."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:shouldly",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The DKNet test suite uses Shouldly for assertions."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:docker",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Docker is required to run the TestContainers.MsSql integration tests."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:sonarcloud",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "The CI pipeline runs SonarCloud analysis as part of the quality gate."
+    },
+    {
+      "source": "article:testing-strategy",
+      "target": "entity:opencover",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Tests run with OpenCover coverage collection to enforce the 80% gate."
+    },
+    {
+      "source": "article:idempotency",
+      "target": "entity:fluentresults",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "Idempotency middleware uses the FluentResults pattern for outcomes."
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "entity:mathjax",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "ContentTemplate.html injects MathJax to render math in generated PDFs."
+    },
+    {
+      "source": "article:pdf-generators",
+      "target": "entity:highlightjs",
+      "type": "exemplifies",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "ContentTemplate.html injects highlight.js for syntax-highlighted code in generated PDFs."
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:specifications",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Repositories consume specifications to apply Criteria, Includes, and OrderBy as a reusable query unit."
+    },
+    {
+      "source": "article:savechanges-hooks",
+      "target": "article:efcore-abstractions",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Hooks operate on the [AuditLog]/[Encrypted] marker attributes and entity types defined in EfCore.Abstractions."
+    },
+    {
+      "source": "article:repositories",
+      "target": "article:efcore-abstractions",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Repositories load and save AggregateRoot instances declared in EfCore.Abstractions."
+    },
+    {
+      "source": "article:random-creator",
+      "target": "article:encryption-services",
+      "type": "contradicts",
+      "direction": "forward",
+      "weight": 0.9,
+      "description": "Articles draw an explicit boundary: RandomCreator only generates random values and is NOT for cryptography, which belongs to encryption-services."
+    },
+    {
+      "source": "article:encryption-services",
+      "target": "article:column-encryption",
+      "type": "contradicts",
+      "direction": "forward",
+      "weight": 0.9,
+      "description": "Encryption-services is for explicit application cryptography and is explicitly distinguished from transparent EF Core column-encryption."
+    },
+    {
+      "source": "article:idempotency",
+      "target": "article:fw-extensions",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "The Idempotency package depends on the core utilities in Fw.Extensions."
+    },
+    {
+      "source": "article:transformation",
+      "target": "article:pdf-generators",
+      "type": "builds_on",
+      "direction": "forward",
+      "weight": 0.8,
+      "description": "Resolved/templated text from Transformation can feed downstream document generation in pdf-generators."
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:architecture-&-concepts",
+      "name": "Architecture & Concepts",
+      "description": "Architecture & Concepts (9 nodes)",
+      "nodeIds": [
+        "article:onion-architecture",
+        "article:domain-driven-design",
+        "article:aggregate-root",
+        "article:domain-events",
+        "article:cqrs-slimbus",
+        "topic:architecture-&-concepts",
+        "entity:slimmessagebus",
+        "entity:fluentresults",
+        "entity:x-pagedlist-ef"
+      ]
+    },
+    {
+      "id": "layer:core-utilities",
+      "name": "Core Utilities",
+      "description": "Core Utilities (3 nodes)",
+      "nodeIds": [
+        "article:fw-extensions",
+        "article:random-creator",
+        "topic:core-utilities"
+      ]
+    },
+    {
+      "id": "layer:ef-core-persistence",
+      "name": "EF Core Persistence",
+      "description": "EF Core Persistence (12 nodes)",
+      "nodeIds": [
+        "article:efcore-abstractions",
+        "article:specifications",
+        "article:dynamic-predicate-builder",
+        "article:repositories",
+        "article:savechanges-hooks",
+        "article:audit-logs",
+        "article:column-encryption",
+        "article:data-authorization",
+        "article:dto-generator",
+        "topic:ef-core-persistence",
+        "entity:linqkit",
+        "entity:roslyn"
+      ]
+    },
+    {
+      "id": "layer:asp.net-core",
+      "name": "ASP.NET Core",
+      "description": "ASP.NET Core (4 nodes)",
+      "nodeIds": [
+        "article:idempotency",
+        "article:background-tasks",
+        "article:aspcore-extensions",
+        "topic:asp.net-core"
+      ]
+    },
+    {
+      "id": "layer:service-adapters",
+      "name": "Service Adapters",
+      "description": "Service Adapters (10 nodes)",
+      "nodeIds": [
+        "article:blob-storage",
+        "article:pdf-generators",
+        "article:encryption-services",
+        "article:transformation",
+        "topic:service-adapters",
+        "entity:azure-storage-blobs",
+        "entity:cloudflare-r2",
+        "entity:minio",
+        "entity:mathjax",
+        "entity:highlightjs"
+      ]
+    },
+    {
+      "id": "layer:infrastructure-&-messaging",
+      "name": "Infrastructure & Messaging",
+      "description": "Infrastructure & Messaging (4 nodes)",
+      "nodeIds": [
+        "article:aspire-servicebus",
+        "topic:infrastructure-&-messaging",
+        "entity:dotnet-aspire",
+        "entity:azure-service-bus"
+      ]
+    },
+    {
+      "id": "layer:quality-&-testing",
+      "name": "Quality & Testing",
+      "description": "Quality & Testing (8 nodes)",
+      "nodeIds": [
+        "article:testing-strategy",
+        "topic:quality-&-testing",
+        "entity:testcontainers-mssql",
+        "entity:xunit",
+        "entity:shouldly",
+        "entity:docker",
+        "entity:sonarcloud",
+        "entity:opencover"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Architecture & Concepts",
+      "description": "Explore the Architecture & Concepts section (5 articles)",
+      "nodeIds": [
+        "article:onion-architecture",
+        "article:domain-driven-design",
+        "article:aggregate-root"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Core Utilities",
+      "description": "Explore the Core Utilities section (2 articles)",
+      "nodeIds": [
+        "article:fw-extensions",
+        "article:random-creator"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "EF Core Persistence",
+      "description": "Explore the EF Core Persistence section (9 articles)",
+      "nodeIds": [
+        "article:efcore-abstractions",
+        "article:specifications",
+        "article:dynamic-predicate-builder"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "ASP.NET Core",
+      "description": "Explore the ASP.NET Core section (3 articles)",
+      "nodeIds": [
+        "article:idempotency",
+        "article:background-tasks",
+        "article:aspcore-extensions"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Service Adapters",
+      "description": "Explore the Service Adapters section (4 articles)",
+      "nodeIds": [
+        "article:blob-storage",
+        "article:pdf-generators",
+        "article:encryption-services"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Infrastructure & Messaging",
+      "description": "Explore the Infrastructure & Messaging section (1 articles)",
+      "nodeIds": [
+        "article:aspire-servicebus"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "Quality & Testing",
+      "description": "Explore the Quality & Testing section (1 articles)",
+      "nodeIds": [
+        "article:testing-strategy"
+      ]
+    }
+  ]
+}

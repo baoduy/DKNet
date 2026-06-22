@@ -24,6 +24,8 @@ public static class AsyncEnumerableExtensions
     /// </returns>
     public static async Task<IList<T>> ToListAsync<T>(this IAsyncEnumerable<T> enumerable)
     {
+        ArgumentNullException.ThrowIfNull(enumerable);
+
         var list = new List<T>();
         await foreach (var item in enumerable)
         {

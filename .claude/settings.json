@@ -1,0 +1,45 @@
+{
+  "enabledPlugins": {
+    "claude-code-setup@claude-plugins-official": true,
+    "claude-smart@reflexioai": true,
+    "context-mode@context-mode": true,
+    "learning-output-style@claude-plugins-official": true,
+    "ponytail@ponytail": true,
+    "superpowers@claude-plugins-official": true,
+    "team-share@drunkcoding": true,
+    "understand-anything@understand-anything": true
+  },
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "autoUpdate": true,
+      "source": {
+        "repo": "mksglu/context-mode",
+        "source": "github"
+      }
+    },
+    "drunkcoding": {
+      "source": {
+        "repo": "baoduy/agents-and-skills",
+        "source": "github"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "repo": "DietrichGebert/ponytail",
+        "source": "github"
+      }
+    },
+    "reflexioai": {
+      "source": {
+        "repo": "ReflexioAI/claude-smart",
+        "source": "github"
+      }
+    },
+    "understand-anything": {
+      "source": {
+        "repo": "Egonex-AI/Understand-Anything",
+        "source": "github"
+      }
+    }
+  }
+}

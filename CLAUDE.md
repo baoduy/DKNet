@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code (claude.ai/code) when working in this repository. The same applies to any AI coding assistant — for finer-grained DKNet-specific rules, see `src/CLAUDE.md`, `src/AGENTS.md`, and `src/memory-bank/`.
+Guidance for Claude Code (claude.ai/code) when working in this repository. The same applies to any AI coding assistant — for finer-grained DKNet-specific rules, see `src/CLAUDE.md`
 
 ## Repository at a Glance
 
@@ -48,17 +48,8 @@ Treat these as primary sources — Claude should read the relevant ones before g
 | File | Why it matters |
 |---|---|
 | `src/CLAUDE.md` | Repo-specific Claude guidance (commands, conventions, signature patterns). |
-| `src/AGENTS.md` | Full coding/testing/PR conventions: commit format, naming, anti-patterns. |
-| `src/memory-bank/README.md` | Index into the AI knowledge base. |
-| `src/memory-bank/activeContext.md` | What is actively being worked on right now. |
-| `src/memory-bank/copilot-rules.md` | 8000+ words of project-specific standards. |
-| `src/memory-bank/copilot-quick-reference.md` | Code templates for common tasks. |
-| `src/memory-bank/systemPatterns.md` | Architectural patterns and component relationships. |
-| `src/memory-bank/libraries/README.md` | Scenario → DKNet package routing for API work. |
 | `.github/copilot-instructions.md` | Mostly overlaps with AGENTS.md. |
 | `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | User-facing reference. |
-
-After meaningful work: update `src/memory-bank/activeContext.md` and `src/memory-bank/progress.md`.
 
 ## Common Commands
 
@@ -71,7 +62,7 @@ dotnet test    DKNet.FW.sln --settings coverage.runsettings --collect:"XPlat Cod
 dotnet test    EfCore.Specifications.Tests       # single project
 dotnet test    --filter "FullyQualifiedName~DynamicAnd_WithMultipleConditions"
 dotnet format                                    # before committing
-./nuget.sh pack && ./verify_nuget_package.sh     # build + sanity-check NuGet packages
+./verify_nuget_package.sh                        # pack solution to ./nupkgs (Release), then verify at nuget.info
 ```
 
 `Directory.Build.props` enables `TreatWarningsAsErrors=true`, `Nullable=enable`, `LangVersion=latest`, and `GenerateDocumentationFile=true` solution-wide. Any new warning, missing XML doc, or nullable mismatch breaks the build.
@@ -120,7 +111,6 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 ## Workflow Notes Specific to This Repo
 
 - `dev` is the integration branch and the default PR base. Recent history shows many small `up` / fix commits — squash where it makes sense.
-- After a meaningful change, update `src/memory-bank/activeContext.md` (and `progress.md` for larger items).
 - Diagrams are tracked: `Diagram.drawio` / `Diagram.png` at the repo root and `src/EfCore/Diagrams/`. If you change an architectural relationship, update the relevant diagram or call it out in the PR.
 - Generated artefacts — `nupkgs/`, `TestResults/`, `coverage-report*/` — must never be committed.
 

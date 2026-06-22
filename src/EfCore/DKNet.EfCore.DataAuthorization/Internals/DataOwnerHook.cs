@@ -55,7 +55,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
             if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
             {
                 au.SetPropertyValue(nameof(au.CreatedBy), ownerKey);
-                au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.Now);
+                au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.UtcNow);
             }
 
             if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))

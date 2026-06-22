@@ -180,7 +180,8 @@ public static class EfCoreExtensions
             if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
 
             var f = att.FormatString.Replace(nameof(DateTime), "0", StringComparison.OrdinalIgnoreCase);
-            return string.Format(CultureInfo.CurrentCulture, f, DateTime.Now, value);
+            // Use UTC so generated sequence codes are deterministic regardless of server time zone.
+            return string.Format(CultureInfo.CurrentCulture, f, DateTime.UtcNow, value);
         }
     }
 }
