@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace DKNet.EfCore.DtoEntities.Share;
 
 public interface IBalanceAmounts

@@ -1,8 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
-using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
-using DKNet.EfCore.DtoEntities.Share;
 
 namespace DKNet.EfCore.DtoEntities.Features.StaticData;
 

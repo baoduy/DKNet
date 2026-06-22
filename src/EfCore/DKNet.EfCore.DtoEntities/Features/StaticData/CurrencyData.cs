@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Entities;
 
 namespace DKNet.EfCore.DtoEntities.Features.StaticData;

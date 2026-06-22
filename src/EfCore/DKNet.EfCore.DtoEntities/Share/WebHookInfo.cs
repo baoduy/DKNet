@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
-
 namespace DKNet.EfCore.DtoEntities.Share;
 
 [Owned]

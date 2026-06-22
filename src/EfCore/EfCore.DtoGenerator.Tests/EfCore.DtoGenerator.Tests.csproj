@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <ImplicitUsings>false</ImplicitUsings>
         <IsPackable>false</IsPackable>
         <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
@@ -13,7 +14,7 @@
         <NoWarn>$(NoWarn);CS1591;SA1600;DKDTOGEN004</NoWarn>
     </PropertyGroup>
     <ItemGroup>
-        <CompilerVisibleProperty Include="DtoGeneratorExclusions"/>
+        <CompilerVisibleProperty Include="DtoGeneratorExclusions" />
     </ItemGroup>
 
     <!-- 1. Configure global exclusions for DTO generator -->
@@ -24,21 +25,17 @@
     <!-- 2. Custom target to copy generated DTOs to project/GeneratedDtos folder, flattening structure and preserving names/extensions -->
     <Target Name="CopyGeneratedDtosToOutputFolder" AfterTargets="CoreCompile" Condition="Exists('$(CompilerGeneratedFilesOutputPath)')">
         <ItemGroup>
-            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs"/>
+            <GeneratedDtoFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*.g.cs" />
         </ItemGroup>
-        <MakeDir Directories="$(ProjectDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Copy SourceFiles="@(GeneratedDtoFiles)"
-              DestinationFiles="$(ProjectDir)GeneratedDtos\%(Filename)%(Extension)"
-              SkipUnchangedFiles="false"
-              OverwriteReadOnlyFiles="true"
-              Condition="'@(GeneratedDtoFiles)' != ''"/>
-        <Message Text="Copied %(Filename)%(Extension) to $(ProjectDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''"/>
+        <MakeDir Directories="$(ProjectDir)GeneratedDtos" Condition="'@(GeneratedDtoFiles)' != ''" />
+        <Copy SourceFiles="@(GeneratedDtoFiles)" DestinationFiles="$(ProjectDir)GeneratedDtos\%(Filename)%(Extension)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Condition="'@(GeneratedDtoFiles)' != ''" />
+        <Message Text="Copied %(Filename)%(Extension) to $(ProjectDir)GeneratedDtos" Importance="high" Condition="'@(GeneratedDtoFiles)' != ''" />
     </Target>
 
     <!-- 3. Exclude generated DTOs from compilation, but keep them visible in Solution Explorer -->
     <ItemGroup>
-        <Compile Remove="GeneratedDtos\**\*.cs"/>
-        <None Include="GeneratedDtos\**\*.cs"/>
+        <Compile Remove="GeneratedDtos\**\*.cs" />
+        <None Include="GeneratedDtos\**\*.cs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -50,29 +47,27 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="xunit"/>
-        <PackageReference Include="xunit.runner.visualstudio"/>
-        <PackageReference Include="Shouldly"/>
-        <PackageReference Include="Mapster"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="Mapster" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Xunit"/>
+        <Using Include="Xunit" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- Reference the generator as an analyzer so it runs during compilation -->
-        <ProjectReference Include="..\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj"/>
-        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"
-                          OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="true">
+        <ProjectReference Include="..\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Features\StaticData\Currencies\Queries\"/>
+        <Folder Include="Features\StaticData\Currencies\Queries\" />
     </ItemGroup>
 </Project>

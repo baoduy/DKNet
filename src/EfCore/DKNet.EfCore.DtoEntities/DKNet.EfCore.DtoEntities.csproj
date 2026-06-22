@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <ImplicitUsings>false</ImplicitUsings>
         <IsPackable>false</IsPackable>
         <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>

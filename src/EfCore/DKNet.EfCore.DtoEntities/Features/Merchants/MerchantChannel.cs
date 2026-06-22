@@ -1,6 +1,4 @@
-using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.DtoEntities.Features.StaticData;
-using DKNet.EfCore.DtoEntities.Share;
 
 namespace DKNet.EfCore.DtoEntities.Features.Merchants;
 

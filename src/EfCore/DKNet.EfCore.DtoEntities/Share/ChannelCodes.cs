@@ -1,5 +1,3 @@
-using System.ComponentModel;
-
 namespace DKNet.EfCore.DtoEntities.Share;
 
 public enum ChannelCodes
