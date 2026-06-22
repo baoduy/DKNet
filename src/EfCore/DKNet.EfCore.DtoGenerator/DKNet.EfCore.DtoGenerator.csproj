@@ -5,16 +5,13 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
-
+        <RoslynComponentsPackage>true</RoslynComponentsPackage>
         <!-- Don't include the generator DLL in the lib folder -->
         <IncludeBuildOutput>false</IncludeBuildOutput>
-
         <!-- This is a development dependency -->
         <DevelopmentDependency>true</DevelopmentDependency>
-
         <!-- Disable symbols package for source generators -->
         <IncludeSymbols>false</IncludeSymbols>
-
         <!-- Suppress warnings about netstandard2.0 -->
         <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>

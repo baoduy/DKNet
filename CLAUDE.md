@@ -48,17 +48,8 @@ Treat these as primary sources — Claude should read the relevant ones before g
 | File | Why it matters |
 |---|---|
 | `src/CLAUDE.md` | Repo-specific Claude guidance (commands, conventions, signature patterns). |
-| `src/AGENTS.md` | Full coding/testing/PR conventions: commit format, naming, anti-patterns. |
-| `src/memory-bank/README.md` | Index into the AI knowledge base. |
-| `src/memory-bank/activeContext.md` | What is actively being worked on right now. |
-| `src/memory-bank/copilot-quick-reference.md` | Largest knowledge file (~22K) — code templates for common tasks. |
-| `src/memory-bank/copilot-rules.md` | Project standards (currently a short stub — check before relying on it). |
-| `src/memory-bank/systemPatterns.md` | Architectural patterns and component relationships. |
-| `src/memory-bank/libraries/README.md` | Scenario → DKNet package routing for API work. |
 | `.github/copilot-instructions.md` | Mostly overlaps with AGENTS.md. |
 | `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | User-facing reference. |
-
-After meaningful work: update `src/memory-bank/activeContext.md` and `src/memory-bank/progress.md`.
 
 ## Common Commands
 
@@ -120,7 +111,6 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 ## Workflow Notes Specific to This Repo
 
 - `dev` is the integration branch and the default PR base. Recent history shows many small `up` / fix commits — squash where it makes sense.
-- After a meaningful change, update `src/memory-bank/activeContext.md` (and `progress.md` for larger items).
 - Diagrams are tracked: `Diagram.drawio` / `Diagram.png` at the repo root and `src/EfCore/Diagrams/`. If you change an architectural relationship, update the relevant diagram or call it out in the PR.
 - Generated artefacts — `nupkgs/`, `TestResults/`, `coverage-report*/` — must never be committed.
 
