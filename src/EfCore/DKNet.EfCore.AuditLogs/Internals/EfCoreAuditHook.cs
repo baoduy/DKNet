@@ -28,7 +28,7 @@ internal sealed class EfCoreAuditHook(
         if (logs is not { Count: > 0 }) return;
 
         _cache.Remove(context.DbContext.ContextId.InstanceId);
-        PublishLogsAsync(context.DbContext, logs);
+        PublishLogs(context.DbContext, logs);
     }
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
@@ -51,20 +51,23 @@ internal sealed class EfCoreAuditHook(
         return base.BeforeSaveAsync(context, cancellationToken);
     }
 
-    private void PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs)
+    private void PublishLogs(DbContext context, IEnumerable<AuditLogEntry> logs)
     {
         // Fire & forget: do not await publishers. Each publisher runs independently.
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
         foreach (var publisher in publishers)
-            Task.Run(async () =>
+            // Explicitly discard the task: this is fire-and-forget, so the returned task is never awaited.
+            _ = Task.Run(async () =>
             {
                 try
                 {
                     // Ignore cancellation for fire-and-forget to ensure attempt
                     await publisher.PublishAsync(logs, CancellationToken.None);
                 }
-                catch (DbUpdateException ex)
+                catch (Exception ex)
                 {
+                    // Catch every exception: an unobserved exception escaping a fire-and-forget Task
+                    // would otherwise surface on the finalizer thread and can tear down the process.
                     if (logger.IsEnabled(LogLevel.Error))
                         logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
                 }

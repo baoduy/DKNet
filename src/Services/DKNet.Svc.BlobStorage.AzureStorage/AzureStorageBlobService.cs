@@ -16,6 +16,11 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
 {
     #region Fields
 
+    /// <summary>
+    ///     Lifetime applied to a generated SAS URL when the caller does not specify an explicit expiry.
+    /// </summary>
+    private static readonly TimeSpan DefaultSasLifetime = TimeSpan.FromDays(1);
+
     private readonly AzureStorageOptions _options =
         options.Value ?? throw new ArgumentNullException(nameof(options));
 
@@ -176,13 +181,13 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             throw new NotSupportedException(
                 $"Current Container '{_options.ContainerName}' does not support Shared Public Access Url");
 
-        // Create a SAS token that's valid for one day
+        // Create a read-only SAS token, valid for the requested window (defaults to DefaultSasLifetime).
         var sasBuilder = new BlobSasBuilder
         {
             BlobContainerName = client.Name,
             Resource = "b",
             StartsOn = DateTimeOffset.UtcNow,
-            ExpiresOn = DateTimeOffset.UtcNow.Add(expiresFromNow ?? TimeSpan.FromDays(1)) //Blob only accessible
+            ExpiresOn = DateTimeOffset.UtcNow.Add(expiresFromNow ?? DefaultSasLifetime)
         };
 
         sasBuilder.SetPermissions(BlobContainerSasPermissions.Read);

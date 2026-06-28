@@ -71,7 +71,10 @@ internal sealed class TokenResolver : ITokenResolver
 
     public Task<object?> ResolveAsync(IToken token, params object?[] data)
     {
-        return Task.Run(() => Resolve(token, data));
+        // Resolve is synchronous, CPU-bound reflection work. Offloading it to the thread pool with
+        // Task.Run inside a library wastes a thread and adds a context switch with no benefit; return the
+        // completed result directly and let the caller decide whether to offload.
+        return Task.FromResult(Resolve(token, data));
     }
 
     private static object? TryGetValueFromCollection(IEnumerable<object?> collection, string keyName)
