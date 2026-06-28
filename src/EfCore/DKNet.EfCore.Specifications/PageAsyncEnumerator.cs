@@ -97,10 +97,19 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
 /// </summary>
 internal static class PageAsyncEnumeratorExtensions
 {
+    #region Fields
+
+    /// <summary>
+    ///     Default number of rows fetched per database round-trip when no explicit page size is supplied.
+    /// </summary>
+    internal const int DefaultPageSize = 100;
+
+    #endregion
+
     #region Methods
 
     public static IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(
-        this IQueryable<TEntity> query, int pageSize = 100) where TEntity : class
+        this IQueryable<TEntity> query, int pageSize = DefaultPageSize) where TEntity : class
         => new EfCorePageAsyncEnumerator<TEntity>(query, pageSize);
 
     #endregion

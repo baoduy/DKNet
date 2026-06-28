@@ -59,7 +59,7 @@ public static class ModelSpecRepoExtensions
         /// <param name="cancellationToken">A token allowing the operation to be cancelled.</param>
         /// <returns>An <see cref="IList{T}" /> containing zero or more projected models.</returns>
         /// <remarks>
-        ///     Use <see cref="ToPagedListAsync{TEntity,TModel}(IRepositorySpec,IModelSpecification{TEntity,TModel},int,int)" />
+        ///     Use <see cref="ToPagedListAsync{TEntity,TModel}(IRepositorySpec,IModelSpecification{TEntity,TModel},int,int,CancellationToken)" />
         ///     for large result sets to avoid retrieving the full collection in a single query.
         /// </remarks>
         public async Task<IList<TModel>> ToListAsync<TEntity, TModel>(
@@ -77,16 +77,19 @@ public static class ModelSpecRepoExtensions
         /// <param name="specification">The model specification defining filter and ordering logic.</param>
         /// <param name="pageNumber">The 1-based page number to retrieve.</param>
         /// <param name="pageSize">The number of items per page.</param>
+        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
         /// <returns>An <see cref="IPagedList{TModel}" /> representing the requested page (may be empty).</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     Thrown when <paramref name="pageNumber" /> or
         ///     <paramref name="pageSize" /> are invalid (&lt;= 0).
         /// </exception>
         public Task<IPagedList<TModel>> ToPagedListAsync<TEntity, TModel>(
-            IModelSpecification<TEntity, TModel> specification, int pageNumber, int pageSize)
+            IModelSpecification<TEntity, TModel> specification, int pageNumber, int pageSize,
+            CancellationToken cancellationToken = default)
             where TEntity : class
             where TModel : class =>
-            repo.Query<TEntity, TModel>(specification).ToPagedListAsync(pageNumber, pageSize);
+            repo.Query<TEntity, TModel>(specification)
+                .ToPagedListAsync(pageNumber, pageSize, totalSetCount: null, cancellationToken: cancellationToken);
 
         /// <summary>
         ///     Returns an async enumerable that streams the projected models for entities matching the specification using
