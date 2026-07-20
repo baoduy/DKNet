@@ -31,6 +31,11 @@ internal static class SpecificationExtensions
                 queryable,
                 (current, includeQuery) => current.Include(includeQuery));
 
+        if (specification.IncludeBuilders.Count > 0)
+            queryable = specification.IncludeBuilders.Aggregate(
+                queryable,
+                (current, builder) => builder(current));
+
         // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
         var hasOrderBy = specification.OrderByQueries.Count > 0;
         var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
