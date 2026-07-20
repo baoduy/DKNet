@@ -41,6 +41,26 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     }
 
     [Fact]
+    public void IsSqlServer_WithSqlServerProvider_ShouldReturnTrue()
+    {
+        // Act
+        var result = _db.IsSqlServer();
+
+        // Assert
+        result.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void IsNpgsql_WithSqlServerProvider_ShouldReturnFalse()
+    {
+        // Act
+        var result = _db.IsNpgsql();
+
+        // Assert
+        result.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
         // This test verifies the format processing logic
