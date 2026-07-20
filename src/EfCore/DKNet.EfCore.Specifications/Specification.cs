@@ -35,6 +35,9 @@ public interface ISpecification<TEntity>
     /// </summary>
     IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries { get; }
 
+    /// <summary>Include chains supporting ThenInclude and per-navigation filtering.</summary>
+    IReadOnlyCollection<Func<IQueryable<TEntity>, IQueryable<TEntity>>> IncludeBuilders { get; }
+
     /// <summary>
     ///     A function that describes how to order entities by descending
     /// </summary>
@@ -58,6 +61,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     #region Fields
 
     private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
+    private readonly List<Func<IQueryable<TEntity>, IQueryable<TEntity>>> _includeBuilders = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
 
@@ -90,6 +94,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         IsIgnoreQueryFilters = specification.IsIgnoreQueryFilters;
         // Copy collections into the mutable backing lists (interface properties are non-null by contract)
         _includeQueries.AddRange(specification.IncludeQueries);
+        _includeBuilders.AddRange(specification.IncludeBuilders);
         _orderByQueries.AddRange(specification.OrderByQueries);
         _orderByDescendingQueries.AddRange(specification.OrderByDescendingQueries);
     }
@@ -107,6 +112,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     Gets the collection of include expressions that describe related entities to include when querying.
     /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object?>>> IncludeQueries => _includeQueries;
+
+    /// <summary>Include chains supporting ThenInclude and per-navigation filtering.</summary>
+    public IReadOnlyCollection<Func<IQueryable<TEntity>, IQueryable<TEntity>>> IncludeBuilders => _includeBuilders;
 
     /// <summary>
     ///     Gets a value indicating whether global query filters should be ignored for this specification.
@@ -130,13 +138,23 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     #region Methods
 
     /// <summary>
-    ///     Adds an query that describes included entities
+    ///     Adds an query that describes included entities. Single-level filtered includes are supported,
+    ///     e.g. <c>AddInclude(p =&gt; p.OrderItems.Where(i =&gt; i.Quantity &gt; 0))</c>.
+    ///     On tracking queries, filtered includes can surface already-tracked children that don't match
+    ///     the filter due to EF Core navigation-fixup; for filter-accurate results consume via
+    ///     <c>Query&lt;TEntity,TModel&gt;</c> (projection) or an <c>AsNoTracking()</c> read. See
+    ///     https://learn.microsoft.com/ef/core/querying/related-data/eager#filtered-include.
     /// </summary>
     /// <param name="query">Expression that describes included entities</param>
     protected void AddInclude(Expression<Func<TEntity, object?>> query)
     {
         _includeQueries.Add(query);
     }
+
+    /// <summary>Adds an Include/ThenInclude chain (may filter with Where/OrderBy/Skip/Take at any level).</summary>
+    /// <param name="includeBuilder">Applies the include chain to the query.</param>
+    protected void AddInclude(Func<IQueryable<TEntity>, IQueryable<TEntity>> includeBuilder)
+        => _includeBuilders.Add(includeBuilder);
 
     /// <summary>
     ///     Adds an order by clause based on a property name and sort direction
