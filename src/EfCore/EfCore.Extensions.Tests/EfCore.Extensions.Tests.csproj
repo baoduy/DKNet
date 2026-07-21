@@ -27,6 +27,8 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Console"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
         <PackageReference Include="Testcontainers.MsSql"/>
+        <PackageReference Include="Testcontainers.PostgreSql"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Bogus"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Moq"/>
