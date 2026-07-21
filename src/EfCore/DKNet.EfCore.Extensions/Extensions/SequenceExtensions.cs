@@ -10,9 +10,11 @@ internal static class SequenceExtensions
     internal static SqlSequenceAttribute? GetAttribute(Type enumType) =>
         enumType.GetCustomAttribute<SqlSequenceAttribute>();
 
+    internal static SequenceAttribute? GetFieldAttribute(Type enumType, object field) =>
+        enumType.GetMember(field.ToString()!)[0].GetCustomAttribute<SequenceAttribute>();
+
     internal static SequenceAttribute GetFieldAttributeOrDefault(Type enumType, object field) =>
-        enumType.GetMember(field.ToString()!)[0].GetCustomAttribute<SequenceAttribute>() ??
-        new SequenceAttribute();
+        GetFieldAttribute(enumType, field) ?? new SequenceAttribute();
 
     internal static string GetSequenceName(object field) => $"Seq_{field}";
 
@@ -43,7 +45,9 @@ internal static class SequenceExtensions
 
             foreach (var f in fields)
             {
-                var fieldAtt = GetFieldAttributeOrDefault(enumType, f);
+                var fieldAtt = GetFieldAttribute(enumType, f);
+                if (fieldAtt == null) continue;
+
                 var name = GetSequenceName(f);
 
                 var seq = modelBuilder.HasSequence(fieldAtt.Type, name, att.Schema);

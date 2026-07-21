@@ -54,7 +54,10 @@ public class NpgsqlSequenceTests(PostgresFixture fixture) : IClassFixture<Postgr
         await using var context = new DbContext(options);
         await context.Database.EnsureCreatedAsync();
 
-        // ponytail: HasSequence not supported by Npgsql at runtime, create manually
+        // Manual create still needed: this scans typeof(DbContext).Assembly (EF Core's own assembly), which
+        // never contains TestSequenceTypes, so nothing gets auto-registered regardless of provider. Contrast
+        // with NextSeqValueWithFormat_ShouldReturnFormattedValue below, which scans the right assembly and
+        // needs no manual create now that Npgsql registration is enabled.
         await context.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS seq");
         await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_TestSequence1\" START WITH 100 INCREMENT BY 5");
 
@@ -80,7 +83,11 @@ public class NpgsqlSequenceTests(PostgresFixture fixture) : IClassFixture<Postgr
         await using var context = new DbContext(options);
         await context.Database.EnsureCreatedAsync();
 
-        // ponytail: HasSequence not supported by Npgsql at runtime, create manually
+        // Manual create still required: EF's default ModelCacheKey is keyed on DbContext CLR type only, not
+        // on the assemblies passed to UseAutoConfigModel. Since NextSeqValue_WithValidSequence_ShouldReturnValue
+        // above also uses the plain DbContext type (with a different assemblies list), running the suite
+        // together can serve this test a stale cached model with no sequences - relying on auto-creation here
+        // would be order-dependent. This is a pre-existing model-caching characteristic, out of scope for this fix.
         await context.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS seq");
         await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_TestSequence1\" START WITH 100 INCREMENT BY 5");
 
@@ -104,11 +111,11 @@ public class NpgsqlSequenceTests(PostgresFixture fixture) : IClassFixture<Postgr
         await using var context = new MyDbContext(options);
         await context.Database.EnsureCreatedAsync();
 
-        // ponytail: HasSequence not supported by Npgsql at runtime, create manually
+        // Seq_Invoice/Seq_Payment are now auto-created by EnsureCreatedAsync (annotated with [Sequence]).
+        // Seq_Order still needs a manual create: Order has no [Sequence] attribute, so the registration-loop
+        // fix (skip non-annotated members) deliberately excludes it from the model on every provider.
         await context.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS seq");
-        await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_Invoice\" START WITH 1 INCREMENT BY 1 MAXVALUE 32767");
         await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_Order\" START WITH 1 INCREMENT BY 1");
-        await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_Payment\" START WITH 1 INCREMENT BY 1");
 
         // Act
         // Postgres nextval() returns bigint, so use long
@@ -132,9 +139,8 @@ public class NpgsqlSequenceTests(PostgresFixture fixture) : IClassFixture<Postgr
         await using var context = new MyDbContext(options);
         await context.Database.EnsureCreatedAsync();
 
-        // ponytail: HasSequence not supported by Npgsql at runtime, create manually
-        await context.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS seq");
-        await context.Database.ExecuteSqlRawAsync("CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_Invoice\" START WITH 1 INCREMENT BY 1 MAXVALUE 32767");
+        // No manual create needed: Invoice carries [Sequence], so EnsureCreatedAsync auto-creates
+        // Seq_Invoice on Npgsql now that registration is enabled for this provider.
 
         // Act
         var val = await context.NextSeqValueWithFormat(SequencesTest.Invoice);
