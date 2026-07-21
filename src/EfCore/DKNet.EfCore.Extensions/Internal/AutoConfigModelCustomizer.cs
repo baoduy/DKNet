@@ -23,7 +23,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         modelBuilder.RegisterGlobalModelBuilders(assemblies, dbContext);
 
         //Register Sequence
-        if (dbContext.IsSqlServer()) modelBuilder.RegisterSequences(assemblies);
+        if (dbContext.IsSqlServer() || dbContext.IsNpgsql()) modelBuilder.RegisterSequences(assemblies);
     }
 
     public void Customize(ModelBuilder modelBuilder, DbContext context)
