@@ -7,10 +7,12 @@
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
         <AnalysisMode>None</AnalysisMode>
-        <RunAnalyzers>false</RunAnalyzers>
-        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
-        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <!-- Dev-only netstandard2.0 generator: don't run SDK code-style / NetAnalyzers here.
+             They're version-locked to the building SDK's Roslyn and cause CS9057 when this
+             project is built by an older compiler band (e.g. csc 5.3 vs analyzers built for 5.6). -->
+        <RunAnalyzers>false</RunAnalyzers>
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <NoWarn>$(NoWarn);CS1591;SA1600</NoWarn>
     </PropertyGroup>
     <ItemGroup>

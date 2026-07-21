@@ -122,6 +122,15 @@ public static class EfCoreExtensions
                 StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
+        /// </summary>
+        /// <returns></returns>
+        public bool IsNpgsql() =>
+            string.Equals(
+                context.Database.ProviderName,
+                "Npgsql.EntityFrameworkCore.PostgreSQL",
+                StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
         ///     Get the Next Sequence value
         /// </summary>
         /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
@@ -139,6 +148,7 @@ public static class EfCoreExtensions
         /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
         /// <returns>The next value of the sequence.</returns>
+        /// <exception cref="NotSupportedException">Thrown when the database provider is neither SQL Server nor Npgsql.</exception>
         [SuppressMessage(
             "Security",
             "CA2100:Review SQL queries for security vulnerabilities",
@@ -152,8 +162,15 @@ public static class EfCoreExtensions
             var att = SequenceExtensions.GetAttribute(type);
             if (att == null) return null;
 
+            var sequenceName = SequenceExtensions.GetSequenceName(name);
+
             await using var command = context.Database.GetDbConnection().CreateCommand();
-            command.CommandText = $"SELECT NEXT VALUE FOR {att.Schema}.{SequenceExtensions.GetSequenceName(name)}";
+            command.CommandText = context.IsSqlServer()
+                ? $"SELECT NEXT VALUE FOR {att.Schema}.{sequenceName}"
+                : context.IsNpgsql()
+                    ? $"SELECT nextval('{att.Schema}.\"{sequenceName}\"')"
+                    : throw new NotSupportedException(
+                        $"Provider '{context.Database.ProviderName}' is not supported for sequence value generation.");
 
             await context.Database.OpenConnectionAsync();
             await using var result = await command.ExecuteReaderAsync();

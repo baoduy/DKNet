@@ -85,11 +85,13 @@ public static class RepoExtensions
         /// <param name="specification">The specification to apply</param>
         /// <param name="pageNumber">Page number</param>
         /// <param name="pageSize">Page size</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A paged list of entities</returns>
         public Task<IPagedList<TEntity>> SpecsToPageListAsync(ISpecification<TEntity> specification,
             int pageNumber,
-            int pageSize) =>
+            int pageSize,
+            CancellationToken cancellationToken = default) =>
             repo.QuerySpecs(specification)
-                .ToPagedListAsync(pageNumber, pageSize);
+                .ToPagedListAsync(pageNumber, pageSize, totalSetCount: null, cancellationToken: cancellationToken);
     }
 }

@@ -369,6 +369,32 @@ For local consumption in another project:
 </ItemGroup>
 ```
 
+### Cross-Compiler Compatibility (CS9057)
+
+This is a dev-only `netstandard2.0` source generator, so its `.csproj` disables the SDK
+code-style / NetAnalyzers from running **on the generator's own build**:
+
+```xml
+<PropertyGroup>
+  <RunAnalyzers>false</RunAnalyzers>
+  <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+</PropertyGroup>
+```
+
+Without these, the project fails to build under a `csc` older than the SDK's analyzers, e.g.:
+
+```
+CSC : error CS9057: Analyzer assembly '.../codestyle/cs/Microsoft.CodeAnalysis.CodeStyle.dll'
+cannot be used because it references version '5.6.0.0' of the compiler, which is newer than
+the currently running version '5.3.0.0'.
+```
+
+CS9057 means an analyzer was built against a newer Roslyn than the compiler running the build
+(a mixed-SDK environment: e.g. MSBuild from the `10.0.3xx` band feeding `5.6` analyzers into a
+`5.3` `csc`). These analyzers add no value to a generator project, so turning them off here
+decouples the build from any specific SDK band. Pin the SDK in `global.json` if you want the
+band itself to be deterministic.
+
 ## Planned Enhancements
 
 - `[DtoIgnore]` attribute to skip specific entity properties

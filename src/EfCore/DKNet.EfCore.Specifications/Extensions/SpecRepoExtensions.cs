@@ -115,10 +115,14 @@ public static class SpecRepoExtensions
         /// <param name="specification">The specification to apply</param>
         /// <param name="pageNumber">Page number (1-based)</param>
         /// <param name="pageSize">Number of items per page</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A task representing the asynchronous operation that returns a paged list of entities</returns>
         public Task<IPagedList<TEntity>> ToPagedListAsync<TEntity>(ISpecification<TEntity> specification,
             int pageNumber,
-            int pageSize) where TEntity : class => repo.Query(specification).ToPagedListAsync(pageNumber, pageSize);
+            int pageSize,
+            CancellationToken cancellationToken = default) where TEntity : class =>
+            repo.Query(specification)
+                .ToPagedListAsync(pageNumber, pageSize, totalSetCount: null, cancellationToken: cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns a paged list of projected models matching the specification.
@@ -128,13 +132,16 @@ public static class SpecRepoExtensions
         /// <param name="specification">The specification to apply</param>
         /// <param name="pageNumber">Page number (1-based)</param>
         /// <param name="pageSize">Number of items per page</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A task representing the asynchronous operation that returns a paged list of projected models</returns>
         public Task<IPagedList<TModel>> ToPagedListAsync<TEntity, TModel>(ISpecification<TEntity> specification,
             int pageNumber,
-            int pageSize)
+            int pageSize,
+            CancellationToken cancellationToken = default)
             where TEntity : class
             where TModel : class
-            => repo.Query<TEntity, TModel>(specification).ToPagedListAsync(pageNumber, pageSize);
+            => repo.Query<TEntity, TModel>(specification)
+                .ToPagedListAsync(pageNumber, pageSize, totalSetCount: null, cancellationToken: cancellationToken);
 
         /// <summary>
         ///     Returns an async enumerable of entities matching the specification, paged.
