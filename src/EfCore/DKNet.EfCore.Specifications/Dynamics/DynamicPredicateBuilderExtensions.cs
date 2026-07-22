@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Collections;
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using DKNet.EfCore.Specifications.Extensions;
@@ -39,6 +40,15 @@ internal static class DynamicPredicateBuilderExtensions
         "SqlCommand", "SqlConnection", "DbCommand",
         "Runtime.", "Unsafe.", "Marshal.",
         "AppDomain.", "Thread.", "Task.Run"
+    ];
+
+    /// <summary>
+    ///     Non-enum target types (besides numeric types, covered by <c>IsNumericType</c>)
+    ///     that <c>TryCoerceValue</c> knows how to convert a value into.
+    /// </summary>
+    private static readonly HashSet<Type> CoercibleNonEnumTypes =
+    [
+        typeof(bool), typeof(DateTime), typeof(DateOnly), typeof(TimeOnly), typeof(Guid)
     ];
 
     #endregion
@@ -219,11 +229,82 @@ internal static class DynamicPredicateBuilderExtensions
 
         var enumType = type.GetNonNullableType();
 
-        // Handle array/collection of values (for In/NotIn operations)
+        // Handle single value: TryCoerceValue converts it to the enum type further down the pipeline,
+        // so any value convertible to the underlying enum type is acceptable here.
         if (value is not (IEnumerable enumerable and not string)) return enumType.TryConvertToEnum(value, out _);
-        return enumerable.OfType<object>().All(item => enumType.TryConvertToEnum(item, out _));
 
-        // Handle single value
+        // Handle array/collection of values (for In/NotIn operations): element-wise coercion is out of
+        // scope (DRK-39), so an array is only valid when its elements are already the enum type itself
+        // (e.g. OrderStatus[]) - an int[]/string[] would reach the Dynamic LINQ parser unconverted and
+        // throw on Contains() type-mismatch, so it must be rejected here instead.
+        return enumerable.OfType<object>().All(enumType.IsInstanceOfType);
+    }
+
+    /// <summary>
+    ///     Attempts to coerce a scalar filter value to the resolved property's non-nullable CLR type, so
+    ///     that values arriving as strings (query strings, JSON bodies, UI forms) can be used against
+    ///     numeric, boolean, date/time, <see cref="Guid" />, and enum properties without throwing at
+    ///     Dynamic LINQ parse time.
+    /// </summary>
+    /// <param name="propertyType">The resolved property type (can be a nullable value type).</param>
+    /// <param name="value">The filter value to coerce (can be null).</param>
+    /// <param name="coerced">
+    ///     When this method returns, the coerced value: <see langword="null" /> when <paramref name="value" />
+    ///     is <see langword="null" />, the original <paramref name="value" /> when no coercion was needed or
+    ///     applicable, or the converted value on a successful conversion.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true" /> when <paramref name="value" /> is <see langword="null" />, is already
+    ///     assignable to <paramref name="propertyType" />, is not a type this method knows how to convert, or
+    ///     was successfully converted; <see langword="false" /> when conversion was attempted and failed.
+    /// </returns>
+    internal static bool TryCoerceValue(this Type propertyType, object? value, out object? coerced)
+    {
+        if (value == null)
+        {
+            coerced = null;
+            return true;
+        }
+
+        var targetType = propertyType.GetNonNullableType();
+        if (targetType.IsInstanceOfType(value))
+        {
+            coerced = value;
+            return true;
+        }
+
+        if (targetType.IsEnumType())
+            return targetType.TryConvertToEnum(value, out coerced);
+
+        if (!targetType.IsNumericType() && !CoercibleNonEnumTypes.Contains(targetType))
+        {
+            // Not a type we know how to coerce - leave the value as-is (unchanged behaviour).
+            coerced = value;
+            return true;
+        }
+
+        var text = value is string raw ? raw.Trim() : null;
+
+        try
+        {
+            coerced = targetType switch
+            {
+                _ when targetType == typeof(Guid) =>
+                    Guid.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture),
+                _ when targetType == typeof(DateOnly) =>
+                    DateOnly.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture),
+                _ when targetType == typeof(TimeOnly) =>
+                    TimeOnly.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture),
+                _ => Convert.ChangeType(text ?? value, targetType, CultureInfo.InvariantCulture)
+            };
+            return true;
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException
+                                        or ArgumentException)
+        {
+            coerced = null;
+            return false;
+        }
     }
 
     #endregion
