@@ -51,15 +51,21 @@ public static class DynamicPredicateExtensions
         if (!propType.ValidateEnumValue(value))
             return null;
 
+        // Coerce scalar values (e.g. strings) to the property's CLR type; In/NotIn arrays are left untouched
+        var coercedValue = value;
+        if (operation is not (Ops.In or Ops.NotIn) && !propType.TryCoerceValue(value, out coercedValue))
+            return null;
+
         // Build the dynamic LINQ predicate string using shared BuildClause method
-        var predicateString = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, op, value, 0);
+        var predicateString = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, op, coercedValue, 0);
 
 
         // Use System.Linq.Dynamic.Core to parse the predicate string
         // For In/NotIn, value is the array passed as @0 parameter
-        var lambda = value == null
+        var lambda = coercedValue == null
             ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
-            : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString, value);
+            : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString,
+                coercedValue);
 
         return lambda;
     }
@@ -71,6 +77,10 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using AND.
         /// </summary>
+        /// <remarks>
+        ///     If <paramref name="value" /> cannot be converted to the target property's type, the condition
+        ///     is silently skipped and the predicate is returned unchanged, rather than throwing.
+        /// </remarks>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -84,6 +94,10 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using OR.
         /// </summary>
+        /// <remarks>
+        ///     If <paramref name="value" /> cannot be converted to the target property's type, the condition
+        ///     is silently skipped and the predicate is returned unchanged, rather than throwing.
+        /// </remarks>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -130,6 +144,10 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using AND.
         /// </summary>
+        /// <remarks>
+        ///     If <paramref name="value" /> cannot be converted to the target property's type, the condition
+        ///     is silently skipped and the predicate is returned unchanged, rather than throwing.
+        /// </remarks>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
@@ -143,6 +161,10 @@ public static class DynamicPredicateExtensions
         /// <summary>
         ///     Adds a dynamic condition using OR.
         /// </summary>
+        /// <remarks>
+        ///     If <paramref name="value" /> cannot be converted to the target property's type, the condition
+        ///     is silently skipped and the predicate is returned unchanged, rather than throwing.
+        /// </remarks>
         /// <param name="propertyName">Property name or dotted path.</param>
         /// <param name="operation">Filter operation.</param>
         /// <param name="value">Filter value.</param>
