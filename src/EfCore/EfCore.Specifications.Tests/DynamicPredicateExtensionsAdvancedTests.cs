@@ -271,14 +271,21 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
     }
 
     [Fact]
-    public void DynamicAnd_WithInOperation_EnumIntArray_ReturnsMatchingRecords()
+    public void DynamicAnd_WithInOperation_EnumIntArray_ReturnsOriginalPredicate()
     {
-        // Arrange - Using int values for enum
+        // Arrange - int[] element-wise coercion for enum In/NotIn is out of scope (DRK-39);
+        // the condition must be skipped gracefully instead of throwing (DRK-47).
         var statusValues = new[] { 0, 1, 2, 3 }; // Pending = 0, Processing = 1, Shipped = 2, Delivered = 3
-        var action = () => PredicateBuilder.New<Order>(true)
-            .DynamicAnd("Status", Ops.In, statusValues);
+        var predicate = PredicateBuilder.New<Order>(o => o.TotalAmount > 0);
 
-        action.ShouldThrow<InvalidOperationException>();
+        // Act
+        var result = predicate.DynamicAnd("Status", Ops.In, statusValues);
+
+        // Assert
+        var query = _context.Orders.AsExpandable().Where(result);
+        var sql = query.ToQueryString();
+        sql.ShouldNotContain("IN"); // Should not have IN clause
+        sql.ShouldContain("\"TotalAmount\""); // Should only have original condition
     }
 
     [Fact]

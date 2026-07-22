@@ -229,11 +229,15 @@ internal static class DynamicPredicateBuilderExtensions
 
         var enumType = type.GetNonNullableType();
 
-        // Handle array/collection of values (for In/NotIn operations)
+        // Handle single value: TryCoerceValue converts it to the enum type further down the pipeline,
+        // so any value convertible to the underlying enum type is acceptable here.
         if (value is not (IEnumerable enumerable and not string)) return enumType.TryConvertToEnum(value, out _);
-        return enumerable.OfType<object>().All(item => enumType.TryConvertToEnum(item, out _));
 
-        // Handle single value
+        // Handle array/collection of values (for In/NotIn operations): element-wise coercion is out of
+        // scope (DRK-39), so an array is only valid when its elements are already the enum type itself
+        // (e.g. OrderStatus[]) - an int[]/string[] would reach the Dynamic LINQ parser unconverted and
+        // throw on Contains() type-mismatch, so it must be rejected here instead.
+        return enumerable.OfType<object>().All(enumType.IsInstanceOfType);
     }
 
     /// <summary>

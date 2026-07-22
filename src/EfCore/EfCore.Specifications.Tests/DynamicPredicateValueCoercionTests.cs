@@ -214,17 +214,20 @@ public class DynamicPredicateValueCoercionTests(TestDbFixture fixture) : IClassF
 
     #endregion
 
-    #region Regression — int[] to enum In filter
+    #region Regression — int[] to enum In filter (DRK-47)
 
     [Fact]
-    public void DynamicAnd_WithIntArrayForEnumInFilter_ThrowsOnTypeMismatch()
+    public void DynamicAnd_WithIntArrayForEnumInFilter_SkipsConditionGracefully()
     {
         var statusValues = new[] { 0, 1, 2, 3 };
+        var basePredicate = PredicateBuilder.New<Order>(o => o.TotalAmount > 0);
 
-        var action = () => PredicateBuilder.New<Order>(true)
-            .DynamicAnd("Status", Ops.In, statusValues);
+        var result = basePredicate.DynamicAnd("Status", Ops.In, statusValues);
 
-        action.ShouldThrow<InvalidOperationException>();
+        var query = _context.Orders.AsExpandable().Where(result);
+        var sql = query.ToQueryString();
+        sql.ShouldNotContain("IN");
+        sql.ShouldContain("\"TotalAmount\"");
     }
 
     #endregion
