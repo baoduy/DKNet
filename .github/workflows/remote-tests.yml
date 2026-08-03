@@ -43,7 +43,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          global-json-file: src/global.json
+          dotnet-version: "10.x.x"
 
       - name: Restore
         run: dotnet restore src/DKNet.FW.sln
