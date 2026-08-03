@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Runtime.InteropServices;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -20,6 +21,12 @@ namespace AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
 public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsyncLifetime
 {
     #region Fields
+
+    // azure-sql-edge runs on ARM64 (Apple Silicon); mssql/server has no ARM64 image.
+    private static readonly string MssqlImage =
+        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+            ? "mcr.microsoft.com/azure-sql-edge:latest"
+            : "mcr.microsoft.com/mssql/server:2022-latest";
 
     private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
     private MsSqlContainer? _container;
@@ -92,7 +99,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     public async Task InitializeAsync()
     {
         // Create and start SQL Server container
-        _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
+        _container = new MsSqlBuilder(MssqlImage)
             .WithPassword($"A{Guid.NewGuid():N}a!")
             .WithCleanUp(true)
             .Build();

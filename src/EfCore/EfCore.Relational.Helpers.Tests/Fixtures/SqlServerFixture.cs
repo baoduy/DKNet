@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using DotNet.Testcontainers.Containers;
 using Testcontainers.MsSql;
 
@@ -6,6 +7,12 @@ namespace EfCore.Relational.Helpers.Tests.Fixtures;
 public class SqlServerFixture : IAsyncLifetime
 {
     #region Fields
+
+    // azure-sql-edge runs on ARM64 (Apple Silicon); mssql/server has no ARM64 image.
+    private static readonly string MssqlImage =
+        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+            ? "mcr.microsoft.com/azure-sql-edge:latest"
+            : "mcr.microsoft.com/mssql/server:2022-latest";
 
     private readonly string _databaseName = $"TestDb_{Guid.NewGuid():N}";
     private MsSqlContainer? _container;
@@ -43,7 +50,7 @@ public class SqlServerFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
+        _container = new MsSqlBuilder(MssqlImage)
             .WithPassword($"A{Guid.NewGuid():N}a!")
 
             //.WithReuse(true)
