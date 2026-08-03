@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Runtime.InteropServices;
+using DotNet.Testcontainers.Builders;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -101,6 +102,9 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
         // Create and start SQL Server container
         _container = new MsSqlBuilder(MssqlImage)
             .WithPassword($"A{Guid.NewGuid():N}a!")
+            // azure-sql-edge has no sqlcmd, so the default readiness probe fails; wait on the log line instead.
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilMessageIsLogged("SQL Server is now ready for client connections"))
             .WithCleanUp(true)
             .Build();
 

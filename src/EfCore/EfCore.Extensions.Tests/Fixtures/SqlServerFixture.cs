@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DotNet.Testcontainers.Builders;
 
 namespace EfCore.Extensions.Tests.Fixtures;
 
@@ -13,6 +14,9 @@ public class SqlServerFixture : IAsyncLifetime
             : "mcr.microsoft.com/mssql/server:2022-latest";
 
     private readonly MsSqlContainer _sql = new MsSqlBuilder(MssqlImage)
+        // azure-sql-edge has no sqlcmd, so the default readiness probe fails; wait on the log line instead.
+        .WithWaitStrategy(Wait.ForUnixContainer()
+            .UntilMessageIsLogged("SQL Server is now ready for client connections"))
         .Build();
 
     #endregion

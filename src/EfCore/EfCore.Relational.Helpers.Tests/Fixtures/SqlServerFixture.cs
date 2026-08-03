@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Testcontainers.MsSql;
 
@@ -52,6 +53,9 @@ public class SqlServerFixture : IAsyncLifetime
     {
         _container = new MsSqlBuilder(MssqlImage)
             .WithPassword($"A{Guid.NewGuid():N}a!")
+            // azure-sql-edge has no sqlcmd, so the default readiness probe fails; wait on the log line instead.
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilMessageIsLogged("SQL Server is now ready for client connections"))
 
             //.WithReuse(true)
             .Build();
