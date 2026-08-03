@@ -1,10 +1,22 @@
+using System.Runtime.InteropServices;
+using DotNet.Testcontainers.Builders;
+
 namespace EfCore.Extensions.Tests.Fixtures;
 
 public class SqlServerFixture : IAsyncLifetime
 {
     #region Fields
 
-    private readonly MsSqlContainer _sql = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
+    // azure-sql-edge runs on ARM64 (Apple Silicon); mssql/server has no ARM64 image.
+    private static readonly string MssqlImage =
+        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+            ? "mcr.microsoft.com/azure-sql-edge:latest"
+            : "mcr.microsoft.com/mssql/server:2022-latest";
+
+    private readonly MsSqlContainer _sql = new MsSqlBuilder(MssqlImage)
+        // azure-sql-edge has no sqlcmd, so the default readiness probe fails; wait on the log line instead.
+        .WithWaitStrategy(Wait.ForUnixContainer()
+            .UntilMessageIsLogged("SQL Server is now ready for client connections"))
         .Build();
 
     #endregion

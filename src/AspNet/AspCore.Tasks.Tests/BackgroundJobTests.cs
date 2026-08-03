@@ -126,7 +126,7 @@ public class BackgroundJobTests
     {
         var type = typeof(TaskSetups);
         var field = type.GetField("_added", BindingFlags.Static | BindingFlags.NonPublic);
-        field!.SetValue(null, false);
+        field!.SetValue(null, 0);
     }
 
     #endregion

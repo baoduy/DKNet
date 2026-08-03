@@ -41,9 +41,11 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         var connectionString = dbContext.Database.GetConnectionString();
 
         // Assert
+        // EF/SqlClient normalises the connection string, so the DB name shows as "Initial Catalog=..."
+        // rather than "Database=...". Assert on the database name and that it is not master.
         connectionString.ShouldNotBeNullOrWhiteSpace();
-        connectionString.ShouldContain($"Database={fixture.DatabaseName}");
-        connectionString.ShouldNotContain("Database=master");
+        connectionString.ShouldContain(fixture.DatabaseName);
+        connectionString.ShouldNotContain("=master");
     }
 
     [Fact]

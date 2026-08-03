@@ -1,0 +1,94 @@
+name: Remote Unit Tests
+
+# Manually/remotely triggerable test run for any branch — lets a machine without a working
+# SQL Server (e.g. ARM devices where mssql/server and azure-sql-edge won't run) verify tests on
+# a GitHub-hosted x64 runner where Docker + TestContainers work.
+#
+# Trigger from the CLI:
+#   gh workflow run remote-tests.yml --ref <branch>
+#   gh workflow run remote-tests.yml --ref <branch> -f project=EfCore/EfCore.Extensions.Tests
+#   gh workflow run remote-tests.yml --ref <branch> -f filter="FullyQualifiedName~DynamicAnd"
+# Watch / read results:
+#   gh run list --workflow remote-tests.yml
+#   gh run watch <run-id>
+#   gh run view <run-id> --log-failed
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Path (relative to src/) of a test project/.csproj, or the solution. Default: whole solution."
+        required: false
+        default: "DKNet.FW.sln"
+      filter:
+        description: "Optional dotnet test --filter expression (e.g. FullyQualifiedName~SomeTest)."
+        required: false
+        default: ""
+
+concurrency:
+  group: remote-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x.x"
+
+      - name: Restore
+        run: dotnet restore src/DKNet.FW.sln
+
+      - name: Build
+        run: |
+          mkdir -p src/TestResults
+          # pipefail is on by default in GitHub's bash shell, so a build error still fails the step.
+          dotnet build src/DKNet.FW.sln --no-restore --configuration Release 2>&1 \
+            | tee src/TestResults/build.log
+
+      - name: Test
+        working-directory: src
+        env:
+          PROJECT: ${{ inputs.project }}
+          FILTER: ${{ inputs.filter }}
+        run: |
+          args=(--no-build --configuration Release
+                --logger "trx;LogFileName=test-results.trx"
+                --results-directory ./TestResults
+                --verbosity normal)
+          if [ -n "$FILTER" ]; then args+=(--filter "$FILTER"); fi
+          dotnet test "$PROJECT" "${args[@]}" 2>&1 | tee ./TestResults/test.log
+
+      - name: Failure summary
+        if: always()
+        working-directory: src
+        run: |
+          {
+            echo "## Test run summary"
+            echo '```'
+            grep -E "Passed!|Failed!|error CS|error MSB" TestResults/*.log 2>/dev/null | tail -50 || true
+            echo '```'
+            echo "### Failed tests"
+            echo '```'
+            grep -E "^\s*(Failed|error) " TestResults/test.log 2>/dev/null | head -100 || echo "none"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results (trx + build/test logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            src/TestResults/**/*.trx
+            src/TestResults/*.log
+          if-no-files-found: ignore

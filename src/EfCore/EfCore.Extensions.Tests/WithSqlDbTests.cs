@@ -71,6 +71,13 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     [Fact]
     public async Task SequenceValueTestAsync()
     {
+        // Order has no [Sequence] attribute, so it is deliberately excluded from the model and not
+        // auto-created by EnsureCreated (see NpgsqlSequenceTests). Create it manually to exercise the int path.
+        await _db.Database.ExecuteSqlRawAsync(
+            "IF NOT EXISTS (SELECT 1 FROM sys.sequences s JOIN sys.schemas sc ON s.schema_id = sc.schema_id " +
+            "WHERE s.name = 'Seq_Order' AND sc.name = 'seq') " +
+            "CREATE SEQUENCE seq.Seq_Order AS int START WITH 1 INCREMENT BY 1");
+
         var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
         val1!.Value.ShouldBeGreaterThan((short)0);
 

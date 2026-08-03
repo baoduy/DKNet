@@ -67,7 +67,22 @@ dotnet format                                    # before committing
 
 `Directory.Build.props` enables `TreatWarningsAsErrors=true`, `Nullable=enable`, `LangVersion=latest`, and `GenerateDocumentationFile=true` solution-wide. Any new warning, missing XML doc, or nullable mismatch breaks the build.
 
-Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory.
+Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. On ARM64/Apple Silicon the fixtures fall back to `mcr.microsoft.com/azure-sql-edge` (no ARM image for `mssql/server`) and wait on the SQL log line instead of `sqlcmd` (which `azure-sql-edge` doesn't ship).
+
+### Remote test verification (ARM / no local SQL Server)
+
+When SQL Server won't run locally (e.g. ARM devices where neither `mssql/server` nor `azure-sql-edge` work), verify tests on a GitHub-hosted x64 runner via the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml`. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging.
+
+```bash
+gh workflow run remote-tests.yml --ref <branch>                              # whole solution
+gh workflow run remote-tests.yml --ref <branch> -f project=EfCore/EfCore.Extensions.Tests
+gh workflow run remote-tests.yml --ref <branch> -f filter="FullyQualifiedName~DynamicAnd"
+gh run watch <run-id> --exit-status        # or: gh run list --workflow remote-tests.yml
+gh run view <run-id> --log-failed          # inline failed-step logs
+gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
+```
+
+The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
 
 ## Architectural Big Picture
 

@@ -31,7 +31,7 @@ dotnet format                                                # before committing
 
 `global.json` pins SDK `10.0.100` (rollForward `latestMinor`). `Directory.Build.props` enables `TreatWarningsAsErrors=true`, nullable reference types, and `GenerateDocumentationFile=true` solution-wide — any new warning breaks the build.
 
-Integration tests require Docker (TestContainers spins up real SQL Server). Do not switch them to InMemory.
+Integration tests require Docker (TestContainers spins up real SQL Server). Do not switch them to InMemory. When SQL Server won't run locally (e.g. ARM devices), verify on a GitHub x64 runner: `gh workflow run remote-tests.yml --ref <branch>` — it runs the tests and uploads a `test-results` artifact (trx + build/test logs) for AI debugging. See the root `CLAUDE.md` "Remote test verification" section for details.
 
 ## Repository Layout
 

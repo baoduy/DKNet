@@ -64,7 +64,10 @@ public class DataSeedingEdgeCaseTests
 
     private sealed class FixedColorSeedingConfiguration : DataSeedingConfiguration<ColorRow>
     {
-        public static IReadOnlyList<ColorRow> Rows { get; set; } = [];
+        // Instance (not static): a static here leaks across test classes — UseAutoDataSeeding in
+        // DataSeedingTests scans this assembly, picks up this ColorRow config, and a polluted static
+        // makes it seed ColorRow into MyDbContext (which has no ColorRow). Default empty = early return.
+        public IReadOnlyList<ColorRow> Rows { get; init; } = [];
 
         protected override ValueTask<ICollection<ColorRow>> GetDataAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult<ICollection<ColorRow>>(Rows.ToList());
@@ -94,8 +97,7 @@ public class DataSeedingEdgeCaseTests
         }
 
         await using var context = new ColorDbContext(options);
-        FixedColorSeedingConfiguration.Rows = seedRows;
-        var config = new FixedColorSeedingConfiguration();
+        var config = new FixedColorSeedingConfiguration { Rows = seedRows };
 
         // Act — invoking SeedAsync should NOT insert any duplicates because every candidate is
         // already in the existing set, hitting the `toAdd.Count == 0` early-return.
