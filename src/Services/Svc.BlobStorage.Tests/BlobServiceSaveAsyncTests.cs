@@ -184,6 +184,48 @@ public class BlobServiceSaveAsyncTests
         (await service.CheckExistsAsync(new BlobRequest(blobName))).ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task S3_DeleteFolder_ShouldWork()
+    {
+        using var fixture = new S3BlobServiceFixture();
+        var service = fixture.Service;
+        
+        // Create a folder with a file
+        var folderName = $"testfolder-{Guid.NewGuid()}";
+        var fileName = $"{folderName}/test.txt";
+        var blobData = new BlobDetails.BlobData(fileName, BinaryData.FromString("Folder Test")) { Overwrite = true };
+        
+        // Save file in folder
+        await service.SaveAsync(blobData);
+        
+        // Delete folder
+        var folderRequest = new BlobRequest(folderName) { Type = BlobTypes.Directory };
+        (await service.DeleteAsync(folderRequest)).ShouldBeTrue();
+        
+        // Verify folder is gone
+        (await service.CheckExistsAsync(folderRequest)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task S3_GetItemAsync_ShouldWork()
+    {
+        using var fixture = new S3BlobServiceFixture();
+        var service = fixture.Service;
+        var blobName = $"getitem-{Guid.NewGuid()}.txt";
+        var blobData = new BlobDetails.BlobData(blobName, BinaryData.FromString("GetItem Test")) { Overwrite = true };
+
+        // Save
+        await service.SaveAsync(blobData);
+
+        // GetItem
+        var item = await service.GetItemAsync(new BlobRequest(blobName));
+        item.ShouldNotBeNull();
+        item!.Name.ShouldBe(blobName);
+
+        // Cleanup
+        await service.DeleteAsync(new BlobRequest(blobName));
+    }
+
     #endregion
 
     #region AzureStorageBlobService Tests
