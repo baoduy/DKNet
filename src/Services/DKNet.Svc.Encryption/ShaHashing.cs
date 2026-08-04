@@ -178,9 +178,16 @@ public sealed class ShaHashing : IShaHashing
         ArgumentNullException.ThrowIfNull(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
         var actual = ComputeHash(input, algorithm, !ignoreCase);
-        return ignoreCase
-            ? string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase)
-            : actual == expectedHex;
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(
+                Convert.FromHexString(actual),
+                Convert.FromHexString(expectedHex));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

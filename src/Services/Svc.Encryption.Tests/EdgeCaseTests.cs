@@ -189,7 +189,24 @@ public class EdgeCaseTests
         rsa.Verify("hello", tampered).ShouldBeFalse();
     }
 
+    [Theory]
+    [InlineData("***not-base64***", true)]
+    [InlineData("***not-hex***", false)]
+    public void HmacHashing_Verify_InvalidSignature_ReturnsFalse(string badSig, bool isBase64)
+    {
+        using IHmacHashing hmac = new HmacHashing();
+        hmac.VerifySha256("msg", "key", badSig, isBase64).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ShaHashing_Verify_InvalidHex_ReturnsFalse()
+    {
+        using IShaHashing hash = new ShaHashing();
+        hash.VerifySha256("msg", "***not-hex***").ShouldBeFalse();
+    }
+
     // ShaHashing edges
+
     [Fact]
     public void Sha256Hashing_UpperCaseAndVerifyCaseSensitive()
     {
