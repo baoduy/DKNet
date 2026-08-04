@@ -47,13 +47,14 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
             return null;
         }
 
-        // Capture the context in the closure so EF Core can evaluate AccessibleKeys per query
-        // Use !Any() instead of Count == 0 for better SQL translation
+        // Capture the context in the closure so EF Core can evaluate AccessibleKeys/IsUnrestrictedAccess per query
+        // An empty AccessibleKeys collection denies access by default (deny-all); only an explicit
+        // IsUnrestrictedAccess opt-in bypasses the filter
         // EF Core can translate Contains on IEnumerable<string> to SQL IN clause
         var capturedContext = dataOwnerContext;
 
         return x =>
-            !capturedContext.AccessibleKeys.Any()
+            capturedContext.IsUnrestrictedAccess
             || capturedContext.AccessibleKeys.Contains(((IOwnedBy)x).OwnedBy);
     }
 

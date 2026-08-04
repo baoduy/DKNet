@@ -167,9 +167,18 @@ public sealed class HmacHashing : IHmacHashing
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedSignature);
 
         var actual = Compute(message, secretKey, algorithm, signatureIsBase64);
-        return ignoreCase
-            ? string.Equals(actual, expectedSignature, StringComparison.OrdinalIgnoreCase)
-            : actual == expectedSignature;
+        try
+        {
+            var actualBytes = signatureIsBase64 ? Convert.FromBase64String(actual) : Convert.FromHexString(actual);
+            var expectedBytes = signatureIsBase64
+                ? Convert.FromBase64String(expectedSignature)
+                : Convert.FromHexString(expectedSignature);
+            return CryptographicOperations.FixedTimeEquals(actualBytes, expectedBytes);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
