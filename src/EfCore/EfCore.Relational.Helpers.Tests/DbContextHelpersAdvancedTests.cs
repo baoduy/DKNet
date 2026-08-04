@@ -1,5 +1,6 @@
 using System.Data;
 using EfCore.Relational.Helpers.Tests.Fixtures;
+using Npgsql;
 
 namespace EfCore.Relational.Helpers.Tests;
 
@@ -208,6 +209,37 @@ public class DbContextHelpersAdvancedTests(PostgresFixture fixture) : IClassFixt
 
         // Assert
         exists.ShouldBeTrue("As Db will be auto created, the table should exist after EnsureCreatedAsync");
+    }
+
+    [Fact]
+    public async Task TableExistsAsync_OnDatabaseWithoutTheTable_ShouldReturnFalse()
+    {
+        // Arrange - create a brand-new, empty database (no EnsureCreatedAsync, no shared state)
+        await fixture.EnsureReadyAsync();
+
+        var isolatedConnectionString = fixture.CreateIsolatedConnectionString();
+        var databaseName = new NpgsqlConnectionStringBuilder(isolatedConnectionString).Database!;
+
+        var adminConnectionString =
+            new NpgsqlConnectionStringBuilder(fixture.GetConnectionString()) { Database = "postgres" }
+                .ConnectionString;
+        await using (var adminConnection = new NpgsqlConnection(adminConnectionString))
+        {
+            await adminConnection.OpenAsync();
+            await using var createDb = adminConnection.CreateCommand();
+            createDb.CommandText = $"CREATE DATABASE \"{databaseName}\"";
+            await createDb.ExecuteNonQueryAsync();
+        }
+
+        await using var db = new TestDbContext(
+            new DbContextOptionsBuilder<TestDbContext>()
+                .UseNpgsql(isolatedConnectionString).Options);
+
+        // Act - the database exists but the "TestEntity" table was never created in it
+        var exists = await db.TableExistsAsync<TestEntity>();
+
+        // Assert
+        exists.ShouldBeFalse();
     }
 
     #endregion
