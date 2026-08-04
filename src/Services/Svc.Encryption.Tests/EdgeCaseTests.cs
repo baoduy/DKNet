@@ -96,7 +96,48 @@ public class EdgeCaseTests
         provider.GetRequiredService<IHmacHashing>().ShouldNotBeNull();
 
         //provider.GetRequiredService<IPasswordAesEncryption>().ShouldNotBeNull();
-        provider.GetRequiredService<IRsaEncryption>().ShouldNotBeNull();
+        provider.GetService<IRsaEncryption>().ShouldBeNull();
+    }
+
+    [Fact]
+    public void AddRsaEncryption_Registers_Singleton()
+    {
+        var privateKey = new RsaEncryption().PrivateKey;
+
+        var services = new ServiceCollection();
+        services.AddRsaEncryption(privateKey!);
+        var provider = services.BuildServiceProvider();
+
+        var first = provider.GetRequiredService<IRsaEncryption>();
+        var second = provider.GetRequiredService<IRsaEncryption>();
+
+        ReferenceEquals(first, second).ShouldBeTrue();
+        first.PublicKey.ShouldBe(second.PublicKey);
+    }
+
+    [Fact]
+    public void AddRsaEncryption_TwoResolutions_RoundTrip()
+    {
+        var privateKey = new RsaEncryption().PrivateKey;
+
+        var services = new ServiceCollection();
+        services.AddRsaEncryption(privateKey!);
+        var provider = services.BuildServiceProvider();
+
+        var encryptor = provider.GetRequiredService<IRsaEncryption>();
+        var cipherText = encryptor.Encrypt("hello world");
+
+        var decryptor = provider.GetRequiredService<IRsaEncryption>();
+        decryptor.Decrypt(cipherText).ShouldBe("hello world");
+    }
+
+    [Theory]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void AddRsaEncryption_NullOrWhitespaceKey_Throws(string key)
+    {
+        var services = new ServiceCollection();
+        Should.Throw<ArgumentException>(() => services.AddRsaEncryption(key));
     }
 
     [Theory]

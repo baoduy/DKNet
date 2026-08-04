@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Improved documentation organization and navigation
 - Enhanced main README.md to be more concise and point to docs/
+- **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
+  throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
+  RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
+  as a singleton built from a caller-supplied key.
+
+### Security
+- Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
+  (DKNet.Svc.Encryption).
 
 ## [2024.12.0] - 2024-12-XX
 
