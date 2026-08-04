@@ -121,6 +121,11 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
     #endregion
 }
 
+public class SimpleContext : DbContext
+{
+    public SimpleContext(DbContextOptions options) : base(options) { }
+}
+
 /// <summary>
 ///     Tests for the scenario where IsUnrestrictedAccess is opted into (true),
 ///     meaning all entities are visible regardless of the AccessibleKeys restriction.
@@ -163,4 +168,34 @@ public class DataAuthorizationUnrestrictedAccessTests(UnrestrictedAccessFixture 
     }
 
     #endregion
+}
+
+/// <summary>
+///     Tests for the internal filter logic.
+/// </summary>
+public class DataAuthorizationFilterTests
+{
+    [Fact]
+    public void HasQueryFilter_WithInvalidContext_ReturnsNull()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<SimpleContext>().UseSqlite("DataSource=:memory:").Options;
+        using var context = new SimpleContext(options);
+        var filter = new DataOwnerAuthQuery();
+
+        // Act
+        // Using reflection to call protected method
+        var method = typeof(DataOwnerAuthQuery).GetMethod("HasQueryFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var genericMethod = method?.MakeGenericMethod(typeof(Root));
+        
+        object? result = null;
+        var ex = Record.Exception(() => {
+            result = genericMethod?.Invoke(filter, new object[] { context });
+        });
+
+        // Assert
+        // If Debug.Fail is called, it throws DebugAssertException
+        ex.ShouldNotBeNull();
+        result.ShouldBeNull();
+    }
 }
