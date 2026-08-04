@@ -27,5 +27,18 @@ public interface IDataOwnerDbContext
     /// </remarks>
     IEnumerable<string> AccessibleKeys { get; }
 
+    /// <summary>
+    ///     Gets a value indicating whether the current context is exempt from ownership filtering entirely.
+    /// </summary>
+    /// <value>
+    ///     <c>true</c> to bypass the <see cref="AccessibleKeys" /> filter and see every row; otherwise <c>false</c>.
+    /// </value>
+    /// <remarks>
+    ///     This is an explicit, opt-in escape hatch for system or admin contexts. An empty
+    ///     <see cref="AccessibleKeys" /> collection must never be inferred as unrestricted access — the default
+    ///     is <c>false</c>, so an empty collection denies access to all owned rows.
+    /// </remarks>
+    bool IsUnrestrictedAccess => false;
+
     #endregion
 }

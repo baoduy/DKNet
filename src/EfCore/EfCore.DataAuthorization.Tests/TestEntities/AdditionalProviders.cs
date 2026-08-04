@@ -15,8 +15,8 @@ internal class EmptyOwnerKeyProvider : IDataOwnerProvider
 }
 
 /// <summary>
-///     A data owner provider with no accessible keys, simulating a super-user context where
-///     all entities should be visible regardless of ownership.
+///     A data owner provider with no accessible keys, simulating a context that has not been granted
+///     access to any owned data — the deny-all default, since it does not opt into unrestricted access.
 /// </summary>
 internal class EmptyAccessibleKeysProvider : IDataOwnerProvider
 {

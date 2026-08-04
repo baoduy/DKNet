@@ -74,8 +74,8 @@ public class DataAuthorizationEmptyOwnerKeyTests(EmptyOwnerKeyFixture fixture)
 }
 
 /// <summary>
-///     Tests for the scenario where AccessibleKeys is empty, meaning all entities should be visible
-///     (super-user / admin context).
+///     Tests for the scenario where AccessibleKeys is empty and IsUnrestrictedAccess is not opted into,
+///     meaning no entities should be visible (deny-all default).
 /// </summary>
 public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixture fixture)
     : IClassFixture<EmptyAccessibleKeysFixture>
@@ -83,10 +83,10 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
     #region Methods
 
     [Fact]
-    public async Task WhenAccessibleKeysIsEmpty_AllEntitiesAreVisible()
+    public async Task WhenAccessibleKeysIsEmpty_NoEntitiesAreVisible()
     {
         // Arrange: EmptyAccessibleKeysProvider returns [] for GetAccessibleKeys()
-        // The query filter's !AccessibleKeys.Any() == true branch is exercised → show ALL entities
+        // IsUnrestrictedAccess defaults to false, so Contains on an empty collection denies every row
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         var entity1 = new Root("Entity owned by Steven", "Steven");
@@ -96,14 +96,11 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
         await db.AddRangeAsync(entity1, entity2, entity3);
         await db.SaveChangesAsync();
 
-        // Act: With empty AccessibleKeys, the query filter allows ALL entities
+        // Act: With empty AccessibleKeys and no opt-in, the query filter denies ALL entities
         var allEntities = await db.Set<Root>().ToListAsync();
 
-        // Assert: Entities with ANY OwnedBy value should be visible
-        allEntities.Count.ShouldBeGreaterThanOrEqualTo(3);
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "Steven");
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "other-user");
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "admin");
+        // Assert: No entities are visible regardless of OwnedBy value
+        allEntities.ShouldBeEmpty();
     }
 
     [Fact]
