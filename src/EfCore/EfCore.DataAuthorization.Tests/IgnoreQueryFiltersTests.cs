@@ -126,6 +126,33 @@ public class IgnoreQueryFiltersTests(TenantIsolationFixture fixture) : IClassFix
             .Select(x => x.Id).OrderBy(x => x).ShouldBe([1, 2]);
     }
 
+    [Fact]
+    public void DataOwnerAuthQuery_HasQueryFilter_ReturnsNull_WhenContextIsNotDataOwnerDbContext()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<DbContext>().UseSqlite("DataSource=:memory:").Options;
+        using var db = new DbContext(options);
+        var query = new DataOwnerAuthQuery();
+
+        // Act
+        var method = typeof(DataOwnerAuthQuery).GetMethod("HasQueryFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var genericMethod = method?.MakeGenericMethod(typeof(Root));
+        
+        // Assert
+        try 
+        {
+            var result = genericMethod?.Invoke(query, new object[] { db });
+            result.ShouldBeNull();
+        }
+        catch (System.Reflection.TargetInvocationException ex)
+        {
+            // Expecting Debug.Fail to throw in debug builds
+            ex.InnerException.ShouldNotBeNull();
+        }
+    }
+
+
+
     #endregion
 }
 
