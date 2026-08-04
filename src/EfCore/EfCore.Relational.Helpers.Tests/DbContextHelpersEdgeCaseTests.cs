@@ -4,7 +4,7 @@ using EfCore.Relational.Helpers.Tests.Fixtures;
 
 namespace EfCore.Relational.Helpers.Tests;
 
-public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class DbContextHelpersEdgeCaseTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
     #region Methods
 
@@ -12,11 +12,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task All_Methods_WithShortTimeout_ShouldComplete()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
@@ -38,11 +38,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task CreateTableAsync_CalledMultipleTimes_ShouldBeIdempotent()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Act - Call CreateTableAsync multiple times
         await db.CreateTableAsync<TestEntity>();
@@ -62,7 +62,7 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(invalidConnectionString).Options);
+                .UseNpgsql(invalidConnectionString).Options);
 
         // Act & Assert
         await Should.ThrowAsync<Exception>(async () =>
@@ -73,11 +73,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task GetDbConnection_AfterDatabaseCreation_ShouldWork()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Act
         await db.Database.EnsureCreatedAsync();
@@ -92,11 +92,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task GetDbConnection_MultipleCallsConcurrently_ShouldHandleCorrectly()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Act - Make multiple concurrent calls
         var tasks = Enumerable.Range(0, 10).Select(async _ => await db.GetDbConnection()).ToArray();
@@ -112,11 +112,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task GetTableName_WithComplexEntity_ShouldReturnCorrectNames()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Act - Test with different entity types
         var (schema1, tableName1) = db.GetTableName<TestEntity>();
@@ -135,11 +135,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task TableExistsAsync_WithInvalidDbContext_ShouldHandleGracefully()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Dispose the context to make it invalid
         await db.DisposeAsync();
@@ -153,11 +153,11 @@ public class DbContextHelpersEdgeCaseTests(SqlServerFixture fixture) : IClassFix
     public async Task TableExistsAsync_WithLongRunningOperation_ShouldComplete()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 

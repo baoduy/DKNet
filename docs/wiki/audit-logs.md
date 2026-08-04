@@ -25,6 +25,14 @@ runs in the before-SaveChanges phase to populate or capture that information for
 tracked, flagged entities, so audit data is written consistently in the same
 transaction as the change.
 
+## Sensitive property redaction
+
+Captured property values are redacted by default: any property whose name matches a known sensitive pattern
+(passwords, secrets, tokens, connection strings, etc.) is recorded as `***REDACTED***` instead of its real value.
+Apply `[AuditLog]` to a property to force plaintext capture for that property, or pass
+`AuditPropertyPolicy.OnlyAttributedProperties` to the DI registration for a strict mode that captures only
+explicitly `[AuditLog]`-marked properties.
+
 ## Where it fits
 
 Audit logging is independent of the other interceptor-based concerns —

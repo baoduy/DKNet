@@ -18,7 +18,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 {
     #region Methods
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task ApiHealthCheck()
     {
         // Arrange & Act
@@ -31,7 +31,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         content.ShouldNotBeNull();
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task ApiFixture_UsesIsolatedDatabaseConnectionString()
     {
         // Arrange
@@ -48,7 +48,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         connectionString.ShouldNotContain("=master");
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_ConcurrentRequestsWithSameKey_OnlyOneProcessed()
     {
         // Arrange
@@ -92,7 +92,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         count.ShouldBe(1, "Unique constraint should prevent duplicate idempotency keys");
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_VerifyKeySanitization_RemovesInvalidCharacters()
     {
         // Arrange
@@ -124,7 +124,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.ShouldBeNull("Invalid idempotency key should not be stored in database.");
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_WithDifferentIdempotencyKeys_CreatesMultipleItems()
     {
         // Arrange
@@ -166,7 +166,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         count.ShouldBe(2);
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_WithIdempotencyKey_FirstRequest_StoresInDatabase()
     {
         // Arrange
@@ -200,7 +200,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.Body.ShouldNotBeNullOrWhiteSpace();
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_WithIdempotencyKey_StoresCorrectResponseDetails()
     {
         // Arrange
@@ -231,7 +231,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.ExpiresAt!.Value.ShouldBeGreaterThan(storedKey.CreatedAt);
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_WithoutIdempotencyKey_ProcessesNormally()
     {
         // Arrange
@@ -248,7 +248,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         item.ShouldContain("The 'X-Idempotency-Key' header is invalid.");
     }
 
-    [Fact]
+    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
     public async Task CreateItem_WithSameIdempotencyKey_SecondRequest_ReturnsCachedResponse()
     {
         // Arrange

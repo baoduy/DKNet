@@ -26,10 +26,13 @@ public static class ModelBuilderExtensions
     ///     Thrown when <paramref name="modelBuilder" /> or
     ///     <paramref name="encryptionKeyProvider" /> is null.
     /// </exception>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown when a property marked with <see cref="EncryptedAttribute" /> is a primary key or foreign key,
+    ///     which is not supported.
+    /// </exception>
     /// <remarks>
     ///     This method scans all entity types in the model and applies encryption value converters
-    ///     to string properties that are not primary or foreign keys and are marked with the <see cref="EncryptedAttribute" />
-    ///     .
+    ///     to string properties marked with the <see cref="EncryptedAttribute" />.
     /// </remarks>
     public static void UseColumnEncryption(this ModelBuilder modelBuilder, IEncryptionKeyProvider encryptionKeyProvider)
     {
@@ -38,10 +41,7 @@ public static class ModelBuilderExtensions
 
         var stringProperties = modelBuilder.Model.GetEntityTypes()
             .SelectMany(e => e.GetProperties())
-            .Where(p =>
-                p.ClrType == typeof(string) &&
-                !p.IsPrimaryKey() &&
-                !p.IsForeignKey());
+            .Where(p => p.ClrType == typeof(string));
 
         foreach (var property in stringProperties)
         {
@@ -49,6 +49,12 @@ public static class ModelBuilderExtensions
             if (propertyInfo == null || !Attribute.IsDefined(propertyInfo, typeof(EncryptedAttribute)))
             {
                 continue;
+            }
+
+            if (property.IsPrimaryKey() || property.IsForeignKey())
+            {
+                throw new InvalidOperationException(
+                    $"Property '{propertyInfo.DeclaringType!.Name}.{propertyInfo.Name}' is marked with [Encrypted] but is a primary key or foreign key column, which is not supported.");
             }
 
             var key = encryptionKeyProvider.GetKey(propertyInfo.DeclaringType!);

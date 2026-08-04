@@ -74,8 +74,8 @@ public class DataAuthorizationEmptyOwnerKeyTests(EmptyOwnerKeyFixture fixture)
 }
 
 /// <summary>
-///     Tests for the scenario where AccessibleKeys is empty, meaning all entities should be visible
-///     (super-user / admin context).
+///     Tests for the scenario where AccessibleKeys is empty and IsUnrestrictedAccess is not opted into,
+///     meaning no entities should be visible (deny-all default).
 /// </summary>
 public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixture fixture)
     : IClassFixture<EmptyAccessibleKeysFixture>
@@ -83,10 +83,10 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
     #region Methods
 
     [Fact]
-    public async Task WhenAccessibleKeysIsEmpty_AllEntitiesAreVisible()
+    public async Task WhenAccessibleKeysIsEmpty_NoEntitiesAreVisible()
     {
         // Arrange: EmptyAccessibleKeysProvider returns [] for GetAccessibleKeys()
-        // The query filter's !AccessibleKeys.Any() == true branch is exercised → show ALL entities
+        // IsUnrestrictedAccess defaults to false, so Contains on an empty collection denies every row
         var db = fixture.Provider.GetRequiredService<DddContext>();
 
         var entity1 = new Root("Entity owned by Steven", "Steven");
@@ -96,14 +96,11 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
         await db.AddRangeAsync(entity1, entity2, entity3);
         await db.SaveChangesAsync();
 
-        // Act: With empty AccessibleKeys, the query filter allows ALL entities
+        // Act: With empty AccessibleKeys and no opt-in, the query filter denies ALL entities
         var allEntities = await db.Set<Root>().ToListAsync();
 
-        // Assert: Entities with ANY OwnedBy value should be visible
-        allEntities.Count.ShouldBeGreaterThanOrEqualTo(3);
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "Steven");
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "other-user");
-        allEntities.ShouldContain(e => ((IOwnedBy)e).OwnedBy == "admin");
+        // Assert: No entities are visible regardless of OwnedBy value
+        allEntities.ShouldBeEmpty();
     }
 
     [Fact]
@@ -122,4 +119,83 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
     }
 
     #endregion
+}
+
+public class SimpleContext : DbContext
+{
+    public SimpleContext(DbContextOptions options) : base(options) { }
+}
+
+/// <summary>
+///     Tests for the scenario where IsUnrestrictedAccess is opted into (true),
+///     meaning all entities are visible regardless of the AccessibleKeys restriction.
+/// </summary>
+public class DataAuthorizationUnrestrictedAccessTests(UnrestrictedAccessFixture fixture)
+    : IClassFixture<UnrestrictedAccessFixture>
+{
+    #region Methods
+
+    [Fact]
+    public async Task WhenUnrestrictedAccessIsTrue_AllEntitiesAreVisibleEvenWithRestrictedKeys()
+    {
+        // Arrange: NonEmptyAccessibleKeysProvider returns ["Steven"]
+        // IsUnrestrictedAccess is true, so the query filter should be bypassed
+        var db = fixture.Provider.GetRequiredService<UnrestrictedDddContext>();
+
+        var entity1 = new Root("Entity owned by Steven", "Steven");
+        var entity2 = new Root("Entity owned by other", "other-user");
+        var entity3 = new Root("Entity owned by admin", "admin");
+
+        await db.AddRangeAsync(entity1, entity2, entity3);
+        await db.SaveChangesAsync();
+
+        // Act: With unrestricted access, all entities are visible regardless of ownership
+        var allEntities = await db.Set<Root>().ToListAsync();
+
+        // Assert: All entities are visible
+        allEntities.Count.ShouldBe(3);
+        allEntities.ShouldContain(e => e.OwnedBy == "Steven");
+        allEntities.ShouldContain(e => e.OwnedBy == "other-user");
+        allEntities.ShouldContain(e => e.OwnedBy == "admin");
+    }
+
+    [Fact]
+    public void WhenUnrestrictedAccessIsTrue_AccessibleKeysAreStillProvided()
+    {
+        var db = fixture.Provider.GetRequiredService<UnrestrictedDddContext>();
+        db.IsUnrestrictedAccess.ShouldBeTrue();
+        db.AccessibleKeys.ShouldContain("Steven");
+    }
+
+    #endregion
+}
+
+/// <summary>
+///     Tests for the internal filter logic.
+/// </summary>
+public class DataAuthorizationFilterTests
+{
+    [Fact]
+    public void HasQueryFilter_WithInvalidContext_ReturnsNull()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<SimpleContext>().UseSqlite("DataSource=:memory:").Options;
+        using var context = new SimpleContext(options);
+        var filter = new DataOwnerAuthQuery();
+
+        // Act
+        // Using reflection to call protected method
+        var method = typeof(DataOwnerAuthQuery).GetMethod("HasQueryFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var genericMethod = method?.MakeGenericMethod(typeof(Root));
+        
+        object? result = null;
+        var ex = Record.Exception(() => {
+            result = genericMethod?.Invoke(filter, new object[] { context });
+        });
+
+        // Assert
+        // If Debug.Fail is called, it throws DebugAssertException
+        ex.ShouldNotBeNull();
+        result.ShouldBeNull();
+    }
 }

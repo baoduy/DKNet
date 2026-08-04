@@ -23,10 +23,8 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
         <!-- Force fixed SQLitePCLRaw (EF Sqlite pulls vulnerable 2.1.11, GHSA-2m69-gcr7-jv3q) -->
         <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
-        <PackageReference Include="Testcontainers.MsSql"/>
         <PackageReference Include="Testcontainers.PostgreSql"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Bogus"/>

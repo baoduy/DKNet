@@ -45,7 +45,7 @@ internal sealed class EventContext(SnapshotContext snapshotContext, IMapper mapp
 
             foreach (var e in finalEvents)
             {
-                if (e is IEventItem item) item.AdditionalData.Add(nameof(sourceType), sourceType);
+                if (e is IEventItem item) item.AdditionalData[nameof(sourceType)] = sourceType;
                 yield return e;
             }
         }

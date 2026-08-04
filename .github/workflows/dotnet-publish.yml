@@ -12,6 +12,7 @@ on:
       - 'main'
 
 concurrency:
+  # One run of this pipeline per branch at a time; a newer commit cancels the older in-flight run.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -55,10 +56,8 @@ jobs:
         run: dotnet restore ${{ env.Project_Path }}
       - name: Build
         run: dotnet build ${{ env.Project_Path }} --no-restore --configuration Release
-      - name: Test
-        continue-on-error: true
-        if: ${{ env.Enable_Release != 'true' && env.Enable_Nuget_Release != 'true' }}
-        run: dotnet test ${{ env.Project_Path }} --collect "Code Coverage" --verbosity normal
+
+      # No tests on the release pipeline — unit tests run on `dev` (build-test-coverage.yml).
 
       # Versioning
       - name: Calculate version

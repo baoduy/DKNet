@@ -21,7 +21,9 @@ public interface ISpecification<TEntity>
     #region Properties
 
     /// <summary>
-    ///     Ignore the global query filters (e.g., for soft delete or multi-tenancy)
+    ///     Ignore global query filters that opt in to being bypassed (e.g., soft delete). Filters marked
+    ///     non-ignorable (e.g. row-level tenant/ownership isolation) are never bypassed by this flag, regardless
+    ///     of consuming application.
     /// </summary>
     bool IsIgnoreQueryFilters { get; }
 
@@ -117,8 +119,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     public IReadOnlyCollection<Func<IQueryable<TEntity>, IQueryable<TEntity>>> IncludeBuilders => _includeBuilders;
 
     /// <summary>
-    ///     Gets a value indicating whether global query filters should be ignored for this specification.
-    ///     Call <see cref="IgnoreQueryFilters" /> to enable this behavior.
+    ///     Gets a value indicating whether ignorable global query filters should be bypassed for this
+    ///     specification. Non-ignorable filters (e.g. row-level tenant/ownership isolation) are never bypassed by
+    ///     this flag. Call <see cref="IgnoreQueryFilters" /> to enable this behavior.
     /// </summary>
     public bool IsIgnoreQueryFilters { get; private set; }
 
@@ -207,7 +210,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         expression == null ? PredicateBuilder.New<TEntity>() : PredicateBuilder.New(expression);
 
     /// <summary>
-    ///     Instructs the specification to ignore global query filters (for example soft-delete filters).
+    ///     Instructs the specification to bypass global query filters that opt in to being ignorable (for
+    ///     example soft-delete filters). Non-ignorable filters (e.g. row-level tenant/ownership isolation) are
+    ///     never bypassed by this flag, regardless of consuming application.
     /// </summary>
     protected void IgnoreQueryFilters()
     {

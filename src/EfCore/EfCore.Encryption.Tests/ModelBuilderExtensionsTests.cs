@@ -52,6 +52,39 @@ public class NoEncryptionEntity
     #endregion
 }
 
+public class EncryptedPrimaryKeyEntity
+{
+    #region Properties
+
+    [Encrypted][Key] public string Code { get; set; } = string.Empty;
+
+    public string Name { get; set; } = string.Empty;
+
+    #endregion
+}
+
+public class ParentKeyEntity
+{
+    #region Properties
+
+    [Key] public string Code { get; set; } = string.Empty;
+
+    #endregion
+}
+
+public class EncryptedForeignKeyEntity
+{
+    #region Properties
+
+    [Key] public int Id { get; set; }
+
+    public ParentKeyEntity Parent { get; set; } = null!;
+
+    [Encrypted] public string ParentCode { get; set; } = string.Empty;
+
+    #endregion
+}
+
 // Test DbContext
 public class TestDbContext(DbContextOptions<TestDbContext> options, IEncryptionKeyProvider? keyProvider = null)
     : DbContext(options)
@@ -363,6 +396,37 @@ public class ModelBuilderExtensionsTests
         productEntityType.ShouldNotBeNull();
         productEntityType.FindProperty(nameof(ProductEntity.SecretFormula))
             ?.GetValueConverter().ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void UseColumnEncryption_WithEncryptedForeignKey_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var modelBuilder = new ModelBuilder();
+        modelBuilder.Entity<EncryptedForeignKeyEntity>()
+            .HasOne(e => e.Parent)
+            .WithMany()
+            .HasForeignKey(e => e.ParentCode);
+        var keyProvider = new TestKeyProvider();
+
+        // Act & Assert
+        var ex = Should.Throw<InvalidOperationException>(() => modelBuilder.UseColumnEncryption(keyProvider));
+        ex.Message.ShouldContain(nameof(EncryptedForeignKeyEntity));
+        ex.Message.ShouldContain(nameof(EncryptedForeignKeyEntity.ParentCode));
+    }
+
+    [Fact]
+    public void UseColumnEncryption_WithEncryptedPrimaryKey_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var modelBuilder = new ModelBuilder();
+        modelBuilder.Entity<EncryptedPrimaryKeyEntity>().HasKey(e => e.Code);
+        var keyProvider = new TestKeyProvider();
+
+        // Act & Assert
+        var ex = Should.Throw<InvalidOperationException>(() => modelBuilder.UseColumnEncryption(keyProvider));
+        ex.Message.ShouldContain(nameof(EncryptedPrimaryKeyEntity));
+        ex.Message.ShouldContain(nameof(EncryptedPrimaryKeyEntity.Code));
     }
 
     [Fact]

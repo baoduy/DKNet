@@ -5,9 +5,10 @@ on:
   push:
     branches: [ dev ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ dev ]
 
 concurrency:
+  # One run of this pipeline per branch at a time; a newer commit cancels the older in-flight run.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 

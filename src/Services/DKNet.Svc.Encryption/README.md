@@ -191,10 +191,17 @@ Resolves:
 - `IShaHashing`
 - `IHmacHashing`
 - `IPasswordAesEncryption`
-- `IRsaEncryption` (generated keypair per singleton instance – for multi-key scenarios register factories yourself)
 
-> Registering `IRsaEncryption` as singleton generates one key pair at startup. Override if per-tenant / per-request keys
-> are needed.
+`IRsaEncryption` is not registered by `AddEncryptionServices()` — RSA needs a caller-supplied key, so it has its own
+opt-in extension:
+
+```csharp
+services.AddRsaEncryption(privateKeyBase64);
+```
+
+This registers `IRsaEncryption` as a **singleton** built from the Base64 encoded PKCS#1 private key you provide
+(source it from configuration or a key vault — never hardcode it). The same instance is returned for every
+resolution, so data encrypted/signed via one resolution can be decrypted/verified via another.
 
 ---
 
