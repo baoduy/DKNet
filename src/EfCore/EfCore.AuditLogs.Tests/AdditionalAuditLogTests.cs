@@ -78,7 +78,8 @@ public class AdditionalAuditLogTests
         ctx.Update(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Notes) && c.OldValue == null && (string?)c.NewValue == "note");
         log.Changes.ShouldContain(c =>
@@ -97,7 +98,8 @@ public class AdditionalAuditLogTests
         ctx.Remove(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Deleted, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Deleted, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldAllBe(c => c.NewValue == null);
         log.EntityName.ShouldBe(nameof(TestAuditEntity));
     }
@@ -113,7 +115,8 @@ public class AdditionalAuditLogTests
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(plain);
         entry.State = EntityState.Modified;
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities);
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive);
         log.ShouldBeNull();
     }
 
