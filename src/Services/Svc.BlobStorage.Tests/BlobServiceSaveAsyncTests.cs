@@ -220,7 +220,7 @@ public class BlobServiceSaveAsyncTests
         // GetItem
         var item = await service.GetItemAsync(new BlobRequest(blobName));
         item.ShouldNotBeNull();
-        item!.Name.ShouldBe(blobName);
+        item!.Name.ShouldBe($"/{blobName}");
 
         // Cleanup
         await service.DeleteAsync(new BlobRequest(blobName));
