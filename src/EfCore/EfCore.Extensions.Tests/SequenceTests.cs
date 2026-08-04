@@ -19,7 +19,7 @@ public enum DefaultSchemaSequenceTypes
     [Sequence] DefaultSequence
 }
 
-public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class SequenceExtensionsTests
 {
     #region Methods
 
@@ -93,49 +93,6 @@ public class SequenceExtensionsTests(SqlServerFixture fixture) : IClassFixture<S
 
         // Assert
         name.ShouldBe("Seq_TestSequence1");
-    }
-
-    [Fact]
-    public async Task NextSeqValue_WithValidSequence_ShouldReturnValue()
-    {
-        // Arrange
-
-        var options = new DbContextOptionsBuilder()
-            .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
-            .UseAutoConfigModel([typeof(DbContext).Assembly])
-            .Options;
-
-        await using var context = new DbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
-        // Act
-        var value = await context.NextSeqValue(TestSequenceTypes.TestSequence1);
-
-        // Assert
-        value.ShouldNotBeNull();
-        value.ShouldBeOfType<int>();
-        ((int)value).ShouldBeGreaterThanOrEqualTo(100); // Should start from the StartAt value
-    }
-
-    [Fact]
-    public async Task NextSeqValueWithFormat_ShouldReturnFormattedValue()
-    {
-        // Arrange
-
-        var options = new DbContextOptionsBuilder()
-            .UseSqlServer(fixture.GetConnectionString("SequenceDb"))
-            .UseAutoConfigModel([typeof(TestSequenceTypes).Assembly])
-            .Options;
-
-        await using var context = new DbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
-        // Act
-        var formattedValue = await context.NextSeqValueWithFormat(TestSequenceTypes.TestSequence1);
-
-        // Assert
-        formattedValue.ShouldNotBeNullOrEmpty();
-        formattedValue.ShouldStartWith("TEST-");
     }
 
     #endregion

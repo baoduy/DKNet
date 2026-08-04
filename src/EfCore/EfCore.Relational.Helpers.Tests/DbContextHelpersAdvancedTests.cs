@@ -3,7 +3,7 @@ using EfCore.Relational.Helpers.Tests.Fixtures;
 
 namespace EfCore.Relational.Helpers.Tests;
 
-public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class DbContextHelpersAdvancedTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
     #region Methods
 
@@ -11,11 +11,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task CreateTableAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -29,11 +29,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task CreateTableAsync_WithExistingTable_ShouldNotThrow()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -48,14 +48,14 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task CreateTableAsync_WithNonExistingDatabase_ShouldCreateDatabaseAndTable()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         // Create a unique database name to ensure it doesn't exist.
         var uniqueConnectionString = fixture.CreateIsolatedConnectionString();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(uniqueConnectionString).Options);
+                .UseNpgsql(uniqueConnectionString).Options);
 
         // Act
         await db.CreateTableAsync<TestEntity>();
@@ -72,11 +72,14 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task GetDbConnection_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
+        // Pooling=false forces a genuine new connection dial: Npgsql only honors an already-cancelled
+        // token on Open() while it is actually establishing the connection, not when handing out an
+        // already-warm pooled one (which completes synchronously without ever checking the token).
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql($"{fixture.GetConnectionString()};Pooling=false").Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -90,11 +93,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task GetDbConnection_WithClosedConnection_ShouldOpenConnection()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Ensure connection is closed first
         if (db.Database.GetDbConnection().State != ConnectionState.Closed)
@@ -114,11 +117,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task GetDbConnection_WithOpenConnection_ShouldReturnOpenConnection()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Ensure connection is open first
         await db.Database.OpenConnectionAsync();
@@ -135,11 +138,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task GetTableName_WithEntityHavingSchema_ShouldReturnSchemaAndTableName()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -155,11 +158,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task TableExistsAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync(); // Cancel immediately
@@ -173,11 +176,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task TableExistsAsync_WithExistingTable_ShouldReturnTrue()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         await db.Database.EnsureCreatedAsync();
 
@@ -192,11 +195,11 @@ public class DbContextHelpersAdvancedTests(SqlServerFixture fixture) : IClassFix
     public async Task TableExistsAsync_WithNonExistingTable_ShouldReturnTrue()
     {
         // Arrange
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
 
         // Don't create the database - table won't exist
 

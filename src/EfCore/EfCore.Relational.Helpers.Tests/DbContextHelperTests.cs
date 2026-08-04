@@ -2,20 +2,20 @@ using EfCore.Relational.Helpers.Tests.Fixtures;
 
 namespace EfCore.Relational.Helpers.Tests;
 
-public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class DbContextHelperTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
     #region Methods
 
     [Fact]
     public async Task CheckTableExistsFailed()
     {
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         var action = async () =>
         {
             await using var db = new TestDbContext(
                 new DbContextOptionsBuilder<TestDbContext>()
-                    .UseSqlServer(fixture.GetConnectionString()).Options);
+                    .UseNpgsql(fixture.GetConnectionString()).Options);
             await db.Database.EnsureCreatedAsync();
             await db.TableExistsAsync<NotMappedTestEntity>();
         };
@@ -25,7 +25,7 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task ConnectionString_ShouldUseIsolatedDatabaseName()
     {
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         var connectionString = fixture.GetConnectionString();
 
@@ -36,11 +36,11 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task CreateTable()
     {
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
         await db.CreateTableAsync<TestEntity>();
         var check = await db.TableExistsAsync<TestEntity>();
         check.ShouldBeTrue();
@@ -49,11 +49,11 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task GetTableName()
     {
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
         var (_, tableName) = db.GetTableName<TestEntity>();
         tableName.ShouldBe(nameof(TestEntity));
@@ -62,11 +62,11 @@ public class DbContextHelperTests(SqlServerFixture fixture) : IClassFixture<SqlS
     [Fact]
     public async Task GetTableNameNotMapped()
     {
-        await fixture.EnsureSqlReadyAsync();
+        await fixture.EnsureReadyAsync();
 
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
-                .UseSqlServer(fixture.GetConnectionString()).Options);
+                .UseNpgsql(fixture.GetConnectionString()).Options);
         await db.Database.EnsureCreatedAsync();
         var (_, tableName) = db.GetTableName<NotMappedTestEntity>();
         tableName.ShouldBeNullOrEmpty();

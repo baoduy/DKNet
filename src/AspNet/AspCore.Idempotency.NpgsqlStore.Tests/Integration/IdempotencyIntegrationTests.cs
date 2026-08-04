@@ -6,19 +6,20 @@
 using System.Net;
 using System.Net.Http.Json;
 using AspCore.Idempotency.ApiTests;
-using AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
+using AspCore.Idempotency.NpgsqlStore.Tests.Fixtures;
+using DKNet.AspCore.Idempotency;
 
-namespace AspCore.Idempotency.MsSqlStore.Tests.Integration;
+namespace AspCore.Idempotency.NpgsqlStore.Tests.Integration;
 
 /// <summary>
-///     Integration tests for MS SQL idempotency storage using real SQL Server container.
+///     Integration tests for PostgreSQL idempotency storage using a real PostgreSQL container.
 /// </summary>
 [Collection("Api Collection")]
 public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLifetime
 {
     #region Methods
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task ApiHealthCheck()
     {
         // Arrange & Act
@@ -31,7 +32,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         content.ShouldNotBeNull();
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task ApiFixture_UsesIsolatedDatabaseConnectionString()
     {
         // Arrange
@@ -41,14 +42,12 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         var connectionString = dbContext.Database.GetConnectionString();
 
         // Assert
-        // EF/SqlClient normalises the connection string, so the DB name shows as "Initial Catalog=..."
-        // rather than "Database=...". Assert on the database name and that it is not master.
         connectionString.ShouldNotBeNullOrWhiteSpace();
         connectionString.ShouldContain(fixture.DatabaseName);
-        connectionString.ShouldNotContain("=master");
+        connectionString.ShouldNotContain("Database=postgres");
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_ConcurrentRequestsWithSameKey_OnlyOneProcessed()
     {
         // Arrange
@@ -92,7 +91,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         count.ShouldBe(1, "Unique constraint should prevent duplicate idempotency keys");
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_VerifyKeySanitization_RemovesInvalidCharacters()
     {
         // Arrange
@@ -124,7 +123,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.ShouldBeNull("Invalid idempotency key should not be stored in database.");
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_WithDifferentIdempotencyKeys_CreatesMultipleItems()
     {
         // Arrange
@@ -166,7 +165,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         count.ShouldBe(2);
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_WithIdempotencyKey_FirstRequest_StoresInDatabase()
     {
         // Arrange
@@ -200,7 +199,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.Body.ShouldNotBeNullOrWhiteSpace();
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_WithIdempotencyKey_StoresCorrectResponseDetails()
     {
         // Arrange
@@ -231,7 +230,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         storedKey.ExpiresAt!.Value.ShouldBeGreaterThan(storedKey.CreatedAt);
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_WithoutIdempotencyKey_ProcessesNormally()
     {
         // Arrange
@@ -248,7 +247,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         item.ShouldContain("The 'X-Idempotency-Key' header is invalid.");
     }
 
-    [Fact(Skip = "SQL Server retired from the test run — see DKNet.AspCore.Idempotency.NpgsqlStore for the PostgreSQL-backed equivalent (DRK-118)")]
+    [Fact]
     public async Task CreateItem_WithSameIdempotencyKey_SecondRequest_ReturnsCachedResponse()
     {
         // Arrange
@@ -282,6 +281,51 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         count.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest()
+    {
+        // Arrange - insert an already-expired entry directly, bypassing the HTTP pipeline
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Key Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            var expiredEntity = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/api/items",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 201,
+                    Body = "{}",
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddHours(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddHours(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredEntity);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - a request with the same key should be processed as new, not served the expired cache entry
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+        {
+            Headers = { { "X-Idempotency-Key", idempotencyKey } },
+            Content = JsonContent.Create(request)
+        };
+        var response = await fixture.HttpClient!.SendAsync(httpRequest);
+
+        // Assert - a served-from-cache response would carry the seeded entry's empty "{}" body and no name;
+        // getting the real handler's output back proves the expired key was treated as unprocessed and replayed.
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+        item!.Name.ShouldBe("Expired Key Item");
+        item.Id.ShouldNotBe(Guid.Empty);
+    }
+
     public Task DisposeAsync() => Task.CompletedTask;
 
     public Task InitializeAsync() => Task.CompletedTask;
@@ -290,7 +334,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 }
 
 /// <summary>
-///     Collection definition for API fixture with SQL Server container.
+///     Collection definition for API fixture with PostgreSQL container.
 /// </summary>
 [CollectionDefinition("Api Collection")]
 public sealed class ApiCollection : ICollectionFixture<ApiFixture>
