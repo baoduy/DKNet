@@ -26,6 +26,9 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 
     public override string FilterKey => nameof(DataOwnerAuthQuery);
 
+    // Row-level tenant/owner isolation must never be silently disabled by a spec's IsIgnoreQueryFilters flag.
+    public override bool IsIgnorable => false;
+
     #endregion
 
     #region Methods
