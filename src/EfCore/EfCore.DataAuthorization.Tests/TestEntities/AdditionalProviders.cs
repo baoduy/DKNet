@@ -24,3 +24,14 @@ internal class EmptyAccessibleKeysProvider : IDataOwnerProvider
 
     public string GetOwnershipKey() => "Steven";
 }
+
+/// <summary>
+///     A data owner provider with specific accessible keys, used to verify that
+///     unrestricted access bypasses these restrictions.
+/// </summary>
+internal class NonEmptyAccessibleKeysProvider : IDataOwnerProvider
+{
+    public ICollection<string> GetAccessibleKeys() => ["Steven"];
+
+    public string GetOwnershipKey() => "Steven";
+}

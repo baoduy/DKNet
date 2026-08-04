@@ -120,3 +120,47 @@ public class DataAuthorizationEmptyAccessibleKeysTests(EmptyAccessibleKeysFixtur
 
     #endregion
 }
+
+/// <summary>
+///     Tests for the scenario where IsUnrestrictedAccess is opted into (true),
+///     meaning all entities are visible regardless of the AccessibleKeys restriction.
+/// </summary>
+public class DataAuthorizationUnrestrictedAccessTests(UnrestrictedAccessFixture fixture)
+    : IClassFixture<UnrestrictedAccessFixture>
+{
+    #region Methods
+
+    [Fact]
+    public async Task WhenUnrestrictedAccessIsTrue_AllEntitiesAreVisibleEvenWithRestrictedKeys()
+    {
+        // Arrange: NonEmptyAccessibleKeysProvider returns ["Steven"]
+        // IsUnrestrictedAccess is true, so the query filter should be bypassed
+        var db = fixture.Provider.GetRequiredService<UnrestrictedDddContext>();
+
+        var entity1 = new Root("Entity owned by Steven", "Steven");
+        var entity2 = new Root("Entity owned by other", "other-user");
+        var entity3 = new Root("Entity owned by admin", "admin");
+
+        await db.AddRangeAsync(entity1, entity2, entity3);
+        await db.SaveChangesAsync();
+
+        // Act: With unrestricted access, all entities are visible regardless of ownership
+        var allEntities = await db.Set<Root>().ToListAsync();
+
+        // Assert: All entities are visible
+        allEntities.Count.ShouldBe(3);
+        allEntities.ShouldContain(e => e.OwnedBy == "Steven");
+        allEntities.ShouldContain(e => e.OwnedBy == "other-user");
+        allEntities.ShouldContain(e => e.OwnedBy == "admin");
+    }
+
+    [Fact]
+    public void WhenUnrestrictedAccessIsTrue_AccessibleKeysAreStillProvided()
+    {
+        var db = fixture.Provider.GetRequiredService<UnrestrictedDddContext>();
+        db.IsUnrestrictedAccess.ShouldBeTrue();
+        db.AccessibleKeys.ShouldContain("Steven");
+    }
+
+    #endregion
+}

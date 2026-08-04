@@ -23,3 +23,13 @@ public class DddContext(
     // ReSharper disable once InconsistentNaming
     internal readonly IDataOwnerProvider _dataKeyProvider = dataKeyProviders.First();
 }
+
+/// <summary>
+///     A context that explicitly opts into unrestricted access to bypass ownership filtering.
+/// </summary>
+public class UnrestrictedDddContext(
+    DbContextOptions options,
+    IEnumerable<IDataOwnerProvider> dataKeyProviders) : DddContext(options, dataKeyProviders)
+{
+    public bool IsUnrestrictedAccess => true;
+}
