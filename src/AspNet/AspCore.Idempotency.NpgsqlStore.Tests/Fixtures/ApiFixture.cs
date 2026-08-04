@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Testcontainers.PostgreSql;
 
-namespace AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
+namespace AspCore.Idempotency.NpgsqlStore.Tests.Fixtures;
 
 /// <summary>
-///     Web application factory for testing idempotency endpoints with real SQL Server.
-///     Provides a minimal web host configured with idempotency services, TestContainers.MsSql,
+///     Web application factory for testing idempotency endpoints with real PostgreSQL.
+///     Provides a minimal web host configured with idempotency services, TestContainers.PostgreSql,
 ///     and test endpoints for integration testing.
 /// </summary>
 public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsyncLifetime
@@ -21,13 +22,14 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     #region Fields
 
     private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
+    private PostgreSqlContainer? _container;
 
     #endregion
 
     #region Properties
 
     /// <summary>
-    ///     Gets the SQL Server connection string.
+    ///     Gets the PostgreSQL connection string.
     /// </summary>
     public string ConnectionString { get; private set; } = string.Empty;
 
@@ -43,7 +45,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     #region Methods
 
     /// <summary>
-    ///     Configures the web host builder for testing with SQL Server and idempotency services.
+    ///     Configures the web host builder for testing with PostgreSQL and idempotency services.
     /// </summary>
     /// <param name="builder">The web host builder.</param>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -52,9 +54,9 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
 
         builder.ConfigureServices(services =>
         {
-            // Register idempotency with MS SQL store using the TestContainers connection string
+            // Register idempotency with Npgsql store using the TestContainers connection string
             services
-                .AddIdempotencyWithMsSqlStore(
+                .AddIdempotencyWithNpgsqlStore(
                     ConnectionString,
                     options =>
                     {
@@ -65,10 +67,16 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     Disposes the test application. No SQL Server container is ever created (see <see cref="InitializeAsync" />).
+    ///     Disposes the test application and PostgreSQL container.
     /// </summary>
     public new async Task DisposeAsync()
     {
+        if (_container != null)
+        {
+            await _container.StopAsync();
+            await _container.DisposeAsync();
+        }
+
         await base.DisposeAsync();
     }
 
@@ -79,12 +87,21 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     No-op: the SQL Server idempotency store's tests are retired (see DRK-118), and this fixture must
-    ///     guarantee no container is ever started — marking the tests Skip alone does not stop xUnit from
-    ///     constructing this <see cref="IClassFixture{TFixture}" />/<see cref="ICollectionFixture{TFixture}" />
-    ///     instance and running <see cref="InitializeAsync" /> regardless.
+    ///     Initializes the test application with TestContainers.PostgreSql.
     /// </summary>
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync()
+    {
+        _container = new PostgreSqlBuilder("postgres:16-alpine")
+            .WithCleanUp(true)
+            .Build();
+
+        await _container.StartAsync();
+        ConnectionString = _container.GetConnectionString()
+            .Replace("Database=postgres", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
+
+        // Create the HTTP client
+        HttpClient ??= CreateClient();
+    }
 
     #endregion
 }

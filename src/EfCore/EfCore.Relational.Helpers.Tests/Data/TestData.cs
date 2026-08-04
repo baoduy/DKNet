@@ -34,7 +34,7 @@ public class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<TestEntity>();
+        modelBuilder.Entity<TestEntity>().ToTable(nameof(TestEntity), "public");
     }
 
     #endregion

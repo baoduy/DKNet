@@ -64,7 +64,9 @@ internal sealed class UserEntityConfig : IEntityTypeConfiguration<User>
         builder.Property(x => x.Id).IsRequired();
         builder.Property(x => x.FirstName).HasMaxLength(100);
         builder.Property(x => x.LastName).HasMaxLength(100);
-        builder.Property(x => x.RowVersion).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();
+        // Postgres has no native rowversion column type (unlike SQL Server's convention-inferred
+        // `rowversion`), so RowVersion is stamped client-side in MyDbContext.SaveChangesAsync instead.
+        builder.Property(x => x.RowVersion).IsConcurrencyToken();
 
         // Add more configuration as needed (e.g., relationships, default values)
         builder.HasMany(x => x.Addresses).WithOne(x => x.User).HasForeignKey(x => x.UserId);
