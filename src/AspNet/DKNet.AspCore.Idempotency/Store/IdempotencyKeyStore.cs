@@ -7,14 +7,17 @@ namespace DKNet.AspCore.Idempotency.Store;
 public interface IIdempotencyKeyStore
 {
     /// <summary>
-    ///     Checks if the key has been processed and retrieves the cached response if available.
-    ///     Returns the cached response including HTTP status code, body, and content type.
+    ///     Atomically checks whether the key has been processed and, if not, reserves it for the caller.
+    ///     A call that returns <c>(false, null)</c> MUST have already durably recorded that this composite key
+    ///     is now in-flight, such that a concurrent call for the identical key can never also observe
+    ///     <c>(false, null)</c> — exactly one caller per key is granted the right to proceed.
     /// </summary>
     /// <param name="keyInfo">The idempotency key to check for prior processing.</param>
     /// <returns>
     ///     A tuple containing:
-    ///     - A boolean indicating whether the key has been processed
-    ///     - The CachedResponse if available, or null if no cached response exists
+    ///     - A boolean indicating whether the key has been processed or is currently reserved by another caller
+    ///     - The CachedResponse if the key was already completed, or null if no cached response exists yet
+    ///       (either the key is new and now reserved by this call, or another caller's reservation is still in-flight)
     /// </returns>
     ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo);
 

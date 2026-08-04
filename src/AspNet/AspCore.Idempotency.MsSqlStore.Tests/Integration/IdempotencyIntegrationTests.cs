@@ -55,9 +55,9 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         var idempotencyKey = Guid.NewGuid().ToString();
         var request = new CreateItemRequest { Name = "Concurrent Item" };
 
-        // Act - Send 5 concurrent requests with the same idempotency key
-        // multiple requests may process simultaneously when they all arrive before any is cached.
-        // This is a known limitation of stateless filters without distributed locking.
+        // Act - Send 5 concurrent requests with the same idempotency key.
+        // The atomic reserve-then-check in IsKeyProcessedAsync guarantees exactly one request reaches the
+        // handler; the other four are turned away as conflicts before they ever call next(context).
         var tasks = Enumerable.Range(0, 5).Select(_ =>
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
@@ -70,19 +70,12 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         var responses = await Task.WhenAll(tasks);
 
-        // Assert - With concurrent requests, some or all may succeed (201 or 409 Conflict)
-        // The first request wins, subsequent ones get 409 Conflict (if ConflictHandling = ConflictResponse)
-        // or the cached response (if ConflictHandling = CachedResult)
+        // Assert - Exactly one request succeeds, the remaining four are conflicts.
         var successCount = responses.Count(r => r.StatusCode == HttpStatusCode.Created);
         var conflictCount = responses.Count(r => r.StatusCode == HttpStatusCode.Conflict);
 
-        // At least one should succeed (201)
-        successCount.ShouldBeGreaterThanOrEqualTo(1);
-
-        // The rest should be conflicts or cached responses
-        var otherCount = responses.Count(r => r.StatusCode != HttpStatusCode.Created &&
-                                              r.StatusCode != HttpStatusCode.Conflict);
-        (successCount + conflictCount + otherCount).ShouldBe(5);
+        successCount.ShouldBe(1);
+        conflictCount.ShouldBe(4);
 
         // Verify only ONE entry in database (unique constraint ensures this)
         await using var dbContext = fixture.GetDbContext();
