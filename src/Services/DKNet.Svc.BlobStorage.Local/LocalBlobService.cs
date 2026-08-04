@@ -247,6 +247,8 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
         CancellationToken cancellationToken = default)
     {
+        ValidateFile(blob);
+
         if (await CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
             throw new InvalidOperationException("File already existed");
 
