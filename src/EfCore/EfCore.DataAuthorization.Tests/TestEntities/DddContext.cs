@@ -16,6 +16,8 @@ public class DddContext(
 
     public IEnumerable<string> AccessibleKeys => _dataKeyProvider?.GetAccessibleKeys() ?? [];
 
+    public virtual bool IsUnrestrictedAccess => false;
+
     #endregion
 
     //Internal fields will be available in unit test project.
@@ -31,5 +33,5 @@ public class UnrestrictedDddContext(
     DbContextOptions options,
     IEnumerable<IDataOwnerProvider> dataKeyProviders) : DddContext(options, dataKeyProviders)
 {
-    public bool IsUnrestrictedAccess => true;
+    public override bool IsUnrestrictedAccess => true;
 }
