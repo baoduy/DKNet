@@ -371,6 +371,64 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         item.Id.ShouldNotBe(Guid.Empty);
     }
 
+    [Fact]
+    public async Task CreateItem_ConcurrentRequestsAgainstExpiredReservation_OnlyOneProcessed()
+    {
+        // Arrange - seed an already-expired StatusCode=102 reservation so every concurrent request's
+        // initial unexpired-row query misses it, and every request's own reservation INSERT collides
+        // with this same stale row (unique index doesn't care that it's expired).
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Reservation Race Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            var expiredReservation = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/api/items",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 102,
+                    Body = null,
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredReservation);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - fire 5 concurrent requests against the same key, all racing the stale expired row
+        var tasks = Enumerable.Range(0, 5).Select(_ =>
+        {
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+            {
+                Headers = { { "X-Idempotency-Key", idempotencyKey } },
+                Content = JsonContent.Create(request)
+            };
+            return fixture.HttpClient!.SendAsync(httpRequest);
+        }).ToArray();
+
+        var responses = await Task.WhenAll(tasks);
+
+        // Assert - only one distinct handler execution must be observable, same as the fresh-key case
+        var createdIds = new List<Guid>();
+        foreach (var response in responses)
+        {
+            if (response.StatusCode != HttpStatusCode.Created) continue;
+            var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+            createdIds.Add(item!.Id);
+        }
+
+        createdIds.ShouldNotBeEmpty("At least one request should have succeeded");
+        createdIds.Distinct().Count().ShouldBe(1,
+            "The handler must have executed exactly once, even when racing an already-expired reservation row");
+    }
+
     public Task DisposeAsync() => Task.CompletedTask;
 
     public Task InitializeAsync() => Task.CompletedTask;
