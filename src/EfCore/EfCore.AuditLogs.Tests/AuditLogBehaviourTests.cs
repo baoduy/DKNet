@@ -138,6 +138,8 @@ public class AuditLogBehaviourTests
             unattributedId = u.Id;
         }
 
+        await Task.Delay(1000);
+
         BehaviourCapturingPublisher.Logs.Count.ShouldBeGreaterThan(0);
         BehaviourCapturingPublisher.Clear();
 
@@ -192,6 +194,8 @@ public class AuditLogBehaviourTests
             unattributedId = u.Id;
         }
 
+        await Task.Delay(1000);
+
         // Ensure still no logs
         BehaviourCapturingPublisher.Logs.Count.ShouldBe(1);
         BehaviourCapturingPublisher.Clear();
@@ -242,6 +246,8 @@ public class AuditLogBehaviourTests
             unattributedId = u.Id;
             attributedId = a.Id;
         }
+
+        await Task.Delay(1000);
 
         BehaviourCapturingPublisher.Logs.Count.ShouldBeLessThanOrEqualTo(1);
         BehaviourCapturingPublisher.Clear();

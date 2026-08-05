@@ -5,7 +5,8 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DKNet.AspCore.Idempotency.NpgsqlStore.Data;
 
@@ -101,25 +102,18 @@ internal sealed class IdempotencyKeyEntity
     #region Methods
 
     /// <summary>
-    ///     Sanitizes an idempotency key for use as a database key.
-    ///     Removes invalid characters to prevent injection attacks.
+    ///     Sanitizes an idempotency key for use as a database key by hashing it.
+    ///     Hashing (rather than stripping characters) guarantees structurally distinct
+    ///     composite keys never collapse onto the same database key.
     /// </summary>
     /// <param name="key">The idempotency key to sanitize.</param>
-    /// <returns>A sanitized key with only alphanumeric characters and hyphens.</returns>
+    /// <returns>A deterministic, fixed-length (64-character) uppercase hex SHA-256 hash of the key.</returns>
     internal static string SanitizeKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Idempotency key cannot be null or empty.", nameof(key));
 
-        // Remove non-alphanumeric characters except hyphens
-        var sanitized = Regex.Replace(key, @"[^a-zA-Z0-9\-]", string.Empty);
-
-        if (string.IsNullOrEmpty(sanitized))
-            throw new ArgumentException("Idempotency key contains no valid characters.", nameof(key));
-
-        if (sanitized.Length > 128) sanitized = sanitized[..128];
-
-        return sanitized.ToUpperInvariant();
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
     }
 
     #endregion
