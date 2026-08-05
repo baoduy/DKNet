@@ -64,15 +64,6 @@ public sealed class IdempotencyOptions
     public string IdempotencyHeaderKey { get; set; } = "X-Idempotency-Key";
 
     /// <summary>
-    ///     Gets or sets how long an in-flight reservation placeholder is honoured before it is treated as
-    ///     expired/abandoned (e.g. the original handler crashed and never completed the request).
-    ///     Deliberately short compared to <see cref="Expiration" /> so a genuinely failed request doesn't
-    ///     permanently block retries.
-    ///     Default is 30 seconds.
-    /// </summary>
-    public TimeSpan InFlightReservationTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-    /// <summary>
     ///     Gets or sets a regular expression pattern used to validate idempotency key format.
     ///     Keys that don't match this pattern will be rejected with a 400 Bad Request.
     ///     Default pattern allows alphanumeric characters, hyphens, and underscores (UUID v4 compatible).
