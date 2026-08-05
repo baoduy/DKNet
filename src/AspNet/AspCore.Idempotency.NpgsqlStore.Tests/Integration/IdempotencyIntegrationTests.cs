@@ -54,9 +54,8 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         var idempotencyKey = Guid.NewGuid().ToString();
         var request = new CreateItemRequest { Name = "Concurrent Item" };
 
-        // Act - Send 5 concurrent requests with the same idempotency key
-        // multiple requests may process simultaneously when they all arrive before any is cached.
-        // This is a known limitation of stateless filters without distributed locking.
+        // Act - Send 5 concurrent requests with the same idempotency key.
+        // The store's atomic reservation ensures at most one of them ever reaches the handler.
         var tasks = Enumerable.Range(0, 5).Select(_ =>
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
@@ -69,19 +68,20 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         var responses = await Task.WhenAll(tasks);
 
-        // Assert - With concurrent requests, some or all may succeed (201 or 409 Conflict)
-        // The first request wins, subsequent ones get 409 Conflict (if ConflictHandling = ConflictResponse)
-        // or the cached response (if ConflictHandling = CachedResult)
-        var successCount = responses.Count(r => r.StatusCode == HttpStatusCode.Created);
-        var conflictCount = responses.Count(r => r.StatusCode == HttpStatusCode.Conflict);
+        // Assert - the fixture uses ConflictHandling = CachedResult, so a duplicate arriving after the
+        // winner completes legitimately gets 201 with the replayed body, not 409; we don't assert an
+        // exact 201/409 split. Instead: the handler generates a fresh Guid per call, so every 201
+        // response carrying the SAME Id proves the handler ran exactly once.
+        var createdIds = new List<Guid>();
+        foreach (var response in responses)
+        {
+            if (response.StatusCode != HttpStatusCode.Created) continue;
+            var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+            createdIds.Add(item!.Id);
+        }
 
-        // At least one should succeed (201)
-        successCount.ShouldBeGreaterThanOrEqualTo(1);
-
-        // The rest should be conflicts or cached responses
-        var otherCount = responses.Count(r => r.StatusCode != HttpStatusCode.Created &&
-                                              r.StatusCode != HttpStatusCode.Conflict);
-        (successCount + conflictCount + otherCount).ShouldBe(5);
+        createdIds.ShouldNotBeEmpty("At least one request should have succeeded");
+        createdIds.Distinct().Count().ShouldBe(1, "The handler must have executed exactly once");
 
         // Verify only ONE entry in database (unique constraint ensures this)
         await using var dbContext = fixture.GetDbContext();
@@ -323,6 +323,51 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
         item!.Name.ShouldBe("Expired Key Item");
+        item.Id.ShouldNotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task CreateItem_WithExpiredInFlightReservation_ProcessesAsNewRequest()
+    {
+        // Arrange - seed an already-expired StatusCode=102 reservation placeholder directly, simulating
+        // a prior request whose handler never completed (crashed, timed out) within the reservation window.
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Reservation Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            var expiredReservation = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/api/items",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 102,
+                    Body = null,
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredReservation);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - a request with the same key must not be permanently blocked by the stale reservation
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+        {
+            Headers = { { "X-Idempotency-Key", idempotencyKey } },
+            Content = JsonContent.Create(request)
+        };
+        var response = await fixture.HttpClient!.SendAsync(httpRequest);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+        item!.Name.ShouldBe("Expired Reservation Item");
         item.Id.ShouldNotBe(Guid.Empty);
     }
 
