@@ -153,10 +153,40 @@ internal sealed class IdempotencyPostgresStore(
             }
 
             // The row blocking our insert is itself expired (a stale reservation or completed entry
-            // nothing ever purged). Treat this request as not-processed and let it run the handler;
-            // MarkKeyAsProcessedAsync reclaims that row in place once processing completes.
-            logger.LogDebug("Blocking idempotency key row has expired, proceeding as new: {Key}", sanitizedKey);
-            return (false, null);
+            // nothing ever purged). Reclaiming it with a plain read-then-write would reopen the same
+            // race this method exists to close, so reclaim it atomically: a conditional UPDATE that
+            // only matches while the row is still expired. Its affected-row count gives the same
+            // single-winner guarantee the unique index gives the fresh-insert path - only the caller
+            // whose UPDATE actually flips the row wins; every other concurrent racer's UPDATE affects
+            // zero rows once the winner has moved ExpiresAt into the future.
+            var now = DateTime.UtcNow;
+            var reclaimed = await dbContext.IdempotencyKeys
+                .Where(k => k.CompositeKey == sanitizedKey && k.ExpiresAt != null && k.ExpiresAt <= now)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(k => k.StatusCode, 102)
+                    .SetProperty(k => k.Body, (string?)null)
+                    .SetProperty(k => k.ContentType, "application/json")
+                    .SetProperty(k => k.CreatedAt, now)
+                    .SetProperty(k => k.ExpiresAt, now + options.Value.InFlightReservationTimeout))
+                .ConfigureAwait(false);
+
+            if (reclaimed == 1)
+            {
+                logger.LogDebug("Reclaimed expired idempotency key row, proceeding as new: {Key}", sanitizedKey);
+                return (false, null);
+            }
+
+            // Another caller reclaimed (or completed) the row between our insert collision and this
+            // reclaim attempt - re-read its current state and branch exactly like the unexpired path.
+            var current = await dbContext.IdempotencyKeys
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey)
+                .ConfigureAwait(false);
+
+            logger.LogInformation(
+                "Idempotency key already reserved or processed by a concurrent request: {Key}",
+                sanitizedKey);
+            return (true, current is null || current.StatusCode == 102 ? null : ToCachedResponse(current));
         }
     }
 
