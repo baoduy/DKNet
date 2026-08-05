@@ -102,6 +102,21 @@ internal sealed class IdempotencyKeyEntity
     #region Methods
 
     /// <summary>
+    ///     Completes an in-flight reservation placeholder in place, overwriting it with the actual
+    ///     processed response. Used when this row was inserted as a <c>StatusCode == 102</c> reservation
+    ///     and the protected handler has now finished, so the row transitions from placeholder to
+    ///     completed cache entry without a second insert.
+    /// </summary>
+    /// <param name="response">The cached response to store.</param>
+    internal void Complete(CachedResponse response)
+    {
+        StatusCode = response.StatusCode;
+        Body = response.Body;
+        ContentType = response.ContentType;
+        ExpiresAt = response.ExpiresAt;
+    }
+
+    /// <summary>
     ///     Sanitizes an idempotency key for use as a database key by hashing it.
     ///     Hashing (rather than stripping characters) guarantees structurally distinct
     ///     composite keys never collapse onto the same database key.
