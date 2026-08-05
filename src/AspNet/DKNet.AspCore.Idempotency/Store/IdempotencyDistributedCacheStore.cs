@@ -11,12 +11,23 @@ namespace DKNet.AspCore.Idempotency.Store;
 ///     Implementation of <see cref="IIdempotencyKeyStore" /> using a distributed cache.
 ///     This store provides idempotency support by caching processed keys and their responses.
 /// </summary>
+/// <remarks>
+///     <see cref="IDistributedCache" /> has no atomic compare-and-set primitive, so this store narrows the
+///     check-then-act race window to the gap between <c>GetStringAsync</c> and <c>SetStringAsync</c> in
+///     <see cref="IsKeyProcessedAsync" /> rather than eliminating it the way the SQL store's unique index does.
+///     Do not treat this store as fully atomic under concurrency.
+/// </remarks>
 internal sealed class IdempotencyDistributedCacheStore(
     IDistributedCache cache,
     IOptions<IdempotencyOptions> options,
     ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyStore
 {
     #region Fields
+
+    /// <summary>
+    ///     HTTP 102 (Processing) is used as the sentinel status code for an in-flight reservation entry.
+    /// </summary>
+    private const int ReservationStatusCode = 102;
 
     /// <summary>
     ///     Gets the idempotency options used for cache configuration and JSON serialization.
@@ -44,25 +55,50 @@ internal sealed class IdempotencyDistributedCacheStore(
 
         var cachedJson = await cache.GetStringAsync(cacheKey).ConfigureAwait(false);
 
-        if (string.IsNullOrWhiteSpace(cachedJson))
+        if (!string.IsNullOrWhiteSpace(cachedJson))
         {
-            logger.LogDebug("No cached response found for key: {CacheKey}", cacheKey);
-            return (false, null);
+            var cachedResponse = JsonSerializer.Deserialize<CachedResponse>(cachedJson, _options.JsonSerializerOptions);
+
+            if (cachedResponse?.IsExpired == true)
+            {
+                logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
+                await cache.RemoveAsync(cacheKey).ConfigureAwait(false);
+            }
+            else if (cachedResponse?.StatusCode == ReservationStatusCode)
+            {
+                logger.LogDebug("Reservation still in-flight for key: {CacheKey}", cacheKey);
+                return (true, null);
+            }
+            else
+            {
+                logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
+                    cacheKey, cachedResponse?.StatusCode);
+                return (true, cachedResponse);
+            }
         }
 
-        var cachedResponse = JsonSerializer.Deserialize<CachedResponse>(cachedJson, _options.JsonSerializerOptions);
+        // No live entry found — reserve this key so a concurrent request for the identical key sees the
+        // in-flight placeholder instead of also observing a miss (see class remarks for the residual race).
+        logger.LogDebug("No cached response found for key: {CacheKey}. Reserving.", cacheKey);
 
-        // Check if the cached response has expired
-        if (cachedResponse?.IsExpired == true)
+        var reservation = new CachedResponse
         {
-            logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
-            await cache.RemoveAsync(cacheKey).ConfigureAwait(false);
-            return (false, null);
-        }
+            StatusCode = ReservationStatusCode,
+            Body = null,
+            ContentType = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.Add(_options.InFlightReservationTimeout)
+        };
 
-        logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
-            cacheKey, cachedResponse?.StatusCode);
-        return (true, cachedResponse);
+        await cache.SetStringAsync(
+            cacheKey,
+            JsonSerializer.Serialize(reservation, _options.JsonSerializerOptions),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _options.InFlightReservationTimeout
+            }).ConfigureAwait(false);
+
+        return (false, null);
     }
 
     /// <summary>

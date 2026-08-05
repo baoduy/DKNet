@@ -77,9 +77,9 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
-            ConnectionString = "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com",
-            AccessKey = "c5240e9de9fb8f2b24d67315eed90737",
-            Secret = "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b",
+            ConnectionString = "https://fake-test-account.example.com",
+            AccessKey = "FAKEACCESSKEYFORTESTS00",
+            Secret = "FAKESECRETKEYFORTESTSONLY0000000000000000000000",
             BucketName = "dev",
             DisablePayloadSigning = true,
             IncludedExtensions = [".txt"] 
@@ -97,9 +97,9 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
-            ConnectionString = "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com",
-            AccessKey = "c5240e9de9fb8f2b24d67315eed90737",
-            Secret = "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b",
+            ConnectionString = "https://fake-test-account.example.com",
+            AccessKey = "FAKEACCESSKEYFORTESTS00",
+            Secret = "FAKESECRETKEYFORTESTSONLY0000000000000000000000",
             BucketName = "dev",
             DisablePayloadSigning = true,
             MaxFileSizeInMb = 1 
@@ -118,9 +118,9 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
-            ConnectionString = "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com",
-            AccessKey = "c5240e9de9fb8f2b24d67315eed90737",
-            Secret = "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b",
+            ConnectionString = "https://fake-test-account.example.com",
+            AccessKey = "FAKEACCESSKEYFORTESTS00",
+            Secret = "FAKESECRETKEYFORTESTSONLY0000000000000000000000",
             BucketName = "dev",
             DisablePayloadSigning = true,
             MaxFileNameLength = 5 
@@ -135,16 +135,10 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_SaveAsync_DefaultOptions_ShouldSucceed()
     {
+        // Unlike the validation-rejection tests above, this one actually saves — it needs a live
+        // backend, so it goes through the Minio-backed fixture instead of a placeholder S3Options.
         using var fixture = new S3BlobServiceFixture();
-        var options = new S3Options 
-        { 
-            ConnectionString = "https://c4bf6253a59daf70a445861c23b45778.r2.cloudflarestorage.com",
-            AccessKey = "c5240e9de9fb8f2b24d67315eed90737",
-            Secret = "df8dc0fe841d98c8c8429e3fbe5a6e0e784865e835860b4ffeb65913d7e7346b",
-            BucketName = "dev",
-            DisablePayloadSigning = true
-        };
-        var service = new S3BlobService(Options.Create(options), NullLogger<S3BlobService>.Instance);
+        var service = fixture.Service;
         var blobData = new BlobDetails.BlobData("test.txt", BinaryData.FromString("test")) { Overwrite = true };
 
         var result = await service.SaveAsync(blobData);
@@ -217,10 +211,10 @@ public class BlobServiceSaveAsyncTests
         // Save
         await service.SaveAsync(blobData);
 
-        // GetItem
+        // GetItem — S3 keys carry no leading slash (see S3BlobService's GetBlobLocation trim)
         var item = await service.GetItemAsync(new BlobRequest(blobName));
         item.ShouldNotBeNull();
-        item!.Name.ShouldBe($"/{blobName}");
+        item!.Name.ShouldBe(blobName);
 
         // Cleanup
         await service.DeleteAsync(new BlobRequest(blobName));

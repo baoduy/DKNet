@@ -8,6 +8,7 @@ using DKNet.AspCore.Idempotency.Store;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Idempotency.MsSqlStore.Store;
 
@@ -17,13 +18,22 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Store;
 /// </summary>
 internal sealed class IdempotencySqlServerStore(
     IServiceProvider serviceProvider,
+    IOptions<IdempotencyOptions> options,
     ILogger<IdempotencySqlServerStore> logger) : IIdempotencyKeyStore, IAsyncDisposable
 {
     #region Fields
 
+    /// <summary>
+    ///     HTTP 102 (Processing) is used as the sentinel status code for an in-flight reservation row —
+    ///     legal under <c>CK_StatusCode_Valid</c> (100-599) and outside the range any real completed
+    ///     response would use.
+    /// </summary>
+    private const int ReservationStatusCode = 102;
+
     private static int _dbMigrationsEnsured;
     private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
+    private readonly IdempotencyOptions _options = options.Value;
     private readonly AsyncServiceScope _scope = serviceProvider.CreateAsyncScope();
 
     #endregion
@@ -56,6 +66,19 @@ internal sealed class IdempotencySqlServerStore(
         }
     }
 
+    /// <summary>
+    ///     Maps a stored entity to its <see cref="CachedResponse" /> representation for replay.
+    /// </summary>
+    private static CachedResponse ToCachedResponse(IdempotencyKeyEntity entity) =>
+        new()
+        {
+            StatusCode = entity.StatusCode,
+            Body = entity.Body,
+            ContentType = entity.ContentType ?? "application/json",
+            CreatedAt = entity.CreatedAt,
+            ExpiresAt = entity.ExpiresAt
+        };
+
     /// <inheritdoc />
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
@@ -73,33 +96,64 @@ internal sealed class IdempotencySqlServerStore(
             .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey && k.ExpiresAt > DateTime.UtcNow)
             .ConfigureAwait(false);
 
-        if (existing == null)
+        if (existing != null && !existing.IsExpired)
         {
-            logger.LogDebug("Idempotency key not found or expired: {Key}", sanitizedKey);
-            return (false, null);
+            if (existing.StatusCode == ReservationStatusCode)
+            {
+                logger.LogDebug("Idempotency key reservation still in-flight: {Key}", sanitizedKey);
+                return (true, null);
+            }
+
+            logger.LogInformation(
+                "Idempotency key found with status code {StatusCode}: {Key}",
+                existing.StatusCode,
+                sanitizedKey);
+
+            return (true, ToCachedResponse(existing));
         }
 
-        if (existing.IsExpired)
+        // No completed row (and no live reservation) found — reserve this key for the current caller so a
+        // concurrent request for the identical key can never also observe an empty slot.
+        logger.LogDebug("Idempotency key not found or expired, reserving: {Key}", sanitizedKey);
+
+        var reservation = new IdempotencyKeyEntity(keyInfo, new CachedResponse
         {
-            logger.LogDebug("Idempotency key has expired: {Key}", sanitizedKey);
+            StatusCode = ReservationStatusCode,
+            Body = null,
+            ContentType = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.Add(_options.InFlightReservationTimeout)
+        });
+
+        try
+        {
+            dbContext.IdempotencyKeys.Add(reservation);
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
             return (false, null);
         }
-
-        logger.LogInformation(
-            "Idempotency key found with status code {StatusCode}: {Key}",
-            existing.StatusCode,
-            sanitizedKey);
-
-        var cachedResponse = new CachedResponse
+        catch (DbUpdateException ex) when ((ex.InnerException?.Message ?? ex.Message).Contains("UNIQUE", StringComparison.OrdinalIgnoreCase))
         {
-            StatusCode = existing.StatusCode,
-            Body = existing.Body,
-            ContentType = existing.ContentType ?? "application/json",
-            CreatedAt = existing.CreatedAt,
-            ExpiresAt = existing.ExpiresAt
-        };
+            // Handle race condition: another concurrent request already reserved or completed this key.
+            logger.LogInformation(
+                "Idempotency key reservation collided with a concurrent request: {Key}. Re-checking status.",
+                sanitizedKey);
 
-        return (true, cachedResponse);
+            var concurrent = await dbContext.IdempotencyKeys
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey)
+                .ConfigureAwait(false);
+
+            if (concurrent is null || concurrent.IsExpired)
+            {
+                // The competing row is gone or has since expired — treat the key as not found, matching
+                // Rule R1: an abandoned reservation must not permanently block retries.
+                return (false, null);
+            }
+
+            if (concurrent.StatusCode == ReservationStatusCode) return (true, null);
+
+            return (true, ToCachedResponse(concurrent));
+        }
     }
 
     /// <inheritdoc />
@@ -117,11 +171,23 @@ internal sealed class IdempotencySqlServerStore(
             var factory =
                 _scope.ServiceProvider.GetRequiredService<IDbContextFactory<IdempotencyDbContext>>();
             await using var dbContext = await factory.CreateDbContextAsync();
-
-            var entity = new IdempotencyKeyEntity(keyInfo, cachedResponse);
             await EnsureDatabaseCreatedAsync(dbContext);
 
-            dbContext.IdempotencyKeys.Add(entity);
+            var entity = await dbContext.IdempotencyKeys
+                .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey)
+                .ConfigureAwait(false);
+
+            if (entity is null)
+            {
+                // Defensive only: should not happen once IsKeyProcessedAsync always reserves first.
+                entity = new IdempotencyKeyEntity(keyInfo, cachedResponse);
+                dbContext.IdempotencyKeys.Add(entity);
+            }
+            else
+            {
+                entity.Complete(cachedResponse);
+            }
+
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
             logger.LogInformation(
@@ -131,7 +197,7 @@ internal sealed class IdempotencySqlServerStore(
         }
         catch (DbUpdateException ex) when ((ex.InnerException?.Message??ex.Message).Contains("UNIQUE",StringComparison.OrdinalIgnoreCase))
         {
-            // Handle race condition: Another concurrent request already inserted this key
+            // Handle race condition: another concurrent request already inserted this key.
             logger.LogInformation(
                 "Idempotency key already processed by concurrent request: {Key}. Continuing without duplicate insert.",
                 sanitizedKey);
