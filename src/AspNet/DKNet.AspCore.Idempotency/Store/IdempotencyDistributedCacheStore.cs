@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -87,23 +89,19 @@ internal sealed class IdempotencyDistributedCacheStore(
     }
 
     /// <summary>
-    ///     Sanitizes an idempotency key for use as a cache key by removing or replacing invalid characters.
-    ///     This prevents cache key injection attacks by normalizing the input.
-    ///     The sanitized key is prefixed with the configured cache prefix and converted to uppercase.
+    ///     Sanitizes an idempotency key for use as a cache key by hashing it.
+    ///     Hashing (rather than replacing characters) guarantees structurally distinct
+    ///     composite keys never collapse onto the same cache key. The configured cache
+    ///     prefix is prepended unchanged.
     /// </summary>
     /// <param name="key">The idempotency key to sanitize.</param>
     /// <returns>
-    ///     A sanitized cache key with invalid characters removed and the configured prefix prepended,
-    ///     converted to uppercase for consistency.
+    ///     The configured cache prefix followed by a deterministic, fixed-length (64-character)
+    ///     lowercase hex SHA-256 hash of the key.
     /// </returns>
     private string SanitizeKey(string key)
     {
-        var k = key
-            .Replace("/", "_", StringComparison.OrdinalIgnoreCase)
-            .Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("\r", string.Empty, StringComparison.OrdinalIgnoreCase); // Sanitize user input
-
-        return $"{_options.CachePrefix}{k}".ToLowerInvariant();
+        return $"{_options.CachePrefix}{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()}";
     }
 
     #endregion
