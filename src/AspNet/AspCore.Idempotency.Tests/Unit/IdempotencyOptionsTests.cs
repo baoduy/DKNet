@@ -82,6 +82,20 @@ public class IdempotencyOptionsTests
         options.ConflictHandling.ShouldBe(IdempotentConflictHandling.ConflictResponse);
         options.JsonSerializerOptions.ShouldNotBeNull();
         options.JsonSerializerOptions.PropertyNamingPolicy.ShouldBe(JsonNamingPolicy.CamelCase);
+        options.InFlightReservationTimeout.ShouldBe(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public void IdempotencyOptions_CanSetCustomInFlightReservationTimeout()
+    {
+        // Arrange
+        var customTimeout = TimeSpan.FromSeconds(5);
+
+        // Act
+        var options = new IdempotencyOptions { InFlightReservationTimeout = customTimeout };
+
+        // Assert
+        options.InFlightReservationTimeout.ShouldBe(customTimeout);
     }
 
     [Fact]
