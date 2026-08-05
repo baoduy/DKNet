@@ -42,7 +42,9 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     /// <returns><c>true</c> when a matching object exists; otherwise <c>false</c>.</returns>
     public override async Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        // S3 keys are not path-segments: a leading slash here would double up with the bucket
+        // segment under ForcePathStyle addressing (e.g. Minio) and break SigV4 signing.
+        var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
 
         try
@@ -78,7 +80,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     /// <returns><c>true</c> when deletion completed (or object did not exist); otherwise <c>false</c>.</returns>
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        var location = GetBlobLocation(blob).TrimStart('/');
         return blob.Type == BlobTypes.File
             ? DeleteFileAsync(location, cancellationToken)
             : DeleteFolderAsync(location, cancellationToken);
@@ -122,16 +124,15 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Delete the whole page in a single request. A ListObjectsV2 page holds at most
-            // 1000 keys, which is exactly the S3 batch-delete limit, so one call per page suffices
-            // instead of one round-trip per object.
-            await client.DeleteObjectsAsync(
-                new DeleteObjectsRequest
-                {
-                    BucketName = _options.BucketName,
-                    Objects = info.S3Objects.Select(o => new KeyVersion { Key = o.Key }).ToList()
-                },
-                cancellationToken);
+            // ponytail: one DeleteObjectAsync call per key instead of a single batch
+            // DeleteObjectsAsync for the page. The batch API requires a Content-MD5 request-body
+            // checksum, which the SDK's flexible-checksum pipeline won't auto-compute (MD5 is
+            // blocked as "unsupported") and Minio won't accept a substitute algorithm for — so
+            // batch delete cannot work against Minio on this SDK version. Upgrade path: switch
+            // back to DeleteObjectsAsync once the SDK supports precalculated Content-MD5 or Minio
+            // accepts a modern checksum trailer for Multi-Object Delete.
+            await Task.WhenAll(info.S3Objects.Select(o =>
+                client.DeleteObjectAsync(_options.BucketName, o.Key, cancellationToken)));
         } while (true);
 
         await client.DeleteObjectAsync(_options.BucketName, folderLocation, cancellationToken);
@@ -165,7 +166,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         BlobRequest blob,
         CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
         try
         {
@@ -204,7 +205,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         TimeSpan? expiresFromNow = null,
         CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
         var request = new GetPreSignedUrlRequest
         {
@@ -274,7 +275,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         BlobRequest blob,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var location = GetBlobLocation(blob);
+        var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
 
         var info = await client.ListObjectsV2Async(
@@ -315,11 +316,13 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
         CancellationToken cancellationToken = default)
     {
+        ValidateFile(blob);
+
         var existed = await CheckExistsAsync(blob, cancellationToken);
         if (existed && !blob.Overwrite)
             throw new InvalidOperationException($"File {blob.Name} is not allowed to override.");
 
-        var location = GetBlobLocation(blob);
+        var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
 
         var uploadRequest = new PutObjectRequest

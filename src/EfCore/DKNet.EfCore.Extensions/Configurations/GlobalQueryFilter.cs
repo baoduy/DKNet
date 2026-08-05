@@ -4,6 +4,7 @@
 // File: GlobalQueryFilter.cs
 // Description: Base class to apply global query filters to entity types at model build time.
 
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -25,6 +26,13 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     private readonly MethodInfo _method = typeof(GlobalQueryFilter)
         .GetMethod(nameof(ApplyQueryFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
+    /// <summary>
+    ///     Tracks <see cref="IsIgnorable" /> by <see cref="FilterKey" /> for every <see cref="GlobalQueryFilter" />
+    ///     that has been applied to a model, so <see cref="IgnorableFilterKeys" /> can report which registered
+    ///     filters are safe to bypass.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, bool> KnownFilterKeys = new();
+
     #endregion
 
     #region Properties
@@ -34,6 +42,22 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     ///     Support from EF Core 10 onwards for named query filters.
     /// </summary>
     public abstract string FilterKey { get; }
+
+    /// <summary>
+    ///     Whether this filter may be bypassed via <c>ISpecification.IsIgnoreQueryFilters</c>. Defaults to
+    ///     <c>true</c>, preserving today's bypass behaviour for any filter that doesn't override it (e.g. a future
+    ///     soft-delete filter). Override to <c>false</c> for filters that must never be bypassed this way, such as
+    ///     row-level tenant/ownership isolation.
+    /// </summary>
+    public virtual bool IsIgnorable => true;
+
+    /// <summary>
+    ///     The <see cref="FilterKey" /> of every registered <see cref="GlobalQueryFilter" /> whose
+    ///     <see cref="IsIgnorable" /> is <c>true</c> — the set of filters that
+    ///     <c>SpecificationExtensions.ApplySpecs</c> is allowed to bypass.
+    /// </summary>
+    public static IReadOnlyCollection<string> IgnorableFilterKeys =>
+        KnownFilterKeys.Where(kv => kv.Value).Select(kv => kv.Key).ToArray();
 
     #endregion
 
@@ -47,6 +71,7 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     public void Apply(ModelBuilder modelBuilder, DbContext context)
     {
         var entityTypes = GetEntityTypes(modelBuilder);
+        KnownFilterKeys[FilterKey] = IsIgnorable;
 
         foreach (var entityType in entityTypes)
         {

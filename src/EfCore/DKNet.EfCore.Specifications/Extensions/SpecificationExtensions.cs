@@ -1,3 +1,4 @@
+using DKNet.EfCore.Extensions.Configurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Specifications.Extensions;
@@ -22,7 +23,11 @@ internal static class SpecificationExtensions
     {
         ArgumentNullException.ThrowIfNull(specification);
 
-        if (specification.IsIgnoreQueryFilters) queryable = queryable.IgnoreQueryFilters();
+        if (specification.IsIgnoreQueryFilters)
+        {
+            var ignorableKeys = GlobalQueryFilter.IgnorableFilterKeys;
+            if (ignorableKeys.Count > 0) queryable = queryable.IgnoreQueryFilters(ignorableKeys);
+        }
 
         if (specification.FilterQuery is not null) queryable = queryable.Where(specification.FilterQuery);
 

@@ -44,7 +44,7 @@ public interface IShaHashing : IDisposable // now disposable so we can release c
     /// </summary>
     /// <param name="input">The input text to hash and compare.</param>
     /// <param name="expectedHex">The expected hexadecimal hash string.</param>
-    /// <param name="ignoreCase">If <c>true</c> performs a case-insensitive comparison.</param>
+    /// <param name="ignoreCase">Has no effect on the result: hex decoding is case-insensitive, so the comparison result is unaffected by this flag.</param>
     /// <returns><c>true</c> if the computed hash equals <paramref name="expectedHex" />; otherwise <c>false</c>.</returns>
     bool VerifySha256(string input, string expectedHex, bool ignoreCase = true);
 
@@ -53,7 +53,7 @@ public interface IShaHashing : IDisposable // now disposable so we can release c
     /// </summary>
     /// <param name="input">The input text to hash and compare.</param>
     /// <param name="expectedHex">The expected hexadecimal hash string.</param>
-    /// <param name="ignoreCase">If <c>true</c> performs a case-insensitive comparison.</param>
+    /// <param name="ignoreCase">Has no effect on the result: hex decoding is case-insensitive, so the comparison result is unaffected by this flag.</param>
     /// <returns><c>true</c> if the computed hash equals <paramref name="expectedHex" />; otherwise <c>false</c>.</returns>
     bool VerifySha512(string input, string expectedHex, bool ignoreCase = true);
 
@@ -69,7 +69,7 @@ public sealed class ShaHashing : IShaHashing
 
     private readonly Dictionary<HashAlgorithmKind, HashAlgorithm> _algorithms = [];
     private readonly object _sync = new(); // changed to object for locking
-    private bool _disposed;
+    private volatile bool _disposed;
 
     #endregion
 
@@ -178,9 +178,16 @@ public sealed class ShaHashing : IShaHashing
         ArgumentNullException.ThrowIfNull(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
         var actual = ComputeHash(input, algorithm, !ignoreCase);
-        return ignoreCase
-            ? string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase)
-            : actual == expectedHex;
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(
+                Convert.FromHexString(actual),
+                Convert.FromHexString(expectedHex));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

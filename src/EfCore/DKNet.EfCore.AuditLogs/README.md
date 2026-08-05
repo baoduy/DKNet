@@ -164,10 +164,32 @@ public static class AuditLogExtensions
 
 ## Extending
 
-### Filter Properties
+### Sensitive Property Redaction
 
-Wrap or fork `BuildAuditLog` (internal extension) to exclude sensitive fields (like passwords, secrets). Provide a
-custom hook variant if needed.
+By default (`AuditPropertyPolicy.RedactSensitive`) any property whose name matches a known sensitive pattern
+(`password`, `secret`, `token`, `apikey`, `ssn`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`,
+`passphrase`, `accesskey`, `salt`, etc., or a `SecureString` type) has its `OldValue`/`NewValue` replaced with
+`"***REDACTED***"` instead of being captured in plaintext. The field still appears in `Changes` so you can see that
+it changed — just not its value.
+
+Apply `[AuditLog]` directly to a property to force plaintext capture of that property, overriding redaction:
+
+```csharp
+public sealed class ApiClient : AuditedEntity<Guid>
+{
+    [AuditLog] // captured in plaintext even though the name matches "token"
+    public DateTimeOffset TokenExpiryUtc { get; set; }
+}
+```
+
+For a strict allow-list instead, pass `AuditPropertyPolicy.OnlyAttributedProperties` to `AddEfCoreAuditHook` /
+`AddEfCoreAuditLogs` — only properties explicitly marked `[AuditLog]` are captured; every other property is omitted
+from `Changes` entirely:
+
+```csharp
+services.AddEfCoreAuditLogs<MyDbContext, ConsoleAuditPublisher>(
+    propertyPolicy: AuditPropertyPolicy.OnlyAttributedProperties);
+```
 
 ### Enrich Audit Logs
 

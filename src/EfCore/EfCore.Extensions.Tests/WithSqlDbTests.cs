@@ -4,7 +4,7 @@ namespace EfCore.Extensions.Tests;
 
 #pragma warning disable CA2012 // Use ValueTasks correctly
 
-public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
+public class WithSqlDbTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
     #region Fields
 
@@ -31,36 +31,6 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     }
 
     [Fact]
-    public void DatabaseProvider_ShouldBeSqlServer()
-    {
-        // Act
-        var providerName = _db.Database.ProviderName;
-
-        // Assert
-        providerName.ShouldBe("Microsoft.EntityFrameworkCore.SqlServer");
-    }
-
-    [Fact]
-    public void IsSqlServer_WithSqlServerProvider_ShouldReturnTrue()
-    {
-        // Act
-        var result = _db.IsSqlServer();
-
-        // Assert
-        result.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void IsNpgsql_WithSqlServerProvider_ShouldReturnFalse()
-    {
-        // Act
-        var result = _db.IsNpgsql();
-
-        // Assert
-        result.ShouldBeFalse();
-    }
-
-    [Fact]
     public async Task NextSeqValueWithFormat_WithEmptyFormatString_ShouldReturnValueAsString()
     {
         // This test verifies the format processing logic
@@ -72,17 +42,17 @@ public class WithSqlDbTests(SqlServerFixture fixture) : IClassFixture<SqlServerF
     public async Task SequenceValueTestAsync()
     {
         // Order has no [Sequence] attribute, so it is deliberately excluded from the model and not
-        // auto-created by EnsureCreated (see NpgsqlSequenceTests). Create it manually to exercise the int path.
+        // auto-created by EnsureCreated (see NpgsqlSequenceTests). Create it manually.
+        await _db.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS seq");
         await _db.Database.ExecuteSqlRawAsync(
-            "IF NOT EXISTS (SELECT 1 FROM sys.sequences s JOIN sys.schemas sc ON s.schema_id = sc.schema_id " +
-            "WHERE s.name = 'Seq_Order' AND sc.name = 'seq') " +
-            "CREATE SEQUENCE seq.Seq_Order AS int START WITH 1 INCREMENT BY 1");
+            "CREATE SEQUENCE IF NOT EXISTS seq.\"Seq_Order\" START WITH 1 INCREMENT BY 1");
 
-        var val1 = await _db.NextSeqValue<SequencesTest, short>(SequencesTest.Invoice);
-        val1!.Value.ShouldBeGreaterThan((short)0);
+        // Postgres nextval() always returns bigint, so use long regardless of the [Sequence] attribute's type.
+        var val1 = await _db.NextSeqValue<SequencesTest, long>(SequencesTest.Invoice);
+        val1!.Value.ShouldBeGreaterThan(0L);
 
-        var val2 = await _db.NextSeqValue<SequencesTest, int>(SequencesTest.Order);
-        val2!.Value.ShouldBeGreaterThan(0);
+        var val2 = await _db.NextSeqValue<SequencesTest, long>(SequencesTest.Order);
+        val2!.Value.ShouldBeGreaterThan(0L);
     }
 
     [Fact]

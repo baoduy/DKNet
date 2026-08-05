@@ -1,5 +1,6 @@
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs.Internals;
 using DKNet.Fw.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -13,7 +14,8 @@ internal static class AuditLogExtensions
     public static AuditLogEntry? BuildAuditLog(
         this EntityEntry entry,
         EntityState originalState,
-        AuditLogBehaviour behaviour)
+        AuditLogBehaviour behaviour,
+        AuditPropertyPolicy propertyPolicy)
     {
         // If behaviour is OnlyAttributedAuditedEntities, skip entities not marked with AuditLogAttribute
         if (entry.Entity is not IAuditedProperties audited)
@@ -50,6 +52,14 @@ internal static class AuditLogExtensions
                     continue;
                 }
 
+                var isAttributed = clrProp.HasAttribute<AuditLogAttribute>();
+                if (propertyPolicy == AuditPropertyPolicy.OnlyAttributedProperties && !isAttributed)
+                {
+                    continue;
+                }
+
+                var isSensitive = !isAttributed && SensitiveDataPatterns.IsSensitive(clrProp);
+
                 var name = prop.Metadata.Name;
                 var oldVal = prop.OriginalValue;
                 var newVal = prop.CurrentValue;
@@ -60,7 +70,7 @@ internal static class AuditLogExtensions
                         new AuditFieldChange
                         {
                             FieldName = name,
-                            OldValue = oldVal,
+                            OldValue = isSensitive ? SensitiveDataPatterns.RedactedValue : oldVal,
                             NewValue = null
                         });
                     continue;
@@ -72,8 +82,8 @@ internal static class AuditLogExtensions
                         new AuditFieldChange
                         {
                             FieldName = name,
-                            OldValue = oldVal,
-                            NewValue = newVal
+                            OldValue = isSensitive ? SensitiveDataPatterns.RedactedValue : oldVal,
+                            NewValue = isSensitive ? SensitiveDataPatterns.RedactedValue : newVal
                         });
                 }
             }

@@ -21,7 +21,8 @@ public class AdditionalAuditLogEdgeCasesTests
         ctx.Remove(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Deleted, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Deleted, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.Count.ShouldBeGreaterThan(0); // Should contain all mapped properties
         log.Changes.All(c => c.NewValue == null).ShouldBeTrue();
     }
@@ -42,7 +43,8 @@ public class AdditionalAuditLogEdgeCasesTests
         // Ensure none of the properties marked modified
         foreach (var p in entry.Properties) p.IsModified = false;
 
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldBeEmpty();
     }
 
@@ -59,7 +61,8 @@ public class AdditionalAuditLogEdgeCasesTests
         e.UpdateProfile("updater");
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldNotContain(c => c.FieldName == nameof(TestAuditEntity.Notes));
     }
 
@@ -75,7 +78,8 @@ public class AdditionalAuditLogEdgeCasesTests
         // Mark property as modified without changing its value
         var entry = ctx.Entry(e);
         entry.Property(nameof(TestAuditEntity.Age)).IsModified = true; // value remains 7
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Age) && (int?)c.OldValue == 7 && (int?)c.NewValue == 7);
     }
@@ -95,7 +99,8 @@ public class AdditionalAuditLogEdgeCasesTests
         // Removed ctx.Update(e) to allow EF Core to track only changed audit fields
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
 
         // Age, Name, Balance, IsActive unchanged -> changes should only include audit fields UpdatedBy / UpdatedOn if tracked
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.UpdatedBy));
@@ -117,7 +122,8 @@ public class AdditionalAuditLogEdgeCasesTests
         ctx.Update(e);
         ctx.ChangeTracker.DetectChanges();
         var entry = ctx.Entry(e);
-        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities)!;
+        var log = entry.BuildAuditLog(EntityState.Modified, AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy.RedactSensitive)!;
         log.Changes.ShouldContain(c =>
             c.FieldName == nameof(TestAuditEntity.Notes) && (string?)c.OldValue == "original" && c.NewValue == null);
     }

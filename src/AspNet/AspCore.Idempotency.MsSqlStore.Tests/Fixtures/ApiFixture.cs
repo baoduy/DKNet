@@ -3,14 +3,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
-using System.Runtime.InteropServices;
-using DotNet.Testcontainers.Builders;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Testcontainers.MsSql;
 
 namespace AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
 
@@ -23,14 +20,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
 {
     #region Fields
 
-    // azure-sql-edge runs on ARM64 (Apple Silicon); mssql/server has no ARM64 image.
-    private static readonly string MssqlImage =
-        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-            ? "mcr.microsoft.com/azure-sql-edge:latest"
-            : "mcr.microsoft.com/mssql/server:2022-latest";
-
     private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
-    private MsSqlContainer? _container;
 
     #endregion
 
@@ -75,16 +65,10 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     Disposes the test application and SQL Server container.
+    ///     Disposes the test application. No SQL Server container is ever created (see <see cref="InitializeAsync" />).
     /// </summary>
     public new async Task DisposeAsync()
     {
-        if (_container != null)
-        {
-            await _container.StopAsync();
-            await _container.DisposeAsync();
-        }
-
         await base.DisposeAsync();
     }
 
@@ -95,26 +79,12 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     Initializes the test application with TestContainers.MsSql.
+    ///     No-op: the SQL Server idempotency store's tests are retired (see DRK-118), and this fixture must
+    ///     guarantee no container is ever started — marking the tests Skip alone does not stop xUnit from
+    ///     constructing this <see cref="IClassFixture{TFixture}" />/<see cref="ICollectionFixture{TFixture}" />
+    ///     instance and running <see cref="InitializeAsync" /> regardless.
     /// </summary>
-    public async Task InitializeAsync()
-    {
-        // Create and start SQL Server container
-        _container = new MsSqlBuilder(MssqlImage)
-            .WithPassword($"A{Guid.NewGuid():N}a!")
-            // azure-sql-edge has no sqlcmd, so the default readiness probe fails; wait on the log line instead.
-            .WithWaitStrategy(Wait.ForUnixContainer()
-                .UntilMessageIsLogged("SQL Server is now ready for client connections"))
-            .WithCleanUp(true)
-            .Build();
-
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString()
-            .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
-
-        // Create the HTTP client
-        HttpClient ??= CreateClient();
-    }
+    public Task InitializeAsync() => Task.CompletedTask;
 
     #endregion
 }

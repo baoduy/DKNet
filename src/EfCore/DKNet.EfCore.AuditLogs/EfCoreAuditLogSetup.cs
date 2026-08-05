@@ -33,6 +33,25 @@ public enum AuditLogBehaviour
 }
 
 /// <summary>
+///     Controls how individual property values are captured within an audited entity's changes.
+/// </summary>
+public enum AuditPropertyPolicy
+{
+    /// <summary>
+    ///     Every non-ignored property is captured, but properties matching a known sensitive-data
+    ///     pattern have their old/new values replaced with a redacted sentinel, unless the property
+    ///     is explicitly marked with <see cref="AuditLogAttribute" />.
+    /// </summary>
+    RedactSensitive,
+
+    /// <summary>
+    ///     Only properties explicitly marked with <see cref="AuditLogAttribute" /> are captured;
+    ///     all other properties are omitted from the recorded changes entirely.
+    /// </summary>
+    OnlyAttributedProperties
+}
+
+/// <summary>
 ///     Internal options used to configure audit logging behaviour.
 /// </summary>
 internal sealed class AuditLogOptions
@@ -43,6 +62,11 @@ internal sealed class AuditLogOptions
     ///     Selected behaviour for which entities should be audit-logged.
     /// </summary>
     public required AuditLogBehaviour Behaviour { get; init; }
+
+    /// <summary>
+    ///     Selected policy for how individual property values are captured.
+    /// </summary>
+    public AuditPropertyPolicy PropertyPolicy { get; init; } = AuditPropertyPolicy.RedactSensitive;
 
     #endregion
 }
@@ -75,12 +99,18 @@ public static class EfCoreAuditLogSetup
         /// </summary>
         /// <typeparam name="TDbContext">The application's DbContext type the hook will attach to.</typeparam>
         /// <param name="behaviour">Optional behaviour that controls which entities are included in audit logs.</param>
+        /// <param name="propertyPolicy">Optional policy that controls how individual property values are captured.</param>
         /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
         public IServiceCollection AddEfCoreAuditHook<TDbContext>(
-            AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities)
+            AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy propertyPolicy = AuditPropertyPolicy.RedactSensitive)
             where TDbContext : DbContext =>
             services
-                .AddSingleton(Options.Create(new AuditLogOptions { Behaviour = behaviour }))
+                .AddSingleton(Options.Create(new AuditLogOptions
+                {
+                    Behaviour = behaviour,
+                    PropertyPolicy = propertyPolicy
+                }))
                 .AddHook<TDbContext, EfCoreAuditHook>();
 
         /// <summary>
@@ -91,9 +121,11 @@ public static class EfCoreAuditLogSetup
         /// <typeparam name="TDbContext">The application's DbContext type.</typeparam>
         /// <typeparam name="TPublisher">The publisher implementation to register for the DbContext type.</typeparam>
         /// <param name="behaviour">Optional behaviour that controls which entities are included in audit logs.</param>
+        /// <param name="propertyPolicy">Optional policy that controls how individual property values are captured.</param>
         /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
         public IServiceCollection AddEfCoreAuditLogs<TDbContext, TPublisher>(
-            AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities)
+            AuditLogBehaviour behaviour = AuditLogBehaviour.IncludeAllAuditedEntities,
+            AuditPropertyPolicy propertyPolicy = AuditPropertyPolicy.RedactSensitive)
             where TDbContext : DbContext
             where TPublisher : class, IAuditLogPublisher
         {
@@ -104,7 +136,7 @@ public static class EfCoreAuditLogSetup
                 return services;
 
             services.AddKeyedScoped<IAuditLogPublisher, TPublisher>(key);
-            services.AddEfCoreAuditHook<TDbContext>(behaviour);
+            services.AddEfCoreAuditHook<TDbContext>(behaviour, propertyPolicy);
             return services;
         }
     }
