@@ -41,7 +41,7 @@ public interface IHmacHashing : IDisposable
     /// <param name="secretKey">The secret key to use for hashing.</param>
     /// <param name="expectedSignature">The expected hash signature to compare against.</param>
     /// <param name="signatureIsBase64">If <c>true</c>, the signature is base64-encoded; otherwise, hexadecimal.</param>
-    /// <param name="ignoreCase">If <c>true</c>, ignores case when comparing signatures.</param>
+    /// <param name="ignoreCase">Has no effect on the result: the comparison always uses <see cref="CryptographicOperations.FixedTimeEquals" /> on the decoded signature bytes, so signatures are compared exactly regardless of this flag.</param>
     /// <returns><c>true</c> if the computed hash matches the expected signature; otherwise, <c>false</c>.</returns>
     bool VerifySha256(
         string message,
@@ -57,7 +57,7 @@ public interface IHmacHashing : IDisposable
     /// <param name="secretKey">The secret key to use for hashing.</param>
     /// <param name="expectedSignature">The expected hash signature to compare against.</param>
     /// <param name="signatureIsBase64">If <c>true</c>, the signature is base64-encoded; otherwise, hexadecimal.</param>
-    /// <param name="ignoreCase">If <c>true</c>, ignores case when comparing signatures.</param>
+    /// <param name="ignoreCase">Has no effect on the result: the comparison always uses <see cref="CryptographicOperations.FixedTimeEquals" /> on the decoded signature bytes, so signatures are compared exactly regardless of this flag.</param>
     /// <returns><c>true</c> if the computed hash matches the expected signature; otherwise, <c>false</c>.</returns>
     bool VerifySha512(
         string message,
@@ -78,7 +78,7 @@ public sealed class HmacHashing : IHmacHashing
 
     private readonly Dictionary<(HmacAlgorithm alg, string key), HMAC> _cache = [];
     private readonly Lock _sync = new();
-    private bool _disposed;
+    private volatile bool _disposed;
 
     #endregion
 
