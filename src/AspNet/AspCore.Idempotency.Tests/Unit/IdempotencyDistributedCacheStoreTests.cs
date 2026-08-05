@@ -5,46 +5,46 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace AspCore.Idempotency.NpgsqlStore.Tests.Unit;
+namespace AspCore.Idempotency.Tests.Unit;
 
 /// <summary>
-///     Tests for idempotency store edge cases not covered
-///     by the main repository tests, specifically for NpgsqlStore's SanitizeKey implementation.
+///     Tests for <see cref="IdempotencyDistributedCacheStore" /> edge cases not covered
+///     by the main repository tests, specifically for collision detection and deterministic behavior.
 /// </summary>
-public class IdempotencyNpgsqlStoreTests
+public class IdempotencyDistributedCacheStoreTests
 {
     #region Fields
 
     private readonly IDistributedCache _cache;
-    private readonly ILogger<IdempotencyNpgsqlStoreTests> _logger;
+    private readonly ILogger<IdempotencyEndpointFilter> _logger;
 
     #endregion
 
     #region Constructors
 
-    public IdempotencyNpgsqlStoreTests()
+    public IdempotencyDistributedCacheStoreTests()
     {
         _cache = new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
-        _logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<IdempotencyNpgsqlStoreTests>();
+        _logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<IdempotencyEndpointFilter>();
     }
 
     #endregion
 
     #region Methods
 
-    private IIdempotencyKeyStore CreateDistributedCacheStore(IdempotencyOptions? options = null) =>
-        new IdempotencyDistributedCacheStore(_cache, Options.Create(options ?? new IdempotencyOptions()), _logger);
+    private IdempotencyDistributedCacheStore CreateStore(IdempotencyOptions? options = null) =>
+        new(_cache, Options.Create(options ?? new IdempotencyOptions()), _logger);
 
     private static IdempotentKeyInfo MakeKey(string key) =>
         new() { IdempotentKey = key, Endpoint = "/api/test", Method = "POST" };
 
     [Fact]
-    public async Task DistributedCache_SanitizeKey_ExactCollisionFromFinding_ProducesDifferentResults()
+    public async Task SanitizeKey_ExactCollisionFromFinding_ProducesDifferentResults()
     {
         // Arrange
         const string keyA = "POST:/ab:cd";
         const string keyB = "POST:/a:bcd";
-        var store = CreateDistributedCacheStore();
+        var store = CreateStore();
 
         // Act
         var responseA = new CachedResponse
@@ -79,11 +79,11 @@ public class IdempotencyNpgsqlStoreTests
     }
 
     [Fact]
-    public async Task DistributedCache_SanitizeKey_StructurallySimilarKeys_AreAllPairwiseDistinct()
+    public async Task SanitizeKey_StructurallySimilarKeys_AreAllPairwiseDistinct()
     {
         // Arrange
         string[] keys = ["GET:/a/b:x", "GET:/a:b/x", "GET:/ab:x"];
-        var store = CreateDistributedCacheStore();
+        var store = CreateStore();
         var responses = new List<CachedResponse>();
 
         // Act
@@ -112,11 +112,11 @@ public class IdempotencyNpgsqlStoreTests
     }
 
     [Fact]
-    public async Task DistributedCache_SanitizeKey_SameInputTwice_IsDeterministic()
+    public async Task SanitizeKey_SameInputTwice_IsDeterministic()
     {
         // Arrange
         const string key = "GET:/api/orders:idem-key-123";
-        var store = CreateDistributedCacheStore();
+        var store = CreateStore();
         var response = new CachedResponse
         {
             StatusCode = 200,
@@ -136,43 +136,6 @@ public class IdempotencyNpgsqlStoreTests
         result2.processed.ShouldBeTrue();
         result1.response!.Body.ShouldBe("{\"id\": 123}");
         result2.response!.Body.ShouldBe("{\"id\": 123}");
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task DistributedCache_SanitizeKey_NullOrWhiteSpaceKey_ThrowsArgumentException(string? key)
-    {
-        // Arrange
-        var store = CreateDistributedCacheStore();
-        var response = new CachedResponse
-        {
-            StatusCode = 200,
-            Body = "{}",
-            ContentType = "application/json",
-            CreatedAt = DateTimeOffset.UtcNow,
-            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1)
-        };
-
-        // Act & Assert
-        // Test the SanitizeKey method directly since that's where the validation happens
-        var ex = Should.Throw<System.Reflection.TargetInvocationException>(() => 
-        {
-            // Access the private SanitizeKey method through reflection
-            var method = typeof(IdempotencyDistributedCacheStore).GetMethod("SanitizeKey", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var field = typeof(IdempotencyDistributedCacheStore).GetField("_options", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var options = (IdempotencyOptions)field!.GetValue(store)!;
-            var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("test");
-            var cache = new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
-            var directStore = new IdempotencyDistributedCacheStore(cache, Options.Create(options), logger);
-            method!.Invoke(directStore, [key]);
-        });
-        
-        // The TargetInvocationException wraps the actual ArgumentException
-        ex.InnerException.ShouldNotBeNull();
-        ex.InnerException.ShouldBeOfType<ArgumentException>();
-        ex.InnerException.Message.ShouldContain("Idempotency key cannot be null or empty");
     }
 
     #endregion

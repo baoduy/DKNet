@@ -11,10 +11,10 @@ namespace DKNet.AspCore.Idempotency.Store;
 ///     Implementation of <see cref="IIdempotencyKeyStore" /> using a distributed cache.
 ///     This store provides idempotency support by caching processed keys and their responses.
 /// </summary>
-public sealed class IdempotencyDistributedCacheStore(
+internal sealed class IdempotencyDistributedCacheStore(
     IDistributedCache cache,
     IOptions<IdempotencyOptions> options,
-    ILogger logger) : IIdempotencyKeyStore
+    ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyStore
 {
     #region Fields
 
@@ -103,12 +103,8 @@ public sealed class IdempotencyDistributedCacheStore(
     ///     The configured cache prefix followed by a deterministic, fixed-length (64-character)
     ///     lowercase hex SHA-256 hash of the key.
     /// </returns>
-    /// <exception cref="ArgumentException">Thrown when the key is null, empty, or whitespace.</exception>
-    internal string SanitizeKey(string key)
+    private string SanitizeKey(string key)
     {
-        if (string.IsNullOrWhiteSpace(key))
-            throw new ArgumentException("Idempotency key cannot be null or empty.", nameof(key));
-
         return $"{_options.CachePrefix}{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()}";
     }
 
