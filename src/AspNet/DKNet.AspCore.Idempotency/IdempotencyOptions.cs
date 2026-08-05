@@ -80,6 +80,16 @@ public sealed class IdempotencyOptions
     public string IdempotencyKeyPattern { get; set; } = @"^[a-zA-Z0-9\-_]+$";
 
     /// <summary>
+    ///     Gets or sets how long an in-flight reservation placeholder is honoured before being treated as
+    ///     expired and abandoned. A store that makes its check-and-reserve step atomic inserts such a
+    ///     placeholder while the protected handler is running; once this timeout elapses without the
+    ///     reservation being completed (e.g. the handler crashed), a fresh request for the same key is
+    ///     allowed to proceed instead of being permanently blocked.
+    ///     Default is 30 seconds.
+    /// </summary>
+    public TimeSpan InFlightReservationTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     ///     Gets or sets the JSON serializer options used to serialize response bodies before caching them.
     ///     This is used when the conflict handling strategy is set to return cached results.
     ///     Default uses camel case naming policy for consistency with typical JSON APIs.
