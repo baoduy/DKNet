@@ -20,14 +20,24 @@ public sealed class S3BlobServiceFixture : IDisposable
 
         _minioContainer.StartAsync().GetAwaiter().GetResult();
 
+        Options = new S3Options
+        {
+            ConnectionString = _minioContainer.GetConnectionString(),
+            AccessKey = _minioContainer.GetAccessKey(),
+            Secret = _minioContainer.GetSecretKey(),
+            BucketName = "dev",
+            DisablePayloadSigning = false,
+            ForcePathStyle = true
+        };
+
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "BlobService:S3:ConnectionString", _minioContainer.GetConnectionString() },
-                    { "BlobService:S3:AccessKey", _minioContainer.GetAccessKey() },
-                    { "BlobService:S3:Secret", _minioContainer.GetSecretKey() },
-                    { "BlobService:S3:BucketName", "dev" },
+                    { "BlobService:S3:ConnectionString", Options.ConnectionString },
+                    { "BlobService:S3:AccessKey", Options.AccessKey },
+                    { "BlobService:S3:Secret", Options.Secret },
+                    { "BlobService:S3:BucketName", Options.BucketName },
                     { "BlobService:S3:DisablePayloadSigning", "false" },
                     { "BlobService:S3:ForcePathStyle", "true" }
                 })
@@ -46,6 +56,12 @@ public sealed class S3BlobServiceFixture : IDisposable
     #region Properties
 
     public IBlobService Service { get; }
+
+    /// <summary>
+    ///     The options this fixture's Minio container was configured with — exposed so tests can construct
+    ///     their own <see cref="S3BlobService" /> instance directly (e.g. to exercise Dispose()).
+    /// </summary>
+    public S3Options Options { get; }
 
     #endregion
 

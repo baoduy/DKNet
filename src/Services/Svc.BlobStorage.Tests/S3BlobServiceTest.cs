@@ -1,4 +1,7 @@
 using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using DKNet.Svc.BlobStorage.AwsS3;
 using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
@@ -166,6 +169,50 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
 
         var items = await _service.ListItemsAsync(new BlobRequest("")).ToListAsync();
         items.Count.ShouldBeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task DeleteAsyncDeletesDirectoryWithMultipleKeys()
+    {
+        // Regression test for the per-key DeleteFolderAsync rewrite (one DeleteObjectAsync call per
+        // key instead of a single batch DeleteObjectsAsync) — confirms it drops none of several keys.
+        var dir = $"delete-dir-multi-{Guid.NewGuid()}";
+        for (var i = 0; i < 5; i++)
+        {
+            var blob = new BlobDetails.BlobData($"{dir}/file{i}.txt", new BinaryData("bye"u8.ToArray()))
+                { Overwrite = true, Type = BlobTypes.File };
+            await _service.SaveAsync(blob);
+        }
+
+        var deleted = await _service.DeleteAsync(new BlobRequest(dir) { Type = BlobTypes.Directory });
+        deleted.ShouldBeTrue();
+
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteAsyncDeletesEmptyDirectoryWithoutThrowing()
+    {
+        var dir = $"delete-dir-empty-{Guid.NewGuid()}";
+
+        var deleted = await _service.DeleteAsync(new BlobRequest(dir) { Type = BlobTypes.Directory });
+        deleted.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task DisposeReleasesUnderlyingClientAndIsIdempotent()
+    {
+        var service = new S3BlobService(Options.Create(fixture.Options), NullLogger<S3BlobService>.Instance);
+
+        // Force the lazy AmazonS3Client to be created before disposing it.
+        await service.CheckExistsAsync(new BlobRequest($"dispose-check-{Guid.NewGuid()}.txt"));
+
+        Should.NotThrow(service.Dispose);
+        Should.NotThrow(service.Dispose); // second call must be a no-op, not re-dispose a null client
     }
 
     #endregion
