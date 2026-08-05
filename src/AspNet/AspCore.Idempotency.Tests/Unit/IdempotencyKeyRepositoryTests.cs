@@ -76,11 +76,11 @@ public class IdempotencyKeyRepositoryTests
         await repository.MarkKeyAsProcessedAsync(CreateKeyInfo(idempotencyKey1), cachedResponse);
         var result = await repository.IsKeyProcessedAsync(CreateKeyInfo(idempotencyKey2));
 
-        // Assert
-        result.processed.ShouldBeTrue();
-        result.response.ShouldNotBeNull();
-        result.response!.Body.ShouldBe(cachedResponse.Body);
-        result.response.StatusCode.ShouldBe(cachedResponse.StatusCode);
+        // Assert — SanitizeKey now hashes the raw key, so keys differing only by case
+        // must be treated as distinct entries (DRK-146); marking one processed must not
+        // make the other appear processed.
+        result.processed.ShouldBeFalse();
+        result.response.ShouldBeNull();
     }
 
     [Fact]
