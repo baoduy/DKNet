@@ -202,11 +202,14 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
         if (_options.MaxFileNameLength > 0 && item.Name.Length > _options.MaxFileNameLength)
             throw new FileLoadException("File name is invalid.");
 
-        var ext = Path.GetExtension(item.Name);
-        if (string.IsNullOrEmpty(ext)) throw new FileLoadException("File extension is invalid.");
+        if (_options.IncludedExtensions.Any())
+        {
+            var ext = Path.GetExtension(item.Name);
+            if (string.IsNullOrEmpty(ext)) throw new FileLoadException("File extension is invalid.");
 
-        if (!_options.IncludedExtensions.Any(e => string.Equals(e, ext, StringComparison.OrdinalIgnoreCase)))
-            throw new FileLoadException("File extension is invalid.");
+            if (!_options.IncludedExtensions.Any(e => string.Equals(e, ext, StringComparison.OrdinalIgnoreCase)))
+                throw new FileLoadException("File extension is invalid.");
+        }
 
         if (_options.MaxFileSizeInMb > 0)
         {

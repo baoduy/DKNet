@@ -315,6 +315,8 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
         CancellationToken cancellationToken = default)
     {
+        ValidateFile(blob);
+
         var existed = await CheckExistsAsync(blob, cancellationToken);
         if (existed && !blob.Overwrite)
             throw new InvalidOperationException($"File {blob.Name} is not allowed to override.");

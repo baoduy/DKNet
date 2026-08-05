@@ -233,6 +233,8 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
         CancellationToken cancellationToken = default)
     {
+        ValidateFile(blob);
+
         var client = await GetClient();
         var location = GetBlobLocation(blob);
         await client.GetBlobClient(location).UploadAsync(blob.Data, blob.Overwrite, cancellationToken);
