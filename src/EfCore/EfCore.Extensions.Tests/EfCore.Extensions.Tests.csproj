@@ -25,6 +25,8 @@
         <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
+        <!-- Force fixed SSH.NET (Testcontainers pulls vulnerable 2025.1.0, GHSA-q939-rpr3-3284) -->
+        <PackageReference Include="SSH.NET" />
         <PackageReference Include="Testcontainers.PostgreSql"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Bogus"/>

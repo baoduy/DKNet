@@ -28,6 +28,8 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Shouldly"/>
+        <!-- Force fixed SSH.NET (Testcontainers pulls vulnerable 2025.1.0, GHSA-q939-rpr3-3284) -->
+        <PackageReference Include="SSH.NET" />
         <PackageReference Include="Testcontainers.Azurite"/>
         <PackageReference Include="Testcontainers.Minio"/>
     </ItemGroup>

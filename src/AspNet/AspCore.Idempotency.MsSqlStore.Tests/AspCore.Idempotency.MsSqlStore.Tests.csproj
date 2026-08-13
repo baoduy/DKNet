@@ -25,6 +25,8 @@
         <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Shouldly"/>
+        <!-- Force fixed SSH.NET (Testcontainers pulls vulnerable 2025.1.0, GHSA-q939-rpr3-3284) -->
+        <PackageReference Include="SSH.NET" />
         <PackageReference Include="Testcontainers.MsSql"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio"/>
