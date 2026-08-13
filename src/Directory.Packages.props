@@ -123,6 +123,9 @@
     <!-- Override vulnerable transitive: EF Core Sqlite pulls SQLitePCLRaw 2.1.11 (GHSA-2m69-gcr7-jv3q, High).
          3.0.x is the fixed line; referenced directly by the Sqlite-backed test projects. -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+    <!-- Override vulnerable transitive: Testcontainers pulls SSH.NET 2025.1.0 (GHSA-q939-rpr3-3284, High).
+         2026.0.0 is the fixed line. Test-only dependency - never flows into a published DKNet package. -->
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
     <PackageVersion Include="SlimMessageBus" Version="3.0.0" />
     <PackageVersion Include="SlimMessageBus.Host" Version="3.5.0" />
     <PackageVersion Include="SlimMessageBus.Host.AzureServiceBus" Version="3.3.4" />
