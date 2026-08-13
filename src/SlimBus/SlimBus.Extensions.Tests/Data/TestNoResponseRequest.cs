@@ -3,7 +3,7 @@ using FluentResults;
 
 namespace SlimBus.Extensions.Tests.Data;
 
-public class TestRequest : Fluents.Requests.IWitResponse<Guid>
+public class TestNoResponseRequest : Fluents.Requests.INoResponse
 {
     #region Properties
 
@@ -12,16 +12,17 @@ public class TestRequest : Fluents.Requests.IWitResponse<Guid>
     #endregion
 }
 
-internal sealed class TestRequestHandler(TestDbContext dbContext) : Fluents.Requests.IHandler<TestRequest, Guid>
+internal sealed class TestNoResponseRequestHandler(TestDbContext dbContext)
+    : Fluents.Requests.IHandler<TestNoResponseRequest>
 {
     #region Methods
 
-    public async Task<IResult<Guid>> OnHandle(TestRequest request, CancellationToken cancellationToken)
+    public async Task<IResultBase> OnHandle(TestNoResponseRequest request, CancellationToken cancellationToken)
     {
         var entity = new TestEntity { Name = request.Name };
         await dbContext.AddAsync(entity, cancellationToken);
 
-        return Result.Ok(entity.Id);
+        return Result.Ok();
     }
 
     #endregion
