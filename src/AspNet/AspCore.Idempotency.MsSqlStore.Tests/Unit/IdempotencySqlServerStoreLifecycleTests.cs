@@ -13,9 +13,12 @@ using Microsoft.Extensions.Options;
 namespace AspCore.Idempotency.MsSqlStore.Tests.Unit;
 
 /// <summary>
-///     Covers the reserve/complete lifecycle and the collision-handler branches of
-///     <see cref="IdempotencySqlServerStore" /> that <see cref="IdempotencySqlServerStoreConcurrencyTests" />
-///     doesn't exercise. Uses the same file-based SQLite setup so it runs without Docker/SQL Server.
+///     Covers the reserve/complete lifecycle of <see cref="IdempotencySqlServerStore" /> reachable without a
+///     real SQL Server — unique-violation collision handling is not exercised here (SQLite's
+///     <c>SqliteException</c> can no longer satisfy the locale-independent <c>SqlException.Number</c> check;
+///     see the removal note below); that branch is covered by the Testcontainer-backed
+///     <c>IdempotencyIntegrationTests</c> instead. Uses the same file-based SQLite setup so this class runs
+///     without Docker/SQL Server.
 /// </summary>
 public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
 {
@@ -44,7 +47,7 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
         services.AddDbContextFactory<IdempotencyDbContext>(o => o.UseSqlite(
                 $"Data Source={_dbFilePath}",
                 sqlite => sqlite.MigrationsAssembly(
-                    typeof(IdempotencySqlServerStoreConcurrencyTests).Assembly.GetName().Name))
+                    typeof(IdempotencySqlServerStoreLifecycleTests).Assembly.GetName().Name))
             .ReplaceService<IModelCustomizer, SqliteCompatibleModelCustomizer>());
         _serviceProvider = services.BuildServiceProvider();
 
@@ -117,64 +120,15 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
         inFlight.response.ShouldBeNull();
     }
 
-    [Fact]
-    public async Task IsKeyProcessedAsync_CollisionOnInsert_ReQueryReturnsCompletedResponse()
-    {
-        // Arrange - seed a completed row directly. ExpiresAt is left null so the initial
-        // "ExpiresAt > now" lookup in IsKeyProcessedAsync misses it (null compares false), forcing the
-        // store down the reserve-insert path, which then collides with this row's unique CompositeKey.
-        var keyInfo = new IdempotentKeyInfo
-        {
-            Endpoint = "/api/orders",
-            Method = "POST",
-            IdempotentKey = Guid.NewGuid().ToString()
-        };
-        var response = CreateResponse(200, "{\"id\":42}", null);
-
-        var factory = _serviceProvider.GetRequiredService<IDbContextFactory<IdempotencyDbContext>>();
-        await using (var seedContext = await factory.CreateDbContextAsync())
-        {
-            seedContext.IdempotencyKeys.Add(new IdempotencyKeyEntity(keyInfo, response));
-            await seedContext.SaveChangesAsync();
-        }
-
-        // Act
-        var result = await _store.IsKeyProcessedAsync(keyInfo);
-
-        // Assert - the collision handler re-queries and returns the already-completed response
-        result.processed.ShouldBeTrue();
-        result.response.ShouldNotBeNull();
-        result.response!.StatusCode.ShouldBe(200);
-        result.response.Body.ShouldBe("{\"id\":42}");
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_ExpiredReservationCollision_ReturnsFalseForFreshReservation()
-    {
-        // Arrange - a very short InFlightReservationTimeout so the reservation row is expired by the
-        // time the second call collides with it, without actually waiting out the 30s default.
-        var shortTimeoutStore = CreateStore(new IdempotencyOptions
-        {
-            InFlightReservationTimeout = TimeSpan.FromMilliseconds(1)
-        });
-        var keyInfo = new IdempotentKeyInfo
-        {
-            Endpoint = "/api/orders",
-            Method = "POST",
-            IdempotentKey = Guid.NewGuid().ToString()
-        };
-
-        // Act
-        await shortTimeoutStore.IsKeyProcessedAsync(keyInfo); // reserves, expiring almost immediately
-        await Task.Delay(50);
-        var result = await shortTimeoutStore.IsKeyProcessedAsync(keyInfo); // collides, re-query finds it expired
-
-        // Assert - Rule R1: an abandoned/expired reservation must not permanently block retries
-        result.processed.ShouldBeFalse();
-        result.response.ShouldBeNull();
-
-        await shortTimeoutStore.DisposeAsync();
-    }
+    // IsKeyProcessedAsync_CollisionOnInsert_ReQueryReturnsCompletedResponse and
+    // IsKeyProcessedAsync_ExpiredReservationCollision_ReturnsFalseForFreshReservation used to live here,
+    // simulating a unique-constraint collision by relying on SQLite's incidental "UNIQUE" message text.
+    // Now that IsUniqueViolation (DRK-324/DRK-355) checks SqlException.Number instead, SQLite can no
+    // longer trigger that catch — it was always an implementation detail of the old check, not a
+    // contract. Removed to match IdempotencyPostgresStore's own suite (no SQLite collision-simulation
+    // test there either); the collision branch is exercised for real against SQL Server by the
+    // Testcontainer-backed AspCore.Idempotency.MsSqlStore.Tests.Integration.IdempotencyIntegrationTests.
+    // CreateItem_ConcurrentRequestsWithSameKey_OnlyOneProcessed test (DRK-118, un-skipped by DRK-362).
 
     [Fact]
     public async Task MarkKeyAsProcessedAsync_WithoutPriorReservation_CreatesEntityDefensively()
@@ -200,4 +154,27 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
     }
 
     #endregion
+}
+
+/// <summary>
+///     Applies <see cref="IdempotencyKeyConfiguration" /> as-is, then drops the one column-type override in it
+///     that is SQL-Server-specific raw SQL, so <c>EnsureCreatedAsync</c> can generate valid SQLite DDL.
+/// </summary>
+internal sealed class SqliteCompatibleModelCustomizer(ModelCustomizerDependencies dependencies)
+    : ModelCustomizer(dependencies)
+{
+    public override void Customize(ModelBuilder modelBuilder, DbContext context)
+    {
+        base.Customize(modelBuilder, context);
+
+        var key = modelBuilder.Entity<IdempotencyKeyEntity>();
+        key.Property(e => e.Body).HasColumnType(null);
+
+        // The Sqlite provider cannot translate "> "/"<" comparisons on a DateTimeOffset column (only equality) -
+        // IsKeyProcessedAsync's expiry check relies on exactly that. Store ExpiresAt as UTC ticks instead so the
+        // comparison becomes an ordinary numeric one; the property's C# type/behaviour is unaffected.
+        key.Property(e => e.ExpiresAt).HasConversion(
+            v => v.HasValue ? v.Value.UtcTicks : (long?)null,
+            v => v.HasValue ? new DateTimeOffset(v.Value, TimeSpan.Zero) : null);
+    }
 }

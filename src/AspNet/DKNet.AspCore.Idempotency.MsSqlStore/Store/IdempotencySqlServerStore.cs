@@ -3,8 +3,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Collections.Concurrent;
 using DKNet.AspCore.Idempotency.MsSqlStore.Data;
 using DKNet.AspCore.Idempotency.Store;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,7 +32,11 @@ internal sealed class IdempotencySqlServerStore(
     /// </summary>
     private const int ReservationStatusCode = 102;
 
-    private static int _dbMigrationsEnsured;
+    // Keyed by connection string rather than a single process-wide flag: a process that targets more
+    // than one database over its lifetime (e.g. per-tenant databases, or multiple test fixtures sharing
+    // one test host) must ensure migrations separately for each one, not skip every database after the
+    // first is ensured.
+    private static readonly ConcurrentDictionary<string, bool> DbMigrationsEnsured = new(StringComparer.Ordinal);
     private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
     private readonly IdempotencyOptions _options = options.Value;
@@ -48,17 +54,18 @@ internal sealed class IdempotencySqlServerStore(
     private static async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
         CancellationToken cancellationToken = default)
     {
-        if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+        var connectionString = dbContext.Database.GetConnectionString() ?? string.Empty;
+        if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
         await MigrationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+            if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
             if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false)).Any())
                 await dbContext.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
 
-            Interlocked.Exchange(ref _dbMigrationsEnsured, 1);
+            DbMigrationsEnsured[connectionString] = true;
         }
         finally
         {
@@ -78,6 +85,15 @@ internal sealed class IdempotencySqlServerStore(
             CreatedAt = entity.CreatedAt,
             ExpiresAt = entity.ExpiresAt
         };
+
+    /// <summary>
+    ///     Determines whether a <see cref="DbUpdateException" /> was caused by the unique-key violation on
+    ///     <c>CompositeKey</c> — SQL Server reports this as error number 2601 (duplicate key in a unique
+    ///     index, e.g. <c>UX_CompositeKey</c>) or 2627 (unique/primary key constraint violation), not a
+    ///     message substring, which is localized by the server's login language.
+    /// </summary>
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
 
     /// <inheritdoc />
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
@@ -131,7 +147,7 @@ internal sealed class IdempotencySqlServerStore(
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
             return (false, null);
         }
-        catch (DbUpdateException ex) when ((ex.InnerException?.Message ?? ex.Message).Contains("UNIQUE", StringComparison.OrdinalIgnoreCase))
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // Handle race condition: another concurrent request already reserved or completed this key.
             logger.LogInformation(
@@ -195,9 +211,10 @@ internal sealed class IdempotencySqlServerStore(
                 cachedResponse.StatusCode,
                 sanitizedKey);
         }
-        catch (DbUpdateException ex) when ((ex.InnerException?.Message??ex.Message).Contains("UNIQUE",StringComparison.OrdinalIgnoreCase))
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // Handle race condition: another concurrent request already inserted this key.
+            // Unreachable in the common path now, kept as a defensive guard around the fallback Add() above.
             logger.LogInformation(
                 "Idempotency key already processed by concurrent request: {Key}. Continuing without duplicate insert.",
                 sanitizedKey);

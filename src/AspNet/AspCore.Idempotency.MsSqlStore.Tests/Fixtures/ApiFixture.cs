@@ -7,6 +7,7 @@ using DotNet.Testcontainers.Builders;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Testcontainers.MsSql;
@@ -105,6 +106,18 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
             .Build();
 
         await _container.StartAsync();
+
+        // Testcontainers.MsSql's connection string targets the container's "master" database.
+        // Unlike SQLite, SQL Server does not create a database implicitly on first connection,
+        // so the per-test database must be provisioned before the app under test connects to it.
+        await using (var masterConnection = new SqlConnection(_container.GetConnectionString()))
+        {
+            await masterConnection.OpenAsync();
+            await using var createDatabaseCommand = masterConnection.CreateCommand();
+            createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
+            await createDatabaseCommand.ExecuteNonQueryAsync();
+        }
+
         ConnectionString = _container.GetConnectionString()
             .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
 
