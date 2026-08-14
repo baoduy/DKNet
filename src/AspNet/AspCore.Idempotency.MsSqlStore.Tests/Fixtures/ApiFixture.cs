@@ -3,11 +3,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using DotNet.Testcontainers.Builders;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Testcontainers.MsSql;
 
 namespace AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
 
@@ -20,7 +22,12 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
 {
     #region Fields
 
+    // mssql/server ships x64-only images (no ARM64). These tests are meant to run on a
+    // GitHub-hosted x64 runner via the remote-tests pipeline, never on a local ARM PC.
+    private const string MssqlImage = "mcr.microsoft.com/mssql/server:2022-latest";
+
     private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
+    private MsSqlContainer? _container;
 
     #endregion
 
@@ -65,10 +72,16 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     Disposes the test application. No SQL Server container is ever created (see <see cref="InitializeAsync" />).
+    ///     Disposes the test application and SQL Server container.
     /// </summary>
     public new async Task DisposeAsync()
     {
+        if (_container != null)
+        {
+            await _container.StopAsync();
+            await _container.DisposeAsync();
+        }
+
         await base.DisposeAsync();
     }
 
@@ -79,12 +92,25 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     }
 
     /// <summary>
-    ///     No-op: the SQL Server idempotency store's tests are retired (see DRK-118), and this fixture must
-    ///     guarantee no container is ever started — marking the tests Skip alone does not stop xUnit from
-    ///     constructing this <see cref="IClassFixture{TFixture}" />/<see cref="ICollectionFixture{TFixture}" />
-    ///     instance and running <see cref="InitializeAsync" /> regardless.
+    ///     Initializes the test application with TestContainers.MsSql.
     /// </summary>
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync()
+    {
+        // Create and start the SQL Server container.
+        _container = new MsSqlBuilder(MssqlImage)
+            .WithPassword($"A{Guid.NewGuid():N}a!")
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilMessageIsLogged("SQL Server is now ready for client connections"))
+            .WithCleanUp(true)
+            .Build();
+
+        await _container.StartAsync();
+        ConnectionString = _container.GetConnectionString()
+            .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
+
+        // Create the HTTP client
+        HttpClient ??= CreateClient();
+    }
 
     #endregion
 }

@@ -8,8 +8,8 @@ using Microsoft.Extensions.Options;
 namespace DKNet.AspCore.Idempotency.Store;
 
 /// <summary>
-///     Implementation of <see cref="IIdempotencyKeyStore" /> using a distributed cache.
-///     This store provides idempotency support by caching processed keys and their responses.
+    ///     Implementation of <see cref="IIdempotencyKeyStore" /> using a distributed cache.
+    ///     This store provides idempotency support by caching processed keys and their responses.
 /// </summary>
 /// <remarks>
 ///     <see cref="IDistributedCache" /> has no atomic compare-and-set primitive, so this store narrows the
@@ -17,10 +17,7 @@ namespace DKNet.AspCore.Idempotency.Store;
 ///     <see cref="IsKeyProcessedAsync" /> rather than eliminating it the way the SQL store's unique index does.
 ///     Do not treat this store as fully atomic under concurrency.
 /// </remarks>
-internal sealed class IdempotencyDistributedCacheStore(
-    IDistributedCache cache,
-    IOptions<IdempotencyOptions> options,
-    ILogger<IdempotencyEndpointFilter> logger) : IIdempotencyKeyStore
+internal sealed class IdempotencyDistributedCacheStore : IIdempotencyKeyStore
 {
     #region Fields
 
@@ -29,10 +26,35 @@ internal sealed class IdempotencyDistributedCacheStore(
     /// </summary>
     private const int ReservationStatusCode = 102;
 
+    private readonly IDistributedCache _cache;
+
     /// <summary>
     ///     Gets the idempotency options used for cache configuration and JSON serialization.
     /// </summary>
-    private readonly IdempotencyOptions _options = options.Value;
+    private readonly IdempotencyOptions _options;
+
+    private readonly ILogger<IdempotencyEndpointFilter> _logger;
+
+    #endregion
+
+    #region Constructors
+
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="IdempotencyDistributedCacheStore" /> class.
+    /// </summary>
+    public IdempotencyDistributedCacheStore(
+        IDistributedCache cache,
+        IOptions<IdempotencyOptions> options,
+        ILogger<IdempotencyEndpointFilter> logger)
+    {
+        _cache = cache;
+        _options = options.Value;
+        _logger = logger;
+
+        _logger.LogWarning(
+            "IdempotencyDistributedCacheStore is not atomic under concurrent load. " +
+            "It is intended for single-instance or development use only.");
+    }
 
     #endregion
 
@@ -51,9 +73,9 @@ internal sealed class IdempotencyDistributedCacheStore(
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
         var cacheKey = SanitizeKey(keyInfo.CompositeKey);
-        logger.LogDebug("Trying to get existing response for cache key: {CacheKey}", cacheKey);
+        _logger.LogDebug("Trying to get existing response for cache key: {CacheKey}", cacheKey);
 
-        var cachedJson = await cache.GetStringAsync(cacheKey).ConfigureAwait(false);
+        var cachedJson = await _cache.GetStringAsync(cacheKey).ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(cachedJson))
         {
@@ -61,17 +83,17 @@ internal sealed class IdempotencyDistributedCacheStore(
 
             if (cachedResponse?.IsExpired == true)
             {
-                logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
-                await cache.RemoveAsync(cacheKey).ConfigureAwait(false);
+                _logger.LogDebug("Cached response has expired for key: {CacheKey}", cacheKey);
+                await _cache.RemoveAsync(cacheKey).ConfigureAwait(false);
             }
             else if (cachedResponse?.StatusCode == ReservationStatusCode)
             {
-                logger.LogDebug("Reservation still in-flight for key: {CacheKey}", cacheKey);
+                _logger.LogDebug("Reservation still in-flight for key: {CacheKey}", cacheKey);
                 return (true, null);
             }
             else
             {
-                logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
+                _logger.LogDebug("Cached response found for key: {CacheKey} with status code: {StatusCode}",
                     cacheKey, cachedResponse?.StatusCode);
                 return (true, cachedResponse);
             }
@@ -79,7 +101,7 @@ internal sealed class IdempotencyDistributedCacheStore(
 
         // No live entry found — reserve this key so a concurrent request for the identical key sees the
         // in-flight placeholder instead of also observing a miss (see class remarks for the residual race).
-        logger.LogDebug("No cached response found for key: {CacheKey}. Reserving.", cacheKey);
+        _logger.LogDebug("No cached response found for key: {CacheKey}. Reserving.", cacheKey);
 
         var reservation = new CachedResponse
         {
@@ -90,7 +112,7 @@ internal sealed class IdempotencyDistributedCacheStore(
             ExpiresAt = DateTimeOffset.UtcNow.Add(_options.InFlightReservationTimeout)
         };
 
-        await cache.SetStringAsync(
+        await _cache.SetStringAsync(
             cacheKey,
             JsonSerializer.Serialize(reservation, _options.JsonSerializerOptions),
             new DistributedCacheEntryOptions
@@ -113,18 +135,18 @@ internal sealed class IdempotencyDistributedCacheStore(
     public async ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse)
     {
         var cacheKey = SanitizeKey(keyInfo.CompositeKey);
-        logger.LogDebug("Setting cached response for cache key: {CacheKey} with status code: {StatusCode}",
+        _logger.LogDebug("Setting cached response for cache key: {CacheKey} with status code: {StatusCode}",
             cacheKey, cachedResponse.StatusCode);
 
         var json = JsonSerializer.Serialize(cachedResponse, _options.JsonSerializerOptions);
 
-        await cache.SetStringAsync(cacheKey, json,
+        await _cache.SetStringAsync(cacheKey, json,
             new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = _options.Expiration
             }).ConfigureAwait(false);
 
-        logger.LogInformation("Response cached for key: {CacheKey} with status code: {StatusCode}",
+        _logger.LogInformation("Response cached for key: {CacheKey} with status code: {StatusCode}",
             cacheKey, cachedResponse.StatusCode);
     }
 

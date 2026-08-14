@@ -19,7 +19,6 @@ public sealed class Repository<TEntity>
     private readonly DbContext _dbContext;
     private readonly IMapper? _mapper;
 
-
     #endregion
 
     #region Constructors
@@ -43,53 +42,13 @@ public sealed class Repository<TEntity>
     #region Methods
 
     /// <summary>
-    ///     Counts entities matching the provided <paramref name="filter" /> asynchronously.
+    ///     Returns a TRACKED queryable for the entity type so that materialized entities can be modified and persisted.
     /// </summary>
-    /// <param name="filter">Predicate to filter entities.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of matching entities.</returns>
-    public Task<int> CountAsync(
-        Expression<Func<TEntity, bool>> filter,
-        CancellationToken cancellationToken = default) =>
-        Query(filter).CountAsync(cancellationToken);
-
-    /// <summary>
-    ///     Determines whether any entity exists that satisfies the <paramref name="filter" />.
-    /// </summary>
-    /// <param name="filter">Predicate to filter entities.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns><c>true</c> when at least one entity matches; otherwise <c>false</c>.</returns>
-    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
-        => Query(filter).AnyAsync(cancellationToken);
-
-    /// <summary>
-    ///     Finds an entity by its primary key value asynchronously.
-    /// </summary>
-    /// <param name="keyValue">Single primary key value (or composite key element when single).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The found entity or <c>null</c> when not found.</returns>
-    public ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default)
-        => FindAsync([keyValue], cancellationToken);
-
-    /// <summary>
-    ///     Finds an entity by its primary key values asynchronously.
-    /// </summary>
-    /// <param name="keyValues">Array of key values for composite keys.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The found entity or <c>null</c> when not found.</returns>
-    public async ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default)
-        => await _dbContext.FindAsync<TEntity>(keyValues, cancellationToken);
-
-    /// <summary>
-    ///     Finds the first entity that satisfies the provided <paramref name="filter" />, or <c>null</c> if none match.
-    /// </summary>
-    /// <param name="filter">Predicate to filter entities.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The matched entity or <c>null</c>.</returns>
-    public Task<TEntity?> FindAsync(
-        Expression<Func<TEntity, bool>> filter,
-        CancellationToken cancellationToken = default) =>
-        Query(filter).FirstOrDefaultAsync(cancellationToken);
+    /// <remarks>
+    ///     <see cref="ReadRepository{TEntity}.Query()" /> returns <c>AsNoTracking()</c> for read-only scenarios;
+    ///     this override deliberately returns a tracked queryable for read-then-update workflows.
+    /// </remarks>
+    public override IQueryable<TEntity> Query() => _dbContext.Set<TEntity>();
 
     /// <summary>
     ///     Projects entities that satisfy the specified <paramref name="filter" /> to the target model
@@ -99,7 +58,7 @@ public sealed class Repository<TEntity>
     /// <typeparam name="TModel">The model type to project to.</typeparam>
     /// <param name="filter">Predicate to filter entities.</param>
     /// <returns>An <see cref="IQueryable{TModel}" /> representing the projected query.</returns>
-    public IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
+    public override IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
     {
         if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
@@ -107,17 +66,6 @@ public sealed class Repository<TEntity>
         var query = Query(filter);
         return query.ProjectToType<TModel>(_mapper.Config);
     }
-
-    /// <summary>
-    ///     Returns a queryable for the entity type. Implementations may override to apply default includes or filters.
-    /// </summary>
-    public IQueryable<TEntity> Query() => _dbContext.Set<TEntity>();
-
-    /// <summary>
-    ///     Returns a queryable filtered by the provided <paramref name="filter" />.
-    /// </summary>
-    /// <param name="filter">Predicate to filter entities.</param>
-    public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
 
     #endregion
 }
