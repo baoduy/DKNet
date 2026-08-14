@@ -149,7 +149,7 @@ public class IdempotencySetupTests
 
         // Act
         var exception = Should.Throw<ArgumentException>(() =>
-            services.AddIdempotentKey(c => c.ScopeHmacSecret = string.Empty));
+            services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = string.Empty));
 
         // Assert
         exception.ParamName.ShouldBe("ScopeHmacSecret");
@@ -163,7 +163,7 @@ public class IdempotencySetupTests
 
         // Act
         var exception = Should.Throw<ArgumentException>(() =>
-            services.AddIdempotentKey(c => c.ScopeHmacSecret = "   "));
+            services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = "   "));
 
         // Assert
         exception.ParamName.ShouldBe("ScopeHmacSecret");
