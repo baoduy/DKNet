@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Collections.Concurrent;
 using DKNet.AspCore.Idempotency.MsSqlStore.Data;
 using DKNet.AspCore.Idempotency.Store;
 using Microsoft.Data.SqlClient;
@@ -31,7 +32,11 @@ internal sealed class IdempotencySqlServerStore(
     /// </summary>
     private const int ReservationStatusCode = 102;
 
-    private static int _dbMigrationsEnsured;
+    // Keyed by connection string rather than a single process-wide flag: a process that targets more
+    // than one database over its lifetime (e.g. per-tenant databases, or multiple test fixtures sharing
+    // one test host) must ensure migrations separately for each one, not skip every database after the
+    // first is ensured.
+    private static readonly ConcurrentDictionary<string, bool> DbMigrationsEnsured = new(StringComparer.Ordinal);
     private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
     private readonly IdempotencyOptions _options = options.Value;
@@ -49,17 +54,18 @@ internal sealed class IdempotencySqlServerStore(
     private static async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
         CancellationToken cancellationToken = default)
     {
-        if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+        var connectionString = dbContext.Database.GetConnectionString() ?? string.Empty;
+        if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
         await MigrationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (Interlocked.CompareExchange(ref _dbMigrationsEnsured, 0, 0) == 1) return;
+            if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
             if ((await dbContext.Database.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false)).Any())
                 await dbContext.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
 
-            Interlocked.Exchange(ref _dbMigrationsEnsured, 1);
+            DbMigrationsEnsured[connectionString] = true;
         }
         finally
         {
