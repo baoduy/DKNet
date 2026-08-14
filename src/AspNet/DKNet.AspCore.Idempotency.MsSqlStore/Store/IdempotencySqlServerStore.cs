@@ -5,6 +5,7 @@
 
 using DKNet.AspCore.Idempotency.MsSqlStore.Data;
 using DKNet.AspCore.Idempotency.Store;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -79,6 +80,15 @@ internal sealed class IdempotencySqlServerStore(
             ExpiresAt = entity.ExpiresAt
         };
 
+    /// <summary>
+    ///     Determines whether a <see cref="DbUpdateException" /> was caused by the unique-key violation on
+    ///     <c>CompositeKey</c> — SQL Server reports this as error number 2601 (duplicate key in a unique
+    ///     index, e.g. <c>UX_CompositeKey</c>) or 2627 (unique/primary key constraint violation), not a
+    ///     message substring, which is localized by the server's login language.
+    /// </summary>
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
+
     /// <inheritdoc />
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
@@ -131,7 +141,7 @@ internal sealed class IdempotencySqlServerStore(
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
             return (false, null);
         }
-        catch (DbUpdateException ex) when ((ex.InnerException?.Message ?? ex.Message).Contains("UNIQUE", StringComparison.OrdinalIgnoreCase))
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // Handle race condition: another concurrent request already reserved or completed this key.
             logger.LogInformation(
@@ -195,9 +205,10 @@ internal sealed class IdempotencySqlServerStore(
                 cachedResponse.StatusCode,
                 sanitizedKey);
         }
-        catch (DbUpdateException ex) when ((ex.InnerException?.Message??ex.Message).Contains("UNIQUE",StringComparison.OrdinalIgnoreCase))
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // Handle race condition: another concurrent request already inserted this key.
+            // Unreachable in the common path now, kept as a defensive guard around the fallback Add() above.
             logger.LogInformation(
                 "Idempotency key already processed by concurrent request: {Key}. Continuing without duplicate insert.",
                 sanitizedKey);
