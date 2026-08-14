@@ -1,4 +1,4 @@
-using PuppeteerSharp;
+using DKNet.Svc.PdfGenerators;
 
 namespace Svc.PdfGenerators.Tests;
 
@@ -11,13 +11,23 @@ public class PdfGeneratorChromeCollection : ICollectionFixture<ChromeDownloadFix
 
 /// <summary>
 ///     Fixture that downloads Chrome (via PuppeteerSharp) once for all PDF generation tests.
-///     By sharing this fixture across a collection, the download happens exactly once.
+///     The download goes through <see cref="PdfGenerator" />'s serialized <c>EnsureChromeAsync</c> path
+///     (DRK-363), so it shares the process-wide lock with conversions running in parallel collections
+///     instead of racing them on the download file.
 /// </summary>
 public class ChromeDownloadFixture : IAsyncLifetime
 {
     public async Task InitializeAsync()
     {
-        await new BrowserFetcher().DownloadAsync();
+        var warmupPdfPath = Path.Combine(Path.GetTempPath(), $"chrome-warmup-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            await new PdfGenerator().ConvertHtmlAsync("<h1>warmup</h1>", warmupPdfPath);
+        }
+        finally
+        {
+            if (File.Exists(warmupPdfPath)) File.Delete(warmupPdfPath);
+        }
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
