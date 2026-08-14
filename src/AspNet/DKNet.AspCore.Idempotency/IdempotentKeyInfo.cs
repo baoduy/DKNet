@@ -29,13 +29,16 @@ public sealed record IdempotentKeyInfo
     ///     Gets or initializes the endpoint route template or path from the HTTP request.
     /// </summary>
     /// <value>
-    ///     The route template from endpoint metadata (e.g., "/api/orders/{id}"), or the actual
-    ///     request path if route metadata is unavailable. This value is required and must not be null.
+    ///     The route template from endpoint metadata (e.g., "/API/ORDERS/{ID}"), or the actual
+    ///     request path if route metadata is unavailable. This value is required, must not be null,
+    ///     and is normalized to upper-invariant casing so requests differing only in path casing
+    ///     resolve to the same idempotency scope.
     /// </value>
     /// <remarks>
-    ///     For minimal APIs, the route template is extracted from
-    ///     <see cref="Microsoft.AspNetCore.Components.RouteAttribute" /> metadata.
-    ///     If unavailable, falls back to <see cref="Microsoft.AspNetCore.Http.HttpRequest.Path" />.
+    ///     The route template is resolved, in order, from <see cref="Microsoft.AspNetCore.Routing.RouteEndpoint" />'s
+    ///     <c>RoutePattern.RawText</c>, then <see cref="Microsoft.AspNetCore.Http.Metadata.IRouteDiagnosticsMetadata" />'s
+    ///     <c>Route</c>, then falls back to <see cref="Microsoft.AspNetCore.Http.HttpRequest.Path" />. The resolved
+    ///     value is upper-invariant-cased before assignment.
     /// </remarks>
     public required string Endpoint { get; init; }
 

@@ -2,8 +2,9 @@ using System.Text;
 using System.Text.Json;
 using DKNet.AspCore.Idempotency.Store;
 using DKNet.Fw.Extensions;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -136,9 +137,10 @@ internal sealed class IdempotencyEndpointFilter(
     {
         var idempotencyKey = context.HttpContext.Request.Headers[_options.IdempotencyHeaderKey].FirstOrDefault();
         var endpoint = context.HttpContext.GetEndpoint();
-        var routeTemplate = endpoint?.Metadata.GetMetadata<RouteAttribute>()?.Template
-                            ?? context.HttpContext.Request.Path.Value
-                            ?? "/";
+        var routeTemplate = ((endpoint as RouteEndpoint)?.RoutePattern.RawText
+                             ?? endpoint?.Metadata.GetMetadata<IRouteDiagnosticsMetadata>()?.Route
+                             ?? context.HttpContext.Request.Path.Value
+                             ?? "/").ToUpperInvariant();
         var httpMethod = context.HttpContext.Request.Method.ToUpperInvariant();
         var scope = _options.KeyScopeResolver is not null
             ? (_options.KeyScopeResolver.Invoke(context.HttpContext) ?? string.Empty)
