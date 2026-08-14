@@ -14,6 +14,9 @@ name: Remote Unit Tests
 #   gh run view <run-id> --log-failed
 
 on:
+  # Runs on any branch push so Docker-gated tests (e.g. SQL Server Testcontainers) are verified on a
+  # GitHub x64 runner instead of a local machine (ARM PCs cannot run mssql/server).
+  push:
   workflow_dispatch:
     inputs:
       project:
