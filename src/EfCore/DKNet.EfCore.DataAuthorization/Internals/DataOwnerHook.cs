@@ -1,3 +1,4 @@
+using System.Reflection;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
@@ -77,12 +78,61 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     {
         if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
         {
-            au.SetPropertyValue(nameof(au.CreatedBy), ownerKey);
-            au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.UtcNow);
+            SetOwnedProperty(au, nameof(au.CreatedBy), ownerKey);
+            SetOwnedProperty(au, nameof(au.CreatedOn), DateTimeOffset.UtcNow);
         }
 
         if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-            own.SetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
+            SetOwnedProperty(own, nameof(IOwnedBy.OwnedBy), ownerKey);
+    }
+
+    /// <summary>
+    ///     Sets a property's value on <paramref name="entity" />, resolving the writable accessor by walking up
+    ///     the type hierarchy (see <see cref="FindWritableProperty" />) instead of the single-type lookup that
+    ///     <see cref="PropertyExtensions.GetProperty{T}" /> performs.
+    /// </summary>
+    /// <param name="entity">The object to set the property on.</param>
+    /// <param name="propertyName">The name of the property to set.</param>
+    /// <param name="value">The value to set.</param>
+    /// <exception cref="ArgumentException">
+    ///     No writable property named <paramref name="propertyName" /> exists anywhere in <paramref name="entity" />'s
+    ///     type hierarchy.
+    /// </exception>
+    private static void SetOwnedProperty(object entity, string propertyName, object value)
+    {
+        var property = FindWritableProperty(entity.GetType(), propertyName) ??
+                       throw new ArgumentException(
+                           $"Property '{propertyName}' not found on type '{entity.GetType().FullName}'.",
+                           nameof(propertyName));
+
+        entity.SetPropertyValue(property, value);
+    }
+
+    /// <summary>
+    ///     Finds a property by name, walking up from <paramref name="type" /> through its base types.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="Type.GetProperty(string, BindingFlags)" /> on a derived type only resolves non-public
+    ///     accessors declared directly on that type — it does not see a non-public setter declared on a base
+    ///     class, exactly the "private setter + intention-revealing method" pattern this codebase favors
+    ///     (e.g. <c>AuditedEntity&lt;TKey&gt;</c>). Searching each type in the hierarchy with
+    ///     <see cref="BindingFlags.DeclaredOnly" /> finds it.
+    /// </remarks>
+    /// <param name="type">The runtime type to start searching from.</param>
+    /// <param name="propertyName">The name of the property to find.</param>
+    /// <returns>The writable <see cref="PropertyInfo" />, or <c>null</c> if none exists in the hierarchy.</returns>
+    private static PropertyInfo? FindWritableProperty(Type type, string propertyName)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            var property = current.GetProperty(propertyName,
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            if (property?.GetSetMethod(true) is not null) return property;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -104,7 +154,8 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
         // Not accessible (or blank) — revert to the original owner so the row never moves to another
         // tenant and never becomes orphaned.
-        own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), original ?? string.Empty);
+        var property = FindWritableProperty(own.GetType(), nameof(IOwnedBy.OwnedBy));
+        if (property is not null) own.TrySetPropertyValue(property, original ?? string.Empty);
     }
 
     #endregion
