@@ -35,3 +35,14 @@ internal class NonEmptyAccessibleKeysProvider : IDataOwnerProvider
 
     public string GetOwnershipKey() => "Steven";
 }
+
+/// <summary>
+///     A data owner provider with more than one accessible key, used to verify that reassigning
+///     <see cref="IOwnedBy.OwnedBy" /> to another key the caller can access is allowed to persist.
+/// </summary>
+internal class MultiKeyOwnerProvider : IDataOwnerProvider
+{
+    public ICollection<string> GetAccessibleKeys() => ["Steven", "Bob"];
+
+    public string GetOwnershipKey() => "Steven";
+}
