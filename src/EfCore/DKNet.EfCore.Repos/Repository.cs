@@ -58,7 +58,7 @@ public sealed class Repository<TEntity>
     /// <typeparam name="TModel">The model type to project to.</typeparam>
     /// <param name="filter">Predicate to filter entities.</param>
     /// <returns>An <see cref="IQueryable{TModel}" /> representing the projected query.</returns>
-    public new IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
+    public override IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
     {
         if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
