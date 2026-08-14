@@ -51,7 +51,14 @@ public interface IReadRepository<TEntity> where TEntity : class
     IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
 
     /// <summary>
+    ///     Get IQueryable of entity.
     /// </summary>
+    /// <remarks>
+    ///     Tracking behaviour depends on the concrete implementation:
+    ///     <c>ReadRepository&lt;TEntity&gt;.Query()</c> returns <c>AsNoTracking()</c> for read-only scenarios,
+    ///     while <c>Repository&lt;TEntity&gt;.Query()</c> returns a tracked queryable for read-then-update workflows.
+    ///     Consumers must not assume a single tracking mode from this interface alone.
+    /// </remarks>
     /// <returns></returns>
     IQueryable<TEntity> Query();
 

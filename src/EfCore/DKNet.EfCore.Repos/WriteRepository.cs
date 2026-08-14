@@ -16,7 +16,7 @@ namespace DKNet.EfCore.Repos;
 /// </summary>
 /// <typeparam name="TEntity">Entity CLR type.</typeparam>
 public class WriteRepository<TEntity>(DbContext dbContext, IServiceProvider? provider = null)
-    : IWriteRepository<TEntity>
+    : ReadRepository<TEntity>(dbContext), IWriteRepository<TEntity>
     where TEntity : class
 {
     #region Methods

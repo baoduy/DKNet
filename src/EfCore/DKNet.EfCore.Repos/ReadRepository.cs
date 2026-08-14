@@ -56,7 +56,7 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
     public IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter) => Query().Where(filter);
 
     /// <inheritdoc />
-    public IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
+    public virtual IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter)
         where TModel : class
     {
         if (_mapper is null) throw new InvalidOperationException("IMapper is not registered.");
