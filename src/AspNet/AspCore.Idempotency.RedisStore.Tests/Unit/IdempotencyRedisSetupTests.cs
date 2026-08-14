@@ -110,23 +110,21 @@ public sealed class IdempotencyRedisSetupTests
     }
 
     [Fact]
-    public void AddIdempotencyWithRedisStore_ConnectionStringQuickStart_ResolvingKeyStoreThrows()
+    public void AddIdempotencyWithRedisStore_ConnectionStringQuickStart_ResolvesKeyStore()
     {
         // Arrange - this is the README's own "Quick Start" call shape: a single
         // AddIdempotencyWithRedisStore(connectionString, config) call with nothing else registered (ILogger<>
-        // is stubbed here purely so the failure below isolates to the missing IConnectionMultiplexer).
+        // is stubbed here purely so the resolution below only exercises the DI graph, not logging setup).
         var services = new ServiceCollection();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         // Act
         services.AddIdempotencyWithRedisStore("localhost:6379", o => o.Expiration = TimeSpan.FromHours(24));
 
-        // Assert - IdempotencyRedisStore's constructor requires IConnectionMultiplexer, but the
-        // connection-string overload only registers IDistributedCache (AddStackExchangeRedisCache), never an
-        // IConnectionMultiplexer. Resolving the key store the README tells callers to configure this way throws.
+        // Assert - the connection-string overload now registers an IConnectionMultiplexer alongside
+        // IDistributedCache, so IdempotencyRedisStore's constructor dependency resolves without throwing.
         using var provider = services.BuildServiceProvider();
-        var ex = Should.Throw<InvalidOperationException>(() => provider.GetRequiredService<IIdempotencyKeyStore>());
-        ex.Message.ShouldContain(nameof(IConnectionMultiplexer));
+        provider.GetRequiredService<IIdempotencyKeyStore>().ShouldBeOfType<IdempotencyRedisStore>();
     }
 
     #endregion

@@ -19,7 +19,8 @@ public static class IdempotencyRedisSetup
 
     /// <summary>
     ///     Adds Redis-based idempotency key storage to the service collection.
-    ///     This registers the StackExchange.Redis cache infrastructure needed by <see cref="IdempotencyRedisStore" />.
+    ///     This registers the StackExchange.Redis cache infrastructure and an <see cref="IConnectionMultiplexer" />
+    ///     needed by <see cref="IdempotencyRedisStore" />.
     /// </summary>
     /// <param name="services">The service collection to register into.</param>
     /// <param name="connectionString">The Redis connection string.</param>
@@ -29,6 +30,7 @@ public static class IdempotencyRedisSetup
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
         return services;
     }
 
