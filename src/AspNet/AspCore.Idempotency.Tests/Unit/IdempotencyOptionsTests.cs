@@ -5,6 +5,7 @@
 
 using System.Text.Json;
 using DKNet.AspCore.Idempotency;
+using Microsoft.AspNetCore.Http;
 
 namespace AspCore.Idempotency.Tests.Unit;
 
@@ -135,6 +136,51 @@ public class IdempotencyOptionsTests
 
         // Assert
         conflictHandling.ShouldBe(IdempotentConflictHandling.ConflictResponse);
+    }
+
+    [Fact]
+    public void IdempotencyOptions_HasDefaultScopeValues()
+    {
+        // Arrange & Act
+        var options = new IdempotencyOptions();
+
+        // Assert
+        options.KeyScopeResolver.ShouldBeNull();
+        options.ScopeHmacSecret.ShouldBeNull();
+        options.IncludeClientIpInScope.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void IdempotencyOptions_CanSetKeyScopeResolver()
+    {
+        // Arrange
+        Func<HttpContext, string?> resolver = _ => "tenant:acme";
+
+        // Act
+        var options = new IdempotencyOptions { KeyScopeResolver = resolver };
+
+        // Assert
+        options.KeyScopeResolver.ShouldBe(resolver);
+    }
+
+    [Fact]
+    public void IdempotencyOptions_CanSetScopeHmacSecret()
+    {
+        // Arrange & Act
+        var options = new IdempotencyOptions { ScopeHmacSecret = "s3cret" };
+
+        // Assert
+        options.ScopeHmacSecret.ShouldBe("s3cret");
+    }
+
+    [Fact]
+    public void IdempotencyOptions_CanSetIncludeClientIpInScope()
+    {
+        // Arrange & Act
+        var options = new IdempotencyOptions { IncludeClientIpInScope = true };
+
+        // Assert
+        options.IncludeClientIpInScope.ShouldBeTrue();
     }
 
     #endregion

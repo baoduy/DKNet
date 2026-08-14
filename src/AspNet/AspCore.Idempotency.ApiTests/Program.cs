@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AspCore.Idempotency.ApiTests;
 using DKNet.AspCore.Idempotency;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +16,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddDistributedMemoryCache();
+builder.Services
+    .AddAuthentication(TestAuthHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, null);
 
 var app = builder.Build();
+
+app.UseAuthentication();
 
 // Sample POST endpoint that requires idempotency
 app.MapPost("/api/items", async (CreateItemRequest request) =>
