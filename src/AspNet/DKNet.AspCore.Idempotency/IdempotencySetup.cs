@@ -123,6 +123,11 @@ public static class IdempotencySetup
                 "CachePrefix cannot be empty or whitespace.",
                 nameof(options.CachePrefix));
 
+        if (options.ScopeHmacSecret is not null && string.IsNullOrWhiteSpace(options.ScopeHmacSecret))
+            throw new ArgumentException(
+                "ScopeHmacSecret cannot be empty or whitespace.",
+                nameof(options.ScopeHmacSecret));
+
         if (options.Expiration <= TimeSpan.Zero)
             throw new ArgumentException(
                 $"Expiration must be positive. Current value: {options.Expiration}",
