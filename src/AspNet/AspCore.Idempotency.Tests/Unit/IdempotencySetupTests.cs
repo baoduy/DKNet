@@ -141,5 +141,33 @@ public class IdempotencySetupTests
         exception.ShouldBeNull();
     }
 
+    [Fact]
+    public void AddIdempotentKey_WithEmptyScopeHmacSecret_ThrowsArgumentException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        var exception = Should.Throw<ArgumentException>(() =>
+            services.AddIdempotentKey(c => c.ScopeHmacSecret = string.Empty));
+
+        // Assert
+        exception.ParamName.ShouldBe("ScopeHmacSecret");
+    }
+
+    [Fact]
+    public void AddIdempotentKey_WithWhitespaceScopeHmacSecret_ThrowsArgumentException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        var exception = Should.Throw<ArgumentException>(() =>
+            services.AddIdempotentKey(c => c.ScopeHmacSecret = "   "));
+
+        // Assert
+        exception.ParamName.ShouldBe("ScopeHmacSecret");
+    }
+
     #endregion
 }

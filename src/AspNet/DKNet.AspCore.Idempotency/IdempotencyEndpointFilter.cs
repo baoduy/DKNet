@@ -140,12 +140,16 @@ internal sealed class IdempotencyEndpointFilter(
                             ?? context.HttpContext.Request.Path.Value
                             ?? "/";
         var httpMethod = context.HttpContext.Request.Method.ToUpperInvariant();
+        var scope = _options.KeyScopeResolver is not null
+            ? (_options.KeyScopeResolver.Invoke(context.HttpContext) ?? string.Empty)
+            : IdempotencyKeyScopeResolver.Resolve(context.HttpContext, _options);
 
         return new IdempotentKeyInfo
         {
             IdempotentKey = idempotencyKey,
             Endpoint = routeTemplate,
-            Method = httpMethod
+            Method = httpMethod,
+            Scope = scope
         };
     }
 
