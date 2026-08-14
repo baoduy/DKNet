@@ -41,9 +41,14 @@ public static class IdempotencySetup
     /// <remarks>
     ///     This method must be called before adding endpoint filters that use <see cref="RequiredIdempotentKey" />.
     ///     It registers:
-    ///     - <see cref="IdempotencyDistributedCacheStore" /> as the <see cref="IIdempotencyKeyStore" />
-    ///     implementation
+    ///     - <typeparamref name="TSoreImplement" /> as the <see cref="IIdempotencyKeyStore" /> implementation
     ///     - Configuration options as a singleton
+    ///     <para>
+    ///         For concurrency-safe storage prefer an atomic store implementation such as
+    ///         <c>IdempotencySqlServerStore</c>, <c>IdempotencyPostgresStore</c>, or <c>IdempotencyRedisStore</c>.
+    ///         The distributed-cache store is convenient for single-instance or development scenarios but does not
+    ///         eliminate the check-then-act race window.
+    ///     </para>
     /// </remarks>
     public static IServiceCollection AddIdempotentKey<TSoreImplement>(this IServiceCollection services,
         Action<IdempotencyOptions>? config = null) where TSoreImplement : class, IIdempotencyKeyStore
@@ -79,7 +84,18 @@ public static class IdempotencySetup
     ///     - <see cref="IdempotencyDistributedCacheStore" /> as the <see cref="IIdempotencyKeyStore" />
     ///     implementation
     ///     - Configuration options as a singleton
+    ///     <para>
+    ///         The default <see cref="IdempotencyDistributedCacheStore" /> narrows but does not eliminate the
+    ///         check-then-act race window because <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache" /> does not provide an atomic
+    ///         compare-and-set primitive. For concurrent environments use an atomic store such as
+    ///         <c>AddIdempotentKey&lt;IdempotencySqlServerStore&gt;()</c>,
+    ///         <c>AddIdempotentKey&lt;IdempotencyPostgresStore&gt;()</c>, or
+    ///         <c>AddIdempotentKey&lt;IdempotencyRedisStore&gt;()</c>.
+    ///     </para>
     /// </remarks>
+    [Obsolete("The default IdempotencyDistributedCacheStore is not atomic under concurrency. " +
+              "Use AddIdempotentKey<IdempotencySqlServerStore>(), AddIdempotentKey<IdempotencyPostgresStore>(), " +
+              "or AddIdempotentKey<IdempotencyRedisStore>() instead.")]
     public static IServiceCollection AddIdempotentKey(this IServiceCollection services,
         Action<IdempotencyOptions>? config = null) =>
         services.AddIdempotentKey<IdempotencyDistributedCacheStore>(config);

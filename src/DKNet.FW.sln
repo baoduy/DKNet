@@ -153,6 +153,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Idempotency.NpgsqlS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Idempotency.NpgsqlStore", "AspNet\DKNet.AspCore.Idempotency.NpgsqlStore\DKNet.AspCore.Idempotency.NpgsqlStore.csproj", "{18C84C4C-E482-4E26-8C21-51791E5D636F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Idempotency.RedisStore", "AspNet\DKNet.AspCore.Idempotency.RedisStore\DKNet.AspCore.Idempotency.RedisStore.csproj", "{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -799,6 +801,18 @@ Global
 		{18C84C4C-E482-4E26-8C21-51791E5D636F}.Release|x64.Build.0 = Release|Any CPU
 		{18C84C4C-E482-4E26-8C21-51791E5D636F}.Release|x86.ActiveCfg = Release|Any CPU
 		{18C84C4C-E482-4E26-8C21-51791E5D636F}.Release|x86.Build.0 = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|x64.Build.0 = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Debug|x86.Build.0 = Debug|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|x64.ActiveCfg = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|x64.Build.0 = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|x86.ActiveCfg = Release|Any CPU
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -860,5 +874,6 @@ Global
 		{08DA565A-0831-4FC3-BD9F-10F7C9275E05} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{FE716F53-A5B0-4C88-BEE6-8D43DBA746D7} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{18C84C4C-E482-4E26-8C21-51791E5D636F} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
+		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 	EndGlobalSection
 EndGlobal
