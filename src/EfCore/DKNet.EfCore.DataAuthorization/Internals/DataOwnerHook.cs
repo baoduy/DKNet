@@ -36,31 +36,75 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    ///     Updates the ownership information for newly added entities.
+    ///     Updates the ownership information for newly added entities and guards existing ownership on modified
+    ///     entities against silent reassignment.
     /// </summary>
     /// <param name="context">The snapshot context containing entity changes.</param>
     private void UpdatingOwner(SnapshotContext context)
     {
+        var autoDetectChangesEnabled = context.DbContext.ChangeTracker.AutoDetectChangesEnabled;
         context.DbContext.ChangeTracker.AutoDetectChangesEnabled = true;
 
-        var dataKeyEntities = context.Entities
-            .Where(e => e.OriginalState == EntityState.Added)
-            .Select(e => e.Entity);
-
-        var ownerKey = dataOwnerProvider.GetOwnershipKey();
-        if (string.IsNullOrEmpty(ownerKey)) return;
-
-        foreach (var entity in dataKeyEntities)
+        try
         {
-            if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
-            {
-                au.SetPropertyValue(nameof(au.CreatedBy), ownerKey);
-                au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.UtcNow);
-            }
+            var ownerKey = dataOwnerProvider.GetOwnershipKey();
+            var accessibleKeys = dataOwnerProvider.GetAccessibleKeys();
 
-            if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-                own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
+            foreach (var entry in context.Entities)
+                switch (entry.OriginalState)
+                {
+                    case EntityState.Added when !string.IsNullOrEmpty(ownerKey):
+                        StampAddedEntity(entry.Entity, ownerKey);
+                        break;
+
+                    case EntityState.Modified:
+                        GuardOwnedByReassignment(entry, accessibleKeys);
+                        break;
+                }
         }
+        finally
+        {
+            context.DbContext.ChangeTracker.AutoDetectChangesEnabled = autoDetectChangesEnabled;
+        }
+    }
+
+    /// <summary>
+    ///     Stamps audit and ownership properties on a newly added entity.
+    /// </summary>
+    /// <param name="entity">The newly added entity.</param>
+    /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
+    private static void StampAddedEntity(object entity, string ownerKey)
+    {
+        if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
+        {
+            au.SetPropertyValue(nameof(au.CreatedBy), ownerKey);
+            au.SetPropertyValue(nameof(au.CreatedOn), DateTimeOffset.UtcNow);
+        }
+
+        if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
+            own.SetPropertyValue(nameof(IOwnedBy.OwnedBy), ownerKey);
+    }
+
+    /// <summary>
+    ///     Reverts a modified entity's <see cref="IOwnedBy.OwnedBy" /> to its original value unless the new value
+    ///     is one of the current context's accessible keys, preventing cross-tenant transfer and orphaning.
+    /// </summary>
+    /// <param name="entry">The snapshot entry for the modified entity.</param>
+    /// <param name="accessibleKeys">The data keys the current context may reassign ownership to.</param>
+    private static void GuardOwnedByReassignment(SnapshotEntityEntry entry, ICollection<string> accessibleKeys)
+    {
+        if (entry.Entity is not IOwnedBy own) return;
+        if (entry.Entry.Metadata.FindProperty(nameof(IOwnedBy.OwnedBy)) is null) return;
+
+        var original = entry.Entry.Property(nameof(IOwnedBy.OwnedBy)).OriginalValue as string;
+        var current = own.OwnedBy;
+
+        if (string.Equals(current, original, StringComparison.Ordinal)) return;
+        if (!string.IsNullOrEmpty(current) && accessibleKeys.Contains(current)) return;
+
+        // Not accessible (or blank) — revert to the original owner so the row never moves to another
+        // tenant and never becomes orphaned.
+        own.TrySetPropertyValue(nameof(IOwnedBy.OwnedBy), original ?? string.Empty);
     }
 
     #endregion
