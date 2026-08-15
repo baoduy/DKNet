@@ -1,3 +1,6 @@
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.EfCore.Events.Internals;
+using DKNet.EfCore.Extensions.Snapshots;
 using Microsoft.Extensions.Logging;
 
 namespace EfCore.Events.Tests.EventHookPublisherFailureTests;
@@ -94,6 +97,30 @@ public class EventHookPublisherFailureTests(EventHookPublisherFailureFixture fix
         var contextId = state.First(k => k.Key == "ContextId").Value?.ToString();
         contextId.ShouldNotBeNullOrEmpty();
         contextId.ShouldBe(db.ContextId.ToString());
+    }
+
+    [Fact]
+    public async Task AfterSaveAsync_WithNullLoggerAndThrowingPublisher_DoesNotThrow()
+    {
+        // Arrange
+        RecordingEventPublisher.Published.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+
+        var root = new Root("Null Logger Root", "TestOwner");
+        root.AddEvent(new EntityAddedEvent { Id = root.Id, Name = root.Name });
+        db.Set<Root>().Add(root);
+
+        using var snapshot = new SnapshotContext(db);
+        snapshot.Initialize();
+
+        var hook = new EventHook(
+            new IEventPublisher[] { new FailingEventPublisher(), new RecordingEventPublisher() },
+            [],
+            null);
+
+        // Act & Assert - failure swallowed even when no logger is wired
+        await hook.AfterSaveAsync(snapshot);
+        RecordingEventPublisher.Published.Count.ShouldBe(1);
     }
 
     #endregion
