@@ -28,7 +28,7 @@ internal sealed class EventHook(
             logger.LogInformation("{Name}:AfterSaveAsync for {ContextId}", nameof(EventHook),
                 context.DbContext.ContextId);
 
-        var eventContext = new EventContext(context, _mapper!);
+        var eventContext = new EventContext(context, _mapper);
 
         foreach (var publisher in eventPublishers)
         {
