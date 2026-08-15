@@ -26,6 +26,11 @@ public interface IEventEntity
     ///     This method is useful when the event instance will be created from the entity state
     ///     at the time of event processing.
     /// </remarks>
+    /// <exception cref="System.Exception">
+    ///     Thrown as a <c>DKNet.EfCore.Events.EventException</c> at dispatch time when no <c>IMapper</c> is
+    ///     registered. Unlike <see cref="AddEvent(object)" />, this overload maps the entity onto
+    ///     <typeparamref name="TEvent" /> and therefore requires a mapper.
+    /// </exception>
     void AddEvent<TEvent>()
         where TEvent : class;
 
