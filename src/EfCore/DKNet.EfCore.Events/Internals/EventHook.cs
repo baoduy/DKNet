@@ -31,7 +31,18 @@ internal sealed class EventHook(
         var eventContext = new EventContext(context, _mapper!);
 
         foreach (var publisher in eventPublishers)
-            await publisher.PublishAsync(eventContext.GetEvents(), cancellationToken);
+        {
+            try
+            {
+                await publisher.PublishAsync(eventContext.GetEvents(), cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "{Name}: publisher {Publisher} failed for {ContextId}",
+                    nameof(EventHook), publisher.GetType().Name, context.DbContext.ContextId);
+            }
+        }
+
         eventContext.ClearEvents();
     }
 
