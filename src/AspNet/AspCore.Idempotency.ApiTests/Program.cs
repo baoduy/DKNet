@@ -46,6 +46,13 @@ app.MapPost("/api/items", async (CreateItemRequest request) =>
 app.MapGet("/api/health", () => TypedResults.Ok(new { status = "healthy" }))
     .WithName("Health");
 
+// Endpoint whose result status code falls outside the configured caching range - exercises the
+// "not configured for caching" path in the idempotency filter.
+app.MapPost("/api/rejects", () => TypedResults.NotFound())
+    .WithName("Reject")
+    .WithDescription("Always returns 404. Requires idempotency key but the response is never cached.")
+    .RequiredIdempotentKey();
+
 await app.RunAsync();
 
 namespace AspCore.Idempotency.ApiTests
