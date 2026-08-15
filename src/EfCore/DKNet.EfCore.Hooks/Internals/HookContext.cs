@@ -6,18 +6,11 @@ namespace DKNet.EfCore.Hooks.Internals;
 
 internal sealed class HookContext : IDisposable, IAsyncDisposable
 {
-    #region Fields
-
-    private readonly IServiceScope _scope;
-
-    #endregion
-
     #region Constructors
 
     public HookContext(IServiceProvider provider, DbContext db)
     {
-        _scope = provider.CreateScope();
-        var factory = _scope.ServiceProvider.GetRequiredService<HookFactory>();
+        var factory = provider.GetRequiredService<HookFactory>();
         var (before, afters) = factory.LoadHooks(db);
         BeforeSaveHooks = [..before];
         AfterSaveHooks = [..afters];
@@ -38,19 +31,9 @@ internal sealed class HookContext : IDisposable, IAsyncDisposable
 
     #region Methods
 
-    public void Dispose()
-    {
-        _scope.Dispose();
-        Snapshot.Dispose();
-    }
+    public void Dispose() => Snapshot.Dispose();
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_scope is IAsyncDisposable asyncDisposable)
-            await asyncDisposable.DisposeAsync();
-        else _scope.Dispose();
-        await Snapshot.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await Snapshot.DisposeAsync();
 
     #endregion
 }
