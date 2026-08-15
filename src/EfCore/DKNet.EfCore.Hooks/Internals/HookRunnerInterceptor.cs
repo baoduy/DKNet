@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace DKNet.EfCore.Hooks.Internals;
@@ -23,9 +25,8 @@ public enum RunningTypes
 /// <summary>
 ///     Runs hooks before and after save operations.
 /// </summary>
-/// <param name="provider">the IServiceProvider of HookRunner</param>
 /// <param name="logger">the logger of HookRunner</param>
-internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<HookRunnerInterceptor> logger)
+internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logger)
     : SaveChangesInterceptor, IAsyncDisposable, IDisposable
 {
     #region Fields
@@ -53,7 +54,22 @@ internal sealed class HookRunnerInterceptor(IServiceProvider provider, ILogger<H
     private HookContext GetContext(DbContextEventData eventData) =>
         _cache.GetOrAdd(
             eventData.Context!.ContextId.InstanceId,
-            _ => new HookContext(provider, eventData.Context!));
+            _ => new HookContext(GetApplicationServiceProvider(eventData.Context!), eventData.Context!));
+
+    /// <summary>
+    ///     Resolves the DbContext's own application service provider, so hooks are loaded from the same DI
+    ///     scope as the DbContext itself instead of a detached scope off the root provider.
+    /// </summary>
+    /// <param name="db">the DbContext to resolve the application service provider from</param>
+    /// <exception cref="InvalidOperationException">
+    ///     thrown when <paramref name="db" /> was not registered via <c>AddDbContextWithHook</c>/<c>AddDbContext</c>,
+    ///     so it has no application service provider to resolve hooks from.
+    /// </exception>
+    private static IServiceProvider GetApplicationServiceProvider(DbContext db) =>
+        db.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider
+        ?? throw new InvalidOperationException(
+            $"The DbContext '{db.GetType().Name}' has no application service provider. " +
+            "It must be registered via AddDbContextWithHook or AddDbContext.");
 
     private async Task RemoveContext(DbContextEventData eventData)
     {
