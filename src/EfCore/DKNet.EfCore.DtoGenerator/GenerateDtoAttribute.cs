@@ -59,10 +59,17 @@ internal sealed class GenerateDtoAttribute : Attribute
 
     /// <summary>
     /// Gets or sets a value indicating whether to automatically ignore complex types during DTO generation.
-    /// When set to true, properties that link to other entities (classes without the Owned attribute)
-    /// will be automatically excluded, including both single entity properties and collection properties.
+    /// When set to true (or left unset), properties that link to other entities (classes without the Owned
+    /// attribute) are automatically excluded, including both single entity properties and collection properties.
+    /// Set to false to include navigation properties for this DTO.
     /// </summary>
-    public bool IgnoreComplexType { get; set; }
+    /// <remarks>
+    /// Defaults to <see langword="null"/> (not specified on the attribute). Precedence when resolving the
+    /// effective value: this per-DTO value, if set, wins; otherwise the project-wide MSBuild property
+    /// <c>DtoGeneratorIgnoreComplexType</c>, if set, wins; otherwise the built-in default of <see langword="true"/>
+    /// applies (navigation properties excluded).
+    /// </remarks>
+    public bool? IgnoreComplexType { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GenerateDtoAttribute"/> class.

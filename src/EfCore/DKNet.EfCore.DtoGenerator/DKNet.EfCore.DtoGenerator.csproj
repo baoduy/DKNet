@@ -30,6 +30,9 @@
         <!-- Include the attribute file in consuming projects -->
         <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
 
+        <!-- Pack the MSBuild props so CompilerVisibleProperty declarations reach consuming projects -->
+        <None Include="DKNet.EfCore.DtoGenerator.props" Pack="true" PackagePath="buildTransitive/"/>
+
         <!-- Standard package files -->
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>

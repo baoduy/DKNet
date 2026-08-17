@@ -163,16 +163,18 @@ ignored, and a warning will be generated if both are provided.
 
 ### Ignoring Complex Types (Entity Navigation Properties)
 
-Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This
-is useful for creating simple DTOs that only contain primitive and value type properties:
+Navigation properties that link to other entities are excluded from generated DTOs **by default** — `IgnoreComplexType`
+is implicitly `true` unless overridden. This gives you a flat DTO shape (primitive and value type properties only)
+without repeating anything on every `[GenerateDto]` declaration:
 
 ```csharp
 // Assuming Customer has Orders (List<Order>) and PrimaryAddress (Address) navigation properties
-[GenerateDto(typeof(Customer), IgnoreComplexType = true)]
+[GenerateDto(typeof(Customer))]
 public partial record CustomerSimpleDto;
+// Orders and PrimaryAddress are excluded automatically — no IgnoreComplexType argument needed
 ```
 
-When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
+By default, the generator excludes:
 
 - Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
 - Collection properties of entities (e.g., `public List<Order> Orders { get; set; }`)
@@ -180,13 +182,33 @@ When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
 **Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered
 part of the entity, not navigation properties.
 
-You can combine `IgnoreComplexType` with `Exclude` to exclude additional properties:
+To include navigation properties for a specific DTO, set `IgnoreComplexType = false`:
 
 ```csharp
-[GenerateDto(typeof(Customer), IgnoreComplexType = true, Exclude = new[] { "Email" })]
-public partial record CustomerBasicDto;
-// Generated DTO will exclude Orders, PrimaryAddress (complex types) AND Email
+[GenerateDto(typeof(Customer), IgnoreComplexType = false)]
+public partial record CustomerWithNavigationsDto;
+// Orders and PrimaryAddress are included
 ```
+
+You can combine `IgnoreComplexType = false` with `Exclude` to still exclude specific properties:
+
+```csharp
+[GenerateDto(typeof(Customer), IgnoreComplexType = false, Exclude = new[] { "Email" })]
+public partial record CustomerBasicDto;
+// Generated DTO will include Orders, PrimaryAddress but exclude Email
+```
+
+To change the default project-wide instead of per-DTO, set the `DtoGeneratorIgnoreComplexType` MSBuild property in
+your `.csproj` (consumers get this via the package's `buildTransitive` props):
+
+```xml
+<PropertyGroup>
+  <DtoGeneratorIgnoreComplexType>false</DtoGeneratorIgnoreComplexType>
+</PropertyGroup>
+```
+
+Precedence: a per-DTO `IgnoreComplexType` argument always wins over the project-wide property, which in turn wins
+over the built-in default of `true`.
 
 However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation
 properties if needed:
@@ -335,9 +357,9 @@ var balances = await dbContext.MerchantBalances
 ## Additional Notes
 
 - **Navigation Properties**:
-    - By default, navigation and collection properties are included as shallow copies in DTOs.
-    - Use `IgnoreComplexType = true` to automatically exclude all entity navigation properties (both single and
-      collection).
+    - By default, navigation and collection properties are excluded (`IgnoreComplexType` is implicitly `true`).
+    - Use `IgnoreComplexType = false` per DTO, or the `DtoGeneratorIgnoreComplexType` MSBuild property project-wide,
+      to include entity navigation properties (both single and collection).
     - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned
       types, not navigations.
     - Customize via Mapster configuration or override in partial DTO for more control.
