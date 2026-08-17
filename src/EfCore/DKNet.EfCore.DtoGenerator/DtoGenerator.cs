@@ -80,17 +80,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(compilationWithOptions, static (spc, pair) =>
         {
             var ((compilation, targets), optionsProvider) = pair;
-            
+
             // Extract global exclusions from analyzer config
             var globalExclusions = ExtractGlobalExclusionsFromConfig(optionsProvider);
-            
+
+            // Extract project-wide IgnoreComplexType default from analyzer config
+            var projectWideIgnoreComplexType = ExtractProjectWideIgnoreComplexTypeFromConfig(optionsProvider);
+
             foreach (var target in targets)
             {
                 if (target is null) continue;
 
                 try
                 {
-                    GenerateDtoSource(spc, compilation, target, globalExclusions);
+                    GenerateDtoSource(spc, compilation, target, globalExclusions, projectWideIgnoreComplexType);
                 }
                 catch (Exception ex)
                 {
@@ -127,6 +130,27 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
         
         return globalExclusions;
+    }
+
+    /// <summary>
+    /// Extracts the project-wide IgnoreComplexType default from analyzer configuration options.
+    /// </summary>
+    /// <param name="optionsProvider">The analyzer config options provider.</param>
+    /// <returns>
+    /// The parsed bool value of the <c>DtoGeneratorIgnoreComplexType</c> MSBuild property if it is set to a
+    /// parseable bool; otherwise <see langword="null"/> (property absent, blank, or unparseable).
+    /// </returns>
+    private static bool? ExtractProjectWideIgnoreComplexTypeFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
+    {
+        var globalOptions = optionsProvider.GlobalOptions;
+        if (globalOptions.TryGetValue("build_property.DtoGeneratorIgnoreComplexType", out var value) &&
+            !string.IsNullOrWhiteSpace(value) &&
+            bool.TryParse(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
     }
 
     #endregion
@@ -357,11 +381,15 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="ctx">The generator syntax context.</param>
     /// <param name="attribute">The attribute syntax.</param>
-    /// <returns>True if IgnoreComplexType is set to true, false otherwise.</returns>
+    /// <returns>
+    /// The constant bool value if IgnoreComplexType is explicitly set to a bool constant; otherwise
+    /// <see langword="null"/> (argument absent, or expression is not a constant bool) to signal "use
+    /// project-wide/default resolution".
+    /// </returns>
     /// <example>
     /// // [GenerateDto(typeof(User), IgnoreComplexType = true)]
     /// </example>
-    private static bool ExtractIgnoreComplexTypeFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
+    private static bool? ExtractIgnoreComplexTypeFromAttribute(GeneratorSyntaxContext ctx, AttributeSyntax attribute)
     {
         foreach (var arg in attribute.ArgumentList!.Arguments.Skip(1))
         {
@@ -379,7 +407,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
             }
         }
 
-        return false;
+        return null;
     }
 
     /// <summary>
@@ -461,7 +489,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="compilation">The Roslyn compilation.</param>
     /// <param name="target">The DTO generation target.</param>
     /// <param name="globalExclusions">The set of globally excluded property names.</param>
-    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target, HashSet<string> globalExclusions)
+    /// <param name="projectWideIgnoreComplexType">
+    /// The project-wide <c>DtoGeneratorIgnoreComplexType</c> MSBuild property value, or <see langword="null"/> if unset.
+    /// </param>
+    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target, HashSet<string> globalExclusions, bool? projectWideIgnoreComplexType)
     {
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
@@ -516,7 +547,10 @@ public sealed class DtoGenerator : IIncrementalGenerator
                 Diagnostic.Create(diagnostic, Location.None, target.DtoSymbol.Name, globalExclusions.Count));
         }
 
-        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions, target.IgnoreComplexType, compilation);
+        // Effective IgnoreComplexType: per-DTO value wins, then project-wide, then built-in default true.
+        var effectiveIgnoreComplexType = target.IgnoreComplexType ?? projectWideIgnoreComplexType ?? true;
+
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions, effectiveIgnoreComplexType, compilation);
         
         // Additional logging for property filtering
         if (includedProperties.Count < entityProperties.Count)
@@ -1021,9 +1055,30 @@ public sealed class DtoGenerator : IIncrementalGenerator
             }
         }
 
+        // Exclude .NET framework/BCL types (e.g. Uri, Version) - they are scalars, not EF navigation targets
+        if (IsFrameworkType(typeSymbol))
+            return false;
+
         // If it's a class (but not a record) and not owned, it's a complex navigation type
         // Records are excluded because they're typically used as DTOs/value objects, not entities
         return typeSymbol.TypeKind == TypeKind.Class && !typeSymbol.IsRecord;
+    }
+
+    /// <summary>
+    /// Determines if a named type belongs to the .NET framework/BCL (System.* or Microsoft.* namespaces)
+    /// rather than the consumer's own code. Framework types (e.g. Uri, Version) are scalars, never EF navigation targets.
+    /// </summary>
+    /// <param name="type">The named type symbol.</param>
+    /// <returns>True if the type's containing namespace is or starts with "System" or "Microsoft".</returns>
+    private static bool IsFrameworkType(INamedTypeSymbol type)
+    {
+        var ns = type.ContainingNamespace;
+        if (ns is null || ns.IsGlobalNamespace)
+            return false;
+
+        var namespaceName = ns.ToDisplayString();
+        return namespaceName == "System" || namespaceName.StartsWith("System.", StringComparison.Ordinal) ||
+               namespaceName == "Microsoft" || namespaceName.StartsWith("Microsoft.", StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -1484,7 +1539,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         public INamedTypeSymbol EntitySymbol { get; set; } = null!;
         public HashSet<string> ExcludedProperties { get; set; } = new();
         public HashSet<string> IncludedProperties { get; set; } = new();
-        public bool IgnoreComplexType { get; set; }
+        public bool? IgnoreComplexType { get; set; }
 
         // Use string-based comparison for stability across compilations
         // SymbolEqualityComparer can give inconsistent results with incremental compilation

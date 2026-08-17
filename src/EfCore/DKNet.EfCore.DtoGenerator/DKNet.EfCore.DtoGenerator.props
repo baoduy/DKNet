@@ -1,0 +1,8 @@
+<Project>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="DtoGeneratorExclusions" />
+        <CompilerVisibleProperty Include="DtoGeneratorIgnoreComplexType" />
+    </ItemGroup>
+
+</Project>

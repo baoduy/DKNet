@@ -59,6 +59,19 @@ public class GenerateDtoAttributeTests
     }
 
     [Fact]
+    public void IgnoreComplexType_CanBeSetToFalse()
+    {
+        // Arrange
+        var attribute = new GenerateDtoAttribute(typeof(TestEntity));
+
+        // Act
+        attribute.IgnoreComplexType = false;
+
+        // Assert
+        attribute.IgnoreComplexType.ShouldBeFalse();
+    }
+
+    [Fact]
     public void IgnoreComplexType_DefaultsToFalse()
     {
         // Arrange
