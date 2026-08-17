@@ -1,4 +1,5 @@
 using System.Reflection;
+using EfCore.DtoGenerator.Tests.ProjectWide.Features;
 using Shouldly;
 
 namespace EfCore.DtoGenerator.Tests.ProjectWide;
@@ -25,8 +26,8 @@ public class ProjectWideIgnoreComplexTypeTests
     [Fact]
     public void CustomerExplicitIgnoreDto_OverridesProjectWideFlag_AndExcludesNavigationProperties()
     {
-        FindProperty<Features.CustomerExplicitIgnoreDto>(nameof(CustomerExplicitIgnoreDto.Orders)).ShouldBeNull();
-        FindProperty<Features.CustomerExplicitIgnoreDto>(nameof(CustomerExplicitIgnoreDto.PrimaryAddress)).ShouldBeNull();
+        FindProperty<Features.CustomerExplicitIgnoreDto>("Orders").ShouldBeNull();
+        FindProperty<Features.CustomerExplicitIgnoreDto>("PrimaryAddress").ShouldBeNull();
         FindProperty<Features.CustomerExplicitIgnoreDto>(nameof(CustomerExplicitIgnoreDto.Email)).ShouldNotBeNull();
         FindProperty<Features.CustomerExplicitIgnoreDto>(nameof(CustomerExplicitIgnoreDto.Name)).ShouldNotBeNull();
     }
