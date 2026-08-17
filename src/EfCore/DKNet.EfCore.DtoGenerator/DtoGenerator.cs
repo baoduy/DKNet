@@ -1055,9 +1055,30 @@ public sealed class DtoGenerator : IIncrementalGenerator
             }
         }
 
+        // Exclude .NET framework/BCL types (e.g. Uri, Version) - they are scalars, not EF navigation targets
+        if (IsFrameworkType(typeSymbol))
+            return false;
+
         // If it's a class (but not a record) and not owned, it's a complex navigation type
         // Records are excluded because they're typically used as DTOs/value objects, not entities
         return typeSymbol.TypeKind == TypeKind.Class && !typeSymbol.IsRecord;
+    }
+
+    /// <summary>
+    /// Determines if a named type belongs to the .NET framework/BCL (System.* or Microsoft.* namespaces)
+    /// rather than the consumer's own code. Framework types (e.g. Uri, Version) are scalars, never EF navigation targets.
+    /// </summary>
+    /// <param name="type">The named type symbol.</param>
+    /// <returns>True if the type's containing namespace is or starts with "System" or "Microsoft".</returns>
+    private static bool IsFrameworkType(INamedTypeSymbol type)
+    {
+        var ns = type.ContainingNamespace;
+        if (ns is null || ns.IsGlobalNamespace)
+            return false;
+
+        var namespaceName = ns.ToDisplayString();
+        return namespaceName == "System" || namespaceName.StartsWith("System.", StringComparison.Ordinal) ||
+               namespaceName == "Microsoft" || namespaceName.StartsWith("Microsoft.", StringComparison.Ordinal);
     }
 
     /// <summary>

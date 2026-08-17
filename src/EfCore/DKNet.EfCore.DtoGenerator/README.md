@@ -174,6 +174,7 @@ public partial record CustomerSimpleDto;
 // Orders and PrimaryAddress are excluded automatically — no IgnoreComplexType argument needed
 ```
 
+A navigation property is a reference-type class in the consumer's own code that is not a record and not `[Owned]`.
 By default, the generator excludes:
 
 - Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
@@ -181,6 +182,9 @@ By default, the generator excludes:
 
 **Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered
 part of the entity, not navigation properties.
+
+**Note:** .NET framework/BCL types (`System.*`, `Microsoft.*` — e.g. `Uri`, `Version`) are never treated as navigation
+properties and are always kept in the generated DTO, even though they are non-record reference-type classes.
 
 To include navigation properties for a specific DTO, set `IgnoreComplexType = false`:
 
@@ -362,6 +366,8 @@ var balances = await dbContext.MerchantBalances
       to include entity navigation properties (both single and collection).
     - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned
       types, not navigations.
+    - .NET framework/BCL types (`System.*`, `Microsoft.*` — e.g. `Uri`, `Version`) are never treated as navigation
+      properties and are always kept, regardless of `IgnoreComplexType`.
     - Customize via Mapster configuration or override in partial DTO for more control.
 - **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy
   compiler null-state analysis.
