@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <ImplicitUsings>false</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <!-- Disable code analysis for test entities -->
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <AnalysisMode>None</AnalysisMode>
+        <RunAnalyzers>false</RunAnalyzers>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;SA1600;DKDTOGEN004</NoWarn>
+    </PropertyGroup>
+
+    <!-- Project-wide flag: IgnoreComplexType defaults to false in this project, so navigation properties are INCLUDED by default -->
+    <PropertyGroup>
+        <DtoGeneratorIgnoreComplexType>false</DtoGeneratorIgnoreComplexType>
+    </PropertyGroup>
+    <ItemGroup>
+        <CompilerVisibleProperty Include="DtoGeneratorIgnoreComplexType" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Net.Compilers.Toolset">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+
+        <PackageReference Include="coverlet.collector">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="Mapster" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Reference the generator as an analyzer so it runs during compilation -->
+        <ProjectReference Include="..\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj" />
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+</Project>

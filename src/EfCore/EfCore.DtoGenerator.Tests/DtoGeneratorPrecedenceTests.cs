@@ -183,10 +183,10 @@ public class DtoGeneratorPrecedenceTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(projectWideIgnoreComplexType);
-        var generator = new DtoGenerator().AsSourceGenerator();
-        var driver = CSharpGeneratorDriver.Create([generator], optionsProvider: optionsProvider);
+        var generator = new DKNet.EfCore.DtoGenerator.DtoGenerator().AsSourceGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], optionsProvider: optionsProvider);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out _);
-        var runResult = driver.GetRunResult();
+        var runResult = ((CSharpGeneratorDriver)driver).GetRunResult();
         var generatedSources = runResult.Results
             .SelectMany(r => r.GeneratedSources)
             .Select(s => s.SourceText.ToString())
