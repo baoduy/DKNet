@@ -157,6 +157,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.AspCore.Idempotency.R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspCore.Idempotency.RedisStore.Tests", "AspNet\AspCore.Idempotency.RedisStore.Tests\AspCore.Idempotency.RedisStore.Tests.csproj", "{2E2A5345-EDAF-4FFD-84DF-992D8C42E4D9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DtoGenerator.Tests.ProjectWide", "EfCore\EfCore.DtoGenerator.Tests.ProjectWide\EfCore.DtoGenerator.Tests.ProjectWide.csproj", "{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -827,6 +829,18 @@ Global
 		{2E2A5345-EDAF-4FFD-84DF-992D8C42E4D9}.Release|x64.Build.0 = Release|Any CPU
 		{2E2A5345-EDAF-4FFD-84DF-992D8C42E4D9}.Release|x86.ActiveCfg = Release|Any CPU
 		{2E2A5345-EDAF-4FFD-84DF-992D8C42E4D9}.Release|x86.Build.0 = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|x64.Build.0 = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Debug|x86.Build.0 = Debug|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|x64.ActiveCfg = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|x64.Build.0 = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|x86.ActiveCfg = Release|Any CPU
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -890,5 +904,6 @@ Global
 		{18C84C4C-E482-4E26-8C21-51791E5D636F} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{F8A2EEB5-CF6D-4B99-B6C0-86A63D2EA049} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
 		{2E2A5345-EDAF-4FFD-84DF-992D8C42E4D9} = {120F93FD-F47A-4370-9D13-0C33A16786D4}
+		{4BF8ACA5-E104-4943-9A31-40C2D4C5F3F4} = {79AB749C-6325-4718-9BE0-36C750367F00}
 	EndGlobalSection
 EndGlobal

@@ -17,6 +17,7 @@
     </PropertyGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests"/>
+        <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests.ProjectWide"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all"/>

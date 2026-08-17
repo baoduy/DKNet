@@ -14,12 +14,10 @@ public class IgnoreComplexTypeTests
     [Fact]
     public void CustomerDto_PropertyTypes_ShouldBeCorrect()
     {
-        // Verify the property types are as expected
+        // Verify the scalar property types are as expected
         var customerIdProperty = typeof(CustomerDto).GetProperty("CustomerId");
         var nameProperty = typeof(CustomerDto).GetProperty("Name");
         var emailProperty = typeof(CustomerDto).GetProperty("Email");
-        var primaryAddressProperty = typeof(CustomerDto).GetProperty("PrimaryAddress");
-        var ordersProperty = typeof(CustomerDto).GetProperty("Orders");
 
         customerIdProperty.ShouldNotBeNull();
         customerIdProperty.PropertyType.ShouldBe(typeof(int));
@@ -30,17 +28,15 @@ public class IgnoreComplexTypeTests
         emailProperty.ShouldNotBeNull();
         emailProperty.PropertyType.ShouldBe(typeof(string));
 
-        primaryAddressProperty.ShouldNotBeNull();
-        primaryAddressProperty.PropertyType.ShouldBe(typeof(Address));
-
-        ordersProperty.ShouldNotBeNull();
-        ordersProperty.PropertyType.ShouldBe(typeof(ICollection<Order>));
+        // Navigation properties are excluded by default
+        typeof(CustomerDto).GetProperty("PrimaryAddress").ShouldBeNull();
+        typeof(CustomerDto).GetProperty("Orders").ShouldBeNull();
     }
 
     [Fact]
-    public void CustomerDto_WithoutIgnoreComplexType_ShouldIncludeAllProperties()
+    public void CustomerDto_WithoutIgnoreComplexType_ShouldExcludeNavigationProperties()
     {
-        // Assert - Verify all properties exist including complex types
+        // Assert - Verify navigation properties are excluded by default
         var hasCustomerId = typeof(CustomerDto).GetProperty("CustomerId") != null;
         var hasName = typeof(CustomerDto).GetProperty("Name") != null;
         var hasEmail = typeof(CustomerDto).GetProperty("Email") != null;
@@ -49,14 +45,40 @@ public class IgnoreComplexTypeTests
         var hasCreatedUtc = typeof(CustomerDto).GetProperty("CreatedUtc") != null;
         var hasUpdatedUtc = typeof(CustomerDto).GetProperty("UpdatedUtc") != null;
 
-        // Assert - All properties should exist
+        // Assert - Scalar properties exist
         hasCustomerId.ShouldBeTrue("CustomerId should be included");
         hasName.ShouldBeTrue("Name should be included");
         hasEmail.ShouldBeTrue("Email should be included");
-        hasPrimaryAddress.ShouldBeTrue("PrimaryAddress should be included (complex type)");
-        hasOrders.ShouldBeTrue("Orders should be included (complex collection type)");
         hasCreatedUtc.ShouldBeTrue("CreatedUtc should be included");
         hasUpdatedUtc.ShouldBeTrue("UpdatedUtc should be included");
+
+        // Assert - Navigation properties are excluded by default
+        hasPrimaryAddress.ShouldBeFalse("PrimaryAddress should be excluded by default (complex type)");
+        hasOrders.ShouldBeFalse("Orders should be excluded by default (complex collection type)");
+    }
+
+    [Fact]
+    public void CustomerWithNavigationDto_IgnoreComplexTypeFalse_ShouldIncludeNavigationProperties()
+    {
+        // Assert - Verify navigation properties are included when IgnoreComplexType is explicitly false
+        var hasCustomerId = typeof(CustomerWithNavigationDto).GetProperty("CustomerId") != null;
+        var hasName = typeof(CustomerWithNavigationDto).GetProperty("Name") != null;
+        var hasEmail = typeof(CustomerWithNavigationDto).GetProperty("Email") != null;
+        var hasCreatedUtc = typeof(CustomerWithNavigationDto).GetProperty("CreatedUtc") != null;
+        var hasUpdatedUtc = typeof(CustomerWithNavigationDto).GetProperty("UpdatedUtc") != null;
+        var hasPrimaryAddress = typeof(CustomerWithNavigationDto).GetProperty("PrimaryAddress") != null;
+        var hasOrders = typeof(CustomerWithNavigationDto).GetProperty("Orders") != null;
+
+        // Assert - Scalar properties exist
+        hasCustomerId.ShouldBeTrue("CustomerId should be included");
+        hasName.ShouldBeTrue("Name should be included");
+        hasEmail.ShouldBeTrue("Email should be included");
+        hasCreatedUtc.ShouldBeTrue("CreatedUtc should be included");
+        hasUpdatedUtc.ShouldBeTrue("UpdatedUtc should be included");
+
+        // Assert - Navigation properties are included (per-DTO opt-out)
+        hasPrimaryAddress.ShouldBeTrue("PrimaryAddress should be included (IgnoreComplexType = false)");
+        hasOrders.ShouldBeTrue("Orders should be included (IgnoreComplexType = false)");
     }
 
     [Fact]
