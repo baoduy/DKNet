@@ -64,12 +64,11 @@ internal sealed class GenerateDtoAttribute : Attribute
     /// Set to false to include navigation properties for this DTO.
     /// </summary>
     /// <remarks>
-    /// Defaults to <see langword="null"/> (not specified on the attribute). Precedence when resolving the
-    /// effective value: this per-DTO value, if set, wins; otherwise the project-wide MSBuild property
-    /// <c>DtoGeneratorIgnoreComplexType</c>, if set, wins; otherwise the built-in default of <see langword="true"/>
-    /// applies (navigation properties excluded).
+    /// When absent from the attribute, precedence falls through to the project-wide MSBuild property
+    /// <c>DtoGeneratorIgnoreComplexType</c>, if set; otherwise the built-in default of <see langword="true"/>
+    /// applies (navigation properties excluded). When present, this per-DTO value wins over both.
     /// </remarks>
-    public bool? IgnoreComplexType { get; set; }
+    public bool IgnoreComplexType { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GenerateDtoAttribute"/> class.
