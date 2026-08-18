@@ -391,16 +391,16 @@ public sealed class EventGenerator : IIncrementalGenerator
         builder.AppendLine("#nullable enable");
         builder.AppendLine();
 
+        foreach (var namespaceEntry in requiredNamespaces.OrderBy(n => n, StringComparer.Ordinal))
+            builder.Append("using ").Append(namespaceEntry).AppendLine(";");
+        if (requiredNamespaces.Count > 0)
+            builder.AppendLine();
+
         if (registrationLine is not null)
         {
             builder.AppendLine(registrationLine);
             builder.AppendLine();
         }
-
-        foreach (var namespaceEntry in requiredNamespaces.OrderBy(n => n, StringComparer.Ordinal))
-            builder.Append("using ").Append(namespaceEntry).AppendLine(";");
-        if (requiredNamespaces.Count > 0)
-            builder.AppendLine();
 
         if (namespaceName is not null)
         {
