@@ -4,6 +4,7 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -32,7 +33,7 @@ public sealed class ApiFixtureCachedResult : WebApplicationFactory<ApiTests.Prog
         // Set test environment
         builder.UseEnvironment(Environments.Development);
         builder.ConfigureServices(s =>
-            s.AddIdempotentKey(c => c.ConflictHandling = IdempotentConflictHandling.CachedResult));
+            s.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ConflictHandling = IdempotentConflictHandling.CachedResult));
     }
 
     public new async Task DisposeAsync()

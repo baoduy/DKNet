@@ -84,6 +84,12 @@ gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
 
 The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
 
+`Svc.PdfGenerators.Tests` downloads an x86_64 Chromium build that cannot run on ARM sandboxes (missing x86_64 loader) — verify it on the GitHub x64 runner instead of locally:
+
+```bash
+gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGenerators.Tests
+```
+
 ## Architectural Big Picture
 
 DKNet expresses DDD + Onion Architecture at the package boundaries:

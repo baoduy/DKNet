@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 
 namespace DKNet.AspCore.Idempotency;
 
@@ -106,6 +107,33 @@ public sealed class IdempotencyOptions
     ///     Default: 200 (OK)
     /// </summary>
     public int MinStatusCodeForCaching { get; set; } = 200;
+
+    /// <summary>
+    ///     Gets or sets a custom resolver that produces the caller scope used in the idempotency composite key.
+    ///     When set, this resolver is used verbatim and the default fallback chain (authenticated user,
+    ///     HMAC of the Authorization header, client IP) is skipped.
+    ///     Default is <c>null</c>.
+    /// </summary>
+    public Func<HttpContext, string?>? KeyScopeResolver { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the server-side secret used to HMAC-SHA256 the <c>Authorization</c> request header
+    ///     when resolving the caller scope for anonymous requests.
+    ///     If <c>null</c> or not configured, the Authorization-header fallback is skipped.
+    ///     Default is <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The raw secret and the raw header value are never logged or emitted; only the resulting digest
+    ///     is used as part of the scope.
+    /// </remarks>
+    public string? ScopeHmacSecret { get; set; }
+
+    /// <summary>
+    ///     Gets or sets a value indicating whether the client's remote IP address is used as a scope fallback
+    ///     when no authenticated user or Authorization header scope can be resolved.
+    ///     Default is <c>false</c>.
+    /// </summary>
+    public bool IncludeClientIpInScope { get; set; }
 
     #endregion
 }

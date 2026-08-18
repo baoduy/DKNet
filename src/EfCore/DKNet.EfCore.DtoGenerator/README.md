@@ -76,6 +76,68 @@ public partial record BalanceDto;
 The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping
 helper methods.
 
+## Event Declaration
+
+Declaring a domain event is two separate steps, not one combined attribute:
+
+1. Shape the event payload as an ordinary generated DTO via `[GenerateDto]` (a `partial record` shell, same
+   as any other DTO — `Include`/`Exclude`/`IgnoreComplexType` all apply).
+2. Declare a raise rule on the entity via the repeatable `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute`,
+   naming the payload record, the persistence operation(s) that raise it, and — for updates — an optional
+   narrowing property list.
+
+```csharp
+using DKNet.EfCore.Abstractions.Events;
+
+[GenerateDto(typeof(Product))]
+public partial record ProductCreatedEvent;
+
+[GenerateDto(typeof(Product), Exclude = new[] { "InternalCost" })]
+public partial record ProductPriceChangedEvent;
+
+[RaisesEvent(typeof(ProductCreatedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(ProductPriceChangedEvent), EventOperations.Updated, nameof(Product.Price))]
+public class Product
+{
+    public Guid Id { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+This generator emits **no code** for `[RaisesEvent]` — the payload is generated entirely from its own
+`[GenerateDto]` declaration, exactly as any other DTO. `[RaisesEvent]` is read via reflection at runtime by
+`DKNet.EfCore.Events`' save hook — see that package's README for the raise mechanics.
+
+**Update narrowing** (the raise rule's trailing `params string[] properties`): non-empty raises the event only
+when at least one listed property changed; empty (default) raises on any change. Entries must name a direct
+property of the entity via `nameof(...)` — a nested path (e.g. `nameof-style "Address.Line"`) is a build error
+(`DKRAISEVT001`), and narrowing on a rule with no `Updated` flag is a build warning (`DKRAISEVT003`) since it
+has no effect at runtime.
+
+**Payload/entity match**: the named event type must be a `[GenerateDto]` payload generated from the SAME entity
+carrying the `[RaisesEvent]` rule — naming a payload generated from a different entity, or a type with no
+`[GenerateDto]` at all, is a build error (`DKRAISEVT002`).
+
+**Build-time validation** — this generator fails the build (or warns) on:
+
+- `DKRAISEVT001` — narrowing property is a nested path, or not a property of the entity.
+- `DKRAISEVT002` — the named event type is generated from a different entity, or carries no `[GenerateDto]`.
+- `DKRAISEVT003` (warning) — narrowing set on a rule with no `Updated` flag.
+
+**Migration note**: adopting this on an existing domain needs no base-class change — any mapped entity may
+declare rules, aggregate root or not. A domain project referencing only `DKNet.EfCore.Abstractions` and this
+package builds and packs fine with rules declared; reference `DKNet.EfCore.Events` and register an `IMapper`
+(e.g. Mapster) alongside `AddEventPublisher` in the application to actually raise them. Existing hand-raised
+events (via `AddEvent(...)`) keep firing unchanged and coexist with declared ones as distinct types.
+
+**Nested owned values**: a change confined to a nested `[Owned]` value (e.g. `Customer.Address.Line`) does **not**
+raise the owner's update event — EF Core does not report the owner entity itself as `Modified` for an owned-type-only
+change. Narrow the rule's properties to the owner's own direct properties only.
+
+**Security note**: like any `[GenerateDto]` payload, a raised event mirrors the entity's properties by default —
+sensitive values are included unless `Exclude`d on the payload's `[GenerateDto]` declaration. Review each payload
+for fields that shouldn't reach event subscribers.
+
 ## Validation Attributes
 
 **NEW:** The generator automatically copies all validation attributes from entity properties to DTO properties. This
@@ -163,16 +225,19 @@ ignored, and a warning will be generated if both are provided.
 
 ### Ignoring Complex Types (Entity Navigation Properties)
 
-Use the `IgnoreComplexType` parameter to automatically exclude navigation properties that link to other entities. This
-is useful for creating simple DTOs that only contain primitive and value type properties:
+Navigation properties that link to other entities are excluded from generated DTOs **by default** — `IgnoreComplexType`
+is implicitly `true` unless overridden. This gives you a flat DTO shape (primitive and value type properties only)
+without repeating anything on every `[GenerateDto]` declaration:
 
 ```csharp
 // Assuming Customer has Orders (List<Order>) and PrimaryAddress (Address) navigation properties
-[GenerateDto(typeof(Customer), IgnoreComplexType = true)]
+[GenerateDto(typeof(Customer))]
 public partial record CustomerSimpleDto;
+// Orders and PrimaryAddress are excluded automatically — no IgnoreComplexType argument needed
 ```
 
-When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
+A navigation property is a reference-type class in the consumer's own code that is not a record and not `[Owned]`.
+By default, the generator excludes:
 
 - Single entity properties (e.g., `public Address? PrimaryAddress { get; set; }`)
 - Collection properties of entities (e.g., `public List<Order> Orders { get; set; }`)
@@ -180,13 +245,36 @@ When `IgnoreComplexType` is set to `true`, the generator automatically excludes:
 **Note:** Properties marked with the `[Owned]` attribute (EF Core owned types) are NOT excluded since they're considered
 part of the entity, not navigation properties.
 
-You can combine `IgnoreComplexType` with `Exclude` to exclude additional properties:
+**Note:** .NET framework/BCL types (`System.*`, `Microsoft.*` — e.g. `Uri`, `Version`) are never treated as navigation
+properties and are always kept in the generated DTO, even though they are non-record reference-type classes.
+
+To include navigation properties for a specific DTO, set `IgnoreComplexType = false`:
 
 ```csharp
-[GenerateDto(typeof(Customer), IgnoreComplexType = true, Exclude = new[] { "Email" })]
-public partial record CustomerBasicDto;
-// Generated DTO will exclude Orders, PrimaryAddress (complex types) AND Email
+[GenerateDto(typeof(Customer), IgnoreComplexType = false)]
+public partial record CustomerWithNavigationsDto;
+// Orders and PrimaryAddress are included
 ```
+
+You can combine `IgnoreComplexType = false` with `Exclude` to still exclude specific properties:
+
+```csharp
+[GenerateDto(typeof(Customer), IgnoreComplexType = false, Exclude = new[] { "Email" })]
+public partial record CustomerBasicDto;
+// Generated DTO will include Orders, PrimaryAddress but exclude Email
+```
+
+To change the default project-wide instead of per-DTO, set the `DtoGeneratorIgnoreComplexType` MSBuild property in
+your `.csproj` (consumers get this via the package's `buildTransitive` props):
+
+```xml
+<PropertyGroup>
+  <DtoGeneratorIgnoreComplexType>false</DtoGeneratorIgnoreComplexType>
+</PropertyGroup>
+```
+
+Precedence: a per-DTO `IgnoreComplexType` argument always wins over the project-wide property, which in turn wins
+over the built-in default of `true`.
 
 However, when you use `Include`, it overrides `IgnoreComplexType`, allowing you to explicitly include navigation
 properties if needed:
@@ -335,11 +423,13 @@ var balances = await dbContext.MerchantBalances
 ## Additional Notes
 
 - **Navigation Properties**:
-    - By default, navigation and collection properties are included as shallow copies in DTOs.
-    - Use `IgnoreComplexType = true` to automatically exclude all entity navigation properties (both single and
-      collection).
+    - By default, navigation and collection properties are excluded (`IgnoreComplexType` is implicitly `true`).
+    - Use `IgnoreComplexType = false` per DTO, or the `DtoGeneratorIgnoreComplexType` MSBuild property project-wide,
+      to include entity navigation properties (both single and collection).
     - Properties marked with `[Owned]` attribute are NOT excluded by `IgnoreComplexType` as they're considered owned
       types, not navigations.
+    - .NET framework/BCL types (`System.*`, `Microsoft.*` — e.g. `Uri`, `Version`) are never treated as navigation
+      properties and are always kept, regardless of `IgnoreComplexType`.
     - Customize via Mapster configuration or override in partial DTO for more control.
 - **Nullable Reference Types**: Non-nullable reference type properties receive a `= default!;` initializer to satisfy
   compiler null-state analysis.

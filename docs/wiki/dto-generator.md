@@ -36,3 +36,16 @@ DTOs generated here are typically returned by query handlers in [[cqrs-slimbus]]
 projected from queries built with [[specifications]], so read paths return shaped
 transfer objects rather than exposing aggregates directly. This keeps the presentation
 contract decoupled from the domain model, consistent with [[onion-architecture]].
+
+## Validating raise rules with `[RaisesEvent]`
+
+Declaring a domain event is two separate steps: a `[GenerateDto]` payload record shapes
+the event (no different from any other generated DTO), and the repeatable
+`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` on the entity names that payload,
+the persistence operation(s) (`Created` / `Updated` / `Deleted`, combinable), and an
+optional update-narrowing property list. This generator emits **no code** for
+`[RaisesEvent]` — only build-time diagnostics: the named payload must be generated from
+the same entity carrying the rule, and narrowing entries must be direct properties of
+the entity. `DKNet.EfCore.Events` reads `[RaisesEvent]` via reflection at runtime and
+raises the payload automatically after a successful save — see [[domain-events]] for the
+raising side and the nested-owned-value limitation.

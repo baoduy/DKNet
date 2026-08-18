@@ -1,8 +1,10 @@
+
+
 # DKNet Framework Documentation
 
 Welcome to the comprehensive documentation for the DKNet Framework - a powerful collection of .NET libraries designed to
 enhance and simplify enterprise application development using Domain-Driven Design (DDD) principles and Onion
-Architecture patterns.
+Architecture patterns. The framework targets .NET 10.
 
 ## 📚 Quick Navigation
 

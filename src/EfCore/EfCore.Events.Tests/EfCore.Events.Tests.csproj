@@ -40,6 +40,16 @@
         <ProjectReference Include="..\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+            <PrivateAssets>all</PrivateAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Consumers receive [GenerateDto] as a NuGet content file; a ProjectReference cannot. Link the
+             same attribute source the package ships so [GenerateDto] payload declarations on test entities
+             resolve while the DtoGenerator analyzer project reference generates their properties. -->
+        <Compile Include="..\DKNet.EfCore.DtoGenerator\GenerateDtoAttribute.cs" Link="GeneratedAttributes\GenerateDtoAttribute.cs"/>
     </ItemGroup>
 
 </Project>

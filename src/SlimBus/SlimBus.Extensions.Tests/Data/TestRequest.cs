@@ -1,6 +1,9 @@
+using DKNet.SlimBus.Extensions;
+using FluentResults;
+
 namespace SlimBus.Extensions.Tests.Data;
 
-public class TestRequest : IRequest<Guid>
+public class TestRequest : Fluents.Requests.IWitResponse<Guid>
 {
     #region Properties
 
@@ -9,16 +12,16 @@ public class TestRequest : IRequest<Guid>
     #endregion
 }
 
-internal sealed class TestRequestHandler(TestDbContext dbContext) : IRequestHandler<TestRequest, Guid>
+internal sealed class TestRequestHandler(TestDbContext dbContext) : Fluents.Requests.IHandler<TestRequest, Guid>
 {
     #region Methods
 
-    public async Task<Guid> OnHandle(TestRequest request, CancellationToken cancellationToken)
+    public async Task<IResult<Guid>> OnHandle(TestRequest request, CancellationToken cancellationToken)
     {
         var entity = new TestEntity { Name = request.Name };
         await dbContext.AddAsync(entity, cancellationToken);
 
-        return entity.Id;
+        return Result.Ok(entity.Id);
     }
 
     #endregion

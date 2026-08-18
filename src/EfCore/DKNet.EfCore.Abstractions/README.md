@@ -171,6 +171,8 @@ public class Invoice : Entity<long>
 - `[SqlSequence(string)]` - SQL-based sequence generation
 - `[StaticData]` - Mark entity as static/reference data
 - `[IgnoreEntity]` - Exclude entity from EF discovery
+- `[RaisesEvent(Type, EventOperations, params string[])]` - Declare that an entity raises a
+  [DtoGenerator](../DKNet.EfCore.DtoGenerator)-generated event payload on save (repeatable)
 
 ## Advanced Usage
 
@@ -204,6 +206,43 @@ public class Order : Entity<Guid>
 public record OrderCreatedEvent(Guid OrderId, string CustomerName);
 public record OrderCompletedEvent(Guid OrderId);
 ```
+
+### Declaring Raised Domain Events with `[RaisesEvent]`
+
+As an alternative (or complement) to hand-raising events via `AddEvent(...)`, declare a raise rule on the
+entity naming a [DtoGenerator](../DKNet.EfCore.DtoGenerator)-generated payload record and the persistence
+operation(s) that raise it:
+
+```csharp
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.EfCore.DtoGenerator;
+
+[GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
+public partial record OrderPlacedEvent;
+
+[RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
+public class Order : Entity<Guid>
+{
+    public string Status { get; set; } = string.Empty;
+}
+```
+
+`DKNet.EfCore.DtoGenerator` validates the rule at build time (the payload must be generated from the same
+entity, narrowing properties must be direct, existing properties of the entity). `DKNet.EfCore.Events`'
+save hook reads `[RaisesEvent]` via reflection and raises the payload after a successful save — see its
+[README](../DKNet.EfCore.Events) for the runtime side.
+
+**Migrating an existing domain**: adding `[RaisesEvent]` to an entity that already hand-raises events via
+`AddEvent(...)` is additive — both fire; nothing needs to change on the existing path.
+
+**Limitation**: a change confined to a nested owned value does not raise the owner's `Updated` event —
+narrowing only observes direct properties of the carrying entity.
+
+**Runtime registration required**: declaring `[RaisesEvent]` on an entity in a domain project that only
+references `DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds and packs fine — no rule
+raises anything until the application registers `DKNet.EfCore.Events`' save hook, exactly as for
+hand-raised events today.
 
 ### Custom Audit Implementation
 

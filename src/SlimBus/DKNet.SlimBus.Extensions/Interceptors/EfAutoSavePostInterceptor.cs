@@ -1,3 +1,4 @@
+using System.Linq;
 using DKNet.EfCore.Extensions.Extensions;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
@@ -40,11 +41,9 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
             return response;
         }
 
-        if (request is Fluents.Queries.IWitResponse<TResponse> ||
-            request is Fluents.Queries.IWitPageResponse<TResponse> ||
-            request is Fluents.EventsConsumers.IHandler<IRequest>)
+        if (!IsWriteRequest())
         {
-            logger.LogDebug("Request is a query or event handler. Skipping auto-save.");
+            logger.LogDebug("Request is not a write request. Skipping auto-save.");
             return response;
         }
 
@@ -76,6 +75,12 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
 
         return response;
     }
+
+    private static bool IsWriteRequest() =>
+        typeof(Fluents.Requests.INoResponse).IsAssignableFrom(typeof(TRequest)) ||
+        typeof(TRequest).GetInterfaces().Any(i =>
+            i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(Fluents.Requests.IWitResponse<>));
 
     #endregion
 }

@@ -15,27 +15,43 @@ namespace DKNet.EfCore.DtoGenerator;
 /// To configure global exclusions, add the following to your .csproj file:
 /// <code>
 /// &lt;PropertyGroup&gt;
-///   &lt;DtoGenerator_GlobalExclusions&gt;CreatedBy,UpdatedBy,CreatedAt,UpdatedAt&lt;/DtoGenerator_GlobalExclusions&gt;
+///   &lt;DtoGeneratorExclusions&gt;CreatedBy,UpdatedBy,CreatedAt,UpdatedAt&lt;/DtoGeneratorExclusions&gt;
 /// &lt;/PropertyGroup&gt;
 /// </code>
+/// </para>
+/// <para>
+/// Navigation properties (properties that link to other entities) are excluded from every DTO by default.
+/// Configure the project-wide default via the <c>DtoGeneratorIgnoreComplexType</c> MSBuild property:
+/// <code>
+/// &lt;PropertyGroup&gt;
+///   &lt;DtoGeneratorIgnoreComplexType&gt;false&lt;/DtoGeneratorIgnoreComplexType&gt;
+/// &lt;/PropertyGroup&gt;
+/// </code>
+/// Precedence when resolving the effective value for a DTO: the per-DTO <c>IgnoreComplexType</c> attribute
+/// argument, if set, wins; otherwise the project-wide <c>DtoGeneratorIgnoreComplexType</c> property, if set,
+/// wins; otherwise the built-in default of <see langword="true"/> applies.
 /// </para>
 /// <para>
 /// Examples:
 /// <code>
 /// // With global exclusions configured in .csproj:
-/// // &lt;DtoGenerator_GlobalExclusions&gt;CreatedBy,UpdatedBy,CreatedAt,UpdatedAt&lt;/DtoGenerator_GlobalExclusions&gt;
-/// 
+/// // &lt;DtoGeneratorExclusions&gt;CreatedBy,UpdatedBy,CreatedAt,UpdatedAt&lt;/DtoGeneratorExclusions&gt;
+///
 /// // All DTOs will exclude these properties by default
 /// [GenerateDto(typeof(Customer))]
-/// public partial record CustomerDto; // Excludes CreatedBy, UpdatedBy, CreatedAt, UpdatedAt
-/// 
+/// public partial record CustomerDto; // Excludes CreatedBy, UpdatedBy, CreatedAt, UpdatedAt, and navigation properties
+///
 /// // Local exclusions are combined with global exclusions
 /// [GenerateDto(typeof(Customer), Exclude = ["InternalId"])]
 /// public partial record CustomerSummaryDto; // Excludes all global + InternalId
-/// 
+///
 /// // Include overrides global exclusions
 /// [GenerateDto(typeof(Customer), Include = ["Id", "Name", "CreatedAt"])]
 /// public partial record CustomerNameDto; // Only includes Id, Name, CreatedAt (ignores global exclusions)
+///
+/// // Per-DTO opt-out of the default navigation exclusion
+/// [GenerateDto(typeof(Customer), IgnoreComplexType = false)]
+/// public partial record CustomerWithNavigationsDto; // Navigation properties included
 /// </code>
 /// </para>
 /// </remarks>
@@ -49,7 +65,13 @@ public static class GlobalDtoConfiguration
     /// To configure global exclusions at compile-time, add this to your .csproj:
     /// <code>
     /// &lt;PropertyGroup&gt;
-    ///   &lt;DtoGenerator_GlobalExclusions&gt;PropertyName1,PropertyName2,PropertyName3&lt;/DtoGenerator_GlobalExclusions&gt;
+    ///   &lt;DtoGeneratorExclusions&gt;PropertyName1,PropertyName2,PropertyName3&lt;/DtoGeneratorExclusions&gt;
+    /// &lt;/PropertyGroup&gt;
+    /// </code>
+    /// To configure the project-wide navigation-property default:
+    /// <code>
+    /// &lt;PropertyGroup&gt;
+    ///   &lt;DtoGeneratorIgnoreComplexType&gt;false&lt;/DtoGeneratorIgnoreComplexType&gt;
     /// &lt;/PropertyGroup&gt;
     /// </code>
     /// </remarks>

@@ -16,14 +16,34 @@ public class IdempotentKeyInfoTests
     public void CompositeKey_CombinesMethodEndpointAndKey()
     {
         var info = new IdempotentKeyInfo { IdempotentKey = "test-key", Endpoint = "/api/orders", Method = "POST" };
-        info.CompositeKey.ShouldBe("POST:/api/orders:test-key");
+        info.CompositeKey.ShouldBe(":POST:/api/orders:test-key");
     }
 
     [Fact]
     public void CompositeKey_WhenKeyIsNull_UsesEmptyString()
     {
         var info = new IdempotentKeyInfo { IdempotentKey = null, Endpoint = "/api/orders", Method = "GET" };
-        info.CompositeKey.ShouldBe("GET:/api/orders:");
+        info.CompositeKey.ShouldBe(":GET:/api/orders:");
+    }
+
+    [Fact]
+    public void Scope_DefaultValue_IsEmptyString()
+    {
+        var info = new IdempotentKeyInfo { IdempotentKey = "test-key", Endpoint = "/api/orders", Method = "POST" };
+        info.Scope.ShouldBe(string.Empty);
+    }
+
+    [Fact]
+    public void CompositeKey_WhenScopeSet_PrependsScopeSegment()
+    {
+        var info = new IdempotentKeyInfo
+        {
+            Scope = "user:user-42",
+            IdempotentKey = "test-key",
+            Endpoint = "/api/orders",
+            Method = "POST"
+        };
+        info.CompositeKey.ShouldBe("user:user-42:POST:/api/orders:test-key");
     }
 
     [Fact]

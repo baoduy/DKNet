@@ -87,7 +87,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         await using var dbContext = fixture.GetDbContext();
         var count = await dbContext.IdempotencyKeys
             .CountAsync(k => k.IdempotentKey == idempotencyKey &&
-                             k.Method == "POST" && k.Endpoint == "/api/items");
+                             k.Method == "POST" && k.Endpoint == "/API/ITEMS");
         count.ShouldBe(1, "Unique constraint should prevent duplicate idempotency keys");
     }
 
@@ -118,7 +118,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k =>
-                k.Method == "POST" && k.Endpoint == "/api/items" && k.IdempotentKey.Contains("test-key-123"));
+                k.Method == "POST" && k.Endpoint == "/API/ITEMS" && k.IdempotentKey.Contains("test-key-123"));
 
         storedKey.ShouldBeNull("Invalid idempotency key should not be stored in database.");
     }
@@ -160,7 +160,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         // Verify two entries in database for this endpoint
         await using var dbContext = fixture.GetDbContext();
         var count = await dbContext.IdempotencyKeys
-            .CountAsync(k => k.Method == "POST" && k.Endpoint == "/api/items" &&
+            .CountAsync(k => k.Method == "POST" && k.Endpoint == "/API/ITEMS" &&
                              (k.IdempotentKey == idempotencyKey1 || k.IdempotentKey == idempotencyKey2));
         count.ShouldBe(2);
     }
@@ -192,7 +192,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         await using var dbContext = fixture.GetDbContext();
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k => k.IdempotentKey == idempotencyKey &&
-                                      k.Method == "POST" && k.Endpoint == "/api/items");
+                                      k.Method == "POST" && k.Endpoint == "/API/ITEMS");
 
         storedKey.ShouldNotBeNull();
         storedKey.StatusCode.ShouldBe(201);
@@ -219,7 +219,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         await using var dbContext = fixture.GetDbContext();
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k => k.IdempotentKey == idempotencyKey &&
-                             k.Method == "POST" && k.Endpoint == "/api/items");
+                             k.Method == "POST" && k.Endpoint == "/API/ITEMS");
 
         storedKey.ShouldNotBeNull();
         storedKey.StatusCode.ShouldBe(201);
@@ -277,7 +277,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         await using var dbContext = fixture.GetDbContext();
         var count = await dbContext.IdempotencyKeys
             .CountAsync(k => k.IdempotentKey == idempotencyKey &&
-                             k.Method == "POST" && k.Endpoint == "/api/items");
+                             k.Method == "POST" && k.Endpoint == "/API/ITEMS");
         count.ShouldBe(1);
     }
 
@@ -294,7 +294,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
                 new IdempotentKeyInfo
                 {
                     IdempotentKey = idempotencyKey,
-                    Endpoint = "/api/items",
+                    Endpoint = "/API/ITEMS",
                     Method = "POST"
                 },
                 new CachedResponse
@@ -340,7 +340,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
                 new IdempotentKeyInfo
                 {
                     IdempotentKey = idempotencyKey,
-                    Endpoint = "/api/items",
+                    Endpoint = "/API/ITEMS",
                     Method = "POST"
                 },
                 new CachedResponse
@@ -386,7 +386,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
                 new IdempotentKeyInfo
                 {
                     IdempotentKey = idempotencyKey,
-                    Endpoint = "/api/items",
+                    Endpoint = "/API/ITEMS",
                     Method = "POST"
                 },
                 new CachedResponse

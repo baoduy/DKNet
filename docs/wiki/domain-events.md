@@ -36,3 +36,20 @@ When `DKNet.SlimBus.Extensions` is in use, the `SlimBusEventPublisher` implement
 additional data onto message headers. This connects the in-process domain events to
 the broader messaging infrastructure described in [[cqrs-slimbus]]. The events
 originate from rich behavior modeled per [[domain-driven-design]].
+
+## Declared events via `[RaisesEvent]`
+
+Entities can also *declare* events instead of hand-raising them, as two separate
+declarations: a `[GenerateDto]` payload record (from [[dto-generator]]) shapes the
+event, and the repeatable `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute`
+on the entity names that payload, the persistence operation(s), and an optional
+update-narrowing property list. `DKNet.EfCore.Events` reads `[RaisesEvent]` via
+reflection, evaluates narrowing against `EntityEntry.Property(...).IsModified` before
+`SaveChanges`, then maps the entity onto the payload type via the registered
+`IMapper` and publishes it after a successful save — coexisting with any hand-raised
+events on the same entity. No `IEventEntity` or `AggregateRoot` base class is required
+to declare, and a domain project referencing only `DKNet.EfCore.Abstractions` and
+`DKNet.EfCore.DtoGenerator` builds fine with rules declared before the application
+ever registers the event runtime. One limitation: a change confined to a nested owned
+value does not raise the owner's update event, since EF Core does not report the
+owner itself as `Modified` in that case.

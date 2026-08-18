@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ internal sealed class EfCoreAuditHook(
         if (logs is not { Count: > 0 }) return;
 
         _cache.Remove(context.DbContext.ContextId.InstanceId);
-        PublishLogs(context.DbContext, logs);
+        await PublishLogsAsync(context.DbContext, logs, cancellationToken);
     }
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
@@ -51,27 +52,35 @@ internal sealed class EfCoreAuditHook(
         return base.BeforeSaveAsync(context, cancellationToken);
     }
 
-    private void PublishLogs(DbContext context, IEnumerable<AuditLogEntry> logs)
+    private async Task PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken)
     {
-        // Fire & forget: do not await publishers. Each publisher runs independently.
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
         foreach (var publisher in publishers)
-            // Explicitly discard the task: this is fire-and-forget, so the returned task is never awaited.
-            _ = Task.Run(async () =>
+        {
+            try
             {
+                await publisher.PublishAsync(logs, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                if (!logger.IsEnabled(LogLevel.Error)) continue;
+
+                string? payload = null;
                 try
                 {
-                    // Ignore cancellation for fire-and-forget to ensure attempt
-                    await publisher.PublishAsync(logs, CancellationToken.None);
+                    payload = JsonSerializer.Serialize(logs);
                 }
-                catch (Exception ex)
+                catch
                 {
-                    // Catch every exception: an unobserved exception escaping a fire-and-forget Task
-                    // would otherwise surface on the finalizer thread and can tear down the process.
-                    if (logger.IsEnabled(LogLevel.Error))
-                        logger.LogError(ex, "Audit log publishing failed for {Publisher}", publisher.GetType().Name);
+                    // Serialization failure must not escape the catch block.
                 }
-            });
+
+                if (payload is not null)
+                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries: {AuditLogEntries}", publisher.GetType().Name, payload);
+                else
+                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries count: {AuditLogEntriesCount}", publisher.GetType().Name, logs.Count());
+            }
+        }
     }
 
     #endregion

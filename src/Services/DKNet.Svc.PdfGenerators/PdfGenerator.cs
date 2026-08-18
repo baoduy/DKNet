@@ -81,6 +81,11 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     #region Properties
 
     /// <summary>
+    ///     Serializes the Chrome browser download so concurrent conversions never race on the same download.
+    /// </summary>
+    private static readonly SemaphoreSlim ChromeDownloadLock = new(1, 1);
+
+    /// <summary>
     ///     Options for PDF generation.
     /// </summary>
     private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
@@ -183,7 +188,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <param name="outputFilePath">Output PDF file path.</param>
     private async Task GeneratePdfFromHtmlAsync(string htmlContent, string outputFilePath)
     {
-        await new BrowserFetcher().DownloadAsync();
+        await EnsureChromeAsync();
         var launchOptions = new LaunchOptions
         {
             Headless = true,
@@ -219,6 +224,25 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         };
         await page.EmulateMediaTypeAsync(MediaType.Screen);
         await page.PdfAsync(outputFilePath, pdfOptions);
+    }
+
+    /// <summary>
+    ///     Ensures the Chrome browser used by Puppeteer is available, serializing the download so
+    ///     concurrent conversions never race on the same download.
+    /// </summary>
+    private async Task EnsureChromeAsync()
+    {
+        if (Options.ChromePath != null) return;
+
+        await ChromeDownloadLock.WaitAsync();
+        try
+        {
+            await new BrowserFetcher().DownloadAsync();
+        }
+        finally
+        {
+            ChromeDownloadLock.Release();
+        }
     }
 
     #endregion
