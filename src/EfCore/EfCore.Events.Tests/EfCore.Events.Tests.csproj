@@ -40,6 +40,17 @@
         <ProjectReference Include="..\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+            <PrivateAssets>all</PrivateAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Consumers receive [GenerateEvent]/EventKinds as NuGet content files; a ProjectReference cannot.
+             Link the same attribute sources the package ships so [GenerateEvent] declarations on test
+             entities resolve while the EventGenerator analyzer project reference generates the event records. -->
+        <Compile Include="..\DKNet.EfCore.DtoGenerator\GenerateEventAttribute.cs" Link="GeneratedAttributes\GenerateEventAttribute.cs"/>
+        <Compile Include="..\DKNet.EfCore.DtoGenerator\EventKinds.cs" Link="GeneratedAttributes\EventKinds.cs"/>
     </ItemGroup>
 
 </Project>
