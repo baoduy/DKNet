@@ -45,4 +45,11 @@
         </ProjectReference>
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- Consumers receive [GenerateDto] as a NuGet content file; a ProjectReference cannot. Link the
+             same attribute source the package ships so [GenerateDto] payload declarations on test entities
+             resolve while the DtoGenerator analyzer project reference generates their properties. -->
+        <Compile Include="..\DKNet.EfCore.DtoGenerator\GenerateDtoAttribute.cs" Link="GeneratedAttributes\GenerateDtoAttribute.cs"/>
+    </ItemGroup>
+
 </Project>
