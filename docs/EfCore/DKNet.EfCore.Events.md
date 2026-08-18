@@ -478,19 +478,28 @@ public class EventSourcedAggregate : Entity<Guid>, IEventEntity
 }
 ```
 
-## Declared Domain Events (`[GenerateEvent]`)
+## Declared Domain Events (`[RaisesEvent]`)
 
-`DKNet.EfCore.DtoGenerator` can generate a domain event record straight from an entity via the repeatable
-`[GenerateEvent]` attribute — see
-[DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md#generating-domain-events-generateevent) for the
-declaration syntax (naming, `Kinds`, update narrowing, `Include`/`Exclude`/`IgnoreComplexType`, build-time
-validation). This package is what raises the declared events.
+Declaring an event is two separate steps: shape the payload as an ordinary
+[DtoGenerator](./DKNet.EfCore.DtoGenerator.md#declaring-domain-events-raisesevent)-generated record via
+`[GenerateDto]`, then declare a raise rule on the entity via the repeatable
+`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s), and
+— for updates — an optional narrowing property list. See the DtoGenerator link above for the declaration
+syntax and build-time validation. This package is what raises the declared events.
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
+[GenerateDto(typeof(Order))]
+public partial record OrderPlacedEvent;
+
+[GenerateDto(typeof(Order))]
+public partial record OrderStatusChangedEvent;
+
 // Entity — no IEventEntity or AggregateRoot base class required
-[GenerateEvent(Kinds = EventKinds.Created)]
-[GenerateEvent(Kinds = EventKinds.Updated, NameSuffix = "StatusChanged", Properties = new[] { "Status" })]
-[GenerateEvent(Kinds = EventKinds.Deleted)]
+[RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
+[RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Deleted)]
 public class Order
 {
     public Guid Id { get; set; }
@@ -500,18 +509,18 @@ public class Order
 
 ### How declared events raise
 
-1. **Before `SaveChanges`**: for every tracked entity whose declaration's `Kinds` matches the pending operation
-   (Added/Modified/Deleted), the update-narrowing `Properties` list (if any) is checked against
+1. **Before `SaveChanges`**: for every tracked entity whose rule's `Operations` matches the pending operation
+   (Added/Modified/Deleted), the update-narrowing property list (if any) is checked against
    `EntityEntry.Property(...).IsModified` — this must happen before the save, since that flag is meaningless
    afterwards.
-2. **After a successful `SaveChanges`**: each qualifying declaration is mapped from the entity onto its generated
-   event type via the registered `IMapper`, merged with any hand-raised (`AddEvent(...)`) events from the same
-   save, and published through the normal `IEventPublisher` path — declared and hand-raised events are distinct
-   types and both reach subscribers.
+2. **After a successful `SaveChanges`**: each qualifying rule is mapped from the entity onto its named payload
+   type via the registered `IMapper`, merged with any hand-raised (`AddEvent(...)`) events from the same save,
+   and published through the normal `IEventPublisher` path — declared and hand-raised events are distinct
+   types and both reach subscribers. Two rules naming the same payload for the same operation raise it once.
 3. **Delete events carry pre-removal values**: EF Core's delete does not mutate the in-memory entity's property
-   values, so the generated delete event mirrors the entity exactly as it was before removal.
+   values, so the raised delete event mirrors the entity exactly as it was before removal.
 
-Any entity mapped by the `DbContext` may declare events this way — it does not need to be an `AggregateRoot` or
+Any entity mapped by the `DbContext` may declare rules this way — it does not need to be an `AggregateRoot` or
 implement `IEventEntity`.
 
 ### Mapping requirement
@@ -527,26 +536,28 @@ services.AddEventPublisher<AppDbContext, EventPublisher>();
 Saving an entity that raised a declared event with no `IMapper` registered throws:
 
 ```
-Entity raised {N} declared (generated) event(s) via [GenerateEvent], which map the entity onto the event type
-and therefore require an IMapper registration. Register one to use generated domain events.
+Entity raised {N} declared event(s) via [RaisesEvent], which map the entity onto the event type
+and therefore require an IMapper registration. Register one to use declared domain events.
 ```
 
 ### Migration note
 
-Adopting this on an existing domain: reference `DKNet.EfCore.DtoGenerator`'s analyzer for the `[GenerateEvent]`
-attribute, this package, and register an `IMapper`. Existing hand-raised events keep firing unchanged, and no
-entity needs a base-class change to start declaring events alongside them.
+Adopting this on an existing domain: add a `[GenerateDto]` payload record and a `[RaisesEvent]` rule naming it
+on the entity, reference this package, and register an `IMapper`. A domain project that only references
+`DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds fine with rules declared — nothing raises
+until the application also registers this package's save hook. Existing hand-raised events keep firing
+unchanged, and no entity needs a base-class change to start declaring events alongside them.
 
 ### Nested owned-value limitation
 
 A change confined to a nested owned value (`OwnsOne`/`[Owned]`) does not raise the owner's update event, because
-EF Core does not report the owner itself as `Modified` when only the owned value changed. Narrow `Properties` on
-the owner's own direct properties only.
+EF Core does not report the owner itself as `Modified` when only the owned value changed. Narrow the rule's
+properties to the owner's own direct properties only.
 
 ### Security note
 
 A declared event mirrors the entity's properties by default, same rule as generated DTOs — sensitive values are
-included unless `Exclude`d on the `[GenerateEvent]` declaration.
+included unless `Exclude`d on the payload's `[GenerateDto]` declaration.
 
 ## Best Practices
 

@@ -78,54 +78,65 @@ helper methods.
 
 ## Event Declaration
 
-Apply the repeatable `[GenerateEvent]` attribute directly to an entity class to have the generator emit a
-strongly-typed domain event record mirroring the entity's properties, and register it so `DKNet.EfCore.Events`
-raises it automatically after a successful save — no `partial record` DTO shell needed.
+Declaring a domain event is two separate steps, not one combined attribute:
+
+1. Shape the event payload as an ordinary generated DTO via `[GenerateDto]` (a `partial record` shell, same
+   as any other DTO — `Include`/`Exclude`/`IgnoreComplexType` all apply).
+2. Declare a raise rule on the entity via the repeatable `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute`,
+   naming the payload record, the persistence operation(s) that raise it, and — for updates — an optional
+   narrowing property list.
 
 ```csharp
-[GenerateEvent(Kinds = EventKinds.Created)]
-[GenerateEvent(Kinds = EventKinds.Deleted, NameSuffix = "Removed")]
-[GenerateEvent(Kinds = EventKinds.Updated, Properties = new[] { "Price" }, NameSuffix = "PriceChanged")]
+using DKNet.EfCore.Abstractions.Events;
+
+[GenerateDto(typeof(Product))]
+public partial record ProductCreatedEvent;
+
+[GenerateDto(typeof(Product), Exclude = new[] { "InternalCost" })]
+public partial record ProductPriceChangedEvent;
+
+[RaisesEvent(typeof(ProductCreatedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(ProductPriceChangedEvent), EventOperations.Updated, nameof(Product.Price))]
 public class Product
 {
     public Guid Id { get; set; }
     public decimal Price { get; set; }
 }
-// Generates ProductCreatedEvent, ProductRemovedEvent, ProductPriceChangedEvent.
 ```
 
-**Naming**: with `NameSuffix` set, the event is `{Entity}{NameSuffix}Event`. Left unset, `Kinds` must cover exactly
-one operation — `{Entity}CreatedEvent` / `{Entity}UpdatedEvent` / `{Entity}DeletedEvent`. A no-suffix declaration
-covering more than one `Kinds` flag is a build error (`DKDTOEVT003`) since there is no single name to resolve to.
+This generator emits **no code** for `[RaisesEvent]` — the payload is generated entirely from its own
+`[GenerateDto]` declaration, exactly as any other DTO. `[RaisesEvent]` is read via reflection at runtime by
+`DKNet.EfCore.Events`' save hook — see that package's README for the raise mechanics.
 
-**Include / Exclude / IgnoreComplexType** follow the same rules as `[GenerateDto]` above — mutually exclusive
-Include/Exclude, and `IgnoreComplexType` resolves per-declaration → project-wide `DtoGeneratorIgnoreComplexType` →
-default `true`.
+**Update narrowing** (the raise rule's trailing `params string[] properties`): non-empty raises the event only
+when at least one listed property changed; empty (default) raises on any change. Entries must name a direct
+property of the entity via `nameof(...)` — a nested path (e.g. `nameof-style "Address.Line"`) is a build error
+(`DKRAISEVT001`), and narrowing on a rule with no `Updated` flag is a build warning (`DKRAISEVT003`) since it
+has no effect at runtime.
 
-**Update narrowing** (`Properties`): non-empty raises the event only when at least one listed property changed;
-empty (default) raises on any change. Entries must name a direct property of the entity — a nested path (`"Address.Line"`)
-is a build error (`DKDTOEVT001`), and narrowing on a declaration with no `Updated` flag is a build warning
-(`DKDTOEVT004`) since it has no effect there.
+**Payload/entity match**: the named event type must be a `[GenerateDto]` payload generated from the SAME entity
+carrying the `[RaisesEvent]` rule — naming a payload generated from a different entity, or a type with no
+`[GenerateDto]` at all, is a build error (`DKRAISEVT002`).
 
-**Build-time validation** — the generator fails the build (or warns) on:
+**Build-time validation** — this generator fails the build (or warns) on:
 
-- `DKDTOEVT001` — narrowing property is a nested path, or not a property of the entity.
-- `DKDTOEVT002` — two declarations on the same entity resolve to the same event name; give one a distinct `NameSuffix`.
-- `DKDTOEVT003` — a no-suffix declaration covers more than one `Kinds` flag.
-- `DKDTOEVT004` (warning) — `Properties` narrowing set on a declaration with no `Updated` flag.
-- `DKDTOEVT005` (warning) — a declaration with no `Kinds` set generates nothing.
+- `DKRAISEVT001` — narrowing property is a nested path, or not a property of the entity.
+- `DKRAISEVT002` — the named event type is generated from a different entity, or carries no `[GenerateDto]`.
+- `DKRAISEVT003` (warning) — narrowing set on a rule with no `Updated` flag.
 
-**Migration note**: adopting this on an existing domain needs no base-class change — any mapped entity may declare
-events, aggregate root or not. Reference `DKNet.EfCore.Events` and register an `IMapper` (e.g. Mapster) alongside
-`AddEventPublisher`; existing hand-raised events (via `AddEvent(...)`) keep firing unchanged and coexist with
-declared ones as distinct types.
+**Migration note**: adopting this on an existing domain needs no base-class change — any mapped entity may
+declare rules, aggregate root or not. A domain project referencing only `DKNet.EfCore.Abstractions` and this
+package builds and packs fine with rules declared; reference `DKNet.EfCore.Events` and register an `IMapper`
+(e.g. Mapster) alongside `AddEventPublisher` in the application to actually raise them. Existing hand-raised
+events (via `AddEvent(...)`) keep firing unchanged and coexist with declared ones as distinct types.
 
 **Nested owned values**: a change confined to a nested `[Owned]` value (e.g. `Customer.Address.Line`) does **not**
 raise the owner's update event — EF Core does not report the owner entity itself as `Modified` for an owned-type-only
-change. Narrow `Properties` on the owner's own direct properties only.
+change. Narrow the rule's properties to the owner's own direct properties only.
 
-**Security note**: like `[GenerateDto]`, a declared event mirrors the entity's properties by default — sensitive
-values are included unless `Exclude`d. Review each declaration for fields that shouldn't reach event subscribers.
+**Security note**: like any `[GenerateDto]` payload, a raised event mirrors the entity's properties by default —
+sensitive values are included unless `Exclude`d on the payload's `[GenerateDto]` declaration. Review each payload
+for fields that shouldn't reach event subscribers.
 
 ## Validation Attributes
 

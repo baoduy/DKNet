@@ -171,25 +171,44 @@ services.AddScoped<INotificationHandler<ProductPriceChangedEvent>, ProductPriceC
 services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ProductCreatedHandler).Assembly));
 ```
 
-## Declared Domain Events (`[GenerateEvent]`)
+## Declared Domain Events (`[RaisesEvent]`)
 
-`DKNet.EfCore.DtoGenerator` can generate a domain event record straight from an entity via the repeatable
-`[GenerateEvent]` attribute — see that package's README for the declaration syntax (naming, `Kinds`, update
-narrowing, `Include`/`Exclude`/`IgnoreComplexType`, build-time validation). This package is what raises them:
+Declaring an event is two separate steps: shape the payload as an ordinary
+[DtoGenerator](../DKNet.EfCore.DtoGenerator)-generated record via `[GenerateDto]`, then declare a raise rule
+on the entity via the repeatable `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload,
+the persistence operation(s) that raise it, and — for updates — an optional narrowing property list:
+
+```csharp
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.EfCore.DtoGenerator;
+
+[GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
+public partial record OrderPlacedEvent;
+
+[RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
+public class Order { public string Status { get; set; } = string.Empty; }
+```
+
+`DKNet.EfCore.DtoGenerator` validates `[RaisesEvent]` rules at build time (payload/entity match, narrowing
+property names) but emits no code for them — see that package's README for the diagnostics. This package
+(`DKNet.EfCore.Events`) is what raises them at runtime:
 
 - **Automatic raising**: declared events are captured before `SaveChanges` (so update narrowing can inspect
   `EntityEntry.Property(...).IsModified`) and published through the same `IEventPublisher` path as hand-raised
   events, after a successful save.
-- **Coexistence**: an entity can both declare events via `[GenerateEvent]` and raise events by hand via
+- **Coexistence**: an entity can both declare events via `[RaisesEvent]` and raise events by hand via
   `AddEvent(...)` — both are published, as distinct types, from the same save.
 - **No base-class requirement**: any entity mapped by the `DbContext` may declare events; it does not need to be
   an `AggregateRoot` or implement `IEventEntity`.
 - **Delete events carry pre-removal values**: because a deleted entity's in-memory property values are untouched
-  by the database delete, the generated delete event mirrors the entity exactly as it was before removal.
+  by the database delete, the raised delete event mirrors the entity exactly as it was before removal.
+- **One raise per payload per operation**: if two rules on the same entity name the same payload for the same
+  operation, it raises once.
 
 ### Mapping requirement
 
-Declared events are produced by mapping the entity onto the generated event type through the registered
+Declared events are produced by mapping the entity onto the payload type through the registered
 `IMapper` — the same mapper used for `AddEvent<TEvent>()` type-based mapping. Register one (e.g. Mapster's
 `IMapper`) alongside `AddEventPublisher`:
 
@@ -201,27 +220,28 @@ services.AddEventPublisher<AppDbContext, EventPublisher>();
 Without a registered `IMapper`, saving an entity that raised at least one declared event throws:
 
 ```
-Entity raised {N} declared (generated) event(s) via [GenerateEvent], which map the entity onto the event type
-and therefore require an IMapper registration. Register one to use generated domain events.
+Entity raised {N} declared event(s) via [RaisesEvent], which map the entity onto the event type
+and therefore require an IMapper registration. Register one to use declared domain events.
 ```
 
 ### Migration note
 
-Adopting declared events on an existing domain needs: a reference to `DKNet.EfCore.DtoGenerator`'s analyzer
-(for the `[GenerateEvent]` attribute), this package (`DKNet.EfCore.Events`), and an `IMapper` registration.
-Existing hand-raised events keep firing unchanged, and no entity needs a base-class change to start declaring
-events.
+Adopting declared events on an existing domain needs: a `[GenerateDto]` payload record, a `[RaisesEvent]` rule
+naming it on the entity, this package (`DKNet.EfCore.Events`), and an `IMapper` registration. A domain project
+that only references `DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds and packs fine with
+rules declared — nothing raises until the application also registers this package's save hook. Existing
+hand-raised events keep firing unchanged, and no entity needs a base-class change to start declaring events.
 
 ### Nested owned-value limitation
 
 A change confined to a nested owned value (`[Owned]` / `OwnsOne`) does not raise the owner's update event — EF
-Core does not report the owner itself as `Modified` when only an owned value changed. Narrow `Properties` on the
-owner's own direct properties only.
+Core does not report the owner itself as `Modified` when only an owned value changed. Narrow the rule's
+properties to the owner's own direct properties only.
 
 ### Security note
 
 A declared event mirrors the entity's properties by default, same as `[GenerateDto]` — sensitive values are
-included unless `Exclude`d on the `[GenerateEvent]` declaration.
+included unless `Exclude`d on the payload's `[GenerateDto]` declaration.
 
 ## API Reference
 

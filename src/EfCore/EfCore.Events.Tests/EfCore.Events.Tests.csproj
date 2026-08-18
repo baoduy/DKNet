@@ -45,12 +45,4 @@
         </ProjectReference>
     </ItemGroup>
 
-    <ItemGroup>
-        <!-- Consumers receive [GenerateEvent]/EventKinds as NuGet content files; a ProjectReference cannot.
-             Link the same attribute sources the package ships so [GenerateEvent] declarations on test
-             entities resolve while the EventGenerator analyzer project reference generates the event records. -->
-        <Compile Include="..\DKNet.EfCore.DtoGenerator\GenerateEventAttribute.cs" Link="GeneratedAttributes\GenerateEventAttribute.cs"/>
-        <Compile Include="..\DKNet.EfCore.DtoGenerator\EventKinds.cs" Link="GeneratedAttributes\EventKinds.cs"/>
-    </ItemGroup>
-
 </Project>

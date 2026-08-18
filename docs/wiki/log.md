@@ -12,3 +12,9 @@
   `DKNet.EfCore.Events` raises declared events automatically after SaveChanges, including the
   `IMapper` mapping requirement and the nested-owned-value limitation. Refreshed both entries in
   `index.md`.
+- **2026-08-18** — Reworked `dto-generator.md` and `domain-events.md` for DRK-450: replaced the
+  single-annotation `[GenerateEvent]` shape with the two-declaration shape — a `[GenerateDto]`
+  payload record plus a repeatable `RaisesEventAttribute` raise rule on the entity naming the
+  payload, operations, and optional narrowing. The DtoGenerator now only validates raise rules
+  (payload/entity match, narrowing property names) and emits no code for them. Refreshed both
+  entries in `index.md`.

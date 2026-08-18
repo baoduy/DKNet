@@ -37,13 +37,15 @@ projected from queries built with [[specifications]], so read paths return shape
 transfer objects rather than exposing aggregates directly. This keeps the presentation
 contract decoupled from the domain model, consistent with [[onion-architecture]].
 
-## Generating domain events with `[GenerateEvent]`
+## Validating raise rules with `[RaisesEvent]`
 
-The same generator project also emits **domain event records** directly from an entity
-via the repeatable `[GenerateEvent]` attribute — no DTO shell needed. Kinds (`Created`
-/ `Updated` / `Deleted`, combinable), a `NameSuffix`, and `Include`/`Exclude`/
-`IgnoreComplexType` follow the same rules as `[GenerateDto]`; `Updated` events can be
-narrowed to raise only when specific properties change. `DKNet.EfCore.Events` reads the
-generated registration at runtime and raises the event automatically after a
-successful save — see [[domain-events]] for the raising side and the nested-owned-value
-limitation.
+Declaring a domain event is two separate steps: a `[GenerateDto]` payload record shapes
+the event (no different from any other generated DTO), and the repeatable
+`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` on the entity names that payload,
+the persistence operation(s) (`Created` / `Updated` / `Deleted`, combinable), and an
+optional update-narrowing property list. This generator emits **no code** for
+`[RaisesEvent]` — only build-time diagnostics: the named payload must be generated from
+the same entity carrying the rule, and narrowing entries must be direct properties of
+the entity. `DKNet.EfCore.Events` reads `[RaisesEvent]` via reflection at runtime and
+raises the payload automatically after a successful save — see [[domain-events]] for the
+raising side and the nested-owned-value limitation.
