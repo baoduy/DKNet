@@ -521,6 +521,98 @@ TypeAdapterConfig<Order, OrderDto>
          src => $"{src.ShippingAddress.Street}, {src.ShippingAddress.City}");
 ```
 
+## Declaring Domain Events ([RaisesEvent])
+
+Declaring a domain event is two separate steps, not one combined attribute:
+
+1. Shape the event payload as an ordinary generated DTO via `[GenerateDto]` — a `partial record` shell, same
+   as any other DTO (`Include`/`Exclude`/`IgnoreComplexType` all apply).
+2. Declare a raise rule on the entity via the repeatable `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute`,
+   naming the payload record, the persistence operation(s) that raise it, and — for updates — an optional
+   narrowing property list.
+
+```csharp
+using DKNet.EfCore.Abstractions.Events;
+
+[GenerateDto(typeof(Product))]
+public partial record ProductCreatedEvent;
+
+[GenerateDto(typeof(Product), Exclude = new[] { "InternalCost" })]
+public partial record ProductPriceChangedEvent;
+
+[RaisesEvent(typeof(ProductCreatedEvent), EventOperations.Created)]
+[RaisesEvent(typeof(ProductPriceChangedEvent), EventOperations.Updated, nameof(Product.Price))]
+public class Product
+{
+    public Guid Id { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+This generator emits **no code** for `[RaisesEvent]` — only build-time diagnostics (below). The payload is
+generated entirely from its own `[GenerateDto]` declaration. `DKNet.EfCore.Events` reads `[RaisesEvent]` via
+reflection at runtime and raises the named payload automatically after a successful `SaveChanges`, mapping
+the entity onto the payload type through the registered `IMapper` — see
+[DKNet.EfCore.Events](./DKNet.EfCore.Events.md#declared-domain-events-raisesevent) for the raising,
+coexistence-with-hand-raised-events, and mapping-requirement details.
+
+### Payload/entity match
+
+The event type named in `[RaisesEvent]` must be a `[GenerateDto]` payload generated from the SAME entity
+carrying the rule. Naming a payload generated from a different entity, or a type with no `[GenerateDto]` at
+all, is a build error (`DKRAISEVT002`).
+
+### Update narrowing
+
+The rule's trailing `params string[] properties` narrows when an `Updated` operation raises: non-empty raises
+only when at least one listed property changed (evaluated via `EntityEntry.Property(...).IsModified` just
+before save); empty means any change qualifies. Entries must be a direct property of the entity, named via
+`nameof(...)` — a nested path is a build error.
+
+```csharp
+// Only raises OrderStatusChangedEvent when Status itself changed
+[GenerateDto(typeof(Order))]
+public partial record OrderStatusChangedEvent;
+
+[RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
+public class Order
+{
+    public Guid Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string DeliveryNote { get; set; } = string.Empty;
+}
+```
+
+### Migration note
+
+Adopting declared events on an existing domain requires no base-class change — any entity mapped by the
+`DbContext` may carry rules, whether or not it is an `AggregateRoot`. A domain project referencing only
+`DKNet.EfCore.Abstractions` and this generator builds and packs fine with rules declared; reference
+`DKNet.EfCore.Events` and register an `IMapper` (e.g. Mapster) alongside `AddEventPublisher` in the
+application to actually raise them. Existing hand-raised events (`AddEvent(...)`) keep firing unchanged and
+coexist with declared events as distinct types from the same save.
+
+### Nested owned-value limitation
+
+A change confined to a nested owned value (`OwnsOne`/`[Owned]`) does **not** raise the owner's update event — EF
+Core does not report the owner entity itself as `Modified` for an owned-type-only change. Narrow the rule's
+properties to the owner's own direct properties only:
+
+```csharp
+public class Customer
+{
+    public Guid Id { get; set; }
+    public OwnedAddress Address { get; set; } = new();
+}
+// Changing only Address.Line does NOT raise Customer's Updated raise rule.
+```
+
+### Security note
+
+A raised event mirrors the entity's properties by default — sensitive values are included unless `Exclude`d
+on the payload's `[GenerateDto]` declaration, same rule as any other generated DTO. Review each payload for
+fields that shouldn't reach event subscribers.
+
 ## Performance Considerations
 
 ### Compile-Time vs Runtime
@@ -635,6 +727,13 @@ The generator reports several diagnostic codes:
 - **DKDTOGEN005**: Include parameter ignores global exclusions (informational)
   - When using Include, global exclusions are not applied
   - Only specified properties will be included
+
+The `[RaisesEvent]` validator reports its own codes:
+
+- **DKRAISEVT001** (error): a narrowing property entry is a nested path, or not a property of the entity.
+- **DKRAISEVT002** (error): the named event type is generated (via `[GenerateDto]`) from a different entity than
+  the one carrying the rule, or carries no `[GenerateDto]` at all.
+- **DKRAISEVT003** (warning): narrowing properties set on a rule with no `Updated` operation flag — ignored.
 
 Check build output for specific diagnostic messages.
 
@@ -787,6 +886,7 @@ public class GetCustomerHandler : IHandler<GetCustomerQuery, CustomerDto>
 
 - **[DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md)** - Repository pattern implementations
 - **[DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md)** - Repository abstractions
+- **[DKNet.EfCore.Events](./DKNet.EfCore.Events.md)** - Raises `[RaisesEvent]`-declared domain events automatically after SaveChanges
 - **[Architecture Guide](../Architecture.md)** - Understanding DDD and Onion Architecture
 - **[Examples & Recipes](../Examples/README.md)** - Practical implementation patterns
 
