@@ -29,12 +29,13 @@ internal sealed class EventHook(
                 context.DbContext.ContextId);
 
         var eventContext = new EventContext(context, _mapper);
+        var events = eventContext.GetEvents().ToList();
 
         foreach (var publisher in eventPublishers)
         {
             try
             {
-                await publisher.PublishAsync(eventContext.GetEvents(), cancellationToken);
+                await publisher.PublishAsync(events, cancellationToken);
             }
             catch (Exception ex)
             {
