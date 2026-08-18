@@ -521,6 +521,86 @@ TypeAdapterConfig<Order, OrderDto>
          src => $"{src.ShippingAddress.Street}, {src.ShippingAddress.City}");
 ```
 
+## Generating Domain Events ([GenerateEvent])
+
+Alongside DTOs, the generator can emit **domain event records** straight from an entity — no DTO shell required.
+Apply the repeatable `[GenerateEvent]` attribute to the entity class itself:
+
+```csharp
+[GenerateEvent(Kinds = EventKinds.Created)]
+[GenerateEvent(Kinds = EventKinds.Deleted, NameSuffix = "Removed")]
+[GenerateEvent(Kinds = EventKinds.Updated, Properties = new[] { "Price" }, NameSuffix = "PriceChanged")]
+public class Product
+{
+    public Guid Id { get; set; }
+    public decimal Price { get; set; }
+}
+// Generates ProductCreatedEvent, ProductRemovedEvent, ProductPriceChangedEvent.
+```
+
+`DKNet.EfCore.Events` reads the generated assembly-level registration at runtime and raises each event
+automatically after a successful `SaveChanges`, mapping the entity onto the event type through the registered
+`IMapper` — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md#declared-domain-events-generateevent) for the
+raising, coexistence-with-hand-raised-events, and mapping-requirement details.
+
+### Naming
+
+- `NameSuffix` set → `{Entity}{NameSuffix}Event`.
+- `NameSuffix` unset and `Kinds` covers exactly one operation → `{Entity}CreatedEvent` / `{Entity}UpdatedEvent` /
+  `{Entity}DeletedEvent`.
+- `NameSuffix` unset and `Kinds` covers more than one operation → build error (`DKDTOEVT003`); an explicit
+  `NameSuffix` is required.
+
+### Shape rules and update narrowing
+
+`Include`, `Exclude` and `IgnoreComplexType` follow the exact same rules as `[GenerateDto]` (see above): mutually
+exclusive Include/Exclude, and `IgnoreComplexType` resolving per-declaration → project-wide
+`DtoGeneratorIgnoreComplexType` → default `true`.
+
+`Properties` narrows when an `Updated` event raises: non-empty raises only when at least one listed property
+changed (evaluated via `EntityEntry.Property(...).IsModified` just before save); empty means any change qualifies.
+Entries must be a direct property of the entity — a nested path is a build error.
+
+```csharp
+// Only raises OrderStatusChangedEvent when Status itself changed
+[GenerateEvent(Kinds = EventKinds.Updated, NameSuffix = "StatusChanged", Properties = new[] { "Status" })]
+public class Order
+{
+    public Guid Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string DeliveryNote { get; set; } = string.Empty;
+}
+```
+
+### Migration note
+
+Adopting generated events on an existing domain requires no base-class change — any entity mapped by the
+`DbContext` may declare events, whether or not it is an `AggregateRoot`. Reference this generator's analyzer,
+`DKNet.EfCore.Events`, and register an `IMapper` (e.g. Mapster) alongside `AddEventPublisher`. Existing
+hand-raised events (`AddEvent(...)`) keep firing unchanged and coexist with declared events as distinct types
+from the same save.
+
+### Nested owned-value limitation
+
+A change confined to a nested owned value (`OwnsOne`/`[Owned]`) does **not** raise the owner's update event — EF
+Core does not report the owner entity itself as `Modified` for an owned-type-only change. Narrow `Properties` on
+the owner's own direct properties only:
+
+```csharp
+public class Customer
+{
+    public Guid Id { get; set; }
+    public OwnedAddress Address { get; set; } = new();
+}
+// Changing only Address.Line does NOT raise Customer's [GenerateEvent(Kinds = EventKinds.Updated)] event.
+```
+
+### Security note
+
+A generated event mirrors the entity's properties by default — sensitive values are included unless `Exclude`d,
+same rule as generated DTOs. Review each `[GenerateEvent]` declaration for fields that shouldn't reach event
+subscribers.
+
 ## Performance Considerations
 
 ### Compile-Time vs Runtime
@@ -635,6 +715,15 @@ The generator reports several diagnostic codes:
 - **DKDTOGEN005**: Include parameter ignores global exclusions (informational)
   - When using Include, global exclusions are not applied
   - Only specified properties will be included
+
+The `[GenerateEvent]` event generator reports its own codes:
+
+- **DKDTOEVT001** (error): a narrowing `Properties` entry is a nested path, or not a property of the entity.
+- **DKDTOEVT002** (error): two `[GenerateEvent]` declarations on the same entity resolve to the same event name —
+  give one a distinct `NameSuffix`.
+- **DKDTOEVT003** (error): a no-suffix declaration covers more than one `Kinds` flag.
+- **DKDTOEVT004** (warning): `Properties` narrowing set on a declaration with no `Updated` flag — ignored.
+- **DKDTOEVT005** (warning): a declaration with no `Kinds` set generates nothing.
 
 Check build output for specific diagnostic messages.
 
@@ -787,6 +876,7 @@ public class GetCustomerHandler : IHandler<GetCustomerQuery, CustomerDto>
 
 - **[DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md)** - Repository pattern implementations
 - **[DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md)** - Repository abstractions
+- **[DKNet.EfCore.Events](./DKNet.EfCore.Events.md)** - Raises `[GenerateEvent]`-declared domain events automatically after SaveChanges
 - **[Architecture Guide](../Architecture.md)** - Understanding DDD and Onion Architecture
 - **[Examples & Recipes](../Examples/README.md)** - Practical implementation patterns
 

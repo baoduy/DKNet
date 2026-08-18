@@ -171,6 +171,58 @@ services.AddScoped<INotificationHandler<ProductPriceChangedEvent>, ProductPriceC
 services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ProductCreatedHandler).Assembly));
 ```
 
+## Declared Domain Events (`[GenerateEvent]`)
+
+`DKNet.EfCore.DtoGenerator` can generate a domain event record straight from an entity via the repeatable
+`[GenerateEvent]` attribute — see that package's README for the declaration syntax (naming, `Kinds`, update
+narrowing, `Include`/`Exclude`/`IgnoreComplexType`, build-time validation). This package is what raises them:
+
+- **Automatic raising**: declared events are captured before `SaveChanges` (so update narrowing can inspect
+  `EntityEntry.Property(...).IsModified`) and published through the same `IEventPublisher` path as hand-raised
+  events, after a successful save.
+- **Coexistence**: an entity can both declare events via `[GenerateEvent]` and raise events by hand via
+  `AddEvent(...)` — both are published, as distinct types, from the same save.
+- **No base-class requirement**: any entity mapped by the `DbContext` may declare events; it does not need to be
+  an `AggregateRoot` or implement `IEventEntity`.
+- **Delete events carry pre-removal values**: because a deleted entity's in-memory property values are untouched
+  by the database delete, the generated delete event mirrors the entity exactly as it was before removal.
+
+### Mapping requirement
+
+Declared events are produced by mapping the entity onto the generated event type through the registered
+`IMapper` — the same mapper used for `AddEvent<TEvent>()` type-based mapping. Register one (e.g. Mapster's
+`IMapper`) alongside `AddEventPublisher`:
+
+```csharp
+services.AddSingleton<IMapper, Mapper>(); // or your IMapper registration of choice
+services.AddEventPublisher<AppDbContext, EventPublisher>();
+```
+
+Without a registered `IMapper`, saving an entity that raised at least one declared event throws:
+
+```
+Entity raised {N} declared (generated) event(s) via [GenerateEvent], which map the entity onto the event type
+and therefore require an IMapper registration. Register one to use generated domain events.
+```
+
+### Migration note
+
+Adopting declared events on an existing domain needs: a reference to `DKNet.EfCore.DtoGenerator`'s analyzer
+(for the `[GenerateEvent]` attribute), this package (`DKNet.EfCore.Events`), and an `IMapper` registration.
+Existing hand-raised events keep firing unchanged, and no entity needs a base-class change to start declaring
+events.
+
+### Nested owned-value limitation
+
+A change confined to a nested owned value (`[Owned]` / `OwnsOne`) does not raise the owner's update event — EF
+Core does not report the owner itself as `Modified` when only an owned value changed. Narrow `Properties` on the
+owner's own direct properties only.
+
+### Security note
+
+A declared event mirrors the entity's properties by default, same as `[GenerateDto]` — sensitive values are
+included unless `Exclude`d on the `[GenerateEvent]` declaration.
+
 ## API Reference
 
 ### Core Interfaces

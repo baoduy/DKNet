@@ -7,3 +7,8 @@
 - **2026-08-04** — Updated `audit-logs.md` for SEC-005: documented default sensitive-property
   redaction, the `[AuditLog]` per-property override, and the `AuditPropertyPolicy.OnlyAttributedProperties`
   strict mode.
+- **2026-08-18** — Updated `dto-generator.md` and `domain-events.md` for DRK-437: documented the
+  repeatable `[GenerateEvent]` attribute (naming, `Kinds`, update narrowing) and how
+  `DKNet.EfCore.Events` raises declared events automatically after SaveChanges, including the
+  `IMapper` mapping requirement and the nested-owned-value limitation. Refreshed both entries in
+  `index.md`.

@@ -10,7 +10,7 @@ quality gates and `CLAUDE.md` for wiki conventions.
 - [[onion-architecture]] — How DKNet enforces inward-flowing dependencies across package boundaries.
 - [[domain-driven-design]] — DDD building blocks (aggregates, value objects, events) as expressed in DKNet.
 - [[aggregate-root]] — The `AggregateRoot` base type that marks consistency boundaries and carries events.
-- [[domain-events]] — Event records raised by aggregates and dispatched during SaveChanges.
+- [[domain-events]] — Event records raised by aggregates (or declared via `[GenerateEvent]`) and dispatched during SaveChanges.
 - [[cqrs-slimbus]] — CQRS command/query handling via `DKNet.SlimBus.Extensions`.
 
 ## Core Utilities
@@ -28,7 +28,7 @@ quality gates and `CLAUDE.md` for wiki conventions.
 - [[audit-logs]] — Automatic created/updated audit tracking via `[AuditLog]`.
 - [[column-encryption]] — Column-level encryption for `[Encrypted]` string properties.
 - [[data-authorization]] — Ownership-based row-level filtering via EF Core query filters.
-- [[dto-generator]] — Roslyn incremental source generator driven by `[GenerateDto]`.
+- [[dto-generator]] — Roslyn incremental source generator driven by `[GenerateDto]` (and `[GenerateEvent]` for domain events).
 
 ## ASP.NET Core
 

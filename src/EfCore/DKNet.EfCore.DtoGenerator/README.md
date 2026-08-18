@@ -76,6 +76,57 @@ public partial record BalanceDto;
 The generator will automatically create a `BalanceDto.g.cs` file with all properties from `MerchantBalance` and mapping
 helper methods.
 
+## Event Declaration
+
+Apply the repeatable `[GenerateEvent]` attribute directly to an entity class to have the generator emit a
+strongly-typed domain event record mirroring the entity's properties, and register it so `DKNet.EfCore.Events`
+raises it automatically after a successful save — no `partial record` DTO shell needed.
+
+```csharp
+[GenerateEvent(Kinds = EventKinds.Created)]
+[GenerateEvent(Kinds = EventKinds.Deleted, NameSuffix = "Removed")]
+[GenerateEvent(Kinds = EventKinds.Updated, Properties = new[] { "Price" }, NameSuffix = "PriceChanged")]
+public class Product
+{
+    public Guid Id { get; set; }
+    public decimal Price { get; set; }
+}
+// Generates ProductCreatedEvent, ProductRemovedEvent, ProductPriceChangedEvent.
+```
+
+**Naming**: with `NameSuffix` set, the event is `{Entity}{NameSuffix}Event`. Left unset, `Kinds` must cover exactly
+one operation — `{Entity}CreatedEvent` / `{Entity}UpdatedEvent` / `{Entity}DeletedEvent`. A no-suffix declaration
+covering more than one `Kinds` flag is a build error (`DKDTOEVT003`) since there is no single name to resolve to.
+
+**Include / Exclude / IgnoreComplexType** follow the same rules as `[GenerateDto]` above — mutually exclusive
+Include/Exclude, and `IgnoreComplexType` resolves per-declaration → project-wide `DtoGeneratorIgnoreComplexType` →
+default `true`.
+
+**Update narrowing** (`Properties`): non-empty raises the event only when at least one listed property changed;
+empty (default) raises on any change. Entries must name a direct property of the entity — a nested path (`"Address.Line"`)
+is a build error (`DKDTOEVT001`), and narrowing on a declaration with no `Updated` flag is a build warning
+(`DKDTOEVT004`) since it has no effect there.
+
+**Build-time validation** — the generator fails the build (or warns) on:
+
+- `DKDTOEVT001` — narrowing property is a nested path, or not a property of the entity.
+- `DKDTOEVT002` — two declarations on the same entity resolve to the same event name; give one a distinct `NameSuffix`.
+- `DKDTOEVT003` — a no-suffix declaration covers more than one `Kinds` flag.
+- `DKDTOEVT004` (warning) — `Properties` narrowing set on a declaration with no `Updated` flag.
+- `DKDTOEVT005` (warning) — a declaration with no `Kinds` set generates nothing.
+
+**Migration note**: adopting this on an existing domain needs no base-class change — any mapped entity may declare
+events, aggregate root or not. Reference `DKNet.EfCore.Events` and register an `IMapper` (e.g. Mapster) alongside
+`AddEventPublisher`; existing hand-raised events (via `AddEvent(...)`) keep firing unchanged and coexist with
+declared ones as distinct types.
+
+**Nested owned values**: a change confined to a nested `[Owned]` value (e.g. `Customer.Address.Line`) does **not**
+raise the owner's update event — EF Core does not report the owner entity itself as `Modified` for an owned-type-only
+change. Narrow `Properties` on the owner's own direct properties only.
+
+**Security note**: like `[GenerateDto]`, a declared event mirrors the entity's properties by default — sensitive
+values are included unless `Exclude`d. Review each declaration for fields that shouldn't reach event subscribers.
+
 ## Validation Attributes
 
 **NEW:** The generator automatically copies all validation attributes from entity properties to DTO properties. This

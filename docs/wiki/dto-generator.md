@@ -36,3 +36,14 @@ DTOs generated here are typically returned by query handlers in [[cqrs-slimbus]]
 projected from queries built with [[specifications]], so read paths return shaped
 transfer objects rather than exposing aggregates directly. This keeps the presentation
 contract decoupled from the domain model, consistent with [[onion-architecture]].
+
+## Generating domain events with `[GenerateEvent]`
+
+The same generator project also emits **domain event records** directly from an entity
+via the repeatable `[GenerateEvent]` attribute — no DTO shell needed. Kinds (`Created`
+/ `Updated` / `Deleted`, combinable), a `NameSuffix`, and `Include`/`Exclude`/
+`IgnoreComplexType` follow the same rules as `[GenerateDto]`; `Updated` events can be
+narrowed to raise only when specific properties change. `DKNet.EfCore.Events` reads the
+generated registration at runtime and raises the event automatically after a
+successful save — see [[domain-events]] for the raising side and the nested-owned-value
+limitation.
