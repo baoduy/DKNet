@@ -31,6 +31,10 @@
         <!-- Include the attribute file in consuming projects -->
         <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
 
+        <!-- Include the event declaration files in consuming projects -->
+        <None Include="EventKinds.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
+        <None Include="GenerateEventAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
+
         <!-- Pack the MSBuild props so CompilerVisibleProperty declarations reach consuming projects -->
         <None Include="DKNet.EfCore.DtoGenerator.props" Pack="true" PackagePath="buildTransitive/"/>
 

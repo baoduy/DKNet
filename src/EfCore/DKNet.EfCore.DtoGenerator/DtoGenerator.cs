@@ -108,7 +108,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="optionsProvider">The analyzer config options provider.</param>
     /// <returns>A set of globally excluded property names.</returns>
-    private static HashSet<string> ExtractGlobalExclusionsFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
+    internal static HashSet<string> ExtractGlobalExclusionsFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
     {
         var globalExclusions = new HashSet<string>();
         
@@ -140,7 +140,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// The parsed bool value of the <c>DtoGeneratorIgnoreComplexType</c> MSBuild property if it is set to a
     /// parseable bool; otherwise <see langword="null"/> (property absent, blank, or unparseable).
     /// </returns>
-    private static bool? ExtractProjectWideIgnoreComplexTypeFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
+    internal static bool? ExtractProjectWideIgnoreComplexTypeFromConfig(AnalyzerConfigOptionsProvider optionsProvider)
     {
         var globalOptions = optionsProvider.GlobalOptions;
         if (globalOptions.TryGetValue("build_property.DtoGeneratorIgnoreComplexType", out var value) &&
@@ -416,7 +416,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="ctx">The generator syntax context.</param>
     /// <param name="expression">The expression syntax.</param>
     /// <returns>A set of excluded property names.</returns>
-    private static HashSet<string> ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
+    internal static HashSet<string> ExtractExcludedPropertiesFromExpression(GeneratorSyntaxContext ctx, ExpressionSyntax? expression)
     {
         return expression switch
         {
@@ -435,7 +435,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="initializer">The initializer expression syntax.</param>
     /// <returns>A set of string literals.</returns>
-    private static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
+    internal static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
     {
         var result = new HashSet<string>();
         
@@ -456,7 +456,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="ctx">The generator syntax context.</param>
     /// <param name="collectionExpression">The collection expression syntax.</param>
     /// <returns>A set of string literals.</returns>
-    private static HashSet<string> ExtractStringLiteralsFromCollectionExpression(
+    internal static HashSet<string> ExtractStringLiteralsFromCollectionExpression(
         GeneratorSyntaxContext ctx,
         CollectionExpressionSyntax collectionExpression)
     {
@@ -715,7 +715,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <example>
     /// var props = GetEntityProperties(entitySymbol);
     /// </example>
-    private static List<IPropertySymbol> GetEntityProperties(INamedTypeSymbol entitySymbol)
+    internal static List<IPropertySymbol> GetEntityProperties(INamedTypeSymbol entitySymbol)
     {
         var properties = new List<IPropertySymbol>();
         var seenPropertyNames = new HashSet<string>();
@@ -776,7 +776,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="ignoreComplexType">Whether to automatically exclude complex types.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
     /// <returns>The filtered list of included properties.</returns>
-    private static List<IPropertySymbol> FilterIncludedProperties(
+    internal static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
         HashSet<string> excludedProperties,
         HashSet<string> includedProperties,
@@ -842,7 +842,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="property">The property symbol.</param>
     /// <param name="typeFormat">The symbol display format.</param>
     /// <returns>The C# type name.</returns>
-    private static string GetPropertyTypeName(IPropertySymbol property, SymbolDisplayFormat typeFormat)
+    internal static string GetPropertyTypeName(IPropertySymbol property, SymbolDisplayFormat typeFormat)
     {
         var type = property.Type;
 
@@ -865,7 +865,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="type">The type symbol.</param>
     /// <returns>The C# type name.</returns>
-    private static string BuildCleanTypeName(ITypeSymbol type)
+    internal static string BuildCleanTypeName(ITypeSymbol type)
     {
         // Handle special types (int, string, etc.) using C# keywords
         if (type.SpecialType != SpecialType.None)
@@ -923,7 +923,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <returns>True if the property is a non-nullable string.</returns>
-    private static bool IsNonNullableString(IPropertySymbol property)
+    internal static bool IsNonNullableString(IPropertySymbol property)
     {
         return property.Type.SpecialType == SpecialType.System_String &&
                property.NullableAnnotation != NullableAnnotation.Annotated;
@@ -934,7 +934,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <returns>True if the property is a collection.</returns>
-    private static bool IsCollectionType(IPropertySymbol property)
+    internal static bool IsCollectionType(IPropertySymbol property)
     {
         if (property.Type is IArrayTypeSymbol)
             return true;
@@ -965,7 +965,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <returns>True if the property is a non-nullable complex reference type.</returns>
-    private static bool IsComplexReferenceType(IPropertySymbol property)
+    internal static bool IsComplexReferenceType(IPropertySymbol property)
     {
         // Must be a reference type
         if (!property.Type.IsReferenceType)
@@ -999,7 +999,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="property">The property symbol.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
     /// <returns>True if the property is a complex navigation type.</returns>
-    private static bool IsComplexNavigationType(IPropertySymbol property, Compilation compilation)
+    internal static bool IsComplexNavigationType(IPropertySymbol property, Compilation compilation)
     {
         var propertyType = property.Type;
 
@@ -1117,7 +1117,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="properties">The list of property symbols.</param>
     /// <param name="dtoNamespace">The DTO's namespace.</param>
     /// <returns>A set of required namespaces.</returns>
-    private static HashSet<string> CollectRequiredNamespaces(List<IPropertySymbol> properties, string? dtoNamespace)
+    internal static HashSet<string> CollectRequiredNamespaces(List<IPropertySymbol> properties, string? dtoNamespace)
     {
         var namespaces = new HashSet<string>();
         
@@ -1149,7 +1149,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="type">The type symbol.</param>
     /// <param name="namespaces">The set of namespaces.</param>
     /// <param name="dtoNamespace">The DTO's namespace.</param>
-    private static void CollectNamespacesFromType(ITypeSymbol type, HashSet<string> namespaces, string? dtoNamespace)
+    internal static void CollectNamespacesFromType(ITypeSymbol type, HashSet<string> namespaces, string? dtoNamespace)
     {
         // Skip special types (int, string, etc.)
         if (type.SpecialType != SpecialType.None)
@@ -1197,7 +1197,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// Creates a symbol display format for type names (name only, with generics).
     /// </summary>
     /// <returns>The symbol display format.</returns>
-    private static SymbolDisplayFormat CreateTypeDisplayFormat()
+    internal static SymbolDisplayFormat CreateTypeDisplayFormat()
     {
         return new SymbolDisplayFormat(
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly,
