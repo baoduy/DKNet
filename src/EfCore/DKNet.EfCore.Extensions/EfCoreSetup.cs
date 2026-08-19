@@ -93,8 +93,9 @@ public static class EfCoreSetup
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            if (!GlobalModelBuilders.Contains(typeof(TImplementation)))
-                GlobalModelBuilders.Add(typeof(TImplementation));
+            // No Contains guard: RegisterGlobalModelBuilders already dedupes via .Union(GlobalModelBuilders),
+            // so a Contains/Add check-then-act here would only add a non-atomic race for no behavioural gain.
+            GlobalModelBuilders.Add(typeof(TImplementation));
 
             return serviceCollection;
         }
