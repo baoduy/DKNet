@@ -22,10 +22,13 @@ public static class EventSetup
     /// <returns></returns>
     public static IServiceCollection AddEventPublisher<TDbContext, TImplementation>(this IServiceCollection services)
         where TImplementation : class, IEventPublisher
-        where TDbContext : DbContext =>
-        services
-            .AddScoped<IEventPublisher, TImplementation>()
-            .AddHook<TDbContext, EventHook>();
+        where TDbContext : DbContext
+    {
+        if (!services.IsRegisteredWithImplementation<IEventPublisher>(typeof(TImplementation)))
+            services.AddScoped<IEventPublisher, TImplementation>();
+
+        return services.AddHook<TDbContext, EventHook>();
+    }
 
     #endregion
 }

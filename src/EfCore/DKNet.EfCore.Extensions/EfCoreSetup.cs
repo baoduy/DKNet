@@ -73,9 +73,17 @@ public static class EfCoreSetup
         /// <returns></returns>
         public IServiceCollection AddEfCoreExceptionHandler<TDbContext, TExceptionHandler>()
             where TDbContext : DbContext
-            where TExceptionHandler : class, IEfCoreExceptionHandler =>
-            serviceCollection.AddKeyedTransient<IEfCoreExceptionHandler, TExceptionHandler>(typeof(TDbContext)
-                .FullName);
+            where TExceptionHandler : class, IEfCoreExceptionHandler
+        {
+            var key = typeof(TDbContext).FullName;
+
+            if (serviceCollection.Any(s =>
+                    s.IsKeyedService && ReferenceEquals(s.ServiceKey, key) &&
+                    s.ServiceType == typeof(IEfCoreExceptionHandler)))
+                return serviceCollection;
+
+            return serviceCollection.AddKeyedTransient<IEfCoreExceptionHandler, TExceptionHandler>(key);
+        }
 
         /// <summary>
         ///     Register the GlobalModelBuilderRegister to the service collection.
@@ -85,7 +93,9 @@ public static class EfCoreSetup
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            GlobalModelBuilders.Add(typeof(TImplementation));
+            if (!GlobalModelBuilders.Contains(typeof(TImplementation)))
+                GlobalModelBuilders.Add(typeof(TImplementation));
+
             return serviceCollection;
         }
     }

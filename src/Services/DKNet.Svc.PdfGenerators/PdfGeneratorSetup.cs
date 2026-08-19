@@ -19,7 +19,9 @@ public static class PdfGeneratorSetup
         this IServiceCollection services,
         PdfGeneratorOptions? options = null)
     {
-        services.AddSingleton<IPdfGenerator>(new PdfGenerator(options));
+        if (!services.Any(s => s.ServiceType == typeof(IPdfGenerator)))
+            services.AddSingleton<IPdfGenerator>(new PdfGenerator(options));
+
         return services;
     }
 

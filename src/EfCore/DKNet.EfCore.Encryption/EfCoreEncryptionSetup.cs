@@ -24,7 +24,9 @@ public static class EfCoreEncryptionSetup
     public static ServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this ServiceCollection services)
         where TKeyServiceImplementation : class, IEncryptionKeyProvider
     {
-        services.AddSingleton<IEncryptionKeyProvider, TKeyServiceImplementation>();
+        if (!services.Any(s => s.ServiceType == typeof(IEncryptionKeyProvider)))
+            services.AddSingleton<IEncryptionKeyProvider, TKeyServiceImplementation>();
+
         return services;
     }
 

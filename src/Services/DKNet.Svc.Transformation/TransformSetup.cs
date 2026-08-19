@@ -20,6 +20,9 @@ public static class TransformSetup
         this IServiceCollection services,
         Action<TransformOptions>? optionFactory = null)
     {
+        if (services.Any(s => s.ServiceType == typeof(ITransformerService)))
+            return services;
+
         var op = new TransformOptions();
         optionFactory?.Invoke(op);
 

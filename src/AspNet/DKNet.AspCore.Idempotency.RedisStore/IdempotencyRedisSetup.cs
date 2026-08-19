@@ -29,6 +29,9 @@ public static class IdempotencyRedisSetup
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
+        if (services.IsRegistered<IConnectionMultiplexer>())
+            return services;
+
         services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
         return services;
@@ -45,6 +48,9 @@ public static class IdempotencyRedisSetup
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(connectionMultiplexer);
+
+        if (services.IsRegistered<IConnectionMultiplexer>())
+            return services;
 
         services.AddSingleton(connectionMultiplexer);
         return services;

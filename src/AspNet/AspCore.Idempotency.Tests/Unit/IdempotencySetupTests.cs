@@ -13,7 +13,7 @@ public class IdempotencySetupTests
     #region Methods
 
     [Fact]
-    public void AddIdempotentKey_MultipleCallsWithDifferentConfig_UsesLatestConfig()
+    public void AddIdempotentKey_MultipleCallsWithDifferentConfig_FirstConfigWins()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -27,7 +27,7 @@ public class IdempotencySetupTests
         var serviceProvider = services.BuildServiceProvider();
         var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
 
-        options.Value.CachePrefix.ShouldBe("second");
+        options.Value.CachePrefix.ShouldBe("first");
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class IdempotencySetupTests
     }
 
     [Fact]
-    public void IdempotentHeaderKey_IsSetFromOptions()
+    public void AddIdempotentKey_WithCustomHeaderKey_ResolvesFromOptions()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -121,7 +121,10 @@ public class IdempotencySetupTests
         services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options => options.IdempotencyHeaderKey = customHeaderKey);
 
         // Assert
-        IdempotencySetup.IdempotentHeaderKey.ShouldBe(customHeaderKey);
+        var serviceProvider = services.BuildServiceProvider();
+        var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
+
+        options.Value.IdempotencyHeaderKey.ShouldBe(customHeaderKey);
     }
 
     [Fact]

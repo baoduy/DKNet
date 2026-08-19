@@ -27,9 +27,13 @@ public static class AzureStorageSetup
         {
             var option = new AzureStorageOptions();
             config.Invoke(option);
-            return services
-                .AddSingleton(option)
-                .AddScoped<IBlobService, AzureStorageBlobService>();
+            services.AddSingleton(option);
+
+            if (!services.Any(s =>
+                    s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(AzureStorageBlobService)))
+                services.AddScoped<IBlobService, AzureStorageBlobService>();
+
+            return services;
         }
 
         /// <summary>
@@ -39,9 +43,13 @@ public static class AzureStorageSetup
         /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
         public IServiceCollection AddAzureStorageAdapter(IConfiguration configuration)
         {
-            return services
-                .Configure<AzureStorageOptions>(o => configuration.GetSection(AzureStorageOptions.Name).Bind(o))
-                .AddScoped<IBlobService, AzureStorageBlobService>();
+            services.Configure<AzureStorageOptions>(o => configuration.GetSection(AzureStorageOptions.Name).Bind(o));
+
+            if (!services.Any(s =>
+                    s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(AzureStorageBlobService)))
+                services.AddScoped<IBlobService, AzureStorageBlobService>();
+
+            return services;
         }
     }
 }
