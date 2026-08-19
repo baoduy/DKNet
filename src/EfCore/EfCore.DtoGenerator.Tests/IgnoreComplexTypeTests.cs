@@ -1,4 +1,4 @@
-using DKNet.EfCore.DtoEntities;
+using EfCore.DtoGenerator.TestEntities;
 using EfCore.DtoGenerator.Tests.Features;
 using Shouldly;
 

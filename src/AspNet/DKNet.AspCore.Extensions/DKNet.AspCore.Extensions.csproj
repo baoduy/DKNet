@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <IsPackable>false</IsPackable>
+        <IsPackable>true</IsPackable>
         <IsAspNetCoreApp>true</IsAspNetCoreApp>
     </PropertyGroup>
     <ItemGroup>
@@ -14,9 +14,12 @@
 
     <ItemGroup>
         <PackageReference Include="FluentResults"/>
+        <PackageReference Include="Asp.Versioning.Http"/>
+        <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
     </ItemGroup>
 </Project>

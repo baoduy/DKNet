@@ -12,6 +12,7 @@ namespace DKNet.EfCore.Repos.Abstractions;
 ///     The factory provides methods to obtain read-only and read-write repository interfaces
 ///     and supports synchronous disposal and asynchronous disposal patterns.
 /// </summary>
+[Obsolete("DKNet.EfCore.Repos.Abstractions is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
 public interface IRepositoryFactory : IDisposable, IAsyncDisposable
 {
     #region Methods

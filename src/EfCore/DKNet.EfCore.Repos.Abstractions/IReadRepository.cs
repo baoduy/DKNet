@@ -6,6 +6,7 @@ namespace DKNet.EfCore.Repos.Abstractions;
 ///     Read Repository Interface
 /// </summary>
 /// <typeparam name="TEntity"></typeparam>
+[Obsolete("DKNet.EfCore.Repos.Abstractions is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
 public interface IReadRepository<TEntity> where TEntity : class
 {
     #region Methods

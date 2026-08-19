@@ -5,6 +5,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// <summary>
 ///     Repo setup extensions for <see cref="IServiceCollection" />
 /// </summary>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup.AddSpecRepo) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // registered repository types are the obsolete members being flagged here
 public static class SetupRepository
 {
     /// <param name="services"></param>
@@ -62,3 +64,4 @@ public static class SetupRepository
         }
     }
 }
+#pragma warning restore CS0618

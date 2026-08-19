@@ -1,4 +1,4 @@
-using DKNet.EfCore.DtoEntities;
+using EfCore.DtoGenerator.TestEntities;
 using DKNet.EfCore.DtoGenerator;
 
 namespace EfCore.DtoGenerator.Tests.ProjectWide.Features;

@@ -11,7 +11,8 @@
         <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
-        <NoWarn>$(NoWarn);CS1591;SA1600</NoWarn>
+        <!-- DKNet.EfCore.Repos is retired ([Obsolete]); this is its own test suite, the sole permitted dependent. -->
+        <NoWarn>$(NoWarn);CS1591;SA1600;CS0618</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

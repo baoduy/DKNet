@@ -1,4 +1,4 @@
-using DKNet.EfCore.DtoEntities.Features.StaticData;
+using EfCore.DtoGenerator.TestEntities.Features.StaticData;
 using DKNet.EfCore.DtoGenerator;
 
 namespace EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;

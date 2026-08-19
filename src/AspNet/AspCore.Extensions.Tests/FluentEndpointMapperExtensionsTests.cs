@@ -1,220 +1,304 @@
-using DKNet.AspCore.Extensions;
+using System.Net;
+using System.Net.Http.Json;
+using AspCore.Extensions.Tests.Fixtures;
+using AspCore.Extensions.Tests.TestEntities;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Shouldly;
-using static DKNet.SlimBus.Extensions.Fluents;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AspCore.Extensions.Tests;
 
-public class FluentEndpointMapperExtensionsTests
+/// <summary>
+///     Exercises the endpoint mappers end to end through a real ASP.NET Core minimal-API pipeline (TestServer) with
+///     a real in-memory SlimMessageBus and real handlers — verb, route, dispatch, status code, and response shape —
+///     rather than asserting the mapper merely returned a non-null <see cref="RouteHandlerBuilder" />.
+/// </summary>
+public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClassFixture<EndpointTestHost>
 {
     #region Methods
 
-    private static RouteGroupBuilder CreateRouteGroupBuilder()
+    // --- POST: naming-derived created rule -----------------------------------------------------------------
+
+    [Fact]
+    public async Task MapPost_WithResponse_CreateNamedCommand_Returns201WithBody()
     {
-        var app = WebApplication.CreateBuilder().Build();
-        return app.MapGroup("/test");
+        var response = await host.Client.PostAsJsonAsync(
+            "/t/post-with-response-create", new CreateWidgetCommand { Name = "widget-1" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("widget-1");
     }
 
     [Fact]
-    public void MapDelete_NoResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPost_WithResponse_NonCreateNamedCommand_Returns200WithBody()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PostAsJsonAsync(
+            "/t/post-with-response-update", new RenameWidgetCommand { Name = "widget-2" });
 
-        // Act
-        var builder = group.MapDelete<TestCommandNoResponse>("/endpoint");
-
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("widget-2");
     }
 
     [Fact]
-    public void MapDelete_WithResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPost_NoResponse_CreateNamedCommand_Returns201()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PostAsJsonAsync("/t/post-no-response-create", new CreateNoResponseCommand());
 
-        // Act
-        var builder = group.MapDelete<TestCommand, TestResponse>("/endpoint");
-
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     [Fact]
-    public void MapGet_WithResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPost_NoResponse_NonCreateNamedCommand_Returns200()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PostAsJsonAsync("/t/post-no-response-update", new EchoNoResponseCommand());
 
-        // Act
-        var builder = group.MapGet<TestQuery, TestResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- Shared error responses (ProblemDetails on failure) -------------------------------------------------
+
+    [Fact]
+    public async Task MapPost_WithResponse_FailedResult_Returns400WithProblemDetailsBody()
+    {
+        var response = await host.Client.PostAsJsonAsync(
+            "/t/post-fail-with-response", new FailingWidgetCommand { Reason = "no-can-do" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem.ShouldNotBeNull();
+        problem.Detail.ShouldBe("no-can-do");
     }
 
     [Fact]
-    public void MapGetPage_WithResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPost_NoResponse_FailedResult_Returns400WithProblemDetailsBody()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PostAsJsonAsync("/t/post-fail-no-response", new FailingNoResponseCommand());
 
-        // Act
-        var builder = group.MapGetPage<TestPageQuery, TestResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem.ShouldNotBeNull();
+        problem.Detail.ShouldBe("no-response-boom");
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- DELETE (no-response overload; see MapDeleteWithResponseTests for the "with response" overload) ----
+
+    [Fact]
+    public async Task MapDelete_NoResponse_Returns200()
+    {
+        var response = await host.Client.DeleteAsync("/t/delete-no-response");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // --- PATCH ----------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task MapPatch_NoResponse_Returns200()
+    {
+        var response = await host.Client.PatchAsync(
+            "/t/patch-no-response", JsonContent.Create(new EchoNoResponseCommand()));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
-    public void MapPatch_NoResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPatch_WithResponse_Returns200WithBody()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PatchAsync(
+            "/t/patch-with-response", JsonContent.Create(new RenameWidgetCommand { Name = "patched" }));
 
-        // Act
-        var builder = group.MapPatch<TestCommandNoResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("patched");
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- PUT --------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task MapPut_NoResponse_Returns200()
+    {
+        var response = await host.Client.PutAsJsonAsync("/t/put-no-response", new EchoNoResponseCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
-    public void MapPatch_WithResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapPut_WithResponse_Returns200WithBody()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.PutAsJsonAsync(
+            "/t/put-with-response", new RenameWidgetCommand { Name = "put-name" });
 
-        // Act
-        var builder = group.MapPatch<TestCommand, TestResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("put-name");
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- GET: query dispatch + missing-resource (404) handling ----------------------------------------------
+
+    [Fact]
+    public async Task MapGet_Query_Found_Returns200WithBody()
+    {
+        var response = await host.Client.GetAsync("/t/get-query?Found=true&Name=present");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("present");
     }
 
     [Fact]
-    public void MapPost_NoResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapGet_Query_NotFound_Returns404()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.GetAsync("/t/get-query?Found=false&Name=absent");
 
-        // Act
-        var builder = group.MapPost<TestCommandNoResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- GET: paged query -------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task MapGetPage_Query_Returns200WithPagedResponseShape()
+    {
+        var response = await host.Client.GetAsync("/t/get-page");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetResult>>();
+        page.ShouldNotBeNull();
+        page.PageNumber.ShouldBe(1);
+        page.PageSize.ShouldBe(2);
+        page.TotalItemCount.ShouldBe(5);
+        page.Items.Select(i => i.Name).ShouldBe(["a", "b"]);
+    }
+
+    // --- GET by id: generic entity -> model projection, backed by a real IRepositorySpec / EF Core store ----
+
+    [Fact]
+    public async Task MapGetById_ExistingId_Returns200WithProjectedModel()
+    {
+        var response = await host.Client.GetAsync($"/t/widgets/{host.SeededWidgetId}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var model = await response.Content.ReadFromJsonAsync<WidgetModel>();
+        model.ShouldNotBeNull();
+        model.Id.ShouldBe(host.SeededWidgetId);
+        model.Name.ShouldBe("second");
     }
 
     [Fact]
-    public void MapPost_WithResponse_ReturnsRouteHandlerBuilder()
+    public async Task MapGetById_UnknownId_Returns404()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var response = await host.Client.GetAsync($"/t/widgets/{Guid.NewGuid()}");
 
-        // Act
-        var builder = group.MapPost<TestCommand, TestResponse>("/endpoint");
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+    // --- GET list: generic entity -> model page, newest-first ordering ---------------------------------------
+
+    [Fact]
+    public async Task MapGetList_Returns200WithAllSeededWidgets_NewestIdFirst()
+    {
+        var response = await host.Client.GetAsync("/t/widgets?pageNumber=1&pageSize=10");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.TotalItemCount.ShouldBe(3);
+        page.Items.Select(i => i.Name).ShouldBe(["third", "second", "first"]);
+    }
+
+    // --- ProducesCommons: shared error status codes are advertised on endpoint metadata ---------------------
+
+    [Fact]
+    public async Task ProducesCommons_AddsCommonErrorStatusCodeMetadata()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        var app = builder.Build();
+        app.MapGroup("/x").MapGet("/y", () => "ok").ProducesCommons();
+        await app.StartAsync();
+
+        var endpoint = app.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => e.RoutePattern.RawText == "/x/y");
+        var statusCodes = endpoint.Metadata
+            .OfType<IProducesResponseTypeMetadata>()
+            .Select(m => m.StatusCode)
+            .ToHashSet();
+
+        await app.StopAsync();
+
+        // Assert containment, not exact-set equality — the endpoint also carries its own inferred 200 success
+        // metadata (from the () => "ok" delegate), which is not ProducesCommons' concern.
+        foreach (var expected in new[]
+                 {
+                     StatusCodes.Status400BadRequest,
+                     StatusCodes.Status401Unauthorized,
+                     StatusCodes.Status403Forbidden,
+                     StatusCodes.Status404NotFound,
+                     StatusCodes.Status409Conflict,
+                     StatusCodes.Status429TooManyRequests,
+                     StatusCodes.Status500InternalServerError
+                 })
+            statusCodes.ShouldContain(expected);
+    }
+
+    // --- Published API description: the Produces<> type/status actually advertised on endpoint metadata -----
+    // Reverting a Produces<>() call to a wrong response type/status leaves the runtime-body assertions above
+    // green — a client generator reading the endpoint description would still be wrong. These assert the
+    // metadata directly, so they fail the moment the corresponding Produces<>() call changes.
+
+    [Fact]
+    public void MapGetPage_DeclaresPagedResponseAsThe200ResponseType()
+    {
+        var producesType = GetSuccessProducesType("/t/get-page", HttpStatusCode.OK);
+
+        producesType.ShouldBe(typeof(PagedResponse<WidgetResult>));
     }
 
     [Fact]
-    public void MapPut_NoResponse_ReturnsRouteHandlerBuilder()
+    public void MapGetList_DeclaresPagedResponseAsThe200ResponseType()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var producesType = GetSuccessProducesType("/t/widgets", HttpStatusCode.OK);
 
-        // Act
-        var builder = group.MapPut<TestCommandNoResponse>("/endpoint");
-
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+        producesType.ShouldBe(typeof(PagedResponse<WidgetModel>));
     }
 
     [Fact]
-    public void MapPut_WithResponse_ReturnsRouteHandlerBuilder()
+    public void MapPost_WithResponse_CreateNamedCommand_Declares201AsTheProducesStatusCode()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
+        var producesType = GetSuccessProducesType("/t/post-with-response-create", HttpStatusCode.Created);
 
-        // Act
-        var builder = group.MapPut<TestCommand, TestResponse>("/endpoint");
-
-        // Assert
-        builder.ShouldNotBeNull();
-        builder.ShouldBeOfType<RouteHandlerBuilder>();
+        producesType.ShouldBe(typeof(WidgetResult));
     }
 
     [Fact]
-    public void ProducesCommons_AddsCommonStatusCodes()
+    public void MapPost_WithResponse_NonCreateNamedCommand_Declares200AsTheProducesStatusCode()
     {
-        // Arrange
-        var group = CreateRouteGroupBuilder();
-        var builder = group.MapGet("/test", () => "test");
+        var producesType = GetSuccessProducesType("/t/post-with-response-update", HttpStatusCode.OK);
 
-        // Act
-        var result = builder.ProducesCommons();
+        producesType.ShouldBe(typeof(WidgetResult));
+    }
 
-        // Assert
-        result.ShouldNotBeNull();
-        result.ShouldBeOfType<RouteHandlerBuilder>();
+    private Type? GetSuccessProducesType(string routeRawText, HttpStatusCode expectedStatusCode)
+    {
+        var endpoint = host.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => e.RoutePattern.RawText == routeRawText);
+        return endpoint.Metadata
+            .OfType<IProducesResponseTypeMetadata>()
+            .Single(m => m.StatusCode == (int)expectedStatusCode)
+            .Type;
     }
 
     #endregion
-
-    public record TestCommand : Requests.IWitResponse<TestResponse>
-    {
-        #region Properties
-
-        public string Value { get; init; } = string.Empty;
-
-        #endregion
-    }
-
-    public record TestCommandNoResponse : Requests.INoResponse
-    {
-        #region Properties
-
-        public string Value { get; init; } = string.Empty;
-
-        #endregion
-    }
-
-    public record TestPageQuery : Queries.IWitPageResponse<TestResponse>
-    {
-        #region Properties
-
-        public string Value { get; init; } = string.Empty;
-
-        #endregion
-    }
-
-    public record TestQuery : Queries.IWitResponse<TestResponse>
-    {
-        #region Properties
-
-        public string Value { get; init; } = string.Empty;
-
-        #endregion
-    }
-
-    public record TestResponse
-    {
-        #region Properties
-
-        public string Result { get; init; } = string.Empty;
-
-        #endregion
-    }
 }

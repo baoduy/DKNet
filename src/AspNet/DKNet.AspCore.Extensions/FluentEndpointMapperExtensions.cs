@@ -4,6 +4,9 @@
 // File: FluentEndpointMapperExtensions.cs
 // Description: Extension helpers to map HTTP endpoints to SlimMessageBus-based fluent requests/queries using minimal APIs.
 
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Extensions;
 using DKNet.SlimBus.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -52,7 +55,7 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, [FromBody] TCommand request) =>
                     {
                         var rs = await bus.Send(request);
                         return rs.Response();
@@ -96,6 +99,56 @@ public static class FluentsEndpointMapperExtensions
                         return rs is not null ? Results.Ok(rs) : Results.NotFound();
                     })
                 .Produces<TResponse>()
+                .ProducesCommons();
+        }
+
+        /// <summary>
+        ///     Maps an HTTP GET endpoint that retrieves a single <typeparamref name="TEntity" /> by its <see cref="Guid" />
+        ///     id and projects it to <typeparamref name="TModel" />.
+        /// </summary>
+        /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+        /// <typeparam name="TModel">Model type the entity is projected to.</typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        public RouteHandlerBuilder MapGetById<TEntity, TModel>(string endpoint)
+            where TEntity : class, IEntity<Guid>
+            where TModel : class
+        {
+            return app.MapGet(
+                    endpoint,
+                    async (Guid id, [FromServices] IRepositorySpec repo) =>
+                    {
+                        var model = await repo.FirstOrDefaultAsync<TEntity, TModel>(
+                            new EntityByIdSpecification<TEntity, TModel>(id));
+                        return model is null ? Results.NotFound() : Results.Ok(model);
+                    })
+                .Produces<TModel>()
+                .ProducesCommons();
+        }
+
+        /// <summary>
+        ///     Maps an HTTP GET endpoint that returns a page of <typeparamref name="TEntity" /> records, newest first,
+        ///     projected to <typeparamref name="TModel" />.
+        /// </summary>
+        /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+        /// <typeparam name="TModel">Model type each entity is projected to.</typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        public RouteHandlerBuilder MapGetList<TEntity, TModel>(string endpoint)
+            where TEntity : class, IEntity<Guid>
+            where TModel : class
+        {
+            return app.MapGet(
+                    endpoint,
+                    async (int pageNumber, int pageSize, [FromServices] IRepositorySpec repo) =>
+                    {
+                        var page = await repo.ToPagedListAsync<TEntity, TModel>(
+                            new EntityListSpecification<TEntity, TModel>(),
+                            pageNumber < 1 ? 1 : pageNumber,
+                            pageSize < 1 ? 20 : pageSize);
+                        return Results.Ok(new PagedResponse<TModel>(page));
+                    })
+                .Produces<PagedResponse<TModel>>()
                 .ProducesCommons();
         }
 
@@ -160,6 +213,8 @@ public static class FluentsEndpointMapperExtensions
 
         /// <summary>
         ///     Maps an HTTP POST endpoint that accepts a command producing a response of type <typeparamref name="TResponse" />.
+        ///     Returns 201 Created when <typeparamref name="TCommand" />'s name contains "Create" (case-insensitive);
+        ///     otherwise returns 200 Ok.
         /// </summary>
         /// <typeparam name="TCommand">Command type implementing <see cref="Fluents.Requests.IWitResponse{TResponse}" />.</typeparam>
         /// <typeparam name="TResponse">Response type returned by the command.</typeparam>
@@ -168,18 +223,21 @@ public static class FluentsEndpointMapperExtensions
         public RouteHandlerBuilder MapPost<TCommand, TResponse>(string endpoint)
             where TCommand : class, Fluents.Requests.IWitResponse<TResponse>
         {
+            var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
                     async (IMessageBus bus, TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(true);
-                    }).Produces<TResponse>()
+                        return rs.Response(isCreating);
+                    }).Produces<TResponse>(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
 
         /// <summary>
         ///     Maps an HTTP POST endpoint that accepts a command without a response.
+        ///     Returns 201 Created when <typeparamref name="TCommand" />'s name contains "Create" (case-insensitive);
+        ///     otherwise returns 200 Ok.
         /// </summary>
         /// <typeparam name="TCommand">Command type implementing <see cref="Fluents.Requests.INoResponse" />.</typeparam>
         /// <param name="endpoint">The URL template for the endpoint.</param>
@@ -187,13 +245,15 @@ public static class FluentsEndpointMapperExtensions
         public RouteHandlerBuilder MapPost<TCommand>(string endpoint)
             where TCommand : class, Fluents.Requests.INoResponse
         {
+            var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                 endpoint,
                 async (IMessageBus bus, TCommand request) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response(true);
-                }).ProducesCommons();
+                    return rs.Response(isCreating);
+                }).Produces(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
+                .ProducesCommons();
         }
 
         /// <summary>
@@ -234,4 +294,33 @@ public static class FluentsEndpointMapperExtensions
                 }).ProducesCommons();
         }
     }
+}
+
+/// <summary>
+///     Specification matching a single <typeparamref name="TEntity" /> by its <see cref="Guid" /> id, used by
+///     <see cref="FluentsEndpointMapperExtensions.MapGetById{TEntity,TModel}" />.
+/// </summary>
+/// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+/// <typeparam name="TModel">Model type the entity is projected to.</typeparam>
+internal sealed class EntityByIdSpecification<TEntity, TModel> : ModelSpecification<TEntity, TModel>
+    where TEntity : class, IEntity<Guid>
+    where TModel : class
+{
+    /// <summary>Initializes the specification with a filter matching the given id.</summary>
+    /// <param name="id">The entity id to match.</param>
+    public EntityByIdSpecification(Guid id) => WithFilter(x => x.Id == id);
+}
+
+/// <summary>
+///     Specification listing <typeparamref name="TEntity" /> records ordered newest-first, used by
+///     <see cref="FluentsEndpointMapperExtensions.MapGetList{TEntity,TModel}" />.
+/// </summary>
+/// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+/// <typeparam name="TModel">Model type each entity is projected to.</typeparam>
+internal sealed class EntityListSpecification<TEntity, TModel> : ModelSpecification<TEntity, TModel>
+    where TEntity : class, IEntity<Guid>
+    where TModel : class
+{
+    /// <summary>Initializes the specification with the default newest-first ordering.</summary>
+    public EntityListSpecification() => AddOrderByDescending(x => x.Id);
 }
