@@ -123,6 +123,37 @@ carrying the `[RaisesEvent]` rule — naming a payload generated from a differen
 - `DKRAISEVT001` — narrowing property is a nested path, or not a property of the entity.
 - `DKRAISEVT002` — the named event type is generated from a different entity, or carries no `[GenerateDto]`.
 - `DKRAISEVT003` (warning) — narrowing set on a rule with no `Updated` flag.
+- `DKRAISEVT004` — string-form name already resolves to an existing type; use the type-naming form instead.
+- `DKRAISEVT005` — string-form name is not a compile-time constant, or not a single valid C# identifier.
+- `DKRAISEVT006` — two entities in the same namespace name the same string-form event; never merged into one record.
+
+### String form — generated payload record with no hand-written `[GenerateDto]`
+
+Naming the raise rule by string skips step 1 above entirely: the build generates the default-shape payload
+record for you, in the carrying entity's own namespace.
+
+```csharp
+[RaisesEvent("CustomerTouched", EventOperations.Created)]
+public class Customer
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+// Optional — extend the generated record from your own file (it is a public partial record):
+public partial record CustomerTouched
+{
+    public string Greeting => $"Hello, {Name}";
+}
+```
+
+The generated record is identical in shape to `[GenerateDto(typeof(Customer))]` with no `Exclude`/`Include`
+and the built-in `IgnoreComplexType` default (`true`) — no payload-shaping knobs are available on the string
+form. It carries no `[GenerateDto]` attribute itself and is `public partial record`, so a hand-authored partial
+with the same name in the same namespace merges with it rather than colliding (`DKRAISEVT004` only fires for
+a genuinely incompatible existing type — a non-partial type, or a type of a different kind). Narrowing
+(`DKRAISEVT001`/`DKRAISEVT003`) applies identically to both forms. The type-naming form's syntax and runtime
+behaviour are entirely unaffected by the string form.
 
 **Migration note**: adopting this on an existing domain needs no base-class change — any mapped entity may
 declare rules, aggregate root or not. A domain project referencing only `DKNet.EfCore.Abstractions` and this

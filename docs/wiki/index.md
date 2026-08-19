@@ -28,7 +28,7 @@ quality gates and `CLAUDE.md` for wiki conventions.
 - [[audit-logs]] — Automatic created/updated audit tracking via `[AuditLog]`.
 - [[column-encryption]] — Column-level encryption for `[Encrypted]` string properties.
 - [[data-authorization]] — Ownership-based row-level filtering via EF Core query filters.
-- [[dto-generator]] — Roslyn incremental source generator driven by `[GenerateDto]` (and validating `[RaisesEvent]` raise rules for domain events).
+- [[dto-generator]] — Roslyn incremental source generator driven by `[GenerateDto]` (validates `[RaisesEvent]` raise rules and generates the string form's payload record).
 
 ## ASP.NET Core
 
