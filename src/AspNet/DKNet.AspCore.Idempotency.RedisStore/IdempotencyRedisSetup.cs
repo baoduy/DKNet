@@ -5,6 +5,7 @@
 
 using DKNet.AspCore.Idempotency.RedisStore.Store;
 using DKNet.AspCore.Idempotency.Store;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
@@ -29,11 +30,14 @@ public static class IdempotencyRedisSetup
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-        if (services.IsRegistered<IConnectionMultiplexer>())
-            return services;
+        // Guarded independently: an app may already have its own IConnectionMultiplexer registered for
+        // unrelated Redis use, and should still get IDistributedCache (and vice versa) from this call.
+        if (!services.IsRegistered<IDistributedCache>())
+            services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
 
-        services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
-        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
+        if (!services.IsRegistered<IConnectionMultiplexer>())
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
+
         return services;
     }
 
