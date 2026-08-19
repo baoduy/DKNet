@@ -12,7 +12,9 @@ using DKNet.SlimBus.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.OpenApi;
 using SlimMessageBus;
 
 namespace DKNet.AspCore.Extensions;
@@ -150,7 +152,13 @@ public static class FluentsEndpointMapperExtensions
                         return Results.Ok(new PagedResponse<TModel>(page));
                     })
                 .Produces<PagedResponse<TModel>>()
-                .ProducesCommons();
+                .ProducesCommons()
+                .AddOpenApiOperationTransformer((operation, _, _) =>
+                {
+                    if (operation.Parameters?.FirstOrDefault(p => p.Name == "pageSize") is OpenApiParameter pageSize)
+                        pageSize.Description = "Number of items per page. Values above 100 are clamped to 100.";
+                    return Task.CompletedTask;
+                });
         }
 
         /// <summary>
