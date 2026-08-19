@@ -28,6 +28,9 @@ public static class IdempotencyNpgsqlSetup
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
+        if (services.IsRegistered<IdempotencyDbContext>())
+            return services;
+
         // Register DbContext
         services.AddDbContext<IdempotencyDbContext>(options =>
             {

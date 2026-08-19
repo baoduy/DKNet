@@ -15,17 +15,6 @@ namespace DKNet.AspCore.Idempotency;
 [ExcludeFromCodeCoverage]
 public static class IdempotencySetup
 {
-    #region Properties
-
-    /// <summary>
-    ///     Gets the HTTP header name used for idempotency keys.
-    ///     This value is set when <see cref="AddIdempotentKey" /> is called and can be used to reference
-    ///     the header in documentation or client code.
-    /// </summary>
-    public static string IdempotentHeaderKey { get; private set; } = null!;
-
-    #endregion
-
     #region Methods
 
     /// <summary>
@@ -53,6 +42,9 @@ public static class IdempotencySetup
     public static IServiceCollection AddIdempotentKey<TSoreImplement>(this IServiceCollection services,
         Action<IdempotencyOptions>? config = null) where TSoreImplement : class, IIdempotencyKeyStore
     {
+        if (services.IsRegistered<IIdempotencyKeyStore>())
+            return services;
+
         var options = new IdempotencyOptions();
         config?.Invoke(options);
 
@@ -62,8 +54,6 @@ public static class IdempotencySetup
         services
             .AddSingleton<IIdempotencyKeyStore, TSoreImplement>()
             .AddSingleton(Options.Create(options));
-
-        IdempotentHeaderKey = options.IdempotencyHeaderKey;
 
         return services;
     }

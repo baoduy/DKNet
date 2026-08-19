@@ -26,9 +26,12 @@ public static class S3Setup
     /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
     public static IServiceCollection AddS3BlobService(this IServiceCollection services, IConfiguration configuration)
     {
-        return services
-            .Configure<S3Options>(o => configuration.GetSection(S3Options.Name).Bind(o))
-            .AddScoped<IBlobService, S3BlobService>();
+        services.Configure<S3Options>(o => configuration.GetSection(S3Options.Name).Bind(o));
+
+        if (!services.Any(s => s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(S3BlobService)))
+            services.AddScoped<IBlobService, S3BlobService>();
+
+        return services;
     }
 
     #endregion

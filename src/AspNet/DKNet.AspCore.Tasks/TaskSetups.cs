@@ -15,12 +15,6 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class TaskSetups
 {
-    #region Fields
-
-    private static int _added;
-
-    #endregion
-
     /// <param name="services">The service collection to add the background job to.</param>
     extension(IServiceCollection services)
     {
@@ -31,7 +25,14 @@ public static class TaskSetups
         /// <returns>The service collection for method chaining.</returns>
         public IServiceCollection AddBackgroundJob<TJob>()
             where TJob : class, IBackgroundTask
-            => services.AddHost().AddScoped<IBackgroundTask, TJob>();
+        {
+            services.AddHost();
+
+            if (!services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == typeof(TJob)))
+                services.AddScoped<IBackgroundTask, TJob>();
+
+            return services;
+        }
 
         /// <summary>
         ///     Scans the specified assemblies and registers all types that implement <see cref="IBackgroundTask" /> as background
@@ -41,17 +42,25 @@ public static class TaskSetups
         /// <returns>The service collection for method chaining.</returns>
         public IServiceCollection AddBackgroundJobFrom(Assembly[] assemblies)
         {
-            services.AddHost().Scan(s =>
-                s.FromAssemblies(assemblies)
-                    .AddClasses(c => c.AssignableTo<IBackgroundTask>(), false)
-                    .AsImplementedInterfaces()
-                    .WithScopedLifetime());
+            services.AddHost();
+
+            var jobTypes = assemblies
+                .SelectMany(a => a.GetTypes())
+                .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IBackgroundTask).IsAssignableFrom(t));
+
+            foreach (var jobType in jobTypes)
+            {
+                if (!services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == jobType))
+                    services.AddScoped(typeof(IBackgroundTask), jobType);
+            }
+
             return services;
         }
 
         private IServiceCollection AddHost()
         {
-            if (Interlocked.CompareExchange(ref _added, 1, 0) == 1) return services;
+            if (services.Any(s => s.ImplementationType == typeof(BackgroundJobHost)))
+                return services;
 
             services.AddHostedService<BackgroundJobHost>();
             return services;

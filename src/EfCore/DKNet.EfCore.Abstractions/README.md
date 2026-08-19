@@ -173,6 +173,8 @@ public class Invoice : Entity<long>
 - `[IgnoreEntity]` - Exclude entity from EF discovery
 - `[RaisesEvent(Type, EventOperations, params string[])]` - Declare that an entity raises a
   [DtoGenerator](../DKNet.EfCore.DtoGenerator)-generated event payload on save (repeatable)
+- `[RaisesEvent(string, EventOperations, params string[])]` - String form: names an event that does not exist
+  yet, and the build generates its default-shape payload record (repeatable)
 
 ## Advanced Usage
 
@@ -232,6 +234,31 @@ public class Order : Entity<Guid>
 entity, narrowing properties must be direct, existing properties of the entity). `DKNet.EfCore.Events`'
 save hook reads `[RaisesEvent]` via reflection and raises the payload after a successful save — see its
 [README](../DKNet.EfCore.Events) for the runtime side.
+
+### String-form `[RaisesEvent]` — no hand-written payload record
+
+Naming an event by string skips writing a `[GenerateDto]` payload record by hand: the build generates a
+public, partial, default-shape record for it in the carrying entity's own namespace.
+
+```csharp
+[RaisesEvent("CustomerTouched", EventOperations.Created)]
+public class Customer : Entity<Guid>
+{
+}
+
+// Optional — extend the generated record with your own members in a separate file:
+public partial record CustomerTouched
+{
+    public string Greeting => $"Hello, {Name}";
+}
+```
+
+The generated record has the same default shape as `[GenerateDto(typeof(Customer))]` (public init-only
+properties, `IgnoreComplexType` on) — no `Include`/`Exclude`/`IgnoreComplexType` knobs are available on the
+string form. Build-time errors (`DKRAISEVT004`–`DKRAISEVT006`) catch a name that already resolves to an
+existing type, a name that isn't a compile-time constant or single valid identifier, and two entities in the
+same namespace naming the same event — see the [DtoGenerator README](../DKNet.EfCore.DtoGenerator) for
+details. The type-naming form's syntax and behaviour are unaffected by the string form.
 
 **Migrating an existing domain**: adding `[RaisesEvent]` to an entity that already hand-raises events via
 `AddEvent(...)` is additive — both fire; nothing needs to change on the existing path.

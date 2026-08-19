@@ -49,3 +49,14 @@ the same entity carrying the rule, and narrowing entries must be direct properti
 the entity. `DKNet.EfCore.Events` reads `[RaisesEvent]` via reflection at runtime and
 raises the payload automatically after a successful save — see [[domain-events]] for the
 raising side and the nested-owned-value limitation.
+
+`[RaisesEvent]` also has a string form — naming an event that doesn't exist yet, e.g.
+`[RaisesEvent("CustomerTouched", EventOperations.Created)]` — for which this generator
+itself emits the payload: a public, partial, default-shape record in the carrying
+entity's namespace (same shape as `[GenerateDto(typeof(Entity))]` with no
+`Include`/`Exclude`/`IgnoreComplexType` knobs). New diagnostics guard it: `DKRAISEVT004`
+(name already resolves to an existing, incompatible type), `DKRAISEVT005` (name isn't a
+compile-time constant or a single valid identifier), and `DKRAISEVT006` (two entities in
+the same namespace name the same event). A hand-authored `partial record` with the same
+name merges with the generated one rather than colliding — the same pattern used to
+extend any other generated DTO.

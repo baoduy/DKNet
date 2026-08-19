@@ -162,7 +162,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         // Arrange
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
-        var customer = new Customer("Acme Pte Ltd", "GST-123456", "verify");
+        var customer = new Customer("Acme Pte Ltd", "billing@acme.example", "GST-123456", "verify");
 
         // Act
         db.Set<Customer>().Add(customer);
@@ -274,7 +274,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         // Arrange
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
-        var customer = new Customer("Acme Pte Ltd", "GST-123456", "verify");
+        var customer = new Customer("Acme Pte Ltd", "billing@acme.example", "GST-123456", "verify");
         customer.Address.Line = "1 Main Street";
         db.Set<Customer>().Add(customer);
         await db.SaveChangesAsync();
@@ -317,6 +317,157 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         delivered.ShouldContain(e => e.ProductId == product.Id && e.Operation == "Updated" && e.Name == "Widget Pro");
         delivered.ShouldContain(e => e.ProductId == product.Id && e.Operation == "Deleted");
         RaisesEventPublisher.Events.Count.ShouldBe(delivered.Count);
+    }
+
+    // --- DRK-474: [RaisesEvent] string form + generated payload record ---------------------------------
+
+    [Fact]
+    public async Task StringFormRule_GeneratesItsRecordAndRaisesIt_WithNoHandWrittenPayload()
+    {
+        // Arrange - LoyaltyMembershipOtherEvents has no [GenerateDto] declaration anywhere; it exists
+        // only because the string-form rule below told the build to generate it.
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var membership = new LoyaltyMembership(100, "Bronze", "verify");
+        db.Set<LoyaltyMembership>().Add(membership);
+        await db.SaveChangesAsync();
+        RaisesEventPublisher.Events.Clear();
+
+        // Act
+        membership.ChangeTier("Silver");
+        await db.SaveChangesAsync();
+
+        // Assert
+        var published = RaisesEventPublisher.Events.OfType<LoyaltyMembershipOtherEvents>().ToList();
+        published.ShouldNotBeEmpty();
+        published.ShouldContain(e => e.Tier == "Silver" && e.Points == 100);
+    }
+
+    [Fact]
+    public void GeneratedRecord_IsPublicAndPartial_InTheCarryingEntitysNamespace()
+    {
+        // Assert - the build placed LoyaltyMembershipOtherEvents in LoyaltyMembership's own namespace,
+        // made it public, and it accepted the hand-authored Note member declared alongside the entity
+        // (see the partial record stub in RaisesEventEntities.cs) — proof the record is partially declarable.
+        var generatedType = typeof(LoyaltyMembershipOtherEvents);
+        generatedType.IsPublic.ShouldBeTrue();
+        generatedType.Namespace.ShouldBe(typeof(LoyaltyMembership).Namespace);
+        generatedType.GetProperty("Note").ShouldNotBeNull();
+        generatedType.GetProperty("Points").ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task BothForms_CoexistOnOneEntity_EachRaisingOnlyOnItsOwnSave()
+    {
+        // Arrange - LoyaltyMembership carries a type-naming rule (LoyaltyMembershipEvents, on
+        // Points changes) and a string-form rule (LoyaltyMembershipOtherEvents, narrowed to Tier).
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var membership = new LoyaltyMembership(100, "Bronze", "verify");
+
+        // Act - first save: create
+        db.Set<LoyaltyMembership>().Add(membership);
+        await db.SaveChangesAsync();
+        var afterCreate = RaisesEventPublisher.Events.ToList();
+
+        // Act - second save: only Tier changes
+        RaisesEventPublisher.Events.Clear();
+        membership.ChangeTier("Silver");
+        await db.SaveChangesAsync();
+        var afterTierChange = RaisesEventPublisher.Events.ToList();
+
+        // Assert
+        afterCreate.OfType<LoyaltyMembershipEvents>().ShouldContain(e => e.Points == 100);
+        afterCreate.OfType<LoyaltyMembershipOtherEvents>().ShouldBeEmpty();
+        afterTierChange.OfType<LoyaltyMembershipOtherEvents>().ShouldContain(e => e.Tier == "Silver");
+        afterTierChange.OfType<LoyaltyMembershipEvents>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task TypeNamingRule_RaisesOnlyThePreExistingEvent_AcrossTwoSaves_UnaffectedByTheStringForm()
+    {
+        // Arrange - regression guard: a Points-only save must raise LoyaltyMembershipEvents exactly as
+        // it did before the string form shipped, and never the unrelated string-form event (narrowed to
+        // the untouched Tier property).
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var membership = new LoyaltyMembership(100, "Bronze", "verify");
+
+        // Act - first save (create)
+        db.Set<LoyaltyMembership>().Add(membership);
+        await db.SaveChangesAsync();
+        var afterCreate = RaisesEventPublisher.Events.ToList();
+
+        // Act - second save (update, points only)
+        RaisesEventPublisher.Events.Clear();
+        membership.AddPoints(150);
+        await db.SaveChangesAsync();
+        var afterUpdate = RaisesEventPublisher.Events.ToList();
+
+        // Assert
+        afterCreate.OfType<LoyaltyMembershipEvents>().ShouldContain(e => e.Points == 100);
+        afterCreate.Count.ShouldBe(1);
+        afterUpdate.OfType<LoyaltyMembershipEvents>().ShouldContain(e => e.Points == 250);
+        afterUpdate.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task StringFormDefaultShape_CarriesTheEntitysDefaultValues()
+    {
+        // Arrange - CustomerTouched is generated with no shaping options: the default shape for Customer.
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var customer = new Customer("Acme Pte Ltd", "billing@acme.example", "T08-9911", "verify");
+
+        // Act
+        db.Set<Customer>().Add(customer);
+        await db.SaveChangesAsync();
+
+        // Assert
+        var published = RaisesEventPublisher.Events.OfType<CustomerTouched>().ToList();
+        published.ShouldContain(e =>
+            e.Name == "Acme Pte Ltd" && e.Email == "billing@acme.example" && e.TaxIdentifier == "T08-9911");
+    }
+
+    [Fact]
+    public async Task NarrowedStringFormUpdateRule_StaysSilent_WhenTheNarrowedPropertyDoesNotChange()
+    {
+        // Arrange - the string-form OrderStatusChanged rule is narrowed to Status, exactly like the
+        // pre-existing type-form OrderStatusChangedEvent rule on the same entity.
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var order = new Order("Acme Pte Ltd", "Pending", string.Empty, "verify");
+        db.Set<Order>().Add(order);
+        await db.SaveChangesAsync();
+        RaisesEventPublisher.Events.Clear();
+
+        // Act - only DeliveryNote changes
+        order.UpdateDeliveryNote("Leave at reception");
+        await db.SaveChangesAsync();
+
+        // Assert
+        RaisesEventPublisher.Events.OfType<OrderStatusChanged>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task NarrowedStringFormUpdateRule_Raises_WhenTheNarrowedPropertyChanges()
+    {
+        // Arrange
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var order = new Order("Acme Pte Ltd", "Pending", string.Empty, "verify");
+        db.Set<Order>().Add(order);
+        await db.SaveChangesAsync();
+        RaisesEventPublisher.Events.Clear();
+
+        // Act
+        order.ChangeStatus("Shipped");
+        await db.SaveChangesAsync();
+
+        // Assert
+        var published = RaisesEventPublisher.Events.OfType<OrderStatusChanged>().ToList();
+        published.ShouldNotBeEmpty();
+        published.ShouldContain(e => e.Status == "Shipped");
     }
 
     #endregion

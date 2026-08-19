@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Cryptography;
 using DKNet.Svc.Encryption;
 using Microsoft.Extensions.DependencyInjection;
@@ -97,6 +98,34 @@ public class EdgeCaseTests
 
         //provider.GetRequiredService<IPasswordAesEncryption>().ShouldNotBeNull();
         provider.GetService<IRsaEncryption>().ShouldBeNull();
+    }
+
+    [Fact]
+    public void EncryptionSetup_CalledTwice_RegistersEachServiceOnlyOnce()
+    {
+        var services = new ServiceCollection();
+
+        services.AddEncryptionServices();
+        services.AddEncryptionServices();
+
+        services.Count(s => s.ServiceType == typeof(IAesEncryption)).ShouldBe(1);
+        services.Count(s => s.ServiceType == typeof(IAesGcmEncryption)).ShouldBe(1);
+        services.Count(s => s.ServiceType == typeof(IShaHashing)).ShouldBe(1);
+        services.Count(s => s.ServiceType == typeof(IHmacHashing)).ShouldBe(1);
+    }
+
+    [Fact]
+    public void AddRsaEncryption_CalledTwice_KeepsFirstRegisteredKey()
+    {
+        var first = new RsaEncryption().PrivateKey;
+        var second = new RsaEncryption().PrivateKey;
+
+        var services = new ServiceCollection();
+        services.AddRsaEncryption(first!);
+        services.AddRsaEncryption(second!);
+
+        var provider = services.BuildServiceProvider();
+        provider.GetRequiredService<IRsaEncryption>().PublicKey.ShouldBe(new RsaEncryption(first!).PublicKey);
     }
 
     [Fact]

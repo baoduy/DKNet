@@ -18,11 +18,16 @@ public static class SetupRepository
         ///     - <see cref="IRepository{TEntity}" />
         /// </summary>
         /// <returns></returns>
-        private IServiceCollection AddGenericRepositories() =>
-            services
+        private IServiceCollection AddGenericRepositories()
+        {
+            if (services.Any(s => s.ServiceType == typeof(IReadRepository<>)))
+                return services;
+
+            return services
                 .AddScoped(typeof(IReadRepository<>), typeof(ReadRepository<>))
                 .AddScoped(typeof(IWriteRepository<>), typeof(WriteRepository<>))
                 .AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        }
 
         /// <summary>
         ///     Expose TDbContext as DbContext to <see cref="IServiceCollection" /> and Add Generic Repositories
@@ -48,7 +53,12 @@ public static class SetupRepository
         /// <typeparam name="TDbContext"></typeparam>
         /// <returns></returns>
         public IServiceCollection AddRepoFactory<TDbContext>()
-            where TDbContext : DbContext =>
-            services.AddScoped<IRepositoryFactory, RepositoryFactory<TDbContext>>();
+            where TDbContext : DbContext
+        {
+            if (services.IsRegistered<IRepositoryFactory>())
+                return services;
+
+            return services.AddScoped<IRepositoryFactory, RepositoryFactory<TDbContext>>();
+        }
     }
 }

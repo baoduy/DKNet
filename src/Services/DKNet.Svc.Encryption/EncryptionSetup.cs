@@ -16,12 +16,19 @@ public static class EncryptionSetup
     {
         // Keep AES-CBC registration for backward compatibility while obsolete APIs are phased out.
 #pragma warning disable CS0618
-        services.AddTransient<IAesEncryption, AesEncryption>();
+        if (!services.Any(s => s.ServiceType == typeof(IAesEncryption)))
+            services.AddTransient<IAesEncryption, AesEncryption>();
 #pragma warning restore CS0618
-        services.AddTransient<IShaHashing, ShaHashing>();
-        services.AddTransient<IHmacHashing, HmacHashing>();
 
-        services.AddTransient<IAesGcmEncryption, AesGcmEncryption>();
+        if (!services.Any(s => s.ServiceType == typeof(IShaHashing)))
+            services.AddTransient<IShaHashing, ShaHashing>();
+
+        if (!services.Any(s => s.ServiceType == typeof(IHmacHashing)))
+            services.AddTransient<IHmacHashing, HmacHashing>();
+
+        if (!services.Any(s => s.ServiceType == typeof(IAesGcmEncryption)))
+            services.AddTransient<IAesGcmEncryption, AesGcmEncryption>();
+
         return services;
     }
 
@@ -41,7 +48,10 @@ public static class EncryptionSetup
     public static IServiceCollection AddRsaEncryption(this IServiceCollection services, string privateKeyBase64)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(privateKeyBase64);
-        services.AddSingleton<IRsaEncryption>(_ => new RsaEncryption(privateKeyBase64));
+
+        if (!services.Any(s => s.ServiceType == typeof(IRsaEncryption)))
+            services.AddSingleton<IRsaEncryption>(_ => new RsaEncryption(privateKeyBase64));
+
         return services;
     }
 

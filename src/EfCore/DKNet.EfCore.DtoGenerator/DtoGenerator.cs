@@ -323,7 +323,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="compilation">The Roslyn compilation.</param>
     /// <param name="typeName">The type name.</param>
     /// <returns>A list of matching type symbols.</returns>
-    private static List<INamedTypeSymbol> FindTypeSymbolsByName(Compilation compilation, string typeName)
+    internal static List<INamedTypeSymbol> FindTypeSymbolsByName(Compilation compilation, string typeName)
     {
         return compilation
             .GetSymbolsWithName(name => name.Equals(typeName, StringComparison.Ordinal), SymbolFilter.Type)
@@ -1105,6 +1105,32 @@ public sealed class DtoGenerator : IIncrementalGenerator
         }
 
         return validationAttributes;
+    }
+
+    /// <summary>
+    /// Builds the default-shape payload record source for a <c>[RaisesEvent]</c> string-form declaration:
+    /// identical output to <c>[GenerateDto(typeof(Entity))]</c> with no Include/Exclude and the built-in
+    /// <c>IgnoreComplexType</c> default (<see langword="true"/>). Reused by <see cref="RaisesEventValidator"/>
+    /// so the two generators share one emission path instead of duplicating property analysis.
+    /// </summary>
+    /// <param name="entitySymbol">The entity type carrying the <c>[RaisesEvent]</c> string-form rule.</param>
+    /// <param name="recordName">The record name — the rule's string event name.</param>
+    /// <param name="recordNamespace">The namespace to emit the record in, or <see langword="null"/> for the global namespace.</param>
+    /// <param name="compilation">The Roslyn compilation.</param>
+    /// <returns>The generated C# source for the payload record.</returns>
+    internal static string BuildRaisesEventRecordSource(
+        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation)
+    {
+        var entityProperties = GetEntityProperties(entitySymbol);
+        var includedProperties = FilterIncludedProperties(
+            entityProperties, new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), true, compilation);
+
+        var typeDisplayFormat = CreateTypeDisplayFormat();
+        var requiredNamespaces = CollectRequiredNamespaces(includedProperties, recordNamespace);
+        var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+
+        var metadata = new DtoMetadata(recordName, recordNamespace, "partial record", entityDisplayName, new HashSet<string>());
+        return BuildDtoSourceCode(metadata, includedProperties, requiredNamespaces, typeDisplayFormat);
     }
 
     #endregion

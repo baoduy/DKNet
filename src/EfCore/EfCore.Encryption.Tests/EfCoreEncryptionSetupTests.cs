@@ -53,7 +53,7 @@ public class EfCoreEncryptionSetupTests
     #region Methods
 
     [Fact]
-    public void AddEfCoreEncryption_AfterBuildingServiceProvider_ShouldReflectNewRegistrations()
+    public void AddEfCoreEncryption_AfterBuildingServiceProvider_ShouldKeepFirstRegistration()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -63,13 +63,14 @@ public class EfCoreEncryptionSetupTests
         var serviceProvider1 = services.BuildServiceProvider();
         var provider1 = serviceProvider1.GetService<IEncryptionKeyProvider>();
 
+        // A later call for a different implementation is ignored — first registration wins.
         services.AddEfCoreEncryption<ConfigurableKeyProvider>();
         var serviceProvider2 = services.BuildServiceProvider();
         var provider2 = serviceProvider2.GetRequiredService<IEncryptionKeyProvider>();
 
         // Assert
         provider1.ShouldBeOfType<SimpleKeyProvider>();
-        provider2.ShouldBeOfType<ConfigurableKeyProvider>();
+        provider2.ShouldBeOfType<SimpleKeyProvider>();
     }
 
     [Fact]
@@ -107,7 +108,7 @@ public class EfCoreEncryptionSetupTests
     }
 
     [Fact]
-    public void AddEfCoreEncryption_MultipleCalls_ShouldUseLast()
+    public void AddEfCoreEncryption_MultipleCalls_ShouldKeepOnlyFirstRegistration()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -119,10 +120,10 @@ public class EfCoreEncryptionSetupTests
 
         // Assert
         var keyProviders = serviceProvider.GetServices<IEncryptionKeyProvider>().ToList();
-        keyProviders.Count.ShouldBe(2); // Both registrations exist
+        keyProviders.Count.ShouldBe(1); // Second call is a no-op — first registration wins
 
-        var lastProvider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
-        lastProvider.ShouldBeOfType<ConfigurableKeyProvider>();
+        var provider = serviceProvider.GetRequiredService<IEncryptionKeyProvider>();
+        provider.ShouldBeOfType<SimpleKeyProvider>();
     }
 
     [Fact]

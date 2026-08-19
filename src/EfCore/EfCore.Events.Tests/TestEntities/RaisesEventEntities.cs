@@ -32,6 +32,19 @@ public partial record CustomerUpdatedEvent;
 [GenerateDto(typeof(ShipmentLeg))]
 public partial record ShipmentLegPlacedEvent;
 
+// String-form payload — no hand-written [GenerateDto] record: the build generates
+// LoyaltyMembershipOtherEvents below from the [RaisesEvent("LoyaltyMembershipOtherEvents", ...)] rule
+// carried by LoyaltyMembership. This hand-authored declaration is the developer's own extension point —
+// a compatible partial record stub the generated partial merges into (DRK-471 §3 requirement 2).
+public partial record LoyaltyMembershipOtherEvents
+{
+    /// <summary>Hand-added member proving the generated record is genuinely partially-declarable.</summary>
+    public string Note => "hand-authored extension";
+}
+
+[GenerateDto(typeof(LoyaltyMembership))]
+public partial record LoyaltyMembershipEvents;
+
 /// <summary>
 ///     Mapped entity (not an aggregate root) carrying five raise rules: a duplicated create rule for
 ///     <see cref="OrderPlacedEvent" /> (two rules naming the same payload for the same operation raise
@@ -43,6 +56,7 @@ public partial record ShipmentLegPlacedEvent;
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
 [RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
+[RaisesEvent("OrderStatusChanged", EventOperations.Updated, nameof(Order.Status))]
 [RaisesEvent(typeof(OrderChangedEvent), EventOperations.Updated)]
 [RaisesEvent(typeof(OrderCancelledEvent), EventOperations.Deleted)]
 [RaisesEvent(typeof(OrderRecordedEvent), EventOperations.Created | EventOperations.Updated)]
@@ -96,21 +110,25 @@ public sealed record OrderStatusNotifiedEvent
 }
 
 /// <summary>
-///     Mapped entity carrying a create rule that excludes <c>TaxIdentifier</c> and an unnarrowed update
-///     rule, with an owned <see cref="OwnedAddress" /> value. Used to verify exclusion honouring and the
-///     nested-owned-value limitation (a change confined to <see cref="Address" /> does not raise the
-///     owner's update event).
+///     Mapped entity carrying a create rule that excludes <c>TaxIdentifier</c>, an unnarrowed update
+///     rule, and a string-form create rule (<see cref="LoyaltyMembershipOtherEvents" />-style generation,
+///     here proving the default generated shape carries the entity's default values — name, email, tax
+///     identifier), with an owned <see cref="OwnedAddress" /> value. Used to verify exclusion honouring
+///     and the nested-owned-value limitation (a change confined to <see cref="Address" /> does not raise
+///     the owner's update event).
 /// </summary>
 [RaisesEvent(typeof(CustomerRegisteredEvent), EventOperations.Created)]
 [RaisesEvent(typeof(CustomerUpdatedEvent), EventOperations.Updated)]
+[RaisesEvent("CustomerTouched", EventOperations.Created)]
 public class Customer : EntityBase<Guid>
 {
     #region Constructors
 
-    public Customer(string name, string taxIdentifier, string createdBy)
+    public Customer(string name, string email, string taxIdentifier, string createdBy)
         : base(Guid.CreateVersion7(), "TestOwner", createdBy)
     {
         Name = name;
+        Email = email;
         TaxIdentifier = taxIdentifier;
         Address = new OwnedAddress();
     }
@@ -120,6 +138,8 @@ public class Customer : EntityBase<Guid>
     #region Properties
 
     [Required] public string Name { get; private set; }
+
+    [Required] public string Email { get; private set; }
 
     public string TaxIdentifier { get; private set; }
 
@@ -173,6 +193,45 @@ public class ShipmentLeg : EntityBase<Guid>
     [Required] public string Origin { get; private set; }
 
     [Required] public string Destination { get; private set; }
+
+    #endregion
+}
+
+/// <summary>
+///     Mapped entity carrying a type-form create+update rule narrowed to <see cref="Points" /> (regression
+///     guard — same payload, same behaviour as before the string form shipped) and a string-form update
+///     rule narrowed to the unrelated <see cref="Tier" /> property, proving both forms coexist and raise
+///     independently: a <see cref="Points" />-only save raises only <see cref="LoyaltyMembershipEvents" />,
+///     and a <see cref="Tier" /> change raises only the generated <see cref="LoyaltyMembershipOtherEvents" />.
+/// </summary>
+[RaisesEvent(typeof(LoyaltyMembershipEvents), EventOperations.Created | EventOperations.Updated, nameof(Points))]
+[RaisesEvent("LoyaltyMembershipOtherEvents", EventOperations.Updated, nameof(Tier))]
+public class LoyaltyMembership : EntityBase<Guid>
+{
+    #region Constructors
+
+    public LoyaltyMembership(int points, string tier, string createdBy)
+        : base(Guid.CreateVersion7(), "TestOwner", createdBy)
+    {
+        Points = points;
+        Tier = tier;
+    }
+
+    #endregion
+
+    #region Properties
+
+    public int Points { get; private set; }
+
+    [Required] public string Tier { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public void AddPoints(int points) => Points += points;
+
+    public void ChangeTier(string tier) => Tier = tier;
 
     #endregion
 }
@@ -254,6 +313,19 @@ internal sealed class CustomerEfConfig : DefaultEntityTypeConfiguration<Customer
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(100);
         builder.OwnsOne(x => x.Address);
+    }
+
+    #endregion
+}
+
+internal sealed class LoyaltyMembershipEfConfig : DefaultEntityTypeConfiguration<LoyaltyMembership>
+{
+    #region Methods
+
+    public override void Configure(EntityTypeBuilder<LoyaltyMembership> builder)
+    {
+        base.Configure(builder);
+        builder.HasKey(x => x.Id);
     }
 
     #endregion

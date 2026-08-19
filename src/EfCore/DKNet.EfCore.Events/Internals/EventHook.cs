@@ -17,6 +17,10 @@ internal sealed class EventHook(
 
     private static readonly ConcurrentDictionary<Type, RaisesEventAttribute[]> DeclaredEventCache = new();
 
+    // String-form rules resolve their payload record by reflection (entity's assembly + namespace); cache the
+    // result per (entity type, event name) since that lookup is not free and the mapping never changes at runtime.
+    private static readonly ConcurrentDictionary<(Type EntityType, string EventName), Type?> ResolvedEventTypeCache = new();
+
     private readonly IMapper? _mapper = mappers.FirstOrDefault();
     private readonly HashSet<(object Entity, Type EventType)> _declaredEvents = [];
 
@@ -57,7 +61,7 @@ internal sealed class EventHook(
 
                 // R5: two rules naming the same payload for the same operation raise it once
                 // (HashSet dedups on the entity instance + event type).
-                _declaredEvents.Add((entry.Entity, rule.EventType));
+                _declaredEvents.Add((entry.Entity, ResolveEventType(entry.Entity.GetType(), rule)));
             }
         }
 
@@ -71,6 +75,32 @@ internal sealed class EventHook(
     private static RaisesEventAttribute[] GetRaisesEventAttributes(Type entityType) =>
         DeclaredEventCache.GetOrAdd(entityType,
             static t => t.GetCustomAttributes<RaisesEventAttribute>().ToArray());
+
+    /// <summary>
+    ///     Resolves the <see cref="Type" /> a <see cref="RaisesEventAttribute" /> rule raises: the declared
+    ///     <see cref="RaisesEventAttribute.EventType" /> for the type-naming form, or the generated payload
+    ///     record resolved by name (entity's own assembly + namespace) for the string form.
+    /// </summary>
+    /// <exception cref="EventException">
+    ///     The rule is the string form and no generated payload record with that name exists in the entity's
+    ///     namespace — never silently dropped.
+    /// </exception>
+    private static Type ResolveEventType(Type entityType, RaisesEventAttribute rule)
+    {
+        if (rule.EventType is not null)
+            return rule.EventType;
+
+        var eventName = rule.EventName!;
+        var resolved = ResolvedEventTypeCache.GetOrAdd((entityType, eventName), static key =>
+        {
+            var (entity, name) = key;
+            var qualifiedName = entity.Namespace is null ? name : $"{entity.Namespace}.{name}";
+            return entity.Assembly.GetType(qualifiedName);
+        });
+
+        return resolved ?? throw new EventException(Result.Fail(
+            $"Entity '{entityType.Name}' declares a [RaisesEvent] string-form rule naming '{eventName}', but no generated payload record named '{eventName}' was found in its namespace. Ensure DKNet.EfCore.DtoGenerator is referenced and the entity builds cleanly."));
+    }
 
     /// <summary>
     ///     Run RunAfterSaveAsync Events and ignore the result even failed.

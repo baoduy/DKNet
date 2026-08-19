@@ -40,7 +40,15 @@ public class RaisesEventDiagnosticsTests
                     Properties = properties;
                 }
 
-                public Type EventType { get; }
+                public RaisesEventAttribute(string eventName, EventOperations operations, params string[] properties)
+                {
+                    EventName = eventName;
+                    Operations = operations;
+                    Properties = properties;
+                }
+
+                public Type? EventType { get; }
+                public string? EventName { get; }
                 public EventOperations Operations { get; }
                 public string[] Properties { get; }
             }
@@ -198,10 +206,259 @@ public class RaisesEventDiagnosticsTests
         result.CompilationDiagnostics.ShouldNotContain(d => d.Severity == DiagnosticSeverity.Error);
     }
 
-    private static GeneratorOutput RunGenerator(string declaration)
+    [Fact]
+    public void ProjectGeneratingPayloads_DeclaringNoRule_ProducesTheUnchangedDefaultShapePayload()
     {
-        var entitySource = EntitySource.Replace("{{Declaration}}", declaration);
+        // Arrange - concrete baseline (spec-review nit): OrderPlacedEvent is a plain [GenerateDto] payload,
+        // Order carries no [RaisesEvent] rule at all. Assert the exact members generated, not "unchanged".
+        const string declaration = "";
 
+        // Act - both generators run together, exactly as they do in a real build
+        var result = RunBothGenerators(declaration);
+
+        // Assert - DKDTOGEN003 is DtoGenerator's routine "N properties excluded" info notice, unrelated
+        // to [RaisesEvent]; the build must still be free of errors and warnings.
+        result.Diagnostics.ShouldNotContain(d => d.Severity == DiagnosticSeverity.Error || d.Severity == DiagnosticSeverity.Warning);
+        result.CompilationDiagnostics.ShouldNotContain(d => d.Severity == DiagnosticSeverity.Error);
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal));
+
+        var payloadSource = result.GeneratedSources
+            .Single(s => s.HintName.Contains("OrderPlacedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payloadSource.ShouldContain("Id");
+        payloadSource.ShouldContain("Status");
+        payloadSource.ShouldContain("DeliveryNote");
+        payloadSource.ShouldNotContain("DeliveryAddress"); // complex/nav property, excluded by default
+    }
+
+    [Fact]
+    public void StringFormName_ResolvingToAnIncompatibleExistingType_FailsTheBuild()
+    {
+        // Arrange - LoyaltyMembershipEvents is a plain (non-partial, non-record) type already declared;
+        // naming it by string must fail rather than silently reuse or collide with it.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                public sealed class LoyaltyMembershipEvents
+                {
+                    public int Points { get; set; }
+                }
+
+                [RaisesEvent("LoyaltyMembershipEvents", EventOperations.Created)]
+                public sealed class LoyaltyMembership
+                {
+                    public Guid Id { get; set; }
+                    public int Points { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT004" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("LoyaltyMembershipEvents");
+        error.GetMessage().ShouldContain("typeof(LoyaltyMembershipEvents)");
+    }
+
+    [Fact]
+    public void StringFormName_NotACompileTimeConstant_FailsTheBuild()
+    {
+        // Arrange - the name is read from a non-const static field, not written as a literal
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                public static class EventNames
+                {
+                    public static string OrderTouched = "OrderTouched";
+                }
+
+                [RaisesEvent(EventNames.OrderTouched, EventOperations.Created)]
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT005" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Order");
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void StringFormName_NotASingleIdentifier_FailsTheBuildNamingIt()
+    {
+        // Arrange
+        const string declaration = """[RaisesEvent("Foo.Bar", EventOperations.Created)]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT005" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Foo.Bar");
+    }
+
+    [Fact]
+    public void TwoEntitiesInOneNamespace_NamingTheSameStringEvent_FailsTheBuildIdentifyingBoth()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Domain.Sales
+            {
+                [RaisesEvent("RecordTouched", EventOperations.Created)]
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                }
+
+                [RaisesEvent("RecordTouched", EventOperations.Created)]
+                public sealed class Invoice
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var errors = result.Diagnostics.Where(d => d.Id == "DKRAISEVT006" && d.Severity == DiagnosticSeverity.Error).ToList();
+        errors.Count.ShouldBe(2); // one per declaration, each identifying both entities
+        errors.ShouldAllBe(d => d.GetMessage().Contains("Order") && d.GetMessage().Contains("Invoice"));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("RecordTouched", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NamingANonexistentType_IsStillACompileError_NeverAGenerationTrigger()
+    {
+        // Arrange - LoyaltyMembershipEvnets (typo) does not exist; the type-naming form never falls back
+        // to generation, unlike the string form.
+        const string declaration = """[RaisesEvent(typeof(LoyaltyMembershipEvnets), EventOperations.Created)]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert - the native compiler rejects the unresolved type (CS0246); the validator resolves it to
+        // an error-type symbol and, correctly, still reports it as a mismatched payload rather than
+        // silently accepting it — either way the build fails and nothing is generated for the typo'd name.
+        result.CompilationDiagnostics.ShouldContain(d => d.Severity == DiagnosticSeverity.Error);
+        result.Diagnostics.ShouldNotContain(d =>
+            d.Id == "DKRAISEVT004" || d.Id == "DKRAISEVT005" || d.Id == "DKRAISEVT006");
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("LoyaltyMembershipEvnets", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NarrowingAStringFormRule_ToAPropertyTheEntityDoesNotHave_FailsTheBuild()
+    {
+        // Arrange - narrowing validation is identical for both forms; exercised here for the string form
+        const string declaration = """[RaisesEvent("OrderTouched", EventOperations.Updated, "Sttaus")]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT001" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Sttaus");
+    }
+
+    [Fact]
+    public void NarrowingOnAStringFormCreateOnlyRule_WarnsExactlyAsTheExistingFormDoes()
+    {
+        // Arrange - narrowing means nothing on a create-only rule, string form or type form alike
+        const string declaration = """[RaisesEvent("OrderTouched", EventOperations.Created, "Status")]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert
+        result.Diagnostics.ShouldNotContain(d => d.Severity == DiagnosticSeverity.Error);
+        var warning = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT003" && d.Severity == DiagnosticSeverity.Warning);
+        warning.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ValidStringFormDeclaration_GeneratesAPublicPartialRecord_WithTheEntitysDefaultShapeMembers()
+    {
+        // Arrange
+        const string declaration = """[RaisesEvent("OrderTouched", EventOperations.Created)]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var generated = result.GeneratedSources.Single(s => s.HintName.Contains("OrderTouched.RaisesEvent.g.cs", StringComparison.Ordinal));
+        var source = generated.SourceText.ToString();
+        source.ShouldContain("namespace Probe.Entities");
+        source.ShouldContain("public partial record OrderTouched");
+        source.ShouldContain("Status");
+        source.ShouldContain("DeliveryNote");
+    }
+
+    [Fact]
+    public void HandAuthoredPartialRecordStub_WithTheSameNameAsAStringFormEvent_MergesWithoutBeingTreatedAsACollision()
+    {
+        // Arrange - a hand-authored `public partial record` stub is the developer's extension point
+        // (identical to how [GenerateDto] payloads are extended), not a collision.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                public partial record OrderTouched
+                {
+                    public string ExtraNote => "hand-authored";
+                }
+
+                [RaisesEvent("OrderTouched", EventOperations.Created)]
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert - no collision diagnostic, and the generator still emits its partial for the merge
+        result.Diagnostics.ShouldNotContain(d => d.Id == "DKRAISEVT004");
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("OrderTouched.RaisesEvent.g.cs", StringComparison.Ordinal));
+    }
+
+    private static GeneratorOutput RunGenerator(string declaration) =>
+        RunGeneratorWithSource(EntitySource.Replace("{{Declaration}}", declaration));
+
+    /// <summary>
+    /// Runs <see cref="DKNet.EfCore.DtoGenerator.RaisesEventValidator"/> against a caller-supplied entity
+    /// source (bypassing the single-<c>{{Declaration}}</c> template), for scenarios needing extra types
+    /// or more than one entity in the compilation.
+    /// </summary>
+    private static GeneratorOutput RunGeneratorWithSource(string entitySource)
+    {
         var compilation = CSharpCompilation.Create(
             "ProbeCompilation",
             [
@@ -219,10 +476,52 @@ public class RaisesEventDiagnosticsTests
 
         return new GeneratorOutput(
             runResult.Results.SelectMany(r => r.Diagnostics).ToList(),
-            outputCompilation.GetDiagnostics().ToList());
+            outputCompilation.GetDiagnostics().ToList(),
+            runResult.Results.SelectMany(r => r.GeneratedSources).ToList());
     }
 
-    private sealed record GeneratorOutput(List<Diagnostic> Diagnostics, List<Diagnostic> CompilationDiagnostics);
+    /// <summary>
+    /// Runs both <see cref="DKNet.EfCore.DtoGenerator.RaisesEventValidator"/> and the real
+    /// <see cref="DKNet.EfCore.DtoGenerator.DtoGenerator"/> together, for the one scenario that needs to
+    /// inspect actual payload-record content (the "no rule declared" baseline).
+    /// </summary>
+    private static GeneratorOutput RunBothGenerators(string declaration)
+    {
+        var entitySource = EntitySource.Replace("{{Declaration}}", declaration);
+
+        // DtoGenerator deliberately omits "using System;" from generated payload source, relying on the
+        // ImplicitUsings that every real consuming project has (Directory.Build.props, solution-wide) —
+        // reproduce that same global using here rather than in every generated file.
+        var compilation = CSharpCompilation.Create(
+            "ProbeCompilation",
+            [
+                CSharpSyntaxTree.ParseText("global using System;"),
+                CSharpSyntaxTree.ParseText(RuntimeContractSource),
+                CSharpSyntaxTree.ParseText(GenerateDtoAttributeSource),
+                CSharpSyntaxTree.ParseText(entitySource),
+            ],
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var generators = new ISourceGenerator[]
+        {
+            new DKNet.EfCore.DtoGenerator.RaisesEventValidator().AsSourceGenerator(),
+            new DKNet.EfCore.DtoGenerator.DtoGenerator().AsSourceGenerator(),
+        };
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
+        var runResult = ((CSharpGeneratorDriver)driver).GetRunResult();
+
+        return new GeneratorOutput(
+            runResult.Results.SelectMany(r => r.Diagnostics).ToList(),
+            outputCompilation.GetDiagnostics().ToList(),
+            runResult.Results.SelectMany(r => r.GeneratedSources).ToList());
+    }
+
+    private sealed record GeneratorOutput(
+        List<Diagnostic> Diagnostics,
+        List<Diagnostic> CompilationDiagnostics,
+        List<GeneratedSourceResult> GeneratedSources);
 
     #endregion
 }
