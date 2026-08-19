@@ -52,6 +52,24 @@ internal sealed class ByUserProbeHandler : Fluents.Requests.IHandler<ByUserProbe
     #endregion
 }
 
+/// <summary>
+///     Same probe as <see cref="ByUserProbeCommand" /> but mapped with <c>[AsParameters]</c> binding (via
+///     <c>MapGet&lt;TCommand,TResponse&gt;</c>) rather than JSON body binding — <c>[JsonIgnore]</c> on
+///     <see cref="RequestBase.ByUser" /> has no effect on this binding source, so a caller can put
+///     <c>?ByUser=...</c> straight on the querystring unless the host stamps over it unconditionally.
+/// </summary>
+public record ByUserQueryProbe : RequestBase, Fluents.Queries.IWitResponse<WidgetResult>;
+
+internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQueryProbe, WidgetResult>
+{
+    #region Methods
+
+    public Task<WidgetResult?> OnHandle(ByUserQueryProbe request, CancellationToken cancellationToken) =>
+        Task.FromResult<WidgetResult?>(new WidgetResult { Name = request.ByUser ?? "(null)" });
+
+    #endregion
+}
+
 /// <summary>The single <see cref="IEndpointConfig" /> discovered by default (no explicit assemblies) in this test assembly.</summary>
 public sealed class ProbeEndpointConfig : IEndpointConfig
 {
@@ -69,6 +87,7 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
     {
         group.MapPost<ValidatedCommand, WidgetResult>("/validated");
         group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
+        group.MapGet<ByUserQueryProbe, WidgetResult>("/by-user-query");
     }
 
     #endregion
@@ -96,6 +115,32 @@ public sealed class PolicyGuardedEndpointConfig : IEndpointConfig
     #endregion
 }
 
+/// <summary>
+///     A third config that explicitly overrides <see cref="Tag" /> to empty — exercising the
+///     <see cref="EndpointRegistrationOptions.DefaultTag" /> fallback branch in
+///     <c>EndpointConfigExtensions.MapEndpointConfig</c> (<see cref="ProbeEndpointConfig" /> and
+///     <see cref="PolicyGuardedEndpointConfig" /> both resolve a non-empty tag from their default
+///     <see cref="IEndpointConfig.Tag" /> implementation, so neither exercises this branch).
+/// </summary>
+public sealed class EmptyTagEndpointConfig : IEndpointConfig
+{
+    #region Properties
+
+    public string GroupEndpoint => "/empty-tag";
+
+    public string Tag => "";
+
+    public int Version => 1;
+
+    #endregion
+
+    #region Methods
+
+    public void Map(RouteGroupBuilder group) => group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
+
+    #endregion
+}
+
 /// <summary>Options for <see cref="TestAuthHandler" /> — set per-test, no shared/static state.</summary>
 public sealed class TestAuthSchemeOptions : AuthenticationSchemeOptions
 {
@@ -103,7 +148,13 @@ public sealed class TestAuthSchemeOptions : AuthenticationSchemeOptions
 
     public bool Authenticated { get; set; }
 
-    public string UserName { get; set; } = "alice";
+    /// <summary>
+    ///     Value of the authenticated identity's <see cref="System.Security.Claims.ClaimTypes.Name" /> claim.
+    ///     <see langword="null" /> omits the claim entirely — simulating an authenticated principal that carries
+    ///     no name (e.g. a client-credentials / machine-to-machine token), so <c>Identity.Name</c> is
+    ///     <see langword="null" /> even though <c>Identity.IsAuthenticated</c> is <see langword="true" />.
+    /// </summary>
+    public string? UserName { get; set; } = "alice";
 
     public IEnumerable<System.Security.Claims.Claim> Claims { get; set; } = [];
 
@@ -129,10 +180,9 @@ public sealed class TestAuthHandler(
     {
         if (!Options.Authenticated) return Task.FromResult(AuthenticateResult.NoResult());
 
-        var claims = new List<System.Security.Claims.Claim>
-        {
-            new(System.Security.Claims.ClaimTypes.Name, Options.UserName)
-        };
+        var claims = new List<System.Security.Claims.Claim>();
+        if (Options.UserName is not null)
+            claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, Options.UserName));
         claims.AddRange(Options.Claims);
         var identity = new System.Security.Claims.ClaimsIdentity(claims, SchemeName);
         var principal = new System.Security.Claims.ClaimsPrincipal(identity);

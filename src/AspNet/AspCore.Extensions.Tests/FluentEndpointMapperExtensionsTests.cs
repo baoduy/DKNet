@@ -252,5 +252,53 @@ public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClass
             statusCodes.ShouldContain(expected);
     }
 
+    // --- Published API description: the Produces<> type/status actually advertised on endpoint metadata -----
+    // Reverting a Produces<>() call to a wrong response type/status leaves the runtime-body assertions above
+    // green — a client generator reading the endpoint description would still be wrong. These assert the
+    // metadata directly, so they fail the moment the corresponding Produces<>() call changes.
+
+    [Fact]
+    public void MapGetPage_DeclaresPagedResponseAsThe200ResponseType()
+    {
+        var producesType = GetSuccessProducesType("/t/get-page", HttpStatusCode.OK);
+
+        producesType.ShouldBe(typeof(PagedResponse<WidgetResult>));
+    }
+
+    [Fact]
+    public void MapGetList_DeclaresPagedResponseAsThe200ResponseType()
+    {
+        var producesType = GetSuccessProducesType("/t/widgets", HttpStatusCode.OK);
+
+        producesType.ShouldBe(typeof(PagedResponse<WidgetModel>));
+    }
+
+    [Fact]
+    public void MapPost_WithResponse_CreateNamedCommand_Declares201AsTheProducesStatusCode()
+    {
+        var producesType = GetSuccessProducesType("/t/post-with-response-create", HttpStatusCode.Created);
+
+        producesType.ShouldBe(typeof(WidgetResult));
+    }
+
+    [Fact]
+    public void MapPost_WithResponse_NonCreateNamedCommand_Declares200AsTheProducesStatusCode()
+    {
+        var producesType = GetSuccessProducesType("/t/post-with-response-update", HttpStatusCode.OK);
+
+        producesType.ShouldBe(typeof(WidgetResult));
+    }
+
+    private Type? GetSuccessProducesType(string routeRawText, HttpStatusCode expectedStatusCode)
+    {
+        var endpoint = host.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => e.RoutePattern.RawText == routeRawText);
+        return endpoint.Metadata
+            .OfType<IProducesResponseTypeMetadata>()
+            .Single(m => m.StatusCode == (int)expectedStatusCode)
+            .Type;
+    }
+
     #endregion
 }

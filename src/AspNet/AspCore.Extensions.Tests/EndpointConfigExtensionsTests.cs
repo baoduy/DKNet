@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using AspCore.Extensions.Tests.Fixtures;
@@ -6,8 +7,12 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 using SlimMessageBus.Host;
 using SlimMessageBus.Host.Memory;
@@ -299,6 +304,230 @@ public class EndpointConfigExtensionsTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         await app.StopAsync();
+    }
+
+    // --- Request filter: caller-supplied ByUser on [AsParameters] binding must never survive ------------------
+
+    [Fact]
+    public async Task RequestFilter_AsParametersBinding_AuthenticatedWithNoNameClaim_CallerSuppliedByUserIsIgnored()
+    {
+        var builder = CreateBuilder();
+        // Authenticated (IsAuthenticated == true), but with no Name claim — e.g. a client-credentials /
+        // machine-to-machine token. Before the fix, the filter's `if (userName is not null)` guard skipped
+        // stamping in this case, letting whatever [AsParameters] bound from the querystring survive untouched.
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = null;
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/probe/by-user-query?ByUser=attacker");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("(null)"); // caller-supplied "attacker" must never reach the handler
+        await app.StopAsync();
+    }
+
+    // --- Two hosts in one process configure independently -----------------------------------------------------
+
+    [Fact]
+    public async Task UseEndpointConfigs_TwoHostsInSameProcess_StrictHostStartedFirst_EachKeepsItsOwnAuthorizationSetting()
+    {
+        var strictBuilder = CreateBuilder();
+        AddTestAuth(strictBuilder, o => o.Authenticated = false);
+        var strictApp = strictBuilder.Build();
+        strictApp.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly); // default: RequireAuthorization = true
+        await strictApp.StartAsync();
+        using var strictClient = strictApp.GetTestClient();
+
+        var permissiveBuilder = CreateBuilder();
+        var permissiveApp = permissiveBuilder.Build();
+        permissiveApp.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ProbeEndpointConfig).Assembly);
+        await permissiveApp.StartAsync();
+        using var permissiveClient = permissiveApp.GetTestClient();
+
+        var strictResponse = await strictClient.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+        var permissiveResponse = await permissiveClient.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+
+        strictResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        permissiveResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        await strictApp.StopAsync();
+        await permissiveApp.StopAsync();
+    }
+
+    [Fact]
+    public async Task UseEndpointConfigs_TwoHostsInSameProcess_PermissiveHostStartedFirst_EachKeepsItsOwnAuthorizationSetting()
+    {
+        // Same assertion as the previous test with construction/start order reversed — proves the two hosts'
+        // options are independent registration-time state, not shared statics that only happen to work in one order.
+        var permissiveBuilder = CreateBuilder();
+        var permissiveApp = permissiveBuilder.Build();
+        permissiveApp.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ProbeEndpointConfig).Assembly);
+        await permissiveApp.StartAsync();
+        using var permissiveClient = permissiveApp.GetTestClient();
+
+        var strictBuilder = CreateBuilder();
+        AddTestAuth(strictBuilder, o => o.Authenticated = false);
+        var strictApp = strictBuilder.Build();
+        strictApp.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await strictApp.StartAsync();
+        using var strictClient = strictApp.GetTestClient();
+
+        var permissiveResponse = await permissiveClient.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+        var strictResponse = await strictClient.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+
+        permissiveResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        strictResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+
+        await permissiveApp.StopAsync();
+        await strictApp.StopAsync();
+    }
+
+    // --- Startup diagnostics reach the host log, not the console ------------------------------------------------
+
+    [Fact]
+    public async Task UseEndpointConfigs_DiscoveryDiagnostic_LogsToHostLoggerAndNeverToConsole()
+    {
+        var builder = CreateBuilder();
+        builder.Logging.ClearProviders();
+        var capturedLogs = new List<string>();
+        builder.Logging.AddProvider(new CapturingLoggerProvider(capturedLogs));
+        var app = builder.Build();
+
+        var originalConsoleOut = Console.Out;
+        var capturedConsole = new StringWriter();
+        Console.SetOut(capturedConsole);
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        }
+        finally
+        {
+            Console.SetOut(originalConsoleOut);
+        }
+
+        capturedLogs.ShouldContain(m => m.Contains("discovered", StringComparison.OrdinalIgnoreCase) &&
+                                         m.Contains("endpoint configuration", StringComparison.OrdinalIgnoreCase));
+        capturedConsole.ToString().ShouldBeEmpty();
+        await app.DisposeAsync();
+    }
+
+    private sealed class CapturingLoggerProvider(List<string> messages) : ILoggerProvider
+    {
+        public ILogger CreateLogger(string categoryName) => new CapturingLogger(messages);
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class CapturingLogger(List<string> messages) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter) =>
+                messages.Add(formatter(state, exception));
+        }
+    }
+
+    // --- A consumer's own request filter runs before her handler -----------------------------------------------
+
+    [Fact]
+    public async Task ConsumerRegisteredFilter_OnReturnedGroup_RunsBeforeHandler_RejectsFlaggedRequestsAllowsOthers()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        var groups = app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        // A consumer wires her own filter onto the group builder UseEndpointConfigs handed back — it must run
+        // before ByUserProbeHandler ever executes, so a rejected request never reaches the handler at all.
+        foreach (var group in groups)
+            group.AddEndpointFilter(async (context, next) =>
+                context.HttpContext.Request.Headers["X-Merchant"] == "blocked"
+                    ? Results.StatusCode(StatusCodes.Status403Forbidden)
+                    : await next(context));
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var blockedRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/probe/by-user")
+        {
+            Content = JsonContent.Create(new ByUserProbeCommand())
+        };
+        blockedRequest.Headers.Add("X-Merchant", "blocked");
+        var blockedResponse = await client.SendAsync(blockedRequest);
+
+        var allowedRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/probe/by-user")
+        {
+            Content = JsonContent.Create(new ByUserProbeCommand())
+        };
+        allowedRequest.Headers.Add("X-Merchant", "trusted");
+        var allowedResponse = await client.SendAsync(allowedRequest);
+
+        blockedResponse.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        allowedResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var allowedBody = await allowedResponse.Content.ReadFromJsonAsync<WidgetResult>();
+        allowedBody.ShouldNotBeNull();
+        allowedBody.Name.ShouldBe("alice"); // proves dispatch reached the real handler for the non-rejected request
+
+        await app.StopAsync();
+    }
+
+    // --- Resolved grouping tag, including the DefaultTag fallback -----------------------------------------------
+
+    [Fact]
+    public async Task UseEndpointConfigs_ConfigWithNonEmptyTag_ResolvesItsOwnTagNotDefaultTag()
+    {
+        var builder = CreateBuilder();
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.DefaultTag = "Fallback", typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+
+        var tags = GetTags(app, "/probe/by-user");
+
+        await app.StopAsync();
+        tags.ShouldContain("probe"); // ProbeEndpointConfig's default Tag impl: GroupEndpoint "/probe" -> "probe"
+        tags.ShouldNotContain("Fallback");
+    }
+
+    [Fact]
+    public async Task UseEndpointConfigs_ConfigWithEmptyTag_FallsBackToDefaultTagOption()
+    {
+        var builder = CreateBuilder();
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.DefaultTag = "Fallback", typeof(EmptyTagEndpointConfig).Assembly);
+        await app.StartAsync();
+
+        var tags = GetTags(app, "/empty-tag/by-user");
+
+        await app.StopAsync();
+        tags.ShouldContain("Fallback");
+    }
+
+    /// <summary>
+    ///     Finds the mapped endpoint whose route ends with <paramref name="routeSuffix" /> (e.g. <c>/probe/by-user</c>)
+    ///     and returns its resolved OpenAPI tags. Matches by suffix rather than the full raw pattern because
+    ///     <see cref="Microsoft.AspNetCore.Routing.Patterns.RoutePattern.RawText" /> preserves the unresolved
+    ///     <c>{version:apiVersion}</c> placeholder literally, not the version value substituted at request time.
+    /// </summary>
+    private static HashSet<string> GetTags(WebApplication app, string routeSuffix)
+    {
+        var endpoint = app.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => e.RoutePattern.RawText!.EndsWith(routeSuffix, StringComparison.Ordinal));
+        return [.. endpoint.Metadata.OfType<ITagsMetadata>().SelectMany(m => m.Tags!)];
     }
 
     #endregion

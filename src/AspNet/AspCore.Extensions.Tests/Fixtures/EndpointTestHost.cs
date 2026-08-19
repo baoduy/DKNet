@@ -33,6 +33,9 @@ public sealed class EndpointTestHost : IAsyncLifetime
     /// <summary>Id of the seeded "second" widget, positioned between two others for MapGetList ordering assertions.</summary>
     public Guid SeededWidgetId { get; } = new("00000000-0000-0000-0000-000000000002");
 
+    /// <summary>The host's DI container — lets tests inspect endpoint metadata via <see cref="EndpointDataSource" />.</summary>
+    public IServiceProvider Services => _app!.Services;
+
     #endregion
 
     #region Methods
