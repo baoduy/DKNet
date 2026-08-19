@@ -333,24 +333,49 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// Checks whether <paramref name="name"/> collides with a real, incompatible existing type in the entity's
     /// namespace. A hand-authored <c>public partial record</c> stub with the same name is NOT a collision — it
     /// is the developer's extension point for the generated record (identical to how <c>[GenerateDto]</c>
-    /// payload records are extended) and simply merges with the generated partial via the compiler.
+    /// payload records are extended) and simply merges with the generated partial via the compiler. Every other
+    /// same-named type in the namespace — an interface/enum/delegate, an existing <c>[GenerateDto]</c> partial
+    /// record, or a type that only exists in a referenced assembly — is a real collision.
     /// </summary>
     private static bool HasIncompatibleExistingType(Compilation compilation, INamedTypeSymbol entitySymbol, string name)
     {
         var entityNamespace = GetEntityNamespace(entitySymbol);
+        var qualifiedName = entityNamespace is null ? name : $"{entityNamespace}.{name}";
 
-        return DtoGenerator.FindTypeSymbolsByName(compilation, name)
-            .Where(t => GetEntityNamespace(t) == entityNamespace)
+        var candidates = FindTypeSymbolsByNameAnyKind(compilation, name)
+            .Where(t => GetEntityNamespace(t) == entityNamespace);
+
+        var metadataType = compilation.GetTypeByMetadataName(qualifiedName);
+        if (metadataType is not null)
+            candidates = candidates.Append(metadataType);
+
+        return candidates
+            .Distinct(SymbolEqualityComparer.Default)
+            .Cast<INamedTypeSymbol>()
             .Any(t => !IsCompatiblePartialRecordStub(t));
     }
 
     /// <summary>
-    /// True when every declared part of <paramref name="type"/> is a <c>partial record</c> — safe to merge the
-    /// generated part into.
+    /// Finds every type symbol (class, struct, interface, enum, or delegate) declared in source and matching
+    /// <paramref name="typeName"/> — unlike <see cref="DtoGenerator.FindTypeSymbolsByName"/>, which narrows to
+    /// class/struct because it resolves entity types specifically.
+    /// </summary>
+    private static IEnumerable<INamedTypeSymbol> FindTypeSymbolsByNameAnyKind(Compilation compilation, string typeName) =>
+        compilation
+            .GetSymbolsWithName(n => n.Equals(typeName, StringComparison.Ordinal), SymbolFilter.Type)
+            .OfType<INamedTypeSymbol>();
+
+    /// <summary>
+    /// True when <paramref name="type"/> is a plain hand-authored <c>partial record</c> stub — declared in
+    /// source (never metadata-only), not itself a <c>[GenerateDto]</c> payload, and every declared part is
+    /// <c>partial</c> — safe to merge the generated part into.
     /// </summary>
     private static bool IsCompatiblePartialRecordStub(INamedTypeSymbol type)
     {
-        if (!type.IsRecord)
+        if (!type.IsRecord || type.DeclaringSyntaxReferences.IsEmpty)
+            return false;
+
+        if (type.GetAttributes().Any(a => a.AttributeClass?.Name == GenerateDtoAttributeName))
             return false;
 
         foreach (var syntaxRef in type.DeclaringSyntaxReferences)
@@ -365,7 +390,9 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
     /// <summary>
     /// Generates payload records for valid string-form declarations, skipping (with a diagnostic) any name
-    /// that two entities in the same namespace both declare — never merging into one record.
+    /// that two DIFFERENT entities in the same namespace both declare — never merging into one record. One
+    /// entity naming the same event on more than one of its own rules is not a collision: it generates exactly
+    /// one record (the payload shape depends only on the entity, not on which rule produced it).
     /// </summary>
     private static void GenerateStringFormRecords(
         SourceProductionContext context, Compilation compilation, List<RaisesEventDeclaration> declarations)
@@ -375,9 +402,15 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
         foreach (var group in groups)
         {
             var groupList = group.ToList();
-            if (groupList.Count > 1)
+            var distinctEntities = groupList
+                .Select(d => d.EntitySymbol)
+                .Distinct(SymbolEqualityComparer.Default)
+                .Cast<INamedTypeSymbol>()
+                .ToList();
+
+            if (distinctEntities.Count > 1)
             {
-                var entityNames = string.Join(", ", groupList.Select(d => d.EntitySymbol.Name).Distinct());
+                var entityNames = string.Join(", ", distinctEntities.Select(e => e.Name));
                 foreach (var decl in groupList)
                 {
                     ReportDiagnostic(context, "DKRAISEVT006", "Duplicate event name in namespace", DiagnosticSeverity.Error,
