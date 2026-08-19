@@ -11,6 +11,9 @@
         <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);CS1591;SA1600</NoWarn>
+        <!-- AddOpenApi()'s XML-comment source generator relies on interceptors; needed to exercise the
+             published pageSize-ceiling description (DRK-519 §5 scenario 4) via a real /openapi/v1.json. -->
+        <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="coverlet.collector">
