@@ -15,15 +15,6 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class TaskSetups
 {
-    /// <summary>
-    ///     Tracks, per <see cref="IServiceCollection" />, which assemblies <see cref="AddBackgroundJobFrom" /> has
-    ///     already scanned so a repeat call with an overlapping assembly set does not register jobs twice.
-    /// </summary>
-    private sealed class ScannedAssembliesMarker
-    {
-        public HashSet<Assembly> Assemblies { get; } = [];
-    }
-
     /// <param name="services">The service collection to add the background job to.</param>
     extension(IServiceCollection services)
     {
@@ -53,23 +44,15 @@ public static class TaskSetups
         {
             services.AddHost();
 
-            var marker = services.FirstOrDefault(s => s.ServiceType == typeof(ScannedAssembliesMarker))
-                ?.ImplementationInstance as ScannedAssembliesMarker;
+            var jobTypes = assemblies
+                .SelectMany(a => a.GetTypes())
+                .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IBackgroundTask).IsAssignableFrom(t));
 
-            if (marker is null)
+            foreach (var jobType in jobTypes)
             {
-                marker = new ScannedAssembliesMarker();
-                services.AddSingleton(marker);
+                if (!services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == jobType))
+                    services.AddScoped(typeof(IBackgroundTask), jobType);
             }
-
-            var newAssemblies = assemblies.Where(a => marker.Assemblies.Add(a)).ToArray();
-            if (newAssemblies.Length == 0) return services;
-
-            services.Scan(s =>
-                s.FromAssemblies(newAssemblies)
-                    .AddClasses(c => c.AssignableTo<IBackgroundTask>(), false)
-                    .AsImplementedInterfaces()
-                    .WithScopedLifetime());
 
             return services;
         }
