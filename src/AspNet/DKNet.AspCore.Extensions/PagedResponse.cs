@@ -34,6 +34,8 @@ public sealed record PagedResponse<TResult>
         PageCount = list.PageCount;
         TotalItemCount = list.TotalItemCount;
         Items = [.. list];
+        HasNextPage = PageNumber < PageCount;
+        HasPreviousPage = PageNumber > 1;
     }
 
     #endregion
@@ -64,6 +66,16 @@ public sealed record PagedResponse<TResult>
     ///     Total number of items across all pages.
     /// </summary>
     public int TotalItemCount { get; init; }
+
+    /// <summary>
+    ///     Whether a page after the current one exists (<c>PageNumber &lt; PageCount</c>).
+    /// </summary>
+    public bool HasNextPage { get; init; }
+
+    /// <summary>
+    ///     Whether a page before the current one exists (<c>PageNumber &gt; 1</c>).
+    /// </summary>
+    public bool HasPreviousPage { get; init; }
 
     #endregion
 }
