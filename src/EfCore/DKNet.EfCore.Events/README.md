@@ -206,6 +206,17 @@ property names) but emits no code for them — see that package's README for the
 - **One raise per payload per operation**: if two rules on the same entity name the same payload for the same
   operation, it raises once.
 
+### String-form rules
+
+`[RaisesEvent("CustomerTouched", EventOperations.Created)]` names an event by string instead of an existing
+`[GenerateDto]` type — `DKNet.EfCore.DtoGenerator` generates the payload record for you (see its README).
+At runtime this package resolves the generated type by reflection from the entity's own assembly and
+namespace, cached per entity type + event name. If the generated record is missing (e.g. the generator
+wasn't referenced, or the project didn't rebuild), the first save that would raise it throws an
+`EventException` naming the missing event — never silently dropped. Everything else — capture timing,
+narrowing, coexistence with hand-raised events, one-raise-per-payload dedup — behaves identically to the
+type-naming form.
+
 ### Mapping requirement
 
 Declared events are produced by mapping the entity onto the payload type through the registered

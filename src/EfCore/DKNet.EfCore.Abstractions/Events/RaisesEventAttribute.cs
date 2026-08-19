@@ -6,7 +6,7 @@ namespace DKNet.EfCore.Abstractions.Events;
 /// </summary>
 /// <remarks>
 ///     <para>
-///     Usage:
+///     Two forms are supported. The type-naming form names an existing <c>[GenerateDto]</c> payload record:
 ///     <code>
 ///     [GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
 ///     public partial record OrderPlacedEvent;
@@ -15,16 +15,23 @@ namespace DKNet.EfCore.Abstractions.Events;
 ///     [RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
 ///     public class Order { public string Status { get; set; } = string.Empty; }
 ///     </code>
+///     The string form names an event that does not exist yet: the build generates a public, partial,
+///     default-shape payload record for it in the carrying entity's namespace — no hand-written
+///     <c>[GenerateDto]</c> record is needed.
+///     <code>
+///     [RaisesEvent("CustomerTouched", EventOperations.Created)]
+///     public class Customer { }
+///     </code>
 ///     </para>
 ///     <para>
-///     <paramref name="eventType"/> must be a payload record generated via <c>[GenerateDto]</c> from the SAME
-///     entity type this attribute is applied to; a build error is raised otherwise.
+///     For the type-naming form, the named type must be a payload record generated via <c>[GenerateDto]</c>
+///     from the SAME entity type this attribute is applied to; a build error is raised otherwise.
 ///     </para>
 ///     <para>
-///     <paramref name="properties"/> narrows an <see cref="EventOperations.Updated"/> rule: non-empty raises
-///     only when at least one listed property changed (use <c>nameof(Entity.Property)</c> for compiler-checked
-///     names). Empty raises on any change. Entries must be a direct property of the entity — nested paths are
-///     not supported and fail the build. Narrowing on a rule whose <paramref name="operations"/> has no
+///     <c>properties</c> narrows an <see cref="EventOperations.Updated"/> rule: non-empty raises only when at
+///     least one listed property changed (use <c>nameof(Entity.Property)</c> for compiler-checked names).
+///     Empty raises on any change. Entries must be a direct property of the entity — nested paths are not
+///     supported and fail the build. Narrowing on a rule whose <c>operations</c> has no
 ///     <see cref="EventOperations.Updated"/> flag is ignored at runtime and reported as a build warning.
 ///     </para>
 ///     <para>
@@ -34,28 +41,62 @@ namespace DKNet.EfCore.Abstractions.Events;
 ///     with rules declared and simply never raises them until the application wires up the runtime.
 ///     </para>
 /// </remarks>
-/// <param name="eventType">The <c>[GenerateDto]</c>-generated payload record type to raise.</param>
-/// <param name="operations">The persistence operation(s) that raise <paramref name="eventType"/>.</param>
-/// <param name="properties">
-///     For <see cref="EventOperations.Updated"/>, the narrowing property list. Empty means any change qualifies.
-/// </param>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-public sealed class RaisesEventAttribute(Type eventType, EventOperations operations, params string[] properties)
-    : Attribute
+public sealed class RaisesEventAttribute : Attribute
 {
     /// <summary>
-    ///     Gets the <c>[GenerateDto]</c>-generated payload record type to raise.
+    ///     Type-naming form: names an existing <c>[GenerateDto]</c> payload record to raise.
     /// </summary>
-    public Type EventType { get; } = eventType;
+    /// <param name="eventType">The <c>[GenerateDto]</c>-generated payload record type to raise.</param>
+    /// <param name="operations">The persistence operation(s) that raise <paramref name="eventType"/>.</param>
+    /// <param name="properties">
+    ///     For <see cref="EventOperations.Updated"/>, the narrowing property list. Empty means any change qualifies.
+    /// </param>
+    public RaisesEventAttribute(Type eventType, EventOperations operations, params string[] properties)
+    {
+        EventType = eventType;
+        Operations = operations;
+        Properties = properties;
+    }
 
     /// <summary>
-    ///     Gets the persistence operation(s) that raise <see cref="EventType" />.
+    ///     String form: names an event by string with no hand-written payload record. The build generates a
+    ///     public, partial, default-shape payload record for <paramref name="eventName"/> in the carrying
+    ///     entity's namespace.
     /// </summary>
-    public EventOperations Operations { get; } = operations;
+    /// <param name="eventName">The name of the event to raise; also the generated record's type name.</param>
+    /// <param name="operations">The persistence operation(s) that raise the named event.</param>
+    /// <param name="properties">
+    ///     For <see cref="EventOperations.Updated"/>, the narrowing property list. Empty means any change qualifies.
+    /// </param>
+    public RaisesEventAttribute(string eventName, EventOperations operations, params string[] properties)
+    {
+        EventName = eventName;
+        Operations = operations;
+        Properties = properties;
+    }
+
+    /// <summary>
+    ///     Gets the <c>[GenerateDto]</c>-generated payload record type to raise (type-naming form).
+    ///     <see langword="null"/> for the string form; exactly one of <see cref="EventType"/>/<see cref="EventName"/>
+    ///     is set per instance.
+    /// </summary>
+    public Type? EventType { get; }
+
+    /// <summary>
+    ///     Gets the event name to raise (string form). <see langword="null"/> for the type-naming form; exactly
+    ///     one of <see cref="EventType"/>/<see cref="EventName"/> is set per instance.
+    /// </summary>
+    public string? EventName { get; }
+
+    /// <summary>
+    ///     Gets the persistence operation(s) that raise the declared event.
+    /// </summary>
+    public EventOperations Operations { get; }
 
     /// <summary>
     ///     Gets the <see cref="EventOperations.Updated" /> narrowing property list. Empty means any
     ///     property change qualifies.
     /// </summary>
-    public IReadOnlyList<string> Properties { get; } = properties;
+    public IReadOnlyList<string> Properties { get; }
 }

@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace DKNet.EfCore.DtoGenerator;
@@ -10,9 +11,10 @@ namespace DKNet.EfCore.DtoGenerator;
 #nullable enable
 
 /// <summary>
-/// Incremental generator that validates <c>[RaisesEvent]</c> declarations at build time. A raise rule carries
-/// no generated code of its own — <c>DKNet.EfCore.Events</c> reads the attribute via reflection at runtime —
-/// so this generator emits diagnostics only and never references <c>DKNet.EfCore.Events</c>.
+/// Incremental generator that validates <c>[RaisesEvent]</c> declarations at build time. The type-naming
+/// form carries no generated code of its own — <c>DKNet.EfCore.Events</c> reads the attribute via reflection
+/// at runtime. The string form generates a default-shape payload record (see <see cref="DtoGenerator"/>'s
+/// <c>BuildRaisesEventRecordSource</c>, reused here) so this generator never references <c>DKNet.EfCore.Events</c>.
 /// </summary>
 [ExcludeFromCodeCoverage]
 [Generator]
@@ -34,7 +36,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     #region Initialization
 
     /// <summary>
-    /// Initializes the incremental generator. Registers the syntax provider and diagnostic output.
+    /// Initializes the incremental generator. Registers the syntax provider and diagnostic/source output.
     /// </summary>
     /// <param name="context">The generator initialization context.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -44,10 +46,12 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
                 static (ctx, _) => ExtractDeclarations(ctx))
             .SelectMany(static (list, _) => list);
 
-        context.RegisterSourceOutput(declarations.Collect(), static (spc, targets) =>
+        var compilationAndDeclarations = context.CompilationProvider.Combine(declarations.Collect());
+
+        context.RegisterSourceOutput(compilationAndDeclarations, static (spc, pair) =>
         {
-            foreach (var declaration in targets)
-                ValidateDeclaration(spc, declaration);
+            var (compilation, targets) = pair;
+            ValidateAndGenerate(spc, compilation, targets);
         });
     }
 
@@ -101,30 +105,62 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Extracts the event type, operations, and narrowing properties from a [RaisesEvent] declaration.
+    /// Extracts the event type/name, operations, and narrowing properties from a [RaisesEvent] declaration.
+    /// The first argument distinguishes the two ctor forms: <c>typeof(...)</c> is the type-naming form,
+    /// anything else is treated as an attempted string form (validated later — it may turn out to not be a
+    /// compile-time constant string, which is itself a build error rather than "not a declaration").
     /// </summary>
     private static RaisesEventDeclaration? ExtractDeclaration(
         GeneratorSyntaxContext ctx, INamedTypeSymbol entitySymbol, AttributeSyntax attribute)
     {
         var arguments = attribute.ArgumentList?.Arguments ?? default;
-        if (arguments.Count < 2 || arguments[0].Expression is not TypeOfExpressionSyntax typeOfExpression)
+        if (arguments.Count < 2)
             return null;
 
-        var eventTypeSymbol = ctx.SemanticModel.GetTypeInfo(typeOfExpression.Type).Type as INamedTypeSymbol;
+        var operations = ExtractOperations(ctx, arguments);
+        var properties = ExtractProperties(ctx, arguments);
+        var firstArgExpression = arguments[0].Expression;
 
-        var operationsValue = ctx.SemanticModel.GetConstantValue(arguments[1].Expression);
-        var operations = operationsValue.HasValue && operationsValue.Value is not null
-            ? Convert.ToInt32(operationsValue.Value)
-            : 0;
+        if (firstArgExpression is TypeOfExpressionSyntax typeOfExpression)
+        {
+            var eventTypeSymbol = ctx.SemanticModel.GetTypeInfo(typeOfExpression.Type).Type as INamedTypeSymbol;
+
+            return new RaisesEventDeclaration
+            {
+                EntitySymbol = entitySymbol,
+                IsStringForm = false,
+                EventTypeSymbol = eventTypeSymbol,
+                Operations = operations,
+                Properties = properties,
+                Location = attribute.GetLocation(),
+            };
+        }
+
+        var constantValue = ctx.SemanticModel.GetConstantValue(firstArgExpression);
+        var isConstantString = constantValue.HasValue && constantValue.Value is string;
 
         return new RaisesEventDeclaration
         {
             EntitySymbol = entitySymbol,
-            EventTypeSymbol = eventTypeSymbol,
+            IsStringForm = true,
+            EventNameIsConstantString = isConstantString,
+            EventName = isConstantString ? (string)constantValue.Value! : null,
             Operations = operations,
-            Properties = ExtractProperties(ctx, arguments),
+            Properties = properties,
             Location = attribute.GetLocation(),
         };
+    }
+
+    /// <summary>
+    /// Extracts the constant <c>EventOperations</c> value from the attribute's second argument.
+    /// </summary>
+    private static int ExtractOperations(
+        GeneratorSyntaxContext ctx, SeparatedSyntaxList<AttributeArgumentSyntax> arguments)
+    {
+        var operationsValue = ctx.SemanticModel.GetConstantValue(arguments[1].Expression);
+        return operationsValue.HasValue && operationsValue.Value is not null
+            ? Convert.ToInt32(operationsValue.Value)
+            : 0;
     }
 
     /// <summary>
@@ -155,16 +191,40 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
     #endregion
 
-    #region Validation
+    #region Validation & Generation
 
     /// <summary>
-    /// Validates a single [RaisesEvent] declaration: payload/entity match, narrowing property names, and
-    /// narrowing-without-Updated.
+    /// Validates every collected [RaisesEvent] declaration and, for valid string-form declarations, emits
+    /// their generated payload records.
     /// </summary>
-    private static void ValidateDeclaration(SourceProductionContext context, RaisesEventDeclaration decl)
+    private static void ValidateAndGenerate(
+        SourceProductionContext context, Compilation compilation, IReadOnlyList<RaisesEventDeclaration> targets)
     {
-        ValidatePayloadEntity(context, decl);
+        var validStringFormDeclarations = new List<RaisesEventDeclaration>();
 
+        foreach (var declaration in targets)
+        {
+            ValidateNarrowing(context, declaration);
+
+            if (declaration.IsStringForm)
+            {
+                if (ValidateStringForm(context, compilation, declaration))
+                    validStringFormDeclarations.Add(declaration);
+            }
+            else
+            {
+                ValidatePayloadEntity(context, declaration);
+            }
+        }
+
+        GenerateStringFormRecords(context, compilation, validStringFormDeclarations);
+    }
+
+    /// <summary>
+    /// Validates narrowing property names and narrowing-without-Updated, identically for both declaration forms.
+    /// </summary>
+    private static void ValidateNarrowing(SourceProductionContext context, RaisesEventDeclaration decl)
+    {
         if (decl.Properties.Count == 0)
             return;
 
@@ -198,7 +258,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
     /// <summary>
     /// Validates that the named event type is a [GenerateDto] payload generated from the same entity that
-    /// carries the [RaisesEvent] rule.
+    /// carries the [RaisesEvent] rule (type-naming form).
     /// </summary>
     private static void ValidatePayloadEntity(SourceProductionContext context, RaisesEventDeclaration decl)
     {
@@ -231,6 +291,154 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Validates a string-form declaration's name: must be a compile-time constant, a single valid C#
+    /// identifier, and must not already resolve to an incompatible existing type. Returns
+    /// <see langword="true"/> when the declaration is valid and should proceed to generation.
+    /// </summary>
+    private static bool ValidateStringForm(
+        SourceProductionContext context, Compilation compilation, RaisesEventDeclaration decl)
+    {
+        if (!decl.EventNameIsConstantString || decl.EventName is null)
+        {
+            ReportDiagnostic(context, "DKRAISEVT005", "Event name not a compile-time constant", DiagnosticSeverity.Error,
+                decl.Location,
+                "Entity {0}: the [RaisesEvent] string-form name must be a compile-time constant string literal.",
+                decl.EntitySymbol.Name);
+            return false;
+        }
+
+        if (!SyntaxFacts.IsValidIdentifier(decl.EventName))
+        {
+            ReportDiagnostic(context, "DKRAISEVT005", "Event name not a valid identifier", DiagnosticSeverity.Error,
+                decl.Location,
+                "Entity {0}: the [RaisesEvent] string-form name '{1}' is not a single valid C# identifier.",
+                decl.EntitySymbol.Name, decl.EventName);
+            return false;
+        }
+
+        if (HasIncompatibleExistingType(compilation, decl.EntitySymbol, decl.EventName))
+        {
+            ReportDiagnostic(context, "DKRAISEVT004", "Event name collides with existing type", DiagnosticSeverity.Error,
+                decl.Location,
+                "Entity {0}: '{1}' already resolves to an existing type. Use the type-naming form " +
+                "([RaisesEvent(typeof({1}), ...)]) instead of the string form.",
+                decl.EntitySymbol.Name, decl.EventName);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Checks whether <paramref name="name"/> collides with a real, incompatible existing type in the entity's
+    /// namespace. A hand-authored <c>public partial record</c> stub with the same name is NOT a collision — it
+    /// is the developer's extension point for the generated record (identical to how <c>[GenerateDto]</c>
+    /// payload records are extended) and simply merges with the generated partial via the compiler. Every other
+    /// same-named type in the namespace — an interface/enum/delegate, an existing <c>[GenerateDto]</c> partial
+    /// record, or a type that only exists in a referenced assembly — is a real collision.
+    /// </summary>
+    private static bool HasIncompatibleExistingType(Compilation compilation, INamedTypeSymbol entitySymbol, string name)
+    {
+        var entityNamespace = GetEntityNamespace(entitySymbol);
+        var qualifiedName = entityNamespace is null ? name : $"{entityNamespace}.{name}";
+
+        var candidates = FindTypeSymbolsByNameAnyKind(compilation, name)
+            .Where(t => GetEntityNamespace(t) == entityNamespace);
+
+        var metadataType = compilation.GetTypeByMetadataName(qualifiedName);
+        if (metadataType is not null)
+            candidates = candidates.Append(metadataType);
+
+        return candidates
+            .Distinct(SymbolEqualityComparer.Default)
+            .Cast<INamedTypeSymbol>()
+            .Any(t => !IsCompatiblePartialRecordStub(t));
+    }
+
+    /// <summary>
+    /// Finds every type symbol (class, struct, interface, enum, or delegate) declared in source and matching
+    /// <paramref name="typeName"/> — unlike <see cref="DtoGenerator.FindTypeSymbolsByName"/>, which narrows to
+    /// class/struct because it resolves entity types specifically.
+    /// </summary>
+    private static IEnumerable<INamedTypeSymbol> FindTypeSymbolsByNameAnyKind(Compilation compilation, string typeName) =>
+        compilation
+            .GetSymbolsWithName(n => n.Equals(typeName, StringComparison.Ordinal), SymbolFilter.Type)
+            .OfType<INamedTypeSymbol>();
+
+    /// <summary>
+    /// True when <paramref name="type"/> is a plain hand-authored <c>partial record</c> stub — declared in
+    /// source (never metadata-only), not itself a <c>[GenerateDto]</c> payload, and every declared part is
+    /// <c>partial</c> — safe to merge the generated part into.
+    /// </summary>
+    private static bool IsCompatiblePartialRecordStub(INamedTypeSymbol type)
+    {
+        if (!type.IsRecord || type.DeclaringSyntaxReferences.IsEmpty)
+            return false;
+
+        if (type.GetAttributes().Any(a => a.AttributeClass?.Name == GenerateDtoAttributeName))
+            return false;
+
+        foreach (var syntaxRef in type.DeclaringSyntaxReferences)
+        {
+            if (syntaxRef.GetSyntax() is not TypeDeclarationSyntax typeDeclaration ||
+                !typeDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Generates payload records for valid string-form declarations, skipping (with a diagnostic) any name
+    /// that two DIFFERENT entities in the same namespace both declare — never merging into one record. One
+    /// entity naming the same event on more than one of its own rules is not a collision: it generates exactly
+    /// one record (the payload shape depends only on the entity, not on which rule produced it).
+    /// </summary>
+    private static void GenerateStringFormRecords(
+        SourceProductionContext context, Compilation compilation, List<RaisesEventDeclaration> declarations)
+    {
+        var groups = declarations.GroupBy(d => (Namespace: GetEntityNamespace(d.EntitySymbol), d.EventName));
+
+        foreach (var group in groups)
+        {
+            var groupList = group.ToList();
+            var distinctEntities = groupList
+                .Select(d => d.EntitySymbol)
+                .Distinct(SymbolEqualityComparer.Default)
+                .Cast<INamedTypeSymbol>()
+                .ToList();
+
+            if (distinctEntities.Count > 1)
+            {
+                var entityNames = string.Join(", ", distinctEntities.Select(e => e.Name));
+                foreach (var decl in groupList)
+                {
+                    ReportDiagnostic(context, "DKRAISEVT006", "Duplicate event name in namespace", DiagnosticSeverity.Error,
+                        decl.Location,
+                        "Event name '{0}' is declared by more than one entity in the same namespace ({1}). " +
+                        "Rename one of the events — a duplicate name is never merged into a single record.",
+                        group.Key.EventName, entityNames);
+                }
+
+                continue;
+            }
+
+            var declaration = groupList[0];
+            var source = DtoGenerator.BuildRaisesEventRecordSource(
+                declaration.EntitySymbol, declaration.EventName!, group.Key.Namespace, compilation);
+
+            var hintName = $"{(group.Key.Namespace ?? "global")}.{declaration.EventName}.RaisesEvent.g.cs";
+            context.AddSource(hintName, source);
+        }
+    }
+
+    /// <summary>
+    /// Gets the entity's namespace display string, or <see langword="null"/> for the global namespace.
+    /// </summary>
+    private static string? GetEntityNamespace(INamedTypeSymbol entitySymbol) =>
+        entitySymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null;
+
+    /// <summary>
     /// Reports a diagnostic at the given location using a lazily-built descriptor.
     /// </summary>
     private static void ReportDiagnostic(
@@ -257,7 +465,10 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     private sealed record RaisesEventDeclaration
     {
         public INamedTypeSymbol EntitySymbol { get; set; } = null!;
+        public bool IsStringForm { get; set; }
         public INamedTypeSymbol? EventTypeSymbol { get; set; }
+        public bool EventNameIsConstantString { get; set; }
+        public string? EventName { get; set; }
         public int Operations { get; set; }
         public List<string> Properties { get; set; } = [];
         public Location Location { get; set; } = Location.None;

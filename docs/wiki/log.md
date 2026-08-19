@@ -18,3 +18,9 @@
   payload, operations, and optional narrowing. The DtoGenerator now only validates raise rules
   (payload/entity match, narrowing property names) and emits no code for them. Refreshed both
   entries in `index.md`.
+- **2026-08-19** — Updated `dto-generator.md` and `domain-events.md` for DRK-474/477: documented
+  `[RaisesEvent]`'s new string form — naming an event that doesn't exist yet, for which the
+  DtoGenerator now emits a default-shape payload record itself (a public partial record in the
+  entity's namespace, mergeable with a hand-authored partial), the new `DKRAISEVT004`–`006`
+  diagnostics, and `DKNet.EfCore.Events`' runtime resolution of the generated type by reflection
+  (with a loud `EventException` if it's missing). The type-naming form is unchanged.

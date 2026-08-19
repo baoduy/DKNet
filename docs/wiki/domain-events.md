@@ -53,3 +53,12 @@ to declare, and a domain project referencing only `DKNet.EfCore.Abstractions` an
 ever registers the event runtime. One limitation: a change confined to a nested owned
 value does not raise the owner's update event, since EF Core does not report the
 owner itself as `Modified` in that case.
+
+`[RaisesEvent]` also has a string form — `[RaisesEvent("CustomerTouched", EventOperations.Created)]` —
+that skips the hand-written `[GenerateDto]` payload entirely: [[dto-generator]]'s generator
+emits a default-shape `public partial record` for the named event in the entity's own
+namespace. At runtime `DKNet.EfCore.Events` resolves that generated type by reflection
+(entity's assembly + namespace), caches the lookup, and throws an `EventException` naming
+the missing event if the record was never generated — never silently dropped. Everything
+else (capture timing, narrowing, coexistence, one-raise-per-payload dedup) is identical to
+the type-naming form.
