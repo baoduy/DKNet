@@ -1,4 +1,5 @@
-﻿using DKNet.Svc.Transformation.Exceptions;
+﻿using System.Linq;
+using DKNet.Svc.Transformation.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -56,6 +57,21 @@ public class TransformTests
 
         // Assert
         Assert.Equal("Hello John Doe, welcome to DKNet!", rs);
+    }
+
+    [Fact]
+    public void AddTransformerService_CalledTwice_RegistersServiceOnlyOnce()
+    {
+        var services = new ServiceCollection();
+
+        services.AddTransformerService(o => o.TokenNotFoundBehavior = TokenNotFoundBehavior.Remove);
+        services.AddTransformerService(o => o.TokenNotFoundBehavior = TokenNotFoundBehavior.ThrowError);
+
+        services.Count(s => s.ServiceType == typeof(ITransformerService)).ShouldBe(1);
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<TransformOptions>>();
+        options.Value.TokenNotFoundBehavior.ShouldBe(TokenNotFoundBehavior.Remove);
     }
 
     [Fact]
