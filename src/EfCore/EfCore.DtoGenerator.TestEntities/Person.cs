@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.DtoEntities;
+namespace EfCore.DtoGenerator.TestEntities;
 
 [ExcludeFromCodeCoverage]
 public sealed class Person : IEntity<Guid>

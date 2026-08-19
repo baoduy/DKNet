@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using DKNet.EfCore.DtoEntities;
-using DKNet.EfCore.DtoEntities.Features.Merchants;
-using DKNet.EfCore.DtoEntities.Features.StaticData;
-using DKNet.EfCore.DtoEntities.Share;
+using EfCore.DtoGenerator.TestEntities;
+using EfCore.DtoGenerator.TestEntities.Features.Merchants;
+using EfCore.DtoGenerator.TestEntities.Features.StaticData;
+using EfCore.DtoGenerator.TestEntities.Share;
 using EfCore.DtoGenerator.Tests.Features;
 using EfCore.DtoGenerator.Tests.Features.Merchants;
 using EfCore.DtoGenerator.Tests.Features.StaticData.ChannelDatas;

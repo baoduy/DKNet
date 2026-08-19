@@ -1,6 +1,6 @@
-using DKNet.EfCore.DtoEntities.Features.StaticData;
+using EfCore.DtoGenerator.TestEntities.Features.StaticData;
 
-namespace DKNet.EfCore.DtoEntities.Features.Merchants;
+namespace EfCore.DtoGenerator.TestEntities.Features.Merchants;
 
 [AuditLog]
 public sealed class MerchantChannel : ChannelDataBase

@@ -11,6 +11,8 @@ namespace DKNet.EfCore.Repos;
 ///     The repository operates in read-only mode and uses the provided <see cref="DbContext" /> for queries.
 /// </summary>
 /// <typeparam name="TEntity">The entity CLR type.</typeparam>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // implemented interface is the obsolete member being flagged here
 public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null)
     : IReadRepository<TEntity>
     where TEntity : class
@@ -67,3 +69,4 @@ public class ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? 
 
     #endregion
 }
+#pragma warning restore CS0618

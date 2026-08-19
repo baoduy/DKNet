@@ -5,7 +5,7 @@
 
 using DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.DtoEntities.Share;
+namespace EfCore.DtoGenerator.TestEntities.Share;
 
 /// <summary>
 ///     Base class for domain entities that require auditing and concurrency control.

@@ -15,6 +15,8 @@ namespace DKNet.EfCore.Repos;
 ///     This implementation uses a provided <see cref="DbContext" /> instance to perform operations.
 /// </summary>
 /// <typeparam name="TEntity">Entity CLR type.</typeparam>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // base type/interface are the obsolete members being flagged here
 public class WriteRepository<TEntity>(DbContext dbContext, IServiceProvider? provider = null)
     : ReadRepository<TEntity>(dbContext), IWriteRepository<TEntity>
     where TEntity : class
@@ -71,3 +73,4 @@ public class WriteRepository<TEntity>(DbContext dbContext, IServiceProvider? pro
 
     #endregion
 }
+#pragma warning restore CS0618

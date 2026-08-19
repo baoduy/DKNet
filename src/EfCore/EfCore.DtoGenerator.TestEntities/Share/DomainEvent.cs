@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using DKNet.EfCore.Abstractions.Events;
 
-namespace DKNet.EfCore.DtoEntities.Share;
+namespace EfCore.DtoGenerator.TestEntities.Share;
 
 public interface IDomainEvent : IEventItem
 {

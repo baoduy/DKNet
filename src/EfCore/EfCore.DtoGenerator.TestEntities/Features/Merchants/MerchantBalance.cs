@@ -1,4 +1,4 @@
-namespace DKNet.EfCore.DtoEntities.Features.Merchants;
+namespace EfCore.DtoGenerator.TestEntities.Features.Merchants;
 
 public sealed class MerchantBalance : DomainEntity, IBalanceAmounts
 {

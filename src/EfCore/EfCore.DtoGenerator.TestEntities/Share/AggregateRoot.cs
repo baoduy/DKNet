@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
-namespace DKNet.EfCore.DtoEntities.Share;
+namespace EfCore.DtoGenerator.TestEntities.Share;
 
 /// <summary>
 ///     Base class for aggregate root entities in the domain model.

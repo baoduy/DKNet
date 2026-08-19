@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.DtoEntities.Features.StaticData;
+namespace EfCore.DtoGenerator.TestEntities.Features.StaticData;
 
 public abstract class ChannelDataBase : AuditedEntity<int>
 {

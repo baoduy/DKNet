@@ -1,6 +1,6 @@
 using DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.DtoEntities.Features.StaticData;
+namespace EfCore.DtoGenerator.TestEntities.Features.StaticData;
 
 public sealed class CurrencyData : IEntity<int>
 {

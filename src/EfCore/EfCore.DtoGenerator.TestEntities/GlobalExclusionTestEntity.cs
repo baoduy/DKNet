@@ -1,6 +1,6 @@
 using DKNet.EfCore.Abstractions.Entities;
 
-namespace DKNet.EfCore.DtoEntities;
+namespace EfCore.DtoGenerator.TestEntities;
 
 /// <summary>
 ///     Test entity for global exclusion functionality.

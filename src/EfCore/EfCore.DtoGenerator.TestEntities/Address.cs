@@ -1,4 +1,4 @@
-namespace DKNet.EfCore.DtoEntities;
+namespace EfCore.DtoGenerator.TestEntities;
 
 public sealed class Address
 {

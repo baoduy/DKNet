@@ -1,4 +1,4 @@
-namespace DKNet.EfCore.DtoEntities.Share;
+namespace EfCore.DtoGenerator.TestEntities.Share;
 
 public enum FeeTypes
 {
