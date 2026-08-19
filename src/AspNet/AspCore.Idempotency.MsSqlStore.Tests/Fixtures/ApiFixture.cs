@@ -110,12 +110,27 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
         // Testcontainers.MsSql's connection string targets the container's "master" database.
         // Unlike SQLite, SQL Server does not create a database implicitly on first connection,
         // so the per-test database must be provisioned before the app under test connects to it.
-        await using (var masterConnection = new SqlConnection(_container.GetConnectionString()))
+        //
+        // ponytail: mssql/server can log "ready for client connections" a moment before the sa
+        // password is actually applied, so the very first login can transiently fail with
+        // "Login failed for user 'sa'" under CPU contention - retry instead of widening the wait
+        // strategy. Ceiling: 5 attempts / 2s apart; raise if it still isn't enough headroom.
+        var masterConnectionString = _container.GetConnectionString();
+        for (var attempt = 1; ; attempt++)
         {
-            await masterConnection.OpenAsync();
-            await using var createDatabaseCommand = masterConnection.CreateCommand();
-            createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
-            await createDatabaseCommand.ExecuteNonQueryAsync();
+            try
+            {
+                await using var masterConnection = new SqlConnection(masterConnectionString);
+                await masterConnection.OpenAsync();
+                await using var createDatabaseCommand = masterConnection.CreateCommand();
+                createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
+                await createDatabaseCommand.ExecuteNonQueryAsync();
+                break;
+            }
+            catch (SqlException) when (attempt < 5)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
         }
 
         ConnectionString = _container.GetConnectionString()
