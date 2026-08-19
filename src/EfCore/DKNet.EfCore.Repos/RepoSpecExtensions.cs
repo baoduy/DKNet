@@ -1,5 +1,6 @@
+using System.Runtime.CompilerServices;
+using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Specifications;
-using DKNet.EfCore.Specifications.Extensions;
 using X.PagedList;
 using X.PagedList.EF;
 
@@ -8,8 +9,136 @@ namespace DKNet.EfCore.Repos;
 /// <summary>
 ///     Provides extension methods for applying specifications to repositories and queries.
 /// </summary>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // IReadRepository<TEntity> is the obsolete member being flagged here
 public static class RepoExtensions
 {
+    #region Methods
+
+    /// <summary>
+    ///     Applies a specification's filter, includes and ordering to a queryable.
+    /// </summary>
+    /// <remarks>
+    ///     Local copy of <c>DKNet.EfCore.Specifications.Extensions.SpecificationExtensions.ApplySpecs</c>, which is
+    ///     internal to that package. Kept in sync only for as long as this retired library ships.
+    /// </remarks>
+    private static IQueryable<TEntity> ApplySpecs<TEntity>(
+        this IQueryable<TEntity> queryable,
+        ISpecification<TEntity> specification) where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+
+        if (specification.IsIgnoreQueryFilters)
+        {
+            var ignorableKeys = GlobalQueryFilter.IgnorableFilterKeys;
+            if (ignorableKeys.Count > 0) queryable = queryable.IgnoreQueryFilters(ignorableKeys);
+        }
+
+        if (specification.FilterQuery is not null) queryable = queryable.Where(specification.FilterQuery);
+
+        if (specification.IncludeQueries.Count > 0)
+            queryable = specification.IncludeQueries.Aggregate(
+                queryable,
+                (current, includeQuery) => current.Include(includeQuery));
+
+        if (specification.IncludeBuilders.Count > 0)
+            queryable = specification.IncludeBuilders.Aggregate(
+                queryable,
+                (current, builder) => builder(current));
+
+        var hasOrderBy = specification.OrderByQueries.Count > 0;
+        var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
+        IOrderedQueryable<TEntity>? ordered = null;
+
+        if (hasOrderBy)
+        {
+            var isFirst = true;
+            foreach (var expr in specification.OrderByQueries)
+                if (isFirst)
+                {
+                    ordered = queryable.OrderBy(expr);
+                    isFirst = false;
+                }
+                else
+                {
+                    ordered = ordered!.ThenBy(expr);
+                }
+        }
+
+        if (hasOrderByDesc)
+        {
+            if (ordered == null)
+            {
+                var isFirst = true;
+                foreach (var expr in specification.OrderByDescendingQueries)
+                    if (isFirst)
+                    {
+                        ordered = queryable.OrderByDescending(expr);
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        ordered = ordered!.ThenByDescending(expr);
+                    }
+            }
+            else
+            {
+                ordered = specification.OrderByDescendingQueries.Aggregate(
+                    ordered,
+                    (current, expr) => current.ThenByDescending(expr));
+            }
+        }
+
+        if (ordered != null) queryable = ordered;
+
+        return queryable;
+    }
+
+    /// <summary>
+    ///     Local copy of <c>DKNet.EfCore.Specifications.Extensions.SpecificationExtensions.EnsureSpecHasOrdering</c>,
+    ///     which is internal to that package.
+    /// </summary>
+    private static void EnsureSpecHasOrdering<TEntity>(this ISpecification<TEntity> specification)
+        where TEntity : class
+    {
+        if (specification.OrderByQueries.Count == 0 && specification.OrderByDescendingQueries.Count == 0)
+            throw new NotSupportedException("The specification must include at least one ordering.");
+    }
+
+    /// <summary>
+    ///     Local copy of the paging behaviour of
+    ///     <c>DKNet.EfCore.Specifications.PageAsyncEnumeratorExtensions.ToPageEnumerable</c>, which is internal to
+    ///     that package: streams the query in fixed-size pages instead of materializing the whole result set.
+    /// </summary>
+    private static async IAsyncEnumerable<TEntity> ToPageEnumerable<TEntity>(
+        this IQueryable<TEntity> query,
+        int pageSize = 100,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default) where TEntity : class
+    {
+        var currentPage = 0;
+        var hasMorePages = true;
+
+        while (hasMorePages)
+        {
+            var page = await query
+                .Skip(currentPage * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            currentPage++;
+            hasMorePages = page.Count == pageSize;
+
+            foreach (var item in page)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return item;
+            }
+        }
+    }
+
+    #endregion
+
     /// <param name="repo">The repository</param>
     /// <typeparam name="TEntity">Type of the entity</typeparam>
     extension<TEntity>(IReadRepository<TEntity> repo) where TEntity : class
@@ -95,3 +224,4 @@ public static class RepoExtensions
                 .ToPagedListAsync(pageNumber, pageSize, totalSetCount: null, cancellationToken: cancellationToken);
     }
 }
+#pragma warning restore CS0618

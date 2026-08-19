@@ -1,4 +1,4 @@
-using DKNet.EfCore.DtoEntities.Features.Merchants;
+using EfCore.DtoGenerator.TestEntities.Features.Merchants;
 using DKNet.EfCore.DtoGenerator;
 
 namespace EfCore.DtoGenerator.Tests.Features.Merchants;

@@ -15,6 +15,7 @@ namespace DKNet.EfCore.Repos.Abstractions;
 ///     Implementations should provide add/update/delete semantics and transaction support for EF Core.
 /// </summary>
 /// <typeparam name="TEntity">The entity type the repository manages.</typeparam>
+[Obsolete("DKNet.EfCore.Repos.Abstractions is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
 public interface IWriteRepository<TEntity>
     where TEntity : class
 {

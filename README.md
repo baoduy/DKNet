@@ -49,8 +49,6 @@ Comprehensive EF Core enhancements that implement repository patterns, domain ev
 - [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) - EF Core functionality enhancements
 - [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) - Lifecycle hooks for EF Core operations
 - [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) - Relational database utilities
-- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) - Repository pattern implementations
-- [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) - Repository abstractions
 
 ### 📨 [Messaging & CQRS](./Messaging/README.md)
 

@@ -129,7 +129,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoGenerator",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DtoGenerator.Tests", "EfCore\EfCore.DtoGenerator.Tests\EfCore.DtoGenerator.Tests.csproj", "{EDA9A512-64EE-4B7F-B418-76E8287FFEBE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.DtoEntities", "EfCore\DKNet.EfCore.DtoEntities\DKNet.EfCore.DtoEntities.csproj", "{BD132A0C-DFD3-492E-A265-BDD230761BD2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfCore.DtoGenerator.TestEntities", "EfCore\EfCore.DtoGenerator.TestEntities\EfCore.DtoGenerator.TestEntities.csproj", "{BD132A0C-DFD3-492E-A265-BDD230761BD2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DKNet.EfCore.Encryption", "EfCore\DKNet.EfCore.Encryption\DKNet.EfCore.Encryption.csproj", "{025FAF1D-B8DD-46AE-8B9D-18E85E3EDED1}"
 EndProject

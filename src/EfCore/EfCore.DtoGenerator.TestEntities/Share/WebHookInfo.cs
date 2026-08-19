@@ -1,0 +1,15 @@
+namespace EfCore.DtoGenerator.TestEntities.Share;
+
+[Owned]
+public sealed record WebHookInfo
+{
+    #region Properties
+
+    [MaxLength(50)] public string? Secret { get; init; }
+
+    public string[] Events { get; init; } = [];
+
+    public required Uri Url { get; init; }
+
+    #endregion
+}

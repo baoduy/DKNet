@@ -10,6 +10,8 @@ namespace DKNet.EfCore.Repos;
 ///     Default repository implementation that provides read helpers on top of <see cref="WriteRepository{TEntity}" />.
 /// </summary>
 /// <typeparam name="TEntity">Entity CLR type.</typeparam>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // base type/interface are the obsolete members being flagged here
 public sealed class Repository<TEntity>
     : WriteRepository<TEntity>, IRepository<TEntity>
     where TEntity : class
@@ -69,3 +71,4 @@ public sealed class Repository<TEntity>
 
     #endregion
 }
+#pragma warning restore CS0618

@@ -6,8 +6,6 @@ The EfCore Extensions provide comprehensive enhancements to Entity Framework Cor
 
 ### Core Abstractions & Patterns
 - [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) - Core abstractions and interfaces
-- [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) - Repository pattern abstractions
-- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) - Repository pattern implementations
 - [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) - Specification pattern for flexible query composition
 
 ### Domain Events & Lifecycle Management

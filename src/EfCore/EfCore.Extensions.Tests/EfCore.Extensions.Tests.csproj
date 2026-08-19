@@ -42,7 +42,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
     </ItemGroup>

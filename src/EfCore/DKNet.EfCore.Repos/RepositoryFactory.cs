@@ -12,6 +12,8 @@ namespace DKNet.EfCore.Repos;
 ///     and will dispose it when the factory is disposed.
 /// </summary>
 /// <typeparam name="TDbContext">The DbContext type used by repositories created by this factory.</typeparam>
+[Obsolete("DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.")]
+#pragma warning disable CS0618 // implemented interface and returned repository types are the obsolete members being flagged here
 public sealed class RepositoryFactory<TDbContext>(
     IDbContextFactory<TDbContext> dbFactory,
     IServiceProvider provider) : IRepositoryFactory
@@ -62,3 +64,4 @@ public sealed class RepositoryFactory<TDbContext>(
 
     #endregion
 }
+#pragma warning restore CS0618
