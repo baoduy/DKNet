@@ -123,10 +123,9 @@ public static class EndpointConfigExtensions
                         ? identity is { IsAuthenticated: true } ? identity.Name : null
                         : options.SystemAccountName;
 
-                    if (userName is not null)
-                        foreach (var argument in context.Arguments)
-                            if (argument is RequestBase requestBase)
-                                requestBase.ByUser = userName;
+                    foreach (var argument in context.Arguments)
+                        if (argument is RequestBase requestBase)
+                            requestBase.ByUser = userName;
 
                     return await next(context);
                 });
