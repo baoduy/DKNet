@@ -115,22 +115,31 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
         // password is actually applied, so the very first login can transiently fail with
         // "Login failed for user 'sa'" under CPU contention - retry instead of widening the wait
         // strategy. Ceiling: 5 attempts / 2s apart; raise if it still isn't enough headroom.
+        // Only the login (OpenAsync) is retried - a CREATE DATABASE failure after a successful
+        // login is a real error and must surface immediately, not get masked by a retry that then
+        // fails with "database already exists".
         var masterConnectionString = _container.GetConnectionString();
+        SqlConnection masterConnection;
         for (var attempt = 1; ; attempt++)
         {
+            masterConnection = new SqlConnection(masterConnectionString);
             try
             {
-                await using var masterConnection = new SqlConnection(masterConnectionString);
                 await masterConnection.OpenAsync();
-                await using var createDatabaseCommand = masterConnection.CreateCommand();
-                createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
-                await createDatabaseCommand.ExecuteNonQueryAsync();
                 break;
             }
             catch (SqlException) when (attempt < 5)
             {
+                await masterConnection.DisposeAsync();
                 await Task.Delay(TimeSpan.FromSeconds(2));
             }
+        }
+
+        await using (masterConnection)
+        {
+            await using var createDatabaseCommand = masterConnection.CreateCommand();
+            createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
+            await createDatabaseCommand.ExecuteNonQueryAsync();
         }
 
         ConnectionString = _container.GetConnectionString()
