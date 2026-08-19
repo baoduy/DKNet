@@ -55,7 +55,7 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, [FromBody] TCommand request) =>
                     {
                         var rs = await bus.Send(request);
                         return rs.Response();

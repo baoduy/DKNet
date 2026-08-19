@@ -20,7 +20,6 @@ dotnet add package DKNet.Fw.Extensions
 
 # Entity Framework Core extensions
 dotnet add package DKNet.EfCore.Extensions
-dotnet add package DKNet.EfCore.Repos
 
 # Messaging & CQRS
 dotnet add package DKNet.SlimBus.Extensions
