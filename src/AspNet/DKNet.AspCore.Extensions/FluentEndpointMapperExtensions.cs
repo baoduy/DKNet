@@ -4,6 +4,7 @@
 // File: FluentEndpointMapperExtensions.cs
 // Description: Extension helpers to map HTTP endpoints to SlimMessageBus-based fluent requests/queries using minimal APIs.
 
+using System.ComponentModel;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Specifications;
 using DKNet.EfCore.Specifications.Extensions;
@@ -140,12 +141,12 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapGet(
                     endpoint,
-                    async (int pageNumber, int pageSize, [FromServices] IRepositorySpec repo) =>
+                    async ([FromServices] IRepositorySpec repo, int pageNumber = 1, int pageSize = 20) =>
                     {
                         var page = await repo.ToPagedListAsync<TEntity, TModel>(
                             new EntityListSpecification<TEntity, TModel>(),
                             pageNumber < 1 ? 1 : pageNumber,
-                            pageSize < 1 ? 20 : pageSize);
+                            pageSize < 1 ? 20 : Math.Min(pageSize, 100));
                         return Results.Ok(new PagedResponse<TModel>(page));
                     })
                 .Produces<PagedResponse<TModel>>()
@@ -321,6 +322,16 @@ internal sealed class EntityListSpecification<TEntity, TModel> : ModelSpecificat
     where TEntity : class, IEntity<Guid>
     where TModel : class
 {
-    /// <summary>Initializes the specification with the default newest-first ordering.</summary>
-    public EntityListSpecification() => AddOrderByDescending(x => x.Id);
+    /// <summary>
+    ///     Initializes the specification with the default newest-first ordering: audited entities order by
+    ///     <c>CreatedOn</c> descending with <c>Id</c> as a tie-break; non-audited entities order by <c>Id</c>
+    ///     descending alone.
+    /// </summary>
+    public EntityListSpecification()
+    {
+        if (typeof(IAuditedEntity<Guid>).IsAssignableFrom(typeof(TEntity)))
+            AddOrderBy(nameof(IAuditedProperties.CreatedOn), ListSortDirection.Descending);
+
+        AddOrderByDescending(x => x.Id);
+    }
 }
