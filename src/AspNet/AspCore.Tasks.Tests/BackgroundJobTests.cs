@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Reflection;
 using DKNet.AspCore.Tasks;
 using DKNet.AspCore.Tasks.Internals;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,6 @@ public class BackgroundJobTests
     [Fact]
     public void AddBackgroundJobFromScansAssemblyForJobs()
     {
-        ResetHostAddedFlag();
         var services = new ServiceCollection();
         services.AddSingleton(new Counter());
         services.AddSingleton(new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
@@ -35,7 +33,6 @@ public class BackgroundJobTests
     [Fact]
     public void AddBackgroundJobRegistersHostOnlyOnce()
     {
-        ResetHostAddedFlag();
         var services = new ServiceCollection();
         services.AddBackgroundJob<CountingTask>();
         services.AddBackgroundJob<DelayedTask>();
@@ -45,9 +42,25 @@ public class BackgroundJobTests
     }
 
     [Fact]
+    public void AddBackgroundJobRegistersHostPerContainer()
+    {
+        // Two containers built in the same process must each get their own BackgroundJobHost —
+        // the guard is scoped to the IServiceCollection, never a static/process-wide flag.
+        var first = new ServiceCollection();
+        var second = new ServiceCollection();
+
+        first.AddBackgroundJob<CountingTask>();
+        second.AddBackgroundJob<DelayedTask>();
+
+        Assert.Single(first,
+            d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(BackgroundJobHost));
+        Assert.Single(second,
+            d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(BackgroundJobHost));
+    }
+
+    [Fact]
     public async Task FailingJobDoesNotPreventOtherJobsAndLogsError()
     {
-        ResetHostAddedFlag();
         var counter = new Counter();
         var logs = new ConcurrentBag<LogEntry>();
         using var host = new HostBuilder()
@@ -78,7 +91,6 @@ public class BackgroundJobTests
     [Fact]
     public async Task HostExecutesRegisteredJobOnStart()
     {
-        ResetHostAddedFlag();
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var counter = new Counter();
 
@@ -102,7 +114,6 @@ public class BackgroundJobTests
     [Fact]
     public async Task MultipleJobsExecuteConcurrentlyAndComplete()
     {
-        ResetHostAddedFlag();
         var counter = new Counter();
         using var host = new HostBuilder()
             .ConfigureServices(s =>
@@ -120,13 +131,6 @@ public class BackgroundJobTests
         await Task.Delay(300);
         Assert.Equal(2, counter.Value); // Both jobs incremented
         await host.StopAsync();
-    }
-
-    private static void ResetHostAddedFlag()
-    {
-        var type = typeof(TaskSetups);
-        var field = type.GetField("_added", BindingFlags.Static | BindingFlags.NonPublic);
-        field!.SetValue(null, 0);
     }
 
     #endregion

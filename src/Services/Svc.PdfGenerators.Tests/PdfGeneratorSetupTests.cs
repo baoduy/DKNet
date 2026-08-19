@@ -1,3 +1,4 @@
+using System.Linq;
 using DKNet.Svc.PdfGenerators;
 using DKNet.Svc.PdfGenerators.Options;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,20 @@ public class PdfGeneratorSetupTests
         var pdfGenerator2 = serviceProvider.GetService<IPdfGenerator>();
 
         pdfGenerator1.ShouldBeSameAs(pdfGenerator2);
+    }
+
+    [Fact]
+    public void AddPdfGenerator_CalledTwice_RegistersServiceOnlyOnce()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddPdfGenerator();
+        services.AddPdfGenerator();
+
+        // Assert
+        services.Count(s => s.ServiceType == typeof(IPdfGenerator)).ShouldBe(1);
     }
 
     [Fact]

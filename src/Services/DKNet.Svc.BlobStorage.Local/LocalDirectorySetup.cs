@@ -29,9 +29,12 @@ public static class LocalDirectorySetup
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        return services
-            .Configure<LocalDirectoryOptions>(o => configuration.GetSection(LocalDirectoryOptions.Name).Bind(o))
-            .AddScoped<IBlobService, LocalBlobService>();
+        services.Configure<LocalDirectoryOptions>(o => configuration.GetSection(LocalDirectoryOptions.Name).Bind(o));
+
+        if (!services.Any(s => s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(LocalBlobService)))
+            services.AddScoped<IBlobService, LocalBlobService>();
+
+        return services;
     }
 
     /// <summary>

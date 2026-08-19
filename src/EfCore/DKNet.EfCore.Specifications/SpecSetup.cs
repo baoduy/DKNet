@@ -26,9 +26,14 @@ public static class SpecSetup
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
     public static IServiceCollection AddSpecRepo<TDbContext>(this IServiceCollection services)
-        where TDbContext : DbContext =>
-        services.AddScoped<IRepositorySpec, RepositorySpec<TDbContext>>()
-            .AddSingleton<IRepositorySpecFactory,RepositorySpecFactory>();
+        where TDbContext : DbContext
+    {
+        if (services.IsRegistered<IRepositorySpec>())
+            return services;
+
+        return services.AddScoped<IRepositorySpec, RepositorySpec<TDbContext>>()
+            .AddSingleton<IRepositorySpecFactory, RepositorySpecFactory>();
+    }
 
     #endregion
 }

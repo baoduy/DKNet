@@ -110,9 +110,33 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
         // Testcontainers.MsSql's connection string targets the container's "master" database.
         // Unlike SQLite, SQL Server does not create a database implicitly on first connection,
         // so the per-test database must be provisioned before the app under test connects to it.
-        await using (var masterConnection = new SqlConnection(_container.GetConnectionString()))
+        //
+        // ponytail: mssql/server can log "ready for client connections" a moment before the sa
+        // password is actually applied, so the very first login can transiently fail with
+        // "Login failed for user 'sa'" under CPU contention - retry instead of widening the wait
+        // strategy. Ceiling: 5 attempts / 2s apart; raise if it still isn't enough headroom.
+        // Only the login (OpenAsync) is retried - a CREATE DATABASE failure after a successful
+        // login is a real error and must surface immediately, not get masked by a retry that then
+        // fails with "database already exists".
+        var masterConnectionString = _container.GetConnectionString();
+        SqlConnection masterConnection;
+        for (var attempt = 1; ; attempt++)
         {
-            await masterConnection.OpenAsync();
+            masterConnection = new SqlConnection(masterConnectionString);
+            try
+            {
+                await masterConnection.OpenAsync();
+                break;
+            }
+            catch (SqlException) when (attempt < 5)
+            {
+                await masterConnection.DisposeAsync();
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        await using (masterConnection)
+        {
             await using var createDatabaseCommand = masterConnection.CreateCommand();
             createDatabaseCommand.CommandText = $"CREATE DATABASE [{_databaseName}]";
             await createDatabaseCommand.ExecuteNonQueryAsync();

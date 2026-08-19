@@ -31,10 +31,15 @@ public static class EfCoreDataAuthSetup
         ///     - Configures necessary dependencies
         /// </remarks>
         private IServiceCollection AddDataOwnerProvider<TProvider>()
-            where TProvider : class, IDataOwnerProvider =>
-            services
+            where TProvider : class, IDataOwnerProvider
+        {
+            if (services.IsRegistered<IDataOwnerProvider>())
+                return services;
+
+            return services
                 .AddGlobalModelBuilder<DataOwnerAuthQuery>()
                 .AddScoped<IDataOwnerProvider, TProvider>();
+        }
 
         /// <summary>
         ///     Configures automatic data key management for a specific DbContext.

@@ -98,6 +98,22 @@ public class SetupRepositoryTests
     }
 
     [Fact]
+    public void AddRepoFactory_CalledTwice_RegistersFactoryOnlyOnce()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddDbContextFactory<TestDbContext>(options =>
+            options.UseSqlite("DataSource=:memory:"));
+
+        // Act
+        services.AddRepoFactory<TestDbContext>();
+        services.AddRepoFactory<TestDbContext>();
+
+        // Assert
+        services.Count(s => s.ServiceType == typeof(IRepositoryFactory)).ShouldBe(1);
+    }
+
+    [Fact]
     public void AddRepoFactory_RegistersRepositoryFactory()
     {
         // Arrange
