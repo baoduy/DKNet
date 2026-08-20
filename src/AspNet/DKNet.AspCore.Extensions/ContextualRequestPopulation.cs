@@ -148,7 +148,7 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
         services.AddSingleton<IContextualValueResolver, ClaimValueResolver>();
         services.AddSingleton<IContextualRequestPopulationService, ContextualRequestPopulationService>();
 
-        services.Configure<OpenApiOptions>(o =>
+        services.ConfigureAll<OpenApiOptions>(o =>
         {
             o.AddSchemaTransformer<ContextualSourceSchemaTransformer>();
             o.AddOperationTransformer<ContextualSourceOperationTransformer>();
