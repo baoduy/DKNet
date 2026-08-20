@@ -190,6 +190,73 @@ public class OrderingWindowTrackingTests : IAsyncLifetime
         copy.OrderByClauses[1].Direction.ShouldBe(ListSortDirection.Descending);
     }
 
+    [Fact]
+    public async Task ApplySpecs_ForeignSpecification_WithOnlyAscendingOrdering_AppliesLegacyOrderByChain()
+    {
+        // Arrange: a foreign ISpecification (not a Specification<TEntity>) takes the legacy two-phase
+        // ordering path in ApplySpecs. Two ascending clauses exercise both the initial OrderBy and the
+        // subsequent ThenBy.
+        _context.Products.AddRange(
+            new Product { Name = "B", Price = 20m, CategoryId = _categoryOneId },
+            new Product { Name = "A", Price = 10m, CategoryId = _categoryOneId });
+        await _context.SaveChangesAsync();
+
+        Expression<Func<Product, object>> byName = p => p.Name;
+        Expression<Func<Product, object>> byPrice = p => p.Price;
+        var foreign = new ForeignSpecification([byName, byPrice], []);
+
+        // Act
+        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
+
+        // Assert
+        results.Select(p => p.Name).ShouldBe(["A", "B"]);
+    }
+
+    [Fact]
+    public async Task ApplySpecs_ForeignSpecification_WithOnlyDescendingOrdering_AppliesLegacyOrderByDescendingChain()
+    {
+        // Arrange: two descending clauses exercise both the initial OrderByDescending and the
+        // subsequent ThenByDescending, with no ascending clauses present.
+        _context.Products.AddRange(
+            new Product { Name = "A", Price = 10m, CategoryId = _categoryOneId },
+            new Product { Name = "B", Price = 20m, CategoryId = _categoryOneId });
+        await _context.SaveChangesAsync();
+
+        Expression<Func<Product, object>> byPrice = p => p.Price;
+        Expression<Func<Product, object>> byName = p => p.Name;
+        var foreign = new ForeignSpecification([], [byPrice, byName]);
+
+        // Act
+        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
+
+        // Assert
+        results.Select(p => p.Name).ShouldBe(["B", "A"]);
+    }
+
+    [Fact]
+    public async Task ApplySpecs_ForeignSpecification_WithMixedOrdering_AppliesAscendingThenDescendingLegacyChain()
+    {
+        // Arrange: legacy behaviour applies all ascending clauses first (as the compound primary key),
+        // then descending clauses as a ThenByDescending tiebreaker — the opposite of the declared-
+        // sequence fix for same-kind Specification<TEntity> instances.
+        _context.Products.AddRange(
+            new Product { Name = "Same", Price = 10m, CategoryId = _categoryOneId },
+            new Product { Name = "Same", Price = 30m, CategoryId = _categoryOneId },
+            new Product { Name = "Other", Price = 5m, CategoryId = _categoryOneId });
+        await _context.SaveChangesAsync();
+
+        Expression<Func<Product, object>> byName = p => p.Name;
+        Expression<Func<Product, object>> byPrice = p => p.Price;
+        var foreign = new ForeignSpecification([byName], [byPrice]);
+
+        // Act
+        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
+
+        // Assert: Name ascending is primary; within the "Same" name, Price descending breaks the tie.
+        results.Select(p => p.Name).ShouldBe(["Other", "Same", "Same"]);
+        results.Select(p => p.Price).ShouldBe([5m, 30m, 10m]);
+    }
+
     #endregion
 
     /// <summary>A foreign <see cref="ISpecification{TEntity}" /> that is not a <see cref="Specification{TEntity}" />.</summary>
