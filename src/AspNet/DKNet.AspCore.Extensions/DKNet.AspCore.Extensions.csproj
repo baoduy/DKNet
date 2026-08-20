@@ -27,4 +27,11 @@
         <ProjectReference Include="..\..\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <!-- Lets AspCore.Extensions.Tests unit-test ContextualMemberScanner/ContextualRequestPopulationService/
+             ClaimValueResolver directly (all internal) instead of only through HTTP dispatch (DRK-565). Mirrors
+             the same pattern already used by DKNet.AspCore.Tasks/DKNet.AspCore.Idempotency. -->
+        <InternalsVisibleTo Include="AspCore.Extensions.Tests"/>
+    </ItemGroup>
 </Project>

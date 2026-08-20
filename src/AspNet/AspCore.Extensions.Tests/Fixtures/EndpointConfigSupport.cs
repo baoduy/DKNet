@@ -127,6 +127,87 @@ internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQ
     #endregion
 }
 
+/// <summary>
+///     Declares a non-string-typed member — proves a claim value that fails to convert to the property's own
+///     type (e.g. a non-Guid string) leaves it at its type's default rather than throwing or rejecting the
+///     request (DRK-565 population is never validation).
+/// </summary>
+public record GuidClaimCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim("tenant-id")]
+    public Guid TenantId { get; set; }
+}
+
+internal sealed class GuidClaimCommandHandler : Fluents.Requests.IHandler<GuidClaimCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(GuidClaimCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.TenantId.ToString() }));
+}
+
+/// <summary>Two declared members, each sourced from its OWN claim type — proves both are populated independently.</summary>
+public record MultiClaimCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+
+    [FromClaim("tenant-id")]
+    public string? TenantId { get; set; }
+}
+
+internal sealed class MultiClaimCommandHandler : Fluents.Requests.IHandler<MultiClaimCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(MultiClaimCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(
+            Result.Ok(new WidgetResult { Name = $"{request.ByUser ?? "(null)"}|{request.TenantId ?? "(null)"}" }));
+}
+
+/// <summary>
+///     Query-bound probe carrying a declared <see cref="ByUser" /> ALONGSIDE a non-declared sibling
+///     <see cref="Name" /> — used to prove the OpenAPI operation-parameter transformer removes only the declared
+///     one (<see cref="ByUserQueryProbe" /> has no non-declared sibling to make that distinction with).
+/// </summary>
+public record ByUserQueryProbeWithName : Fluents.Queries.IWitResponse<WidgetResult>
+{
+    public string Name { get; init; } = string.Empty;
+
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
+
+internal sealed class ByUserQueryProbeWithNameHandler : Fluents.Queries.IHandler<ByUserQueryProbeWithName, WidgetResult>
+{
+    public Task<WidgetResult?> OnHandle(ByUserQueryProbeWithName request, CancellationToken cancellationToken) =>
+        Task.FromResult<WidgetResult?>(new WidgetResult { Name = $"{request.Name}|{request.ByUser ?? "(null)"}" });
+}
+
+#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — this fixture intentionally exercises the
+                               // pre-existing manual-stamping pattern to prove it still works after the attribute
+                               // was added, not the new mechanism.
+/// <summary>
+///     Carries <see cref="RequestBase.ByUser" /> from the OLD pre-DRK-565 pattern — a host's own
+///     <see cref="EndpointRegistrationOptions.ConfigureGroup" /> filter stamps it manually, the way every
+///     <c>RequestBase</c> consumer did before <see cref="FromClaimAttribute" /> existed. Proves <c>[Obsolete]</c>
+///     on <see cref="RequestBase" /> is advisory only — the old manual pattern still compiles and still works.
+/// </summary>
+public record LegacyByUserCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
+{
+    public string Name { get; init; } = string.Empty;
+}
+#pragma warning restore CS0618
+
+public sealed class LegacyByUserCommandValidator : AbstractValidator<LegacyByUserCommand>
+{
+    public LegacyByUserCommandValidator() => RuleFor(x => x.Name).NotEmpty();
+}
+
+internal sealed class LegacyByUserCommandHandler : Fluents.Requests.IHandler<LegacyByUserCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(LegacyByUserCommand request, CancellationToken cancellationToken) =>
+#pragma warning disable CS0618
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.ByUser ?? "(null)" }));
+#pragma warning restore CS0618
+}
+
 /// <summary>The single <see cref="IEndpointConfig" /> discovered by default (no explicit assemblies) in this test assembly.</summary>
 public sealed class ProbeEndpointConfig : IEndpointConfig
 {
@@ -146,6 +227,10 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
         group.MapGet<ByUserQueryProbe, WidgetResult>("/by-user-query");
         group.MapPost<AttributedValidatedCommand, WidgetResult>("/attributed-validated");
+        group.MapPost<GuidClaimCommand, WidgetResult>("/guid-claim");
+        group.MapPost<MultiClaimCommand, WidgetResult>("/multi-claim");
+        group.MapGet<ByUserQueryProbeWithName, WidgetResult>("/by-user-query-with-name");
+        group.MapPost<LegacyByUserCommand, WidgetResult>("/legacy-by-user");
     }
 
     #endregion

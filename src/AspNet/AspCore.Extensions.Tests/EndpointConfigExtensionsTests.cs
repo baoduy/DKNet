@@ -282,9 +282,14 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task ConfigureGroup_RestoresAttributionAndValidation_AttributionAppliedBeforeValidationRuns()
+    public async Task ConfigureGroup_ContextualPopulationRegistered_PopulatesDeclaredMemberBeforeValidationRuns()
     {
+        // AttributedValidatedCommand.ByUser now carries [FromClaim(ClaimTypes.Name)] (DRK-565) — no manual
+        // stamping filter is registered here at all, only AddFluentValidationAutoValidation(). If population
+        // did NOT run before validation, AttributedValidatedCommandValidator's "ByUser must not be null" rule
+        // would reject every request, since nothing else ever sets ByUser.
         var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
         builder.Services.AddValidatorsFromAssemblyContaining<AttributedValidatedCommandValidator>();
         AddTestAuth(builder, o =>
         {
@@ -293,22 +298,7 @@ public class EndpointConfigExtensionsTests
         });
         var app = builder.Build();
         app.UseEndpointConfigs(
-            o => o.ConfigureGroup = (group, _) =>
-            {
-                // Attribution filter added FIRST -> runs before the validation filter added second, so
-                // AttributedValidatedCommandValidator's "ByUser must not be null" rule only passes because
-                // attribution already happened.
-                group.AddEndpointFilter(async (context, next) =>
-                {
-                    var identity = context.HttpContext.User.Identity;
-                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
-                    foreach (var argument in context.Arguments)
-                        if (argument is AttributedValidatedCommand attributedValidatedCommand)
-                            attributedValidatedCommand.ByUser = userName;
-                    return await next(context);
-                });
-                group.AddFluentValidationAutoValidation();
-            },
+            o => o.ConfigureGroup = (group, _) => group.AddFluentValidationAutoValidation(),
             typeof(ProbeEndpointConfig).Assembly);
         await app.StartAsync();
         using var client = app.GetTestClient();
@@ -324,15 +314,90 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task AsParametersBinding_NoConfigureGroup_QueryBoundByUserPassesThroughUnchanged()
+    public async Task ConfigureGroup_ContextualPopulationRegistered_ClaimMissing_ValidationRejectsRequest()
     {
-        // Contrast with the pre-DRK-542 behaviour: the package no longer touches ByUser at all, so a value bound
-        // from the querystring via [AsParameters] survives untouched — attribution is now entirely the host's job.
+        // Same wiring as above, but the authenticated caller carries no ClaimTypes.Name claim: population still
+        // runs (leaving ByUser at its default, null) and the request is rejected by VALIDATION — proving
+        // population never bypasses or substitutes for the application's own validation.
         var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
+        builder.Services.AddValidatorsFromAssemblyContaining<AttributedValidatedCommandValidator>();
         AddTestAuth(builder, o =>
         {
             o.Authenticated = true;
             o.UserName = null;
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) => group.AddFluentValidationAutoValidation(),
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/probe/attributed-validated", new AttributedValidatedCommand { Name = "Acme Retail" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ConfigureGroup_ManualByUserStamping_RequestBaseBasedCommand_StampedByUserReachesHandler()
+    {
+        // Proves the OLD pre-DRK-565 pattern still works: RequestBase.ByUser stamped manually by a host's own
+        // ConfigureGroup filter, ahead of a host-added validation filter — exactly as ConfigureGroup's docs
+        // describe. [Obsolete] on RequestBase is advisory only; it does not break this existing consumer.
+        var builder = CreateBuilder();
+        builder.Services.AddValidatorsFromAssemblyContaining<LegacyByUserCommandValidator>();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "legacy.user@acme.com";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) =>
+            {
+                group.AddEndpointFilter(async (context, next) =>
+                {
+                    var identity = context.HttpContext.User.Identity;
+                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
+                    foreach (var argument in context.Arguments)
+#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — exercising the old manual pattern on purpose.
+                        if (argument is LegacyByUserCommand legacyByUserCommand)
+                            legacyByUserCommand.ByUser = userName;
+#pragma warning restore CS0618
+                    return await next(context);
+                });
+                group.AddFluentValidationAutoValidation();
+            },
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/probe/legacy-by-user", new LegacyByUserCommand { Name = "Acme Retail" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("legacy.user@acme.com");
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task AsParametersBinding_DeclaredByUser_CallerSuppliedQueryValueIsOverwrittenByResolvedClaim()
+    {
+        // ByUserQueryProbe.ByUser now carries [FromClaim(ClaimTypes.Name)] (DRK-565): once AddContextualRequestPopulation
+        // is registered, a caller-supplied ?ByUser=... on the querystring is no longer trustworthy input — it is
+        // always overwritten by the resolved claim, unlike the pre-DRK-565 pass-through behaviour this test used
+        // to assert.
+        var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "jane.tan@acme.com";
         });
         var app = builder.Build();
         app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
@@ -344,7 +409,7 @@ public class EndpointConfigExtensionsTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
-        body.Name.ShouldBe("whatever-the-caller-sends");
+        body.Name.ShouldBe("jane.tan@acme.com"); // never "whatever-the-caller-sends"
         await app.StopAsync();
     }
 
