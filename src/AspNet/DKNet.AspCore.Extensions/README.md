@@ -111,7 +111,7 @@ including ones defined in the consuming application, not just this package:
 public sealed class ProductsEndpoint : IEndpointConfig
 {
     public string GroupEndpoint => "/products";
-    public int Version => 1;
+    // Version defaults to 1 — override only when a group needs a different one.
 
     public void Map(RouteGroupBuilder group)
     {
@@ -124,17 +124,34 @@ app.UseEndpointConfigs();
 ```
 
 With no options supplied, a group gets: route `/v{version:apiVersion}{GroupEndpoint}`, tag `"Root"` (or
-`GroupEndpoint` with slashes replaced by dashes), authorization required, FluentValidation auto-validation enabled,
-and a filter that stamps `RequestBase.ByUser` from the authenticated user name. Override any of it per host:
+`GroupEndpoint` with slashes replaced by dashes), and authorization required. Versioning is on by default — turn it
+off, or supply per-group setup, per host:
 
 ```csharp
 app.UseEndpointConfigs(o =>
 {
-    o.RequireAuthorization = false;      // relax auth; ByUser falls back to o.SystemAccountName
-    o.EnableRequestValidation = false;   // handle validation yourself
-    o.SystemAccountName = "svc-account";
+    o.RequireAuthorization = false;               // relax auth
+    o.EnableVersioning = false;                   // no version segment, no version metadata
+    o.ConfigureGroup = (group, config) =>
+    {
+        // Runs for every group, before authorization and before the group's endpoints are mapped.
+        group.AddFluentValidationAutoValidation();
+        group.AddEndpointFilter(async (context, next) =>
+        {
+            var userName = context.HttpContext.User.Identity is { IsAuthenticated: true } identity
+                ? identity.Name
+                : null;
+            foreach (var argument in context.Arguments)
+                if (argument is RequestBase requestBase)
+                    requestBase.ByUser = userName;
+            return await next(context);
+        });
+    };
 });
 ```
+
+`EnableVersioning = true` (the default) requires the host to have called `AddApiVersioning()`; otherwise
+`UseEndpointConfigs()` throws `InvalidOperationException` at startup.
 
 ## Common Response Metadata
 
@@ -204,7 +221,8 @@ Returned automatically by `MapGetPage` and `MapGetList`.
 ## Acting-User Requests
 
 `RequestBase` (in `DKNet.SlimBus.Extensions`) is the base record for requests that need the acting user's identity.
-`UseEndpointConfigs()`'s default filter populates `RequestBase.ByUser` before the request reaches its handler:
+This package no longer populates `RequestBase.ByUser` on its own — a host that needs stamping supplies it through
+`EndpointRegistrationOptions.ConfigureGroup` (see the example above):
 
 ```csharp
 public record CreateProduct : RequestBase, Fluents.Requests.IWitResponse<ProductDto>
