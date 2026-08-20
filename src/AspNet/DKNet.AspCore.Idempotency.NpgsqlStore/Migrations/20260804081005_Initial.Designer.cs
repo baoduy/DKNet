@@ -25,7 +25,7 @@ namespace DKNet.AspCore.Idempotency.NpgsqlStore.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("DKNet.AspCore.Idempotency.NpgsqlStore.Data.IdempotencyKeyEntity", b =>
+            modelBuilder.Entity("DKNet.AspCore.Idempotency.Relational.Data.IdempotencyKeyEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

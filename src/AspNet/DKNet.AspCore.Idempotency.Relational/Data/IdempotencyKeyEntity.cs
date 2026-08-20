@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace DKNet.AspCore.Idempotency.MsSqlStore.Data;
+namespace DKNet.AspCore.Idempotency.Relational.Data;
 
 /// <summary>
 ///     Represents an idempotency key stored in the database with its associated cached HTTP response.
