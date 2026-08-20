@@ -9,12 +9,11 @@ using Asp.Versioning;
 using Asp.Versioning.Builder;
 using Asp.Versioning.Conventions;
 using DKNet.Fw.Extensions.TypeExtractors;
-using DKNet.SlimBus.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace DKNet.AspCore.Extensions;
 
@@ -26,11 +25,12 @@ namespace DKNet.AspCore.Extensions;
 public sealed class EndpointRegistrationOptions
 {
     /// <summary>
-    ///     Builds the route pattern for a group from its <see cref="IEndpointConfig" />.
-    ///     Defaults to <c>/v{version:apiVersion}{GroupEndpoint}</c>.
+    ///     Builds the route pattern for a group from its <see cref="IEndpointConfig" />. Leave <see langword="null" />
+    ///     to use the version-aware default: <c>/v{version:apiVersion}{GroupEndpoint}</c> when
+    ///     <see cref="EnableVersioning" /> is <see langword="true" />, or <c>{GroupEndpoint}</c> when it is
+    ///     <see langword="false" />.
     /// </summary>
-    public Func<IEndpointConfig, string> RouteTemplate { get; set; } =
-        config => $"/v{{version:apiVersion}}{config.GroupEndpoint}";
+    public Func<IEndpointConfig, string>? RouteTemplate { get; set; }
 
     /// <summary>
     ///     Grouping tag applied when an <see cref="IEndpointConfig" /> resolves an empty <see cref="IEndpointConfig.Tag" />.
@@ -45,16 +45,18 @@ public sealed class EndpointRegistrationOptions
     public bool RequireAuthorization { get; set; } = true;
 
     /// <summary>
-    ///     Whether registered groups get FluentValidation auto-validation applied. Defaults to <see langword="true" />;
-    ///     a host that disables this handles request validation itself.
+    ///     Whether groups are mapped to a versioned route and carry API-version metadata. Defaults to
+    ///     <see langword="true" />. When enabled, the host must have called <c>AddApiVersioning()</c> or
+    ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> throws at startup.
     /// </summary>
-    public bool EnableRequestValidation { get; set; } = true;
+    public bool EnableVersioning { get; set; } = true;
 
     /// <summary>
-    ///     The <see cref="RequestBase.ByUser" /> value stamped on requests when <see cref="RequireAuthorization" /> is
-    ///     <see langword="false" />. Defaults to <c>"system"</c>.
+    ///     Host callback invoked for every created group, after mapping/version metadata/tags are applied and before
+    ///     authorization and <see cref="IEndpointConfig.Map" /> run. Use this to add host-specific setup — such as
+    ///     request-user stamping or request validation — that used to be built into this package.
     /// </summary>
-    public string SystemAccountName { get; set; } = "system";
+    public Action<RouteGroupBuilder, IEndpointConfig>? ConfigureGroup { get; set; }
 }
 
 /// <summary>
@@ -74,12 +76,22 @@ public static class EndpointConfigExtensions
         /// <param name="configureOptions">Overrides the registration defaults; leave <see langword="null" /> to keep them.</param>
         /// <param name="assemblies">Assemblies to scan for <see cref="IEndpointConfig" /> implementations.</param>
         /// <returns>The route groups created, one per discovered config.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     <see cref="EndpointRegistrationOptions.EnableVersioning" /> is <see langword="true" /> (the default) but
+        ///     the host has not called <c>AddApiVersioning()</c>.
+        /// </exception>
         public IReadOnlyList<RouteGroupBuilder> UseEndpointConfigs(
             Action<EndpointRegistrationOptions>? configureOptions = null,
             params Assembly[] assemblies)
         {
             var options = new EndpointRegistrationOptions();
             configureOptions?.Invoke(options);
+
+            if (options.EnableVersioning && app.Services.GetService<IApiVersionParser>() is null)
+                throw new InvalidOperationException(
+                    $"{nameof(EndpointRegistrationOptions.EnableVersioning)} is enabled but no API versioning " +
+                    "services are registered. Call AddApiVersioning() on the service collection, or set " +
+                    $"{nameof(EndpointRegistrationOptions.EnableVersioning)} to false.");
 
             var scanAssemblies = assemblies.Length > 0 ? assemblies : AppDomain.CurrentDomain.GetAssemblies();
             var configs = scanAssemblies
@@ -96,42 +108,41 @@ public static class EndpointConfigExtensions
 
             if (configs.Count == 0) return [];
 
-            var versionSet = app.NewApiVersionSet()
-                .HasApiVersions(configs.Select(c => c.Version).Distinct().Select(v => new ApiVersion(v)))
-                .ReportApiVersions()
-                .Build();
+            var versionSet = options.EnableVersioning
+                ? app.NewApiVersionSet()
+                    .HasApiVersions(configs.Select(c => c.Version).Distinct().Select(v => new ApiVersion(v)))
+                    .ReportApiVersions()
+                    .Build()
+                : null;
 
             return [.. configs.Select(config => app.MapEndpointConfig(config, versionSet, options))];
         }
 
         private RouteGroupBuilder MapEndpointConfig(
             IEndpointConfig config,
-            ApiVersionSet versionSet,
+            ApiVersionSet? versionSet,
             EndpointRegistrationOptions options)
         {
-            var group = app.MapGroup(options.RouteTemplate(config))
-                .WithApiVersionSet(versionSet)
-                .HasApiVersion(config.Version)
-                .MapToApiVersion(config.Version)
+            var routeTemplate = options.RouteTemplate is not null
+                ? options.RouteTemplate(config)
+                : options.EnableVersioning
+                    ? $"/v{{version:apiVersion}}{config.GroupEndpoint}"
+                    : config.GroupEndpoint;
+
+            var group = app.MapGroup(routeTemplate);
+
+            if (versionSet is not null)
+                group = group
+                    .WithApiVersionSet(versionSet)
+                    .HasApiVersion(config.Version)
+                    .MapToApiVersion(config.Version);
+
+            group = group
                 .WithDisplayName($"v{config.Version}{config.GroupEndpoint}")
                 .WithGroupName($"v{config.Version}")
-                .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag)
-                .AddEndpointFilter(async (context, next) =>
-                {
-                    var identity = context.HttpContext.User.Identity;
-                    var userName = options.RequireAuthorization
-                        ? identity is { IsAuthenticated: true } ? identity.Name : null
-                        : options.SystemAccountName;
+                .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
-                    foreach (var argument in context.Arguments)
-                        if (argument is RequestBase requestBase)
-                            requestBase.ByUser = userName;
-
-                    return await next(context);
-                });
-
-            if (options.EnableRequestValidation)
-                group.AddFluentValidationAutoValidation();
+            options.ConfigureGroup?.Invoke(group, config);
 
             if (options.RequireAuthorization)
                 group = string.IsNullOrEmpty(config.AuthPolicy)

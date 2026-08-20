@@ -37,6 +37,48 @@ internal sealed class ValidatedCommandHandler : Fluents.Requests.IHandler<Valida
 }
 
 /// <summary>
+///     Carries both <see cref="RequestBase.ByUser" /> and a validated <see cref="Name" /> — used to prove that a
+///     host-restored attribution filter (via <see cref="EndpointRegistrationOptions.ConfigureGroup" />) runs before
+///     a host-restored validation filter runs on the same request. <see cref="AttributedValidatedCommandValidator" />
+///     rejects a request whose <see cref="RequestBase.ByUser" /> is still <see langword="null" /> at validation
+///     time, so this command only reaches its handler when attribution really did happen first.
+/// </summary>
+public record AttributedValidatedCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
+{
+    #region Properties
+
+    public string Name { get; init; } = string.Empty;
+
+    #endregion
+}
+
+public sealed class AttributedValidatedCommandValidator : AbstractValidator<AttributedValidatedCommand>
+{
+    #region Constructors
+
+    public AttributedValidatedCommandValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty();
+        RuleFor(x => x.ByUser).NotNull();
+    }
+
+    #endregion
+}
+
+internal sealed class AttributedValidatedCommandHandler
+    : Fluents.Requests.IHandler<AttributedValidatedCommand, WidgetResult>
+{
+    #region Methods
+
+    public Task<IResult<WidgetResult>> OnHandle(
+        AttributedValidatedCommand request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.ByUser ?? "(null)" }));
+
+    #endregion
+}
+
+/// <summary>
 ///     Carries <see cref="RequestBase.ByUser" /> so tests can observe, via the response body, what
 ///     <c>EndpointConfigExtensions</c>' request filter stamped it to before dispatch.
 /// </summary>
@@ -88,7 +130,52 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<ValidatedCommand, WidgetResult>("/validated");
         group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
         group.MapGet<ByUserQueryProbe, WidgetResult>("/by-user-query");
+        group.MapPost<AttributedValidatedCommand, WidgetResult>("/attributed-validated");
     }
+
+    #endregion
+}
+
+/// <summary>
+///     Declares <see cref="Version" /> 2 — proves that a group declaring a version other than 1 still routes and
+///     reports its version correctly once versioning is enabled (§5 "Versioned API keeps its versioned routes
+///     after upgrading"). Uses its own <see cref="GroupEndpoint" /> rather than <see cref="ProbeEndpointConfig" />'s
+///     so it does not collide with routes when a DIFFERENT test in this shared fixture assembly disables
+///     versioning altogether (versioning off drops the version discriminator, and two groups sharing one route
+///     text would then ambiguously match).
+/// </summary>
+public sealed class ProbeV2EndpointConfig : IEndpointConfig
+{
+    #region Properties
+
+    public string GroupEndpoint => "/probe-versioned";
+
+    public int Version => 2;
+
+    #endregion
+
+    #region Methods
+
+    public void Map(RouteGroupBuilder group) => group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
+
+    #endregion
+}
+
+/// <summary>
+///     States no <see cref="Version" /> override at all, relying on <see cref="IEndpointConfig" />'s default
+///     interface member — proves a group declaring no version is treated as version 1 (§5).
+/// </summary>
+public sealed class UnversionedProbeEndpointConfig : IEndpointConfig
+{
+    #region Properties
+
+    public string GroupEndpoint => "/unversioned-probe";
+
+    #endregion
+
+    #region Methods
+
+    public void Map(RouteGroupBuilder group) => group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
 
     #endregion
 }

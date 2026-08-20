@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
   as a singleton built from a caller-supplied key.
+- **Breaking:** `EndpointRegistrationOptions.EnableRequestValidation` and `EndpointRegistrationOptions.SystemAccountName`
+  have been removed from `DKNet.AspCore.Extensions`, and `UseEndpointConfigs()` no longer stamps `RequestBase.ByUser`
+  or applies FluentValidation auto-validation on its own. A consumer that had set either setting gets a compile
+  failure; one relying on defaults loses request-user attribution and automatic validation silently — supply both
+  through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
+  (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
 
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
