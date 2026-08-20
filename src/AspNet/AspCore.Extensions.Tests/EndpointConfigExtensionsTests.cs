@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using AspCore.Extensions.Tests.Fixtures;
+using DKNet.SlimBus.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -100,14 +101,10 @@ public class EndpointConfigExtensionsTests
     // --- Options: route template + tag override --------------------------------------------------------------
 
     [Fact]
-    public async Task UseEndpointConfigs_DefaultOptions_UsesVersionedRouteTemplateAndAuthenticatedByUser()
+    public async Task UseEndpointConfigs_DefaultOptions_UsesVersionedRouteTemplate()
     {
         var builder = CreateBuilder();
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = "carol";
-        });
+        AddTestAuth(builder, o => o.Authenticated = true);
         var app = builder.Build();
         app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
         await app.StartAsync();
@@ -117,10 +114,6 @@ public class EndpointConfigExtensionsTests
         var response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("carol");
-
         await app.StopAsync();
     }
 
@@ -145,54 +138,16 @@ public class EndpointConfigExtensionsTests
         await app.StopAsync();
     }
 
-    // --- Options: validation gating -----------------------------------------------------------------------
+    // --- Attribution/validation are no longer performed by the package ------------------------------------
 
     [Fact]
-    public async Task UseEndpointConfigs_ValidationEnabled_RejectsInvalidRequestBody()
-    {
-        var builder = CreateBuilder();
-        builder.Services.AddValidatorsFromAssemblyContaining<ValidatedCommandValidator>();
-        builder.Services.AddFluentValidationAutoValidation();
-        AddTestAuth(builder, o => o.Authenticated = true);
-        var app = builder.Build();
-        app.UseEndpointConfigs(o => o.EnableRequestValidation = true, typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/v1/probe/validated", new ValidatedCommand { Name = "" });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        await app.StopAsync();
-    }
-
-    [Fact]
-    public async Task UseEndpointConfigs_ValidationDisabled_LetsInvalidRequestBodyThrough()
-    {
-        var builder = CreateBuilder();
-        builder.Services.AddValidatorsFromAssemblyContaining<ValidatedCommandValidator>();
-        builder.Services.AddFluentValidationAutoValidation();
-        AddTestAuth(builder, o => o.Authenticated = true);
-        var app = builder.Build();
-        app.UseEndpointConfigs(o => o.EnableRequestValidation = false, typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/v1/probe/validated", new ValidatedCommand { Name = "" });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        await app.StopAsync();
-    }
-
-    // --- Request filter: ByUser stamping -------------------------------------------------------------------
-
-    [Fact]
-    public async Task RequestFilter_AuthenticatedUser_StampsByUserFromPrincipal()
+    public async Task NoConfigureGroup_AuthenticatedRequest_CarriesNoByUserAttributionFromPackage()
     {
         var builder = CreateBuilder();
         AddTestAuth(builder, o =>
         {
             o.Authenticated = true;
-            o.UserName = "dave";
+            o.UserName = "jane.tan@acme.com";
         });
         var app = builder.Build();
         app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
@@ -201,24 +156,19 @@ public class EndpointConfigExtensionsTests
 
         var response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
 
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
-        body.Name.ShouldBe("dave");
+        body.Name.ShouldBe("(null)"); // no ConfigureGroup supplied -> nothing stamps ByUser any more
         await app.StopAsync();
     }
 
     [Fact]
-    public async Task RequestFilter_AuthorizationDisabled_StampsByUserFromSystemAccountName()
+    public async Task NoConfigureGroup_AuthorizationOff_CarriesNoStandInAttribution()
     {
         var builder = CreateBuilder();
         var app = builder.Build();
-        app.UseEndpointConfigs(
-            o =>
-            {
-                o.RequireAuthorization = false;
-                o.SystemAccountName = "svc-account";
-            },
-            typeof(ProbeEndpointConfig).Assembly);
+        app.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ProbeEndpointConfig).Assembly);
         await app.StartAsync();
         using var client = app.GetTestClient();
 
@@ -227,7 +177,227 @@ public class EndpointConfigExtensionsTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
-        body.Name.ShouldBe("svc-account");
+        body.Name.ShouldBe("(null)"); // stand-in account name setting is gone; no attribution is stamped at all
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task NoConfigureGroup_InvalidRequestBody_IsNotRejectedByThePackage()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true); // authorization stays on; authenticate so validation would be reached
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync("/v1/probe/validated", new ValidatedCommand { Name = "" });
+
+        // No auto-validation is applied by the package any more; the empty-name body reaches the handler untouched.
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("");
+        await app.StopAsync();
+    }
+
+    // --- ConfigureGroup: host-supplied per-group setup -----------------------------------------------------
+
+    [Fact]
+    public async Task ConfigureGroup_InvokedForEveryDiscoveredGroup()
+    {
+        var builder = CreateBuilder();
+        var app = builder.Build();
+        var capturedTags = new List<string>();
+        var groups = app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (_, config) => capturedTags.Add(config.Tag),
+            typeof(ProbeEndpointConfig).Assembly);
+
+        capturedTags.Count.ShouldBe(groups.Count); // callback fired exactly once per group, none skipped
+        capturedTags.ShouldContain("probe");
+        capturedTags.ShouldContain("guarded");
+        await app.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ConfigureGroup_AddedFilter_RunsBeforeHandler_RejectsFlaggedRequestsAllowsOthers()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) => group.AddEndpointFilter(async (context, next) =>
+                context.HttpContext.Request.Headers["X-Merchant"] == "blocked"
+                    ? Results.StatusCode(StatusCodes.Status403Forbidden)
+                    : await next(context)),
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var blockedRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/probe/by-user")
+        {
+            Content = JsonContent.Create(new ByUserProbeCommand())
+        };
+        blockedRequest.Headers.Add("X-Merchant", "blocked");
+        var blockedResponse = await client.SendAsync(blockedRequest);
+
+        var allowedRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/probe/by-user")
+        {
+            Content = JsonContent.Create(new ByUserProbeCommand())
+        };
+        allowedRequest.Headers.Add("X-Merchant", "trusted");
+        var allowedResponse = await client.SendAsync(allowedRequest);
+
+        // ConfigureGroup's filter ran ahead of the handler for both requests: the flagged one never reached it,
+        // the trusted one did.
+        blockedResponse.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        allowedResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ConfigureGroup_RestoresAttributionAndValidation_AttributionAppliedBeforeValidationRuns()
+    {
+        var builder = CreateBuilder();
+        builder.Services.AddValidatorsFromAssemblyContaining<AttributedValidatedCommandValidator>();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "jane.tan@acme.com";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) =>
+            {
+                // Attribution filter added FIRST -> runs before the validation filter added second, so
+                // AttributedValidatedCommandValidator's "ByUser must not be null" rule only passes because
+                // attribution already happened.
+                group.AddEndpointFilter(async (context, next) =>
+                {
+                    var identity = context.HttpContext.User.Identity;
+                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
+                    foreach (var argument in context.Arguments)
+                        if (argument is RequestBase requestBase)
+                            requestBase.ByUser = userName;
+                    return await next(context);
+                });
+                group.AddFluentValidationAutoValidation();
+            },
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/probe/attributed-validated", new AttributedValidatedCommand { Name = "Acme Retail" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("jane.tan@acme.com");
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task AsParametersBinding_NoConfigureGroup_QueryBoundByUserPassesThroughUnchanged()
+    {
+        // Contrast with the pre-DRK-542 behaviour: the package no longer touches ByUser at all, so a value bound
+        // from the querystring via [AsParameters] survives untouched — attribution is now entirely the host's job.
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = null;
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/probe/by-user-query?ByUser=whatever-the-caller-sends");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("whatever-the-caller-sends");
+        await app.StopAsync();
+    }
+
+    // --- Versioning switch ----------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EnableVersioning_On_NoApiVersioningServicesRegistered_ThrowsWithDiagnostic()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddAuthorization();
+        // Deliberately no AddApiVersioning() call.
+        var app = builder.Build();
+
+        var exception = Should.Throw<InvalidOperationException>(
+            () => app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly));
+
+        exception.Message.ShouldContain("AddApiVersioning()");
+        exception.Message.ShouldContain(nameof(EndpointRegistrationOptions.EnableVersioning));
+        await app.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task EnableVersioning_Off_RoutesCarryNoVersionSegmentAndReportNoApiVersion()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true); // authorization stays on by default, unaffected by the versioning switch
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.EnableVersioning = false, typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        // Default RouteTemplate with versioning off is "{GroupEndpoint}" -> no "/v{version}" segment.
+        var response = await client.PostAsJsonAsync("/probe/by-user", new ByUserProbeCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.Contains("api-supported-versions").ShouldBeFalse();
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task EnableVersioning_On_GroupDeclaringVersion2_RoutesUnderV2AndReportsSupportedVersions()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly); // discovers Probe (v1) and ProbeV2 (v2)
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var v1Response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+        var v2Response = await client.PostAsJsonAsync("/v2/probe-versioned/by-user", new ByUserProbeCommand());
+
+        v1Response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        v2Response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        v1Response.Headers.Contains("api-supported-versions").ShouldBeTrue();
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task Version_NotDeclared_RoutesAndDisplaysIdenticallyToExplicitVersion1()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(UnversionedProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        // Same version prefix ("/v1/...") as an explicitly-declared version 1 group -> the default interface
+        // member fell back to 1, exactly as an explicit `Version => 1` would have routed.
+        var response = await client.PostAsJsonAsync("/v1/unversioned-probe/by-user", new ByUserProbeCommand());
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var endpoint = app.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => e.RoutePattern.RawText!.EndsWith("/unversioned-probe/by-user", StringComparison.Ordinal));
+        // WithDisplayName($"v{config.Version}{config.GroupEndpoint}") -> identical shape to an explicit Version=1 config.
+        endpoint.DisplayName.ShouldBe("v1/unversioned-probe");
         await app.StopAsync();
     }
 
@@ -303,34 +473,6 @@ public class EndpointConfigExtensionsTests
         var response = await client.PostAsJsonAsync("/v1/guarded/by-user", new ByUserProbeCommand());
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        await app.StopAsync();
-    }
-
-    // --- Request filter: caller-supplied ByUser on [AsParameters] binding must never survive ------------------
-
-    [Fact]
-    public async Task RequestFilter_AsParametersBinding_AuthenticatedWithNoNameClaim_CallerSuppliedByUserIsIgnored()
-    {
-        var builder = CreateBuilder();
-        // Authenticated (IsAuthenticated == true), but with no Name claim — e.g. a client-credentials /
-        // machine-to-machine token. Before the fix, the filter's `if (userName is not null)` guard skipped
-        // stamping in this case, letting whatever [AsParameters] bound from the querystring survive untouched.
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = null;
-        });
-        var app = builder.Build();
-        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.GetAsync("/v1/probe/by-user-query?ByUser=attacker");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("(null)"); // caller-supplied "attacker" must never reach the handler
         await app.StopAsync();
     }
 
@@ -480,7 +622,7 @@ public class EndpointConfigExtensionsTests
         allowedResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var allowedBody = await allowedResponse.Content.ReadFromJsonAsync<WidgetResult>();
         allowedBody.ShouldNotBeNull();
-        allowedBody.Name.ShouldBe("alice"); // proves dispatch reached the real handler for the non-rejected request
+        allowedBody.Name.ShouldBe("(null)"); // proves dispatch reached the real handler for the non-rejected request
 
         await app.StopAsync();
     }
