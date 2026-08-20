@@ -204,13 +204,17 @@ public class EdgeCaseTests
         hmac.VerifySha512("msg", "secret", mutated, false, false).ShouldBeFalse();
     }
 
-    // Base64 extension edge cases
+    // Base64 extension edge cases.
+    // The boolean-word special case was dropped: validity is now purely base64 alphabet +
+    // length. "true"/"TRUE" are 4 chars of valid alphabet -> valid. "false"/"FALSE" are 5
+    // characters -> never valid base64 (length can never be 4n+1), independent of casing.
     [Theory]
-    [InlineData("true")]
-    [InlineData("TRUE")]
-    [InlineData("false")]
-    [InlineData("FALSE")]
-    public void IsBase64String_FalseTrueStrings_ReturnFalse(string value) => value.IsBase64String().ShouldBeFalse();
+    [InlineData("true", true)]
+    [InlineData("TRUE", true)]
+    [InlineData("false", false)]
+    [InlineData("FALSE", false)]
+    public void IsBase64String_BooleanWords_MatchPlainBase64Validity(string value, bool expected) =>
+        value.IsBase64String().ShouldBe(expected);
 
     [Fact]
     public void IsBase64String_InvalidCharacter_ReturnsFalse()

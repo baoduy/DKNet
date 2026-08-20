@@ -97,5 +97,21 @@ public class Base64UrlTests(ITestOutputHelper output)
         ((string)null!).FromBase64UrlString().ShouldBe(string.Empty);
     }
 
+    [Fact]
+    public void OldBase65StringExtensionsUrlSafeForwarderIsByteForByteIdenticalToBase64StringExtensions()
+    {
+        // Arrange: input whose standard base64 form contains '+' and '/', so the URL-safe
+        // substitution ('-' / '_') actually gets exercised on both the old and new names.
+        const string plain = "any+value/with+slashes";
+
+#pragma warning disable CS0618 // intentionally exercising the obsolete forwarder for parity
+        var oldEncoded = plain.ToBase64UrlString();
+        var newEncoded = Base64StringExtensions.ToBase64UrlString(plain);
+        oldEncoded.ShouldBe(newEncoded);
+
+        oldEncoded.FromBase64UrlString().ShouldBe(Base64StringExtensions.FromBase64UrlString(newEncoded));
+#pragma warning restore CS0618
+    }
+
     #endregion
 }
