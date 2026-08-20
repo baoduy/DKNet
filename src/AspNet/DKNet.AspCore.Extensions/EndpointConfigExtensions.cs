@@ -40,14 +40,15 @@ public sealed class EndpointRegistrationOptions
 
     /// <summary>
     ///     Whether registered groups require authorization. Defaults to <see langword="true" />; disabling it is an
-    ///     explicit per-host opt-out (see Rule R1).
+    ///     explicit per-host opt-out that the host itself owns.
     /// </summary>
     public bool RequireAuthorization { get; set; } = true;
 
     /// <summary>
     ///     Whether groups are mapped to a versioned route and carry API-version metadata. Defaults to
     ///     <see langword="true" />. When enabled, the host must have called <c>AddApiVersioning()</c> or
-    ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> throws at startup.
+    ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> throws at startup — this guard is fail-fast and
+    ///     fires regardless of discovery, even when zero <see cref="IEndpointConfig" /> implementations are found.
     /// </summary>
     public bool EnableVersioning { get; set; } = true;
 
@@ -78,7 +79,8 @@ public static class EndpointConfigExtensions
         /// <returns>The route groups created, one per discovered config.</returns>
         /// <exception cref="InvalidOperationException">
         ///     <see cref="EndpointRegistrationOptions.EnableVersioning" /> is <see langword="true" /> (the default) but
-        ///     the host has not called <c>AddApiVersioning()</c>.
+        ///     the host has not called <c>AddApiVersioning()</c>. This check is fail-fast and runs before endpoint
+        ///     discovery, so it throws even when zero <see cref="IEndpointConfig" /> implementations are found.
         /// </exception>
         public IReadOnlyList<RouteGroupBuilder> UseEndpointConfigs(
             Action<EndpointRegistrationOptions>? configureOptions = null,
@@ -142,6 +144,8 @@ public static class EndpointConfigExtensions
                 .WithGroupName($"v{config.Version}")
                 .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
+            // Host setup runs before the authorization block below, so anything the host attaches here
+            // (stamping, validation, filters) observes every request ahead of authorization and Map.
             options.ConfigureGroup?.Invoke(group, config);
 
             if (options.RequireAuthorization)
