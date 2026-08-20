@@ -183,20 +183,21 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
         result.ShouldNotBeEmpty();
         result.ShouldAllBe(p => p.IsActive);
 
-        // Current implementation applies OrderBy first, then OrderByDescending
-        // So it orders by Name (ascending) first, then by Price (descending) as ThenBy
+        // DRK-582: ordering is applied in the declared sequence, not segregated by direction — the
+        // specification declares Price (descending) before Name (ascending), so Price is the primary
+        // key and Name only breaks ties.
         for (var i = 1; i < result.Count; i++)
         {
             var prev = result[i - 1];
             var curr = result[i];
 
-            // Primary sort by Name (ascending)
-            var nameComparison = string.Compare(prev.Name, curr.Name, StringComparison.Ordinal);
-            if (nameComparison == 0)
-                // Then sort by Price (descending)
-                (prev.Price >= curr.Price).ShouldBeTrue();
+            // Primary sort by Price (descending)
+            var priceComparison = prev.Price.CompareTo(curr.Price);
+            if (priceComparison == 0)
+                // Then sort by Name (ascending)
+                (string.Compare(prev.Name, curr.Name, StringComparison.Ordinal) <= 0).ShouldBeTrue();
             else
-                (nameComparison <= 0).ShouldBeTrue();
+                (priceComparison >= 0).ShouldBeTrue();
         }
     }
 
