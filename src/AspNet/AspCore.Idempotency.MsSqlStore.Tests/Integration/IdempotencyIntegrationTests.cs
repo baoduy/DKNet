@@ -285,6 +285,11 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         await using (var seedDbContext = fixture.GetDbContext())
         {
+            // The store only creates the IdempotencyKeys table lazily, on its own first call - a test
+            // that seeds directly (bypassing the HTTP pipeline) can't rely on some earlier test in the
+            // class having already triggered that, so ensure the schema exists here too.
+            await seedDbContext.Database.EnsureCreatedAsync();
+
             var expiredEntity = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
                 {
@@ -331,6 +336,10 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         await using (var seedDbContext = fixture.GetDbContext())
         {
+            // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
+            // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
+            await seedDbContext.Database.EnsureCreatedAsync();
+
             var expiredReservation = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
                 {
@@ -380,6 +389,10 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         await using (var seedDbContext = fixture.GetDbContext())
         {
+            // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
+            // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
+            await seedDbContext.Database.EnsureCreatedAsync();
+
             var expiredReservation = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
                 {
