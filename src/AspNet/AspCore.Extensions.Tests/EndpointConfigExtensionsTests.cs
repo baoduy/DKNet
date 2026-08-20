@@ -303,8 +303,8 @@ public class EndpointConfigExtensionsTests
                     var identity = context.HttpContext.User.Identity;
                     var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
                     foreach (var argument in context.Arguments)
-                        if (argument is RequestBase requestBase)
-                            requestBase.ByUser = userName;
+                        if (argument is AttributedValidatedCommand attributedValidatedCommand)
+                            attributedValidatedCommand.ByUser = userName;
                     return await next(context);
                 });
                 group.AddFluentValidationAutoValidation();

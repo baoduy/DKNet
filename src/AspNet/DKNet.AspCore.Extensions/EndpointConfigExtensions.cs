@@ -144,6 +144,29 @@ public static class EndpointConfigExtensions
                 .WithGroupName($"v{config.Version}")
                 .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
+            // Registered first so it runs before any host filter added by ConfigureGroup (including a
+            // validation filter) — the declared-member overwrite is unconditional and cannot be defeated by
+            // ConfigureGroup's own registration order. IEndpointFilterFactory.Create runs once, at endpoint-build
+            // time, so an IContextualSource-declared member with no setter (DKNet.AspCore.Extensions'
+            // ContextualMemberScanner) fails fast at startup rather than on first request.
+            group.AddEndpointFilterFactory((factoryContext, next) =>
+            {
+                foreach (var parameter in factoryContext.MethodInfo.GetParameters())
+                    ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
+
+                return async invocationContext =>
+                {
+                    var population = invocationContext.HttpContext.RequestServices
+                        .GetService<IContextualRequestPopulationService>();
+                    if (population is not null)
+                        foreach (var argument in invocationContext.Arguments)
+                            if (argument is not null)
+                                population.Populate(argument, invocationContext.HttpContext, options.RequireAuthorization);
+
+                    return await next(invocationContext);
+                };
+            });
+
             // Registration order only: host setup is applied before authorization is required below, so
             // host filters wrap the endpoint's own filters. At runtime those filters still execute after
             // the authorization middleware, so an unauthenticated or unauthorised request never reaches them.

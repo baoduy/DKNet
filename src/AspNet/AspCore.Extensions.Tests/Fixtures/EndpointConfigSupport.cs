@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using DKNet.AspCore.Extensions;
 using DKNet.SlimBus.Extensions;
 using FluentResults;
 using FluentValidation;
@@ -37,17 +39,21 @@ internal sealed class ValidatedCommandHandler : Fluents.Requests.IHandler<Valida
 }
 
 /// <summary>
-///     Carries both <see cref="RequestBase.ByUser" /> and a validated <see cref="Name" /> — used to prove that a
+///     Carries both its own <see cref="ByUser" /> and a validated <see cref="Name" /> — used to prove that a
 ///     host-restored attribution filter (via <see cref="EndpointRegistrationOptions.ConfigureGroup" />) runs before
 ///     a host-restored validation filter runs on the same request. <see cref="AttributedValidatedCommandValidator" />
-///     rejects a request whose <see cref="RequestBase.ByUser" /> is still <see langword="null" /> at validation
-///     time, so this command only reaches its handler when attribution really did happen first.
+///     rejects a request whose <see cref="ByUser" /> is still <see langword="null" /> at validation time, so this
+///     command only reaches its handler when attribution really did happen first.
 /// </summary>
-public record AttributedValidatedCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
+public record AttributedValidatedCommand : Fluents.Requests.IWitResponse<WidgetResult>
 {
     #region Properties
 
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
 
     #endregion
 }
@@ -79,10 +85,15 @@ internal sealed class AttributedValidatedCommandHandler
 }
 
 /// <summary>
-///     Carries <see cref="RequestBase.ByUser" /> so tests can observe, via the response body, what
+///     Carries its own <see cref="ByUser" /> so tests can observe, via the response body, what
 ///     <c>EndpointConfigExtensions</c>' request filter stamped it to before dispatch.
 /// </summary>
-public record ByUserProbeCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>;
+public record ByUserProbeCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
 
 internal sealed class ByUserProbeHandler : Fluents.Requests.IHandler<ByUserProbeCommand, WidgetResult>
 {
@@ -96,11 +107,15 @@ internal sealed class ByUserProbeHandler : Fluents.Requests.IHandler<ByUserProbe
 
 /// <summary>
 ///     Same probe as <see cref="ByUserProbeCommand" /> but mapped with <c>[AsParameters]</c> binding (via
-///     <c>MapGet&lt;TCommand,TResponse&gt;</c>) rather than JSON body binding — <c>[JsonIgnore]</c> on
-///     <see cref="RequestBase.ByUser" /> has no effect on this binding source, so a caller can put
-///     <c>?ByUser=...</c> straight on the querystring unless the host stamps over it unconditionally.
+///     <c>MapGet&lt;TCommand,TResponse&gt;</c>) rather than JSON body binding — a caller can put
+///     <c>?ByUser=...</c> straight on the querystring unless the host overwrites it unconditionally.
 /// </summary>
-public record ByUserQueryProbe : RequestBase, Fluents.Queries.IWitResponse<WidgetResult>;
+public record ByUserQueryProbe : Fluents.Queries.IWitResponse<WidgetResult>
+{
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
 
 internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQueryProbe, WidgetResult>
 {

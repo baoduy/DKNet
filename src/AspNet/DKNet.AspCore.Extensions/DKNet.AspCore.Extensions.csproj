@@ -18,6 +18,9 @@
         <!-- Kept so the README's AddFluentValidationAutoValidation() migration example compiles in a host;
              do not prune in a dependency sweep. -->
         <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints"/>
+        <!-- IOpenApiSchemaTransformer/IOpenApiOperationTransformer for excluding IContextualSource-declared
+             members from the published OpenAPI description (DRK-565). Version pinned centrally. -->
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
     </ItemGroup>
 
     <ItemGroup>
