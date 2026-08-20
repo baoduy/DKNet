@@ -82,7 +82,7 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         var key = aes.Key;
         var iv = aes.IV;
 
-        _keyString = $"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}".ToBase64String();
+        _keyString = Base64StringExtensions.ToBase64String($"{Convert.ToBase64String(key)}:{Convert.ToBase64String(iv)}");
         return aes;
     }
 
@@ -97,7 +97,7 @@ public sealed class AesEncryption : IAesEncryption, IDisposable
         _keyString = keyString;
         ArgumentException.ThrowIfNullOrWhiteSpace(keyString);
 
-        var keys = keyString.FromBase64String().Split(":");
+        var keys = Base64StringExtensions.FromBase64String(keyString).Split(":");
         if (keys.Length != 2) throw new ArgumentException("Invalid key string format.", nameof(keyString));
 
         var key = Convert.FromBase64String(keys[0]);

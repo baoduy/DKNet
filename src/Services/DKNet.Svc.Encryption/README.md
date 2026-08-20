@@ -73,9 +73,8 @@ var plain = aesGcm.DecryptString(cipher); // "hello world"
 | `IRsaEncryption`         | `RsaEncryption`          | RSA 2048/4096 encrypt + sign | N/A            | OAEP-SHA256 + PKCS#1 signatures. Public-only instance via `FromPublicKey`.                                 |
 | `IShaHashing`            | `ShaHashing`             | SHA-256 / SHA-512 hashing    | n/a            | Cached algorithm instances, hex (uppercase) output.                                                        |
 | `IHmacHashing`           | `HmacHashing`            | HMAC (SHA-256 / SHA-512)     | n/a            | Caches keyed HMAC instances; Base64 or Hex.                                                                |
-| (Extensions)             | `Base65StringExtensions` | Base64 / Base64URL           | n/a            | Validation, encode/decode, URL-safe variant.                                                               |
-
-> **Why “65”**: Backward naming kept; includes both Base64 & Base64URL helpers.
+| (Extensions)             | `Base64StringExtensions` | Base64 / Base64URL           | n/a            | Recommended. Static methods (not extension methods) — validation, encode/decode, URL-safe variant.        |
+| (Extensions, deprecated) | `Base65StringExtensions` | Base64 / Base64URL           | n/a            | `[Obsolete]` forwarder kept for source compatibility. Use `Base64StringExtensions` instead.                |
 
 ---
 
@@ -164,14 +163,16 @@ var ok = hash.VerifyHash("payload", sha256);
 
 ### Base64 / Base64URL
 
+`Base64StringExtensions` methods are **static**, not extension methods:
+
 ```csharp
-var std = "hello".ToBase64String();        // SGVsbG8=
-var plain = std.FromBase64String();        // hello
+var std = Base64StringExtensions.ToBase64String("hello");        // SGVsbG8=
+var plain = Base64StringExtensions.FromBase64String(std);        // hello
 
-var url = "hello".ToBase64UrlString();     // SGVsbG8 (no '=')
-var plain2 = url.FromBase64UrlString();    // hello
+var url = Base64StringExtensions.ToBase64UrlString("hello");     // SGVsbG8 (no '=')
+var plain2 = Base64StringExtensions.FromBase64UrlString(url);    // hello
 
-bool valid = std.IsBase64String();         // true
+bool valid = Base64StringExtensions.IsBase64String(std);         // true
 ```
 
 ---

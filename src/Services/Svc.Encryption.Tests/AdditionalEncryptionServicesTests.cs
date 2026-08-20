@@ -103,14 +103,14 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Hmac256Hashing_Dispose_Blocks_Further_Use()
+    public void Hmac256Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
     {
         var hmac = new HmacHashing();
         var sig = hmac.ComputeSha256("m", "k");
         sig.ShouldNotBeNullOrWhiteSpace();
-        hmac.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hmac.ComputeSha256("m2", "k"));
-        Should.Throw<ObjectDisposedException>(() => hmac.VerifySha256("m", "k", sig));
+        Should.NotThrow(hmac.Dispose);
+        hmac.ComputeSha256("m2", "k").ShouldNotBeNullOrWhiteSpace();
+        hmac.VerifySha256("m", "k", sig).ShouldBeTrue();
     }
 
     [Fact]
@@ -125,14 +125,14 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Hmac512Hashing_Dispose_Blocks_Further_Use()
+    public void Hmac512Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
     {
         var hmac = new HmacHashing();
         var sig = hmac.ComputeSha512("m", "k");
         sig.ShouldNotBeNullOrWhiteSpace();
-        hmac.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hmac.ComputeSha512("m2", "k"));
-        Should.Throw<ObjectDisposedException>(() => hmac.VerifySha512("m", "k", sig));
+        Should.NotThrow(hmac.Dispose);
+        hmac.ComputeSha512("m2", "k").ShouldNotBeNullOrWhiteSpace();
+        hmac.VerifySha512("m", "k", sig).ShouldBeTrue();
     }
 
     [Fact]
@@ -155,14 +155,14 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Sha256Hashing_Dispose_Blocks_Further_Use()
+    public void Sha256Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
     {
         var hash = new ShaHashing();
         var sig = hash.ComputeSha256("a");
         sig.ShouldNotBeNullOrWhiteSpace();
-        hash.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hash.ComputeSha256("b"));
-        Should.Throw<ObjectDisposedException>(() => hash.VerifySha512("b", sig));
+        Should.NotThrow(hash.Dispose);
+        hash.ComputeSha256("b").ShouldNotBeNullOrWhiteSpace();
+        hash.VerifySha256("a", sig).ShouldBeTrue();
     }
 
     [Fact]
@@ -190,14 +190,14 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Sha512Hashing_Dispose_Blocks_Further_Use()
+    public void Sha512Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
     {
         var hash = new ShaHashing();
         var sig = hash.ComputeSha512("a");
         sig.ShouldNotBeNullOrWhiteSpace();
-        hash.Dispose();
-        Should.Throw<ObjectDisposedException>(() => hash.ComputeSha512("b"));
-        Should.Throw<ObjectDisposedException>(() => hash.VerifySha512("b", sig));
+        Should.NotThrow(hash.Dispose);
+        hash.ComputeSha512("b").ShouldNotBeNullOrWhiteSpace();
+        hash.VerifySha512("a", sig).ShouldBeTrue();
     }
 
     #endregion

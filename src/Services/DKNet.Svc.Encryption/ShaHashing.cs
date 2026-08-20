@@ -61,18 +61,10 @@ public interface IShaHashing : IDisposable // now disposable so we can release c
 }
 
 /// <summary>
-///     Provides SHA-256 and SHA-512 hashing plus verification helpers. Caches algorithm instances for reuse.
+///     Provides SHA-256 and SHA-512 hashing plus verification helpers.
 /// </summary>
 public sealed class ShaHashing : IShaHashing
 {
-    #region Fields
-
-    private readonly Dictionary<HashAlgorithmKind, HashAlgorithm> _algorithms = [];
-    private readonly object _sync = new(); // changed to object for locking
-    private volatile bool _disposed;
-
-    #endregion
-
     #region Methods
 
     /// <summary>
@@ -82,20 +74,14 @@ public sealed class ShaHashing : IShaHashing
     /// <param name="algorithm">The hashing algorithm to apply.</param>
     /// <param name="upperCase">If <c>true</c> return upper-case hex; otherwise lower-case.</param>
     /// <returns>The hexadecimal hash string.</returns>
-    private string ComputeHash(
+    private static string ComputeHash(
         string input,
         HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
         bool upperCase = false)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
         ArgumentNullException.ThrowIfNull(input);
-        var hashAlgo = GetOrCreate(algorithm);
-        byte[] hash;
-        lock (hashAlgo) // HashAlgorithm instances are not thread-safe
-        {
-            var bytes = Encoding.UTF8.GetBytes(input);
-            hash = hashAlgo.ComputeHash(bytes);
-        }
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var hash = algorithm == HashAlgorithmKind.Sha512 ? SHA512.HashData(bytes) : SHA256.HashData(bytes);
 
         var hexUpper = Convert.ToHexString(hash);
         return upperCase ? hexUpper : hexUpper.ToLowerInvariant();
@@ -116,48 +102,10 @@ public sealed class ShaHashing : IShaHashing
         => ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
 
     /// <summary>
-    ///     Creates a new hashing algorithm instance for the given kind.
-    /// </summary>
-    /// <param name="kind">The algorithm kind.</param>
-    /// <returns>A new <see cref="HashAlgorithm" /> instance.</returns>
-    private static HashAlgorithm CreateAlgorithm(HashAlgorithmKind kind) => kind switch
-    {
-        HashAlgorithmKind.Sha256 => SHA256.Create(),
-        HashAlgorithmKind.Sha512 => SHA512.Create(),
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
-    };
-
-    /// <summary>
-    ///     Releases resources held by cached algorithms.
+    ///     Releases resources held by this instance. No cached algorithms are held, so this is a no-op.
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
-
-        lock (_sync)
-        {
-            foreach (var kv in _algorithms) kv.Value.Dispose();
-
-            _algorithms.Clear();
-            _disposed = true;
-        }
-    }
-
-    /// <summary>
-    ///     Returns an existing cached algorithm or creates a new one for the requested kind.
-    /// </summary>
-    /// <param name="kind">The algorithm kind.</param>
-    /// <returns>A cached or newly created <see cref="HashAlgorithm" /> instance.</returns>
-    private HashAlgorithm GetOrCreate(HashAlgorithmKind kind)
-    {
-        lock (_sync)
-        {
-            if (_algorithms.TryGetValue(kind, out var existing)) return existing;
-
-            var created = CreateAlgorithm(kind);
-            _algorithms[kind] = created;
-            return created;
-        }
     }
 
     /// <summary>
@@ -168,13 +116,12 @@ public sealed class ShaHashing : IShaHashing
     /// <param name="algorithm">The algorithm to apply.</param>
     /// <param name="ignoreCase">If <c>true</c> performs a case-insensitive comparison.</param>
     /// <returns><c>true</c> if the computed hash matches <paramref name="expectedHex" />; otherwise <c>false</c>.</returns>
-    private bool VerifyHash(
+    private static bool VerifyHash(
         string input,
         string expectedHex,
         HashAlgorithmKind algorithm = HashAlgorithmKind.Sha256,
         bool ignoreCase = true)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(ShaHashing));
         ArgumentNullException.ThrowIfNull(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedHex);
         var actual = ComputeHash(input, algorithm, !ignoreCase);

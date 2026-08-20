@@ -74,34 +74,31 @@ public interface IHmacHashing : IDisposable
 /// </summary>
 public sealed class HmacHashing : IHmacHashing
 {
-    #region Fields
-
-    private readonly Dictionary<(HmacAlgorithm alg, string key), HMAC> _cache = [];
-    private readonly Lock _sync = new();
-    private volatile bool _disposed;
-
-    #endregion
-
     #region Methods
 
-    private string Compute(
+    private static string Compute(
         string message,
         string secretKey,
         HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
         bool asBase64 = true)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         ArgumentException.ThrowIfNullOrWhiteSpace(secretKey);
 
-        var hmac = GetOrCreate(algorithm, secretKey);
-        byte[] hash;
-        lock (hmac) // HMAC not thread-safe
+        var keyBytes = Encoding.UTF8.GetBytes(secretKey);
+        var msgBytes = Encoding.UTF8.GetBytes(message);
+        try
         {
-            hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
-        }
+            var hash = algorithm == HmacAlgorithm.Sha512
+                ? HMACSHA512.HashData(keyBytes, msgBytes)
+                : HMACSHA256.HashData(keyBytes, msgBytes);
 
-        return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
+            return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(keyBytes);
+        }
     }
 
     /// <summary>
@@ -118,44 +115,14 @@ public sealed class HmacHashing : IHmacHashing
         =>
             Compute(message, secretKey, HmacAlgorithm.Sha512, asBase64);
 
-    private static HMAC Create(HmacAlgorithm algorithm, byte[] key) => algorithm switch
-    {
-        HmacAlgorithm.Sha256 => new HMACSHA256(key),
-        HmacAlgorithm.Sha512 => new HMACSHA512(key),
-        _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null)
-    };
-
     /// <summary>
     ///     Dispose operation.
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
-
-        lock (_sync)
-        {
-            foreach (var kv in _cache) kv.Value.Dispose();
-
-            _cache.Clear();
-            _disposed = true;
-        }
     }
 
-    private HMAC GetOrCreate(HmacAlgorithm algorithm, string secretKey)
-    {
-        var cacheKey = (algorithm, secretKey);
-        lock (_sync)
-        {
-            if (_cache.TryGetValue(cacheKey, out var existing)) return existing;
-
-            var keyBytes = Encoding.UTF8.GetBytes(secretKey);
-            var created = Create(algorithm, keyBytes);
-            _cache[cacheKey] = created;
-            return created;
-        }
-    }
-
-    private bool Verify(
+    private static bool Verify(
         string message,
         string secretKey,
         string expectedSignature,
@@ -163,7 +130,6 @@ public sealed class HmacHashing : IHmacHashing
         bool signatureIsBase64 = true,
         bool ignoreCase = true)
     {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(HmacHashing));
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedSignature);
 
         var actual = Compute(message, secretKey, algorithm, signatureIsBase64);

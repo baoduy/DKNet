@@ -24,9 +24,10 @@ cohesive service interfaces with dependency injection support.
 | `IRsaEncryption` | `RsaEncryption` | RSA 2048/4096 encryption and PKCS#1 signing/verifying | N/A |
 | `IHmacHashing` | `HmacHashing` | HMAC-SHA256/512 with caching, Base64/hex output helpers | N/A |
 | `IShaHashing` | `ShaHashing` | SHA256/512 hashing utilities with verification helpers | N/A |
-| Extensions | `Base65StringExtensions` | Base64/Base64Url encode, decode, and validation helpers | N/A |
+| Extensions | `Base64StringExtensions` | Base64/Base64Url encode, decode, and validation helpers (static methods, not extension methods) | N/A |
+| Extensions (deprecated) | `Base65StringExtensions` | `[Obsolete]` forwarder kept for source compatibility | N/A |
 
-> **Naming note**: `Base65StringExtensions` retains legacy naming while covering both Base64 and Base64Url utilities.
+> **Naming note**: `Base65StringExtensions` is the misspelled original type name and is now an obsolete forwarder. Use `Base64StringExtensions` instead.
 
 ## 🚀 Quick Start
 
@@ -83,10 +84,12 @@ var ok  = hmac.Verify("body", "shared-secret", mac);
 
 ### Base64 Helpers
 
+`Base64StringExtensions` methods are static, not extension methods:
+
 ```csharp
-var compact = "payload".ToBase64UrlString();
-var original = compact.FromBase64UrlString();
-var isValid = compact.IsBase64UrlString();
+var compact = Base64StringExtensions.ToBase64UrlString("payload");
+var original = Base64StringExtensions.FromBase64UrlString(compact);
+var isValid = Base64StringExtensions.IsBase64String(compact);
 ```
 
 ## 🧩 DI Integration
