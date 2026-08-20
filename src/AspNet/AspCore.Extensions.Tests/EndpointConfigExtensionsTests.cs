@@ -23,10 +23,11 @@ namespace AspCore.Extensions.Tests;
 
 /// <summary>
 ///     Exercises <c>WebApplication.UseEndpointConfigs</c> — discovery (default AppDomain scan vs. explicit
-///     assemblies), <see cref="EndpointRegistrationOptions" /> overrides, the request filter that stamps
-///     <see cref="DKNet.SlimBus.Extensions.RequestBase.ByUser" />, and authorization-on-by-default — through real
-///     HTTP dispatch on a fresh TestServer per test (registration is a startup-time concern, so each test needs its
-///     own host rather than sharing <see cref="Fixtures.EndpointTestHost" />).
+///     assemblies), <see cref="EndpointRegistrationOptions" /> overrides, the host-supplied
+///     <see cref="EndpointRegistrationOptions.ConfigureGroup" /> per-group setup callback, the
+///     <see cref="EndpointRegistrationOptions.EnableVersioning" /> switch, and authorization-on-by-default —
+///     through real HTTP dispatch on a fresh TestServer per test (registration is a startup-time concern, so each
+///     test needs its own host rather than sharing <see cref="Fixtures.EndpointTestHost" />).
 /// </summary>
 public class EndpointConfigExtensionsTests
 {
@@ -44,6 +45,12 @@ public class EndpointConfigExtensionsTests
                 mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(EndpointConfigExtensionsTests).Assembly)));
         builder.Services.AddAuthorization();
         builder.Services.AddApiVersioning();
+        // UseEndpointConfigs discovers the whole test assembly, which always includes ProbeEndpointConfig's
+        // [FromClaim]-declared ByUserProbeCommand — so every test built from this helper needs population
+        // registered regardless of what that individual test is actually exercising (DRK-565 review finding 2's
+        // fail-fast at endpoint-build time). Tests that specifically exercise the "never registered" case build
+        // their own host instead of calling this helper.
+        builder.Services.AddContextualRequestPopulation();
         return builder;
     }
 
@@ -138,30 +145,35 @@ public class EndpointConfigExtensionsTests
         await app.StopAsync();
     }
 
-    // --- Attribution/validation are no longer performed by the package ------------------------------------
-
     [Fact]
-    public async Task NoConfigureGroup_AuthenticatedRequest_CarriesNoByUserAttributionFromPackage()
+    public async Task UseEndpointConfigs_RouteTemplateOverride_EnableVersioningFalse_HonoursCustomTemplateWithoutApiVersion()
     {
         var builder = CreateBuilder();
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = "jane.tan@acme.com";
-        });
+        AddTestAuth(builder, o => o.Authenticated = true);
         var app = builder.Build();
-        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        app.UseEndpointConfigs(
+            o =>
+            {
+                o.RouteTemplate = config => $"/custom{config.GroupEndpoint}";
+                o.EnableVersioning = false;
+            },
+            typeof(ProbeEndpointConfig).Assembly);
         await app.StartAsync();
         using var client = app.GetTestClient();
 
-        var response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+        // With versioning off, the host-supplied template is honoured verbatim and no api-version is required
+        // in any form — mirrors the versioning-on override test above, but for the EnableVersioning = false path.
+        var response = await client.PostAsJsonAsync("/custom/probe/by-user", new ByUserProbeCommand());
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("(null)"); // no ConfigureGroup supplied -> nothing stamps ByUser any more
+        response.Headers.Contains("api-supported-versions").ShouldBeFalse();
         await app.StopAsync();
     }
+
+    // --- Validation is no longer performed by the package ------------------------------------------------
+    //     (attribution IS performed automatically for [FromClaim]-declared members once
+    //     AddContextualRequestPopulation is registered — see ContextualRequestPopulationEndToEndTests
+    //     .JsonBodyBoundCommand_ClaimPresent_HandlerObservesClaimValue — no ConfigureGroup wiring needed, DRK-565.)
 
     [Fact]
     public async Task NoConfigureGroup_AuthorizationOff_CarriesNoStandInAttribution()
@@ -256,9 +268,14 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task ConfigureGroup_RestoresAttributionAndValidation_AttributionAppliedBeforeValidationRuns()
+    public async Task ConfigureGroup_ContextualPopulationRegistered_PopulatesDeclaredMemberBeforeValidationRuns()
     {
+        // AttributedValidatedCommand.ByUser now carries [FromClaim(ClaimTypes.Name)] (DRK-565) — no manual
+        // stamping filter is registered here at all, only AddFluentValidationAutoValidation(). If population
+        // did NOT run before validation, AttributedValidatedCommandValidator's "ByUser must not be null" rule
+        // would reject every request, since nothing else ever sets ByUser.
         var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
         builder.Services.AddValidatorsFromAssemblyContaining<AttributedValidatedCommandValidator>();
         AddTestAuth(builder, o =>
         {
@@ -267,22 +284,7 @@ public class EndpointConfigExtensionsTests
         });
         var app = builder.Build();
         app.UseEndpointConfigs(
-            o => o.ConfigureGroup = (group, _) =>
-            {
-                // Attribution filter added FIRST -> runs before the validation filter added second, so
-                // AttributedValidatedCommandValidator's "ByUser must not be null" rule only passes because
-                // attribution already happened.
-                group.AddEndpointFilter(async (context, next) =>
-                {
-                    var identity = context.HttpContext.User.Identity;
-                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
-                    foreach (var argument in context.Arguments)
-                        if (argument is RequestBase requestBase)
-                            requestBase.ByUser = userName;
-                    return await next(context);
-                });
-                group.AddFluentValidationAutoValidation();
-            },
+            o => o.ConfigureGroup = (group, _) => group.AddFluentValidationAutoValidation(),
             typeof(ProbeEndpointConfig).Assembly);
         await app.StartAsync();
         using var client = app.GetTestClient();
@@ -298,15 +300,90 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task AsParametersBinding_NoConfigureGroup_QueryBoundByUserPassesThroughUnchanged()
+    public async Task ConfigureGroup_ContextualPopulationRegistered_ClaimMissing_ValidationRejectsRequest()
     {
-        // Contrast with the pre-DRK-542 behaviour: the package no longer touches ByUser at all, so a value bound
-        // from the querystring via [AsParameters] survives untouched — attribution is now entirely the host's job.
+        // Same wiring as above, but the authenticated caller carries no ClaimTypes.Name claim: population still
+        // runs (leaving ByUser at its default, null) and the request is rejected by VALIDATION — proving
+        // population never bypasses or substitutes for the application's own validation.
         var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
+        builder.Services.AddValidatorsFromAssemblyContaining<AttributedValidatedCommandValidator>();
         AddTestAuth(builder, o =>
         {
             o.Authenticated = true;
             o.UserName = null;
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) => group.AddFluentValidationAutoValidation(),
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/probe/attributed-validated", new AttributedValidatedCommand { Name = "Acme Retail" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ConfigureGroup_ManualByUserStamping_RequestBaseBasedCommand_StampedByUserReachesHandler()
+    {
+        // Proves the OLD pre-DRK-565 pattern still works: RequestBase.ByUser stamped manually by a host's own
+        // ConfigureGroup filter, ahead of a host-added validation filter — exactly as ConfigureGroup's docs
+        // describe. [Obsolete] on RequestBase is advisory only; it does not break this existing consumer.
+        var builder = CreateBuilder();
+        builder.Services.AddValidatorsFromAssemblyContaining<LegacyByUserCommandValidator>();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "legacy.user@acme.com";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o => o.ConfigureGroup = (group, _) =>
+            {
+                group.AddEndpointFilter(async (context, next) =>
+                {
+                    var identity = context.HttpContext.User.Identity;
+                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
+                    foreach (var argument in context.Arguments)
+#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — exercising the old manual pattern on purpose.
+                        if (argument is LegacyByUserCommand legacyByUserCommand)
+                            legacyByUserCommand.ByUser = userName;
+#pragma warning restore CS0618
+                    return await next(context);
+                });
+                group.AddFluentValidationAutoValidation();
+            },
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/probe/legacy-by-user", new LegacyByUserCommand { Name = "Acme Retail" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("legacy.user@acme.com");
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task AsParametersBinding_DeclaredByUser_CallerSuppliedQueryValueIsOverwrittenByResolvedClaim()
+    {
+        // ByUserQueryProbe.ByUser now carries [FromClaim(ClaimTypes.Name)] (DRK-565): once AddContextualRequestPopulation
+        // is registered, a caller-supplied ?ByUser=... on the querystring is no longer trustworthy input — it is
+        // always overwritten by the resolved claim, unlike the pre-DRK-565 pass-through behaviour this test used
+        // to assert.
+        var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "jane.tan@acme.com";
         });
         var app = builder.Build();
         app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
@@ -318,9 +395,46 @@ public class EndpointConfigExtensionsTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
-        body.Name.ShouldBe("whatever-the-caller-sends");
+        body.Name.ShouldBe("jane.tan@acme.com"); // never "whatever-the-caller-sends"
         await app.StopAsync();
     }
+
+    // --- Contextual population fail-fast (DRK-565 review finding 2) ------------------------------------------
+
+    [Fact]
+    public async Task DeclaredMemberMapped_AddContextualRequestPopulationNeverCalled_StartAsyncThrowsNamingType()
+    {
+        // ByUserProbeCommand.ByUser carries [FromClaim]; the host below never calls AddContextualRequestPopulation
+        // (deliberately not using CreateBuilder(), which registers it for every other test in this file).
+        // Without the fail-fast, the caller-supplied value would reach the handler untouched — exactly the
+        // exposure [FromClaim]'s own doc comment implies is guarded.
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSlimMessageBus(mbb => mbb
+            .AddJsonSerializer()
+            .AddServicesFromAssembly(typeof(EndpointConfigExtensionsTests).Assembly)
+            .AddChildBus(
+                "Memory",
+                mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(EndpointConfigExtensionsTests).Assembly)));
+        builder.Services.AddAuthorization();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.EnableVersioning = false, typeof(ProbeEndpointConfig).Assembly);
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => app.StartAsync());
+
+        exception.Message.ShouldContain(nameof(ByUserProbeCommand));
+        exception.Message.ShouldContain(
+            nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation));
+        await app.StopAsync();
+    }
+
+    // R3 ("a host with no declared members anywhere still starts normally") is covered at the scanner level by
+    // ContextualRequestPopulationTests.GetDeclaredMembers_TypeWithNoDeclaredMembers_ReturnsEmptyArray: the guard
+    // above is `members.Length > 0 && ...`, so a type that scans to zero members short-circuits before ever
+    // touching IContextualRequestPopulationService. This test fixture's assembly-wide discovery always has some
+    // other IEndpointConfig mapping a declared-member command, so a same-host end-to-end negative case would
+    // exercise ProbeEndpointConfig's own registration rather than isolate the no-declaration case.
 
     // --- Versioning switch ----------------------------------------------------------------------------------
 
@@ -622,7 +736,7 @@ public class EndpointConfigExtensionsTests
         allowedResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var allowedBody = await allowedResponse.Content.ReadFromJsonAsync<WidgetResult>();
         allowedBody.ShouldNotBeNull();
-        allowedBody.Name.ShouldBe("(null)"); // proves dispatch reached the real handler for the non-rejected request
+        allowedBody.Name.ShouldBe("alice"); // proves dispatch reached the real handler for the non-rejected request
 
         await app.StopAsync();
     }

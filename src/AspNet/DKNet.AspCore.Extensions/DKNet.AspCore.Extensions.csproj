@@ -15,11 +15,23 @@
     <ItemGroup>
         <PackageReference Include="FluentResults"/>
         <PackageReference Include="Asp.Versioning.Http"/>
+        <!-- Kept so the README's AddFluentValidationAutoValidation() migration example compiles in a host;
+             do not prune in a dependency sweep. -->
         <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints"/>
+        <!-- IOpenApiSchemaTransformer/IOpenApiOperationTransformer for excluding IContextualSource-declared
+             members from the published OpenAPI description (DRK-565). Version pinned centrally. -->
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Lets AspCore.Extensions.Tests unit-test ContextualMemberScanner/ContextualRequestPopulationService/
+             ClaimValueResolver directly (all internal) instead of only through HTTP dispatch (DRK-565). Mirrors
+             the same pattern already used by DKNet.AspCore.Tasks/DKNet.AspCore.Idempotency. -->
+        <InternalsVisibleTo Include="AspCore.Extensions.Tests"/>
     </ItemGroup>
 </Project>

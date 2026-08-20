@@ -40,14 +40,15 @@ public sealed class EndpointRegistrationOptions
 
     /// <summary>
     ///     Whether registered groups require authorization. Defaults to <see langword="true" />; disabling it is an
-    ///     explicit per-host opt-out (see Rule R1).
+    ///     explicit per-host opt-out that the host itself owns.
     /// </summary>
     public bool RequireAuthorization { get; set; } = true;
 
     /// <summary>
     ///     Whether groups are mapped to a versioned route and carry API-version metadata. Defaults to
     ///     <see langword="true" />. When enabled, the host must have called <c>AddApiVersioning()</c> or
-    ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> throws at startup.
+    ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> throws at startup — this guard is fail-fast and
+    ///     fires regardless of discovery, even when zero <see cref="IEndpointConfig" /> implementations are found.
     /// </summary>
     public bool EnableVersioning { get; set; } = true;
 
@@ -78,7 +79,8 @@ public static class EndpointConfigExtensions
         /// <returns>The route groups created, one per discovered config.</returns>
         /// <exception cref="InvalidOperationException">
         ///     <see cref="EndpointRegistrationOptions.EnableVersioning" /> is <see langword="true" /> (the default) but
-        ///     the host has not called <c>AddApiVersioning()</c>.
+        ///     the host has not called <c>AddApiVersioning()</c>. This check is fail-fast and runs before endpoint
+        ///     discovery, so it throws even when zero <see cref="IEndpointConfig" /> implementations are found.
         /// </exception>
         public IReadOnlyList<RouteGroupBuilder> UseEndpointConfigs(
             Action<EndpointRegistrationOptions>? configureOptions = null,
@@ -142,6 +144,46 @@ public static class EndpointConfigExtensions
                 .WithGroupName($"v{config.Version}")
                 .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
+            // Registered first so it runs before any host filter added by ConfigureGroup (including a
+            // validation filter) — the declared-member overwrite is unconditional and cannot be defeated by
+            // ConfigureGroup's own registration order. IEndpointFilterFactory.Create runs once, at endpoint-build
+            // time, so an IContextualSource-declared member with no setter (DKNet.AspCore.Extensions'
+            // ContextualMemberScanner) fails fast at startup rather than on first request.
+            group.AddEndpointFilterFactory((factoryContext, next) =>
+            {
+                // IServiceProviderIsService, not GetService: IContextualRequestPopulationService is scoped
+                // (finding 3), and factoryContext.ApplicationServices is the root provider — resolving a scoped
+                // service directly from it throws under ValidateScopes=true. Asking "is it registered" answers
+                // the fail-fast question without instantiating anything from the wrong scope.
+                var isServiceRegistered = factoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
+                foreach (var parameter in factoryContext.MethodInfo.GetParameters())
+                {
+                    var members = ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
+                    if (members.Length > 0 &&
+                        isServiceRegistered?.IsService(typeof(IContextualRequestPopulationService)) != true)
+                        throw new InvalidOperationException(
+                            $"'{parameter.ParameterType.FullName}' declares a contextual source (e.g. " +
+                            $"{nameof(FromClaimAttribute)}) but " +
+                            $"{nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation)}() " +
+                            "was never called. Call it on the service collection, or remove the declaration.");
+                }
+
+                return async invocationContext =>
+                {
+                    var population = invocationContext.HttpContext.RequestServices
+                        .GetService<IContextualRequestPopulationService>();
+                    if (population is not null)
+                        foreach (var argument in invocationContext.Arguments)
+                            if (argument is not null)
+                                population.Populate(argument, invocationContext.HttpContext, options.RequireAuthorization);
+
+                    return await next(invocationContext);
+                };
+            });
+
+            // Registration order only: host setup is applied before authorization is required below, so
+            // host filters wrap the endpoint's own filters. At runtime those filters still execute after
+            // the authorization middleware, so an unauthenticated or unauthorised request never reaches them.
             options.ConfigureGroup?.Invoke(group, config);
 
             if (options.RequireAuthorization)
