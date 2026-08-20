@@ -114,7 +114,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         // Verify sanitized key in database - the store sanitizes: removes non-alphanumeric (except hyphens), uppercases
         await using var dbContext = fixture.GetDbContext();
-        await dbContext.Database.EnsureCreatedAsync();
+        await dbContext.Database.MigrateAsync();
 
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k =>

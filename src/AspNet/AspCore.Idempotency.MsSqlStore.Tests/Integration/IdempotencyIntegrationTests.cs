@@ -109,7 +109,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         // Verify sanitized key in database - the store sanitizes: removes non-alphanumeric (except hyphens), uppercases
         await using var dbContext = fixture.GetDbContext();
-        await dbContext.Database.EnsureCreatedAsync();
+        await dbContext.Database.MigrateAsync();
 
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k =>
@@ -288,7 +288,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
             // The store only creates the IdempotencyKeys table lazily, on its own first call - a test
             // that seeds directly (bypassing the HTTP pipeline) can't rely on some earlier test in the
             // class having already triggered that, so ensure the schema exists here too.
-            await seedDbContext.Database.EnsureCreatedAsync();
+            await seedDbContext.Database.MigrateAsync();
 
             var expiredEntity = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
@@ -338,7 +338,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         {
             // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
             // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
-            await seedDbContext.Database.EnsureCreatedAsync();
+            await seedDbContext.Database.MigrateAsync();
 
             var expiredReservation = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
@@ -391,7 +391,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
         {
             // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
             // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
-            await seedDbContext.Database.EnsureCreatedAsync();
+            await seedDbContext.Database.MigrateAsync();
 
             var expiredReservation = new IdempotencyKeyEntity(
                 new IdempotentKeyInfo
