@@ -148,11 +148,7 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
         services.AddSingleton<IContextualValueResolver, ClaimValueResolver>();
         services.AddSingleton<IContextualRequestPopulationService, ContextualRequestPopulationService>();
 
-        // ConfigureAll, not Configure: AddOpenApi()/AddOpenApi(name) binds OpenApiOptions per named document
-        // (defaulting to "v1" when no name is given). A plain Configure<OpenApiOptions> lands on the unnamed
-        // options instance instead, which no document actually resolves — the transformers would silently never
-        // run against the host's real "v1" (or any other named) document.
-        services.ConfigureAll<OpenApiOptions>(o =>
+        services.Configure<OpenApiOptions>(o =>
         {
             o.AddSchemaTransformer<ContextualSourceSchemaTransformer>();
             o.AddOperationTransformer<ContextualSourceOperationTransformer>();
