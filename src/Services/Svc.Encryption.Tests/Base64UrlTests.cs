@@ -100,9 +100,9 @@ public class Base64UrlTests(ITestOutputHelper output)
     [Fact]
     public void OldBase65StringExtensionsUrlSafeForwarderIsByteForByteIdenticalToBase64StringExtensions()
     {
-        // Arrange: input whose standard base64 form contains '+' and '/', so the URL-safe
-        // substitution ('-' / '_') actually gets exercised on both the old and new names.
-        const string plain = "any+value/with+slashes";
+        // Arrange: input whose standard base64 form (Kjt+QHo/czY5JD9M) actually contains '+' and
+        // '/', so the URL-safe substitution ('-' / '_') gets exercised on both the old and new names.
+        const string plain = "*;~@z?s69$?L";
 
 #pragma warning disable CS0618 // intentionally exercising the obsolete forwarder for parity
         var oldEncoded = plain.ToBase64UrlString();

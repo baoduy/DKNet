@@ -33,7 +33,7 @@ public sealed class GuidV7ValueGenerator : ValueGenerator<Guid>
     /// </summary>
     /// <param name="entry">The EF Core <see cref="EntityEntry" /> requesting a value. Can be <c>null</c> in some scenarios.</param>
     /// <returns>
-    ///     A new <see cref="Guid" /> containing a 48-bit Unix epoch milliseconds prefix and 80 bits of randomness,
+    ///     A new <see cref="Guid" /> containing a 48-bit Unix epoch milliseconds prefix and 74 bits of randomness,
     ///     with version and variant bits set for GUIDv7/RFC4122 compatibility.
     /// </returns>
     public override Guid Next(EntityEntry entry) => Guid.CreateVersion7();

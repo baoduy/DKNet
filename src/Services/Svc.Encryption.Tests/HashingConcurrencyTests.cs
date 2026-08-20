@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Security.Cryptography;
 using DKNet.Svc.Encryption;
 using Shouldly;
 
@@ -6,6 +8,23 @@ namespace Svc.Encryption.Tests;
 public class HashingConcurrencyTests
 {
     #region Methods
+
+    [Theory]
+    [InlineData(typeof(ShaHashing))]
+    [InlineData(typeof(HmacHashing))]
+    public void HashingTypeDeclaresNoSharedMutableStateThatWouldSerializeConcurrentCallers(Type hashingType)
+    {
+        // Deterministic substitute for the flaky wall-clock "concurrent is not serialized" scenario
+        // below: a lock or a cached algorithm/dictionary instance field is exactly what would
+        // reintroduce serialization behind a shared lock, so fail loudly if either creeps back in.
+        var instanceFields = hashingType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        instanceFields.ShouldAllBe(f =>
+            f.FieldType != typeof(Lock) &&
+            !(f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(Dictionary<,>)) &&
+            !typeof(HashAlgorithm).IsAssignableFrom(f.FieldType) &&
+            !typeof(HMAC).IsAssignableFrom(f.FieldType));
+    }
 
     [Fact]
     public async Task ComputeSha256_ConcurrentCallersWithDifferentInputs_EachReceivesDigestMatchingOwnInput()

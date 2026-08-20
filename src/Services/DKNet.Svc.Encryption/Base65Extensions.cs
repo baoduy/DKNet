@@ -97,8 +97,8 @@ public static class Base64StringExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="plainText" /> is null.</exception>
     /// <example>
     ///     <code>
-    /// var token = "test".ToBase64UrlString();        // dGVzdA
-    /// var roundtrip = token.FromBase64UrlString();    // "test"
+    /// var token = Base64StringExtensions.ToBase64UrlString("test");        // dGVzdA
+    /// var roundtrip = Base64StringExtensions.FromBase64UrlString(token);    // "test"
     /// </code>
     /// </example>
     public static string ToBase64UrlString(string plainText) =>

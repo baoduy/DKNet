@@ -49,15 +49,16 @@ public class Base64Tests
     }
 
     [Fact]
-    public void IsBase64StringWithEmbeddedSpaceInDecodedTextRoundTrips()
+    public void IsBase64StringWithWhitespaceInsideEncodedValueIsAcceptedAndDecodes()
     {
         // Arrange
         const string original = "Acme Pte Ltd";
         var encoded = original.ToBase64String();
+        var withSpace = encoded[..4] + " " + encoded[4..];
 
         // Act & Assert
-        encoded.IsBase64String().ShouldBeTrue();
-        encoded.FromBase64String().ShouldBe(original);
+        withSpace.IsBase64String().ShouldBeTrue();
+        withSpace.FromBase64String().ShouldBe(original);
     }
 
     [Fact]

@@ -81,12 +81,7 @@ public sealed class ShaHashing : IShaHashing
     {
         ArgumentNullException.ThrowIfNull(input);
         var bytes = Encoding.UTF8.GetBytes(input);
-        var hash = algorithm switch
-        {
-            HashAlgorithmKind.Sha256 => SHA256.HashData(bytes),
-            HashAlgorithmKind.Sha512 => SHA512.HashData(bytes),
-            _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null)
-        };
+        var hash = algorithm == HashAlgorithmKind.Sha512 ? SHA512.HashData(bytes) : SHA256.HashData(bytes);
 
         var hexUpper = Convert.ToHexString(hash);
         return upperCase ? hexUpper : hexUpper.ToLowerInvariant();

@@ -87,14 +87,18 @@ public sealed class HmacHashing : IHmacHashing
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);
         var msgBytes = Encoding.UTF8.GetBytes(message);
-        var hash = algorithm switch
+        try
         {
-            HmacAlgorithm.Sha256 => HMACSHA256.HashData(keyBytes, msgBytes),
-            HmacAlgorithm.Sha512 => HMACSHA512.HashData(keyBytes, msgBytes),
-            _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null)
-        };
+            var hash = algorithm == HmacAlgorithm.Sha512
+                ? HMACSHA512.HashData(keyBytes, msgBytes)
+                : HMACSHA256.HashData(keyBytes, msgBytes);
 
-        return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
+            return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(keyBytes);
+        }
     }
 
     /// <summary>
