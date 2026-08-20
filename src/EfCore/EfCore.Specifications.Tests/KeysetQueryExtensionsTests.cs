@@ -313,6 +313,186 @@ public class KeysetQueryExtensionsTests : IClassFixture<TestDbFixture>
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // DRK-628 T1 — caller-owned ordering survives on all four legacy entry points
+    // (pins DRK-624 R1: same rows, same order as dev@6f8d41a for the same cursor)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    ///     Verifies that AfterKeyset (single key) only adds a WHERE predicate and leaves a caller
+    ///     ordering that differs from the keyset column untouched, instead of imposing its own
+    ///     ORDER BY over the keyset column.
+    /// </summary>
+    [Fact]
+    public async Task AfterKeyset_SingleKey_CallerOrderingDiffersFromKeysetColumn_PreservesCallerOrder()
+    {
+        // Arrange
+        var query = _context.Products.OrderBy(p => p.Name).AfterKeyset(p => p.Id, 1);
+        var expected = await _context.Products
+            .Where(p => p.Id > 1)
+            .OrderBy(p => p.Name)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Act
+        var sql = query.ToQueryString();
+        var actual = await query.Select(p => p.Id).ToListAsync();
+
+        // Assert
+        sql.ShouldContain("ORDER BY", Case.Insensitive);
+        sql.ShouldContain("\"p\".\"Name\"");
+        sql.ShouldNotContain("\"p\".\"Id\" ASC");
+        actual.ShouldBe(expected);
+    }
+
+    /// <summary>
+    ///     Verifies that BeforeKeyset (single key) only adds a WHERE predicate and leaves a caller
+    ///     ordering that differs from the keyset column untouched.
+    /// </summary>
+    [Fact]
+    public async Task BeforeKeyset_SingleKey_CallerOrderingDiffersFromKeysetColumn_PreservesCallerOrder()
+    {
+        // Arrange
+        var allIds = await _context.Products.OrderBy(p => p.Id).Select(p => p.Id).ToListAsync();
+        var cursor = allIds[allIds.Count / 2];
+        var query = _context.Products.OrderBy(p => p.Name).BeforeKeyset(p => p.Id, cursor);
+        var expected = await _context.Products
+            .Where(p => p.Id < cursor)
+            .OrderBy(p => p.Name)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Act
+        var sql = query.ToQueryString();
+        var actual = await query.Select(p => p.Id).ToListAsync();
+
+        // Assert
+        sql.ShouldContain("\"p\".\"Name\"");
+        actual.ShouldBe(expected);
+    }
+
+    /// <summary>
+    ///     Verifies the brief's literal regression example: BeforeKeyset ordered by the same column as
+    ///     the keyset returns ids ascending, not the descending order the MR-delegated implementation
+    ///     produced.
+    /// </summary>
+    [Fact]
+    public async Task BeforeKeyset_SingleKey_OrderedByKeysetColumn_ReturnsIdsAscending()
+    {
+        // Arrange
+        var maxId = await _context.Products.MaxAsync(p => p.Id);
+        var totalCount = await _context.Products.CountAsync();
+
+        // Act
+        var ids = await _context.Products
+            .OrderBy(p => p.Id)
+            .BeforeKeyset(p => p.Id, maxId + 1000)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Assert
+        ids.Count.ShouldBe(totalCount);
+        ids.ShouldBe(ids.OrderBy(id => id).ToList());
+    }
+
+    /// <summary>
+    ///     Verifies that AfterKeyset (composite key) only adds a WHERE predicate and leaves a caller
+    ///     ordering that differs from both keyset columns untouched.
+    /// </summary>
+    [Fact]
+    public async Task AfterKeyset_CompositeKey_CallerOrderingDiffersFromKeysetColumns_PreservesCallerOrder()
+    {
+        // Arrange
+        var ordered = await _context.Products
+            .OrderBy(p => p.CreatedDate)
+            .ThenBy(p => p.Id)
+            .Select(p => new { p.CreatedDate, p.Id })
+            .ToListAsync();
+        var cursorRow = ordered[ordered.Count / 2];
+
+        var query = _context.Products
+            .OrderBy(p => p.Name)
+            .AfterKeyset(p => p.CreatedDate, p => p.Id, cursorRow.CreatedDate, cursorRow.Id);
+        var expected = await _context.Products
+            .Where(p => p.CreatedDate > cursorRow.CreatedDate ||
+                        (p.CreatedDate == cursorRow.CreatedDate && p.Id > cursorRow.Id))
+            .OrderBy(p => p.Name)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Act
+        var sql = query.ToQueryString();
+        var actual = await query.Select(p => p.Id).ToListAsync();
+
+        // Assert
+        sql.ShouldContain("\"p\".\"Name\"");
+        actual.ShouldBe(expected);
+    }
+
+    /// <summary>
+    ///     Verifies that BeforeKeyset (composite key) only adds a WHERE predicate and leaves a caller
+    ///     ordering that differs from both keyset columns untouched.
+    /// </summary>
+    [Fact]
+    public async Task BeforeKeyset_CompositeKey_CallerOrderingDiffersFromKeysetColumns_PreservesCallerOrder()
+    {
+        // Arrange
+        var ordered = await _context.Products
+            .OrderBy(p => p.CreatedDate)
+            .ThenBy(p => p.Id)
+            .Select(p => new { p.CreatedDate, p.Id })
+            .ToListAsync();
+        var cursorRow = ordered[ordered.Count / 2];
+
+        var query = _context.Products
+            .OrderBy(p => p.Name)
+            .BeforeKeyset(p => p.CreatedDate, p => p.Id, cursorRow.CreatedDate, cursorRow.Id);
+        var expected = await _context.Products
+            .Where(p => p.CreatedDate < cursorRow.CreatedDate ||
+                        (p.CreatedDate == cursorRow.CreatedDate && p.Id < cursorRow.Id))
+            .OrderBy(p => p.Name)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Act
+        var sql = query.ToQueryString();
+        var actual = await query.Select(p => p.Id).ToListAsync();
+
+        // Assert
+        sql.ShouldContain("\"p\".\"Name\"");
+        actual.ShouldBe(expected);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // DRK-628 T2 — key-selector contract: computed/non-settable selectors work
+    // (dev-backend's ebef832 fix builds the predicate via expression trees, so there is
+    // no reference object and no settable-property requirement anymore)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    ///     Verifies that AfterKeyset accepts a computed, non-settable key selector
+    ///     (<c>p.Name.Length</c>) and translates it to a direct SQL predicate instead of throwing,
+    ///     matching the pre-refactor contract on dev@6f8d41a.
+    /// </summary>
+    [Fact]
+    public async Task AfterKeyset_SingleKey_ComputedKeySelector_TranslatesToPredicateInsteadOfThrowing()
+    {
+        // Arrange
+        var query = _context.Products.AfterKeyset(p => p.Name.Length, 3);
+        var expected = await _context.Products
+            .Where(p => p.Name.Length > 3)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        // Act
+        var sql = query.ToQueryString();
+        var actual = await query.Select(p => p.Id).ToListAsync();
+
+        // Assert – no ArgumentException from a settable-property guard; SQL is a plain length comparison.
+        sql.ShouldContain("length(\"p\".\"Name\")", Case.Insensitive);
+        actual.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Argument validation
     // ──────────────────────────────────────────────────────────────────────
 
