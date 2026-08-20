@@ -137,7 +137,7 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(AesGcmEncryption));
         ArgumentException.ThrowIfNullOrWhiteSpace(cipherPackage);
-        var decoded = cipherPackage.FromBase64String();
+        var decoded = Base64StringExtensions.FromBase64String(cipherPackage);
 
         var parts = decoded.Split(':');
         if (parts.Length != 3) throw new ArgumentException("Invalid cipher package format", nameof(cipherPackage));
@@ -199,7 +199,7 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
 
         var packaged =
             $"{Convert.ToBase64String(nonce)}:{Convert.ToBase64String(tag)}:{Convert.ToBase64String(cipher)}";
-        return packaged.ToBase64String();
+        return Base64StringExtensions.ToBase64String(packaged);
     }
 
     #endregion
