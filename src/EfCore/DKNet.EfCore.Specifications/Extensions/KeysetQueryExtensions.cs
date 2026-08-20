@@ -4,6 +4,10 @@
 // </copyright>
 
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore;
+using MR.EntityFrameworkCore.KeysetPagination;
 
 namespace DKNet.EfCore.Specifications.Extensions;
 
@@ -15,6 +19,10 @@ namespace DKNet.EfCore.Specifications.Extensions;
 ///         Keyset pagination uses a cursor position instead of SQL OFFSET/FETCH, which makes it significantly
 ///         more efficient for large datasets. Instead of scanning all rows up to the offset, the database can
 ///         use an index seek directly to the cursor position.
+///     </para>
+///     <para>
+///         Every method in this class delegates to <c>MR.EntityFrameworkCore.KeysetPagination</c> for ordering,
+///         filtering, and existence checks rather than hand-building expression trees.
 ///     </para>
 ///     <para>
 ///         For a composite keyset with two columns ordered ascending the generated SQL is:
@@ -43,6 +51,17 @@ namespace DKNet.EfCore.Specifications.Extensions;
 ///                 .ToListAsync();
 ///         </code>
 ///     </para>
+///     <para>
+///         <b>Usage example (arbitrary arity, forward/backward, has-previous/has-next):</b>
+///         <code>
+///             // Page merchants by country asc, revenue desc, identifier asc
+///             var page = await context.Merchants.ToKeysetPageAsync(
+///                 b => b.Ascending(m => m.Country).Descending(m => m.Revenue).Ascending(m => m.Id),
+///                 pageSize,
+///                 KeysetPaginationDirection.Forward,
+///                 reference: lastSeenMerchant);
+///         </code>
+///     </para>
 /// </remarks>
 public static class KeysetQueryExtensions
 {
@@ -68,8 +87,11 @@ public static class KeysetQueryExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(keySelector);
 
-        var predicate = BuildSingleKeyPredicate(keySelector, cursor, greaterThan: true);
-        return query.Where(predicate);
+        var reference = CreateReference<TEntity>((ExtractProperty(keySelector), cursor));
+        return query.KeysetPaginateQuery(
+            b => b.Ascending(keySelector),
+            KeysetPaginationDirection.Forward,
+            reference);
     }
 
     /// <summary>
@@ -92,8 +114,11 @@ public static class KeysetQueryExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(keySelector);
 
-        var predicate = BuildSingleKeyPredicate(keySelector, cursor, greaterThan: false);
-        return query.Where(predicate);
+        var reference = CreateReference<TEntity>((ExtractProperty(keySelector), cursor));
+        return query.KeysetPaginateQuery(
+            b => b.Ascending(keySelector),
+            KeysetPaginationDirection.Backward,
+            reference);
     }
 
     /// <summary>
@@ -124,8 +149,14 @@ public static class KeysetQueryExtensions
         ArgumentNullException.ThrowIfNull(key1Selector);
         ArgumentNullException.ThrowIfNull(key2Selector);
 
-        var predicate = BuildCompositeKeyPredicate(key1Selector, key2Selector, cursor1, cursor2, greaterThan: true);
-        return query.Where(predicate);
+        var reference = CreateReference<TEntity>(
+            (ExtractProperty(key1Selector), cursor1),
+            (ExtractProperty(key2Selector), cursor2));
+
+        return query.KeysetPaginateQuery(
+            b => b.Ascending(key1Selector).Ascending(key2Selector),
+            KeysetPaginationDirection.Forward,
+            reference);
     }
 
     /// <summary>
@@ -156,85 +187,102 @@ public static class KeysetQueryExtensions
         ArgumentNullException.ThrowIfNull(key1Selector);
         ArgumentNullException.ThrowIfNull(key2Selector);
 
-        var predicate = BuildCompositeKeyPredicate(key1Selector, key2Selector, cursor1, cursor2, greaterThan: false);
-        return query.Where(predicate);
+        var reference = CreateReference<TEntity>(
+            (ExtractProperty(key1Selector), cursor1),
+            (ExtractProperty(key2Selector), cursor2));
+
+        return query.KeysetPaginateQuery(
+            b => b.Ascending(key1Selector).Ascending(key2Selector),
+            KeysetPaginationDirection.Backward,
+            reference);
     }
 
     /// <summary>
-    ///     Builds a single-key comparison predicate: <c>key &gt; cursor</c> or <c>key &lt; cursor</c>.
+    ///     Pages a keyset over an arbitrary number of columns, each with its own direction (ascending or
+    ///     descending), in either the forward or backward direction, and reports whether a further page
+    ///     exists ahead of and behind the returned rows.
     /// </summary>
-    private static Expression<Func<TEntity, bool>> BuildSingleKeyPredicate<TEntity, TKey>(
-        Expression<Func<TEntity, TKey>> keySelector,
-        TKey cursor,
-        bool greaterThan)
+    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
+    /// <param name="query">The query to page.</param>
+    /// <param name="configureKeyset">
+    ///     Configures the ordered columns that make up the keyset, e.g.
+    ///     <c>b =&gt; b.Ascending(x =&gt; x.Country).Descending(x =&gt; x.Revenue).Ascending(x =&gt; x.Id)</c>.
+    /// </param>
+    /// <param name="pageSize">The maximum number of rows to return.</param>
+    /// <param name="direction">Whether to page forward or backward. Default is forward.</param>
+    /// <param name="reference">
+    ///     The last seen row (or an object whose properties match the configured column names) that the
+    ///     returned page is positioned relative to. Pass <see langword="null" /> to fetch the first (or last,
+    ///     when <paramref name="direction" /> is backward) page.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    ///     A task that returns a <see cref="KeysetPage{TEntity}" /> containing up to <paramref name="pageSize" />
+    ///     rows in declared keyset order, along with whether further pages exist ahead and behind them.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="query" /> or <paramref name="configureKeyset" /> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
+    public static async Task<KeysetPage<TEntity>> ToKeysetPageAsync<TEntity>(
+        this IQueryable<TEntity> query,
+        Action<KeysetPaginationBuilder<TEntity>> configureKeyset,
+        int pageSize,
+        KeysetPaginationDirection direction = KeysetPaginationDirection.Forward,
+        object? reference = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class
     {
-        var parameter = Expression.Parameter(typeof(TEntity), "x");
-        var keyBody = new ParameterReplacer(keySelector.Parameters[0], parameter).Visit(keySelector.Body);
-        var cursorConst = Expression.Constant(cursor, typeof(TKey));
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(configureKeyset);
+        if (pageSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
 
-        var comparison = greaterThan
-            ? Expression.GreaterThan(keyBody, cursorConst)
-            : Expression.LessThan(keyBody, cursorConst);
+        var keysetContext = query.KeysetPaginate(configureKeyset, direction, reference);
 
-        return Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
+        var items = await keysetContext.Query.Take(pageSize).ToListAsync(cancellationToken);
+        keysetContext.EnsureCorrectOrder(items);
+
+        var hasPrevious = await keysetContext.HasPreviousAsync(items);
+        var hasNext = await keysetContext.HasNextAsync(items);
+
+        return new KeysetPage<TEntity>(items, hasPrevious, hasNext);
     }
 
     /// <summary>
-    ///     Builds a composite two-key comparison predicate.
-    ///     For <c>greaterThan = true</c>: <c>key1 &gt; c1 OR (key1 = c1 AND key2 &gt; c2)</c>
-    ///     For <c>greaterThan = false</c>: <c>key1 &lt; c1 OR (key1 = c1 AND key2 &lt; c2)</c>
+    ///     Extracts the <see cref="PropertyInfo" /> that a simple key-selector expression (e.g. <c>x =&gt; x.Id</c>)
+    ///     accesses, so a synthetic reference object can be built for the MR package's loosely-typed reference
+    ///     matching.
     /// </summary>
-    private static Expression<Func<TEntity, bool>> BuildCompositeKeyPredicate<TEntity, TKey1, TKey2>(
-        Expression<Func<TEntity, TKey1>> key1Selector,
-        Expression<Func<TEntity, TKey2>> key2Selector,
-        TKey1 cursor1,
-        TKey2 cursor2,
-        bool greaterThan)
+    private static PropertyInfo ExtractProperty<TEntity, TKey>(Expression<Func<TEntity, TKey>> keySelector)
     {
-        var parameter = Expression.Parameter(typeof(TEntity), "x");
+        var body = keySelector.Body;
+        while (body is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary)
+            body = unary.Operand;
 
-        var key1Body = new ParameterReplacer(key1Selector.Parameters[0], parameter).Visit(key1Selector.Body);
-        var key2Body = new ParameterReplacer(key2Selector.Parameters[0], parameter).Visit(key2Selector.Body);
+        if (body is MemberExpression { Member: PropertyInfo property })
+            return property;
 
-        var cursor1Const = Expression.Constant(cursor1, typeof(TKey1));
-        var cursor2Const = Expression.Constant(cursor2, typeof(TKey2));
+        throw new ArgumentException(
+            "Key selector must be a simple property access expression, e.g. 'x => x.Id'.",
+            nameof(keySelector));
+    }
 
-        // key1 > cursor1 (or key1 < cursor1 for backward)
-        var key1Comparison = greaterThan
-            ? Expression.GreaterThan(key1Body, cursor1Const)
-            : Expression.LessThan(key1Body, cursor1Const);
+    /// <summary>
+    ///     Builds a throwaway <typeparamref name="TEntity" /> instance (bypassing its constructor) with only the
+    ///     given properties populated, for use as the MR package's loosely-typed keyset reference object.
+    /// </summary>
+    private static TEntity CreateReference<TEntity>(params (PropertyInfo Property, object? Value)[] values)
+        where TEntity : class
+    {
+        var reference = (TEntity)RuntimeHelpers.GetUninitializedObject(typeof(TEntity));
+        foreach (var (property, value) in values)
+            property.SetValue(reference, value);
 
-        // key1 = cursor1
-        var key1Equal = Expression.Equal(key1Body, cursor1Const);
-
-        // key2 > cursor2 (or key2 < cursor2 for backward)
-        var key2Comparison = greaterThan
-            ? Expression.GreaterThan(key2Body, cursor2Const)
-            : Expression.LessThan(key2Body, cursor2Const);
-
-        // (key1 = cursor1 AND key2 > cursor2)
-        var tieBreak = Expression.AndAlso(key1Equal, key2Comparison);
-
-        // key1 > cursor1 OR (key1 = cursor1 AND key2 > cursor2)
-        var combined = Expression.OrElse(key1Comparison, tieBreak);
-
-        return Expression.Lambda<Func<TEntity, bool>>(combined, parameter);
+        return reference;
     }
 
     #endregion
 
     #region Nested Types
-
-    /// <summary>
-    ///     Replaces a specific <see cref="ParameterExpression" /> within an expression tree with a new parameter.
-    ///     Used internally to merge key selector expressions into a shared lambda parameter.
-    /// </summary>
-    private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
-    {
-        /// <inheritdoc />
-        protected override Expression VisitParameter(ParameterExpression node)
-            => node == from ? to : base.VisitParameter(node);
-    }
 
     #endregion
 }
