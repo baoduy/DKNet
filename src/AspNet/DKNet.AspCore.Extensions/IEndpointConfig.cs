@@ -33,9 +33,9 @@ public interface IEndpointConfig
     string Tag => GroupEndpoint.Replace("/", "-", StringComparison.OrdinalIgnoreCase).TrimStart('-');
 
     /// <summary>
-    ///     The API version this group is mapped to.
+    ///     The API version this group is mapped to. Defaults to <c>1</c> when not overridden.
     /// </summary>
-    int Version { get; }
+    int Version => 1;
 
     /// <summary>
     ///     Maps this group's endpoints onto <paramref name="group" />.
