@@ -58,7 +58,8 @@ internal static class AuditLogExtensions
                     continue;
                 }
 
-                var isSensitive = !isAttributed && SensitiveDataPatterns.IsSensitive(clrProp);
+                var declaredSensitive = clrProp.HasAttribute<SensitiveDataAttribute>();
+                var isSensitive = declaredSensitive || (!isAttributed && SensitiveDataPatterns.IsSensitive(clrProp));
 
                 var name = prop.Metadata.Name;
                 var oldVal = prop.OriginalValue;
