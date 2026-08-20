@@ -45,6 +45,12 @@ public class EndpointConfigExtensionsTests
                 mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(EndpointConfigExtensionsTests).Assembly)));
         builder.Services.AddAuthorization();
         builder.Services.AddApiVersioning();
+        // UseEndpointConfigs discovers the whole test assembly, which always includes ProbeEndpointConfig's
+        // [FromClaim]-declared ByUserProbeCommand — so every test built from this helper needs population
+        // registered regardless of what that individual test is actually exercising (DRK-565 review finding 2's
+        // fail-fast at endpoint-build time). Tests that specifically exercise the "never registered" case build
+        // their own host instead of calling this helper.
+        builder.Services.AddContextualRequestPopulation();
         return builder;
     }
 
@@ -164,30 +170,10 @@ public class EndpointConfigExtensionsTests
         await app.StopAsync();
     }
 
-    // --- Attribution/validation are no longer performed by the package ------------------------------------
-
-    [Fact]
-    public async Task NoConfigureGroup_AuthenticatedRequest_CarriesNoByUserAttributionFromPackage()
-    {
-        var builder = CreateBuilder();
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = "jane.tan@acme.com";
-        });
-        var app = builder.Build();
-        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("(null)"); // no ConfigureGroup supplied -> nothing stamps ByUser any more
-        await app.StopAsync();
-    }
+    // --- Validation is no longer performed by the package ------------------------------------------------
+    //     (attribution IS performed automatically for [FromClaim]-declared members once
+    //     AddContextualRequestPopulation is registered — see ContextualRequestPopulationEndToEndTests
+    //     .JsonBodyBoundCommand_ClaimPresent_HandlerObservesClaimValue — no ConfigureGroup wiring needed, DRK-565.)
 
     [Fact]
     public async Task NoConfigureGroup_AuthorizationOff_CarriesNoStandInAttribution()
@@ -412,6 +398,43 @@ public class EndpointConfigExtensionsTests
         body.Name.ShouldBe("jane.tan@acme.com"); // never "whatever-the-caller-sends"
         await app.StopAsync();
     }
+
+    // --- Contextual population fail-fast (DRK-565 review finding 2) ------------------------------------------
+
+    [Fact]
+    public async Task DeclaredMemberMapped_AddContextualRequestPopulationNeverCalled_StartAsyncThrowsNamingType()
+    {
+        // ByUserProbeCommand.ByUser carries [FromClaim]; the host below never calls AddContextualRequestPopulation
+        // (deliberately not using CreateBuilder(), which registers it for every other test in this file).
+        // Without the fail-fast, the caller-supplied value would reach the handler untouched — exactly the
+        // exposure [FromClaim]'s own doc comment implies is guarded.
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSlimMessageBus(mbb => mbb
+            .AddJsonSerializer()
+            .AddServicesFromAssembly(typeof(EndpointConfigExtensionsTests).Assembly)
+            .AddChildBus(
+                "Memory",
+                mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(EndpointConfigExtensionsTests).Assembly)));
+        builder.Services.AddAuthorization();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.EnableVersioning = false, typeof(ProbeEndpointConfig).Assembly);
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => app.StartAsync());
+
+        exception.Message.ShouldContain(nameof(ByUserProbeCommand));
+        exception.Message.ShouldContain(
+            nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation));
+        await app.StopAsync();
+    }
+
+    // R3 ("a host with no declared members anywhere still starts normally") is covered at the scanner level by
+    // ContextualRequestPopulationTests.GetDeclaredMembers_TypeWithNoDeclaredMembers_ReturnsEmptyArray: the guard
+    // above is `members.Length > 0 && ...`, so a type that scans to zero members short-circuits before ever
+    // touching IContextualRequestPopulationService. This test fixture's assembly-wide discovery always has some
+    // other IEndpointConfig mapping a declared-member command, so a same-host end-to-end negative case would
+    // exercise ProbeEndpointConfig's own registration rather than isolate the no-declaration case.
 
     // --- Versioning switch ----------------------------------------------------------------------------------
 
@@ -713,7 +736,7 @@ public class EndpointConfigExtensionsTests
         allowedResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var allowedBody = await allowedResponse.Content.ReadFromJsonAsync<WidgetResult>();
         allowedBody.ShouldNotBeNull();
-        allowedBody.Name.ShouldBe("(null)"); // proves dispatch reached the real handler for the non-rejected request
+        allowedBody.Name.ShouldBe("alice"); // proves dispatch reached the real handler for the non-rejected request
 
         await app.StopAsync();
     }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using SlimMessageBus.Host;
 using SlimMessageBus.Host.Memory;
 using SlimMessageBus.Host.Serialization.SystemTextJson;
@@ -276,6 +277,40 @@ public class ContextualRequestPopulationEndToEndTests
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
         body.Name.ShouldBe("alice|acme");
+        await app.StopAsync();
+    }
+
+    // --- DRK-565 review findings 3 + 4: a second, host-registered source kind, scoped end to end ----------------
+
+    [Fact]
+    public async Task SecondSourceKindWithScopedResolver_RequestDeclaringBothKinds_BothResolveUnderValidateScopes()
+    {
+        // Finding 4: a host registers its OWN IContextualSource/IContextualValueResolver pair alongside the
+        // built-in claim one — no change to any type in DKNet.AspCore.Extensions is needed for it to work.
+        // Finding 3: ScopedSecondSourceResolver depends on a scoped ISecondSourceProbe, and ValidateScopes = true
+        // below means the whole pipeline (including the built-in ContextualRequestPopulationService, now scoped
+        // rather than singleton) must resolve without a captive-dependency or scope-validation failure.
+        var builder = CreateBuilder();
+        builder.Host.UseDefaultServiceProvider(o => o.ValidateScopes = true);
+        builder.Services.AddContextualRequestPopulation();
+        builder.Services.AddScoped<ISecondSourceProbe, SecondSourceProbe>();
+        builder.Services.AddScoped<IContextualValueResolver, ScopedSecondSourceResolver>();
+        AddTestAuth(builder, o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "alice";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.EnableVersioning = false, typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync("/probe/mixed-source", new MixedSourceCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("alice|second-source-value");
         await app.StopAsync();
     }
 

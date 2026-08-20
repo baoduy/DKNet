@@ -162,6 +162,56 @@ internal sealed class MultiClaimCommandHandler : Fluents.Requests.IHandler<Multi
 }
 
 /// <summary>
+///     A second, host-defined <see cref="IContextualSource" /> kind (DRK-565 review finding 4) — proves that a
+///     new declaration kind needs only its own attribute plus its own <see cref="IContextualValueResolver" />,
+///     with no change to the mechanism itself. Resolved by <see cref="ScopedSecondSourceResolver" />, which is
+///     registered as scoped by the tests that use it — doubling as end-to-end coverage that a host-registered
+///     scoped resolver resolves on a real request (finding 3).
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class FromSecondSourceAttribute : Attribute, IContextualSource;
+
+/// <summary>Depended on by <see cref="ScopedSecondSourceResolver" /> — a scoped service, the archetypal second-source shape (e.g. a tenant resolver over a <c>DbContext</c>).</summary>
+public interface ISecondSourceProbe
+{
+    string Value { get; }
+}
+
+public sealed class SecondSourceProbe : ISecondSourceProbe
+{
+    public string Value => "second-source-value";
+}
+
+/// <summary>
+///     Resolves <see cref="FromSecondSourceAttribute" /> via a scoped dependency — registered scoped by the
+///     tests that use it, never singleton, so it fails under <c>ValidateScopes = true</c> if
+///     <c>ContextualRequestPopulationService</c> were ever singleton again (finding 3's regression guard).
+/// </summary>
+public sealed class ScopedSecondSourceResolver(ISecondSourceProbe probe) : IContextualValueResolver
+{
+    public bool CanResolve(IContextualSource source) => source is FromSecondSourceAttribute;
+
+    public string? Resolve(IContextualSource source, HttpContext httpContext) => probe.Value;
+}
+
+/// <summary>Declares one member per source kind — [FromClaim] (built-in) and [FromSecondSource] (host-defined) — proving both resolve independently on the same request.</summary>
+public record MixedSourceCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+
+    [FromSecondSource]
+    public string? Secondary { get; set; }
+}
+
+internal sealed class MixedSourceCommandHandler : Fluents.Requests.IHandler<MixedSourceCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(MixedSourceCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(
+            Result.Ok(new WidgetResult { Name = $"{request.ByUser ?? "(null)"}|{request.Secondary ?? "(null)"}" }));
+}
+
+/// <summary>
 ///     Query-bound probe carrying a declared <see cref="ByUser" /> ALONGSIDE a non-declared sibling
 ///     <see cref="Name" /> — used to prove the OpenAPI operation-parameter transformer removes only the declared
 ///     one (<see cref="ByUserQueryProbe" /> has no non-declared sibling to make that distinction with).
@@ -229,6 +279,7 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<AttributedValidatedCommand, WidgetResult>("/attributed-validated");
         group.MapPost<GuidClaimCommand, WidgetResult>("/guid-claim");
         group.MapPost<MultiClaimCommand, WidgetResult>("/multi-claim");
+        group.MapPost<MixedSourceCommand, WidgetResult>("/mixed-source");
         group.MapGet<ByUserQueryProbeWithName, WidgetResult>("/by-user-query-with-name");
         group.MapPost<LegacyByUserCommand, WidgetResult>("/legacy-by-user");
     }

@@ -151,8 +151,22 @@ public static class EndpointConfigExtensions
             // ContextualMemberScanner) fails fast at startup rather than on first request.
             group.AddEndpointFilterFactory((factoryContext, next) =>
             {
+                // IServiceProviderIsService, not GetService: IContextualRequestPopulationService is scoped
+                // (finding 3), and factoryContext.ApplicationServices is the root provider — resolving a scoped
+                // service directly from it throws under ValidateScopes=true. Asking "is it registered" answers
+                // the fail-fast question without instantiating anything from the wrong scope.
+                var isServiceRegistered = factoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
                 foreach (var parameter in factoryContext.MethodInfo.GetParameters())
-                    ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
+                {
+                    var members = ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
+                    if (members.Length > 0 &&
+                        isServiceRegistered?.IsService(typeof(IContextualRequestPopulationService)) != true)
+                        throw new InvalidOperationException(
+                            $"'{parameter.ParameterType.FullName}' declares a contextual source (e.g. " +
+                            $"{nameof(FromClaimAttribute)}) but " +
+                            $"{nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation)}() " +
+                            "was never called. Call it on the service collection, or remove the declaration.");
+                }
 
                 return async invocationContext =>
                 {

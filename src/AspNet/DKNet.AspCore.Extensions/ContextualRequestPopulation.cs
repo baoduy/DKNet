@@ -145,8 +145,12 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
         configure?.Invoke(options);
 
         services.AddSingleton(options);
-        services.AddSingleton<IContextualValueResolver, ClaimValueResolver>();
-        services.AddSingleton<IContextualRequestPopulationService, ContextualRequestPopulationService>();
+        // Scoped, not singleton: a host may register its own IContextualValueResolver that depends on a scoped
+        // service (e.g. a tenant resolver over a DbContext) — a singleton ContextualRequestPopulationService
+        // capturing it would throw under scope validation or captive-dependency it in production.
+        // ClaimValueResolver itself is stateless either way.
+        services.AddScoped<IContextualValueResolver, ClaimValueResolver>();
+        services.AddScoped<IContextualRequestPopulationService, ContextualRequestPopulationService>();
 
         services.ConfigureAll<OpenApiOptions>(o =>
         {
