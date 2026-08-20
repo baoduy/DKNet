@@ -67,11 +67,13 @@ dotnet format                                    # before committing
 
 `Directory.Build.props` enables `TreatWarningsAsErrors=true`, `Nullable=enable`, `LangVersion=latest`, and `GenerateDocumentationFile=true` solution-wide. Any new warning, missing XML doc, or nullable mismatch breaks the build.
 
-Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. On ARM64/Apple Silicon the fixtures fall back to `mcr.microsoft.com/azure-sql-edge` (no ARM image for `mssql/server`) and wait on the SQL log line instead of `sqlcmd` (which `azure-sql-edge` doesn't ship).
+Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. `mssql/server` ships x64-only images with no ARM64 build.
+
+**Never run TestContainers.MsSql-backed tests locally on an ARM64 device (Apple Silicon, ARM dev boxes/sandboxes)** — `mssql/server` has no ARM image, and do not substitute a local ARM workaround (e.g. `azure-sql-edge`) either. Always verify these tests via the GitHub Actions x64 runner below instead.
 
 ### Remote test verification (ARM / no local SQL Server)
 
-When SQL Server won't run locally (e.g. ARM devices where neither `mssql/server` nor `azure-sql-edge` work), verify tests on a GitHub-hosted x64 runner via the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml`. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging.
+On an ARM device, verify tests on a GitHub-hosted x64 runner via the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml`. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging.
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch>                              # whole solution

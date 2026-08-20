@@ -6,6 +6,7 @@
 using DKNet.EfCore.Specifications.Extensions;
 using Mapster;
 using MapsterMapper;
+using MR.EntityFrameworkCore.KeysetPagination;
 
 namespace EfCore.Specifications.Tests;
 
@@ -428,6 +429,117 @@ public class KeysetQueryExtensionsTests : IClassFixture<TestDbFixture>
         var spec = new AllProductsOrderedByIdSpec();
         await Should.ThrowAsync<ArgumentOutOfRangeException>(async () =>
             await _repository.ToKeysetPageAsync(spec, p => p.Id, 0, pageSize: 0));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // IQueryable.ToKeysetPageAsync – arbitrary arity, forward/backward, has-previous/has-next
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    ///     Verifies the arbitrary-arity ToKeysetPageAsync pages forward over a multi-key ordering
+    ///     (category ascending, price descending, id ascending) and reports both boundary flags.
+    /// </summary>
+    [Fact]
+    public async Task ToKeysetPageAsync_MultipleKeysMixedDirections_PagesForwardAndReportsBoundaries()
+    {
+        // Arrange
+        var ordered = await _context.Products
+            .OrderBy(p => p.CategoryId)
+            .ThenByDescending(p => p.Price)
+            .ThenBy(p => p.Id)
+            .ToListAsync();
+        ordered.Count.ShouldBeGreaterThan(5);
+        var reference = ordered[1]; // not the first row, so a previous page exists
+
+        // Act
+        var page = await _context.Products.ToKeysetPageAsync(
+            b => b.Ascending(p => p.CategoryId).Descending(p => p.Price).Ascending(p => p.Id),
+            pageSize: 2,
+            reference: reference);
+
+        // Assert
+        page.Items.Count.ShouldBeLessThanOrEqualTo(2);
+        page.Items.Select(p => p.Id).ShouldBe(ordered.Skip(2).Take(page.Items.Count).Select(p => p.Id));
+        page.HasPrevious.ShouldBeTrue();
+        page.HasNext.ShouldBe(ordered.Count > 2 + page.Items.Count);
+    }
+
+    /// <summary>
+    ///     Verifies the arbitrary-arity ToKeysetPageAsync pages backward and that the returned page
+    ///     precedes the reference row in the declared order.
+    /// </summary>
+    [Fact]
+    public async Task ToKeysetPageAsync_Backward_ReturnsPageBeforeReference()
+    {
+        // Arrange
+        var ordered = await _context.Products.OrderBy(p => p.Id).ToListAsync();
+        ordered.Count.ShouldBeGreaterThan(3);
+        var reference = ordered[3];
+
+        // Act
+        var page = await _context.Products.ToKeysetPageAsync(
+            b => b.Ascending(p => p.Id),
+            pageSize: 10,
+            direction: KeysetPaginationDirection.Backward,
+            reference: reference);
+
+        // Assert
+        page.Items.Select(p => p.Id).ShouldBe(ordered.Take(3).Select(p => p.Id));
+        page.HasPrevious.ShouldBeFalse();
+        page.HasNext.ShouldBeTrue();
+    }
+
+    /// <summary>
+    ///     Verifies that omitting the reference (the default) returns the first page in declared order.
+    /// </summary>
+    [Fact]
+    public async Task ToKeysetPageAsync_NoReference_ReturnsFirstPage()
+    {
+        // Arrange
+        var totalCount = await _context.Products.CountAsync();
+        var firstIds = await _context.Products.OrderBy(p => p.Id).Select(p => p.Id).Take(4).ToListAsync();
+
+        // Act
+        var page = await _context.Products.ToKeysetPageAsync(b => b.Ascending(p => p.Id), pageSize: 4);
+
+        // Assert
+        page.Items.Select(p => p.Id).ShouldBe(firstIds);
+        page.HasPrevious.ShouldBeFalse();
+        page.HasNext.ShouldBe(totalCount > 4);
+    }
+
+    /// <summary>
+    ///     Verifies that the arbitrary-arity ToKeysetPageAsync throws when the query argument is null.
+    /// </summary>
+    [Fact]
+    public async Task ToKeysetPageAsync_ArbitraryArity_NullQuery_ThrowsArgumentNullException()
+    {
+        IQueryable<Product>? nullQuery = null;
+        await Should.ThrowAsync<ArgumentNullException>(async () =>
+            await nullQuery!.ToKeysetPageAsync(b => b.Ascending(p => p.Id), pageSize: 1));
+    }
+
+    /// <summary>
+    ///     Verifies that the arbitrary-arity ToKeysetPageAsync throws when configureKeyset is null.
+    /// </summary>
+    [Fact]
+    public async Task ToKeysetPageAsync_ArbitraryArity_NullConfigureKeyset_ThrowsArgumentNullException()
+    {
+        Action<KeysetPaginationBuilder<Product>>? nullConfigure = null;
+        await Should.ThrowAsync<ArgumentNullException>(async () =>
+            await _context.Products.ToKeysetPageAsync(nullConfigure!, pageSize: 1));
+    }
+
+    /// <summary>
+    ///     Verifies that the arbitrary-arity ToKeysetPageAsync throws for zero or negative page sizes.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ToKeysetPageAsync_ArbitraryArity_InvalidPageSize_ThrowsArgumentOutOfRange(int pageSize)
+    {
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(async () =>
+            await _context.Products.ToKeysetPageAsync(b => b.Ascending(p => p.Id), pageSize));
     }
 
     #endregion
