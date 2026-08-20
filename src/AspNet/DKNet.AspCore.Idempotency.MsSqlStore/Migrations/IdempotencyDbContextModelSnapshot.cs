@@ -22,7 +22,7 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DKNet.AspCore.Idempotency.MsSqlStore.Data.IdempotencyKeyEntity", b =>
+            modelBuilder.Entity("DKNet.AspCore.Idempotency.Relational.Data.IdempotencyKeyEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
