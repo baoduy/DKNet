@@ -33,6 +33,9 @@ public class MerchantDbContext(DbContextOptions<MerchantDbContext> options) : Db
         modelBuilder.Entity<Merchant>(entity =>
         {
             entity.HasKey(e => e.Id);
+            // Seed data assigns explicit Ids; SQL Server rejects those against an int PK's default
+            // IDENTITY column ("Cannot insert explicit value for identity column").
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Revenue).HasPrecision(18, 2);
         });
     }
