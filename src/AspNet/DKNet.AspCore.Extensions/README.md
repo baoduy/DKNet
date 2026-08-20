@@ -138,9 +138,10 @@ app.UseEndpointConfigs(o =>
         group.AddFluentValidationAutoValidation();
         group.AddEndpointFilter(async (context, next) =>
         {
+            // Former SystemAccountName hosts: name the unauthenticated fallback instead of leaving it null.
             var userName = context.HttpContext.User.Identity is { IsAuthenticated: true } identity
                 ? identity.Name
-                : null;
+                : "svc-account";
             foreach (var argument in context.Arguments)
                 if (argument is RequestBase requestBase)
                     requestBase.ByUser = userName;
@@ -222,7 +223,9 @@ Returned automatically by `MapGetPage` and `MapGetList`.
 
 `RequestBase` (in `DKNet.SlimBus.Extensions`) is the base record for requests that need the acting user's identity.
 This package no longer populates `RequestBase.ByUser` on its own — a host that needs stamping supplies it through
-`EndpointRegistrationOptions.ConfigureGroup` (see the example above):
+`EndpointRegistrationOptions.ConfigureGroup` (see the example above). Without that stamping, a caller-supplied
+`ByUser` on a query- or `[AsParameters]`-bound request now reaches the handler unchanged, so a host that does not
+re-add stamping must treat `ByUser` as caller-influenced:
 
 ```csharp
 public record CreateProduct : RequestBase, Fluents.Requests.IWitResponse<ProductDto>
