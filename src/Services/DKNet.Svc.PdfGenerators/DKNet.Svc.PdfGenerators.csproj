@@ -2,10 +2,12 @@
 
     <PropertyGroup>
         <IsPackable>true</IsPackable>
+        <Description>DKNet.Svc.PdfGenerators is a fork of Markdown2Pdf 2.x, extended with additional PDF generation options. See THIRD-PARTY-NOTICES.md for upstream attribution.</Description>
     </PropertyGroup>
     <ItemGroup>
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
+        <None Include="THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>
