@@ -134,11 +134,15 @@ app.UseEndpointConfigs(o =>
     o.EnableVersioning = false;                   // no version segment, no version metadata
     o.ConfigureGroup = (group, config) =>
     {
-        // Runs for every group, before authorization and before the group's endpoints are mapped.
+        // Registration order only: runs for every group before authorization is required and before the
+        // group's endpoints are mapped. At runtime this filter still executes after the authorization
+        // middleware, so an unauthenticated or unauthorised request never reaches it.
         group.AddFluentValidationAutoValidation();
         group.AddEndpointFilter(async (context, next) =>
         {
             // Former SystemAccountName hosts: name the unauthenticated fallback instead of leaving it null.
+            // Reached only on anonymous endpoints, hosts that turn authorization off, or when an
+            // authenticated identity has no name — not on ordinary authenticated traffic.
             var userName = context.HttpContext.User.Identity is { IsAuthenticated: true } identity
                 ? identity.Name
                 : "svc-account";
@@ -224,8 +228,8 @@ Returned automatically by `MapGetPage` and `MapGetList`.
 `RequestBase` (in `DKNet.SlimBus.Extensions`) is the base record for requests that need the acting user's identity.
 This package no longer populates `RequestBase.ByUser` on its own — a host that needs stamping supplies it through
 `EndpointRegistrationOptions.ConfigureGroup` (see the example above). Without that stamping, a caller-supplied
-`ByUser` on a query- or `[AsParameters]`-bound request now reaches the handler unchanged, so a host that does not
-re-add stamping must treat `ByUser` as caller-influenced:
+`ByUser` — regardless of binding source (query, `[AsParameters]`, or JSON body) — now reaches the handler
+unchanged, so a host that does not re-add stamping must treat `ByUser` as caller-influenced:
 
 ```csharp
 public record CreateProduct : RequestBase, Fluents.Requests.IWitResponse<ProductDto>

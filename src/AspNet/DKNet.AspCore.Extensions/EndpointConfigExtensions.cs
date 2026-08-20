@@ -144,8 +144,9 @@ public static class EndpointConfigExtensions
                 .WithGroupName($"v{config.Version}")
                 .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
-            // Host setup runs before the authorization block below, so anything the host attaches here
-            // (stamping, validation, filters) observes every request ahead of authorization and Map.
+            // Registration order only: host setup is applied before authorization is required below, so
+            // host filters wrap the endpoint's own filters. At runtime those filters still execute after
+            // the authorization middleware, so an unauthenticated or unauthorised request never reaches them.
             options.ConfigureGroup?.Invoke(group, config);
 
             if (options.RequireAuthorization)
