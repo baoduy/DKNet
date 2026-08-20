@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using DKNet.AspCore.Extensions;
 using DKNet.SlimBus.Extensions;
 using FluentResults;
 using FluentValidation;
@@ -37,17 +39,21 @@ internal sealed class ValidatedCommandHandler : Fluents.Requests.IHandler<Valida
 }
 
 /// <summary>
-///     Carries both <see cref="RequestBase.ByUser" /> and a validated <see cref="Name" /> — used to prove that a
+///     Carries both its own <see cref="ByUser" /> and a validated <see cref="Name" /> — used to prove that a
 ///     host-restored attribution filter (via <see cref="EndpointRegistrationOptions.ConfigureGroup" />) runs before
 ///     a host-restored validation filter runs on the same request. <see cref="AttributedValidatedCommandValidator" />
-///     rejects a request whose <see cref="RequestBase.ByUser" /> is still <see langword="null" /> at validation
-///     time, so this command only reaches its handler when attribution really did happen first.
+///     rejects a request whose <see cref="ByUser" /> is still <see langword="null" /> at validation time, so this
+///     command only reaches its handler when attribution really did happen first.
 /// </summary>
-public record AttributedValidatedCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
+public record AttributedValidatedCommand : Fluents.Requests.IWitResponse<WidgetResult>
 {
     #region Properties
 
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
 
     #endregion
 }
@@ -79,10 +85,15 @@ internal sealed class AttributedValidatedCommandHandler
 }
 
 /// <summary>
-///     Carries <see cref="RequestBase.ByUser" /> so tests can observe, via the response body, what
+///     Carries its own <see cref="ByUser" /> so tests can observe, via the response body, what
 ///     <c>EndpointConfigExtensions</c>' request filter stamped it to before dispatch.
 /// </summary>
-public record ByUserProbeCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>;
+public record ByUserProbeCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
 
 internal sealed class ByUserProbeHandler : Fluents.Requests.IHandler<ByUserProbeCommand, WidgetResult>
 {
@@ -96,11 +107,15 @@ internal sealed class ByUserProbeHandler : Fluents.Requests.IHandler<ByUserProbe
 
 /// <summary>
 ///     Same probe as <see cref="ByUserProbeCommand" /> but mapped with <c>[AsParameters]</c> binding (via
-///     <c>MapGet&lt;TCommand,TResponse&gt;</c>) rather than JSON body binding — <c>[JsonIgnore]</c> on
-///     <see cref="RequestBase.ByUser" /> has no effect on this binding source, so a caller can put
-///     <c>?ByUser=...</c> straight on the querystring unless the host stamps over it unconditionally.
+///     <c>MapGet&lt;TCommand,TResponse&gt;</c>) rather than JSON body binding — a caller can put
+///     <c>?ByUser=...</c> straight on the querystring unless the host overwrites it unconditionally.
 /// </summary>
-public record ByUserQueryProbe : RequestBase, Fluents.Queries.IWitResponse<WidgetResult>;
+public record ByUserQueryProbe : Fluents.Queries.IWitResponse<WidgetResult>
+{
+    /// <summary>Declared via <see cref="FromClaimAttribute" /> — own property, no longer via <c>RequestBase</c> (DRK-565).</summary>
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
 
 internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQueryProbe, WidgetResult>
 {
@@ -110,6 +125,137 @@ internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQ
         Task.FromResult<WidgetResult?>(new WidgetResult { Name = request.ByUser ?? "(null)" });
 
     #endregion
+}
+
+/// <summary>
+///     Declares a non-string-typed member — proves a claim value that fails to convert to the property's own
+///     type (e.g. a non-Guid string) leaves it at its type's default rather than throwing or rejecting the
+///     request (DRK-565 population is never validation).
+/// </summary>
+public record GuidClaimCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim("tenant-id")]
+    public Guid TenantId { get; set; }
+}
+
+internal sealed class GuidClaimCommandHandler : Fluents.Requests.IHandler<GuidClaimCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(GuidClaimCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.TenantId.ToString() }));
+}
+
+/// <summary>Two declared members, each sourced from its OWN claim type — proves both are populated independently.</summary>
+public record MultiClaimCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+
+    [FromClaim("tenant-id")]
+    public string? TenantId { get; set; }
+}
+
+internal sealed class MultiClaimCommandHandler : Fluents.Requests.IHandler<MultiClaimCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(MultiClaimCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(
+            Result.Ok(new WidgetResult { Name = $"{request.ByUser ?? "(null)"}|{request.TenantId ?? "(null)"}" }));
+}
+
+/// <summary>
+///     A second, host-defined <see cref="IContextualSource" /> kind (DRK-565 review finding 4) — proves that a
+///     new declaration kind needs only its own attribute plus its own <see cref="IContextualValueResolver" />,
+///     with no change to the mechanism itself. Resolved by <see cref="ScopedSecondSourceResolver" />, which is
+///     registered as scoped by the tests that use it — doubling as end-to-end coverage that a host-registered
+///     scoped resolver resolves on a real request (finding 3).
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class FromSecondSourceAttribute : Attribute, IContextualSource;
+
+/// <summary>Depended on by <see cref="ScopedSecondSourceResolver" /> — a scoped service, the archetypal second-source shape (e.g. a tenant resolver over a <c>DbContext</c>).</summary>
+public interface ISecondSourceProbe
+{
+    string Value { get; }
+}
+
+public sealed class SecondSourceProbe : ISecondSourceProbe
+{
+    public string Value => "second-source-value";
+}
+
+/// <summary>
+///     Resolves <see cref="FromSecondSourceAttribute" /> via a scoped dependency — registered scoped by the
+///     tests that use it, never singleton, so it fails under <c>ValidateScopes = true</c> if
+///     <c>ContextualRequestPopulationService</c> were ever singleton again (finding 3's regression guard).
+/// </summary>
+public sealed class ScopedSecondSourceResolver(ISecondSourceProbe probe) : IContextualValueResolver
+{
+    public bool CanResolve(IContextualSource source) => source is FromSecondSourceAttribute;
+
+    public string? Resolve(IContextualSource source, HttpContext httpContext) => probe.Value;
+}
+
+/// <summary>Declares one member per source kind — [FromClaim] (built-in) and [FromSecondSource] (host-defined) — proving both resolve independently on the same request.</summary>
+public record MixedSourceCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+
+    [FromSecondSource]
+    public string? Secondary { get; set; }
+}
+
+internal sealed class MixedSourceCommandHandler : Fluents.Requests.IHandler<MixedSourceCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(MixedSourceCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(
+            Result.Ok(new WidgetResult { Name = $"{request.ByUser ?? "(null)"}|{request.Secondary ?? "(null)"}" }));
+}
+
+/// <summary>
+///     Query-bound probe carrying a declared <see cref="ByUser" /> ALONGSIDE a non-declared sibling
+///     <see cref="Name" /> — used to prove the OpenAPI operation-parameter transformer removes only the declared
+///     one (<see cref="ByUserQueryProbe" /> has no non-declared sibling to make that distinction with).
+/// </summary>
+public record ByUserQueryProbeWithName : Fluents.Queries.IWitResponse<WidgetResult>
+{
+    public string Name { get; init; } = string.Empty;
+
+    [FromClaim(ClaimTypes.Name)]
+    public string? ByUser { get; set; }
+}
+
+internal sealed class ByUserQueryProbeWithNameHandler : Fluents.Queries.IHandler<ByUserQueryProbeWithName, WidgetResult>
+{
+    public Task<WidgetResult?> OnHandle(ByUserQueryProbeWithName request, CancellationToken cancellationToken) =>
+        Task.FromResult<WidgetResult?>(new WidgetResult { Name = $"{request.Name}|{request.ByUser ?? "(null)"}" });
+}
+
+#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — this fixture intentionally exercises the
+                               // pre-existing manual-stamping pattern to prove it still works after the attribute
+                               // was added, not the new mechanism.
+/// <summary>
+///     Carries <see cref="RequestBase.ByUser" /> from the OLD pre-DRK-565 pattern — a host's own
+///     <see cref="EndpointRegistrationOptions.ConfigureGroup" /> filter stamps it manually, the way every
+///     <c>RequestBase</c> consumer did before <see cref="FromClaimAttribute" /> existed. Proves <c>[Obsolete]</c>
+///     on <see cref="RequestBase" /> is advisory only — the old manual pattern still compiles and still works.
+/// </summary>
+public record LegacyByUserCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
+{
+    public string Name { get; init; } = string.Empty;
+}
+#pragma warning restore CS0618
+
+public sealed class LegacyByUserCommandValidator : AbstractValidator<LegacyByUserCommand>
+{
+    public LegacyByUserCommandValidator() => RuleFor(x => x.Name).NotEmpty();
+}
+
+internal sealed class LegacyByUserCommandHandler : Fluents.Requests.IHandler<LegacyByUserCommand, WidgetResult>
+{
+    public Task<IResult<WidgetResult>> OnHandle(LegacyByUserCommand request, CancellationToken cancellationToken) =>
+#pragma warning disable CS0618
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.ByUser ?? "(null)" }));
+#pragma warning restore CS0618
 }
 
 /// <summary>The single <see cref="IEndpointConfig" /> discovered by default (no explicit assemblies) in this test assembly.</summary>
@@ -131,6 +277,11 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
         group.MapGet<ByUserQueryProbe, WidgetResult>("/by-user-query");
         group.MapPost<AttributedValidatedCommand, WidgetResult>("/attributed-validated");
+        group.MapPost<GuidClaimCommand, WidgetResult>("/guid-claim");
+        group.MapPost<MultiClaimCommand, WidgetResult>("/multi-claim");
+        group.MapPost<MixedSourceCommand, WidgetResult>("/mixed-source");
+        group.MapGet<ByUserQueryProbeWithName, WidgetResult>("/by-user-query-with-name");
+        group.MapPost<LegacyByUserCommand, WidgetResult>("/legacy-by-user");
     }
 
     #endregion

@@ -144,6 +144,43 @@ public static class EndpointConfigExtensions
                 .WithGroupName($"v{config.Version}")
                 .WithTags(string.IsNullOrEmpty(config.Tag) ? options.DefaultTag : config.Tag);
 
+            // Registered first so it runs before any host filter added by ConfigureGroup (including a
+            // validation filter) — the declared-member overwrite is unconditional and cannot be defeated by
+            // ConfigureGroup's own registration order. IEndpointFilterFactory.Create runs once, at endpoint-build
+            // time, so an IContextualSource-declared member with no setter (DKNet.AspCore.Extensions'
+            // ContextualMemberScanner) fails fast at startup rather than on first request.
+            group.AddEndpointFilterFactory((factoryContext, next) =>
+            {
+                // IServiceProviderIsService, not GetService: IContextualRequestPopulationService is scoped
+                // (finding 3), and factoryContext.ApplicationServices is the root provider — resolving a scoped
+                // service directly from it throws under ValidateScopes=true. Asking "is it registered" answers
+                // the fail-fast question without instantiating anything from the wrong scope.
+                var isServiceRegistered = factoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
+                foreach (var parameter in factoryContext.MethodInfo.GetParameters())
+                {
+                    var members = ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
+                    if (members.Length > 0 &&
+                        isServiceRegistered?.IsService(typeof(IContextualRequestPopulationService)) != true)
+                        throw new InvalidOperationException(
+                            $"'{parameter.ParameterType.FullName}' declares a contextual source (e.g. " +
+                            $"{nameof(FromClaimAttribute)}) but " +
+                            $"{nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation)}() " +
+                            "was never called. Call it on the service collection, or remove the declaration.");
+                }
+
+                return async invocationContext =>
+                {
+                    var population = invocationContext.HttpContext.RequestServices
+                        .GetService<IContextualRequestPopulationService>();
+                    if (population is not null)
+                        foreach (var argument in invocationContext.Arguments)
+                            if (argument is not null)
+                                population.Populate(argument, invocationContext.HttpContext, options.RequireAuthorization);
+
+                    return await next(invocationContext);
+                };
+            });
+
             // Registration order only: host setup is applied before authorization is required below, so
             // host filters wrap the endpoint's own filters. At runtime those filters still execute after
             // the authorization middleware, so an unauthenticated or unauthorised request never reaches them.

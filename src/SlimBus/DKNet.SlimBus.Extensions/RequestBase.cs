@@ -13,6 +13,11 @@ namespace DKNet.SlimBus.Extensions;
 ///     registration is expected to populate <see cref="ByUser" /> from the authenticated principal (or a configured
 ///     system-account fallback) before the request reaches its handler.
 /// </summary>
+[Obsolete(
+    "Superseded by declaring an IContextualSource attribute (e.g. [FromClaim(ClaimTypes.Name)] from " +
+    "DKNet.AspCore.Extensions) directly on the request's own acting-user property, populated automatically via " +
+    "AddContextualRequestPopulation(). RequestBase.ByUser is retained for existing consumers and is never " +
+    "populated by this package.")]
 public record RequestBase
 {
     /// <summary>

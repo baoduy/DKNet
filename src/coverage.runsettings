@@ -22,6 +22,11 @@
                         **/TestObjects/**
                         **/GlobalUsings.cs
                     </ExcludeByFile>
+                    <!-- Roslyn source generators (e.g. Microsoft.AspNetCore.OpenApi's XmlCommentGenerator) emit
+                         types tagged [GeneratedCodeAttribute] whose source file is virtual — ExcludeByFile's
+                         **/obj/** glob never matches it because the file is never written to disk, so its
+                         near-0%-covered sequence points would otherwise count against the declaring module. -->
+                    <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
                 </Configuration>
             </DataCollector>
         </DataCollectors>
