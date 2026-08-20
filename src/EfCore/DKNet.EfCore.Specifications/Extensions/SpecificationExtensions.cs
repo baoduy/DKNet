@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using DKNet.EfCore.Extensions.Configurations;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,53 +42,79 @@ internal static class SpecificationExtensions
                 queryable,
                 (current, builder) => builder(current));
 
-        // Apply ordering using OrderByQueries and OrderByDescendingQueries in the order they were added
-        var hasOrderBy = specification.OrderByQueries.Count > 0;
-        var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
-        IOrderedQueryable<TEntity>? ordered = null;
-
-        // Apply OrderBy queries first
-        if (hasOrderBy)
+        if (specification is Specification<TEntity> s && s.OrderByClauses.Count > 0)
         {
-            var isFirst = true;
-            foreach (var expr in specification.OrderByQueries)
-                if (isFirst)
-                {
-                    ordered = queryable.OrderBy(expr);
-                    isFirst = false;
-                }
-                else
-                {
-                    ordered = ordered!.ThenBy(expr);
-                }
+            // Declared-sequence ordering: apply mixed-direction clauses in the order they were added.
+            IOrderedQueryable<TEntity>? ordered = null;
+            foreach (var clause in s.OrderByClauses)
+                ordered = ordered is null
+                    ? clause.Direction == ListSortDirection.Ascending
+                        ? queryable.OrderBy(clause.KeySelector)
+                        : queryable.OrderByDescending(clause.KeySelector)
+                    : clause.Direction == ListSortDirection.Ascending
+                        ? ordered.ThenBy(clause.KeySelector)
+                        : ordered.ThenByDescending(clause.KeySelector);
+
+            queryable = ordered!;
         }
-
-        // Then apply OrderByDescending queries
-        if (hasOrderByDesc)
+        else
         {
-            if (ordered == null)
+            // Legacy two-phase ordering for foreign ISpecification implementations: all ascending queries
+            // first, then all descending queries.
+            var hasOrderBy = specification.OrderByQueries.Count > 0;
+            var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
+            IOrderedQueryable<TEntity>? ordered = null;
+
+            // Apply OrderBy queries first
+            if (hasOrderBy)
             {
                 var isFirst = true;
-                foreach (var expr in specification.OrderByDescendingQueries)
+                foreach (var expr in specification.OrderByQueries)
                     if (isFirst)
                     {
-                        ordered = queryable.OrderByDescending(expr);
+                        ordered = queryable.OrderBy(expr);
                         isFirst = false;
                     }
                     else
                     {
-                        ordered = ordered!.ThenByDescending(expr);
+                        ordered = ordered!.ThenBy(expr);
                     }
             }
-            else
+
+            // Then apply OrderByDescending queries
+            if (hasOrderByDesc)
             {
-                ordered = specification.OrderByDescendingQueries.Aggregate(
-                    ordered,
-                    (current, expr) => current.ThenByDescending(expr));
+                if (ordered == null)
+                {
+                    var isFirst = true;
+                    foreach (var expr in specification.OrderByDescendingQueries)
+                        if (isFirst)
+                        {
+                            ordered = queryable.OrderByDescending(expr);
+                            isFirst = false;
+                        }
+                        else
+                        {
+                            ordered = ordered!.ThenByDescending(expr);
+                        }
+                }
+                else
+                {
+                    ordered = specification.OrderByDescendingQueries.Aggregate(
+                        ordered,
+                        (current, expr) => current.ThenByDescending(expr));
+                }
             }
+
+            if (ordered != null) queryable = ordered;
         }
 
-        if (ordered != null) queryable = ordered;
+        if (specification is Specification<TEntity> ws)
+        {
+            if (ws.IsReadOnly) queryable = queryable.AsNoTracking();
+            if (ws.SkipCount is { } skip) queryable = queryable.Skip(skip);
+            if (ws.TakeCount is { } take) queryable = queryable.Take(take);
+        }
 
         return queryable;
     }
