@@ -27,8 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have been removed from `DKNet.AspCore.Extensions`, and `UseEndpointConfigs()` no longer stamps `RequestBase.ByUser`
   or applies FluentValidation auto-validation on its own. A consumer that had set either setting gets a compile
   failure; one relying on defaults loses automatic validation silently, and — because the stamping filter is gone —
-  a caller-supplied `ByUser` on a query- or `[AsParameters]`-bound request now reaches the handler unchanged, so a
-  host that does not re-add stamping via `ConfigureGroup` must treat `ByUser` as caller-influenced. Supply both
+  a caller-supplied `ByUser` — regardless of binding source (query, `[AsParameters]`, or JSON body) — now reaches
+  the handler unchanged, so a host that does not re-add stamping via `ConfigureGroup` must treat `ByUser` as
+  caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
 
