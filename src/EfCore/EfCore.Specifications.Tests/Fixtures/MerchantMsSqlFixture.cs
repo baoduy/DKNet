@@ -44,7 +44,7 @@ public sealed class MerchantMsSqlFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (Db != null!) await Db.DisposeAsync();
+        if (Db is not null) await Db.DisposeAsync();
 
         if (_container != null)
         {

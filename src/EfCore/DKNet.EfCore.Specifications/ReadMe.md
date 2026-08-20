@@ -397,6 +397,43 @@ while (true)
 }
 ```
 
+**Arbitrary-arity paging with `HasPrevious`/`HasNext` (`ToKeysetPageAsync` on `IQueryable<T>`):**
+
+`AfterKeyset`/`BeforeKeyset` cover one or two key columns and leave ordering to the caller. For an
+arbitrary number of columns — each with its own ascending/descending direction — and boundary flags
+telling the caller whether further pages exist, use `ToKeysetPageAsync` instead. It owns both the
+ordering and the cursor filter (built via `MR.EntityFrameworkCore.KeysetPagination`), so do not chain
+it after `OrderBy`.
+
+```csharp
+// Page merchants by country asc, revenue desc, identifier asc
+var page = await context.Merchants.ToKeysetPageAsync(
+    b => b.Ascending(m => m.Country).Descending(m => m.Revenue).Ascending(m => m.Id),
+    pageSize: 20,
+    direction: KeysetPaginationDirection.Forward,
+    reference: lastSeenMerchant); // last row of the previous page, or null for the first page
+
+foreach (var merchant in page.Items) { /* ... */ }
+
+if (page.HasNext) { /* show a "next page" control */ }
+if (page.HasPrevious) { /* show a "previous page" control */ }
+```
+
+Paging backward from a reference row returns the page immediately before it, still in ascending
+declared order:
+
+```csharp
+var prevPage = await context.Merchants.ToKeysetPageAsync(
+    b => b.Ascending(m => m.Country).Descending(m => m.Revenue).Ascending(m => m.Id),
+    pageSize: 20,
+    direction: KeysetPaginationDirection.Backward,
+    reference: firstSeenMerchant);
+```
+
+`reference` only needs to be an object whose property names match the configured keyset columns — it
+does not have to be a `TEntity` instance. Costs three round trips per call: the page query itself, plus
+one each for `HasPrevious`/`HasNext`.
+
 ## Repository Extensions
 
 The library provides rich extension methods for `IRepositorySpec`:
