@@ -23,10 +23,11 @@ namespace AspCore.Extensions.Tests;
 
 /// <summary>
 ///     Exercises <c>WebApplication.UseEndpointConfigs</c> — discovery (default AppDomain scan vs. explicit
-///     assemblies), <see cref="EndpointRegistrationOptions" /> overrides, the request filter that stamps
-///     <see cref="DKNet.SlimBus.Extensions.RequestBase.ByUser" />, and authorization-on-by-default — through real
-///     HTTP dispatch on a fresh TestServer per test (registration is a startup-time concern, so each test needs its
-///     own host rather than sharing <see cref="Fixtures.EndpointTestHost" />).
+///     assemblies), <see cref="EndpointRegistrationOptions" /> overrides, the host-supplied
+///     <see cref="EndpointRegistrationOptions.ConfigureGroup" /> per-group setup callback, the
+///     <see cref="EndpointRegistrationOptions.EnableVersioning" /> switch, and authorization-on-by-default —
+///     through real HTTP dispatch on a fresh TestServer per test (registration is a startup-time concern, so each
+///     test needs its own host rather than sharing <see cref="Fixtures.EndpointTestHost" />).
 /// </summary>
 public class EndpointConfigExtensionsTests
 {
@@ -135,6 +136,31 @@ public class EndpointConfigExtensionsTests
             "/custom/probe/by-user?api-version=1.0", new ByUserProbeCommand());
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task UseEndpointConfigs_RouteTemplateOverride_EnableVersioningFalse_HonoursCustomTemplateWithoutApiVersion()
+    {
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o =>
+            {
+                o.RouteTemplate = config => $"/custom{config.GroupEndpoint}";
+                o.EnableVersioning = false;
+            },
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        // With versioning off, the host-supplied template is honoured verbatim and no api-version is required
+        // in any form — mirrors the versioning-on override test above, but for the EnableVersioning = false path.
+        var response = await client.PostAsJsonAsync("/custom/probe/by-user", new ByUserProbeCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.Contains("api-supported-versions").ShouldBeFalse();
         await app.StopAsync();
     }
 
