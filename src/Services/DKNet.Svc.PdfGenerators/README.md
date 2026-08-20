@@ -50,5 +50,7 @@ Contributions are welcome! Please submit issues or pull requests for bug fixes a
 
 ## License
 
-[Specify your license here]
+MIT. This package is a fork of [Markdown2Pdf](https://github.com/Flayms/Markdown2Pdf) by Flayms
+(Copyright (c) 2023 Flayms), used and modified under its MIT license — see [NOTICE.md](NOTICE.md)
+for the upstream copyright notice.
 
