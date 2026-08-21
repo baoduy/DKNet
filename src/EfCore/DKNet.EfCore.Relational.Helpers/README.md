@@ -1,56 +1,41 @@
 # DKNet.EfCore.Relational.Helpers
 
-A .NET library providing extension methods and helpers for Entity Framework Core’s relational features. Simplifies
-database connection management, table metadata access, and existence checks for EF Core applications.
+Small set of `DbContext` extension methods for relational-provider bookkeeping: table creation without a migration, an already-open connection, resolved schema/table names, and table-existence checks.
 
-## Features
+## Install
 
-- Get and open the underlying `DbConnection` from a `DbContext`
-- Retrieve schema and table names for entity types
-- Check if a table for a given entity exists in the database
-- Supports SQL Server and other EF Core relational providers
-- .NET 9.0 compatible
-
-## Installation
-
-Add the NuGet package to your project:
-
-```
+```bash
 dotnet add package DKNet.EfCore.Relational.Helpers
 ```
 
-## Usage
+## Features
+
+- `CreateTableAsync<TEntity>()` — ensures the database exists and creates the table for `TEntity` if it isn't already there (one-shot, not a migration)
+- `GetDbConnection()` — returns the `DbContext`'s underlying `DbConnection`, opening it if closed
+- `GetTableName<TEntity>()` — resolves the schema and table name EF Core mapped for `TEntity` (with the SQL Server `dbo` default applied)
+- `TableExistsAsync<TEntity>()` — checks whether the table for `TEntity` exists in the database
+
+## Quick start
 
 ```csharp
 using DKNet.EfCore.Relational.Helpers;
 
-// Get and open the database connection
-var conn = await dbContext.GetDbConnection();
+if (!await dbContext.TableExistsAsync<Product>())
+{
+    await dbContext.CreateTableAsync<Product>();
+}
 
-// Get schema and table name for an entity
-var (schema, tableName) = dbContext.GetTableName<MyEntity>();
-
-// Check if the table exists
-bool exists = await dbContext.TableExistsAsync<MyEntity>();
+var (schema, table) = dbContext.GetTableName<Product>();
 ```
 
-## API
+## Documentation
 
-- `GetDbConnection(this DbContext dbContext, CancellationToken cancellationToken = default)`: Returns an open
-  `DbConnection`.
-- `GetTableName<TEntity>(this DbContext dbContext)`: Returns the schema and table name for an entity type.
-- `TableExistsAsync<TEntity>(this DbContext dbContext, CancellationToken cancellationToken = default)`: Checks if the
-  table for an entity exists.
+Full method reference, gotchas, and provider notes: https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Relational.Helpers.md
 
 ## License
 
-MIT © 2026 drunkcoding
+MIT © drunkcoding
 
 ## Repository
 
-[https://github.com/baoduy/DKNet](https://github.com/baoduy/DKNet)
-
-## Contributing
-
-Pull requests and issues are welcome!
-
+https://github.com/baoduy/DKNet

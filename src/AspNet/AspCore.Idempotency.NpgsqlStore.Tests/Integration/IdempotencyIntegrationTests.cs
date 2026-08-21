@@ -8,6 +8,8 @@ using System.Net.Http.Json;
 using AspCore.Idempotency.ApiTests;
 using AspCore.Idempotency.NpgsqlStore.Tests.Fixtures;
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
+using DKNet.AspCore.Idempotency.Store;
 
 namespace AspCore.Idempotency.NpgsqlStore.Tests.Integration;
 

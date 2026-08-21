@@ -1,580 +1,303 @@
 # DKNet.SlimBus.Extensions
 
-**SlimMessageBus extensions for Entity Framework Core that provide a lightweight, high-performance alternative to MediatR, implementing CQRS patterns with automatic persistence and domain event integration for Domain-Driven Design applications.**
+CQRS and messaging glue on top of [SlimMessageBus](https://github.com/zarusz/SlimMessageBus), wired for EF Core. It
+gives command/query/event contracts a small set of fluent interfaces, saves the `DbContext` for you after a
+successful write, and forwards EF Core domain events onto the bus — without pulling in MediatR.
 
-## What is this project?
+## When to reach for it
 
-DKNet.SlimBus.Extensions provides a comprehensive integration between SlimMessageBus and Entity Framework Core, offering fluent interfaces for Commands, Queries, and Events while maintaining clean separation of concerns. It includes automatic change tracking, result handling, and domain event dispatching.
+Use this package when you already have (or want) EF Core aggregates raising domain events via
+`DKNet.EfCore.Events`, and you want a CQRS message pipeline in front of them that is:
 
-### Key Features
+- Lighter than MediatR (SlimMessageBus dispatch, no reflection-heavy pipeline behaviors to hand-roll).
+- Result-based rather than exception-based for expected business failures (`FluentResults`).
+- Self-saving: a command handler that succeeds doesn't need to call `SaveChangesAsync` itself.
 
-- **Fluent CQRS Interfaces**: Type-safe command, query, and event contracts
-- **Auto-Save Behavior**: Automatic EF Core change persistence after successful operations
-- **Result Handling**: Integrated FluentResults for consistent error handling
-- **Paged Queries**: Built-in pagination support for large result sets
-- **Domain Event Integration**: Seamless domain event publishing
-- **Pipeline Behaviors**: Extensible request/response pipeline
-- **Multiple Transports**: Support for in-memory, Azure Service Bus, and other providers
-- **Performance Optimized**: Lightweight alternative to MediatR with better performance
+If you don't use SlimMessageBus, or you don't need auto-save, this package doesn't buy you much — it is a thin
+adapter, not a general CQRS framework.
 
-## How it contributes to DDD and Onion Architecture
-
-### CQRS Implementation in Onion Architecture
-
-DKNet.SlimBus.Extensions implements the **Application Layer** patterns for CQRS while maintaining strict dependency inversion:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  Sends: Commands, Queries via IMessageBus.Send()               │
-│  No knowledge of handlers or EF Core                           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│                 (CQRS Handlers & Behaviors)                    │
-│                                                                 │
-│  📝 Command Handlers: IHandler<CreateOrder, Result<Guid>>      │
-│  📊 Query Handlers: IQueryHandler<GetOrders, OrderDto[]>       │
-│  🎭 Event Handlers: IEventHandler<OrderCreated>                │
-│  ⚡ EfAutoSavePostProcessor: Auto DbContext.SaveChanges()      │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  🏗️ Pure business logic, no messaging dependencies            │
-│  📋 Domain events raised by aggregates                         │
-│  🎯 Commands and queries defined in domain terms               │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                (Message Bus, Data Persistence)                 │
-│                                                                 │
-│  🚌 SlimMessageBus configuration and routing                   │
-│  🗄️ EF Core DbContext and repositories                        │
-│  📡 External message transport providers                       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Command/Query Separation**: Clear distinction between state-changing operations and read operations
-2. **Aggregate Coordination**: Commands operate on single aggregates, maintaining consistency boundaries
-3. **Domain Event Publishing**: Automatic event dispatching enables loose coupling between bounded contexts
-4. **Ubiquitous Language**: Messages and handlers use domain terminology
-5. **Business Logic Isolation**: Domain logic remains pure, free from infrastructure concerns
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Application layer defines message contracts, infrastructure implements routing
-2. **Technology Independence**: Domain and application layers unaware of SlimMessageBus specifics
-3. **Testability**: Easy to mock message bus and test handlers in isolation
-4. **Cross-Cutting Concerns**: Behaviors handle infrastructure concerns (persistence, logging, validation)
-5. **Scalability**: Separate read and write models enable independent scaling
-
-## How to use it
-
-### Installation
+## Install and minimum wiring
 
 ```bash
 dotnet add package DKNet.SlimBus.Extensions
 ```
 
-### Basic Configuration
+The package itself only depends on `SlimMessageBus`, `SlimMessageBus.Host`, `SlimMessageBus.Host.Interceptor`,
+`FluentResults`, `X.PagedList.EF` and (via project reference) `DKNet.EfCore.Events`. It does **not** bring in a
+transport provider — you add whichever `SlimMessageBus.Host.*` provider package your host needs (memory, Azure
+Service Bus, Kafka, …) and configure it yourself through SlimMessageBus's own builder.
+
+Minimum registration to get commands/queries dispatching and auto-saving against an EF Core `DbContext`:
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using DKNet.SlimBus.Extensions;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+using SlimMessageBus.Host.Serialization.SystemTextJson;
 
-public void ConfigureServices(IServiceCollection services)
-{
-    // Add EF Core DbContext
-    services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
-    
-    // Add SlimMessageBus with EF Core integration
-    services.AddSlimBusForEfCore(mbb =>
-    {
-        mbb.AddJsonSerializer();
-        
-        // In-memory bus for internal operations
-        mbb.AddChildBus("Memory", mb => 
-            mb.WithProviderMemory()
-              .AutoDeclareFrom(typeof(Program).Assembly));
-        
-        // Optional: External message bus for integration events
-        mbb.AddChildBus("External", mb =>
-            mb.WithProviderServiceBus(cfg => cfg.ConnectionString = serviceBusConnectionString)
-              .AutoDeclareFrom(typeof(Program).Assembly, consumerTypeFilter: t => t.Name.EndsWith("IntegrationHandler")));
-    });
-    
-    // Register handlers
-    services.AddScoped<CreateOrderHandler>();
-    services.AddScoped<GetOrdersHandler>();
-    services.AddScoped<OrderCreatedEventHandler>();
-}
+services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+
+// 1) Auto-save: SaveChanges the DbContext after a successful write request.
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+
+// 2) Wire SlimMessageBus itself — this part is plain SlimMessageBus, not this package.
+services.AddSlimMessageBus(mbb => mbb
+    .AddJsonSerializer()
+    .AddServicesFromAssembly(typeof(Program).Assembly) // discovers your Fluents handlers
+    .AddChildBus("Memory", bus => bus
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(Program).Assembly)));
 ```
 
-### Command Usage Examples
+`AddSlimBusEfCoreInterceptor<TDbContext>()` is the only call this package requires; everything else
+(`AddSlimMessageBus`, `WithProviderMemory`, `AddChildBus`, `AddJsonSerializer`, `AutoDeclareFrom`,
+`AddServicesFromAssembly`) is SlimMessageBus's own API. If you also want EF Core domain events forwarded onto the
+bus, add `AddSlimBusEventPublisher<TDbContext>()` (see [Domain event publishing](#domain-event-publishing)).
 
-#### 1. Simple Command (No Response)
+## Features
+
+### Commands without a response — `Fluents.Requests.INoResponse` / `IHandler<TRequest>`
+
+For writes that only need to signal success/failure, no payload back.
 
 ```csharp
 using DKNet.SlimBus.Extensions;
 using FluentResults;
 
-// Command definition
-public record DeactivateCustomerCommand(Guid CustomerId) : Fluents.Requests.INoResponse;
+public record DeactivateProduct(Guid ProductId) : Fluents.Requests.INoResponse;
 
-// Command handler
-public class DeactivateCustomerHandler : Fluents.Requests.IHandler<DeactivateCustomerCommand>
+internal sealed class DeactivateProductHandler(AppDbContext db)
+    : Fluents.Requests.IHandler<DeactivateProduct>
 {
-    private readonly ICustomerRepository _customerRepository;
-    
-    public DeactivateCustomerHandler(ICustomerRepository customerRepository)
+    public async Task<IResultBase> OnHandle(DeactivateProduct request, CancellationToken cancellationToken)
     {
-        _customerRepository = customerRepository;
-    }
-    
-    public async Task<IResultBase> Handle(DeactivateCustomerCommand request)
-    {
-        var customer = await _customerRepository.FindAsync(request.CustomerId);
-        if (customer == null)
-            return Result.Fail("Customer not found");
-        
-        if (!customer.CanBeDeactivated())
-            return Result.Fail("Customer cannot be deactivated");
-        
-        customer.Deactivate(); // Domain operation
-        _customerRepository.Update(customer);
-        
-        // Auto-save will persist changes automatically
+        var product = await db.Products.FindAsync([request.ProductId], cancellationToken);
+        if (product is null) return Result.Fail("Product not found");
+
+        product.Deactivate();
+        // No SaveChangesAsync call here — the auto-save interceptor does it after this returns Ok.
         return Result.Ok();
     }
 }
-
-// Usage in controller
-[ApiController]
-[Route("api/[controller]")]
-public class CustomersController : ControllerBase
-{
-    private readonly IMessageBus _messageBus;
-    
-    public CustomersController(IMessageBus messageBus)
-    {
-        _messageBus = messageBus;
-    }
-    
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeactivateCustomer(Guid id)
-    {
-        var command = new DeactivateCustomerCommand(id);
-        var result = await _messageBus.Send(command);
-        
-        return result.IsSuccess ? Ok() : BadRequest(result.Errors);
-    }
-}
 ```
 
-#### 2. Command with Response
+`Fluents.Requests.IHandler<TRequest>` is `IRequestHandler<TRequest, IResultBase>` constrained to
+`TRequest : INoResponse`, so `OnHandle` returns `Task<IResultBase>`.
+
+### Commands with a response — `Fluents.Requests.IWitResponse<TResponse>` / `IHandler<TRequest, TResponse>`
+
+For writes that need to hand back data (e.g. a new id).
 
 ```csharp
 using DKNet.SlimBus.Extensions;
 using FluentResults;
 
-// Command definition
-public record CreateOrderCommand(
-    Guid CustomerId, 
-    List<CreateOrderItem> Items, 
-    string ShippingAddress) : Fluents.Requests.IWitResponse<Result<Guid>>;
+public record CreateProduct(string Name, decimal Price) : Fluents.Requests.IWitResponse<Guid>;
 
-public record CreateOrderItem(Guid ProductId, int Quantity, decimal UnitPrice);
-
-// Command handler
-public class CreateOrderHandler : Fluents.Requests.IHandler<CreateOrderCommand, Result<Guid>>
+internal sealed class CreateProductHandler(AppDbContext db)
+    : Fluents.Requests.IHandler<CreateProduct, Guid>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly ICustomerRepository _customerRepository;
-    private readonly IProductRepository _productRepository;
-    
-    public CreateOrderHandler(
-        IOrderRepository orderRepository,
-        ICustomerRepository customerRepository,
-        IProductRepository productRepository)
+    public async Task<IResult<Guid>> OnHandle(CreateProduct request, CancellationToken cancellationToken)
     {
-        _orderRepository = orderRepository;
-        _customerRepository = customerRepository;
-        _productRepository = productRepository;
+        var product = new Product(request.Name, request.Price);
+        await db.Products.AddAsync(product, cancellationToken);
+        return Result.Ok(product.Id);
     }
-    
-    public async Task<IResult<Result<Guid>>> Handle(CreateOrderCommand request)
-    {
-        // Validate customer
-        var customer = await _customerRepository.FindAsync(request.CustomerId);
-        if (customer == null)
-            return Result.Ok(Result.Fail<Guid>("Customer not found"));
-        
-        if (!customer.CanPlaceOrders())
-            return Result.Ok(Result.Fail<Guid>("Customer cannot place orders"));
-        
-        // Validate products
-        var productIds = request.Items.Select(i => i.ProductId).ToList();
-        var products = await _productRepository.GetByIdsAsync(productIds);
-        
-        if (products.Count != productIds.Count)
-            return Result.Ok(Result.Fail<Guid>("Some products not found"));
-        
-        // Create domain entity
-        var order = Order.Create(
-            customerId: request.CustomerId,
-            shippingAddress: request.ShippingAddress);
-        
-        foreach (var item in request.Items)
-        {
-            var product = products.First(p => p.Id == item.ProductId);
-            order.AddItem(product, item.Quantity, item.UnitPrice);
-        }
-        
-        // Validate order
-        var validationResult = order.Validate();
-        if (validationResult.IsFailed)
-            return Result.Ok(Result.Fail<Guid>(validationResult.Errors.Select(e => e.Message)));
-        
-        // Save order
-        _orderRepository.Add(order);
-        
-        // Auto-save will persist changes and publish domain events
-        return Result.Ok(Result.Ok(order.Id));
-    }
-}
-
-// Usage in controller
-[HttpPost]
-public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
-{
-    var command = new CreateOrderCommand(
-        request.CustomerId,
-        request.Items.Select(i => new CreateOrderItem(i.ProductId, i.Quantity, i.UnitPrice)).ToList(),
-        request.ShippingAddress);
-    
-    var result = await _messageBus.Send(command);
-    
-    if (result.IsSuccess)
-        return CreatedAtAction(nameof(GetOrder), new { id = result.Value }, result.Value);
-    
-    return BadRequest(result.Errors);
 }
 ```
 
-### Query Usage Examples
+Callers get an `IResult<Guid>` back from `IMessageBus.Send(...)`; auto-save runs only if `IsSuccess` is `true`.
 
-#### 1. Simple Query
+### Single-item queries — `Fluents.Queries.IWitResponse<TResponse>` / `IHandler<TQuery, TResponse>`
+
+Reads never trigger auto-save (see [Auto-save](#auto-save-behavior)), regardless of any tracked changes the handler
+happens to make.
 
 ```csharp
 using DKNet.SlimBus.Extensions;
+using Microsoft.EntityFrameworkCore;
 
-// Query definition
-public record GetOrderQuery(Guid OrderId) : Fluents.Queries.IWitResponse<OrderDto>;
+public record GetProduct(Guid Id) : Fluents.Queries.IWitResponse<ProductDto>;
 
-// Query handler
-public class GetOrderHandler : Fluents.Queries.IHandler<GetOrderQuery, OrderDto>
+internal sealed class GetProductHandler(AppDbContext db)
+    : Fluents.Queries.IHandler<GetProduct, ProductDto>
 {
-    private readonly IReadRepository<Order> _orderRepository;
-    
-    public GetOrderHandler(IReadRepository<Order> orderRepository)
+    public async Task<ProductDto?> OnHandle(GetProduct request, CancellationToken cancellationToken)
     {
-        _orderRepository = orderRepository;
+        var product = await db.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        return product is null ? null : new ProductDto(product.Id, product.Name);
     }
-    
-    public async Task<OrderDto?> Handle(GetOrderQuery request)
-    {
-        return await _orderRepository
-            .GetProjection<OrderDto>()
-            .FirstOrDefaultAsync(o => o.Id == request.OrderId);
-    }
-}
-
-// Usage in controller
-[HttpGet("{id}")]
-public async Task<IActionResult> GetOrder(Guid id)
-{
-    var query = new GetOrderQuery(id);
-    var order = await _messageBus.Send(query);
-    
-    return order == null ? NotFound() : Ok(order);
 }
 ```
 
-#### 2. Paged Query
+Note the return type is `TResponse?`, not wrapped in `FluentResults` — a query answers "found / not found", it
+doesn't carry a business-failure result.
+
+### Paged queries — `Fluents.Queries.IWitPageResponse<TResponse>` / `IPageHandler<TQuery, TResponse>`
+
+Backed by `X.PagedList` / `X.PagedList.EF`, already a package dependency.
 
 ```csharp
 using DKNet.SlimBus.Extensions;
+using Microsoft.EntityFrameworkCore;
 using X.PagedList;
+using X.PagedList.EF;
 
-// Query definition
-public record GetCustomerOrdersQuery(
-    Guid CustomerId, 
-    int Page = 1, 
-    int PageSize = 20) : Fluents.Queries.IWitPageResponse<OrderSummaryDto>;
+public record GetProductsPage(int PageIndex, int PageSize) : Fluents.Queries.IWitPageResponse<ProductDto>;
 
-// Query handler
-public class GetCustomerOrdersHandler : Fluents.Queries.IPageHandler<GetCustomerOrdersQuery, OrderSummaryDto>
+internal sealed class GetProductsPageHandler(AppDbContext db)
+    : Fluents.Queries.IPageHandler<GetProductsPage, ProductDto>
 {
-    private readonly IReadRepository<Order> _orderRepository;
-    
-    public GetCustomerOrdersHandler(IReadRepository<Order> orderRepository)
-    {
-        _orderRepository = orderRepository;
-    }
-    
-    public async Task<IPagedList<OrderSummaryDto>> Handle(GetCustomerOrdersQuery request)
-    {
-        var query = _orderRepository
-            .GetProjection<OrderSummaryDto>()
-            .Where(o => o.CustomerId == request.CustomerId)
-            .OrderByDescending(o => o.CreatedOn);
-        
-        return await query.ToPagedListAsync(request.Page, request.PageSize);
-    }
-}
-
-// Usage in controller
-[HttpGet("customers/{customerId}/orders")]
-public async Task<IActionResult> GetCustomerOrders(
-    Guid customerId, 
-    [FromQuery] int page = 1, 
-    [FromQuery] int pageSize = 20)
-{
-    var query = new GetCustomerOrdersQuery(customerId, page, pageSize);
-    var orders = await _messageBus.Send(query);
-    
-    return Ok(new
-    {
-        Data = orders,
-        Page = orders.PageNumber,
-        PageSize = orders.PageSize,
-        TotalCount = orders.TotalItemCount,
-        TotalPages = orders.PageCount
-    });
+    public Task<IPagedList<ProductDto>> OnHandle(GetProductsPage request, CancellationToken cancellationToken) =>
+        db.Products.AsNoTracking()
+            .Select(p => new ProductDto(p.Id, p.Name))
+            .ToPagedListAsync(request.PageIndex, request.PageSize, null, cancellationToken);
 }
 ```
 
-### Event Handling Examples
+`ToPagedListAsync` (from `X.PagedList.EF`) counts and pages server-side; pass `null` for `totalSetCount` to let it
+run the count query itself, or supply a precomputed count to skip it.
 
-#### 1. Domain Event Handler
+### Event consumers — `Fluents.EventsConsumers.IHandler<TEvent>`
+
+A thin alias over SlimMessageBus's own `IConsumer<TEvent>`, so a handler for a domain event published through
+[Domain event publishing](#domain-event-publishing) looks like:
 
 ```csharp
+using DKNet.SlimBus.Extensions;
+
+public class ProductCreatedHandler : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
+{
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken)
+    {
+        // react to the event — e.g. send a notification
+        return Task.CompletedTask;
+    }
+}
+```
+
+### Auto-save behavior
+
+`AddSlimBusEfCoreInterceptor<TDbContext>()` registers an internal `IRequestHandlerInterceptor<,>` that runs after
+every request handler and, on success, saves any registered `DbContext` that has pending changes:
+
+- Runs only for **write requests** — types implementing `Fluents.Requests.INoResponse` or
+  `Fluents.Requests.IWitResponse<TResponse>`. Queries (`Fluents.Queries.*`) and raw SlimMessageBus
+  `IRequest<T>`/`IRequestHandler<,>` implementations are never auto-saved.
+- Skipped when the handler's response is `null`, or is an `IResultBase` with `IsSuccess == false` — a failed
+  command never persists partial state.
+- Iterates every `DbContext` type registered via `AddSlimBusEfCoreInterceptor<TDbContext>()` (you can call it once
+  per `DbContext` type if you have more than one), resolves each from the current scope, and for the ones with
+  `ChangeTracker.HasChanges()`, calls `AddNewEntitiesFromNavigations` then `SaveChangesWithConcurrencyHandlingAsync`
+  (both from `DKNet.EfCore.Extensions`) — the same save primitives used elsewhere in DKNet's EF Core stack.
+- Looks up an `IEfCoreExceptionHandler` keyed by the `DbContext`'s full type name first, falling back to an
+  unkeyed one, letting you plug in per-context or global concurrency-conflict handling.
+- Registered with `Order = int.MaxValue` (`IInterceptorWithOrder`), so it is meant to run after your own
+  interceptors in the SlimMessageBus interceptor pipeline.
+
+The interceptor and its `DbContext` type registry are internal types — you don't reference them directly; you
+opt in purely through `AddSlimBusEfCoreInterceptor<TDbContext>()`.
+
+### Pipeline behaviors / interceptors
+
+Because the auto-save behavior is just a SlimMessageBus `IRequestHandlerInterceptor<TRequest, TResponse>`, you can
+add your own the same way (validation, logging, authorization, …):
+
+```csharp
+using Microsoft.Extensions.Logging;
 using SlimMessageBus;
+using SlimMessageBus.Host.Interceptor;
 
-// Domain event (defined in domain layer)
-public record OrderCreatedEvent(Guid OrderId, Guid CustomerId, decimal TotalAmount, DateTime CreatedAt);
-
-// Event handler (application layer)
-public class OrderCreatedEventHandler : IEventHandler<OrderCreatedEvent>
+public class LoggingInterceptor<TRequest, TResponse>(ILogger<LoggingInterceptor<TRequest, TResponse>> logger)
+    : IRequestHandlerInterceptor<TRequest, TResponse>
 {
-    private readonly IEmailService _emailService;
-    private readonly ICustomerRepository _customerRepository;
-    private readonly ILogger<OrderCreatedEventHandler> _logger;
-    
-    public OrderCreatedEventHandler(
-        IEmailService emailService,
-        ICustomerRepository customerRepository,
-        ILogger<OrderCreatedEventHandler> logger)
-    {
-        _emailService = emailService;
-        _customerRepository = customerRepository;
-        _logger = logger;
-    }
-    
-    public async Task Handle(OrderCreatedEvent evt)
-    {
-        try
-        {
-            // Get customer details
-            var customer = await _customerRepository.FindAsync(evt.CustomerId);
-            if (customer == null)
-            {
-                _logger.LogWarning("Customer {CustomerId} not found for order {OrderId}", 
-                    evt.CustomerId, evt.OrderId);
-                return;
-            }
-            
-            // Send confirmation email
-            await _emailService.SendOrderConfirmationAsync(
-                customer.Email,
-                customer.FullName,
-                evt.OrderId,
-                evt.TotalAmount);
-            
-            _logger.LogInformation("Order confirmation sent for order {OrderId}", evt.OrderId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to process OrderCreated event for order {OrderId}", evt.OrderId);
-            throw; // Will be handled by message bus error handling
-        }
-    }
-}
-```
-
-#### 2. Integration Event Handler
-
-```csharp
-// Integration event for external systems
-public record CustomerOrderPlacedIntegrationEvent(
-    Guid CustomerId, 
-    Guid OrderId, 
-    decimal TotalAmount, 
-    string CustomerEmail,
-    DateTime OrderDate);
-
-// Integration event handler
-public class CustomerOrderPlacedIntegrationEventHandler : IEventHandler<CustomerOrderPlacedIntegrationEvent>
-{
-    private readonly IExternalCrmService _crmService;
-    private readonly IInventoryService _inventoryService;
-    
-    public async Task Handle(CustomerOrderPlacedIntegrationEvent evt)
-    {
-        // Update external CRM system
-        await _crmService.UpdateCustomerOrderHistoryAsync(evt.CustomerId, evt.OrderId, evt.TotalAmount);
-        
-        // Update inventory system
-        await _inventoryService.ReserveInventoryAsync(evt.OrderId);
-    }
-}
-
-// Publishing integration events from domain event handler
-public class OrderCreatedToIntegrationEventHandler : IEventHandler<OrderCreatedEvent>
-{
-    private readonly IMessageBus _messageBus;
-    private readonly ICustomerRepository _customerRepository;
-    
-    public async Task Handle(OrderCreatedEvent evt)
-    {
-        var customer = await _customerRepository.FindAsync(evt.CustomerId);
-        if (customer == null) return;
-        
-        var integrationEvent = new CustomerOrderPlacedIntegrationEvent(
-            evt.CustomerId,
-            evt.OrderId,
-            evt.TotalAmount,
-            customer.Email,
-            evt.CreatedAt);
-        
-        // Publish to external bus
-        await _messageBus.Publish(integrationEvent, "External");
-    }
-}
-```
-
-### Advanced Configuration Examples
-
-#### 1. Multi-Bus Configuration
-
-```csharp
-services.AddSlimBusForEfCore(mbb =>
-{
-    mbb.AddJsonSerializer();
-    
-    // Internal memory bus for domain events and commands
-    mbb.AddChildBus("Memory", mb =>
-        mb.WithProviderMemory()
-          .AutoDeclareFrom(typeof(Program).Assembly, 
-              consumerTypeFilter: t => !t.Name.Contains("Integration")));
-    
-    // Azure Service Bus for integration events
-    mbb.AddChildBus("ServiceBus", mb =>
-        mb.WithProviderServiceBus(cfg => cfg.ConnectionString = serviceBusConnectionString)
-          .AutoDeclareFrom(typeof(Program).Assembly,
-              consumerTypeFilter: t => t.Name.Contains("Integration")));
-    
-    // Redis for high-performance scenarios
-    mbb.AddChildBus("Redis", mb =>
-        mb.WithProviderRedis(cfg => cfg.ConnectionString = redisConnectionString)
-          .AutoDeclareFrom(typeof(Program).Assembly,
-              consumerTypeFilter: t => t.Name.Contains("Cache")));
-});
-```
-
-#### 2. Custom Behaviors
-
-```csharp
-// Custom validation behavior
-public class ValidationBehavior<TRequest, TResponse> : IRequestHandlerInterceptor<TRequest, TResponse>
-{
-    private readonly IValidator<TRequest> _validator;
-    
-    public ValidationBehavior(IValidator<TRequest> validator)
-    {
-        _validator = validator;
-    }
-    
     public async Task<TResponse> OnHandle(TRequest request, Func<Task<TResponse>> next, IConsumerContext context)
     {
-        var validationResult = await _validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            throw new ValidationException(errors);
-        }
-        
+        logger.LogInformation("Handling {RequestType}", typeof(TRequest).Name);
         return await next();
     }
-    
-    public int Order => 1; // Run before auto-save behavior
 }
 
-// Registration
-services.AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(ValidationBehavior<,>));
+services.AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(LoggingInterceptor<,>));
 ```
 
-## Best Practices
+`AddSlimBusEfCoreInterceptor<TDbContext>()` itself guards against double-registering the open generic
+`IRequestHandlerInterceptor<,>` — calling it again (e.g. for a second `DbContext`) only adds that type to the
+save registry, it won't add a second interceptor instance.
 
-### 1. Command Design
-- Keep commands focused on single business operations
-- Include all necessary data in the command (no database lookups in validation)
-- Use value objects for complex command parameters
-- Return meaningful business identifiers from commands
+### Transport / provider support
 
-### 2. Query Optimization
-- Use projections to reduce data transfer
-- Implement paging for large result sets
-- Cache frequently accessed read models
-- Consider read replicas for high-volume queries
+The package is transport-agnostic: it references `SlimMessageBus`, `SlimMessageBus.Host` and
+`SlimMessageBus.Host.Interceptor` only. It doesn't wire, recommend, or restrict any specific provider — the test
+suite uses `SlimMessageBus.Host.Memory` (`WithProviderMemory()`), but Azure Service Bus, Kafka, etc. are equally
+valid, added and configured entirely through SlimMessageBus's own `AddSlimMessageBus(...)` builder, independent of
+this package.
 
-### 3. Event Handling
-- Keep event handlers idempotent
-- Handle failures gracefully with proper logging
-- Use integration events for cross-bounded context communication
-- Avoid long-running operations in event handlers
+### Legacy: `RequestBase.ByUser`
 
-### 4. Error Handling
-- Use FluentResults for consistent error handling
-- Log errors at appropriate levels
-- Provide meaningful error messages for business rule violations
-- Handle infrastructure failures with retry policies
+`RequestBase` is a `[Obsolete]` base record with a `[JsonIgnore] string? ByUser` property. It is **never populated
+by this package** — it's retained only for existing consumers. The supported pattern for carrying the acting user
+is an `IContextualSource` attribute (e.g. `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions`) directly
+on the request, populated via `AddContextualRequestPopulation()`.
 
-### 5. Testing
-- Mock IMessageBus for unit testing controllers
-- Test handlers in isolation with proper setup
-- Use in-memory message bus for integration tests
-- Verify event publishing in handler tests
+## Configuration and defaults
 
-## Integration with Other DKNet Components
+| Call | What it does | Notes |
+|---|---|---|
+| `services.AddSlimBusEfCoreInterceptor<TDbContext>()` | Registers `TDbContext` for auto-save and registers the auto-save interceptor (once). | Call once per `DbContext` type if you have several. |
+| `services.AddSlimBusEventPublisher<TDbContext>()` | Registers `SlimBusEventPublisher` as the `IEventPublisher` for `TDbContext` and wires `DKNet.EfCore.Events`' save hook. | See below. |
+| `services.AddSlimMessageBus(...)` | SlimMessageBus's own bus/provider/serializer configuration. | Not part of this package; `AddJsonSerializer`, `AddChildBus`, `WithProviderMemory`, `AutoDeclareFrom`, `AddServicesFromAssembly` all come from SlimMessageBus host packages. |
 
-DKNet.SlimBus.Extensions integrates seamlessly with other DKNet components:
+There is no separate "options" object owned by this package — the only knobs are which `DbContext` type(s) you
+register and how you configure the SlimMessageBus builder itself.
 
-- **DKNet.EfCore.Events**: Automatic domain event dispatching
-- **DKNet.EfCore.Repos**: Repository pattern integration with auto-save
-- **DKNet.EfCore.Abstractions**: Entity and event interfaces
-- **DKNet.Fw.Extensions**: Utility methods and extensions
+## Composition with other DKNet packages
 
----
+- **`DKNet.EfCore.Events`** — `AddSlimBusEventPublisher<TDbContext>()` registers `SlimBusEventPublisher` (an
+  `IEventPublisher`) and calls that package's `AddEventPublisher<TDbContext, TImplementation>()`, which wires its
+  `EventHook` into `TDbContext`'s save pipeline. After a successful `SaveChangesAsync`, the hook collects the
+  aggregate's raised/declared domain events and calls every registered `IEventPublisher.PublishAsync(...)` —
+  `SlimBusEventPublisher` forwards each event onto `IMessageBus.Publish`, copying `IEventItem.AdditionalData` into
+  message headers (case-insensitive) when the event implements `IEventItem`.
+- **`DKNet.EfCore.Repos`** — that package's write repository is `[Obsolete]` ("retired — use
+  `DKNet.EfCore.Specifications`"), and this package never calls into it. The auto-save interceptor saves the
+  `DbContext` directly using the same `AddNewEntitiesFromNavigations` / `SaveChangesWithConcurrencyHandlingAsync`
+  extensions that repository used, so handlers can mutate entities through `DbContext` directly, through
+  `DKNet.EfCore.Specifications`' `IRepositorySpec`, or through your own repository — auto-save doesn't care, it
+  only looks at `ChangeTracker.HasChanges()`.
+- **`DKNet.EfCore.Abstractions`** — supplies the `IEventItem`/`EventItem` and `IEventPublisher` contracts that
+  `SlimBusEventPublisher` implements, and (via `DKNet.EfCore.Events`) the aggregate/domain-event machinery whose
+  output this package forwards onto the bus.
+- **`DKNet.Fw.Extensions`** — not referenced directly by this package. It flows in transitively through
+  `DKNet.EfCore.Extensions` (used by the auto-save interceptor for save/concurrency handling), so no separate
+  wiring is needed on your part.
 
-> 💡 **Performance Tip**: SlimMessageBus is significantly faster than MediatR with lower memory allocation. The auto-save behavior eliminates the need for explicit SaveChanges calls while maintaining transaction boundaries.
+## Gotchas and limits
+
+- **Query handlers that mutate the `DbContext` won't be saved.** Auto-save only fires for `INoResponse` /
+  `IWitResponse<T>` requests. If a `Fluents.Queries.*` handler adds/updates entities, nothing persists them —
+  by design, but easy to trip over if a "read" handler accidentally does a write.
+- **Raw SlimMessageBus requests bypass auto-save entirely.** A handler implementing `SlimMessageBus.IRequestHandler<,>`
+  directly (not through `Fluents.Requests`) is never recognized as a write request, so no save happens even on
+  success.
+- **No cross-`DbContext` transaction.** When more than one `DbContext` type is registered, each one with pending
+  changes is saved independently in a loop — if a later `DbContext`'s `SaveChangesAsync` throws, earlier ones have
+  already committed. There's no ambient/distributed transaction wrapping the set.
+- **The `DbContext` type registry is static process-wide state.** `AddSlimBusEfCoreInterceptor<TDbContext>()`
+  adds to a shared `HashSet<Type>`, not something scoped to one `IServiceCollection`/`ServiceProvider`. In a single
+  process that builds multiple service providers (e.g. parallel test fixtures), the registered `DbContext` types
+  accumulate across all of them.
+- **A `null` or failed response silently skips the save** — including exceptions caught by the handler and turned
+  into `Result.Fail(...)`. Unhandled exceptions instead propagate out through SlimMessageBus's own pipeline; this
+  package does not add exception handling around the handler call itself.
+- **Handlers should be stateless.** They're resolved per SlimMessageBus dispatch (typically from a DI scope);
+  don't cache request-specific state on the handler instance.
+
+## Source reference
+
+- Fluent interfaces: `src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs`
+- DI wiring: `src/SlimBus/DKNet.SlimBus.Extensions/SlimBusEfCoreSetup.cs`
+- Domain event publisher: `src/SlimBus/DKNet.SlimBus.Extensions/Handlers/SlimBusEventPublisher.cs`
+- Auto-save interceptor (internal): `src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/EfAutoSavePostInterceptor.cs`
+- Usage patterns verified against `src/SlimBus/SlimBus.Extensions.Tests/`

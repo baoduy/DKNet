@@ -5,6 +5,8 @@
 
 global using Xunit;
 global using Shouldly;
+global using DKNet.AspCore.Idempotency.Filtering;
+global using DKNet.AspCore.Idempotency.Store;
 global using DKNet.AspCore.Idempotency.MsSqlStore;
 global using DKNet.AspCore.Idempotency.MsSqlStore.Data;
 global using IdempotencyKeyEntity = DKNet.AspCore.Idempotency.Relational.Data.IdempotencyKeyEntity;

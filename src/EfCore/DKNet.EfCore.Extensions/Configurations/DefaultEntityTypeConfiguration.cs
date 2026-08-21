@@ -7,6 +7,7 @@
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Convertors;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

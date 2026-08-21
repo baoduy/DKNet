@@ -1,20 +1,30 @@
 # DKNet.AspCore.Idempotency.NpgsqlStore
 
-PostgreSQL persistent storage implementation for DKNet.AspCore.Idempotency.
+[![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Idempotency.NpgsqlStore.svg)](https://www.nuget.org/packages/DKNet.AspCore.Idempotency.NpgsqlStore/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview
+PostgreSQL-backed persistent store for `DKNet.AspCore.Idempotency`, built on the shared EF Core relational
+store (`DKNet.AspCore.Idempotency.Relational`).
 
-This library provides a PostgreSQL-backed storage implementation for idempotency keys, replacing the default distributed-cache storage. It uses Entity Framework Core 10 with the Npgsql provider, and detects concurrent duplicate inserts via Postgres's own unique-violation error code (`23505`) rather than message inspection.
+## ✨ Why use it?
 
-## Installation
+- **Persistent** – idempotency keys live in a Postgres `IdempotencyKeys` table, surviving app restarts.
+- **Atomic under concurrency** – a unique index on the composite key serializes duplicate requests in the
+  database itself; no application-level locking needed.
+- **Migrations included** – ships with its own EF Core migration and applies it automatically on first use,
+  independently per connection string.
+- **Multi-database ready** – register the store against several Postgres databases (e.g. per tenant) from the
+  same process; each one is prepared on its own.
+- **Npgsql-tuned** – retry-on-failure and split-query behaviour are configured out of the box.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.AspCore.Idempotency.NpgsqlStore
 ```
 
-## Quick Start
-
 ```csharp
+using DKNet.AspCore.Idempotency;
 using DKNet.AspCore.Idempotency.NpgsqlStore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,40 +33,24 @@ builder.Services.AddIdempotencyWithNpgsqlStore(
     builder.Configuration.GetConnectionString("IdempotencyDb")!,
     options =>
     {
-        options.Expiration = TimeSpan.FromHours(24);
+        options.Expiration = TimeSpan.FromHours(48);
         options.ConflictHandling = IdempotentConflictHandling.CachedResult;
     });
 
 var app = builder.Build();
 
-app.MapPost("/orders", CreateOrder).RequiredIdempotentKey();
+app.MapPost("/orders", CreateOrderAsync)
+    .RequiredIdempotentKey();
 
 app.Run();
 ```
 
-**appsettings.json:**
-```json
-{
-  "ConnectionStrings": {
-    "IdempotencyDb": "Host=localhost;Database=MyAppIdempotency;Username=app;Password=changeit"
-  }
-}
-```
+## 📖 Documentation
 
-## Database Schema
-
-A single `IdempotencyKeys` table, with a unique index (`UX_CompositeKey`) on `CompositeKey` that guarantees exactly one stored entry per idempotency key/endpoint/method combination, and a check constraint (`CK_StatusCode_Valid`) restricting `StatusCode` to the 100-599 range.
-
-## Concurrency Handling
-
-Concurrent requests with the same idempotency key race to insert; the loser's `DbUpdateException` is inspected for `PostgresException.SqlState == PostgresErrorCodes.UniqueViolation` ("23505") and swallowed, so only one entry is ever persisted — no application-level locking required.
-
-## Requirements
-
-- .NET 10.0+
-- PostgreSQL 13+
-- DKNet.AspCore.Idempotency (automatically included)
+Full guide — Postgres schema, concurrency behaviour, multi-database support, and how this store composes with
+the core and relational packages:
+[DKNet.AspCore.Idempotency.NpgsqlStore.md](https://github.com/baoduy/DKNet/blob/main/docs/AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md)
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT — see [LICENSE](https://opensource.org/licenses/MIT).

@@ -2,6 +2,7 @@ using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.AuditLogs.Internals;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 

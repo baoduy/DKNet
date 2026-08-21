@@ -1,324 +1,58 @@
 # DKNet.Svc.Encryption
 
-Light‑weight .NET encryption & cryptographic utilities focused on pragmatic application scenarios:
+[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-- Symmetric encryption (AES-CBC wrapper and modern AES-GCM)
-- Public key (RSA) encryption + signing
-- HMAC (SHA-256 / SHA-512) with cached keyed instances
-- Hashing (SHA-256 / SHA-512) with cached algorithm instances
-- Password‑based encryption (PBKDF2 + AES-CBC)
-- Base64 & Base64URL helpers (RFC 4648) with validation utilities
-- Opinionated DI registration helper
+Standalone, explicitly-invoked cryptography toolkit: AES-GCM encryption, RSA encrypt/sign, HMAC and SHA hashing, and
+Base64/Base64URL helpers, all operating on UTF-8 strings. For transparent EF Core column encryption instead, see
+`DKNet.EfCore.Encryption` — a different package.
 
-> ✅ High test coverage (>97% lines) – designed to be easily auditable.
+## Features
 
----
-
-## Contents
-
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Services & Interfaces](#services--interfaces)
-- [Examples](#examples)
-    - [AES (CBC wrapper)](#aes-cbc-wrapper)
-    - [AES-GCM (preferred)](#aes-gcm-preferred)
-    - [Password-based Encryption](#password-based-encryption)
-    - [RSA Encrypt / Sign](#rsa-encrypt--sign)
-    - [HMAC](#hmac)
-    - [Hashing](#hashing)
-    - [Base64 / Base64URL](#base64--base64url)
-- [Dependency Injection](#dependency-injection)
-- [Security Notes](#security-notes)
-- [Performance Notes](#performance-notes)
-- [Migration / Naming Notes](#migration--naming-notes)
-- [Testing / Coverage](#testing--coverage)
-- [Roadmap](#roadmap)
-- [License](#license)
-
----
+- `IAesGcmEncryption` — authenticated AES-256-GCM encryption with optional associated data
+- `IRsaEncryption` — RSA encrypt/decrypt (OAEP-SHA256) and sign/verify (PKCS1-SHA256), including public-key-only instances
+- `IHmacHashing` / `IShaHashing` — HMAC-SHA256/512 and SHA-256/512 compute + constant-time verify
+- `Base64StringExtensions` — Base64 and Base64URL encode/decode helpers
+- `IAesEncryption` (AES-CBC) kept for migration only — `[Obsolete]`, prefer AES-GCM
 
 ## Installation
 
-Add the NuGet package (placeholder ID – adjust to published package name):
-
-```
+```bash
 dotnet add package DKNet.Svc.Encryption
 ```
-
-Or reference the project directly in your solution.
-
----
 
 ## Quick Start
 
 ```csharp
-var services = new ServiceCollection();
-services.AddEncryptionServices();
-var provider = services.BuildServiceProvider();
+using DKNet.Svc.Encryption;
+using DKNet.Svc.Encryption.Ciphers;
 
-var aesGcm = provider.GetRequiredService<IAesGcmEncryption>();
-var cipher = aesGcm.EncryptString("hello world");
-var plain = aesGcm.DecryptString(cipher); // "hello world"
+builder.Services.AddEncryptionServices(); // AES-GCM, HMAC, SHA (AddRsaEncryption(key) separately if needed)
+
+public sealed class SecretStore(IAesGcmEncryption aesGcm)
+{
+    public string Protect(string plainText) => aesGcm.EncryptString(plainText);
+    public string Reveal(string cipherPackage) => aesGcm.DecryptString(cipherPackage);
+}
 ```
 
----
+## Migration — namespace changes in this release
 
-## Services & Interfaces
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
 
-| Interface                | Implementation           | Purpose                      | Authenticated? | Notes                                                                                                      |
-|--------------------------|--------------------------|------------------------------|----------------|------------------------------------------------------------------------------------------------------------|
-| `IAesEncryption`         | `AesEncryption`          | AES-CBC static IV wrapper    | ❌              | Deterministic; DO NOT use for multiple distinct plaintexts if confidentiality pattern matters. Prefer GCM. |
-| `IAesGcmEncryption`      | `AesGcmEncryption`       | Modern AES-GCM (AEAD)        | ✅              | Random nonce per message, key property, wrapper & direct methods.                                          |
-| `IPasswordAesEncryption` | `PasswordAesEncryption`  | PBKDF2 + AES-CBC             | ❌              | Salt + IV stored (salt:iv:cipher) → Base64. Good for secrets at rest.                                      |
-| `IRsaEncryption`         | `RsaEncryption`          | RSA 2048/4096 encrypt + sign | N/A            | OAEP-SHA256 + PKCS#1 signatures. Public-only instance via `FromPublicKey`.                                 |
-| `IShaHashing`            | `ShaHashing`             | SHA-256 / SHA-512 hashing    | n/a            | Cached algorithm instances, hex (uppercase) output.                                                        |
-| `IHmacHashing`           | `HmacHashing`            | HMAC (SHA-256 / SHA-512)     | n/a            | Caches keyed HMAC instances; Base64 or Hex.                                                                |
-| (Extensions)             | `Base64StringExtensions` | Base64 / Base64URL           | n/a            | Recommended. Static methods (not extension methods) — validation, encode/decode, URL-safe variant.        |
-| (Extensions, deprecated) | `Base65StringExtensions` | Base64 / Base64URL           | n/a            | `[Obsolete]` forwarder kept for source compatibility. Use `Base64StringExtensions` instead.                |
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `IAesEncryption`/`AesEncryption`, `IAesGcmEncryption`/`AesGcmEncryption`, `IRsaEncryption`/`RsaEncryption` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Ciphers` |
+| `IHmacHashing`/`HmacHashing`, `IShaHashing`/`ShaHashing` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Hashing` |
 
----
+`EncryptionSetup` (registration point) and `Base64StringExtensions`/`Base65StringExtensions`
+(the Base64/Base64URL encoding helpers) stay at `DKNet.Svc.Encryption`.
 
-## Examples
+## Documentation
 
-### AES (CBC wrapper)
-
-```csharp
-using var aes = new AesEncryption(); // new key+iv generated
-string key = aes.Key;                // Portable composite key (Base64(key):Base64(iv)) all Base64-wrapped
-var cipher = aes.EncryptString("sensitive");
-var back   = aes.DecryptString(cipher);
-
-// Reconstruct with key
-using var aes2 = new AesEncryption(key);
-var again = aes2.DecryptString(cipher); // "sensitive"
-```
-
-**Warning**: IV is reused per instance → encryption is deterministic. Do not use this pattern for unique large scale
-messaging. Prefer `IAesGcmEncryption`.
-
-### AES-GCM (preferred)
-
-```csharp
-using var gcm = new AesGcmEncryption();
-string key = gcm.Key; // Base64 key only (no IV/nonce stored)
-var cipher = gcm.EncryptString("hello");
-var plain  = gcm.DecryptString(cipher);
-
-// Associated Data (AAD)
-var aad = Encoding.UTF8.GetBytes("meta");
-var c2  = gcm.EncryptString("payload", aad);
-var p2  = gcm.DecryptString(c2, aad);
-```
-
-Wrapper methods enforcing same key:
-
-```csharp
-gcm.Encrypt("msg", gcm.Key); // OK
-gcm.Decrypt(cipher, gcm.Key); // OK
-```
-
-### Password-based Encryption
-
-```csharp
-IPasswordAesEncryption pbe = new PasswordAesEncryption();
-var password = "Sup3r$ecret";
-var cipher = pbe.Encrypt("secret-config-json", password);
-var json   = pbe.Decrypt(cipher, password);
-```
-
-Format: `Base64( Base64(salt):Base64(iv):Base64(cipher) )`.
-
-### RSA Encrypt / Sign
-
-```csharp
-using var rsa = new RsaEncryption();
-string publicKey  = rsa.PublicKey;            // Base64 (PKCS#1)
-string privateKey = rsa.PrivateKey!;          // Keep secure
-
-var cipher = rsa.Encrypt("api-key");
-var clear  = rsa.Decrypt(cipher);
-
-var sig = rsa.Sign("message");
-var publicOnly = RsaEncryption.FromPublicKey(publicKey);
-bool ok = publicOnly.Verify("message", sig); // true
-```
-
-### HMAC
-
-```csharp
-using IHmacHashing hmac = new HmacHashing();
-var macBase64 = hmac.Compute("body", "shared-secret");
-var macHex = hmac.Compute("body", "shared-secret", HmacAlgorithm.Sha512, asBase64:false);
-var valid = hmac.Verify("body", "shared-secret", macBase64); // true
-```
-
-### Hashing
-
-```csharp
-using IShaHashing hash = new ShaHashing();
-var sha256 = hash.ComputeHash("payload");           // Uppercase hex by default
-var sha512Lower = hash.ComputeHash("payload", HashAlgorithmKind.Sha512, upperCase:false);
-var ok = hash.VerifyHash("payload", sha256);
-```
-
-### Base64 / Base64URL
-
-`Base64StringExtensions` methods are **static**, not extension methods:
-
-```csharp
-var std = Base64StringExtensions.ToBase64String("hello");        // SGVsbG8=
-var plain = Base64StringExtensions.FromBase64String(std);        // hello
-
-var url = Base64StringExtensions.ToBase64UrlString("hello");     // SGVsbG8 (no '=')
-var plain2 = Base64StringExtensions.FromBase64UrlString(url);    // hello
-
-bool valid = Base64StringExtensions.IsBase64String(std);         // true
-```
-
----
-
-## Dependency Injection
-
-All cryptographic primitives are registered via the extension method:
-
-```csharp
-services.AddEncryptionServices();
-```
-
-Resolves:
-
-- `IAesEncryption`
-- `IAesGcmEncryption`
-- `IShaHashing`
-- `IHmacHashing`
-- `IPasswordAesEncryption`
-
-`IRsaEncryption` is not registered by `AddEncryptionServices()` — RSA needs a caller-supplied key, so it has its own
-opt-in extension:
-
-```csharp
-services.AddRsaEncryption(privateKeyBase64);
-```
-
-This registers `IRsaEncryption` as a **singleton** built from the Base64 encoded PKCS#1 private key you provide
-(source it from configuration or a key vault — never hardcode it). The same instance is returned for every
-resolution, so data encrypted/signed via one resolution can be decrypted/verified via another.
-
----
-
-## Security Notes
-
-| Concern                   | Guidance                                                                                                                                                                 |
-|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| AES-CBC (`AesEncryption`) | Reuses IV per instance. Deterministic ciphertext → pattern leakage. Use only for niche deterministic needs or replace with per-call IV logic if you modify.              |
-| AES-GCM                   | Preferred for confidentiality + integrity. Nonce generated automatically (12 bytes). Do not reuse nonce+key pair manually.                                               |
-| RSA                       | Use for small payloads (keys, tokens). Do not encrypt large blobs; instead encrypt a random AES key and use symmetric encryption for data.                               |
-| Password-based            | PBKDF2 iterations default (tunable) – ensure adequate iteration count for your threat model (100k baseline).                                                             |
-| Hashing                   | Only strong SHA variants included (no MD5/SHA1).                                                                                                                         |
-| HMAC                      | Safe for message authentication. Keep shared secret length ≥ 32 bytes for SHA-256.                                                                                       |
-| Base64 Validation         | `IsBase64String` is strict (length multiple of 4, proper padding, character set). Use before decoding untrusted input if you need boolean outcome instead of exceptions. |
-
-### Key Handling
-
-- Persist keys you want to reuse (e.g. `AesGcmEncryption.Key` or RSA private key).
-- Protect RSA private keys with OS secrets vault, Azure Key Vault, AWS KMS, etc.
-- Rotate keys periodically (design hook not included – compose externally).
-
-### Recommended Defaults
-
-| Scenario                           | Recommended API                                                                       |
-|------------------------------------|---------------------------------------------------------------------------------------|
-| General data at rest               | `IAesGcmEncryption` (store key securely)                                              |
-| Deterministic encryption required* | Wrap Aes with custom per-call IV logic or use format-preserving scheme (not included) |
-| Password derives encryption key    | `IPasswordAesEncryption`                                                              |
-| Message authentication             | `IHmacHashing`                                                                        |
-| Short secret exchange              | `IRsaEncryption` + `IAesGcmEncryption` hybrid                                         |
-
-\* Consider whether deterministic encryption is truly necessary.
-
----
-
-## Performance Notes
-
-- Hash & HMAC services cache algorithm instances / keyed HMAC objects → fewer allocations under load.
-- AES-GCM instance reused (keyed) – per-call ephemeral nonce & buffers.
-- Avoid sharing a single `AesEncryption` instance across many threads if you later add per-call IV logic; current
-  deterministic approach is thread-safe for reads due to ephemeral encryptors.
-
----
-
-## Migration / Naming Notes
-
-Earlier internal drafts used names like `HashGenerator` / `HmacGenerator`; these evolved to `ShaHashing` / `HmacHashing`
-to signal narrow scope. If you had earlier package versions:
-
-- Replace `IHashGenerator` → `IShaHashing`
-- Replace `IHmacGenerator` → `IHmacHashing`
-- AES-GCM wrapper methods (`Encrypt/Decrypt` with key parameter) now validate the key instead of silently using provided
-  mismatched keys.
-
----
-
-## Testing / Coverage
-
-Extensive xUnit + Shouldly tests cover:
-
-- All happy paths + error paths (invalid keys, tampering, disposal)
-- Base64 / Base64URL edge cases & Unicode
-- Associated data success & mismatch (AES-GCM)
-- DI registration
-
-To run tests with coverage (using XPlat collector):
-
-```bash
-cd path/to/src
- dotnet test Services/DKNet.Svc.Encryption.Tests/DKNet.Svc.Encryption.Tests.csproj \
-  --settings coverage.runsettings --collect:"XPlat Code Coverage"
-```
-
-Cobertura report (example): `TestResults/<guid>/coverage.cobertura.xml`.
-
----
-
-## Roadmap
-
-| Item                                                                      | Status       |
-|---------------------------------------------------------------------------|--------------|
-| Add per-call IV CBC variant                                               | Planned      |
-| Optional key rotation helpers                                             | Planned      |
-| Streaming large-file encrypt/decrypt utilities                            | Planned      |
-| Support Argon2id for password KDF (when BCL available / via optional dep) | Under review |
-| Add MD5 / SHA1 (explicit opt-in only)                                     | Not planned  |
-
----
-
-## License
-
-Specify your license (e.g. MIT) here.
-
----
-
-## Disclaimer
-
-This library streamlines common application crypto tasks but is **not** a substitute for a full security review. For
-high-risk / compliance contexts (PCI, HIPAA, FIPS) involve a qualified cryptographer and review threat models.
-
----
-
-## Contributing
-
-PRs welcome. Please include:
-
-- Unit tests for new branches
-- XML docs for public members
-- Justification for any new algorithms / modes
-
----
-
-## Support
-
-Open an issue with reproduction steps. Security concerns: disclose privately first.
-
----
-Enjoy building securely! 🔐
-
+Full feature reference, configuration, and gotchas:
+https://github.com/baoduy/DKNet/blob/dev/docs/Services/DKNet.Svc.Encryption.md

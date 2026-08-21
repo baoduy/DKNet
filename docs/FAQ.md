@@ -38,7 +38,7 @@ DKNet Framework follows semantic versioning and maintains high code coverage (99
 - **Documentation**: [Complete Documentation](README.md)
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
-- **Examples**: [SlimBus Template](../src/Templates/SlimBus.ApiEndpoints/)
+- **Examples**: SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
 
 ---
 
@@ -109,16 +109,16 @@ services.AddDbContext<CatalogContext>(options =>
 services.AddDbContext<IdentityContext>(options => 
     options.UseSqlServer(identityConnectionString));
 
-services.AddDKNetRepositories<CatalogContext>();
-services.AddDKNetRepositories<IdentityContext>();
+services.AddSpecRepo<CatalogContext>();
+services.AddSpecRepo<IdentityContext>();
 ```
 
 ### How do I handle multi-tenancy?
 
-DKNet provides built-in multi-tenancy support:
-1. **Implement ITenantEntity** on your entities
-2. **Configure tenant provider** in DI
-3. **Repositories automatically filter** by tenant
+DKNet provides built-in multi-tenancy support via `DKNet.EfCore.DataAuthorization`:
+1. **Implement `IOwnedBy`** on your entities
+2. **Register an `IDataOwnerProvider`** in DI via `AddDataOwnerProvider<TDbContext, TProvider>()`
+3. **A global query filter automatically scopes** every query by the current owner
 
 See [Multi-tenant Example](Examples/README.md#multi-tenant-application) for details.
 
@@ -136,10 +136,12 @@ DKNet includes several performance optimizations:
 
 ### Do I need MediatR?
 
-The SlimBus template uses a lightweight message bus, but you can use MediatR:
+No. DKNet's CQRS/messaging package, `DKNet.SlimBus.Extensions`, is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not use or depend on MediatR. Nothing prevents you from using MediatR instead (or alongside it) in your own application, but DKNet does not ship a MediatR integration package — register handlers through SlimBus:
 ```csharp
-services.AddMediatR(typeof(CreateProductHandler));
-services.AddDKNetMediatRIntegration();
+services.AddSlimMessageBus(mbb => mbb
+    .AddChildBus("Memory", builder => builder
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ### How do I handle command validation?
@@ -164,9 +166,10 @@ Domain events are dispatched when `SaveChangesAsync()` is called on the DbContex
 
 Yes, all event handlers support async operations:
 ```csharp
-public class ProductCreatedHandler : IDomainEventHandler<ProductCreatedEvent>
+// Consumed on the bus once AddSlimBusEventPublisher<AppDbContext>() forwards it — see Configuration & Setup.
+public class ProductCreatedHandler(IEmailService _emailService) : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    public async Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
+    public async Task OnHandle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
     {
         await _emailService.SendNotificationAsync(...);
     }
@@ -204,7 +207,7 @@ Domain events are designed to be lightweight:
 
 ```csharp
 // Projection example
-var results = await repository.Gets()
+var results = await repository.Query()
     .Select(p => new ProductDto { Id = p.Id, Name = p.Name })
     .ToListAsync();
 ```
@@ -240,14 +243,14 @@ DKNet promotes testability:
 public async Task CreateProduct_ShouldRaiseEvent()
 {
     // Arrange
-    var product = new Product("Test", 10.0m, "user");
+    var product = Product.Create("Test", 10.0m, "user");
     
     // Act
     product.UpdatePrice(15.0m, "user");
     
     // Assert
-    var events = product.GetUncommittedEvents();
-    events.Should().ContainSingle<ProductPriceChangedEvent>();
+    var (events, _) = product.GetEvents();
+    events.Should().ContainSingle().Which.Should().BeOfType<ProductPriceChangedEvent>();
 }
 ```
 
@@ -255,17 +258,16 @@ public async Task CreateProduct_ShouldRaiseEvent()
 
 ```csharp
 [Test]
-public async Task Repository_ShouldFilterByTenant()
+public async Task Query_ShouldFilterByOwner()
 {
-    // Arrange
-    var tenantProvider = new Mock<ITenantProvider>();
-    tenantProvider.Setup(x => x.GetCurrentTenant()).Returns("tenant1");
-    
-    var repository = new TenantProductRepository(context, tenantProvider.Object);
-    
-    // Act & Assert
-    var products = await repository.GetAllAsync();
-    products.Should().OnlyContain(p => p.TenantId == "tenant1");
+    // Arrange — a fake IDataOwnerProvider scoping every query to "tenant1"
+    var ownerProvider = new Mock<IDataOwnerProvider>();
+    ownerProvider.Setup(x => x.GetOwnershipKey()).Returns("tenant1");
+
+    // Act & Assert — the global query filter registered by AddDataOwnerProvider<TDbContext, TProvider>()
+    // scopes every query to the current owner automatically; no per-query filtering code needed.
+    var products = await context.Set<Product>().ToListAsync();
+    products.Should().OnlyContain(p => p.OwnedBy == "tenant1");
 }
 ```
 
@@ -317,23 +319,23 @@ DKNet is designed for scale:
 This usually indicates missing service registration:
 ```csharp
 // Ensure you've registered all required services
-services.AddDKNetRepositories<AppDbContext>();
-services.AddDKNetSlimBusIntegration();
-services.AddDKNetBlobStorage(builder => /* configuration */);
+services.AddSpecRepo<AppDbContext>();
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+services.AddAzureStorageAdapter(configuration); // or AddS3BlobService / AddLocalDirectoryBlobService
 ```
 
 ### Domain events not firing
 
 Check these common issues:
 1. **SaveChangesAsync called**: Events dispatch during save
-2. **Event handlers registered**: Use `AddDKNetEventHandlers()`
+2. **Event publisher registered**: Use `AddEventPublisher<TDbContext, TImplementation>()` (`DKNet.EfCore.Events`), or `AddSlimBusEventPublisher<TDbContext>()` to forward events onto SlimMessageBus
 3. **Async handlers**: Ensure proper async/await usage
 
 ### Repository queries not working
 
 Common issues:
 1. **DbContext registration**: Ensure context is registered in DI
-2. **Repository registration**: Call `AddDKNetRepositories<TContext>()`
+2. **Repository registration**: Call `AddSpecRepo<TContext>()`
 3. **Specifications**: Check expression syntax for specifications
 
 ### Poor query performance

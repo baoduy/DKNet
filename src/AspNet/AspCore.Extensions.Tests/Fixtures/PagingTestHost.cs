@@ -1,4 +1,5 @@
 using AspCore.Extensions.Tests.TestEntities;
+using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.EfCore.Specifications;
 using Mapster;
 using MapsterMapper;

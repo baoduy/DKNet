@@ -3,6 +3,8 @@ using DKNet.EfCore.DataAuthorization.Internals;
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Hooks;
 using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;

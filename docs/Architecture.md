@@ -1,83 +1,49 @@
 # Architecture Guide
 
-This guide explains the architectural principles, patterns, and design decisions behind the DKNet Framework.
+This guide explains the architectural principles behind the DKNet Framework, and how they map onto its actual
+packages and types — every type and API name below is real and grep-verified against `src/`, not illustrative.
 
 ## 📋 Table of Contents
 
 - [Architectural Overview](#architectural-overview)
 - [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
 - [Onion Architecture](#onion-architecture)
-- [CQRS Pattern](#cqrs-pattern)
+- [CQRS via DKNet.SlimBus.Extensions](#cqrs-via-dknetslimbusextensions)
 - [Event-Driven Architecture](#event-driven-architecture)
-- [Repository Pattern](#repository-pattern)
-- [Dependency Injection](#dependency-injection)
+- [Specification Pattern](#specification-pattern)
 - [Cross-Cutting Concerns](#cross-cutting-concerns)
 
 ---
 
 ## 🏗️ Architectural Overview
 
-DKNet Framework is built on the foundation of **Domain-Driven Design (DDD)** principles and implements the **Onion Architecture** pattern. This approach ensures:
-
-- **Maintainability**: Clear separation of concerns and dependencies
-- **Testability**: Business logic isolated from infrastructure concerns
-- **Flexibility**: Infrastructure can be easily replaced or extended
-- **Scalability**: Modular design supports horizontal and vertical scaling
-
-### Core Architectural Principles
-
-1. **Dependency Inversion**: High-level modules don't depend on low-level modules
-2. **Single Responsibility**: Each component has one reason to change
-3. **Open/Closed Principle**: Open for extension, closed for modification
-4. **Interface Segregation**: Clients depend only on interfaces they use
-5. **Don't Repeat Yourself**: Common functionality is centralized
-
-### Architecture Diagram
+DKNet Framework is a suite of independent .NET NuGet packages built around **Domain-Driven Design (DDD)** and the
+**Onion Architecture** pattern. Rather than a single application skeleton, DKNet expresses these patterns at
+**package boundaries**: each ring of the onion is a separate, opt-in package, so a consuming application pulls in
+only what it needs and can swap an implementation (a blob provider, an idempotency store) without touching domain
+code.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      🌐 Presentation Layer                       │
-│                 (Controllers, API Endpoints, UI)                │
-│                                                                 │
-│  📋 Minimal API Endpoints                                        │
-│  📡 REST API Controllers                                         │
-│  🔍 GraphQL Endpoints (optional)                                │
-│  📱 Blazor Components (optional)                                │
+│              (Minimal API endpoints, DKNet.AspCore.*)            │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
 │                 🎯 Application Layer                            │
-│            (Application Services, Command/Query Handlers)       │
-│                                                                 │
-│  📨 CQRS Commands & Queries                                     │
-│  ✅ Validation (FluentValidation)                               │
-│  🔄 Data Transformation                                          │
-│  📋 Application Services                                         │
-│  🗃️ DTOs and ViewModels                                         │
+│         DKNet.SlimBus.Extensions (CQRS handlers, results)       │
+│         DKNet.Svc.* (blob storage, encryption, PDF, transform)  │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
 │                    💼 Domain Layer                              │
-│              (Entities, Value Objects, Domain Services)         │
-│                                                                 │
-│  🏢 Aggregate Roots                                             │
-│  📊 Entities & Value Objects                                    │
-│  📋 Domain Events                                               │
-│  🔒 Business Rules & Logic                                      │
-│  📐 Domain Services                                             │
-│  🔧 Specifications                                              │
+│   Entities/AuditedEntity + domain events (DKNet.EfCore.Abstractions) │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────┐
 │                   🗄️ Infrastructure Layer                       │
-│         (Data Access, External Services, Cross-cutting)         │
-│                                                                 │
-│  🗃️ Entity Framework Core                                       │
-│  📁 Repository Implementations                                  │
-│  📨 Message Bus Integration                                     │
-│  🗂️ File Storage Services                                       │
-│  🔐 Authentication Providers                                    │
-│  📊 Logging & Monitoring                                        │
+│   DKNet.EfCore.Specifications (queries/writes), DKNet.EfCore.Hooks, │
+│   DKNet.EfCore.Events, DataAuthorization, Encryption, AuditLogs  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -85,983 +51,182 @@ DKNet Framework is built on the foundation of **Domain-Driven Design (DDD)** pri
 
 ## 🎯 Domain-Driven Design (DDD)
 
-DDD is a software development approach that focuses on the core business domain and domain logic. DKNet implements DDD through several key concepts:
+DDD focuses modeling on the core business domain. DKNet supports this with rich, event-raising entities rather than
+anemic data bags — see [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) for the full contract
+surface.
 
-### Ubiquitous Language
+### Ubiquitous language and rich behavior
 
-All code uses the same terminology as domain experts:
-
-```csharp
-// Good: Uses business terminology
-public class Order
-{
-    public void PlaceOrder(Customer customer, IEnumerable<OrderItem> items)
-    {
-        ValidateCustomerCanPlaceOrder(customer);
-        CalculateTotalAmount(items);
-        AddEvent(new OrderPlacedEvent(Id, customer.Id));
-    }
-}
-
-// Avoid: Technical terminology that doesn't match business
-public class OrderEntity
-{
-    public void Insert(CustomerEntity customer, List<OrderItemEntity> items)
-    {
-        // Technical implementation details
-    }
-}
-```
-
-### Bounded Contexts
-
-DKNet organizes code into bounded contexts, each with its own models:
-
-```
-src/
-├── Sales/              # Sales Bounded Context
-│   ├── Orders/
-│   ├── Customers/
-│   └── Products/
-├── Inventory/          # Inventory Bounded Context
-│   ├── Stock/
-│   ├── Warehouses/
-│   └── Suppliers/
-└── Billing/            # Billing Bounded Context
-    ├── Invoices/
-    ├── Payments/
-    └── TaxCalculation/
-```
-
-### Aggregate Roots
-
-Aggregates ensure consistency boundaries:
+State changes through intention-revealing methods that enforce invariants and raise events, not public setters:
 
 ```csharp
-[Table("Orders", Schema = "sales")]
-public class Order : AggregateRoot
-{
-    private readonly List<OrderItem> _items = new();
+using DKNet.EfCore.Abstractions.Entities;
 
-    public Order(string customerName, string shippingAddress, string createdBy)
-        : base(Guid.NewGuid(), createdBy)
+public class Product : AuditedEntity // Guid-keyed, audit-tracked, event-capable
+{
+    private Product() { }
+
+    public static Product Create(string name, decimal price, string createdBy)
     {
-        CustomerName = customerName;
-        ShippingAddress = shippingAddress;
-        Status = OrderStatus.Draft;
+        var product = new Product { Name = name, Price = price, IsActive = true };
+        product.SetCreatedBy(createdBy);
+        product.AddEvent(new ProductCreatedEvent(product.Id));
+        return product;
     }
 
-    public string CustomerName { get; private set; }
-    public string ShippingAddress { get; private set; }
-    public OrderStatus Status { get; private set; }
-    public decimal TotalAmount { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public decimal Price { get; private set; }
+    public bool IsActive { get; private set; }
 
-    public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
-
-    public void AddItem(string productName, decimal unitPrice, int quantity, string userId)
+    public void UpdatePrice(decimal newPrice, string userId)
     {
-        if (Status != OrderStatus.Draft)
-            throw new InvalidOperationException("Cannot modify confirmed order");
+        if (!IsActive) throw new InvalidOperationException("Cannot update price for an inactive product");
 
-        var item = new OrderItem(productName, unitPrice, quantity);
-        _items.Add(item);
-        
-        RecalculateTotal();
+        Price = newPrice;
         SetUpdatedBy(userId);
-        
-        AddEvent(new OrderItemAddedEvent(Id, item.ProductName, item.Quantity));
-    }
-
-    public void ConfirmOrder(string userId)
-    {
-        if (Status != OrderStatus.Draft)
-            throw new InvalidOperationException("Order is already confirmed");
-
-        if (!_items.Any())
-            throw new InvalidOperationException("Cannot confirm empty order");
-
-        Status = OrderStatus.Confirmed;
-        SetUpdatedBy(userId);
-        
-        AddEvent(new OrderConfirmedEvent(Id, CustomerName, TotalAmount));
-    }
-
-    private void RecalculateTotal()
-    {
-        TotalAmount = _items.Sum(item => item.TotalPrice);
+        AddEvent(new ProductPriceChangedEvent(Id, newPrice));
     }
 }
+
+public record ProductCreatedEvent(Guid ProductId);
+public record ProductPriceChangedEvent(Guid ProductId, decimal NewPrice);
 ```
 
-### Value Objects
+There is no separate `AggregateRoot` type shipped by DKNet — `Entity` / `AuditedEntity` (both in
+`DKNet.EfCore.Abstractions`) already carry the domain-event queue (`IEventEntity.AddEvent`) and, for
+`AuditedEntity`, creation/modification tracking. A consistency boundary in DKNet is simply an entity you choose to
+treat as one — model the entity graph so that only the root is fetched and saved directly by application code.
 
-Immutable objects that represent concepts:
+### Bounded contexts
 
-```csharp
-public record Money
-{
-    public Money(decimal amount, string currency)
-    {
-        if (amount < 0)
-            throw new ArgumentException("Amount cannot be negative");
-        
-        if (string.IsNullOrEmpty(currency))
-            throw new ArgumentException("Currency is required");
-
-        Amount = amount;
-        Currency = currency.ToUpperInvariant();
-    }
-
-    public decimal Amount { get; }
-    public string Currency { get; }
-
-    public Money Add(Money other)
-    {
-        if (Currency != other.Currency)
-            throw new InvalidOperationException("Cannot add different currencies");
-
-        return new Money(Amount + other.Amount, Currency);
-    }
-
-    public static Money Zero(string currency) => new(0, currency);
-}
-
-public record Address
-{
-    public Address(string street, string city, string state, string zipCode, string country)
-    {
-        Street = street ?? throw new ArgumentNullException(nameof(street));
-        City = city ?? throw new ArgumentNullException(nameof(city));
-        State = state ?? throw new ArgumentNullException(nameof(state));
-        ZipCode = zipCode ?? throw new ArgumentNullException(nameof(zipCode));
-        Country = country ?? throw new ArgumentNullException(nameof(country));
-    }
-
-    public string Street { get; }
-    public string City { get; }
-    public string State { get; }
-    public string ZipCode { get; }
-    public string Country { get; }
-
-    public override string ToString() => $"{Street}, {City}, {State} {ZipCode}, {Country}";
-}
-```
-
-### Domain Services
-
-Complex business logic that doesn't belong to a single entity:
-
-```csharp
-public interface IPricingService
-{
-    Task<Money> CalculatePriceAsync(Product product, Customer customer, int quantity);
-}
-
-public class PricingService : IPricingService
-{
-    private readonly ICustomerRepository _customerRepository;
-    private readonly IDiscountRepository _discountRepository;
-
-    public PricingService(ICustomerRepository customerRepository, IDiscountRepository discountRepository)
-    {
-        _customerRepository = customerRepository;
-        _discountRepository = discountRepository;
-    }
-
-    public async Task<Money> CalculatePriceAsync(Product product, Customer customer, int quantity)
-    {
-        var basePrice = product.Price.Multiply(quantity);
-        
-        var discounts = await _discountRepository.GetActiveDiscountsAsync(customer.Id, product.Id);
-        var discountAmount = CalculateDiscountAmount(basePrice, discounts);
-        
-        return basePrice.Subtract(discountAmount);
-    }
-
-    private Money CalculateDiscountAmount(Money basePrice, IEnumerable<Discount> discounts)
-    {
-        // Complex discount calculation logic
-        return discounts.Aggregate(Money.Zero(basePrice.Currency), 
-            (total, discount) => total.Add(discount.CalculateDiscount(basePrice)));
-    }
-}
-```
+Within a solution, models are organized into bounded contexts, each with its own `DbContext` and entity set.
+Persistence is reached only through [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md)'s
+`IRepositorySpec`, so domain code never depends on EF Core directly, and application orchestration runs through
+[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) handlers that load entities, invoke their
+behavior, and let the auto-save interceptor persist the result.
 
 ---
 
 ## 🧅 Onion Architecture
 
-The Onion Architecture ensures that dependencies flow inward, making the domain layer independent of infrastructure concerns.
+Dependencies always flow inward toward the domain. DKNet expresses this at the package level, not via a single
+application project:
 
-### Layer Responsibilities
+1. **Domain layer (core)** — entities, value objects, and domain logic with no infrastructure dependencies. Anchored
+   by [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) (`Entity`, `AuditedEntity`, `IEventEntity`).
+2. **Application layer** — orchestrates the domain through command/query handlers. Realized by
+   [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) and the `DKNet.Svc.*` service adapters.
+3. **Infrastructure layer** — implements interfaces declared by inner layers:
+   [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) for persistence, plus the SaveChanges
+   interceptor pipeline ([`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md),
+   [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md),
+   [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md),
+   [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md)).
+4. **Presentation layer** — [`DKNet.AspCore.*`](./AspNetCore/README.md) minimal-API endpoints that depend only on
+   the application layer.
 
-#### 1. Domain Layer (Core)
-- **Purpose**: Contains business entities, value objects, and domain logic
-- **Dependencies**: None (pure business logic)
-- **Examples**: `Product`, `Order`, `Customer`, domain events
-
-```csharp
-// Domain Entity - No infrastructure dependencies
-public class Product : AggregateRoot
-{
-    public Product(string name, Money price, string description, string createdBy)
-        : base(Guid.NewGuid(), createdBy)
-    {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        Price = price ?? throw new ArgumentNullException(nameof(price));
-        Description = description ?? string.Empty;
-        IsActive = true;
-    }
-
-    public string Name { get; private set; }
-    public Money Price { get; private set; }
-    public string Description { get; private set; }
-    public bool IsActive { get; private set; }
-
-    public void UpdatePrice(Money newPrice, string userId)
-    {
-        if (!IsActive)
-            throw new InvalidOperationException("Cannot update price for inactive product");
-
-        var oldPrice = Price;
-        Price = newPrice;
-        SetUpdatedBy(userId);
-
-        AddEvent(new ProductPriceChangedEvent(Id, oldPrice, newPrice));
-    }
-
-    public void Deactivate(string userId)
-    {
-        IsActive = false;
-        SetUpdatedBy(userId);
-        AddEvent(new ProductDeactivatedEvent(Id, Name));
-    }
-}
-```
-
-#### 2. Application Layer
-- **Purpose**: Orchestrates domain objects and coordinates with infrastructure
-- **Dependencies**: Domain layer only
-- **Examples**: Command/query handlers, application services
-
-```csharp
-// Application Service - Orchestrates domain objects
-public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
-{
-    private readonly IProductRepository _repository;
-    private readonly IPricingService _pricingService;
-    private readonly IMapper _mapper;
-
-    public CreateProductHandler(
-        IProductRepository repository,
-        IPricingService pricingService,
-        IMapper mapper)
-    {
-        _repository = repository;
-        _pricingService = pricingService;
-        _mapper = mapper;
-    }
-
-    public async Task<ProductResult> Handle(CreateProductCommand request, CancellationToken cancellationToken)
-    {
-        // Business validation
-        if (await _repository.ExistsWithNameAsync(request.Name))
-            throw new BusinessException($"Product with name '{request.Name}' already exists");
-
-        // Create domain entity
-        var price = new Money(request.Price, request.Currency);
-        var product = new Product(request.Name, price, request.Description, request.UserId);
-
-        // Apply business rules through domain service
-        var validatedPrice = await _pricingService.ValidatePriceAsync(product);
-        if (validatedPrice != price)
-        {
-            product.UpdatePrice(validatedPrice, request.UserId);
-        }
-
-        // Persist
-        await _repository.AddAsync(product, cancellationToken);
-
-        // Map to response
-        return _mapper.Map<ProductResult>(product);
-    }
-}
-```
-
-#### 3. Infrastructure Layer
-- **Purpose**: Implements interfaces defined in inner layers
-- **Dependencies**: Application and Domain layers
-- **Examples**: Repository implementations, external service clients
-
-```csharp
-// Infrastructure Implementation - Implements domain interfaces
-public class ProductRepository : Repository<Product>, IProductRepository
-{
-    public ProductRepository(CatalogDbContext context) : base(context) { }
-
-    public async Task<bool> ExistsWithNameAsync(string name)
-    {
-        return await Gets().AnyAsync(p => p.Name == name);
-    }
-
-    public async Task<IEnumerable<Product>> GetActiveProductsAsync()
-    {
-        return await Gets()
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.Name)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Product>> FindByPriceRangeAsync(Money minPrice, Money maxPrice)
-    {
-        return await Gets()
-            .Where(p => p.IsActive)
-            .Where(p => p.Price.Amount >= minPrice.Amount && p.Price.Amount <= maxPrice.Amount)
-            .Where(p => p.Price.Currency == minPrice.Currency)
-            .ToListAsync();
-    }
-}
-```
-
-#### 4. Presentation Layer
-- **Purpose**: Handles user interaction and external communication
-- **Dependencies**: Application layer only
-- **Examples**: API controllers, web pages, message handlers
-
-```csharp
-// Presentation Layer - Handles external communication
-[ApiController]
-[Route("api/v1/products")]
-public class ProductsController : ControllerBase
-{
-    private readonly IMediator _mediator;
-
-    public ProductsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<ProductResult>> CreateProduct([FromBody] CreateProductCommand command)
-    {
-        command.UserId = User.Identity?.Name ?? "anonymous";
-        var result = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetProduct), new { id = result.Id }, result);
-    }
-
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductResult>> GetProduct(Guid id)
-    {
-        var query = new GetProductQuery { Id = id };
-        var result = await _mediator.Send(query);
-        return result != null ? Ok(result) : NotFound();
-    }
-}
-```
-
-### Dependency Flow
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Presentation  │───▶│   Application   │───▶│     Domain      │
-│      Layer      │    │      Layer      │    │     Layer       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       ▲
-         │                       │                       │
-         ▼                       ▼                       │
-┌─────────────────────────────────────────────────────────┴─────┐
-│                Infrastructure Layer                           │
-│  (Implements interfaces defined in inner layers)             │
-└───────────────────────────────────────────────────────────────┘
-```
+Because DKNet is a library suite, each ring is a separate NuGet package: a consuming application swaps an
+infrastructure adapter (a different blob provider, a different idempotency store) without touching domain or
+application code.
 
 ---
 
-## ⚡ CQRS Pattern
+## ⚡ CQRS via DKNet.SlimBus.Extensions
 
-Command Query Responsibility Segregation (CQRS) separates read and write operations, allowing optimization of each concern independently.
-
-### Command Side (Writes)
-
-Commands modify state and should follow business rules:
+[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) is DKNet's CQRS pipeline, built on
+[SlimMessageBus](https://github.com/zarusz/SlimMessageBus) rather than MediatR — it is lighter (no reflection-heavy
+pipeline behaviors) and result-based (`FluentResults`) for expected business failures. It also auto-saves the
+`DbContext` after a successful write, so handlers don't call `SaveChangesAsync` themselves.
 
 ```csharp
-// Command - Represents intent to change state
-public record UpdateProductPriceCommand : IRequest<ProductResult>
-{
-    public Guid ProductId { get; init; }
-    public decimal NewPrice { get; init; }
-    public string Currency { get; init; } = "USD";
-    public string Reason { get; init; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-}
+using DKNet.SlimBus.Extensions;
+using FluentResults;
 
-// Command Validator - Ensures command is valid
-public class UpdateProductPriceValidator : AbstractValidator<UpdateProductPriceCommand>
+public record DeactivateProduct(Guid ProductId) : Fluents.Requests.INoResponse;
+
+internal sealed class DeactivateProductHandler(AppDbContext db)
+    : Fluents.Requests.IHandler<DeactivateProduct>
 {
-    public UpdateProductPriceValidator()
+    public async Task<IResultBase> OnHandle(DeactivateProduct request, CancellationToken cancellationToken)
     {
-        RuleFor(x => x.ProductId).NotEmpty();
-        RuleFor(x => x.NewPrice).GreaterThan(0);
-        RuleFor(x => x.Currency).NotEmpty().Length(3);
-        RuleFor(x => x.Reason).NotEmpty().When(x => x.NewPrice > 1000);
-    }
-}
+        var product = await db.Products.FindAsync([request.ProductId], cancellationToken);
+        if (product is null) return Result.Fail("Product not found");
 
-// Command Handler - Implements business logic
-public class UpdateProductPriceHandler : IRequestHandler<UpdateProductPriceCommand, ProductResult>
-{
-    private readonly IProductRepository _repository;
-    private readonly IPricingService _pricingService;
-    private readonly IMapper _mapper;
-
-    public async Task<ProductResult> Handle(UpdateProductPriceCommand request, CancellationToken cancellationToken)
-    {
-        // Load aggregate
-        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
-        if (product == null)
-            throw new NotFoundException($"Product {request.ProductId} not found");
-
-        // Apply business rules
-        var newPrice = new Money(request.NewPrice, request.Currency);
-        await _pricingService.ValidatePriceChangeAsync(product, newPrice);
-
-        // Execute command
-        product.UpdatePrice(newPrice, request.UserId);
-
-        // Persist changes
-        await _repository.SaveChangesAsync(cancellationToken);
-
-        return _mapper.Map<ProductResult>(product);
+        product.Deactivate();
+        // No SaveChangesAsync call here — the auto-save interceptor does it after this returns Ok.
+        return Result.Ok();
     }
 }
 ```
 
-### Query Side (Reads)
-
-Queries retrieve data optimized for specific use cases:
-
-```csharp
-// Query - Requests data
-public record GetProductsQuery : IRequest<PagedResult<ProductSummary>>
-{
-    public int PageIndex { get; init; } = 0;
-    public int PageSize { get; init; } = 20;
-    public string? SearchTerm { get; init; }
-    public bool ActiveOnly { get; init; } = true;
-    public decimal? MinPrice { get; init; }
-    public decimal? MaxPrice { get; init; }
-}
-
-// Query Result - Optimized for display
-public record ProductSummary
-{
-    public Guid Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public decimal Price { get; init; }
-    public string Currency { get; init; } = string.Empty;
-    public bool IsActive { get; init; }
-    public DateTime LastUpdated { get; init; }
-}
-
-// Query Handler - Optimized for reading
-public class GetProductsHandler : IRequestHandler<GetProductsQuery, PagedResult<ProductSummary>>
-{
-    private readonly IReadRepository<Product> _repository;
-
-    public GetProductsHandler(IReadRepository<Product> repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task<PagedResult<ProductSummary>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
-    {
-        var query = _repository.Gets();
-
-        // Apply filters
-        if (request.ActiveOnly)
-            query = query.Where(p => p.IsActive);
-
-        if (!string.IsNullOrEmpty(request.SearchTerm))
-            query = query.Where(p => p.Name.Contains(request.SearchTerm) || 
-                                     p.Description.Contains(request.SearchTerm));
-
-        if (request.MinPrice.HasValue)
-            query = query.Where(p => p.Price.Amount >= request.MinPrice.Value);
-
-        if (request.MaxPrice.HasValue)
-            query = query.Where(p => p.Price.Amount <= request.MaxPrice.Value);
-
-        // Project to summary
-        var summaries = query.Select(p => new ProductSummary
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Price = p.Price.Amount,
-            Currency = p.Price.Currency,
-            IsActive = p.IsActive,
-            LastUpdated = p.UpdatedAt ?? p.CreatedAt
-        });
-
-        // Apply paging
-        return await summaries.ToPagedResultAsync(request.PageIndex, request.PageSize, cancellationToken);
-    }
-}
-```
-
-### CQRS Benefits
-
-1. **Scalability**: Read and write sides can be scaled independently
-2. **Performance**: Queries can be optimized without affecting commands
-3. **Flexibility**: Different data models for different use cases
-4. **Maintainability**: Clear separation of concerns
+Registration wires two things: `AddSlimBusEfCoreInterceptor<TDbContext>()` for auto-save, and plain SlimMessageBus
+setup (`AddSlimMessageBus`, a transport provider) for dispatch. See the package page for the full fluent interface
+surface (`INoResponse`, `IHandler<TRequest>`, request/response variants) and query-side handlers.
 
 ---
 
 ## 🔄 Event-Driven Architecture
 
-Domain events enable loose coupling between bounded contexts and support complex business workflows.
+Domain events (raised via `AddEvent(...)` on `Entity`/`AuditedEntity`) enable loose coupling between bounded
+contexts. [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md) dispatches them automatically as part of the
+[`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) before/after-SaveChanges pipeline — application code never
+calls a dispatcher directly. `[RaisesEvent]` attributes on an entity can additionally declare events raised
+automatically on Created/Updated/Deleted, with optional property narrowing (see
+[`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) for the source-generator side of that).
 
-### Domain Events
-
-Events represent things that have happened in the domain:
-
-```csharp
-// Domain Event - Something that happened
-public record ProductPriceChangedEvent(
-    Guid ProductId,
-    Money OldPrice,
-    Money NewPrice,
-    string ChangedBy,
-    string Reason = "") : DomainEvent;
-
-public record OrderPlacedEvent(
-    Guid OrderId,
-    Guid CustomerId,
-    Money TotalAmount,
-    IReadOnlyList<Guid> ProductIds) : DomainEvent;
-
-public record CustomerUpgradedEvent(
-    Guid CustomerId,
-    CustomerTier OldTier,
-    CustomerTier NewTier) : DomainEvent;
-```
-
-### Event Handlers
-
-Handlers respond to events and implement side effects:
-
-```csharp
-// Event Handler - Responds to domain events
-public class ProductPriceChangedHandler : IDomainEventHandler<ProductPriceChangedEvent>
-{
-    private readonly INotificationService _notificationService;
-    private readonly IAuditService _auditService;
-    private readonly ILogger<ProductPriceChangedHandler> _logger;
-
-    public ProductPriceChangedHandler(
-        INotificationService notificationService,
-        IAuditService auditService,
-        ILogger<ProductPriceChangedHandler> logger)
-    {
-        _notificationService = notificationService;
-        _auditService = auditService;
-        _logger = logger;
-    }
-
-    public async Task Handle(ProductPriceChangedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        // Log the event
-        _logger.LogInformation(
-            "Product {ProductId} price changed from {OldPrice} to {NewPrice} by {ChangedBy}",
-            domainEvent.ProductId,
-            domainEvent.OldPrice,
-            domainEvent.NewPrice,
-            domainEvent.ChangedBy);
-
-        // Audit the change
-        await _auditService.RecordPriceChangeAsync(
-            domainEvent.ProductId,
-            domainEvent.OldPrice,
-            domainEvent.NewPrice,
-            domainEvent.ChangedBy,
-            domainEvent.Reason);
-
-        // Notify stakeholders if significant change
-        var changePercentage = CalculateChangePercentage(domainEvent.OldPrice, domainEvent.NewPrice);
-        if (changePercentage > 0.1m) // 10% change
-        {
-            await _notificationService.NotifySignificantPriceChangeAsync(
-                domainEvent.ProductId,
-                changePercentage,
-                cancellationToken);
-        }
-    }
-
-    private decimal CalculateChangePercentage(Money oldPrice, Money newPrice)
-    {
-        if (oldPrice.Amount == 0) return 0;
-        return Math.Abs(newPrice.Amount - oldPrice.Amount) / oldPrice.Amount;
-    }
-}
-
-// Multiple handlers can respond to the same event
-public class InventoryNotificationHandler : IDomainEventHandler<ProductPriceChangedEvent>
-{
-    private readonly IInventoryService _inventoryService;
-
-    public InventoryNotificationHandler(IInventoryService inventoryService)
-    {
-        _inventoryService = inventoryService;
-    }
-
-    public async Task Handle(ProductPriceChangedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        // Update inventory forecasts based on price change
-        await _inventoryService.UpdateForecastsAsync(domainEvent.ProductId, domainEvent.NewPrice);
-    }
-}
-```
-
-### Event Dispatching
-
-Events are dispatched when aggregate changes are persisted:
-
-```csharp
-public class EventDispatchingDbContext : DbContext
-{
-    private readonly IDomainEventDispatcher _eventDispatcher;
-
-    public EventDispatchingDbContext(
-        DbContextOptions options,
-        IDomainEventDispatcher eventDispatcher) : base(options)
-    {
-        _eventDispatcher = eventDispatcher;
-    }
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        // Get all domain events before saving
-        var domainEvents = ChangeTracker.Entries<AggregateRoot>()
-            .SelectMany(entry => entry.Entity.GetUncommittedEvents())
-            .ToList();
-
-        // Save changes to database
-        var result = await base.SaveChangesAsync(cancellationToken);
-
-        // Dispatch events after successful save
-        foreach (var domainEvent in domainEvents)
-        {
-            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
-        }
-
-        // Clear events from aggregates
-        ChangeTracker.Entries<AggregateRoot>()
-            .ToList()
-            .ForEach(entry => entry.Entity.ClearEvents());
-
-        return result;
-    }
-}
-```
+If you want domain events forwarded onto the message bus (rather than only handled in-process), add
+`AddSlimBusEventPublisher<TDbContext>()` from `DKNet.SlimBus.Extensions`.
 
 ---
 
-## 📊 Repository Pattern
+## 📊 Specification Pattern
 
-The Repository pattern abstracts data access and provides a more object-oriented view of the persistence layer.
-
-### Repository Interfaces
-
-```csharp
-// Generic repository for common operations
-public interface IRepository<TEntity> where TEntity : AggregateRoot
-{
-    IQueryable<TEntity> Gets();
-    Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
-    void Update(TEntity entity);
-    void Delete(TEntity entity);
-    Task<IEnumerable<TEntity>> FindAsync(Specification<TEntity> specification, CancellationToken cancellationToken = default);
-}
-
-// Specific repository with domain-specific methods
-public interface IProductRepository : IRepository<Product>
-{
-    Task<bool> ExistsWithNameAsync(string name);
-    Task<IEnumerable<Product>> GetActiveProductsAsync();
-    Task<IEnumerable<Product>> GetProductsByCategory(string category);
-    Task<Product?> GetBySkuAsync(string sku);
-}
-```
-
-### Repository Implementation
+[`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) — not a hand-rolled `IRepository<T>` — is
+the current, supported way to query and persist through a `DbContext`. `IRepositorySpec` is not generic over the
+entity: one injected instance serves every entity type in the `DbContext`, with the entity type inferred from the
+`Specification<TEntity>` passed to each call.
 
 ```csharp
-public class ProductRepository : Repository<Product>, IProductRepository
-{
-    public ProductRepository(CatalogDbContext context) : base(context) { }
+using DKNet.EfCore.Specifications;
 
-    public async Task<bool> ExistsWithNameAsync(string name)
-    {
-        return await Gets().AnyAsync(p => p.Name == name);
-    }
-
-    public async Task<IEnumerable<Product>> GetActiveProductsAsync()
-    {
-        return await Gets()
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.Name)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Product>> GetProductsByCategory(string category)
-    {
-        return await Gets()
-            .Where(p => p.Category == category && p.IsActive)
-            .OrderBy(p => p.Name)
-            .ToListAsync();
-    }
-
-    public async Task<Product?> GetBySkuAsync(string sku)
-    {
-        return await Gets().FirstOrDefaultAsync(p => p.Sku == sku);
-    }
-}
+services.AddSpecRepo<AppDbContext>();
 ```
 
-### Specification Pattern
-
-Specifications encapsulate query logic and can be combined:
+Its signature feature is the **Dynamic Predicate Builder**, for building type-safe EF Core predicates from
+`(propertyName, operation, value)` triples at runtime — the shape search/filter APIs need when criteria aren't known
+at compile time:
 
 ```csharp
-public class ActiveProductsSpecification : Specification<Product>
-{
-    public override Expression<Func<Product, bool>> ToExpression()
-    {
-        return product => product.IsActive;
-    }
-}
+var predicate = PredicateBuilder.New<Product>()
+    .And(p => p.IsActive)
+    .DynamicAnd(b => b.With("Price", FilterOperations.GreaterThan, 100m));
 
-public class ProductsInCategorySpecification : Specification<Product>
-{
-    private readonly string _category;
-
-    public ProductsInCategorySpecification(string category)
-    {
-        _category = category;
-    }
-
-    public override Expression<Func<Product, bool>> ToExpression()
-    {
-        return product => product.Category == _category;
-    }
-}
-
-public class ProductsInPriceRangeSpecification : Specification<Product>
-{
-    private readonly decimal _minPrice;
-    private readonly decimal _maxPrice;
-
-    public ProductsInPriceRangeSpecification(decimal minPrice, decimal maxPrice)
-    {
-        _minPrice = minPrice;
-        _maxPrice = maxPrice;
-    }
-
-    public override Expression<Func<Product, bool>> ToExpression()
-    {
-        return product => product.Price.Amount >= _minPrice && product.Price.Amount <= _maxPrice;
-    }
-}
-
-// Usage: Combine specifications
-var spec = new ActiveProductsSpecification()
-    .And(new ProductsInCategorySpecification("Electronics"))
-    .And(new ProductsInPriceRangeSpecification(100, 1000));
-
-var products = await repository.FindAsync(spec);
+var results = await db.Products.AsExpandable().Where(predicate).ToListAsync();
 ```
 
----
+`.AsExpandable()` is mandatory — LinqKit cannot translate the predicate without it.
 
-## 🔌 Dependency Injection
-
-DKNet heavily uses dependency injection to maintain loose coupling and enable testability.
-
-### Service Registration
-
-```csharp
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddCatalogServices(this IServiceCollection services)
-    {
-        // Register repositories
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
-
-        // Register domain services
-        services.AddScoped<IPricingService, PricingService>();
-        services.AddScoped<IInventoryService, InventoryService>();
-
-        // Register application services
-        services.AddScoped<IProductApplicationService, ProductApplicationService>();
-
-        // Register event handlers
-        services.AddScoped<IDomainEventHandler<ProductPriceChangedEvent>, ProductPriceChangedHandler>();
-        services.AddScoped<IDomainEventHandler<ProductPriceChangedEvent>, InventoryNotificationHandler>();
-
-        return services;
-    }
-}
-```
-
-### Constructor Injection
-
-```csharp
-public class ProductApplicationService : IProductApplicationService
-{
-    private readonly IProductRepository _productRepository;
-    private readonly IPricingService _pricingService;
-    private readonly IInventoryService _inventoryService;
-    private readonly IMapper _mapper;
-    private readonly ILogger<ProductApplicationService> _logger;
-
-    public ProductApplicationService(
-        IProductRepository productRepository,
-        IPricingService pricingService,
-        IInventoryService inventoryService,
-        IMapper mapper,
-        ILogger<ProductApplicationService> logger)
-    {
-        _productRepository = productRepository;
-        _pricingService = pricingService;
-        _inventoryService = inventoryService;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
-    // Methods use injected dependencies
-}
-```
+`DKNet.EfCore.Repos` / `DKNet.EfCore.Repos.Abstractions` (the older generic-repository packages) are retired and
+superseded by Specifications; see
+[`Migrating-Repos-To-Specifications.md`](./EfCore/Migrating-Repos-To-Specifications.md) for the call-site mapping.
 
 ---
 
 ## 🔧 Cross-Cutting Concerns
 
-DKNet handles cross-cutting concerns through various patterns and implementations.
+Audit, encryption, and authorization attach as opt-in SaveChanges interceptors on the same `DbContext`, rather than
+leaking into domain or application code:
 
-### Logging
+- [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity changes, with
+  `[SensitiveData]`-aware redaction.
+- [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) — row-level, ownership-based
+  filtering via EF Core global query filters.
+- [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF
+  Core value converter (independent of the hook pipeline).
 
-```csharp
-public class ProductService
-{
-    private readonly ILogger<ProductService> _logger;
-
-    public async Task<Product> CreateProductAsync(CreateProductCommand command)
-    {
-        _logger.LogInformation("Creating product {ProductName} for user {UserId}", 
-            command.Name, command.UserId);
-
-        try
-        {
-            // Business logic
-            var product = new Product(command.Name, command.Price, command.UserId);
-            
-            _logger.LogInformation("Successfully created product {ProductId}", product.Id);
-            return product;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create product {ProductName}", command.Name);
-            throw;
-        }
-    }
-}
-```
-
-### Validation
-
-```csharp
-public class CreateProductValidator : AbstractValidator<CreateProductCommand>
-{
-    private readonly IProductRepository _repository;
-
-    public CreateProductValidator(IProductRepository repository)
-    {
-        _repository = repository;
-
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .MaximumLength(200)
-            .MustAsync(BeUniqueName).WithMessage("Product name must be unique");
-
-        RuleFor(x => x.Price)
-            .GreaterThan(0)
-            .LessThan(10000);
-
-        RuleFor(x => x.Category)
-            .NotEmpty()
-            .Must(BeValidCategory).WithMessage("Invalid category");
-    }
-
-    private async Task<bool> BeUniqueName(string name, CancellationToken cancellationToken)
-    {
-        return !await _repository.ExistsWithNameAsync(name);
-    }
-
-    private bool BeValidCategory(string category)
-    {
-        var validCategories = new[] { "Electronics", "Clothing", "Books", "Home" };
-        return validCategories.Contains(category);
-    }
-}
-```
-
-### Error Handling
-
-```csharp
-public class GlobalExceptionMiddleware
-{
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionMiddleware> _logger;
-
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
-        {
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An unexpected error occurred");
-            await HandleExceptionAsync(context, ex);
-        }
-    }
-
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = "application/json";
-
-        var response = exception switch
-        {
-            NotFoundException => new { error = "Resource not found", statusCode = 404 },
-            ValidationException => new { error = "Validation failed", statusCode = 400 },
-            BusinessException => new { error = exception.Message, statusCode = 422 },
-            _ => new { error = "An error occurred", statusCode = 500 }
-        };
-
-        context.Response.StatusCode = response.statusCode;
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-    }
-}
-```
+Each registers against the same [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) pipeline
+(`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that `DKNet.EfCore.Events` uses, and each is wired in independently via
+its own DI extension — there is no single "cross-cutting concerns" package to opt into.
 
 ---
 
@@ -1071,7 +236,4 @@ public class GlobalExceptionMiddleware
 - **[Configuration](Configuration.md)** - Setup and configuration
 - **[Examples](Examples/README.md)** - Practical implementations
 - **[API Reference](API-Reference.md)** - Detailed API documentation
-
----
-
-> 🏗️ **Architecture Note**: This architecture guide represents the current state of DKNet Framework. As the framework evolves, architectural patterns may be refined based on community feedback and real-world usage.
+- **[Testing Strategy](Testing-Strategy.md)** - Test stack and coverage targets

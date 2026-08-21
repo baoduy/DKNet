@@ -36,7 +36,7 @@ dotnet list package --include-transitive | grep DKNet
 ```
 
 **2. Incremental Migration**
-- Start with new projects using the [SlimBus template](../src/Templates/SlimBus.ApiEndpoints/)
+- Start with new projects using the SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
 - Migrate existing projects component by component
 - Run both old and new implementations in parallel during transition
 
@@ -131,24 +131,22 @@ public class ProductRepository
 }
 ```
 
-**After (DKNet 2024.12.0+)**
+**After — `DKNet.EfCore.Specifications`**
+
+`DKNet.EfCore.Repos` is retired; `IRepositorySpec` (registered via `services.AddSpecRepo<AppDbContext>()`) is the
+current repository surface. It is not generic over the entity — the entity type comes from the `Specification<T>`
+passed to each call:
+
 ```csharp
-public class ProductRepository : Repository<Product>, IProductRepository
+public sealed class ProductService(IRepositorySpec repo)
 {
-    public ProductRepository(AppDbContext context) : base(context) { }
-    
-    public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await GetByIdAsync(id, cancellationToken);
-    }
-    
     // Specification support
-    public async Task<IEnumerable<Product>> FindAsync(Specification<Product> spec)
-    {
-        return await Gets().Where(spec.ToExpression()).ToListAsync();
-    }
+    public Task<Product?> FindAsync(Specification<Product> spec, CancellationToken cancellationToken = default) =>
+        repo.FirstOrDefaultAsync(spec, cancellationToken);
 }
 ```
+
+See [`Migrating-Repos-To-Specifications.md`](./EfCore/Migrating-Repos-To-Specifications.md) for the full call-site mapping.
 
 ---
 
@@ -187,19 +185,24 @@ public class Product
 }
 ```
 
-**After**
+**After** — there is no separate `AggregateRoot` type; derive from `AuditedEntity` (or plain `Entity` if you don't
+need audit fields) — see [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md):
 ```csharp
+using DKNet.EfCore.Abstractions.Entities;
+
 [Table("Products", Schema = "catalog")]
-public class Product : AggregateRoot
+public class Product : AuditedEntity
 {
-    public Product(string name, decimal price, string createdBy)
-        : base(Guid.NewGuid(), createdBy)
+    private Product() { } // EF Core
+
+    public static Product Create(string name, decimal price, string createdBy)
     {
-        Name = name;
-        Price = price;
+        var product = new Product { Name = name, Price = price };
+        product.SetCreatedBy(createdBy);
+        return product;
     }
 
-    public string Name { get; private set; }
+    public string Name { get; private set; } = null!;
     public decimal Price { get; private set; }
 
     public void UpdatePrice(decimal newPrice, string updatedBy)
@@ -233,34 +236,33 @@ public class ProductService
 }
 ```
 
-**After (CQRS)**
+**After (CQRS via `DKNet.SlimBus.Extensions`)** — see
+[DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) for the full contract set:
 ```csharp
-// Command
-public record CreateProductCommand : IRequest<ProductResult>
-{
-    public string Name { get; init; }
-    public decimal Price { get; init; }
-}
+using DKNet.SlimBus.Extensions;
+using FluentResults;
 
-public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
+// Command
+public record CreateProductCommand(string Name, decimal Price) : Fluents.Requests.IWitResponse<Guid>;
+
+internal sealed class CreateProductHandler(AppDbContext db) : Fluents.Requests.IHandler<CreateProductCommand, Guid>
 {
-    public async Task<ProductResult> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    public async Task<IResult<Guid>> OnHandle(CreateProductCommand request, CancellationToken cancellationToken)
     {
-        // Command handling logic
+        // Command handling logic — no explicit SaveChangesAsync; the auto-save interceptor does it on success.
+        return Result.Ok(Guid.NewGuid());
     }
 }
 
 // Query
-public record GetProductQuery : IRequest<ProductResult>
-{
-    public Guid Id { get; init; }
-}
+public record GetProductQuery(Guid Id) : Fluents.Queries.IWitResponse<ProductResult>;
 
-public class GetProductHandler : IRequestHandler<GetProductQuery, ProductResult>
+internal sealed class GetProductHandler(AppDbContext db) : Fluents.Queries.IHandler<GetProductQuery, ProductResult>
 {
-    public async Task<ProductResult> Handle(GetProductQuery request, CancellationToken cancellationToken)
+    public async Task<ProductResult?> OnHandle(GetProductQuery request, CancellationToken cancellationToken)
     {
         // Query handling logic
+        return null;
     }
 }
 ```
@@ -366,7 +368,7 @@ public class MigrationHelper
         var products = await context.Set<OldProduct>().ToListAsync();
         foreach (var oldProduct in products)
         {
-            var newProduct = new Product(
+            var newProduct = Product.Create(
                 oldProduct.Name, 
                 oldProduct.Price, 
                 "MIGRATION");
@@ -379,28 +381,20 @@ public class MigrationHelper
 
 ### Configuration Migration
 
+There is no `DKNetOptions` and no single aggregator to configure DKNet through — each package exposes its own
+strongly-typed options, bound from your own config section via that package's own `Add*` extension. See
+[Configuration & Setup](Configuration.md) for the full list; for example, migrating blob storage config:
+
 ```csharp
 public static class ConfigurationMigration
 {
     public static IServiceCollection MigrateFromLegacy(
-        this IServiceCollection services, 
+        this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Map old configuration to new structure
-        var legacyConfig = configuration.GetSection("Legacy");
-        var newConfig = new DKNetOptions
-        {
-            DatabaseConnectionString = legacyConfig["Database:ConnectionString"],
-            EnableAuditFields = bool.Parse(legacyConfig["Audit:Enabled"] ?? "true"),
-            // ... other mappings
-        };
-        
-        services.Configure<DKNetOptions>(options =>
-        {
-            options.DatabaseConnectionString = newConfig.DatabaseConnectionString;
-            options.EnableAuditFields = newConfig.EnableAuditFields;
-        });
-        
+        // Point each package's own Add* method at the config section it expects, then let it bind itself
+        services.AddLocalDirectoryBlobService(configuration); // reads its own "BlobStorage" section
+
         return services;
     }
 }
@@ -439,12 +433,15 @@ public static class ConfigurationMigration
 **Issue**: Service registration patterns change
 **Solution**: 
 ```csharp
-// Old
+// Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
 
-// New
+// New: repository + SlimBus (DKNet's MediatR-free CQRS package)
 services.AddScoped<IProductRepository, ProductRepository>();
-services.AddMediatR(typeof(CreateProductHandler));
+services.AddSlimMessageBus(mbb => mbb
+    .AddChildBus("Memory", builder => builder
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ---

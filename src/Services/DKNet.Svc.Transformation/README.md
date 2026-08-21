@@ -1,78 +1,42 @@
 # DKNet.Svc.Transformation
 
-A flexible .NET library for template-based data transformation, designed for APIs, DDD, and EF Core scenarios. Supports
-custom token extraction, dynamic value resolution, and is fully configurable via dependency injection.
+[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.Transformation)](https://www.nuget.org/packages/DKNet.Svc.Transformation/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.Transformation)](https://www.nuget.org/packages/DKNet.Svc.Transformation/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
+
+Template-token substitution: fills bracketed tokens (`[Name]`, `{Email}`, `<Amount>`, `{{Ref}}`) in a string from a
+plain object or dictionary, with pluggable value formatting. Not an object mapper.
 
 ## Features
 
-- Transform template strings using data objects or custom token factories
-- Extensible token extractors for different template formats
-- Configurable value formatting and caching
-- Designed for dependency injection
-- .NET 9.0 compatible
+- `ITransformerService` — `Transform`/`TransformAsync` a template against one or more parameter sources
+- Four built-in token styles (square/curly/angle/double-curly brackets), or define your own
+- Configurable behavior when a token can't be resolved (`ThrowError`, `LeaveAsIs`, `Remove`)
+- Pluggable `IValueFormatter` for bool/number/date formatting
+- Global parameters shared across every template
 
 ## Installation
 
-Add the NuGet package to your project:
-
-```
+```bash
 dotnet add package DKNet.Svc.Transformation
 ```
 
-## Usage
-
-Register the service in your DI container:
+## Quick Start
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
 using DKNet.Svc.Transformation;
 
-var services = new ServiceCollection();
-services.AddTransformerService(options =>
+builder.Services.AddTransformerService();
+
+public sealed class WelcomeEmailBuilder(ITransformerService transformer)
 {
-    // Customize TransformOptions if needed
-    options.DisabledLocalCache = false;
-});
+    public Task<string> BuildAsync(User user) =>
+        transformer.TransformAsync("Hello [Name], your account [Email] is ready.", user);
+}
 ```
 
-Transform a template string:
+## Documentation
 
-```csharp
-var transformer = services.BuildServiceProvider().GetRequiredService<ITransformerService>();
-
-string template = "Hello [Name]. Your {Email} had been [ApprovedStatus]";
-var result = await transformer.TransformAsync(template, new { Name = "Duy", Email = "drunkcoding@outlook.net", ApprovedStatus = "Approved" });
-// result: "Hello Duy. Your drunkcoding@outlook.net had been Approved"
-```
-
-Or use a custom token factory:
-
-```csharp
-var result = await transformer.TransformAsync(template, async token =>
-{
-    // Custom logic to resolve token value
-    return await GetValueForTokenAsync(token);
-});
-```
-
-## API
-
-- `ITransformerService.TransformAsync(string templateString, params object[] parameters)`: Transform using provided data
-  objects.
-- `ITransformerService.TransformAsync(string templateString, Func<IToken, Task<object>> tokenFactory)`: Transform using
-  a custom token resolver.
-- `TransformOptions`: Configure extractors, formatters, caching, and global parameters.
-- `TransformSetup.AddTransformerService(IServiceCollection, Action<TransformOptions>?)`: Register the service with DI.
-
-## License
-
-MIT © 2026 drunkcoding
-
-## Repository
-
-[https://github.com/baoduy/DKNet](https://github.com/baoduy/DKNet)
-
-## Contributing
-
-Pull requests and issues are welcome!
-
+Full feature reference, configuration, and gotchas:
+https://github.com/baoduy/DKNet/blob/dev/docs/Services/DKNet.Svc.Transformation.md

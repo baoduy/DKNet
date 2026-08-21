@@ -5,6 +5,8 @@
 
 using System.Text.Json;
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
+using DKNet.AspCore.Idempotency.Store;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;

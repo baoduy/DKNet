@@ -1,73 +1,52 @@
 # DKNet.EfCore.DataAuthorization
 
-A .NET library for secure, multi-tenant data authorization in Entity Framework Core. Enables automatic filtering of data
-based on ownership, supports DDD and API scenarios, and is designed for extensibility.
+Row-level, ownership-based data authorization for EF Core: an automatic global query filter plus a `SaveChanges`
+hook, so multi-tenant or per-user data isolation is enforced by the persistence layer instead of by convention in
+every query.
 
-## Features
+## Install
 
-- Automatic global query filtering based on data ownership keys
-- Interfaces for associating entities with owners (`IOwnedBy`), providing ownership keys (`IDataOwnerProvider`), and
-  integrating with DbContext (`IDataOwnerDbContext`)
-- Extension methods for easy setup via dependency injection (`EfCoreDataAuthSetup`)
-- Support for multi-tenancy and secure data isolation
-- .NET 9.0 compatible
-
-## Installation
-
-Add the NuGet package to your project:
-
-```
+```bash
 dotnet add package DKNet.EfCore.DataAuthorization
 ```
 
-## Usage
+## Features
 
-Register the data authorization provider and setup in your DI container:
+- **`IOwnedBy`** — marker interface entities implement to opt into ownership-based filtering and stamping.
+- **Automatic global query filter** — every `IOwnedBy` entity is scoped to `IDataOwnerDbContext.AccessibleKeys`
+  automatically; deny-by-default when empty, with an explicit `IsUnrestrictedAccess` escape hatch for admin/system
+  contexts. Not bypassable via specification `IsIgnoreQueryFilters`.
+- **Automatic ownership stamping** — a `SaveChanges` hook stamps the current owner key onto newly added `IOwnedBy`
+  entities (and `CreatedBy`/`CreatedOn` when the entity is also audited), and reverts any attempt to silently
+  reassign an existing row's owner to a key the caller can't access.
+- **One DI call to wire it up** — `AddDataOwnerProvider<TDbContext, TProvider>()` registers the query filter, the
+  hook, and your `IDataOwnerProvider` implementation together.
+
+## Quick start
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using DKNet.EfCore.DataAuthorization;
-
-services.AddAutoDataKeyProvider<MyDbContext, MyOwnerProvider>();
-```
-
-Implement `IOwnedBy` on your entities:
-
-```csharp
-public class Document : IOwnedBy
+public class Invoice : IOwnedBy
 {
-    public string? OwnedBy { get; private set; }
-    public void SetOwnedBy(string ownerKey) => OwnedBy = ownerKey;
+    public string OwnedBy { get; private set; } = string.Empty;
 }
-```
 
-Implement `IDataOwnerProvider` to supply ownership keys and accessible keys:
-
-```csharp
-public class MyOwnerProvider : IDataOwnerProvider
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IDataOwnerDbContext
 {
-    public IEnumerable<string> GetAccessibleKeys() => ...; // e.g., from user context
-    public string GetOwnershipKey() => ...; // e.g., current user's tenant key
+    public IEnumerable<string> AccessibleKeys { get; init; } = [];
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+        => modelBuilder.UseAutoConfigModel(); // required for the global query filter to apply
 }
+
+public sealed class TenantOwnerProvider(ICurrentTenant currentTenant) : IDataOwnerProvider
+{
+    public string? GetOwnershipKey() => currentTenant.TenantId;
+}
+
+services
+    .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
+    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
 ```
 
-## API
-
-- `EfCoreDataAuthSetup.AddAutoDataKeyProvider<TDbContext, TProvider>(IServiceCollection)`: Registers automatic data key
-  management for a DbContext.
-- `IOwnedBy`: Interface for entities supporting ownership, with methods to get/set the owner key.
-- `IDataOwnerProvider`: Interface for providing accessible keys and ownership key for new entities.
-- `IDataOwnerDbContext`: Interface for DbContexts supporting data authorization, exposing accessible keys.
-
-## License
-
-MIT © 2026 drunkcoding
-
-## Repository
-
-[https://github.com/baoduy/DKNet](https://github.com/baoduy/DKNet)
-
-## Contributing
-
-Pull requests and issues are welcome!
-
+Full documentation, configuration options, and gotchas:
+[DKNet.EfCore.DataAuthorization docs](https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.DataAuthorization.md)

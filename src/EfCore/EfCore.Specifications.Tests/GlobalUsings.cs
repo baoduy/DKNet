@@ -2,6 +2,8 @@
 
 global using System.Linq.Expressions;
 global using DKNet.EfCore.Specifications;
+global using DKNet.EfCore.Specifications.Definitions;
+global using DKNet.EfCore.Specifications.Repositories;
 global using LinqKit;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.DependencyInjection;

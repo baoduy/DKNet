@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using DKNet.AspCore.Extensions;
+using DKNet.AspCore.Extensions.Endpoints;
+using DKNet.AspCore.Extensions.ModelBinding;
 using DKNet.SlimBus.Extensions;
 using FluentResults;
 using FluentValidation;

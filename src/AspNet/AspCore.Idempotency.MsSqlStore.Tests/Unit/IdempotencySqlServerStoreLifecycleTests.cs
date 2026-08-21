@@ -4,7 +4,9 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.MsSqlStore.Store;
+using DKNet.AspCore.Idempotency.Store;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

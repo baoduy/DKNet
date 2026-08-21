@@ -1,5 +1,7 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
+using DKNet.EfCore.Repos.Repositories;
+using DKNet.EfCore.Specifications.Definitions;
 
 namespace EfCore.Repos.Tests;
 

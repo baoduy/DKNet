@@ -1,696 +1,241 @@
 # DKNet.EfCore.DataAuthorization
 
-**Data authorization and access control mechanisms for Entity Framework Core that provide row-level security, role-based access control, and policy-based authorization to ensure users can only access data they are authorized to see, supporting Domain-Driven Design (DDD) and Onion Architecture principles.**
+Row-level, ownership-based data authorization for EF Core: automatic global query filtering plus SaveChanges-time
+ownership stamping, so multi-tenant or per-user data isolation doesn't have to be repeated in every query.
 
-## What is this project?
+## 1. Problem it solves / when to reach for it
 
-DKNet.EfCore.DataAuthorization provides a comprehensive data authorization framework for Entity Framework Core applications. It implements row-level security patterns that automatically filter data based on user permissions, roles, and custom authorization policies, ensuring that users can only access data they are authorized to view or modify.
+Any application where rows belong to a principal — a tenant, a user, a branch, a department — has to answer the
+same question at every read: "does the caller own this row, or is it in the set of rows the caller may see?" Doing
+that by hand means every `Where(...)` clause across the codebase has to remember to add the ownership predicate, and
+every insert has to remember to stamp the owner. Miss one query and you leak another tenant's data; miss one insert
+and the row becomes unowned/orphaned.
 
-### Key Features
+`DKNet.EfCore.DataAuthorization` centralizes both halves of that problem as infrastructure:
 
-- **IDataOwnerProvider**: Interface for defining data ownership and access rules
-- **IDataOwnerDbContext**: DbContext extension for automatic authorization filtering
-- **IOwnedBy Interface**: Contract for entities that have ownership or access control
-- **Policy-Based Authorization**: Flexible authorization rules based on custom policies
-- **Role-Based Access Control**: Traditional RBAC implementation with EF Core integration
-- **Multi-Tenancy Support**: Built-in support for multi-tenant data isolation
-- **Query Filtering**: Automatic query filtering based on authorization rules
-- **Dynamic Authorization**: Runtime authorization rule evaluation
-- **Audit Integration**: Comprehensive audit trails for authorization decisions
+- **Reads** — an EF Core global query filter is applied once, at model-build time, to every entity that opts in
+  (`IOwnedBy`). No call site needs to add or remember a `Where` clause.
+- **Writes** — a `SaveChanges` hook stamps the current owner onto newly added entities, and reverts any attempt to
+  silently move an existing row to an owner the current caller isn't allowed to write as.
 
-## How it contributes to DDD and Onion Architecture
+Reach for this package when you have row-level or multi-tenant ownership rules to enforce and you want them applied
+uniformly by the persistence layer rather than by convention in application code.
 
-### Security Layer Implementation
-
-DKNet.EfCore.DataAuthorization implements **Security and Authorization concerns** that span multiple layers of the Onion Architecture, providing data access control without compromising domain logic:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  Benefits from: Automatic data filtering, authorization checks │
-│  Provides: User context, role information                      │
-└─────────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Benefits from: Pre-filtered data, authorization validation    │
-│  Provides: Business context for authorization decisions        │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  📋 IOwnedBy - Ownership contracts                             │
-│  🎭 Authorization policies expressed in business terms         │
-│  🏷️ Domain entities unaware of authorization implementation    │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Authorization, Data Access)                  │
-│                                                                 │
-│  🔒 IDataOwnerProvider - Authorization rule implementation     │
-│  🗃️ IDataOwnerDbContext - Automatic query filtering           │
-│  📊 Authorization policies and rule engines                    │
-│  🔍 Query interceptors for access control                      │
-│  📝 Audit logging for authorization decisions                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Domain Security**: Authorization rules expressed in business terms
-2. **Aggregate Protection**: Ensure aggregate consistency and access control
-3. **Business Policy Enforcement**: Authorization aligned with business rules
-4. **Multi-Tenant Support**: Clean separation of tenant data
-5. **Audit Trails**: Comprehensive business event tracking for compliance
-6. **Context Preservation**: User context maintained throughout domain operations
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Domain defines authorization contracts, infrastructure implements them
-2. **Separation of Concerns**: Authorization logic separated from business logic
-3. **Testability**: Authorization can be mocked for unit testing
-4. **Technology Independence**: Authorization abstractions can work with any data access technology
-5. **Maintainability**: Centralized authorization logic with clear boundaries
-6. **Compliance Ready**: Built-in support for regulatory compliance requirements
-
-## How to use it
-
-### Installation
+## 2. Install and minimum wiring
 
 ```bash
 dotnet add package DKNet.EfCore.DataAuthorization
-dotnet add package DKNet.EfCore.Abstractions
 ```
 
-### Basic Usage Examples
+The package brings in `DKNet.EfCore.Extensions` (global query filter plumbing) and `DKNet.EfCore.Hooks`
+(`SaveChanges` pipeline) as project/package references — you don't add those separately for this feature.
 
-#### 1. Implementing Data Ownership
-
-```csharp
-using DKNet.EfCore.DataAuthorization;
-using DKNet.EfCore.Abstractions;
-
-// Entity that implements ownership
-public class Document : Entity<int>, IOwnedBy<string>
-{
-    public string OwnerId { get; set; } // User ID who owns this document
-    public string Title { get; set; }
-    public string Content { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool IsPublic { get; set; }
-    
-    // Additional authorization properties
-    public List<string> SharedWith { get; set; } = new();
-    public string DepartmentId { get; set; }
-    
-    public Document(string title, string content, string ownerId)
-    {
-        Title = title;
-        Content = content;
-        OwnerId = ownerId;
-        CreatedAt = DateTime.UtcNow;
-    }
-}
-
-// Multi-tenant entity
-public class Order : Entity<int>, IOwnedBy<string>
-{
-    public string OwnerId { get; set; } // Tenant ID
-    public int CustomerId { get; set; }
-    public decimal TotalAmount { get; set; }
-    public DateTime OrderDate { get; set; }
-    public OrderStatus Status { get; set; }
-    
-    public Order(int customerId, decimal totalAmount, string tenantId)
-    {
-        CustomerId = customerId;
-        TotalAmount = totalAmount;
-        OwnerId = tenantId;
-        OrderDate = DateTime.UtcNow;
-        Status = OrderStatus.Pending;
-    }
-}
-```
-
-#### 2. Data Owner Provider Implementation
+Minimum wiring, from the real signatures in `EfCoreDataAuthSetup`, `DataOwnerAuthQuery`, and `SetupEfCoreHook`:
 
 ```csharp
-public class DocumentDataOwnerProvider : IDataOwnerProvider
+// 1. Entity opts into ownership
+public class Invoice : IOwnedBy
 {
-    private readonly ICurrentUserService _currentUserService;
-    private readonly IUserRoleService _userRoleService;
-    private readonly ILogger<DocumentDataOwnerProvider> _logger;
-    
-    public DocumentDataOwnerProvider(
-        ICurrentUserService currentUserService,
-        IUserRoleService userRoleService,
-        ILogger<DocumentDataOwnerProvider> logger)
-    {
-        _currentUserService = currentUserService;
-        _userRoleService = userRoleService;
-        _logger = logger;
-    }
-    
-    public async Task<bool> CanAccessAsync<TEntity>(TEntity entity, string operation, CancellationToken cancellationToken = default)
-        where TEntity : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null)
-        {
-            _logger.LogWarning("No current user found for authorization check");
-            return false;
-        }
-        
-        return entity switch
-        {
-            Document document => await CanAccessDocumentAsync(document, currentUser, operation, cancellationToken),
-            Order order => await CanAccessOrderAsync(order, currentUser, operation, cancellationToken),
-            _ => await DefaultAuthorizationAsync(entity, currentUser, operation, cancellationToken)
-        };
-    }
-    
-    private async Task<bool> CanAccessDocumentAsync(Document document, User currentUser, string operation, CancellationToken cancellationToken)
-    {
-        // Owner can do everything
-        if (document.OwnerId == currentUser.Id)
-        {
-            return true;
-        }
-        
-        // Public documents can be read by anyone authenticated
-        if (document.IsPublic && operation == "Read")
-        {
-            return true;
-        }
-        
-        // Check if document is shared with current user
-        if (document.SharedWith.Contains(currentUser.Id) && operation == "Read")
-        {
-            return true;
-        }
-        
-        // Check department access
-        if (document.DepartmentId == currentUser.DepartmentId)
-        {
-            var departmentRoles = await _userRoleService.GetDepartmentRolesAsync(currentUser.Id, currentUser.DepartmentId);
-            
-            return operation switch
-            {
-                "Read" => departmentRoles.Contains("Viewer") || departmentRoles.Contains("Editor") || departmentRoles.Contains("Admin"),
-                "Update" => departmentRoles.Contains("Editor") || departmentRoles.Contains("Admin"),
-                "Delete" => departmentRoles.Contains("Admin"),
-                _ => false
-            };
-        }
-        
-        // Admin users can access everything
-        var userRoles = await _userRoleService.GetUserRolesAsync(currentUser.Id);
-        if (userRoles.Contains("SystemAdmin"))
-        {
-            return true;
-        }
-        
-        _logger.LogWarning("User {UserId} denied access to document {DocumentId} for operation {Operation}",
-            currentUser.Id, document.Id, operation);
-        
-        return false;
-    }
-    
-    private async Task<bool> CanAccessOrderAsync(Order order, User currentUser, string operation, CancellationToken cancellationToken)
-    {
-        // Multi-tenant check - user must belong to the same tenant
-        if (order.OwnerId != currentUser.TenantId)
-        {
-            return false;
-        }
-        
-        // Check user permissions within tenant
-        var userRoles = await _userRoleService.GetUserRolesAsync(currentUser.Id);
-        
-        return operation switch
-        {
-            "Read" => userRoles.Contains("OrderViewer") || userRoles.Contains("OrderManager") || userRoles.Contains("TenantAdmin"),
-            "Update" => userRoles.Contains("OrderManager") || userRoles.Contains("TenantAdmin"),
-            "Delete" => userRoles.Contains("TenantAdmin"),
-            _ => false
-        };
-    }
-    
-    public IQueryable<TEntity> ApplyAuthorizationFilter<TEntity>(IQueryable<TEntity> query) 
-        where TEntity : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null)
-        {
-            return query.Where(_ => false); // No user, no access
-        }
-        
-        return typeof(TEntity).Name switch
-        {
-            nameof(Document) => ApplyDocumentFilter(query.Cast<Document>(), currentUser).Cast<TEntity>(),
-            nameof(Order) => ApplyOrderFilter(query.Cast<Order>(), currentUser).Cast<TEntity>(),
-            _ => query // No filtering for entities without authorization
-        };
-    }
-    
-    private IQueryable<Document> ApplyDocumentFilter(IQueryable<Document> query, User currentUser)
-    {
-        return query.Where(d => 
-            d.OwnerId == currentUser.Id ||                           // Owner access
-            d.IsPublic ||                                            // Public documents
-            d.SharedWith.Contains(currentUser.Id) ||                 // Shared documents
-            d.DepartmentId == currentUser.DepartmentId ||            // Department access
-            currentUser.Roles.Contains("SystemAdmin"));              // Admin access
-    }
-    
-    private IQueryable<Order> ApplyOrderFilter(IQueryable<Order> query, User currentUser)
-    {
-        return query.Where(o => o.OwnerId == currentUser.TenantId); // Tenant isolation
-    }
+    public string OwnedBy { get; private set; } = string.Empty;
+    // ... other members
 }
-```
 
-#### 3. DbContext with Authorization
-
-```csharp
-public class AuthorizedDbContext : DbContext, IDataOwnerDbContext
+// 2. DbContext exposes the current caller's access
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IDataOwnerDbContext
 {
-    private readonly IDataOwnerProvider _dataOwnerProvider;
-    
-    public AuthorizedDbContext(
-        DbContextOptions<AuthorizedDbContext> options,
-        IDataOwnerProvider dataOwnerProvider) : base(options)
-    {
-        _dataOwnerProvider = dataOwnerProvider;
-    }
-    
-    public DbSet<Document> Documents { get; set; }
-    public DbSet<Order> Orders { get; set; }
-    public DbSet<User> Users { get; set; }
-    
+    public IEnumerable<string> AccessibleKeys { get; init; } = [];
+    // IsUnrestrictedAccess defaults to false via the interface — override only for admin/system contexts.
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        
-        // Apply global query filters for authorization
-        modelBuilder.Entity<Document>()
-            .HasQueryFilter(d => ApplyDocumentAuthorizationFilter(d));
-        
-        modelBuilder.Entity<Order>()
-            .HasQueryFilter(o => ApplyOrderAuthorizationFilter(o));
-    }
-    
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        // Validate authorization before saving
-        await ValidateAuthorizationAsync(cancellationToken);
-        
-        return await base.SaveChangesAsync(cancellationToken);
-    }
-    
-    private async Task ValidateAuthorizationAsync(CancellationToken cancellationToken)
-    {
-        foreach (var entry in ChangeTracker.Entries())
-        {
-            if (entry.Entity is IOwnedBy<string>)
-            {
-                var operation = entry.State switch
-                {
-                    EntityState.Added => "Create",
-                    EntityState.Modified => "Update",
-                    EntityState.Deleted => "Delete",
-                    _ => null
-                };
-                
-                if (operation != null)
-                {
-                    var canAccess = await _dataOwnerProvider.CanAccessAsync(entry.Entity, operation, cancellationToken);
-                    if (!canAccess)
-                    {
-                        throw new UnauthorizedAccessException(
-                            $"User is not authorized to {operation.ToLower()} this {entry.Entity.GetType().Name}");
-                    }
-                }
-            }
-        }
-    }
-    
-    private bool ApplyDocumentAuthorizationFilter(Document document)
-    {
-        // This will be translated to SQL by EF Core
-        // Implementation depends on your authorization logic
-        return true; // Simplified for example
-    }
-    
-    private bool ApplyOrderAuthorizationFilter(Order order)
-    {
-        // Multi-tenant filtering
-        return true; // Simplified for example
-    }
-    
-    public IQueryable<TEntity> AuthorizedSet<TEntity>() where TEntity : class
-    {
-        var baseQuery = Set<TEntity>();
-        return _dataOwnerProvider.ApplyAuthorizationFilter(baseQuery);
-    }
+        => modelBuilder.UseAutoConfigModel(); // required — see "How it composes" below
 }
+
+// 3. Provider supplies the current owner key and the caller's accessible keys
+public sealed class TenantOwnerProvider(ICurrentTenant currentTenant) : IDataOwnerProvider
+{
+    public string? GetOwnershipKey() => currentTenant.TenantId;
+    // Default GetAccessibleKeys() wraps GetOwnershipKey() into a single-key collection;
+    // override it if a caller may see more than one key (see section 3).
+}
+
+// 4. Registration
+services
+    .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
+    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
 ```
 
-#### 4. Service Layer Integration
+`AddDataOwnerProvider<TDbContext, TProvider>()` is an `extension(IServiceCollection)` member on
+`EfCoreDataAuthSetup` (C# 14 extension members). It:
+
+1. Registers `DataOwnerAuthQuery` as a global model builder (`AddGlobalModelBuilder<DataOwnerAuthQuery>()`) — a
+   no-op if it's already registered (checked via `IsRegistered<IDataOwnerProvider>()`).
+2. Registers `TProvider` as scoped `IDataOwnerProvider`.
+3. Registers `DataOwnerHook` as a keyed hook for `TDbContext` (`AddHook<TDbContext, DataOwnerHook>()`).
+
+Two things it does **not** do for you, because they belong to the packages it builds on:
+
+- Call `UseAutoConfigModel(...)` on your `DbContextOptionsBuilder` / inside `OnModelCreating` — without it the
+  global query filter is never applied to the model (see section 5 and the gotchas below).
+- Wire `UseHooks<TDbContext>(provider)` into your `DbContextOptionsBuilder` — `AddDbContextWithHook<TDbContext>`
+  (from `DKNet.EfCore.Hooks`) does this for you; if you build the `DbContext` another way, add
+  `options.UseHooks<TDbContext>(provider)` yourself or `DataOwnerHook` is registered in DI but never runs.
+
+## 3. Features
+
+### 3.1 `IOwnedBy` — ownership marker
 
 ```csharp
-public class DocumentService
+public interface IOwnedBy
 {
-    private readonly AuthorizedDbContext _context;
-    private readonly IDataOwnerProvider _dataOwnerProvider;
-    private readonly ICurrentUserService _currentUserService;
-    
-    public DocumentService(
-        AuthorizedDbContext context,
-        IDataOwnerProvider dataOwnerProvider,
-        ICurrentUserService currentUserService)
-    {
-        _context = context;
-        _dataOwnerProvider = dataOwnerProvider;
-        _currentUserService = currentUserService;
-    }
-    
-    // Automatically filtered by authorization
-    public async Task<IEnumerable<Document>> GetDocumentsAsync()
-    {
-        return await _context.AuthorizedSet<Document>()
-            .OrderByDescending(d => d.CreatedAt)
-            .ToListAsync();
-    }
-    
-    public async Task<Document?> GetDocumentAsync(int documentId)
-    {
-        return await _context.AuthorizedSet<Document>()
-            .FirstOrDefaultAsync(d => d.Id == documentId);
-    }
-    
-    public async Task<Document> CreateDocumentAsync(CreateDocumentRequest request)
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null)
-            throw new UnauthorizedAccessException("No current user");
-        
-        var document = new Document(request.Title, request.Content, currentUser.Id)
-        {
-            IsPublic = request.IsPublic,
-            DepartmentId = currentUser.DepartmentId
-        };
-        
-        // Authorization check is performed in SaveChangesAsync
-        _context.Documents.Add(document);
-        await _context.SaveChangesAsync();
-        
-        return document;
-    }
-    
-    public async Task<Document> UpdateDocumentAsync(int documentId, UpdateDocumentRequest request)
-    {
-        // This will only return the document if user is authorized to see it
-        var document = await _context.AuthorizedSet<Document>()
-            .FirstOrDefaultAsync(d => d.Id == documentId);
-        
-        if (document == null)
-            throw new EntityNotFoundException($"Document {documentId} not found or access denied");
-        
-        document.Title = request.Title;
-        document.Content = request.Content;
-        document.IsPublic = request.IsPublic;
-        
-        // Authorization for update is checked in SaveChangesAsync
-        await _context.SaveChangesAsync();
-        
-        return document;
-    }
-    
-    public async Task ShareDocumentAsync(int documentId, ShareDocumentRequest request)
-    {
-        var document = await _context.AuthorizedSet<Document>()
-            .FirstOrDefaultAsync(d => d.Id == documentId);
-        
-        if (document == null)
-            throw new EntityNotFoundException($"Document {documentId} not found or access denied");
-        
-        // Only owner can share documents
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (document.OwnerId != currentUser?.Id)
-            throw new UnauthorizedAccessException("Only document owner can share documents");
-        
-        document.SharedWith.AddRange(request.UserIds.Except(document.SharedWith));
-        await _context.SaveChangesAsync();
-    }
+    string OwnedBy { get; }
 }
 ```
 
-#### 5. Service Registration
+Implement this on any entity that should be subject to ownership filtering and stamping. Only entities that
+implement `IOwnedBy` are touched by the filter or the hook — everything else in the model is unaffected. The
+getter-only shape signals intent: consumers should mutate `OwnedBy` through a domain method or a private setter, not
+assign it arbitrarily (the hook and its reassignment guard, section 3.3, assume that discipline).
+
+### 3.2 Automatic global query filter (`DataOwnerAuthQuery`)
+
+Registering the provider (section 2) applies a global EF Core query filter to every entity type in the model that
+implements `IOwnedBy` (excluding TPH-discriminated subtypes — `GetDiscriminatorValue() == null` — since EF Core
+already applies a base type's filter down the hierarchy). The filter, evaluated per query against your
+`IDataOwnerDbContext`:
 
 ```csharp
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddDataAuthorization(this IServiceCollection services)
-    {
-        // Register authorization services
-        services.AddScoped<IDataOwnerProvider, DocumentDataOwnerProvider>();
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<IUserRoleService, UserRoleService>();
-        
-        return services;
-    }
-}
-
-// In Program.cs or Startup.cs
-services.AddDbContext<AuthorizedDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-services.AddDataAuthorization();
+x => capturedContext.IsUnrestrictedAccess
+     || capturedContext.AccessibleKeys.Contains(((IOwnedBy)x).OwnedBy);
 ```
 
-### Advanced Usage Examples
+What this buys you: no repository, handler, or LINQ query anywhere in the app needs a `Where(x => x.OwnedBy == ...)`
+— every `DbSet<T>` query against an `IOwnedBy` entity is scoped automatically, translated to a SQL `IN` clause (see
+the gotcha in section 6 about why this only works because `AccessibleKeys` is `IEnumerable<string>`).
 
-#### 1. Policy-Based Authorization
+Key behaviors, verified from `DataOwnerAuthQuery`:
+
+- **Deny-by-default.** An empty `AccessibleKeys` collection means the filter matches nothing — the caller sees zero
+  owned rows. Empty must never be read as "unrestricted"; that has to be requested explicitly (next point).
+- **Explicit unrestricted-access escape hatch.** `IDataOwnerDbContext.IsUnrestrictedAccess` (default `false`) is the
+  only way to bypass the filter entirely. Set it to `true` only on system/admin contexts.
+- **Not ignorable.** `DataOwnerAuthQuery.IsIgnorable => false`. If your app uses `DKNet.EfCore.Specifications`,
+  a specification's `IsIgnoreQueryFilters` flag — which can bypass "ignorable" filters such as soft-delete — has no
+  effect on this one. Row-level ownership isolation cannot be turned off from a query-time flag.
+- **Per-query evaluation.** The filter closes over the `DbContext` instance (`capturedContext`), so
+  `AccessibleKeys`/`IsUnrestrictedAccess` are read fresh on every query, not fixed once at model-build time — a
+  scoped `IDataOwnerDbContext` implementation naturally gets per-request/per-scope values.
+
+### 3.3 Ownership stamping and reassignment guard (`DataOwnerHook`)
+
+`DataOwnerHook` implements `IBeforeSaveHookAsync` and runs inside the `SaveChanges` pipeline for every registered
+`TDbContext` (see section 5 for how the hook actually gets invoked). For every tracked entity it:
+
+- **On `Added` entities** (when `IDataOwnerProvider.GetOwnershipKey()` returns a non-empty key):
+  - Sets `IOwnedBy.OwnedBy` to the current owner key — but only if it's not already set. This is idempotent: an
+    entity created with `OwnedBy` already assigned (e.g. by a domain factory method) is left alone.
+  - If the entity also implements `DKNet.EfCore.Abstractions.Entities.IAuditedProperties`, stamps `CreatedBy` (to
+    the same owner key) and `CreatedOn` (`DateTimeOffset.UtcNow`) when `CreatedBy` is blank — tying ownership
+    stamping to the audited-entity convention used elsewhere in DKNet.
+  - Property values are set by walking up the type hierarchy for a writable accessor (handles private setters
+    declared on a base class, e.g. `AuditedEntity<TKey>`), so this works with the "private setter + intention-
+    revealing method" entity style the rest of the framework uses.
+- **On `Modified` entities**, guards against silent ownership reassignment: if `OwnedBy` changed from its original
+  tracked value and the new value is **not** one of the current context's `GetAccessibleKeys()`, the hook reverts
+  `OwnedBy` back to its original value before save. This stops a row from being transferred to another tenant/owner
+  or orphaned by an errant assignment, without throwing — the save proceeds with ownership unchanged.
+
+This saves you from writing that stamping/guard logic in every aggregate's constructor or every command handler —
+it happens once, uniformly, for anything that implements `IOwnedBy`.
+
+### 3.4 `IDataOwnerProvider.GetAccessibleKeys()` default
 
 ```csharp
-public class PolicyBasedDataOwnerProvider : IDataOwnerProvider
+public ICollection<string> GetAccessibleKeys()
 {
-    private readonly IAuthorizationService _authorizationService;
-    private readonly ICurrentUserService _currentUserService;
-    
-    public async Task<bool> CanAccessAsync<TEntity>(TEntity entity, string operation, CancellationToken cancellationToken = default)
-        where TEntity : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        var authorizationResult = await _authorizationService.AuthorizeAsync(
-            currentUser,
-            entity,
-            $"{typeof(TEntity).Name}.{operation}");
-        
-        return authorizationResult.Succeeded;
-    }
-    
-    public IQueryable<TEntity> ApplyAuthorizationFilter<TEntity>(IQueryable<TEntity> query) 
-        where TEntity : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null) return query.Where(_ => false);
-        
-        // Apply policy-based filtering
-        return ApplyPolicyFilter(query, currentUser);
-    }
-    
-    private IQueryable<TEntity> ApplyPolicyFilter<TEntity>(IQueryable<TEntity> query, User currentUser) 
-        where TEntity : class
-    {
-        // Implementation depends on your policy framework
-        // This could integrate with ASP.NET Core Authorization Policies
-        return query;
-    }
+    var key = GetOwnershipKey();
+    return string.IsNullOrEmpty(key) ? [] : [key];
 }
 ```
 
-#### 2. Hierarchical Authorization
+Most providers only need to implement `GetOwnershipKey()` (the key stamped on new rows) — the default
+`GetAccessibleKeys()` wraps it into a single-key collection, which is also what `DataOwnerHook` uses for the
+reassignment guard. Override `GetAccessibleKeys()` directly when a caller can legitimately see/write more than one
+key — e.g. a head-office user who spans several branch keys.
 
-```csharp
-public class HierarchicalDataOwnerProvider : IDataOwnerProvider
-{
-    private readonly IOrganizationService _organizationService;
-    private readonly ICurrentUserService _currentUserService;
-    
-    public async Task<bool> CanAccessAsync<TEntity>(TEntity entity, string operation, CancellationToken cancellationToken = default)
-        where TEntity : class
-    {
-        if (entity is not IHierarchicalEntity hierarchicalEntity)
-            return true; // No restrictions for non-hierarchical entities
-        
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null) return false;
-        
-        // Check if user has access to this level of the hierarchy
-        var userAccessLevels = await _organizationService.GetUserAccessLevelsAsync(currentUser.Id);
-        
-        return userAccessLevels.Any(level => 
-            hierarchicalEntity.OrganizationPath.StartsWith(level.Path) &&
-            level.Permissions.Contains(operation));
-    }
-    
-    public IQueryable<TEntity> ApplyAuthorizationFilter<TEntity>(IQueryable<TEntity> query) 
-        where TEntity : class
-    {
-        if (typeof(IHierarchicalEntity).IsAssignableFrom(typeof(TEntity)))
-        {
-            return ApplyHierarchicalFilter(query);
-        }
-        
-        return query;
-    }
-    
-    private IQueryable<TEntity> ApplyHierarchicalFilter<TEntity>(IQueryable<TEntity> query) 
-        where TEntity : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null)
-            return query.Where(_ => false);
-        
-        // Filter based on organizational hierarchy
-        // This would be translated to appropriate SQL
-        return query;
-    }
-}
-```
+Note this is a different member than `IDataOwnerDbContext.AccessibleKeys` (section 3.2): the provider supplies the
+data used by both the DbContext's `AccessibleKeys` property (your implementation typically just forwards
+`_provider.GetAccessibleKeys()`) and the hook's reassignment guard — the DbContext is what the query filter reads.
 
-#### 3. Field-Level Authorization
+## 4. Configuration options and defaults
 
-```csharp
-public class FieldLevelAuthorizationService
-{
-    private readonly IDataOwnerProvider _dataOwnerProvider;
-    private readonly ICurrentUserService _currentUserService;
-    
-    public async Task<TDto> ApplyFieldLevelAuthorizationAsync<TEntity, TDto>(TEntity entity, TDto dto)
-        where TEntity : class
-        where TDto : class
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        if (currentUser == null) return dto;
-        
-        var sensitiveFields = typeof(TDto).GetProperties()
-            .Where(p => p.GetCustomAttribute<SensitiveDataAttribute>() != null)
-            .ToList();
-        
-        foreach (var field in sensitiveFields)
-        {
-            var canAccessField = await _dataOwnerProvider.CanAccessAsync(entity, $"Read.{field.Name}");
-            if (!canAccessField)
-            {
-                // Clear sensitive field value
-                field.SetValue(dto, GetDefaultValue(field.PropertyType));
-            }
-        }
-        
-        return dto;
-    }
-    
-    private static object? GetDefaultValue(Type type)
-    {
-        return type.IsValueType ? Activator.CreateInstance(type) : null;
-    }
-}
-```
+There is no `appsettings.json`-driven configuration — everything is expressed through the three interfaces you
+implement:
 
-## Best Practices
+| Setting | Where | Default | Effect |
+|---|---|---|---|
+| `IDataOwnerDbContext.IsUnrestrictedAccess` | your `DbContext` | `false` (interface default) | `false`: rows restricted to `AccessibleKeys`. `true`: query filter bypassed entirely for this context. |
+| `IDataOwnerDbContext.AccessibleKeys` | your `DbContext` | you supply it | Empty collection ⇒ deny all `IOwnedBy` rows (not "allow all"). |
+| `IDataOwnerProvider.GetAccessibleKeys()` | your provider | wraps `GetOwnershipKey()` into one key, or `[]` | Override for multi-key callers. |
+| `IDataOwnerProvider.GetOwnershipKey()` | your provider | required, no default | Owner key stamped on new `IOwnedBy` entities; blank/null ⇒ hook skips stamping. |
+| `DataOwnerAuthQuery.FilterKey` | fixed | `nameof(DataOwnerAuthQuery)` | Named EF Core 10 query filter key; used internally, not configurable. |
+| `DataOwnerAuthQuery.IsIgnorable` | fixed | `false` | Cannot be bypassed via `ISpecification.IsIgnoreQueryFilters`. |
 
-### 1. Authorization Rule Design
+## 5. How it composes with other DKNet packages
 
-```csharp
-// Good: Clear, business-focused authorization rules
-public async Task<bool> CanAccessDocumentAsync(Document document, User user, string operation)
-{
-    return operation switch
-    {
-        "Read" => user.Id == document.OwnerId || 
-                 document.IsPublic || 
-                 document.SharedWith.Contains(user.Id),
-        "Update" => user.Id == document.OwnerId,
-        "Delete" => user.Id == document.OwnerId && user.HasRole("DocumentAdmin"),
-        _ => false
-    };
-}
+This package is a consumer of two other EF Core building blocks, not a standalone interceptor:
 
-// Avoid: Complex authorization logic mixed with data access
-public async Task<Document> GetDocumentAsync(int id)
-{
-    var document = await _context.Documents.FindAsync(id);
-    // DON'T: Mix authorization with data retrieval
-    if (document.OwnerId != _currentUser.Id && !document.IsPublic && ...)
-        throw new UnauthorizedAccessException();
-    return document;
-}
-```
+- **`DKNet.EfCore.Extensions` — global query filter plumbing.** `DataOwnerAuthQuery` derives from
+  `DKNet.EfCore.Extensions.Configurations.GlobalQueryFilter` and is registered via
+  `services.AddGlobalModelBuilder<DataOwnerAuthQuery>()`. That registration only takes effect once your
+  `DbContext` calls `modelBuilder`/`optionsBuilder.UseAutoConfigModel(...)` — `AutoConfigModelCustomizer` is what
+  invokes `RegisterGlobalModelBuilders`, which instantiates every registered `IGlobalModelBuilder` (including
+  `DataOwnerAuthQuery`) and calls `Apply(modelBuilder, dbContext)` for each `IOwnedBy` entity type in your model.
+  Skip `UseAutoConfigModel` and the filter is simply never applied — see the gotcha below.
+- **`DKNet.EfCore.Hooks` — the `SaveChanges` pipeline.** `DataOwnerHook` implements `IBeforeSaveHookAsync` from
+  `DKNet.EfCore.Hooks` and is registered as a keyed hook via `services.AddHook<TDbContext, DataOwnerHook>()`. It
+  only actually runs if `HookRunnerInterceptor` is attached to the `DbContext`'s options
+  (`options.UseHooks<TDbContext>(provider)`), which `AddDbContextWithHook<TDbContext>(...)` does for you. If you
+  configure the `DbContext` with plain `AddDbContext` instead, add `options.UseHooks<TDbContext>(provider)`
+  yourself inside the options delegate, or the hook is registered in DI but never invoked.
+- **`DKNet.EfCore.Abstractions` entities.** The hook special-cases entities that also implement
+  `IAuditedProperties` (from `DKNet.EfCore.Abstractions.Entities`) to stamp `CreatedBy`/`CreatedOn` alongside
+  `OwnedBy`, so ownership and audit stamping stay consistent for entities that use both conventions.
+- **`DKNet.EfCore.Specifications`** (if used in the same app): its `IsIgnoreQueryFilters` flag can bypass
+  "ignorable" global filters, but `DataOwnerAuthQuery.IsIgnorable => false` means row-level ownership isolation
+  is exempt from that bypass by design.
 
-### 2. Performance Considerations
+## 6. Gotchas and limits
 
-```csharp
-// Good: Apply filters at database level
-public IQueryable<Document> GetAuthorizedDocuments()
-{
-    return _context.Documents
-        .Where(d => d.OwnerId == _currentUser.Id || d.IsPublic);
-}
-
-// Avoid: Filtering in memory
-public async Task<IEnumerable<Document>> GetAuthorizedDocuments()
-{
-    var allDocuments = await _context.Documents.ToListAsync();
-    return allDocuments.Where(d => CanAccess(d, "Read")); // Memory filtering
-}
-```
-
-### 3. Testing Authorization
-
-```csharp
-[Test]
-public async Task GetDocuments_UserCanOnlyAccessOwnDocuments()
-{
-    // Arrange
-    var user1 = new User { Id = "user1" };
-    var user2 = new User { Id = "user2" };
-    
-    var doc1 = new Document("Doc 1", "Content 1", user1.Id);
-    var doc2 = new Document("Doc 2", "Content 2", user2.Id);
-    
-    var context = CreateContextWithUser(user1);
-    context.Documents.AddRange(doc1, doc2);
-    await context.SaveChangesAsync();
-    
-    // Act
-    var results = await context.AuthorizedSet<Document>().ToListAsync();
-    
-    // Assert
-    Assert.Single(results);
-    Assert.Equal(doc1.Id, results.First().Id);
-}
-```
-
-## Integration with Other DKNet Components
-
-DKNet.EfCore.DataAuthorization integrates seamlessly with other DKNet components:
-
-- **DKNet.EfCore.Abstractions**: Uses entity interfaces and base classes
-- **DKNet.EfCore.Hooks**: Integrates with authorization hooks
-- **DKNet.EfCore.Repos**: Provides authorized repository implementations
-- **DKNet.EfCore.Events**: Supports authorization-related domain events
-- **DKNet.Fw.Extensions**: Leverages core framework utilities
-
----
-
-> 💡 **Security Tip**: Use DKNet.EfCore.DataAuthorization to implement defense-in-depth security for your data access layer. Always apply authorization at the database query level to prevent data leakage, and combine with application-level authorization for comprehensive security. Regularly audit your authorization rules and test them thoroughly to ensure they work as expected.
+- **`IDataOwnerDbContext.AccessibleKeys` must be `IEnumerable<string>`, never `ICollection<string>`.** EF Core's
+  query-filter translator can turn `Enumerable.Contains` over an `IEnumerable<string>` into a SQL `IN (...)`
+  clause, but it cannot translate `ICollection<string>.Contains` inside a query filter — it throws at query time
+  with `Translation of method 'System.Linq.Enumerable.Contains' failed`. This is exactly why the interface is
+  declared as `IEnumerable<string>` today; if you implement `IDataOwnerDbContext` yourself, expose `AccessibleKeys`
+  as `IEnumerable<string>` (backing it with a `List<string>` or `string[]` is fine — just don't widen the
+  property's declared type back to `ICollection<string>`, which silently reintroduces the untranslatable query).
+- **Empty `AccessibleKeys` denies access — it does not mean "unrestricted".** Older revisions of this package used
+  `!AccessibleKeys.Any() || AccessibleKeys.Contains(...)`, i.e. an empty collection meant "no restriction, see
+  everything." The current filter is deny-by-default: an empty collection matches nothing, and the only way to see
+  everything is the explicit `IsUnrestrictedAccess` opt-in. If you're upgrading from that older behavior, audit any
+  context that relied on "empty keys ⇒ full access" — it will now return zero rows instead.
+- **Forgetting `UseAutoConfigModel` disables filtering silently.** The query filter is only attached to the model
+  when the DbContext calls `UseAutoConfigModel(...)`. There is no runtime error if you skip it — `IOwnedBy` entities
+  simply have no query filter and every query returns all owners' rows.
+- **A `DbContext` that doesn't implement `IDataOwnerDbContext` fails open in Release builds.** `HasQueryFilter`
+  guards with `Debug.Fail(...)` when `context is not IDataOwnerDbContext`, then returns `null` (no filter). `Debug.Fail`
+  is compiled out in Release builds, so in Release this path is a silent no-op: the entity type ends up with **no**
+  ownership filter at all, and every caller sees every row. Always implement `IDataOwnerDbContext` on the exact
+  `DbContext` type you register with `AddDataOwnerProvider<TDbContext, TProvider>()`.
+- **Forgetting `UseHooks<TDbContext>` means new rows are never stamped.** `AddHook<TDbContext, DataOwnerHook>()`
+  registers the hook in DI, but `HookRunnerInterceptor` only invokes it if the `DbContext`'s options include
+  `UseHooks<TDbContext>(provider)` — use `AddDbContextWithHook<TDbContext>(...)` or add that call yourself.
+  Symptom: new `IOwnedBy` rows are saved with a blank `OwnedBy`, and the deny-by-default filter then hides them
+  from everyone, including their creator.
+- **The reassignment guard only sees changes EF Core's `ChangeTracker` sees.** `GuardOwnedByReassignment` inspects a
+  tracked `Modified` entry's original vs. current `OwnedBy` value. Raw SQL, bulk-update libraries, or any write path
+  that bypasses `SaveChanges`/the `ChangeTracker` is not covered — the guard is not a database-level constraint.
+- **TPH (table-per-hierarchy) entities:** the filter is only registered for entity types where
+  `GetDiscriminatorValue() == null`. If `IOwnedBy` is implemented on a base type in a TPH hierarchy, the filter is
+  registered once for the root type; EF Core applies a base type's query filter to derived types in the same
+  hierarchy automatically, so this is expected behavior, not a limitation — but a derived type that implements
+  `IOwnedBy` independently of its base (uncommon) will not get its own filter registration.

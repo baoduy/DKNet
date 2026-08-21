@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using DKNet.EfCore.Extensions.Configurations;
+using DKNet.EfCore.Specifications.Definitions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Specifications.Extensions;

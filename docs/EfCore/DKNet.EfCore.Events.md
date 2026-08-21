@@ -1,491 +1,162 @@
 # DKNet.EfCore.Events
 
-**Domain event handling and dispatching capabilities for Entity Framework Core that enable event-driven architecture patterns, supporting loose coupling between aggregates and implementing Domain-Driven Design (DDD) principles within the Onion Architecture.**
+Dispatches domain events raised by entities during `SaveChanges` — the runtime half of DKNet's domain-events
+feature. The companion package `DKNet.EfCore.Abstractions` defines the contracts entities and publishers
+implement; this package is what actually collects and fires the events.
 
-## What is this project?
+## 1. What problem this solves
 
-DKNet.EfCore.Events provides a comprehensive event-driven architecture framework for Entity Framework Core applications. It enables entities to raise domain events that are automatically collected and dispatched during database operations, facilitating communication between different parts of the application without tight coupling.
+An aggregate's business method (`order.Complete()`, `customer.ChangeEmail()`) often needs to trigger something
+outside itself — send an email, update a read model, notify another bounded context — without knowing or caring
+who's listening. Wiring that by hand means every write path has to remember to call a mediator/bus right after
+`SaveChangesAsync`, and the domain method ends up depending on messaging infrastructure it shouldn't know about.
 
-### Key Features
+`DKNet.EfCore.Events` closes that gap for EF Core: a business method queues a plain object on the entity
+(`AddEvent(...)`); the package notices it during the entity's next `SaveChanges`, waits until the save has
+actually committed, then hands every queued event to whatever `IEventPublisher` you registered. The domain method
+never references the publisher, the bus, or even this package.
 
-- **IEventEntity Interface**: Contract for entities that can raise domain events
-- **EntityEventItem**: Strongly-typed event container with metadata
-- **Event Collection**: Automatic event queuing and retrieval from entities
-- **Event Dispatching**: Automatic event publishing after successful database operations
-- **Event Publisher Integration**: Seamless integration with messaging systems
-- **Pre/Post Save Events**: Support for events before and after database operations
-- **Exception Handling**: Comprehensive error handling for event processing
-- **Async Support**: Full async/await support for event handling
-- **Event Metadata**: Rich event information with timestamps and context
+Reach for it when you're modeling rich aggregates and want cross-aggregate or cross-cutting side effects
+triggered by business facts ("an order was placed") rather than by call sites remembering to trigger them. Skip
+it for plain CRUD with no such side effects — there's nothing to dispatch.
 
-## How it contributes to DDD and Onion Architecture
-
-### Domain Event Implementation
-
-DKNet.EfCore.Events implements the **Domain Events pattern** that spans across multiple layers of the Onion Architecture, enabling clean communication between aggregates:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  May listen to: Integration events for external notifications  │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Event Handlers, Application Services)            │
-│                                                                 │
-│  🎭 Domain Event Handlers - Cross-aggregate coordination       │
-│  📊 Integration Event Handlers - External system integration   │
-│  🔄 Event Orchestration - Complex business workflows           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  🎯 IEventEntity - Entities that raise domain events           │
-│  📋 Domain Events - Business-significant occurrences           │
-│  🏷️ Event-driven Aggregate communication                       │
-│  ✨ Pure domain logic with event publishing                    │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Event Dispatching, Persistence)              │
-│                                                                 │
-│  📡 Event Collection - Automatic event gathering from entities │
-│  🚌 Event Dispatching - Publishing events after successful ops │
-│  🗃️ EF Core Integration - Hooks into SaveChanges lifecycle     │
-│  📊 Event Publishers - Message bus integration                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Aggregate Communication**: Loose coupling between aggregates through events
-2. **Business Logic Isolation**: Domain events express business concepts clearly
-3. **Eventual Consistency**: Support for eventual consistency patterns
-4. **Cross-Bounded Context**: Communication between different bounded contexts
-5. **Audit Trail**: Comprehensive business event history
-6. **Ubiquitous Language**: Events expressed in business terminology
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Domain defines events, infrastructure handles dispatching
-2. **Separation of Concerns**: Event handling separated from business logic
-3. **Testability**: Domain events can be verified without infrastructure
-4. **Technology Independence**: Event handling abstracted from specific technologies
-5. **Extensibility**: Easy to add new event handlers without changing domain code
-
-## How to use it
-
-### Installation
+## 2. Install and minimum registration
 
 ```bash
 dotnet add package DKNet.EfCore.Events
-dotnet add package DKNet.EfCore.Abstractions
 ```
 
-### Basic Usage Examples
+This pulls in `DKNet.EfCore.Abstractions` (the entity/event contracts) and `DKNet.EfCore.Hooks` (the save
+pipeline it plugs into) as project references.
 
-#### 1. Implementing Event Entities
+The package ships exactly one DI extension, `EventSetup.AddEventPublisher`:
 
 ```csharp
-using DKNet.EfCore.Abstractions;
-using DKNet.EfCore.Events;
-
-// Domain event definition
-public record CustomerCreatedEvent(
-    int CustomerId, 
-    string CustomerName, 
-    string Email, 
-    DateTime CreatedAt) : IDomainEvent;
-
-public record CustomerEmailChangedEvent(
-    int CustomerId, 
-    string OldEmail, 
-    string NewEmail, 
-    DateTime ChangedAt) : IDomainEvent;
-
-// Entity that raises domain events
-public class Customer : Entity<int>, IEventEntity
-{
-    private readonly List<EntityEventItem> _events = new();
-    
-    public string FirstName { get; private set; }
-    public string LastName { get; private set; }
-    public string Email { get; private set; }
-    public bool IsActive { get; private set; }
-    
-    // Constructor for new customers
-    public Customer(string firstName, string lastName, string email)
-    {
-        FirstName = firstName;
-        LastName = lastName;
-        Email = email;
-        IsActive = true;
-        
-        // Raise domain event for customer creation
-        AddEvent(new CustomerCreatedEvent(Id, $"{firstName} {lastName}", email, DateTime.UtcNow));
-    }
-    
-    // Business method that raises domain event
-    public void ChangeEmail(string newEmail)
-    {
-        if (Email == newEmail) return;
-        
-        var oldEmail = Email;
-        Email = newEmail;
-        
-        // Raise domain event for email change
-        AddEvent(new CustomerEmailChangedEvent(Id, oldEmail, newEmail, DateTime.UtcNow));
-    }
-    
-    public void Deactivate()
-    {
-        if (!IsActive) return;
-        
-        IsActive = false;
-        AddEvent(new CustomerDeactivatedEvent(Id, DateTime.UtcNow));
-    }
-    
-    // IEventEntity implementation
-    public void AddEvent(object eventItem)
-    {
-        _events.Add(new EntityEventItem(eventItem));
-    }
-    
-    public IEnumerable<EntityEventItem> GetEvents()
-    {
-        return _events.AsReadOnly();
-    }
-    
-    public void ClearEvents()
-    {
-        _events.Clear();
-    }
-}
+public static IServiceCollection AddEventPublisher<TDbContext, TImplementation>(this IServiceCollection services)
+    where TImplementation : class, IEventPublisher
+    where TDbContext : DbContext
 ```
 
-#### 2. Event Handlers
+Minimum end-to-end wiring — the DbContext **must** be registered through `DKNet.EfCore.Hooks`'s
+`AddDbContextWithHook` (or `UseHooks<TDbContext>` manually) or nothing below ever runs, since that's what installs
+the interceptor `AddEventPublisher` hooks into:
 
 ```csharp
-using DKNet.EfCore.Events;
-
-// Domain event handler
-public class CustomerCreatedEventHandler : IEventHandler<CustomerCreatedEvent>
-{
-    private readonly IEmailService _emailService;
-    private readonly ICustomerStatsService _statsService;
-    private readonly ILoggerFactory _logger;
-    
-    public CustomerCreatedEventHandler(
-        IEmailService emailService,
-        ICustomerStatsService statsService,
-        ILoggerFactory logger)
-    {
-        _emailService = emailService;
-        _statsService = statsService;
-        _logger = logger;
-    }
-    
-    public async Task Handle(CustomerCreatedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        var logger = _logger.CreateLogger<CustomerCreatedEventHandler>();
-        
-        try
-        {
-            // Send welcome email
-            await _emailService.SendWelcomeEmailAsync(
-                domainEvent.Email, 
-                domainEvent.CustomerName,
-                cancellationToken);
-            
-            // Update customer statistics
-            await _statsService.IncrementNewCustomerCountAsync(domainEvent.CreatedAt);
-            
-            logger.LogInformation("Successfully processed CustomerCreatedEvent for customer {CustomerId}", 
-                domainEvent.CustomerId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to process CustomerCreatedEvent for customer {CustomerId}", 
-                domainEvent.CustomerId);
-            throw;
-        }
-    }
-}
-
-// Cross-aggregate coordination handler
-public class CustomerEmailChangedEventHandler : IEventHandler<CustomerEmailChangedEvent>
-{
-    private readonly IRepository<Order> _orderRepository;
-    private readonly INotificationService _notificationService;
-    
-    public CustomerEmailChangedEventHandler(
-        IRepository<Order> orderRepository,
-        INotificationService notificationService)
-    {
-        _orderRepository = orderRepository;
-        _notificationService = notificationService;
-    }
-    
-    public async Task Handle(CustomerEmailChangedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        // Update related orders with new email for notifications
-        var pendingOrders = await _orderRepository.Gets()
-            .Where(o => o.CustomerId == domainEvent.CustomerId && 
-                       o.Status == OrderStatus.Pending)
-            .ToListAsync(cancellationToken);
-        
-        foreach (var order in pendingOrders)
-        {
-            order.UpdateCustomerEmail(domainEvent.NewEmail);
-        }
-        
-        // Send notification about email change
-        await _notificationService.NotifyEmailChangeAsync(
-            domainEvent.CustomerId,
-            domainEvent.OldEmail,
-            domainEvent.NewEmail,
-            cancellationToken);
-    }
-}
+services.AddDbContextWithHook<AppDbContext>((_, o) => o.UseSqlServer(connectionString));
+services.AddEventPublisher<AppDbContext, MyEventPublisher>();
 ```
 
-#### 3. DbContext Integration
+`AddEventPublisher` does two things: registers `TImplementation` as a scoped `IEventPublisher` (skipped if that
+exact implementation type is already registered), and calls `DKNet.EfCore.Hooks`'s
+`AddHook<TDbContext, EventHook>()` to add the package's internal `EventHook` to the save pipeline for
+`TDbContext`.
+
+## 3. The full lifecycle
+
+### The type you write: an event-raising entity
+
+You don't implement `IEventEntity` yourself in the common case — derive from `Entity<TKey>` (or `Entity`, its
+`Guid`-keyed convenience base) in `DKNet.EfCore.Abstractions`, which already implements all four `IEventEntity`
+members (`AddEvent(object)`, `AddEvent<TEvent>()`, `GetEvents()`, `ClearEvents()`) backed by two private,
+`[NotMapped]` collections. A business method just calls `AddEvent(...)`:
 
 ```csharp
-using DKNet.EfCore.Events;
+public record OrderPlacedEvent(Guid OrderId, decimal Total);
+public record OrderCompletedEvent(Guid OrderId);
 
-public class ApplicationDbContext : DbContext
+public class Order : Entity<Guid>
 {
-    private readonly IEventPublisher _eventPublisher;
-    
-    public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options,
-        IEventPublisher eventPublisher) : base(options)
+    private Order() { } // EF Core
+
+    public Order(Guid id, decimal total) : base(id)
     {
-        _eventPublisher = eventPublisher;
+        Total = total;
+        AddEvent(new OrderPlacedEvent(id, total)); // queued, not dispatched yet
     }
-    
-    public DbSet<Customer> Customers { get; set; }
-    public DbSet<Order> Orders { get; set; }
-    
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+
+    public decimal Total { get; private set; }
+    public string Status { get; private set; } = "Pending";
+
+    public void Complete()
     {
-        // Collect domain events before saving
-        var eventEntities = ChangeTracker.Entries<IEventEntity>()
-            .Where(e => e.Entity.GetEvents().Any())
-            .ToList();
-        
-        var domainEvents = eventEntities
-            .SelectMany(e => e.Entity.GetEvents())
-            .ToList();
-        
-        // Save changes to database
-        var result = await base.SaveChangesAsync(cancellationToken);
-        
-        // Dispatch events after successful save
-        if (domainEvents.Any())
-        {
-            await DispatchEventsAsync(domainEvents, cancellationToken);
-            
-            // Clear events from entities
-            foreach (var entityEntry in eventEntities)
-            {
-                entityEntry.Entity.ClearEvents();
-            }
-        }
-        
-        return result;
-    }
-    
-    private async Task DispatchEventsAsync(
-        IEnumerable<EntityEventItem> domainEvents, 
-        CancellationToken cancellationToken)
-    {
-        foreach (var eventItem in domainEvents)
-        {
-            try
-            {
-                await _eventPublisher.PublishAsync(eventItem.EventData, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                // Log error but don't fail the transaction
-                // Consider implementing compensation patterns for critical events
-                var logger = this.GetService<ILogger<ApplicationDbContext>>();
-                logger?.LogError(ex, "Failed to publish domain event {EventType}", 
-                    eventItem.EventData.GetType().Name);
-            }
-        }
+        Status = "Completed";
+        AddEvent(new OrderCompletedEvent(Id));
     }
 }
 ```
 
-#### 4. Service Registration
+`AddEvent(object)` just queues the instance you pass — no mapping, no `IMapper` needed. A second overload,
+`AddEvent<TEvent>()`, queues the *type* instead: at dispatch time the entity itself is mapped onto `TEvent` via
+the registered `IMapper` (see §4) — useful when the event should mirror current entity state at save time rather
+than at call time.
+
+### The publisher you write
 
 ```csharp
-using DKNet.EfCore.Events;
-
-public static class ServiceCollectionExtensions
+public sealed class LoggingEventPublisher(ILogger<LoggingEventPublisher> logger) : DefaultEventPublisher
 {
-    public static IServiceCollection AddDomainEvents(this IServiceCollection services)
+    public override Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
     {
-        // Register event handlers
-        services.AddScoped<IEventHandler<CustomerCreatedEvent>, CustomerCreatedEventHandler>();
-        services.AddScoped<IEventHandler<CustomerEmailChangedEvent>, CustomerEmailChangedEventHandler>();
-        services.AddScoped<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
-        
-        // Register event publisher (implementation depends on messaging system)
-        services.AddScoped<IEventPublisher, SlimBusEventPublisher>();
-        
-        return services;
+        logger.LogInformation("Publishing {EventType}", eventObj.GetType().Name);
+        return Task.CompletedTask;
     }
 }
-
-// In Program.cs or Startup.cs
-services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-services.AddDomainEvents();
 ```
 
-### Advanced Usage Examples
+`DefaultEventPublisher` (from `DKNet.EfCore.Abstractions`) implements the bulk overload by looping the single-item
+one, so you only need to override `PublishAsync(object, CancellationToken)`. Implementing `IEventPublisher`
+directly instead requires both overloads yourself.
 
-#### 1. Complex Event Orchestration
+### What happens on `SaveChangesAsync`
 
 ```csharp
-public class OrderCompletedEventHandler : IEventHandler<OrderCompletedEvent>
-{
-    private readonly ICustomerRepository _customerRepository;
-    private readonly IInventoryService _inventoryService;
-    private readonly IShippingService _shippingService;
-    private readonly ILoyaltyService _loyaltyService;
-    
-    public async Task Handle(OrderCompletedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        // Update customer statistics
-        var customer = await _customerRepository.FindAsync(domainEvent.CustomerId);
-        customer?.UpdateOrderHistory(domainEvent.OrderId, domainEvent.OrderTotal);
-        
-        // Update inventory levels
-        await _inventoryService.UpdateInventoryAsync(domainEvent.OrderItems, cancellationToken);
-        
-        // Schedule shipping
-        await _shippingService.ScheduleShippingAsync(domainEvent.OrderId, cancellationToken);
-        
-        // Award loyalty points
-        await _loyaltyService.AwardPointsAsync(
-            domainEvent.CustomerId, 
-            domainEvent.OrderTotal, 
-            cancellationToken);
-    }
-}
+db.Orders.Add(order);
+await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher only after this commits
 ```
 
-#### 2. Integration Events
+1. **Before the save** (`EventHook.BeforeSaveAsync`, an `IBeforeSaveHookAsync`): for every tracked entity, the
+   hook checks its `[RaisesEvent]` declarations (§3.1) against the pending operation and records which ones
+   qualify. This has to happen here, before EF Core writes anything, because
+   `EntityEntry.Property(...).IsModified` is meaningless once the save completes. Hand-raised events
+   (`AddEvent(...)`) are untouched at this point — they stay queued on the entity.
+2. **EF Core performs the actual INSERT/UPDATE/DELETE.** If it throws, `SaveChangesFailedAsync` tears down the
+   hook's per-save state and **no event is ever published** — hand-raised or declared.
+3. **After a successful save** (`EventHook.AfterSaveAsync`, an `IAfterSaveHookAsync`): the hook builds an
+   `EventContext` over the same save's `SnapshotContext`. `EventContext.GetEvents()` walks every tracked entity
+   that is `IEventEntity`, reads its queued `(object[] Events, Type[] EventTypes)` via `GetEvents()`, keeps the
+   object instances as-is, and maps any `TEvent`-only entries onto their type via the registered `IMapper` —
+   throwing `EventException` if none is registered (see §6). It also stamps a `sourceType` entry (the entity's
+   full type name) into `AdditionalData` for any event implementing `IEventItem`.
+4. Declared events captured in step 1 are now mapped from their entity onto their declared payload type (again
+   via `IMapper`, again `EventException` if missing) and merged with the hand-raised ones from the same save —
+   both reach subscribers as distinct objects.
+5. **Every registered `IEventPublisher`** — there can be more than one — receives the full combined list via
+   `PublishAsync(IEnumerable<object>, ct)`. Each publisher runs in its own `try`/`catch`: a throwing publisher is
+   logged and skipped, it does not stop the remaining publishers and does not undo the already-committed save.
+6. **Regardless of publish outcome**, `EventContext.ClearEvents()` clears every event from every entity's queue.
+   The next `SaveChanges` starts with empty queues.
 
-```csharp
-// Integration event for external systems
-public record CustomerCreatedIntegrationEvent(
-    int CustomerId,
-    string CustomerName,
-    string Email,
-    DateTime CreatedAt) : IIntegrationEvent;
+### `EventException`
 
-public class CustomerCreatedIntegrationEventHandler : IEventHandler<CustomerCreatedEvent>
-{
-    private readonly IMessageBus _messageBus;
-    
-    public async Task Handle(CustomerCreatedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        // Transform domain event to integration event
-        var integrationEvent = new CustomerCreatedIntegrationEvent(
-            domainEvent.CustomerId,
-            domainEvent.CustomerName,
-            domainEvent.Email,
-            domainEvent.CreatedAt);
-        
-        // Publish to external systems
-        await _messageBus.PublishAsync(integrationEvent, cancellationToken);
-    }
-}
-```
+`EventException(IResultBase status)` (from `FluentResults`) is thrown in exactly two situations, both about a
+missing `IMapper` for a mapping-based event source, and both at dispatch time (inside step 3/4 above), never at
+`AddEvent()` call time:
 
-#### 3. Event Sourcing Pattern
+- an entity queued a type-based event via `AddEvent<TEvent>()` with no `IMapper` registered;
+- an entity qualifies for a `[RaisesEvent]` declared event with no `IMapper` registered.
 
-```csharp
-public class EventSourcedAggregate : Entity<Guid>, IEventEntity
-{
-    private readonly List<EntityEventItem> _uncommittedEvents = new();
-    private readonly List<IDomainEvent> _eventHistory = new();
-    
-    public int Version { get; private set; }
-    
-    // Apply events to rebuild state
-    public void LoadFromHistory(IEnumerable<IDomainEvent> events)
-    {
-        foreach (var evt in events)
-        {
-            ApplyEvent(evt, false);
-            Version++;
-        }
-    }
-    
-    // Apply new events and mark as uncommitted
-    protected void ApplyEvent(IDomainEvent domainEvent, bool markAsNew = true)
-    {
-        // Apply event to aggregate state
-        When(domainEvent);
-        
-        if (markAsNew)
-        {
-            _uncommittedEvents.Add(new EntityEventItem(domainEvent));
-            Version++;
-        }
-        
-        _eventHistory.Add(domainEvent);
-    }
-    
-    // Pattern matching for event application
-    private void When(IDomainEvent domainEvent)
-    {
-        switch (domainEvent)
-        {
-            case CustomerCreatedEvent evt:
-                // Apply customer created logic
-                break;
-            case CustomerEmailChangedEvent evt:
-                // Apply email changed logic
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown event type: {domainEvent.GetType()}");
-        }
-    }
-    
-    public void AddEvent(object eventItem) => 
-        ApplyEvent((IDomainEvent)eventItem);
-    
-    public IEnumerable<EntityEventItem> GetEvents() => 
-        _uncommittedEvents.AsReadOnly();
-    
-    public void ClearEvents() => 
-        _uncommittedEvents.Clear();
-}
-```
+A third case is specific to `[RaisesEvent]`'s string form (§3.1): the declared event name doesn't resolve to a
+generated payload type in the entity's own assembly/namespace (typically because `DKNet.EfCore.DtoGenerator`
+wasn't referenced, or the project didn't rebuild) — also thrown at dispatch time, never silently dropped.
 
-## Declared Domain Events (`[RaisesEvent]`)
+### 3.1 Declared events (`[RaisesEvent]`)
 
-Declaring an event is two separate steps: shape the payload as an ordinary
+Besides hand-raising events from code, an entity can *declare* them instead — no `IEventEntity`, no `Entity<TKey>`
+base class required. Declaring is two steps: shape the payload as a
 [DtoGenerator](./DKNet.EfCore.DtoGenerator.md#declaring-domain-events-raisesevent)-generated record via
-`[GenerateDto]`, then declare a raise rule on the entity via the repeatable
-`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s), and
-— for updates — an optional narrowing property list. See the DtoGenerator link above for the declaration
-syntax and build-time validation. This package is what raises the declared events.
+`[GenerateDto]`, then apply the repeatable
+`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s)
+(`EventOperations.Created | Updated | Deleted`), and — for `Updated` — an optional narrowing property list:
 
 ```csharp
 using DKNet.EfCore.Abstractions.Events;
@@ -496,7 +167,6 @@ public partial record OrderPlacedEvent;
 [GenerateDto(typeof(Order))]
 public partial record OrderStatusChangedEvent;
 
-// Entity — no IEventEntity or AggregateRoot base class required
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
 [RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Deleted)]
@@ -507,197 +177,108 @@ public class Order
 }
 ```
 
-### How declared events raise
+`DKNet.EfCore.DtoGenerator` validates these rules at build time (payload/entity match, narrowing property names)
+but emits no runtime code for them — **this package** is what reads `[RaisesEvent]` via reflection (cached per
+entity type, and per entity-type+event-name for the string form) and raises them at save time, exactly per the
+lifecycle in §3 above. A rule naming the same payload for the same operation twice on one entity raises it once.
 
-1. **Before `SaveChanges`**: for every tracked entity whose rule's `Operations` matches the pending operation
-   (Added/Modified/Deleted), the update-narrowing property list (if any) is checked against
-   `EntityEntry.Property(...).IsModified` — this must happen before the save, since that flag is meaningless
-   afterwards.
-2. **After a successful `SaveChanges`**: each qualifying rule is mapped from the entity onto its named payload
-   type via the registered `IMapper`, merged with any hand-raised (`AddEvent(...)`) events from the same save,
-   and published through the normal `IEventPublisher` path — declared and hand-raised events are distinct
-   types and both reach subscribers. Two rules naming the same payload for the same operation raise it once.
-3. **Delete events carry pre-removal values**: EF Core's delete does not mutate the in-memory entity's property
-   values, so the raised delete event mirrors the entity exactly as it was before removal.
+An entity may combine `[RaisesEvent]` declarations with hand-raised `AddEvent(...)` calls in the same class —
+both are published from the same save.
 
-Any entity mapped by the `DbContext` may declare rules this way — it does not need to be an `AggregateRoot` or
-implement `IEventEntity`.
+**String form**: `[RaisesEvent("CustomerTouched", EventOperations.Created)]` skips the hand-written
+`[GenerateDto]` payload — `DKNet.EfCore.DtoGenerator` generates a default-shape `public partial record` for it in
+the entity's own namespace. At runtime, this package resolves that generated type by reflection from the entity's
+own assembly and namespace; if it isn't found, the first save that would raise it throws `EventException` naming
+the missing event.
 
-### Mapping requirement
+## 4. Configuration and defaults
 
-Declared events require an `IMapper` registration (Mapster's `IMapper`, or your own), registered alongside
-`AddEventPublisher`:
+There is no options object — the single knob is which `IEventPublisher` implementation(s) you register.
 
-```csharp
-services.AddSingleton<IMapper, Mapper>();
-services.AddEventPublisher<AppDbContext, EventPublisher>();
-```
+- **Publisher lifetime**: scoped, added via `AddScoped<IEventPublisher, TImplementation>()`. Calling
+  `AddEventPublisher` twice with the *same* `TImplementation` is a no-op (guarded via
+  `IsRegisteredWithImplementation`); calling it with *different* implementations registers all of them, and
+  **every one runs on every save** (`IEnumerable<IEventPublisher>` — not first-match).
+- **`IMapper`**: optional unless an entity uses `AddEvent<TEvent>()` or `[RaisesEvent]`. `EventHook` resolves
+  `mappers.FirstOrDefault()` from `IEnumerable<MapsterMapper.IMapper>` — if you register more than one `IMapper`
+  implementation, only the first one DI resolves is used for event mapping. Register one alongside
+  `AddEventPublisher`:
+  ```csharp
+  services.AddSingleton<IMapper, Mapper>(); // Mapster's IMapper, or your own implementation
+  services.AddEventPublisher<AppDbContext, MyEventPublisher>();
+  ```
+- **Logging**: `ILogger<EventHook>` is optional (nullable constructor parameter) — an informational entry on
+  `AfterSaveAsync`, an error entry per failed publisher. No log is emitted for individual successful publishes.
+- **No retry, no ordering knob, no dead-lettering.** These aren't configurable because the package doesn't
+  implement them at all — see §6.
 
-Saving an entity that raised a declared event with no `IMapper` registered throws:
+## 5. How this composes with Abstractions and Hooks
 
-```
-Entity raised {N} declared event(s) via [RaisesEvent], which map the entity onto the event type
-and therefore require an IMapper registration. Register one to use declared domain events.
-```
+This is the part worth understanding before adopting the package: **Events doesn't define entities, event bases,
+or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` defines, running inside a pipeline
+`DKNet.EfCore.Hooks` owns.**
 
-### Migration note
+**With `DKNet.EfCore.Abstractions`:**
 
-Adopting this on an existing domain: add a `[GenerateDto]` payload record and a `[RaisesEvent]` rule naming it
-on the entity, reference this package, and register an `IMapper`. A domain project that only references
-`DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds fine with rules declared — nothing raises
-until the application also registers this package's save hook. Existing hand-raised events keep firing
-unchanged, and no entity needs a base-class change to start declaring events alongside them.
+- `IEventEntity` is the contract an entity satisfies to participate; `Entity<TKey>`/`Entity` are the
+  batteries-included base classes that already implement it, so most domain code never touches the interface
+  directly.
+- `IEventItem`/`EventItem` is an optional richer event base (adds `AdditionalData` for message-header-style
+  metadata and an `EventType` string) — plain records/classes work fine as events too, they just don't get the
+  `sourceType` stamping `EventContext` adds for `IEventItem` events.
+  `IEventPublisher`/`DefaultEventPublisher` is the contract you implement; `EventOperations` and
+  `RaisesEventAttribute` are the declared-event vocabulary.
+- The dependency only points one way: `DKNet.EfCore.Events` project-references `DKNet.EfCore.Abstractions`, never
+  the reverse. A domain project can reference *only* `DKNet.EfCore.Abstractions` (plus `DKNet.EfCore.DtoGenerator`
+  for `[RaisesEvent]` payloads) and compile cleanly with events declared/raised in domain code — nothing actually
+  dispatches until the application also references and registers `DKNet.EfCore.Events`. This is the dependency
+  inversion the DDD/Onion split is built on: domain layer depends on abstractions only, infrastructure wires the
+  concrete dispatch.
 
-### Nested owned-value limitation
+**With `DKNet.EfCore.Hooks`:**
 
-A change confined to a nested owned value (`OwnsOne`/`[Owned]`) does not raise the owner's update event, because
-EF Core does not report the owner itself as `Modified` when only the owned value changed. Narrow the rule's
-properties to the owner's own direct properties only.
+- `EventHook` *is* a hook: `internal sealed class EventHook(...) : HookAsync`, and `HookAsync` /
+  `IHookAsync` / `IBeforeSaveHookAsync` / `IAfterSaveHookAsync` all come from `DKNet.EfCore.Hooks`. It's
+  registered through the exact same `IServiceCollection.AddHook<TDbContext, THook>()` extension any other hook
+  uses — there's no event-specific pipeline; it's a first-class citizen of the general hook mechanism.
+- Concretely, that means `EventHook` shares one `HookRunnerInterceptor` (an EF Core `SaveChangesInterceptor`,
+  cached per `DbContext.ContextId.InstanceId`) with every other hook registered for the same `TDbContext` — audit
+  hooks, validation hooks, whatever else you add. `HookRunnerInterceptor.SavingChangesAsync` runs all
+  `BeforeSaveHooks` (including `EventHook.BeforeSaveAsync`) before EF Core's actual save;
+  `HookRunnerInterceptor.SavedChangesAsync` runs all `AfterSaveHooks` (including `EventHook.AfterSaveAsync`) —
+  and is only reached once the save has truly succeeded. `SaveChangesFailedAsync` just disposes the cached hook
+  state; `AfterSaveHooks` never run on a failed save, so `EventHook` never publishes for one.
+- The DbContext must be registered via `AddDbContextWithHook<TDbContext>` (or `UseHooks<TDbContext>` on a
+  manually-built `DbContextOptionsBuilder`) for the interceptor to be installed at all —
+  `AddEventPublisher` only registers `EventHook` into DI as a hook candidate, it does not wire the interceptor
+  into `DbContextOptions` by itself.
+- Because it's just another hook, `DKNet.EfCore.Hooks`'s `dbContext.DisableHooks()` (used for data
+  seeding/migrations) also suppresses event dispatch for that scope — there's no separate "disable events only"
+  switch.
 
-### Security note
+## 6. Gotchas and limits
 
-A declared event mirrors the entity's properties by default, same rule as generated DTOs — sensitive values are
-included unless `Exclude`d on the payload's `[GenerateDto]` declaration.
-
-## Best Practices
-
-### 1. Event Design
-
-```csharp
-// Good: Immutable events with rich business information
-public record CustomerEmailChangedEvent(
-    int CustomerId,
-    string OldEmail,
-    string NewEmail,
-    DateTime ChangedAt,
-    string ChangedBy) : IDomainEvent;
-
-// Good: Events represent business facts
-public record OrderShippedEvent(
-    int OrderId,
-    string TrackingNumber,
-    string ShippingAddress,
-    DateTime ShippedAt) : IDomainEvent;
-
-// Avoid: Technical events that don't represent business concepts
-public record EntityUpdatedEvent(int EntityId, Dictionary<string, object> Changes) : IDomainEvent;
-```
-
-### 2. Event Handler Idempotency
-
-```csharp
-public class OrderCompletedEventHandler : IEventHandler<OrderCompletedEvent>
-{
-    private readonly IIdempotencyService _idempotencyService;
-    
-    public async Task Handle(OrderCompletedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        var idempotencyKey = $"order-completed-{domainEvent.OrderId}";
-        
-        if (await _idempotencyService.HasBeenProcessedAsync(idempotencyKey))
-        {
-            return; // Already processed
-        }
-        
-        try
-        {
-            // Process event
-            await ProcessOrderCompletionAsync(domainEvent, cancellationToken);
-            
-            // Mark as processed
-            await _idempotencyService.MarkAsProcessedAsync(idempotencyKey);
-        }
-        catch (Exception)
-        {
-            // Don't mark as processed if failed
-            throw;
-        }
-    }
-}
-```
-
-### 3. Error Handling
-
-```csharp
-public class ResilientEventHandler : IEventHandler<CustomerCreatedEvent>
-{
-    private readonly IRetryPolicy _retryPolicy;
-    private readonly ICircuitBreaker _circuitBreaker;
-    private readonly IDeadLetterQueue _deadLetterQueue;
-    
-    public async Task Handle(CustomerCreatedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _retryPolicy.ExecuteAsync(async () =>
-            {
-                await _circuitBreaker.ExecuteAsync(async () =>
-                {
-                    await ProcessEventAsync(domainEvent, cancellationToken);
-                });
-            });
-        }
-        catch (Exception ex)
-        {
-            // Send to dead letter queue for manual processing
-            await _deadLetterQueue.SendAsync(domainEvent, ex, cancellationToken);
-            throw;
-        }
-    }
-}
-```
-
-### 4. Testing Domain Events
-
-```csharp
-[Test]
-public void ChangeEmail_ValidEmail_RaisesCustomerEmailChangedEvent()
-{
-    // Arrange
-    var customer = new Customer("John", "Doe", "john@example.com");
-    customer.ClearEvents(); // Clear creation event
-    
-    // Act
-    customer.ChangeEmail("john.doe@example.com");
-    
-    // Assert
-    var events = customer.GetEvents();
-    Assert.Single(events);
-    
-    var emailChangedEvent = events.First().EventData as CustomerEmailChangedEvent;
-    Assert.NotNull(emailChangedEvent);
-    Assert.Equal(customer.Id, emailChangedEvent.CustomerId);
-    Assert.Equal("john@example.com", emailChangedEvent.OldEmail);
-    Assert.Equal("john.doe@example.com", emailChangedEvent.NewEmail);
-}
-
-[Test]
-public async Task Handle_CustomerCreatedEvent_SendsWelcomeEmail()
-{
-    // Arrange
-    var emailService = new Mock<IEmailService>();
-    var handler = new CustomerCreatedEventHandler(emailService.Object, null, null);
-    var domainEvent = new CustomerCreatedEvent(1, "John Doe", "john@example.com", DateTime.UtcNow);
-    
-    // Act
-    await handler.Handle(domainEvent);
-    
-    // Assert
-    emailService.Verify(x => x.SendWelcomeEmailAsync("john@example.com", "John Doe", It.IsAny<CancellationToken>()), 
-        Times.Once);
-}
-```
-
-## Integration with Other DKNet Components
-
-DKNet.EfCore.Events integrates seamlessly with other DKNet components:
-
-- **DKNet.EfCore.Abstractions**: Uses entity base classes and interfaces
-- **DKNet.EfCore.Repos**: Events are collected and dispatched during repository operations
-- **DKNet.SlimBus.Extensions**: Integrates with SlimMessageBus for event publishing
-- **DKNet.EfCore.Hooks**: Provides hooks for event lifecycle management
-- **DKNet.Fw.Extensions**: Leverages core framework utilities for event processing
-
----
-
-> 💡 **Architecture Tip**: Use DKNet.EfCore.Events to implement the Domain Events pattern in your DDD applications. Domain events enable loose coupling between aggregates and provide a clean way to handle cross-cutting concerns without violating aggregate boundaries. Always ensure events represent business facts and are immutable once created.
+- **Events are cleared unconditionally after `AfterSaveAsync`**, whether every publisher succeeded or not. A
+  publisher exception is logged, not rethrown — it neither undoes the already-committed save nor requeues the
+  event for a retry. If you need at-least-once delivery guarantees (outbox pattern, dead-lettering), build that
+  into your `IEventPublisher` implementation; this package doesn't provide it.
+- **No ordering guarantee.** Events across multiple entities in one save, and multiple registered publishers, run
+  in whatever order the underlying collections/DI enumerate them — don't depend on sequence for correctness.
+- **`AddEvent(object)` never needs an `IMapper`; `AddEvent<TEvent>()` and `[RaisesEvent]` always do.** Forgetting
+  the mapper doesn't fail fast at startup or at the `AddEvent` call site — it throws `EventException` only at the
+  next `SaveChanges` that actually needs to map something.
+- **Delete events mirror pre-removal entity state**, not nulled-out fields — EF Core doesn't clear an entity's
+  in-memory properties when it's deleted, so a declared `Deleted` event captures the entity exactly as it was
+  right before removal. This is expected, not a bug.
+- **A change confined to a nested owned value (`OwnsOne`/`[Owned]`) does not raise the owner's `Updated` rule** —
+  EF Core doesn't report the owner itself as `Modified` when only an owned value changed. Narrow `[RaisesEvent]`
+  properties to the owner's own direct properties only.
+- **`[RaisesEvent]` compiles and validates without this package.** A project referencing only
+  `DKNet.EfCore.Abstractions` + `DKNet.EfCore.DtoGenerator` builds fine with declarations in place — nothing
+  raises until the application also references `DKNet.EfCore.Events` and registers the hook.
+- **A declared event mirrors the entity's properties by default**, same rule as `[GenerateDto]` DTOs generally —
+  sensitive fields need explicit `Exclude` on the payload's `[GenerateDto]` declaration or they leak into the
+  published event.
+- **`DisableHooks()` silently disables event dispatch too**, since `EventHook` is just another hook on the shared
+  pipeline — don't be surprised when events stop firing during a seeding/migration scope that disabled hooks for
+  an unrelated reason.

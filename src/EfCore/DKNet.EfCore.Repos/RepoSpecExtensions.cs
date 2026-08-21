@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using DKNet.EfCore.Extensions.Configurations;
 using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Repositories;
 using X.PagedList;
 using X.PagedList.EF;
 

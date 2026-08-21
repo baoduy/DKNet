@@ -1,5 +1,7 @@
 ﻿// ReSharper disable once CheckNamespace
 
+using DKNet.EfCore.Repos.Repositories;
+
 namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>

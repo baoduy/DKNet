@@ -1,613 +1,373 @@
 # DKNet.EfCore.Specifications
 
-**Specification Pattern implementation for Entity Framework Core that provides flexible, reusable, and composable query logic without the repository pattern overhead, enabling clean separation between domain logic and data access concerns in Domain-Driven Design applications.**
+## Problem it solves
 
-## What is this project?
+Ad-hoc repository query methods rot fast: every new filter combination (`FindActiveByRegion`,
+`FindActiveByRegionAndMinOrders`, `FindActiveByRegionOrVip`, …) either becomes a new repository method or an
+`IQueryable<T>` leaking out of the persistence layer into application code. Neither is testable in isolation, and
+neither composes — you cannot reuse "active customers" as a building block for three different queries without
+copy-pasting the predicate.
 
-DKNet.EfCore.Specifications implements the Specification Pattern for Entity Framework Core, allowing you to build flexible and reusable database queries by encapsulating query logic in specification classes. Instead of using large, hard-to-maintain repositories with numerous methods, you can create small, focused specification classes that can be combined using logical operators (AND/OR) to build complex queries.
+The Specification pattern fixes this by giving filter + include + order-by a name and a home: a small,
+constructor-configured `Specification<TEntity>` class that a repository executes. `DKNet.EfCore.Specifications` is
+the DKNet implementation of that pattern, plus its signature feature — a **dynamic predicate builder** that
+constructs type-safe EF Core predicates from `(propertyName, operation, value)` triples at runtime, for search/filter
+APIs where the criteria are not known at compile time.
 
-### Key Features
+This package is the **flagship successor to the retired `DKNet.EfCore.Repos`**. `DKNet.EfCore.Repos`,
+`DKNet.EfCore.Repos.Abstractions`, and `DKNet.EfCore.DtoEntities` are no longer packed or published — their types
+carry `[Obsolete]` and point here. `IRepositorySpec` (this package) covers the same read/write/paging surface as the
+old `IRepository<T>`, but is not generic over the entity: one injected instance serves every aggregate in the
+`DbContext`, because the entity type is inferred from the `Specification<TEntity>` passed to each call. See
+[`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for a full call-site mapping.
 
-- **Specification Pattern Implementation**: Clean, reusable query specifications
-- **Composable Logic**: Combine specifications using AND/OR operators
-- **EF Core Integration**: Seamless integration with Entity Framework Core and IQueryable
-- **Repository Integration**: Works perfectly with DKNet.EfCore.Repos
-- **Include Support**: Automatic handling of navigation property includes
-- **Ordering Support**: Built-in support for sorting with multiple order criteria
-- **Expression Visitor**: Advanced expression tree manipulation for complex combinations
-- **Type Safety**: Generic constraints ensuring compile-time type safety
-- **Performance Optimized**: IQueryable support for efficient database query execution
+Reach for this package whenever you need reusable, testable query logic against an EF Core `DbContext` — especially
+when some of the filter criteria are supplied by a caller at runtime (search boxes, query-string filters, admin
+grids).
 
-## How it contributes to DDD and Onion Architecture
-
-### Domain Layer Integration
-
-DKNet.EfCore.Specifications enables domain-driven query logic that belongs in the **Domain Layer** while providing infrastructure implementations for the **Infrastructure Layer**:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  No direct knowledge of specifications                         │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Uses: Combined specifications for complex queries             │
-│  var specs = activeCustomers & inRegion & withOrders;          │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  📋 ActiveCustomersSpec - Business rule: active customers      │
-│  📋 CustomersInRegionSpec - Domain logic: region filtering    │
-│  📋 CustomersWithOrdersSpec - Relationship rules              │
-│  🎯 Specification<Customer> - Base specification contracts     │
-│  🔗 AND/OR operators for business logic combinations           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Data Access, Persistence)                    │
-│                                                                 │
-│  🗃️ EfCoreSpecification<T> - EF Core integration              │
-│  📖 SpecificationExtensions - Repository integration          │
-│  ⚙️ ReplaceExpressionVisitor - Expression manipulation         │
-│  📊 ApplySpecs() - Query application and execution             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Business Rules as Code**: Specifications encapsulate business rules as executable code
-2. **Ubiquitous Language**: Specification names reflect domain terminology
-3. **Testable Business Logic**: Query logic can be unit tested independently
-4. **Aggregate Queries**: Support for complex queries that respect aggregate boundaries
-5. **Domain Events Integration**: Specifications can trigger domain events during query execution
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Domain defines specifications, infrastructure applies them
-2. **Separation of Concerns**: Query logic separated from data access implementation
-3. **Technology Independence**: Specifications work with any IQueryable provider
-4. **Composability**: Business rules can be combined without changing existing code
-5. **Testability**: Easy to mock and test specification logic
-
-## How to use it
-
-### Installation
+## Install and minimum wiring
 
 ```bash
 dotnet add package DKNet.EfCore.Specifications
-dotnet add package DKNet.EfCore.Repos  # For repository integration
 ```
 
-### Basic Usage Examples
-
-#### 1. Creating Simple Specifications
+Register the repository against your `DbContext` type:
 
 ```csharp
 using DKNet.EfCore.Specifications;
 
-// Domain specification for active customers
-public class ActiveCustomersSpec : Specification<Customer>
-{
-    public ActiveCustomersSpec()
-    {
-        WithFilter(customer => customer.IsActive);
-        AddOrderBy(customer => customer.LastName);
-    }
-}
-
-// Domain specification for customers in a specific region
-public class CustomersInRegionSpec : Specification<Customer>
-{
-    public CustomersInRegionSpec(string region)
-    {
-        WithFilter(customer => customer.Region == region);
-    }
-}
-
-// Specification with includes for related data
-public class CustomersWithOrdersSpec : Specification<Customer>
-{
-    public CustomersWithOrdersSpec()
-    {
-        WithFilter(customer => customer.Orders.Any());
-        AddInclude(customer => customer.Orders);
-        AddInclude(customer => customer.Address);
-        AddOrderByDescending(customer => customer.CreatedDate);
-    }
-}
+services.AddSpecRepo<AppDbContext>();
 ```
 
-#### 2. Combining Specifications with Logical Operators
+`SpecSetup.AddSpecRepo<TDbContext>(this IServiceCollection services)` is idempotent — it no-ops if `IRepositorySpec`
+is already registered — and wires up two services:
+
+- `IRepositorySpec` → `RepositorySpec<TDbContext>` (scoped), the workhorse used directly by application code.
+- `IRepositorySpecFactory` (singleton) → creates an `IRepositorySpecProvider` per `CreateAsync<TDbContext>()` call,
+  each owning its own DI scope and `DbContext` instance (via `IDbContextFactory<TDbContext>`) — useful outside a
+  normal per-request scope (background jobs, message handlers). Dispose the provider (`IDisposable`/`IAsyncDisposable`)
+  when done; disposing it disposes its scope and `DbContext`.
+
+Model projection (`Query<TEntity, TModel>`, and every `*Async<TEntity, TModel>` repository extension) additionally
+requires a Mapster `IMapper` registered in DI — `RepositorySpec<TDbContext>` resolves it via
+`IServiceProvider.GetService<IMapper>()` and throws `InvalidOperationException` at query time if none is found.
+
+## Features
+
+### 1. `Specification<TEntity>` — filter, include, and order-by in one object
+
+`Specification<TEntity>` is the abstract base you derive from. Configure it entirely from the constructor, using its
+`protected` builder methods — they are not callable from outside the subclass, which is what keeps a specification's
+query logic immutable and self-contained once constructed:
 
 ```csharp
-public class CustomerQueryService
+public sealed class ActiveExpensiveProductsSpec : Specification<Product>
 {
-    private readonly IReadRepository<Customer> _customerRepository;
-    
-    public CustomerQueryService(IReadRepository<Customer> customerRepository)
+    public ActiveExpensiveProductsSpec(decimal minPrice)
     {
-        _customerRepository = customerRepository;
-    }
-    
-    public async Task<List<Customer>> GetActiveCustomersInRegionAsync(string region)
-    {
-        // Combine specifications using AND operator
-        var specification = new ActiveCustomersSpec() & new CustomersInRegionSpec(region);
-        
-        return await _customerRepository.SpecsListAsync(specification);
-    }
-    
-    public async Task<List<Customer>> GetActiveOrVipCustomersAsync()
-    {
-        // Combine specifications using OR operator
-        var activeSpec = new ActiveCustomersSpec();
-        var vipSpec = new VipCustomersSpec();
-        var combinedSpec = activeSpec | vipSpec;
-        
-        return await _customerRepository.SpecsListAsync(combinedSpec);
-    }
-    
-    public async Task<List<Customer>> ComplexCustomerQueryAsync(string region, decimal minOrderValue)
-    {
-        // Complex specification combination
-        var activeCustomers = new ActiveCustomersSpec();
-        var inRegion = new CustomersInRegionSpec(region);
-        var highValueOrders = new CustomersWithHighValueOrdersSpec(minOrderValue);
-        
-        var specification = activeCustomers & (inRegion | highValueOrders);
-        
-        return await _customerRepository.SpecsListAsync(specification);
+        WithFilter(p => p.IsActive && p.Price >= minPrice);   // FilterQuery
+        AddInclude(p => p.Category);                          // IncludeQueries
+        AddOrderByDescending(p => p.Price);                    // OrderByDescendingQueries
+        AddOrderBy(p => p.Name);                               // OrderByQueries (declared-sequence: applied after)
     }
 }
 ```
 
-#### 3. Using Specifications with Repository Extensions
+The public surface a repository (or your own `IQueryable` code, via `ApplySpecs`) reads back is `ISpecification<TEntity>`:
+
+| Member | Meaning |
+|---|---|
+| `FilterQuery` | `Expression<Func<TEntity, bool>>?` — set once via `WithFilter`. |
+| `IncludeQueries` | Single-level `Expression<Func<TEntity, object?>>` includes added via `AddInclude(Expression<...>)`, e.g. `AddInclude(p => p.Category)`. Supports one level of filtered include, e.g. `AddInclude(p => p.OrderItems.Where(i => i.Quantity > 0))` — see the tracking caveat below. |
+| `IncludeBuilders` | `Func<IQueryable<TEntity>, IQueryable<TEntity>>` chains added via `AddInclude(Func<...>)`, for `Include(...).ThenInclude(...)` chains or per-navigation `Where`/`OrderBy`/`Skip`/`Take`. |
+| `OrderByQueries` / `OrderByDescendingQueries` | Legacy segregated ordering lists (ascending-first, then descending) — kept for any external `ISpecification<T>` implementation that doesn't use the declared-sequence path below. |
+| `IsIgnoreQueryFilters` | Set via `IgnoreQueryFilters()` — see "Configuration options and defaults". |
+
+Additional protected builders on `Specification<TEntity>`:
+
+- `AddOrderBy(string orderBy, ListSortDirection direction)` — orders by a **property name string** (normalized to
+  PascalCase the same way the dynamic predicate builder does — see Feature 3), for when the sort column itself is
+  runtime-supplied (e.g. an `?orderBy=` query parameter). Builds an `Expression<Func<TEntity, object>>` via
+  reflection (`Expression.PropertyOrField`) and routes it through the same ordering path as the expression overload.
+- `AddOrderBy` / `AddOrderByDescending` (expression overloads) record ordering **in declaration order** internally
+  (`OrderByClauses`), so mixed-direction ordering (`OrderByDescending(Price).ThenBy(Name)`) applies exactly as
+  declared — not "all ascending, then all descending" — when the specification is a `Specification<TEntity>`.
+  (A foreign `ISpecification<TEntity>` implementation that only populates the legacy segregated lists still gets the
+  old two-phase behavior.)
+- `AsNoTracking()` — marks the specification's query read-only; `ApplySpecs` calls `.AsNoTracking()` on the
+  `IQueryable` when this is set.
+- `Skip(int count)` / `Take(int count)` — declare an offset window; both throw `ArgumentOutOfRangeException` for
+  values `<= 0`.
+- `IgnoreQueryFilters()` — see "Configuration options and defaults".
+- `CreatePredicate(Expression<Func<TEntity, bool>>? expression = null)` — returns a LinqKit
+  `ExpressionStarter<TEntity>` (via `PredicateBuilder.New<TEntity>()` or `PredicateBuilder.New(expression)`), the
+  idiomatic starting point for combining static predicates with the dynamic predicate builder inside a
+  specification's constructor (Feature 3).
+- A copy constructor, `Specification(ISpecification<TEntity> specification)`, clones filter/include/order-by state
+  from an existing specification — useful for `ModelSpecification<TEntity, TModel>` (Feature 4) built from an
+  existing entity specification.
+
+### 2. `IRepositorySpec` — the non-generic repository surface
+
+`IRepositorySpec` is injected once and used for every entity type in the `DbContext`; the entity type comes from the
+`ISpecification<TEntity>` (or explicit type argument) passed to each call:
 
 ```csharp
-public class OrderQueryService
+public sealed class ProductService(IRepositorySpec repo)
 {
-    private readonly IReadRepository<Order> _orderRepository;
-    
-    public OrderQueryService(IReadRepository<Order> orderRepository)
+    public Task<Product?> FindActiveExpensiveAsync(decimal minPrice, CancellationToken ct) =>
+        repo.FirstOrDefaultAsync(new ActiveExpensiveProductsSpec(minPrice), ct);
+
+    public async Task CreateAsync(Product product, CancellationToken ct)
     {
-        _orderRepository = orderRepository;
-    }
-    
-    // Get single result
-    public async Task<Order?> GetLatestOrderForCustomerAsync(int customerId)
-    {
-        var spec = new OrdersForCustomerSpec(customerId);
-        return await _orderRepository.SpecsFirstOrDefaultAsync(spec);
-    }
-    
-    // Get paginated results
-    public async Task<IPagedList<Order>> GetOrdersPagedAsync(
-        ISpecification<Order> specification, 
-        int pageNumber, 
-        int pageSize)
-    {
-        return await _orderRepository.SpecsToPageListAsync(
-            specification, 
-            pageNumber, 
-            pageSize);
-    }
-    
-    // Stream large result sets
-    public IAsyncEnumerable<Order> GetOrdersStreamAsync(ISpecification<Order> specification)
-    {
-        return _orderRepository.SpecsToPageEnumerable(specification);
+        await repo.AddAsync(product, ct);
+        await repo.SaveChangesAsync(ct);
     }
 }
 ```
 
-#### 4. Advanced Specification Patterns
+Core interface members: `AddAsync`/`AddRangeAsync`, `Delete`/`DeleteRange` (`DeleteRange` is `[Obsolete]` — prefer
+`BulkDeleteAsync`), `BulkDeleteAsync<TEntity>(predicate, ct)` (server-side `ExecuteDeleteAsync`), `Entry<TEntity>`,
+`Query<TEntity>(spec)` / `Query<TEntity, TModel>(spec)`, `SaveChangesAsync`, `UpdateAsync`/`UpdateRangeAsync`, and
+`BeginTransactionAsync`.
+
+Query execution goes through `Extensions/SpecRepoExtensions.cs` and `Extensions/ModelSpecRepoExtensions.cs`, both
+implemented as extension members on `IRepositorySpec`:
+
+| Method | Returns |
+|---|---|
+| `AnyAsync<TEntity>(spec, ct)` | `Task<bool>` |
+| `CountAsync<TEntity>(spec, ct)` | `Task<int>` |
+| `FirstAsync<TEntity>(spec, ct)` | `Task<TEntity>` (throws if empty) |
+| `FirstOrDefaultAsync<TEntity>(spec, ct)` | `Task<TEntity?>` |
+| `FirstAsync<TEntity, TModel>` / `FirstOrDefaultAsync<TEntity, TModel>(spec, ct)` | projected model (Feature 4) |
+| `ToListAsync<TEntity>(spec, ct)` / `ToListAsync<TEntity, TModel>(spec, ct)` | `Task<IList<T>>` |
+| `ToPagedListAsync<TEntity>(spec, pageNumber, pageSize, ct)` / `<TEntity, TModel>` overload | `Task<IPagedList<T>>` (X.PagedList) |
+| `ToPageEnumerable<TEntity>(spec)` / `<TEntity, TModel>` overload | `IAsyncEnumerable<T>`, internally paged (Feature 5) |
+| `ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)` / two-key overload | `Task<IList<TEntity>>` (Feature 5) |
+
+`repo.Query<TEntity>(spec)` and `Query<TEntity, TModel>(spec)` also return the raw `IQueryable<T>` — call
+`.ToQueryString()` on it to inspect generated SQL, the pattern used throughout the test suite.
+
+### 3. Dynamic Predicate Builder — the signature feature
+
+For filters whose shape is only known at runtime (search boxes, `?field=value` query strings, admin grids), build a
+predicate from `(propertyName, operation, value)` triples instead of hand-writing `Expression<Func<T, bool>>` trees.
+`DynamicAnd`/`DynamicOr` are extension members (defined in the `LinqKit` namespace, so no extra `using` is needed
+alongside `PredicateBuilder`) on both `ExpressionStarter<T>` and plain `Expression<Func<T, bool>>`:
 
 ```csharp
-// Specification with complex filtering logic
-public class CustomerSearchSpec : Specification<Customer>
-{
-    public CustomerSearchSpec(string searchTerm)
-    {
-        WithFilter(customer => 
-            customer.FirstName.Contains(searchTerm) ||
-            customer.LastName.Contains(searchTerm) ||
-            customer.Email.Contains(searchTerm) ||
-            customer.Company.Contains(searchTerm));
-        
-        AddInclude(customer => customer.Address);
-        AddOrderBy(customer => customer.LastName);
-        AddOrderBy(customer => customer.FirstName);
-    }
-}
+using LinqKit;
+using DKNet.EfCore.Specifications.Dynamics;
 
-// Specification with date range filtering
-public class OrdersInDateRangeSpec : Specification<Order>
+public sealed class ProductSearchSpecification : Specification<Product>
 {
-    public OrdersInDateRangeSpec(DateTime startDate, DateTime endDate)
+    public ProductSearchSpecification(string? name, decimal? minPrice, string? category)
     {
-        WithFilter(order => order.OrderDate >= startDate && order.OrderDate <= endDate);
-        AddInclude(order => order.Customer);
-        AddInclude(order => order.OrderItems);
-        AddOrderByDescending(order => order.OrderDate);
-    }
-}
+        var predicate = CreatePredicate(p => p.IsActive);   // ExpressionStarter<Product>
 
-// Dynamic specification building
-public class DynamicCustomerSpec : Specification<Customer>
-{
-    public DynamicCustomerSpec(CustomerFilter filter)
-    {
-        if (!string.IsNullOrEmpty(filter.Region))
-        {
-            WithFilter(c => c.Region == filter.Region);
-        }
-        
-        if (filter.IsActive.HasValue)
-        {
-            var activeFilter = filter.IsActive.Value 
-                ? (Expression<Func<Customer, bool>>)(c => c.IsActive)
-                : (Expression<Func<Customer, bool>>)(c => !c.IsActive);
-            
-            if (FilterQuery == null)
-                WithFilter(activeFilter);
-            else
-                WithFilter(CombineWithAnd(FilterQuery, activeFilter));
-        }
-        
-        if (filter.MinOrderCount > 0)
-        {
-            WithFilter(c => c.Orders.Count >= filter.MinOrderCount);
-            AddInclude(c => c.Orders);
-        }
-        
-        // Apply sorting
-        switch (filter.SortBy)
-        {
-            case "Name":
-                AddOrderBy(c => c.LastName);
-                AddOrderBy(c => c.FirstName);
-                break;
-            case "Date":
-                AddOrderByDescending(c => c.CreatedDate);
-                break;
-            default:
-                AddOrderBy(c => c.Id);
-                break;
-        }
-    }
-    
-    private Expression<Func<Customer, bool>> CombineWithAnd(
-        Expression<Func<Customer, bool>> left, 
-        Expression<Func<Customer, bool>> right)
-    {
-        var visitor = new ReplaceExpressionVisitor(
-            right.Parameters.Single(), 
-            left.Parameters.Single());
-        var replacedBody = visitor.Visit(right.Body);
-        var andExpression = Expression.AndAlso(left.Body, replacedBody);
-        return Expression.Lambda<Func<Customer, bool>>(andExpression, left.Parameters.Single());
+        if (name is not null)
+            predicate = predicate.DynamicAnd(nameof(Product.Name), Ops.Contains, name);
+
+        if (minPrice is not null)
+            predicate = predicate.DynamicAnd(nameof(Product.Price), Ops.GreaterThanOrEqual, minPrice);
+
+        if (category is not null)
+            predicate = predicate.DynamicAnd("Category.Name", Ops.Equal, category); // nested/dotted path
+
+        WithFilter(predicate);
     }
 }
 ```
 
-### Advanced Usage Examples
+Executing it through `IRepositorySpec` needs nothing extra — `RepositorySpec<TDbContext>.Query<TEntity>` already
+calls `.AsExpandable()` internally (`_dbContext.Set<TEntity>().AsExpandable().ApplySpecs(spec)`) before applying the
+specification, so `repo.ToListAsync(new ProductSearchSpecification(...), ct)` just works. `.AsExpandable()` only
+needs to be added by hand when you build and execute a `DynamicAnd`/`DynamicOr` predicate directly against an
+`IQueryable`/`DbSet` outside `IRepositorySpec` — see "Gotchas and limits".
 
-#### 1. Specification Factory Pattern
+**Supported operations (`Ops` enum, `DKNet.EfCore.Specifications.Dynamics` namespace):**
+
+| `Ops` member | SQL shape | Notes |
+|---|---|---|
+| `Equal` / `NotEqual` | `= @0` / `<> @0` | `null` value → `IS NULL` / `IS NOT NULL`, not a parameterized comparison |
+| `GreaterThan` / `GreaterThanOrEqual` / `LessThan` / `LessThanOrEqual` | `>`, `>=`, `<`, `<=` | |
+| `Contains` / `NotContains` | `LIKE '%..%'` / negated | Auto-converted to `Equal`/`NotEqual` on non-string properties |
+| `StartsWith` / `EndsWith` | `LIKE '..%'` / `LIKE '%..'` | Auto-converted to `Equal` on non-string properties |
+| `In` / `NotIn` | `IN (...)` / `NOT IN (...)` | Value must be a non-empty `IEnumerable` that is not itself a `string`; invalid values are rejected (see below) |
+
+**Property paths.** The property name argument is normalized with `PropertyNameExtensions.ToPascalCase()` — segments
+separated by `_` or `-` are treated as word boundaries, and dotted paths (`"category.name"`, `"customer_profile.city"`)
+are normalized segment-by-segment (`Category.Name`, `CustomerProfile.City`) so callers can pass camelCase,
+snake_case, kebab-case, or already-PascalCase names interchangeably.
+
+**Fail-safe, not fail-loud, for the triple overload.** `DynamicAnd(propertyName, operation, value)` /
+`DynamicOr(...)` **silently return the predicate unchanged** — they do not throw — when:
+
+- the property name is invalid or unsafe (fails the internal path-validation regex),
+- the property doesn't resolve on `TEntity` (typo, wrong nesting),
+- `value` fails to coerce to the property's CLR type (e.g. a non-numeric string against an `int` property),
+- `value` is invalid for an enum property (wrong enum type, or a non-enum-typed array for `In`/`NotIn`), or
+- `value` is invalid for `In`/`NotIn` (`null`, empty, or a `string`/non-enumerable).
+
+This makes the triple overload safe to wire straight to unvalidated user input: a bad filter is dropped rather than
+crashing the request. Scalar values are coerced automatically to numeric types, `bool`, `DateTime`, `DateOnly`,
+`TimeOnly`, `Guid`, and enums (so a query-string `"true"`/`"2024-01-01"`/`"Active"` reaches the database as the right
+CLR type) — this coercion is what can fail and trigger the silent skip above.
+
+There is also a **raw Dynamic LINQ overload** — `DynamicAnd(string expression, params object?[] values)` /
+`DynamicOr(...)` — for expressions the triple shape can't express (e.g. `"Price * Quantity > @0"`). Unlike the triple
+overload, this one is fail-loud: it validates the expression against a blocklist of dangerous substrings
+(`System.`, `Reflection.`, `Process.`, `File.`, `SqlCommand`, `Environment.`, …) and throws `ArgumentException` if
+one is found, and lets `System.Linq.Dynamic.Core` parse/throw normally otherwise.
+
+### 4. `ModelSpecification<TEntity, TModel>` — projections
+
+For read paths that should never materialize the full entity, derive from `ModelSpecification<TEntity, TModel>`
+instead of `Specification<TEntity>`. It adds no new members — same protected builders — but flags the specification
+for projection, and pairs with the `<TEntity, TModel>` repository overloads (`FirstOrDefaultAsync`, `ToListAsync`,
+`ToPagedListAsync`, `ToPageEnumerable`) that call `Query<TEntity, TModel>` under the hood:
 
 ```csharp
-public static class CustomerSpecifications
+public sealed class ActiveProductSummariesSpec : ModelSpecification<Product, ProductSummaryDto>
 {
-    public static Specification<Customer> Active() 
-        => new ActiveCustomersSpec();
-    
-    public static Specification<Customer> InRegion(string region) 
-        => new CustomersInRegionSpec(region);
-    
-    public static Specification<Customer> WithMinOrderValue(decimal minValue) 
-        => new CustomersWithMinOrderValueSpec(minValue);
-    
-    public static Specification<Customer> CreatedAfter(DateTime date) 
-        => new CustomersCreatedAfterSpec(date);
-    
-    // Convenience methods for common combinations
-    public static Specification<Customer> ActiveInRegion(string region)
-        => Active() & InRegion(region);
-    
-    public static Specification<Customer> HighValueCustomers(string region, decimal minOrderValue)
-        => Active() & InRegion(region) & WithMinOrderValue(minOrderValue);
+    public ActiveProductSummariesSpec()
+    {
+        WithFilter(p => p.IsActive);
+        AddOrderBy(p => p.Name);
+    }
 }
 
-// Usage
-public async Task<List<Customer>> GetHighValueCustomersAsync(string region)
-{
-    var specification = CustomerSpecifications.HighValueCustomers(region, 1000m);
-    return await _customerRepository.SpecsListAsync(specification);
-}
+IList<ProductSummaryDto> summaries =
+    await repo.ToListAsync<Product, ProductSummaryDto>(new ActiveProductSummariesSpec(), ct);
 ```
 
-#### 2. Specification with Custom Expression Visitor
+`RepositorySpec<TDbContext>.Query<TEntity, TModel>` maps via Mapster (`ProjectToType<TModel>(_mapper.Config)`) on top
+of `.AsNoTracking()` — projected reads are always non-tracking regardless of whether the specification called
+`AsNoTracking()` itself.
+
+### 5. Keyset (cursor) pagination and streaming enumeration
+
+**`ToPageEnumerable`** (Feature 2's table) streams a specification's results as an `IAsyncEnumerable<T>`, fetching
+pages of 100 rows internally (`Skip`/`Take`) rather than materializing the whole result set:
 
 ```csharp
-public class SecurityFilterSpec<TEntity> : Specification<TEntity>
-    where TEntity : class, IOwnedEntity
+await foreach (var product in repo.ToPageEnumerable(new ActiveExpensiveProductsSpec(50m)))
 {
-    public SecurityFilterSpec(string userId, IEnumerable<string> roles)
-    {
-        if (roles.Contains("Admin"))
-        {
-            // Admins can see everything - no filter needed
-            return;
-        }
-        
-        if (roles.Contains("Manager"))
-        {
-            // Managers can see their department's data
-            WithFilter(entity => entity.Department == GetUserDepartment(userId));
-        }
-        else
-        {
-            // Regular users can only see their own data
-            WithFilter(entity => entity.OwnerId == userId);
-        }
-    }
-    
-    private string GetUserDepartment(string userId)
-    {
-        // Implementation to get user's department
-        return "Sales"; // Simplified for example
-    }
+    await ProcessAsync(product);
 }
 ```
 
-#### 3. Specification Testing
+It requires the specification to declare at least one `OrderBy`/`OrderByDescending` — `EnsureSpecHasOrdering` throws
+`NotSupportedException` up front otherwise, since paging an unordered query would return unstable/duplicate rows
+across page boundaries.
 
-```csharp
-[Test]
-public void ActiveCustomersSpec_FilterExpression_ShouldOnlyIncludeActiveCustomers()
-{
-    // Arrange
-    var specification = new ActiveCustomersSpec();
-    var activeCustomer = new Customer { IsActive = true };
-    var inactiveCustomer = new Customer { IsActive = false };
-    
-    // Act & Assert
-    Assert.IsTrue(specification.Match(activeCustomer));
-    Assert.IsFalse(specification.Match(inactiveCustomer));
-}
+**Keyset pagination** trades `Skip`/`Take` (which scans and discards every preceding row) for an index seek on the
+ordering column(s) — it stays fast as tables grow, where offset pagination degrades. Three layers, from simplest to
+richest:
 
-[Test]
-public void CombinedSpecification_AndOperator_ShouldCombineFilters()
-{
-    // Arrange
-    var activeSpec = new ActiveCustomersSpec();
-    var regionSpec = new CustomersInRegionSpec("North");
-    var combinedSpec = activeSpec & regionSpec;
-    
-    var customer = new Customer { IsActive = true, Region = "North" };
-    var inactiveCustomer = new Customer { IsActive = false, Region = "North" };
-    var wrongRegionCustomer = new Customer { IsActive = true, Region = "South" };
-    
-    // Act & Assert
-    Assert.IsTrue(combinedSpec.Match(customer));
-    Assert.IsFalse(combinedSpec.Match(inactiveCustomer));
-    Assert.IsFalse(combinedSpec.Match(wrongRegionCustomer));
-}
-```
+1. **`IQueryable<TEntity>.AfterKeyset` / `.BeforeKeyset`** (single-key or composite two-key overloads, in
+   `Extensions/KeysetQueryExtensions.cs`) add only a `WHERE` predicate — you own the `OrderBy` yourself:
 
-## Best Practices
+   ```csharp
+   var nextPage = await context.Orders
+       .OrderBy(o => o.CreatedDate).ThenBy(o => o.Id)
+       .AfterKeyset(o => o.CreatedDate, o => o.Id, lastDate, lastId)
+       .Take(pageSize)
+       .ToListAsync();
+   // WHERE CreatedDate > @date OR (CreatedDate = @date AND Id > @id)
+   // equivalent to the row-value comparison (CreatedDate, Id) > (@date, @id)
+   ```
 
-### 1. Specification Design Principles
+2. **`repo.ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)`** (and the `TKey1, TKey2`
+   composite overload) is the `IRepositorySpec` convenience wrapper: it applies the specification, chains
+   `AfterKeyset`, and takes `pageSize` rows. The specification still owns `OrderBy` — declare it there so results
+   stay ordered consistently with the cursor comparison.
 
-```csharp
-// Good: Single responsibility - one business rule per specification
-public class ActiveCustomersSpec : Specification<Customer>
-{
-    public ActiveCustomersSpec()
-    {
-        WithFilter(customer => customer.IsActive);
-    }
-}
+3. **`IQueryable<TEntity>.ToKeysetPageAsync(configureKeyset, pageSize, direction, reference, ct)`** is the
+   arbitrary-arity surface, backed by `MR.EntityFrameworkCore.KeysetPagination`. It owns *both* ordering and the
+   cursor filter — do not chain it after your own `OrderBy` — and returns a `KeysetPage<TEntity>` record
+   (`Items`, `HasPrevious`, `HasNext`) instead of a bare list:
 
-// Good: Parameterized specifications for flexibility
-public class CustomersInRegionSpec : Specification<Customer>
-{
-    public CustomersInRegionSpec(string region)
-    {
-        if (string.IsNullOrEmpty(region))
-            throw new ArgumentException("Region cannot be null or empty", nameof(region));
-            
-        WithFilter(customer => customer.Region == region);
-    }
-}
+   ```csharp
+   var page = await context.Merchants.ToKeysetPageAsync(
+       b => b.Ascending(m => m.Country).Descending(m => m.Revenue).Ascending(m => m.Id),
+       pageSize: 20,
+       direction: KeysetPaginationDirection.Forward,
+       reference: lastSeenMerchant); // null for the first page
 
-// Avoid: Multiple unrelated business rules in one specification
-public class CustomerSpec : Specification<Customer> // ❌ Too generic
-{
-    public CustomerSpec(bool isActive, string region, DateTime createdAfter)
-    {
-        // Multiple responsibilities combined
-    }
-}
-```
+   if (page.HasNext) { /* show a "next" control */ }
+   ```
 
-### 2. Naming Conventions
+   `reference` only needs an object whose property names match the configured keyset columns — it does not have to
+   be a `TEntity`. This overload costs three round trips: the page query, plus one each for the `HasPrevious`/
+   `HasNext` existence checks (and per `MR.EntityFrameworkCore.KeysetPagination` 1.6.0, those two checks do not
+   accept a `CancellationToken`; only the page query itself observes it).
 
-```csharp
-// Good: Clear, business-focused naming
-public class ActiveCustomersSpec : Specification<Customer> { }
-public class CustomersInRegionSpec : Specification<Customer> { }
-public class HighValueOrdersSpec : Specification<Order> { }
-public class ExpiredSubscriptionsSpec : Specification<Subscription> { }
+## Configuration options and defaults
 
-// Good: Factory methods with intention-revealing names
-public static class CustomerSpecs
-{
-    public static Specification<Customer> Active() => new ActiveCustomersSpec();
-    public static Specification<Customer> InRegion(string region) => new CustomersInRegionSpec(region);
-    public static Specification<Customer> WithHighValueOrders() => new HighValueCustomersSpec();
-}
-```
+- **`AddSpecRepo<TDbContext>` is idempotent** — safe to call more than once; it checks `IsRegistered<IRepositorySpec>()`
+  first and no-ops if already registered.
+- **Tracking**: queries track by default, matching plain EF Core; call `AsNoTracking()` inside a specification's
+  constructor to opt into read-only queries. Projected (`TModel`) queries are always `AsNoTracking()` regardless.
+- **`IsIgnoreQueryFilters`**: `IgnoreQueryFilters()` bypasses only global query filters registered as *ignorable*
+  (`GlobalQueryFilter.IsIgnorable`, default `true` — e.g. a soft-delete filter). A filter author can opt a filter out
+  of this bypass entirely by overriding `IsIgnorable => false` (e.g. row-level tenant/ownership isolation) — that
+  filter is never bypassed by a specification's flag, no matter which application calls it.
+- **Streaming page size**: `ToPageEnumerable` fetches 100 rows per round trip; this is an internal constant
+  (`PageAsyncEnumeratorExtensions.DefaultPageSize`), not currently exposed as a parameter on the public
+  `IRepositorySpec` extension methods.
+- **`Skip`/`Take`** on a specification apply only through `SpecificationExtensions.ApplySpecs` — i.e. only when the
+  specification is executed via `Query<TEntity>`/`Query<TEntity, TModel>` (directly or through the `IRepositorySpec`
+  extensions above), not when you read `FilterQuery`/`IncludeQueries`/etc. and build the query yourself.
 
-### 3. Performance Considerations
+## How it composes with other packages
 
-```csharp
-// Good: Use AddInclude for necessary navigation properties
-public class OrdersWithDetailsSpec : Specification<Order>
-{
-    public OrdersWithDetailsSpec()
-    {
-        AddInclude(order => order.Customer);
-        AddInclude(order => order.OrderItems);
-        AddOrderByDescending(order => order.OrderDate);
-    }
-}
+- **Replaces `DKNet.EfCore.Repos`.** `IRepositorySpec` is the direct successor to `IRepository<T>` /
+  `IReadRepository<T>` / `IWriteRepository<T>` — see
+  [`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for the full call-site mapping and
+  a converted before/after example.
+- **Targets entities from `DKNet.EfCore.Abstractions`.** `Specification<TEntity>`/`ModelSpecification<TEntity,TModel>`
+  only constrain `TEntity : class` — they work with any EF Core entity — but in a DKNet solution `TEntity` is
+  typically an `Entity`/`Entity<TKey>`/aggregate root from `DKNet.EfCore.Abstractions`, keeping specification-based
+  query reuse aligned with the same domain model the rest of the framework builds on.
+- **Global query filters** come from `DKNet.EfCore.Extensions` (`GlobalQueryFilter`); `IsIgnoreQueryFilters` only
+  interacts with filters registered through that mechanism.
+- **Writes flow through the same `SaveChangesAsync`/`UpdateAsync` pipeline** as the rest of the EF Core stack —
+  `RepositorySpec<TDbContext>.SaveChangesAsync` calls `AddNewEntitiesFromNavigations` and
+  `SaveChangesWithConcurrencyHandlingAsync` (resolving a keyed `IEfCoreExceptionHandler` for the `DbContext` type if
+  one is registered), so hooks/interceptors registered on the `DbContext` still run.
+- **Model projections need Mapster** (`Mapster`/`MapsterMapper`, referenced by this package) registered in DI for
+  `Query<TEntity, TModel>` and every `*<TEntity, TModel>` repository extension to work.
 
-// Good: Optimize ordering for database indexes
-public class CustomersByNameSpec : Specification<Customer>
-{
-    public CustomersByNameSpec()
-    {
-        AddOrderBy(customer => customer.LastName);  // Primary sort
-        AddOrderBy(customer => customer.FirstName); // Secondary sort
-        AddOrderBy(customer => customer.Id);        // Tie breaker for pagination
-    }
-}
+## Gotchas and limits
 
-// Avoid: Unnecessary includes that impact performance
-public class SimpleCustomerListSpec : Specification<Customer>
-{
-    public SimpleCustomerListSpec()
-    {
-        AddInclude(customer => customer.Orders);           // ❌ Not needed for list view
-        AddInclude(customer => customer.OrderHistory);     // ❌ Heavy navigation property
-        AddInclude(customer => customer.PaymentMethods);   // ❌ Unrelated data
-    }
-}
-```
-
-### 4. Specification Composition
-
-```csharp
-// Good: Use clear logical operators
-public async Task<List<Customer>> GetTargetCustomersAsync(string region, decimal minOrderValue)
-{
-    var activeCustomers = new ActiveCustomersSpec();
-    var inRegion = new CustomersInRegionSpec(region);
-    var highValue = new HighValueCustomersSpec(minOrderValue);
-    
-    // Clear business logic: Active customers in region with high-value orders
-    var specification = activeCustomers & inRegion & highValue;
-    
-    return await _customerRepository.SpecsListAsync(specification);
-}
-
-// Good: Complex business rules using parentheses for clarity
-public async Task<List<Customer>> GetMarketingTargetsAsync(string region)
-{
-    var active = new ActiveCustomersSpec();
-    var inRegion = new CustomersInRegionSpec(region);
-    var highValue = new HighValueCustomersSpec(1000m);
-    var recent = new RecentCustomersSpec(TimeSpan.FromDays(30));
-    
-    // Active customers in region who are either high-value OR recent
-    var specification = active & inRegion & (highValue | recent);
-    
-    return await _customerRepository.SpecsListAsync(specification);
-}
-```
-
-### 5. Error Handling and Validation
-
-```csharp
-public class CustomersInRegionSpec : Specification<Customer>
-{
-    public CustomersInRegionSpec(string region)
-    {
-        if (string.IsNullOrWhiteSpace(region))
-            throw new ArgumentException("Region cannot be null or empty", nameof(region));
-        
-        WithFilter(customer => customer.Region.ToLower() == region.ToLower());
-    }
-}
-
-public class OrdersInDateRangeSpec : Specification<Order>
-{
-    public OrdersInDateRangeSpec(DateTime startDate, DateTime endDate)
-    {
-        if (startDate >= endDate)
-            throw new ArgumentException("Start date must be before end date");
-        
-        if (endDate > DateTime.Now)
-            throw new ArgumentException("End date cannot be in the future");
-        
-        WithFilter(order => order.OrderDate >= startDate && order.OrderDate <= endDate);
-    }
-}
-```
-
-## Integration with Other DKNet Components
-
-DKNet.EfCore.Specifications integrates seamlessly with other DKNet components:
-
-### With DKNet.EfCore.Repos
-```csharp
-// Repository extensions provide specification-aware methods
-var activeCustomers = new ActiveCustomersSpec();
-var customers = await _customerRepository.SpecsListAsync(activeCustomers);
-var firstCustomer = await _customerRepository.SpecsFirstOrDefaultAsync(activeCustomers);
-var pagedCustomers = await _customerRepository.SpecsToPageListAsync(activeCustomers, 1, 20);
-```
-
-### With DKNet.EfCore.Events
-```csharp
-public class CustomerQueryHandler : IEventHandler<CustomerUpdatedEvent>
-{
-    public async Task Handle(CustomerUpdatedEvent eventData)
-    {
-        // Use specifications to find related customers for cache invalidation
-        var sameRegionSpec = new CustomersInRegionSpec(eventData.Region);
-        var relatedCustomers = await _repository.SpecsListAsync(sameRegionSpec);
-        
-        // Invalidate cache for related customers
-        await _cache.InvalidateAsync(relatedCustomers.Select(c => c.Id));
-    }
-}
-```
-
-### With DKNet.EfCore.DataAuthorization
-```csharp
-public class SecureCustomerSpec : Specification<Customer>
-{
-    public SecureCustomerSpec(ClaimsPrincipal user)
-    {
-        var userId = user.GetUserId();
-        var roles = user.GetRoles();
-        
-        if (!roles.Contains("Admin"))
-        {
-            // Non-admin users can only see customers in their territory
-            var territory = user.GetTerritory();
-            WithFilter(customer => customer.Territory == territory);
-        }
-        
-        // Apply additional security filters based on user context
-        if (user.HasClaim("ViewInactiveCustomers", "false"))
-        {
-            WithFilter(customer => customer.IsActive);
-        }
-    }
-}
-```
-
----
-
-> 💡 **Architecture Tip**: Use DKNet.EfCore.Specifications to implement query logic that belongs in your domain layer. Create small, focused specification classes that encapsulate business rules and can be easily combined. This approach eliminates the need for large repository classes with numerous query methods while maintaining clean separation between domain logic and data access concerns.
+- **Forgetting `.AsExpandable()` breaks dynamic predicate translation — but only outside `IRepositorySpec`.**
+  `RepositorySpec<TDbContext>.Query<TEntity>` already calls `.AsExpandable()` before applying the specification, so
+  code that only ever queries through `IRepositorySpec` never needs to think about this. If you build a
+  `DynamicAnd`/`DynamicOr` predicate and run it against a raw `DbSet`/`IQueryable` yourself (bypassing the
+  repository), you must call `.AsExpandable()` first — LinqKit cannot translate/expand the predicate into SQL without
+  it, and the query fails or silently mistranslates at execution time.
+- **Do not reintroduce manual null checks around `DynamicAnd`/`DynamicOr`.** They already null-handle internally —
+  `Equal`/`NotEqual` against a `null` value produce `IS NULL`/`IS NOT NULL`, and invalid values are dropped rather
+  than throwing (see Feature 3). Wrapping calls in `if (value != null)` before calling `DynamicAnd` only hides the
+  library's own handling and risks accidentally skipping a legitimate `null`-equality filter.
+- **Materializing before `.Where(...)` gives wrong results and kills performance.** Call `ToListAsync()`/
+  `ToListAsync<TEntity, TModel>()` (or any other terminal operator) only *after* the specification/predicate has been
+  applied. Calling `ToList()`/`ToListAsync()` earlier in a query chain — before the filter, dynamic predicate, or
+  paging is composed — pulls the unfiltered table into memory and applies everything client-side instead of pushing
+  it to the database, which is both incorrect for large filtered subsets (memory blow-up) and far slower.
+- **`ToPageEnumerable` requires ordering.** A specification with no `OrderBy`/`OrderByDescending` throws
+  `NotSupportedException` immediately, rather than streaming unstably-ordered pages.
+- **Filtered `AddInclude` + tracking can surface stale children.** A single-level filtered include
+  (`AddInclude(p => p.OrderItems.Where(i => i.Quantity > 0))`) on a *tracking* query can return children that don't
+  match the filter, because EF Core's navigation fixup reattaches already-tracked entities regardless of the include
+  filter. Use a projection (`Query<TEntity, TModel>`) or `AsNoTracking()` when the include filter must be exact — see
+  the [EF Core filtered-include docs](https://learn.microsoft.com/ef/core/querying/related-data/eager#filtered-include).
+- **The raw Dynamic LINQ expression overload can still throw.** Unlike the triple (`propertyName, operation, value`)
+  overload, `DynamicAnd`/`DynamicOr(string expression, params object?[] values)` throws `ArgumentException` for a
+  blocklisted pattern and otherwise lets `System.Linq.Dynamic.Core` throw its own parse errors — treat it as
+  fail-loud, not fail-safe.
+- **`ToKeysetPageAsync` (arbitrary-arity, `IQueryable` overload) owns ordering.** Don't chain it after your own
+  `OrderBy`/`OrderByDescending` — pass the ordering into `configureKeyset` instead — and remember its
+  `HasPrevious`/`HasNext` checks add two extra round trips per call.

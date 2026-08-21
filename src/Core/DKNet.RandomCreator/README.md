@@ -1,60 +1,39 @@
 # DKNet.RandomCreator
 
-A lightweight .NET library for generating random strings and character arrays, suitable for passwords, tokens, and other
-random data needs. Uses cryptographically secure random number generation.
-
-## Features
-
-- Generate random strings or char arrays of any length
-- Enforce minimum numbers and special characters
-- Optionally restrict to alphabetic-only output
-- Simple static API with flexible options
-- .NET 9.0 compatible
+A tiny, dependency-free .NET library for generating cryptographically secure random strings and character arrays — suitable for passwords, tokens, and other secrets. Randomness comes from `System.Security.Cryptography.RandomNumberGenerator`, not `System.Random`.
 
 ## Installation
 
-Add the NuGet package to your project:
-
-```
+```bash
 dotnet add package DKNet.RandomCreator
 ```
 
-## Usage
+## Features
+
+- Random `string` or `char[]` generation of any length (`RandomCreators.NewString` / `RandomCreators.NewChars`), default length 25
+- `StringCreatorOptions.MinNumbers` / `MinSpecials` — guarantee exact quotas of digits and symbol characters (great for password-strength rules)
+- Letters-only output by simply leaving both quotas at their default of `0`
+- Output is shuffled so required digits/symbols are never clumped at a fixed position
+- No DKNet or third-party dependencies — just the .NET base class library
+
+## Quick start
 
 ```csharp
 using DKNet.RandomCreator;
 
-// Generate a random string (default length 25)
-string randomString = RandomCreators.NewString();
+// 25-character letters-only string (defaults)
+string token = RandomCreators.NewString();
 
-// Generate a random string of length 32, with at least 4 numbers and 2 special characters
+// 32 characters, at least 4 digits and 2 symbols, rest letters
 var options = new StringCreatorOptions { MinNumbers = 4, MinSpecials = 2 };
 string strongPassword = RandomCreators.NewString(32, options);
-
-// Generate a random alphabetic-only string of length 16
-var alphaOptions = new StringCreatorOptions { AlphabeticOnly = true };
-string alphaString = RandomCreators.NewString(16, alphaOptions);
-
-// Generate a random char array with options
-char[] randomChars = RandomCreators.NewChars(20, options);
 ```
 
-## API
+## Documentation
 
-- `RandomCreators.NewString(int length = 25, StringCreatorOptions? options = null)`: Returns a random string with
-  optional constraints.
-- `RandomCreators.NewChars(int length = 25, StringCreatorOptions? options = null)`: Returns a random char array with
-  optional constraints.
-- `StringCreatorOptions`: Options to control alphabetic-only, minimum numbers, and minimum special characters.
+Full feature guide, configuration reference, and gotchas:
+https://github.com/baoduy/DKNet/blob/dev/docs/Core/DKNet.RandomCreator.md
 
 ## License
 
-MIT © 2026 drunkcoding
-
-## Repository
-
-[https://github.com/baoduy/DKNet](https://github.com/baoduy/DKNet)
-
-## Contributing
-
-Pull requests and issues are welcome!
+MIT © drunkcoding.net — https://github.com/baoduy/DKNet

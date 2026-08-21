@@ -1,5 +1,6 @@
 using DKNet.EfCore.Abstractions.Events;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Collections;
 using FluentResults;
 
 namespace DKNet.EfCore.Events.Internals;

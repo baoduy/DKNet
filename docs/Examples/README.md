@@ -36,20 +36,24 @@ This section provides practical examples and implementation patterns for using D
 ### Entity Definition
 
 ```csharp
+using DKNet.EfCore.Abstractions.Entities;
+
 [Table("Products", Schema = "catalog")]
-public class Product : AggregateRoot
+public class Product : AuditedEntity
 {
-    public Product(string name, decimal price, string description, string createdBy)
-        : base(Guid.NewGuid(), createdBy)
+    private Product() { } // EF Core
+
+    public static Product Create(string name, decimal price, string description, string createdBy)
     {
-        Name = name;
-        Price = price;
-        Description = description;
+        var product = new Product { Name = name, Price = price, Description = description };
+        product.SetCreatedBy(createdBy);
+        product.AddEvent(new ProductCreatedEvent(product.Id, product.Name));
+        return product;
     }
 
-    public string Name { get; private set; }
+    public string Name { get; private set; } = null!;
     public decimal Price { get; private set; }
-    public string Description { get; private set; }
+    public string Description { get; private set; } = null!;
     public bool IsActive { get; private set; } = true;
 
     public void UpdateDetails(string name, decimal price, string description, string updatedBy)
@@ -71,45 +75,19 @@ public class Product : AggregateRoot
 }
 ```
 
-### Repository Implementation
-
-```csharp
-public interface IProductRepository : IRepository<Product>
-{
-    Task<bool> IsNameUniqueAsync(string name, Guid? excludeId = null);
-    Task<IEnumerable<Product>> GetActiveProductsAsync();
-}
-
-public class ProductRepository : Repository<Product>, IProductRepository
-{
-    public ProductRepository(AppDbContext context) : base(context) { }
-
-    public async Task<bool> IsNameUniqueAsync(string name, Guid? excludeId = null)
-    {
-        var query = Gets().Where(p => p.Name == name);
-        if (excludeId.HasValue)
-            query = query.Where(p => p.Id != excludeId.Value);
-            
-        return !await query.AnyAsync();
-    }
-
-    public Task<IEnumerable<Product>> GetActiveProductsAsync()
-    {
-        return Gets().Where(p => p.IsActive).ToListAsync();
-    }
-}
-```
-
 ### Commands and Queries
 
+Handlers talk to the `DbContext` directly and let `AddSlimBusEfCoreInterceptor<AppDbContext>()` save on success —
+see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
+
 ```csharp
+using DKNet.SlimBus.Extensions;
+using FluentResults;
+using Microsoft.EntityFrameworkCore;
+
 // Create Command
-public record CreateProductCommand : IRequest<ProductResult>
-{
-    [Required] public string Name { get; init; } = null!;
-    [Required] public decimal Price { get; init; }
-    public string? Description { get; init; }
-}
+public record CreateProductCommand(string Name, decimal Price, string? Description)
+    : Fluents.Requests.IWitResponse<Guid>;
 
 public class CreateProductValidator : AbstractValidator<CreateProductCommand>
 {
@@ -121,92 +99,47 @@ public class CreateProductValidator : AbstractValidator<CreateProductCommand>
     }
 }
 
-public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
+internal sealed class CreateProductHandler(AppDbContext db)
+    : Fluents.Requests.IHandler<CreateProductCommand, Guid>
 {
-    private readonly IProductRepository _repository;
-    private readonly IMapper _mapper;
-
-    public CreateProductHandler(IProductRepository repository, IMapper mapper)
+    public async Task<IResult<Guid>> OnHandle(CreateProductCommand request, CancellationToken cancellationToken)
     {
-        _repository = repository;
-        _mapper = mapper;
-    }
+        if (await db.Products.AnyAsync(p => p.Name == request.Name, cancellationToken))
+            return Result.Fail($"Product with name '{request.Name}' already exists");
 
-    public async Task<ProductResult> Handle(CreateProductCommand request, CancellationToken cancellationToken)
-    {
-        // Business validation
-        if (!await _repository.IsNameUniqueAsync(request.Name))
-            throw new BusinessException($"Product with name '{request.Name}' already exists");
+        var product = Product.Create(request.Name, request.Price, request.Description ?? string.Empty, "system");
+        await db.Products.AddAsync(product, cancellationToken);
 
-        // Create entity
-        var product = new Product(
-            request.Name, 
-            request.Price, 
-            request.Description ?? string.Empty,
-            "system"); // In real app, get from current user
-
-        await _repository.AddAsync(product, cancellationToken);
-        
-        // Add domain event
-        product.AddEvent(new ProductCreatedEvent(product.Id, product.Name));
-
-        return _mapper.Map<ProductResult>(product);
+        return Result.Ok(product.Id);
     }
 }
 
 // Query
-public record GetProductQuery : IRequest<ProductResult?>
+public record GetProductQuery(Guid Id) : Fluents.Queries.IWitResponse<ProductDto>;
+
+internal sealed class GetProductHandler(AppDbContext db)
+    : Fluents.Queries.IHandler<GetProductQuery, ProductDto>
 {
-    public Guid Id { get; init; }
-}
-
-public class GetProductHandler : IRequestHandler<GetProductQuery, ProductResult?>
-{
-    private readonly IReadRepository<Product> _repository;
-    private readonly IMapper _mapper;
-
-    public GetProductHandler(IReadRepository<Product> repository, IMapper mapper)
+    public async Task<ProductDto?> OnHandle(GetProductQuery request, CancellationToken cancellationToken)
     {
-        _repository = repository;
-        _mapper = mapper;
-    }
-
-    public async Task<ProductResult?> Handle(GetProductQuery request, CancellationToken cancellationToken)
-    {
-        var product = await _repository.GetByIdAsync(request.Id, cancellationToken);
-        return product != null ? _mapper.Map<ProductResult>(product) : null;
+        var product = await db.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        return product is null ? null : new ProductDto(product.Id, product.Name);
     }
 }
 ```
 
-### API Controller
+### Minimal API Endpoints
 
 ```csharp
-[ApiController]
-[Route("api/[controller]")]
-public class ProductsController : ControllerBase
-{
-    private readonly IMediator _mediator;
+using DKNet.AspCore.Extensions;
+using DKNet.SlimBus.Extensions;
 
-    public ProductsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
+app.MapGet("/products/{id:guid}", async (IMessageBus bus, Guid id) =>
+    (await bus.Send(new GetProductQuery(id))) is { } dto ? Results.Ok(dto) : Results.NotFound());
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductResult>> GetProduct(Guid id)
-    {
-        var result = await _mediator.Send(new GetProductQuery { Id = id });
-        return result != null ? Ok(result) : NotFound();
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<ProductResult>> CreateProduct([FromBody] CreateProductCommand command)
-    {
-        var result = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetProduct), new { id = result.Id }, result);
-    }
-}
+app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
+    (await bus.Send(cmd)).Response(isCreated: true));
 ```
 
 ---
@@ -216,65 +149,55 @@ public class ProductsController : ControllerBase
 ### Event Definition
 
 ```csharp
-public record ProductCreatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductCreatedEvent(Guid ProductId, string ProductName) : EventItem;
 
-public record ProductUpdatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductUpdatedEvent(Guid ProductId, string ProductName) : EventItem;
 
-public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : EventItem;
 ```
+
+Raised from the aggregate via `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched to every
+registered `IEventPublisher` by `DKNet.EfCore.Events` after a successful `SaveChangesAsync`.
+`AddSlimBusEventPublisher<AppDbContext>()` forwards each one onto SlimMessageBus for the consumers below to
+pick up — see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
 
 ### Event Handlers
 
 ```csharp
-public class ProductCreatedHandler : IDomainEventHandler<ProductCreatedEvent>
+public class ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
+    : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    private readonly ILogger<ProductCreatedHandler> _logger;
-    private readonly IEmailService _emailService;
-
-    public ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
+    public async Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken)
     {
-        _logger = logger;
-        _emailService = emailService;
-    }
-
-    public async Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Product created: {ProductId} - {ProductName}", 
-            domainEvent.ProductId, domainEvent.ProductName);
+        logger.LogInformation("Product created: {ProductId} - {ProductName}",
+            message.ProductId, message.ProductName);
 
         // Send notification email
-        await _emailService.SendProductCreatedNotificationAsync(
-            domainEvent.ProductId, domainEvent.ProductName, cancellationToken);
+        await emailService.SendProductCreatedNotificationAsync(
+            message.ProductId, message.ProductName, cancellationToken);
     }
 }
 
-public class ProductEventLogger : 
-    IDomainEventHandler<ProductCreatedEvent>,
-    IDomainEventHandler<ProductUpdatedEvent>,
-    IDomainEventHandler<ProductDeactivatedEvent>
+public class ProductEventLogger(ILogger<ProductEventLogger> logger) :
+    Fluents.EventsConsumers.IHandler<ProductCreatedEvent>,
+    Fluents.EventsConsumers.IHandler<ProductUpdatedEvent>,
+    Fluents.EventsConsumers.IHandler<ProductDeactivatedEvent>
 {
-    private readonly ILogger<ProductEventLogger> _logger;
-
-    public ProductEventLogger(ILogger<ProductEventLogger> logger)
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken)
     {
-        _logger = logger;
-    }
-
-    public Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Product created: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product created: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 
-    public Task Handle(ProductUpdatedEvent domainEvent, CancellationToken cancellationToken)
+    public Task OnHandle(ProductUpdatedEvent message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Product updated: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product updated: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 
-    public Task Handle(ProductDeactivatedEvent domainEvent, CancellationToken cancellationToken)
+    public Task OnHandle(ProductDeactivatedEvent message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Product deactivated: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product deactivated: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 }
@@ -286,44 +209,28 @@ public class ProductEventLogger :
 
 ### Specification Pattern
 
+A `Specification<TEntity>` is configured entirely from its constructor via `protected` builder methods — there is
+no boolean `.And()`/`.Or()`/`.Not()` combinator; compose criteria by passing them into one specification's
+constructor instead. See [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) for the full API.
+
 ```csharp
-public class ActiveProductsSpecification : Specification<Product>
+public sealed class ActiveProductsInPriceRangeSpec : Specification<Product>
 {
-    public override Expression<Func<Product, bool>> ToExpression()
+    public ActiveProductsInPriceRangeSpec(decimal minPrice, decimal maxPrice)
     {
-        return product => product.IsActive;
+        WithFilter(p => p.IsActive && p.Price >= minPrice && p.Price <= maxPrice);
+        AddOrderBy(p => p.Name);
     }
 }
 
-public class ProductsByPriceRangeSpecification : Specification<Product>
+public sealed class ActiveProductsByNameSpec : Specification<Product>
 {
-    private readonly decimal _minPrice;
-    private readonly decimal _maxPrice;
-
-    public ProductsByPriceRangeSpecification(decimal minPrice, decimal maxPrice)
+    public ActiveProductsByNameSpec(string namePattern, decimal? minPrice = null)
     {
-        _minPrice = minPrice;
-        _maxPrice = maxPrice;
-    }
-
-    public override Expression<Func<Product, bool>> ToExpression()
-    {
-        return product => product.Price >= _minPrice && product.Price <= _maxPrice;
-    }
-}
-
-public class ProductsByNameSpecification : Specification<Product>
-{
-    private readonly string _namePattern;
-
-    public ProductsByNameSpecification(string namePattern)
-    {
-        _namePattern = namePattern;
-    }
-
-    public override Expression<Func<Product, bool>> ToExpression()
-    {
-        return product => product.Name.Contains(_namePattern);
+        WithFilter(p => p.IsActive
+            && p.Name.Contains(namePattern)
+            && (minPrice == null || p.Price >= minPrice));
+        AddOrderBy(p => p.Name);
     }
 }
 ```
@@ -331,35 +238,15 @@ public class ProductsByNameSpecification : Specification<Product>
 ### Using Specifications
 
 ```csharp
-public class ProductService
+public class ProductService(IRepositorySpec repo)
 {
-    private readonly IProductRepository _repository;
+    public Task<IList<Product>> GetActiveProductsInPriceRangeAsync(
+        decimal minPrice, decimal maxPrice, CancellationToken cancellationToken = default) =>
+        repo.ToListAsync(new ActiveProductsInPriceRangeSpec(minPrice, maxPrice), cancellationToken);
 
-    public ProductService(IProductRepository repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task<IEnumerable<Product>> GetActiveProductsInPriceRangeAsync(decimal minPrice, decimal maxPrice)
-    {
-        var spec = new ActiveProductsSpecification()
-            .And(new ProductsByPriceRangeSpecification(minPrice, maxPrice));
-
-        return await _repository.FindAsync(spec);
-    }
-
-    public async Task<IEnumerable<Product>> SearchProductsAsync(string namePattern, decimal? minPrice = null)
-    {
-        var spec = new ActiveProductsSpecification()
-            .And(new ProductsByNameSpecification(namePattern));
-
-        if (minPrice.HasValue)
-        {
-            spec = spec.And(new ProductsByPriceRangeSpecification(minPrice.Value, decimal.MaxValue));
-        }
-
-        return await _repository.FindAsync(spec);
-    }
+    public Task<IList<Product>> SearchProductsAsync(
+        string namePattern, decimal? minPrice = null, CancellationToken cancellationToken = default) =>
+        repo.ToListAsync(new ActiveProductsByNameSpec(namePattern, minPrice), cancellationToken);
 }
 ```
 
@@ -367,83 +254,53 @@ public class ProductService
 
 ## 🔐 Multi-tenant Application
 
-### Tenant Entity
+Row-level, ownership-based isolation is a built-in feature —
+[DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — rather than something to hand-roll
+per repository. An entity opts in via `IOwnedBy`; a global query filter and a `SaveChanges` hook do the rest.
+
+### Tenant-Owned Entity
 
 ```csharp
-public interface ITenantEntity
-{
-    string TenantId { get; set; }
-}
+using DKNet.EfCore.DataAuthorization;
 
-public class Product : AggregateRoot, ITenantEntity
+public class Product : AuditedEntity, IOwnedBy
 {
-    public string TenantId { get; set; } = null!;
-    public string Name { get; private set; }
+    public string OwnedBy { get; private set; } = string.Empty;
+    public string Name { get; private set; } = null!;
     // ... other properties
-}
-```
-
-### Tenant-Aware Repository
-
-```csharp
-public class TenantProductRepository : Repository<Product>, IProductRepository
-{
-    private readonly ITenantProvider _tenantProvider;
-
-    public TenantProductRepository(AppDbContext context, ITenantProvider tenantProvider) 
-        : base(context)
-    {
-        _tenantProvider = tenantProvider;
-    }
-
-    protected override IQueryable<Product> Gets()
-    {
-        var query = base.Gets();
-        var tenantId = _tenantProvider.GetCurrentTenant();
-        
-        return query.Where(p => p.TenantId == tenantId);
-    }
-
-    public override async Task<Product> AddAsync(Product entity, CancellationToken cancellationToken = default)
-    {
-        entity.TenantId = _tenantProvider.GetCurrentTenant();
-        return await base.AddAsync(entity, cancellationToken);
-    }
 }
 ```
 
 ### Tenant Provider
 
 ```csharp
-public interface ITenantProvider
+using DKNet.EfCore.DataAuthorization;
+
+public sealed class HttpTenantProvider(IHttpContextAccessor httpContextAccessor) : IDataOwnerProvider
 {
-    string GetCurrentTenant();
-}
-
-public class HttpTenantProvider : ITenantProvider
-{
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public HttpTenantProvider(IHttpContextAccessor httpContextAccessor)
+    public string? GetOwnershipKey()
     {
-        _httpContextAccessor = httpContextAccessor;
-    }
+        var context = httpContextAccessor.HttpContext;
 
-    public string GetCurrentTenant()
-    {
-        var context = _httpContextAccessor.HttpContext;
-        
         // Try header first
         if (context?.Request.Headers.TryGetValue("X-Tenant-Id", out var tenantHeader) == true)
-        {
             return tenantHeader.FirstOrDefault() ?? "default";
-        }
 
         // Try claim from JWT
-        var tenantClaim = context?.User?.FindFirst("tenant_id");
-        return tenantClaim?.Value ?? "default";
+        return context?.User?.FindFirst("tenant_id")?.Value ?? "default";
     }
 }
+```
+
+### Registration
+
+`AppDbContext` must implement `IDataOwnerDbContext` and call `UseAutoConfigModel()` in `OnModelCreating` — see
+[DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) for the full wiring.
+
+```csharp
+services
+    .AddDataOwnerProvider<AppDbContext, HttpTenantProvider>()
+    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
 ```
 
 ---
@@ -455,10 +312,10 @@ public class HttpTenantProvider : ITenantProvider
 ```csharp
 public class FileUploadService
 {
-    private readonly IBlobStorageService _blobStorage;
+    private readonly IBlobService _blobStorage;
     private readonly ILogger<FileUploadService> _logger;
 
-    public FileUploadService(IBlobStorageService blobStorage, ILogger<FileUploadService> logger)
+    public FileUploadService(IBlobService blobStorage, ILogger<FileUploadService> logger)
     {
         _blobStorage = blobStorage;
         _logger = logger;
@@ -475,20 +332,22 @@ public class FileUploadService
 
         // Upload file
         using var stream = file.OpenReadStream();
-        await _blobStorage.UploadAsync(filePath, stream, file.ContentType);
+        var blob = new BlobDetails.BlobData(filePath, BinaryData.FromStream(stream)) { ContentType = file.ContentType };
+        var location = await _blobStorage.SaveAsync(blob);
 
-        _logger.LogInformation("File uploaded: {FilePath}", filePath);
-        return filePath;
+        _logger.LogInformation("File uploaded: {FilePath}", location);
+        return location;
     }
 
-    public async Task<Stream> DownloadFileAsync(string filePath)
+    public async Task<BinaryData?> DownloadFileAsync(string filePath)
     {
-        return await _blobStorage.DownloadAsync(filePath);
+        var result = await _blobStorage.GetAsync(new BlobRequest(filePath));
+        return result?.Data;
     }
 
     public async Task DeleteFileAsync(string filePath)
     {
-        await _blobStorage.DeleteAsync(filePath);
+        await _blobStorage.DeleteAsync(new BlobRequest(filePath));
         _logger.LogInformation("File deleted: {FilePath}", filePath);
     }
 }
@@ -499,7 +358,7 @@ public class FileUploadService
 ```csharp
 public class ImageProcessingService
 {
-    private readonly IBlobStorageService _blobStorage;
+    private readonly IBlobService _blobStorage;
     private readonly IImageProcessor _imageProcessor;
 
     public async Task<string> ProcessAndUploadImageAsync(IFormFile imageFile)
@@ -512,9 +371,8 @@ public class ImageProcessingService
         
         // Upload processed image
         var fileName = $"processed/{Guid.NewGuid()}.jpg";
-        await _blobStorage.UploadAsync(fileName, processedStream, "image/jpeg");
-        
-        return fileName;
+        var blob = new BlobDetails.BlobData(fileName, BinaryData.FromStream(processedStream)) { ContentType = "image/jpeg" };
+        return await _blobStorage.SaveAsync(blob);
     }
 }
 ```
@@ -527,7 +385,7 @@ public class ImageProcessingService
 
 ```csharp
 // Check if type implements interface
-if (typeof(Product).ImplementsInterface<IAuditable>())
+if (typeof(Product).IsImplementOf<IAuditable>())
 {
     // Handle auditable entity
 }
@@ -535,7 +393,6 @@ if (typeof(Product).ImplementsInterface<IAuditable>())
 // Get property value dynamically
 var product = new Product();
 var name = product.GetPropertyValue("Name");
-var price = product.GetPropertyValue<decimal>("Price");
 
 // Set property value
 product.SetPropertyValue("Name", "New Product Name");
@@ -546,22 +403,22 @@ product.SetPropertyValue("Name", "New Product Name");
 ```csharp
 public enum OrderStatus
 {
-    [Description("Order is pending")]
+    [Display(Name = "Order is pending")]
     Pending,
-    
-    [Description("Order is confirmed")]
+
+    [Display(Name = "Order is confirmed")]
     Confirmed,
-    
-    [Description("Order is shipped")]
+
+    [Display(Name = "Order is shipped")]
     Shipped
 }
 
-// Get description
+// Get description via the Display attribute
 var status = OrderStatus.Pending;
-var description = status.GetDescription(); // "Order is pending"
+var description = status.GetAttribute<DisplayAttribute>()?.Name; // "Order is pending"
 
-// Get all descriptions
-var allDescriptions = EnumExtensions.GetAllDescriptions<OrderStatus>();
+// Get info for every named value
+var allInfos = EnumExtensions.GetEumInfos<OrderStatus>();
 ```
 
 ### Collection Extensions
@@ -570,13 +427,6 @@ var allDescriptions = EnumExtensions.GetAllDescriptions<OrderStatus>();
 // Async enumerable to list
 var asyncItems = GetItemsAsync();
 var list = await asyncItems.ToListAsync();
-
-// Chunked processing
-var largeList = Enumerable.Range(1, 10000);
-await largeList.ForEachChunkedAsync(100, async chunk =>
-{
-    await ProcessChunkAsync(chunk);
-});
 ```
 
 ---
@@ -585,9 +435,8 @@ await largeList.ForEachChunkedAsync(100, async chunk =>
 
 For complete working examples, check out:
 
-- **[SlimBus Template](../src/Templates/SlimBus.ApiEndpoints/README.md)** - Complete API implementation
-- **[Unit Tests](../src/Tests/)** - Comprehensive test examples
-- **[Integration Tests](../src/Templates/SlimBus.ApiEndpoints/SlimBus.App.Tests/)** - End-to-end testing
+- **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** - Complete API implementation and end-to-end tests, in the DKNet.Templates repository
+- **Unit Tests** - Comprehensive test examples in the sibling `*.Tests` projects next to each package under `src/`
 
 ---
 

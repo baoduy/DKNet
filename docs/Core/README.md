@@ -1,64 +1,24 @@
-# Core Framework
+# Core
 
-The Core Framework provides foundational utilities and extensions that support all other DKNet components. These cross-cutting concerns are essential for building robust, maintainable applications.
+Foundational, dependency-light utilities that sit at the bottom of the DKNet dependency graph. Nothing here depends
+on EF Core, ASP.NET Core, or messaging — these packages are safe to reference from a domain model, an
+infrastructure adapter, or a plain console app.
 
-## Components
+## Packages
 
-- [DKNet.Fw.Extensions](./DKNet.Fw.Extensions.md) - Framework-level extensions and utilities
+| Package | Description |
+|---|---|
+| [`DKNet.Fw.Extensions`](./DKNet.Fw.Extensions.md) | Extension methods and reflection helpers — string/type/enum/DateTime/async-enumerable/property/attribute extensions, DI registration guards, and fluent assembly/type scanning (`TypeExtractors`). |
+| [`DKNet.RandomCreator`](./DKNet.RandomCreator.md) | Cryptographically secure random string/char generation with digit and symbol quotas, for passwords, tokens, and other secrets. |
 
-## Architecture Role
+## Install
 
-The Core Framework sits at the foundation of the DKNet architecture, providing cross-cutting concerns that are used across all layers:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        🌐 Presentation Layer                    │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                     🎯 Application Layer                        │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                      💼 Domain Layer                           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🗄️ Infrastructure Layer                      │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│              ⚙️ Core Framework (Cross-cutting)                │
-│                                                                 │
-│  • String Extensions        • Type Extensions                   │
-│  • DateTime Extensions      • Enum Utilities                    │
-│  • Encryption Services      • DI Container Extensions           │
-│  • Async Extensions         • Property Helpers                  │
-└─────────────────────────────────────────────────────────────────┘
+```bash
+dotnet add package DKNet.Fw.Extensions
+dotnet add package DKNet.RandomCreator
 ```
 
-## Key Features
+Both packages are standalone — no DI wiring or startup configuration is required beyond referencing the NuGet
+package (`DKNet.Fw.Extensions` additionally exposes a few DI-registration guard helpers you can opt into).
 
-### Foundation Services
-- **Extension Methods**: Comprehensive set of extension methods for common .NET types
-- **Type System Utilities**: Advanced type checking and manipulation utilities
-- **Dependency Injection**: Enhanced service registration and keyed service support
-
-### Security & Encryption
-- **String Encryption**: Secure string encryption and decryption utilities
-- **Hashing Services**: Consistent hashing algorithms for data integrity
-
-### Data Processing
-- **Async Enumerables**: Enhanced async enumerable processing
-- **String Manipulation**: Advanced string processing and validation
-- **Enum Utilities**: Rich enum information extraction and processing
-
-## Design Principles
-
-The Core Framework follows these key principles:
-
-1. **Non-intrusive**: Extensions that don't change existing behavior
-2. **Performance-oriented**: Optimized implementations for common operations
-3. **Dependency-minimal**: Minimal external dependencies to reduce coupling
-4. **Cross-platform**: Compatible across different .NET platforms
-5. **Testable**: All components are easily testable and mockable
+See each package's page for the full feature list, compiling examples, and gotchas.

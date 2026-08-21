@@ -10,7 +10,7 @@ Welcome to the comprehensive documentation for the DKNet Framework - a powerful 
 - **[Architecture Guide](Architecture.md)** - Understanding DDD and Onion Architecture
 
 ### 📖 Core Documentation
-- **[API Reference](API-Reference.md)** - Complete API documentation
+- **[API Reference](API-Reference.md)** - Index into the per-package API documentation
 - **[Examples & Recipes](Examples/README.md)** - Practical implementation examples
 - **[FAQ](FAQ.md)** - Frequently asked questions and troubleshooting
 
@@ -26,19 +26,26 @@ Welcome to the comprehensive documentation for the DKNet Framework - a powerful 
 This documentation is organized by functional areas to help you understand how each component contributes to the overall architecture:
 
 ### 🔧 [Core Framework](./Core/README.md)
-Foundation utilities and extensions that support all other components.
+Foundation, dependency-light utilities that sit at the bottom of the dependency graph.
 
-- [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) - Framework-level extensions and utilities
+- [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) - Extension methods and reflection helpers — string/type/enum/DateTime/async-enumerable/property/attribute extensions, DI registration guards, and fluent assembly/type scanning
+- [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) - Cryptographically secure random string/char generation with digit and symbol quotas, for passwords, tokens, and other secrets
 
 ### 🗄️ [Entity Framework Core Extensions](./EfCore/README.md)
-Comprehensive EF Core enhancements that implement repository patterns, domain events, and data access abstractions.
+Comprehensive EF Core enhancements that implement the specification pattern, domain events, and data access abstractions.
 
-- [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) - Core abstractions and interfaces
-- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) - Data authorization and access control
+- [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) - Entity base classes, domain-event contracts, and shared attributes
+- [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) - DI/wiring layer: entity configuration discovery, global query filters, data seeding, GUIDv7 keys, sequences
+- [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) - The specification pattern and `IRepositorySpec`, including the Dynamic Predicate Builder — the current, supported way to query and persist
+- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) - **Retired**, source-only generic repository, superseded by Specifications
+- [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) - **Retired**, source-only repository interfaces implemented by `DKNet.EfCore.Repos`
+- [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) - Before/after-SaveChanges interceptor pipeline
 - [DKNet.EfCore.Events](./EfCore/DKNet.EfCore.Events.md) - Domain event handling and dispatching
-- [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) - EF Core functionality enhancements
-- [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) - Lifecycle hooks for EF Core operations
-- [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) - Relational database utilities
+- [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) - Audit trail of entity changes, with sensitive-data-aware redaction
+- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) - Row-level, ownership-based data authorization via global query filters
+- [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) - Transparent column-level encryption via an EF Core value converter
+- [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) - Compile-time DTO generation from entities via a Roslyn source generator
+- [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) - Small provider-aware `DbContext` helpers
 
 ### 📨 [Messaging & CQRS](./Messaging/README.md)
 SlimMessageBus integration for implementing CQRS patterns and event-driven architecture.
@@ -62,9 +69,15 @@ Infrastructure orchestration helpers for .NET Aspire AppHost projects.
 - [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) - Azure Service Bus resource builder extensions
 
 ### ⚙️ [ASP.NET Core Utilities](./AspNetCore/README.md)
-Startup orchestration utilities for web/API workloads.
+Startup orchestration, minimal-API, and idempotency utilities for web/API workloads.
 
 - [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) - Application start-up background job orchestration
+- [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) - Minimal-API glue: claim-based request population, endpoint discovery/mapping, paged responses, Result/ProblemDetails conversion
+- [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) - Endpoint filter that makes minimal-API operations safe to retry, backed by a pluggable key store
+- [DKNet.AspCore.Idempotency.Relational](./AspNetCore/DKNet.AspCore.Idempotency.Relational.md) - Shared EF Core building blocks for a relational idempotency store
+- [DKNet.AspCore.Idempotency.MsSqlStore](./AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) - SQL Server-backed idempotency key store
+- [DKNet.AspCore.Idempotency.NpgsqlStore](./AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) - PostgreSQL-backed idempotency key store
+- [DKNet.AspCore.Idempotency.RedisStore](./AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) - Redis-backed idempotency key store, no schema/migrations required
 
 ## 🏗️ Architecture Overview
 
