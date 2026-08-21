@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Runtime.InteropServices;
 using DotNet.Testcontainers.Builders;
 using DKNet.AspCore.Idempotency;
 using Microsoft.AspNetCore.Hosting;
@@ -23,9 +24,17 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
 {
     #region Fields
 
-    // mssql/server ships x64-only images (no ARM64). These tests are meant to run on a
-    // GitHub-hosted x64 runner via the remote-tests pipeline, never on a local ARM PC.
-    private const string MssqlImage = "mcr.microsoft.com/mssql/server:2022-latest";
+    // mssql/server ships x64-only images (no ARM64), so on ARM hosts fall back to azure-sql-edge
+    // which has a native ARM64 build. x64 (incl. GitHub-hosted runners) keeps real SQL Server.
+    //
+    // NOTE: azure-sql-edge runs on Apple Silicon Macs, but NOT on every ARM64 device (e.g. GX10).
+    // Where it can't run, this local fallback is useless - verify via the remote-tests GitHub
+    // Action (gh workflow run remote-tests.yml --ref <branch>), which runs on an x64 runner. A
+    // green run here is never proof the tests pass on real SQL Server; that gate is the x64 runner.
+    private static readonly string MssqlImage =
+        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+            ? "mcr.microsoft.com/azure-sql-edge:latest"
+            : "mcr.microsoft.com/mssql/server:2022-latest";
 
     private readonly string _databaseName = $"Idem_{Guid.NewGuid():N}";
     private MsSqlContainer? _container;
