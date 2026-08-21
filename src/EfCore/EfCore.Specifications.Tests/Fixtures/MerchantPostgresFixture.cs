@@ -1,31 +1,23 @@
-// <copyright file="MerchantMsSqlFixture.cs" company="https://drunkcoding.net">
+// <copyright file="MerchantPostgresFixture.cs" company="https://drunkcoding.net">
 // Copyright (c) 2025 Steven Hoang. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
-using DotNet.Testcontainers.Builders;
 using EfCore.Specifications.Tests.TestEntities;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 
 namespace EfCore.Specifications.Tests.Fixtures;
 
 /// <summary>
-///     Spins up a real SQL Server (via TestContainers) seeded with merchants for the three-key
+///     Spins up a real PostgreSQL (via TestContainers) seeded with merchants for the three-key
 ///     keyset pagination integration scenario (country ascending, revenue descending, identifier ascending).
 /// </summary>
-/// <remarks>
-///     mssql/server ships x64-only images. Do not run this fixture on an ARM device (no working local
-///     image) - verify it on the GitHub-hosted x64 runner instead:
-///     <c>gh workflow run remote-tests.yml --ref &lt;branch&gt; -f project=EfCore/EfCore.Specifications.Tests</c>.
-///     See root <c>CLAUDE.md</c> "Remote test verification".
-/// </remarks>
-public sealed class MerchantMsSqlFixture : IAsyncLifetime
+public sealed class MerchantPostgresFixture : IAsyncLifetime
 {
     #region Fields
 
-    private const string MssqlImage = "mcr.microsoft.com/mssql/server:2022-latest";
-
-    private MsSqlContainer? _container;
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
+        .Build();
 
     #endregion
 
@@ -46,26 +38,16 @@ public sealed class MerchantMsSqlFixture : IAsyncLifetime
     {
         if (Db is not null) await Db.DisposeAsync();
 
-        if (_container != null)
-        {
-            await _container.StopAsync();
-            await _container.DisposeAsync();
-        }
+        await _container.StopAsync();
+        await _container.DisposeAsync();
     }
 
     public async Task InitializeAsync()
     {
-        _container = new MsSqlBuilder(MssqlImage)
-            .WithPassword($"A{Guid.NewGuid():N}a1!")
-            .WithWaitStrategy(Wait.ForUnixContainer()
-                .UntilMessageIsLogged("SQL Server is now ready for client connections"))
-            .WithCleanUp(true)
-            .Build();
-
         await _container.StartAsync();
 
         var options = new DbContextOptionsBuilder<MerchantDbContext>()
-            .UseSqlServer(_container.GetConnectionString())
+            .UseNpgsql(_container.GetConnectionString())
             .Options;
 
         Db = new MerchantDbContext(options);
