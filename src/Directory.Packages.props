@@ -41,11 +41,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Asp.Versioning.Http" Version="10.2.2" />
-    <PackageVersion Include="Aspire.Hosting" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.5.0" />
     <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.4.6" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.101" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.102.1" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.102" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.102.3" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
@@ -110,7 +110,7 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.14.0" />
     <PackageVersion Include="X.PagedList.EF" Version="10.5.9" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="Markdig" Version="1.3.2" />
     <PackageVersion Include="PdfPig" Version="0.1.15" />
     <PackageVersion Include="PuppeteerSharp" Version="25.6.0" />
