@@ -26,6 +26,7 @@ dotnet add package DKNet.AspCore.Idempotency
 
 ```csharp
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Store;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +48,20 @@ re-executes `CreateOrder`.
 For multi-instance production traffic, swap the built-in store for an atomic one from the ecosystem —
 `DKNet.AspCore.Idempotency.MsSqlStore`, `DKNet.AspCore.Idempotency.NpgsqlStore`, or
 `DKNet.AspCore.Idempotency.RedisStore`.
+
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `IdempotencyEndpointFilter` (incl. `RequiredIdempotentKey()`), `IdempotencyKeyScopeResolver`, `IdempotentKeyInfo` | `DKNet.AspCore.Idempotency` | `DKNet.AspCore.Idempotency.Filtering` |
+| `CachedResponse` | `DKNet.AspCore.Idempotency` | `DKNet.AspCore.Idempotency.Store` (joins the existing `IIdempotencyKeyStore`/`IdempotencyDistributedCacheStore`) |
+
+`IdempotencySetup` (registration point) and `IdempotencyOptions`/`IdempotentConflictHandling`
+(the configuration surface) stay at `DKNet.AspCore.Idempotency`.
 
 ## Documentation
 

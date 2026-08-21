@@ -41,6 +41,20 @@ public sealed class ProductService(IRepository<Product> repo)
 }
 ```
 
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `ReadRepository<T>`, `WriteRepository<T>`, `Repository<T>`, `RepositoryFactory<T>` | `DKNet.EfCore.Repos` | `DKNet.EfCore.Repos.Repositories` |
+
+`SetupRepository` (ambient, namespace `Microsoft.Extensions.DependencyInjection`) and
+`RepoExtensions`/`RepoSpecExtensions.cs` — the package's registration point and its
+spec-application concern — stay at `DKNet.EfCore.Repos`.
+
 ## Full docs and migration
 
 - Full feature reference: [`docs/EfCore/DKNet.EfCore.Repos.md`](https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Repos.md)

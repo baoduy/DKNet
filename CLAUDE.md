@@ -47,9 +47,15 @@ Treat these as primary sources — Claude should read the relevant ones before g
 
 | File | Why it matters |
 |---|---|
-| `src/CLAUDE.md` | Repo-specific Claude guidance (commands, conventions, signature patterns). |
+| `src/AGENTS.md` | Full coding/testing/PR conventions for this repo (commit format, test patterns, anti-patterns). |
+| `src/memory-bank/README.md` | Index of project context (architecture, current focus, standards). |
+| `src/memory-bank/activeContext.md` | What's actively being worked on right now. |
+| `src/memory-bank/copilot-rules.md`, `src/memory-bank/copilot-quick-reference.md` | Detailed standards and code templates. |
+| `src/memory-bank/libraries/README.md` | Scenario → DKNet package routing for API implementation work. |
 | `.github/copilot-instructions.md` | Mostly overlaps with AGENTS.md. |
 | `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | User-facing reference. |
+
+When the user asks for a feature in a specific area, load the relevant `memory-bank` doc(s) before generating code rather than guessing patterns.
 
 ## Common Commands
 
@@ -117,6 +123,7 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 - **File header**: every `.cs` file gets the copyright block (template lives in the memory-bank). Don't omit when creating new files.
 - **XML docs** are mandatory on all public APIs (`<summary>`, `<param>`, `<returns>`, relevant `<exception>`); `GenerateDocumentationFile=true` makes warnings fatal.
 - **Naming**: private fields `_camelCase`; async methods end in `Async`; extensions live in static classes under `/Extensions`.
+- **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` and `DKNet.EfCore.Repos.SetupRepository` (both `Microsoft.Extensions.DependencyInjection`), `DKNet.Fw.Extensions.AsyncEnumerableExtensions` (`System.Collections.Generic`, filed under `Collections/` on disk), and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
 - **EF Core**: always `await`, default to `AsNoTracking()` for reads, push filtering to the DB, prefer `Include`/projections over per-row fetches. For dynamic predicates remember `.AsExpandable()`.
 - **Verifying SQL** in tests: use `query.ToQueryString()` and assert against the generated SQL alongside the materialized rows — recurring pattern in `EfCore.Specifications.Tests`.
 - **Central package management**: add/upgrade NuGet versions in `src/Directory.Packages.props`, not in individual `.csproj` files.

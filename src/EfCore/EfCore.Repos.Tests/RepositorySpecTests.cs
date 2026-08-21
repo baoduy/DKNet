@@ -1,3 +1,5 @@
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Repositories;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Data.Sqlite;

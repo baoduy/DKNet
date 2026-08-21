@@ -4,6 +4,7 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Store;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;

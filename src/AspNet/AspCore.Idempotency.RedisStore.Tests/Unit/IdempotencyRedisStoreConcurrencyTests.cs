@@ -5,6 +5,7 @@
 
 using System.Collections.Concurrent;
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;

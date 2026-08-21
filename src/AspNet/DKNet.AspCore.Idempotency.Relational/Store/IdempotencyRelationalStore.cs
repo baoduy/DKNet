@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Collections.Concurrent;
+using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Relational.Data;
 using DKNet.AspCore.Idempotency.Store;
 using Microsoft.EntityFrameworkCore;

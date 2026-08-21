@@ -27,6 +27,7 @@ dotnet add package DKNet.Svc.Encryption
 
 ```csharp
 using DKNet.Svc.Encryption;
+using DKNet.Svc.Encryption.Ciphers;
 
 builder.Services.AddEncryptionServices(); // AES-GCM, HMAC, SHA (AddRsaEncryption(key) separately if needed)
 
@@ -36,6 +37,20 @@ public sealed class SecretStore(IAesGcmEncryption aesGcm)
     public string Reveal(string cipherPackage) => aesGcm.DecryptString(cipherPackage);
 }
 ```
+
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `IAesEncryption`/`AesEncryption`, `IAesGcmEncryption`/`AesGcmEncryption`, `IRsaEncryption`/`RsaEncryption` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Ciphers` |
+| `IHmacHashing`/`HmacHashing`, `IShaHashing`/`ShaHashing` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Hashing` |
+
+`EncryptionSetup` (registration point) and `Base64StringExtensions`/`Base65StringExtensions`
+(the Base64/Base64URL encoding helpers) stay at `DKNet.Svc.Encryption`.
 
 ## Documentation
 

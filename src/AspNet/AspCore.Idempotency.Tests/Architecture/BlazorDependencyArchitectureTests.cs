@@ -1,4 +1,5 @@
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Filtering;
 using NetArchTest.Rules;
 using Shouldly;
 

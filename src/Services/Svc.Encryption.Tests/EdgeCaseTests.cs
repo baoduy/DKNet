@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Security.Cryptography;
 using DKNet.Svc.Encryption;
+using DKNet.Svc.Encryption.Ciphers;
+using DKNet.Svc.Encryption.Hashing;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
