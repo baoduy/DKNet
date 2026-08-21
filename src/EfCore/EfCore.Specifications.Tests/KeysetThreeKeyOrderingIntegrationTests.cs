@@ -9,20 +9,20 @@ using MR.EntityFrameworkCore.KeysetPagination;
 namespace EfCore.Specifications.Tests;
 
 /// <summary>
-///     Integration coverage (real SQL Server via TestContainers) for paging over a three-key ordering
+///     Integration coverage (real PostgreSQL via TestContainers) for paging over a three-key ordering
 ///     - country ascending, revenue descending, identifier ascending - per DRK-584's acceptance criteria.
 /// </summary>
-public class KeysetThreeKeyOrderingIntegrationTests : IClassFixture<MerchantMsSqlFixture>
+public class KeysetThreeKeyOrderingIntegrationTests : IClassFixture<MerchantPostgresFixture>
 {
     #region Fields
 
-    private readonly MerchantMsSqlFixture _fixture;
+    private readonly MerchantPostgresFixture _fixture;
 
     #endregion
 
     #region Constructors
 
-    public KeysetThreeKeyOrderingIntegrationTests(MerchantMsSqlFixture fixture) => _fixture = fixture;
+    public KeysetThreeKeyOrderingIntegrationTests(MerchantPostgresFixture fixture) => _fixture = fixture;
 
     #endregion
 

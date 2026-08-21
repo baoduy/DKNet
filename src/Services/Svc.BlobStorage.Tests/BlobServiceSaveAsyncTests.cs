@@ -230,7 +230,7 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = "UseDevelopmentStorage=true", 
+            ConnectionString = fixture.Options.ConnectionString, 
             ContainerName = "test", 
             IncludedExtensions = [".txt"] 
         };
@@ -247,7 +247,7 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = "UseDevelopmentStorage=true", 
+            ConnectionString = fixture.Options.ConnectionString, 
             ContainerName = "test", 
             MaxFileSizeInMb = 1 
         };
@@ -265,7 +265,7 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = "UseDevelopmentStorage=true", 
+            ConnectionString = fixture.Options.ConnectionString, 
             ContainerName = "test", 
             MaxFileNameLength = 5 
         };
@@ -282,7 +282,7 @@ public class BlobServiceSaveAsyncTests
         using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = "UseDevelopmentStorage=true", 
+            ConnectionString = fixture.Options.ConnectionString, 
             ContainerName = "test" 
         };
         var service = new AzureStorageBlobService(Options.Create(options));

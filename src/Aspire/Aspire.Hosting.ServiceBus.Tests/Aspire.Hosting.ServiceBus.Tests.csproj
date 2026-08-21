@@ -1,8 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
@@ -17,25 +15,26 @@
 
     <ItemGroup>
         <PackageReference Include="coverlet.collector">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="Aspire.Hosting" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit" />
         <PackageReference Include="xunit.runner.visualstudio">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Shouldly"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
+        <PackageReference Include="Shouldly" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Xunit"/>
+        <Using Include="Xunit" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.Encryption\DKNet.EfCore.Encryption.csproj"/>
+        <ProjectReference Include="..\Aspire.Hosting.ServiceBus\Aspire.Hosting.ServiceBus.csproj" />
     </ItemGroup>
 
 </Project>
