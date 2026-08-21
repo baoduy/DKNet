@@ -32,8 +32,9 @@ services.AddSpecRepo<AppDbContext>();
 
 ```csharp
 using LinqKit;
-using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
 using DKNet.EfCore.Specifications.Dynamics;
+using DKNet.EfCore.Specifications.Repositories;
 
 public sealed class ProductSearchSpecification : Specification<Product>
 {
@@ -61,6 +62,22 @@ public sealed class ProductService(IRepositorySpec repo)
 
 `.AsExpandable()` is applied automatically when querying through `IRepositorySpec` — no extra wiring needed for the
 dynamic predicate above to translate to SQL.
+
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `Specification<TEntity>`, `ModelSpecification<TEntity, TModel>`, `OrderClause` | `DKNet.EfCore.Specifications` | `DKNet.EfCore.Specifications.Definitions` |
+| `IRepositorySpec`, `IRepositorySpecFactory`, `IRepositorySpecProvider` (+ their implementations) | `DKNet.EfCore.Specifications` | `DKNet.EfCore.Specifications.Repositories` |
+| `PageAsyncEnumerator` | `DKNet.EfCore.Specifications` | `DKNet.EfCore.Specifications.Paging` |
+
+`SpecSetup` — the package's `AddSpecRepo` registration point — stays at `DKNet.EfCore.Specifications`.
+`Dynamics/` and `Extensions/` (including the ambient `LinqKit`-namespaced `DynamicPredicateExtensions`)
+are unchanged.
 
 ## Learn more
 

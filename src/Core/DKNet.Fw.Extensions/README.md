@@ -36,12 +36,35 @@ dotnet add package DKNet.Fw.Extensions
 ## Quick start
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Primitives;
+using DKNet.Fw.Extensions.Reflection;
 
 "Price: $123.45".ExtractDigits();          // "123.45"
 typeof(List<string>).IsImplementOf(typeof(IEnumerable<>)); // true
 DateTime.Today.InQuarter();                // 1-4
 ```
+
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `CollectionExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Collections` |
+| `StringExtensions`, `DateTimeExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Primitives` |
+| `AttributeExtensions`, `PropertyExtensions`, `TypeExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Reflection` |
+| `EnumExtensions`, `EnumInfo` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Enums` |
+
+Two files kept their namespace on purpose — each declares an **ambient namespace** (a
+namespace owned by the framework it extends, so its extension methods resolve without an
+extra import):
+
+- `ServiceCollectionExtensions` — stays at root, namespace `Microsoft.Extensions.DependencyInjection`.
+- `AsyncEnumerableExtensions` — moved into `Collections/` on disk, namespace stays `System.Collections.Generic`.
+
+`TypeExtractors` (fluent assembly scanner) was already grouped before this release and is unchanged.
 
 ## Docs
 

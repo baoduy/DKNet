@@ -1,0 +1,114 @@
+using System.ComponentModel;
+using DKNet.EfCore.Specifications.Dynamics;
+using Xunit.Abstractions;
+
+namespace EfCore.Specifications.Tests.Definitions;
+
+/// <summary>
+///     Specification that searches across multiple string fields (currently Name and Description) using a Contains
+///     operation and applies ordering based on a provided property name.
+/// </summary>
+internal sealed class ProductFilterSpecification : Specification<Product>
+{
+    #region Constructors
+
+    /// <summary>
+    ///     Initializes a new <see cref="ProductFilterSpecification" /> with a search string applied to configured fields
+    ///     and an ordering column.
+    /// </summary>
+    /// <param name="searchString">The substring to search for in the configured fields.</param>
+    /// <param name="orderBy">The property name to order the results by (defaults to <see cref="Product.Name" />).</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="orderBy" /> does not match a valid property.</exception>
+    public ProductFilterSpecification(string searchString, string orderBy = nameof(Product.Name))
+    {
+        // Build dynamic predicate across fields using AND semantics.
+        var predicate = PredicateBuilder.New<Product>(x => x.IsActive);
+        string[] fields = [nameof(Product.Name), nameof(Product.Description)];
+
+        // Build sub-predicate for all fields
+        var searchPredicator = PredicateBuilder.New<Product>();
+        foreach (var f in fields)
+            searchPredicator = searchPredicator.DynamicOr(f, Ops.Contains, searchString);
+
+        predicate = predicate.And(searchPredicator);
+        WithFilter(predicate);
+        AddOrderBy(orderBy, ListSortDirection.Ascending);
+    }
+
+    #endregion
+}
+
+public class SpecFilterTests : IClassFixture<TestDbFixture>
+{
+    #region Fields
+
+    private readonly ITestOutputHelper _output;
+
+    private readonly IRepositorySpec _repository;
+
+    #endregion
+
+    #region Constructors
+
+    public SpecFilterTests(TestDbFixture fixture, ITestOutputHelper output)
+    {
+        _output = output;
+        var context = fixture.Db!;
+        _repository = new RepositorySpec<TestDbContext>(context, (IServiceProvider?)null);
+    }
+
+    #endregion
+
+    #region Methods
+
+    [Fact]
+    public void ProductFilterSpecification_DefaultOrder_GeneratesOrderByName()
+    {
+        // Arrange
+        var spec = new ProductFilterSpecification("test");
+
+        // Act
+        var sql = _repository.Query(spec).ToQueryString();
+
+        // Assert
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("ORDER BY p.Name", Case.Insensitive);
+    }
+
+    [Fact]
+    public void ProductFilterSpecification_InvalidOrderProperty_Throws()
+    {
+        // Arrange / Act / Assert
+        Should.Throw<ArgumentException>(() => new ProductFilterSpecification("x", "NotAProperty"));
+    }
+
+    [Fact]
+    public void ProductFilterSpecification_WithSearchAndOrder_GeneratesExpectedSql()
+    {
+        // Arrange
+        var search = "a"; // Common letter ensures matches in random data
+        var spec = new ProductFilterSpecification(search);
+
+        // Act
+        var query = _repository.Query(spec);
+        var sql = query.ToQueryString();
+        _output.WriteLine(sql);
+
+        // Assert
+        var normalizedSql = NormalizeSql(sql);
+        normalizedSql.ShouldContain("where", Case.Insensitive);
+        normalizedSql.ShouldContain("p.IsActive", Case.Insensitive);
+        normalizedSql.ShouldContain("p.Name", Case.Insensitive);
+        normalizedSql.ShouldContain("p.Description", Case.Insensitive);
+        normalizedSql.ShouldContain("OR", Case.Insensitive);
+        normalizedSql.ShouldContain("ORDER BY p.Name", Case.Insensitive);
+    }
+
+    private static string NormalizeSql(string sql)
+        => sql
+            .Replace("\"", string.Empty, StringComparison.Ordinal)
+            .Replace("[", string.Empty, StringComparison.Ordinal)
+            .Replace("]", string.Empty, StringComparison.Ordinal);
+
+    #endregion
+}

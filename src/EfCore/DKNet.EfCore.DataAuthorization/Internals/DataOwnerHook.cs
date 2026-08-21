@@ -3,6 +3,7 @@ using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;

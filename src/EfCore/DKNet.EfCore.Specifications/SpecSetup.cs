@@ -5,6 +5,7 @@
 // File: SpecSetup.cs
 // Description: DI registration helper for the specification repository implementation.
 
+using DKNet.EfCore.Specifications.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

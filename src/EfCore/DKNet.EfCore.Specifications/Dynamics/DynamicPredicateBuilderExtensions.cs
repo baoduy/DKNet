@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using DKNet.EfCore.Specifications.Extensions;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 
 namespace DKNet.EfCore.Specifications.Dynamics;
 

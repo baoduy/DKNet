@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using DKNet.Svc.Encryption;
+using DKNet.Svc.Encryption.Ciphers;
+using DKNet.Svc.Encryption.Hashing;
 using Shouldly;
 using Xunit.Abstractions;
 

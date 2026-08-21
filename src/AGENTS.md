@@ -1,5 +1,7 @@
 # DKNet Framework - AI Agent Guidelines
 
+> For the folder-and-namespace convention (a type's folder is the last segment of its namespace, ambient-namespace types exempt), the repo-root `CLAUDE.md` is authoritative.
+
 > **CRITICAL**: Read `/memory-bank/README.md` FIRST before any work. This document is a quick reference. Full guidelines are in the memory bank.
 
 ## 🎯 Quick Context

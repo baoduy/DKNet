@@ -1,5 +1,6 @@
 using DKNet.EfCore.Repos;
 using DKNet.EfCore.Repos.Abstractions;
+using EfCore.Repos.Tests.Repositories;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Data.Sqlite;

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

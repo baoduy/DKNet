@@ -1,5 +1,6 @@
 ﻿using DKNet.EfCore.Abstractions.Entities;
 using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace EfCore.Extensions.Tests;

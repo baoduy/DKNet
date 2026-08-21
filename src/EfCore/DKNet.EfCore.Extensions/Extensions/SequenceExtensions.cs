@@ -1,4 +1,5 @@
 ﻿using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 using DKNet.Fw.Extensions.TypeExtractors;
 
 namespace DKNet.EfCore.Extensions.Extensions;

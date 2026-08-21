@@ -4,6 +4,7 @@
 // File: IEndpointConfig.cs
 // Description: Contract for a discoverable endpoint group, mapped by EndpointConfigExtensions.UseEndpointConfigs.
 
+using DKNet.AspCore.Extensions.Endpoints;
 using Microsoft.AspNetCore.Routing;
 
 namespace DKNet.AspCore.Extensions;

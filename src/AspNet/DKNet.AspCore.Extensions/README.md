@@ -49,6 +49,7 @@ app.Run();
 ```csharp
 using System.Security.Claims;
 using DKNet.AspCore.Extensions;
+using DKNet.AspCore.Extensions.ModelBinding;
 using DKNet.SlimBus.Extensions;
 
 public sealed record CreateProductCommand : Fluents.Requests.IWitResponse<ProductModel>
@@ -72,6 +73,20 @@ public sealed class ProductsEndpointConfig : IEndpointConfig
 `CreatedBy` from the caller's claim before the handler runs, and returns 201 Created (the mapper
 infers "Created" from the command's type name) with a FluentResults-derived `ProblemDetails` body
 on failure.
+
+## Migration — namespace changes in this release
+
+Root types were grouped into concern folders; the namespace of each moved type now ends
+with its folder name. This is an import-only source break: no type was renamed, removed,
+resignatured, or had its behaviour changed — update the `using` line and you're done.
+
+| Type | Old namespace | New namespace |
+|---|---|---|
+| `IContextualSource`, `FromClaimAttribute`, `ContextualValueResolver`, `ContextualRequestPopulation` (+ its internal helpers), `ContextualSourceOpenApiTransformers` | `DKNet.AspCore.Extensions` | `DKNet.AspCore.Extensions.ModelBinding` |
+| `EndpointConfigExtensions` (incl. `EndpointRegistrationOptions`, `UseEndpointConfigs`), `FluentEndpointMapperExtensions` | `DKNet.AspCore.Extensions` | `DKNet.AspCore.Extensions.Endpoints` |
+| `PagedResponse<T>`, `ProblemDetailsExtensions`, `ResultResponseExtensions` | `DKNet.AspCore.Extensions` | `DKNet.AspCore.Extensions.Responses` |
+
+`IEndpointConfig` — the package's entry surface — stays at `DKNet.AspCore.Extensions`.
 
 ## Full Documentation
 

@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
+using DKNet.Fw.Extensions.Reflection;
 
 namespace DKNet.Fw.Extensions.TypeExtractors;
 

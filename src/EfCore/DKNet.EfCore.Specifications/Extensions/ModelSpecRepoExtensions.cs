@@ -1,3 +1,6 @@
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Paging;
+using DKNet.EfCore.Specifications.Repositories;
 using Microsoft.EntityFrameworkCore;
 using X.PagedList;
 using X.PagedList.EF;
