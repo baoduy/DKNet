@@ -1,54 +1,41 @@
 # DKNet.Svc.PdfGenerators
 
-## Overview
+[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.PdfGenerators)](https://www.nuget.org/packages/DKNet.Svc.PdfGenerators/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.PdfGenerators)](https://www.nuget.org/packages/DKNet.Svc.PdfGenerators/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
-DKNet.Svc.PdfGenerators is a .NET 9.0 library for generating PDFs from HTML, Markdown, and other content sources. It
-provides flexible options for document styling, table of contents, code highlighting, and more, leveraging modern PDF
-and HTML processing libraries.
+Documentation-grade PDF generation from HTML or Markdown, via headless Chromium (PuppeteerSharp) and Markdig. Fork
+of Markdown2Pdf 2.x with additional options — see `THIRD-PARTY-NOTICES.md` for upstream attribution.
 
 ## Features
 
-- PDF generation from HTML/Markdown
-- Customizable templates and themes
-- Table of contents support
-- Code highlighting
-- Header/footer styling
-- Embedded resource management
+- `IPdfGenerator` — convert an HTML string, an HTML file, a Markdown file, or several Markdown files into one PDF
+- Table of contents with configurable depth, list style, and page-number leaders
+- ~60 built-in syntax-highlighting themes plus a Github/Latex/custom page theme
+- Remote (CDN) or local (offline npm) MathJax/Mermaid/highlight.js module loading
 
-## Key Dependencies
+## Installation
 
-- Markdig (Markdown processing)
-- PdfPig (PDF manipulation)
-- PuppeteerSharp (HTML to PDF rendering)
-- YamlDotNet (YAML configuration)
-
-## Project Structure
-
-- `PdfGenerator.cs`: Main PDF generation logic
-- `Models/`: Data models (e.g., `ModuleInformation`)
-- `Options/`: Configuration options for themes, margins, TOC, etc.
-- `Services/`: Internal services for resource management, metadata, templates, and more
-- `templates/`: HTML/CSS templates for content and styling
-
-## Usage
-
-1. Reference the DKNet.Svc.PdfGenerators NuGet package in your project.
-2. Configure your PDF generation options using the provided models.
-3. Use `PdfGenerator` to generate PDFs from your content.
-
-## Example
-
-```csharp
-var options = new PdfGeneratorOptions { /* ... */ };
-var generator = new PdfGenerator(options);
-generator.GeneratePdf("input.md", "output.pdf");
+```bash
+dotnet add package DKNet.Svc.PdfGenerators
 ```
 
-## Contributing
+## Quick Start
 
-Contributions are welcome! Please submit issues or pull requests for bug fixes and new features.
+```csharp
+using DKNet.Svc.PdfGenerators;
 
-## License
+builder.Services.AddPdfGenerator();
 
-[Specify your license here]
+public sealed class ReportExporter(IPdfGenerator pdfGenerator)
+{
+    public Task<string> ExportAsync(string markdownPath) =>
+        pdfGenerator.ConvertMarkdownFileAsync(markdownPath, "report.pdf");
+}
+```
 
+## Documentation
+
+Full feature reference, configuration, and gotchas:
+https://github.com/baoduy/DKNet/blob/dev/docs/Services/DKNet.Svc.PdfGenerators.md
