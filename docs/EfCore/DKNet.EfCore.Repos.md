@@ -1,461 +1,306 @@
 # DKNet.EfCore.Repos
 
-**Repository pattern implementations that provide a comprehensive foundation for data access operations in Entity Framework Core applications, implementing the Repository and Unit of Work patterns while supporting Domain-Driven Design (DDD) and Onion Architecture principles.**
+> ⚠️ **Retired / obsolete — source-only, not published to NuGet.**
+> The project sets `<IsPackable>false</IsPackable>`, so it is **never packed or published**; it exists purely so
+> existing source consumers keep compiling. Every public type — `ReadRepository<TEntity>`, `WriteRepository<TEntity>`,
+> `Repository<TEntity>`, `RepositoryFactory<TDbContext>`, `RepoExtensions`, `SetupRepository` — carries an
+> `[Obsolete(...)]` attribute. Most read:
+> `"DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md."`
+> `SetupRepository` reads the same message but names the exact replacement entry point:
+> `"DKNet.EfCore.Repos is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup.AddSpecRepo) instead. See docs/EfCore/Migrating-Repos-To-Specifications.md."`
+>
+> **Do not start new code against this package.** Use `DKNet.EfCore.Specifications` (`IRepositorySpec` +
+> `SpecSetup.AddSpecRepo`) instead — see [Migrating from DKNet.EfCore.Repos to DKNet.EfCore.Specifications](./Migrating-Repos-To-Specifications.md)
+> and [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md). This page documents the retired API only for
+> teams that still reference it from source.
 
-## What is this project?
+## What problem it solved, and when it was the answer
 
-DKNet.EfCore.Repos provides concrete implementations of the repository pattern for Entity Framework Core applications. Building upon the abstractions defined in DKNet.EfCore.Repos.Abstractions, this library offers ready-to-use repository classes that encapsulate common data access operations while maintaining clean separation between domain logic and data persistence concerns.
+Before `DKNet.EfCore.Specifications` existed, `DKNet.EfCore.Repos` was DKNet's generic repository layer over EF Core:
+one injectable `IReadRepository<TEntity>` / `IWriteRepository<TEntity>` / `IRepository<TEntity>` per aggregate type,
+giving application code CRUD, projection, and transaction primitives without depending on `DbContext` or
+`DbSet<TEntity>` directly — the classic Infrastructure-layer repository pattern for an Onion Architecture, defined
+against the interfaces in `DKNet.EfCore.Repos.Abstractions`.
 
-### Key Features
+That was the right shape while queries were expressed as ad-hoc `Expression<Func<TEntity, bool>>` filters passed
+into `Query(filter)` / `FindAsync(filter)`. Once `DKNet.EfCore.Specifications` introduced `Specification<TEntity>`
+(filter + includes + order-by as one composable, reusable object) and `IRepositorySpec` (a single non-generic
+repository whose entity type is inferred per call from the specification), the second query layer this package
+bolted on top of EF Core became redundant. `DKNet.EfCore.Repos` is kept only so source builds that still reference
+`IRepository<T>` / `IReadRepository<T>` / `IWriteRepository<T>` keep compiling — **new code should use
+`DKNet.EfCore.Specifications` directly.**
 
-- **Generic Repository Implementation**: Complete CRUD operations with EF Core optimization
-- **Specialized Repository Classes**: ReadRepository, WriteRepository, and combined Repository
-- **Projection Support**: Integrated AutoMapper support for efficient data projections
-- **Query Optimization**: IQueryable support for flexible and performant database queries
-- **Async Operations**: Full async/await support with cancellation tokens
-- **Change Tracking**: Optimized EF Core change tracking patterns
-- **Unit of Work Integration**: Seamless integration with DbContext for transaction management
-- **Type Safety**: Generic constraints ensuring compile-time type safety
+## Install and minimum registration
 
-## How it contributes to DDD and Onion Architecture
+This package is **not on NuGet** — `<IsPackable>false</IsPackable>` in `DKNet.EfCore.Repos.csproj` means it is never
+packed or published. The only way to consume it is a source/project reference from within this repository (or a
+fork of it), e.g.:
 
-### Infrastructure Layer Implementation
-
-DKNet.EfCore.Repos implements the **Infrastructure Layer** of the Onion Architecture, providing concrete repository implementations that fulfill the contracts defined in the domain layer:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  No direct dependencies on repository implementations          │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Depends on: Repository abstractions (interfaces)              │
-│  Uses: ICustomerRepository, IOrderRepository, etc.             │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  Defines: Repository interfaces and contracts                  │
-│  📋 ICustomerRepository interface                              │
-│  📋 IOrderRepository interface                                 │
-│  🏷️ No dependency on concrete implementations                  │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Data Access, Persistence)                    │
-│                                                                 │
-│  🗃️ Repository<TEntity> - Generic repository base class       │
-│  📖 ReadRepository<TEntity> - Read-only operations            │
-│  ✏️ WriteRepository<TEntity> - Write operations only           │
-│  🎯 CustomerRepository : Repository<Customer>                  │
-│  🛒 OrderRepository : Repository<Order>                        │
-└─────────────────────────────────────────────────────────────────┘
+```xml
+<ProjectReference Include="..\DKNet.EfCore.Repos\DKNet.EfCore.Repos.csproj" />
 ```
 
-### DDD Benefits
-
-1. **Aggregate Boundary Enforcement**: Repositories enforce aggregate consistency rules
-2. **Domain Logic Isolation**: Business logic remains in domain entities, not repositories
-3. **Technology Independence**: Domain layer unaware of EF Core specifics
-4. **Query Flexibility**: Support for complex domain queries without exposing EF Core
-5. **Transaction Management**: Proper aggregate transaction boundaries
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Infrastructure implements interfaces defined in domain
-2. **Testability**: Easy to mock repository interfaces for unit testing
-3. **Separation of Concerns**: Data access logic isolated from business logic
-4. **Pluggability**: Easy to swap repository implementations
-5. **Maintainability**: Clear boundaries between layers
-
-## How to use it
-
-### Installation
-
-```bash
-dotnet add package DKNet.EfCore.Repos
-dotnet add package DKNet.EfCore.Repos.Abstractions
-```
-
-### Basic Usage Examples
-
-#### 1. Generic Repository Usage
+Minimum DI registration is the `IServiceCollection` extension method in `SetupRepository`
+(namespace `Microsoft.Extensions.DependencyInjection`):
 
 ```csharp
-using DKNet.EfCore.Repos;
+using Microsoft.Extensions.DependencyInjection;
 
-public class CustomerService
-{
-    private readonly IRepository<Customer> _customerRepository;
-    private readonly DbContext _context;
-    
-    public CustomerService(IRepository<Customer> customerRepository, DbContext context)
-    {
-        _customerRepository = customerRepository;
-        _context = context;
-    }
-    
-    // Read operations
-    public async Task<Customer?> GetCustomerAsync(int customerId)
-    {
-        return await _customerRepository.FindAsync(customerId);
-    }
-    
-    public async Task<IEnumerable<Customer>> GetCustomersByRegionAsync(string region)
-    {
-        return await _customerRepository.Gets()
-            .Where(c => c.Region == region)
-            .ToListAsync();
-    }
-    
-    // Write operations
-    public async Task<Customer> CreateCustomerAsync(Customer customer)
-    {
-        await _customerRepository.AddAsync(customer);
-        await _context.SaveChangesAsync();
-        return customer;
-    }
-}
+services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+
+// Registers IReadRepository<>, IWriteRepository<>, IRepository<> as scoped, backed by AppDbContext.
+services.AddGenericRepositories<AppDbContext>();
 ```
 
-#### 2. Specialized Repository Implementation
+`AddGenericRepositories<TDbContext>()` is idempotent (skips re-registration if `IReadRepository<>` is already
+registered) and also exposes `TDbContext` as the base `DbContext` service if nothing already provides it. There is
+a second, independent registration for the factory flavor (see below):
 
 ```csharp
-// Domain interface (in Domain layer)
-public interface ICustomerRepository : IRepository<Customer>
-{
-    Task<Customer?> GetByEmailAsync(string email);
-    Task<IEnumerable<Customer>> GetActiveCustomersAsync();
-    Task<PagedList<Customer>> GetCustomersPagedAsync(int page, int pageSize);
-}
-
-// Infrastructure implementation (in Infrastructure layer)
-public class CustomerRepository : Repository<Customer>, ICustomerRepository
-{
-    public CustomerRepository(DbContext dbContext, IEnumerable<IMapper>? mappers = null) 
-        : base(dbContext, mappers)
-    {
-    }
-    
-    public async Task<Customer?> GetByEmailAsync(string email)
-    {
-        return await FindAsync(c => c.Email == email);
-    }
-    
-    public async Task<IEnumerable<Customer>> GetActiveCustomersAsync()
-    {
-        return await Gets()
-            .Where(c => c.IsActive)
-            .OrderBy(c => c.LastName)
-            .ToListAsync();
-    }
-    
-    public async Task<PagedList<Customer>> GetCustomersPagedAsync(int page, int pageSize)
-    {
-        var query = Gets().OrderBy(c => c.LastName);
-        return await PagedList<Customer>.CreateAsync(query, page, pageSize);
-    }
-}
+services.AddRepoFactory<AppDbContext>();
 ```
 
-#### 3. Read-Only Repository Usage
+## Features for existing consumers
+
+### `ReadRepository<TEntity>` — query-only access
+
+`ReadRepository<TEntity>(DbContext dbContext, IEnumerable<IMapper>? mappers = null) : IReadRepository<TEntity>`
+
+All queries default to `AsNoTracking()`. Projection requires an `IMapper` (Mapster) — pass one via the constructor
+or DI; without it, `Query<TModel>` throws `InvalidOperationException`.
 
 ```csharp
-public class CustomerQueryService
+public sealed class ProductQueryService(IReadRepository<Product> repo)
 {
-    private readonly IReadRepository<Customer> _customerReadRepository;
-    
-    public CustomerQueryService(IReadRepository<Customer> customerReadRepository)
-    {
-        _customerReadRepository = customerReadRepository;
-    }
-    
-    // Projection for reporting
-    public async Task<IEnumerable<CustomerSummaryDto>> GetCustomerSummariesAsync()
-    {
-        return await _customerReadRepository.GetProjection<CustomerSummaryDto>()
-            .ToListAsync();
-    }
-    
-    // Complex query with filtering
-    public async Task<IEnumerable<Customer>> SearchCustomersAsync(string searchTerm)
-    {
-        return await _customerReadRepository.Gets()
-            .Where(c => c.FirstName.Contains(searchTerm) || 
-                       c.LastName.Contains(searchTerm) ||
-                       c.Email.Contains(searchTerm))
-            .Take(50)
-            .ToListAsync();
-    }
+    public Task<int> CountActiveAsync(CancellationToken ct) =>
+        repo.CountAsync(p => p.IsActive, ct);
+
+    public Task<bool> SkuExistsAsync(string sku, CancellationToken ct) =>
+        repo.ExistsAsync(p => p.Sku == sku, ct);
+
+    public ValueTask<Product?> GetByIdAsync(Guid id, CancellationToken ct) =>
+        repo.FindAsync(id, ct);
+
+    public Task<Product?> GetBySkuAsync(string sku, CancellationToken ct) =>
+        repo.FindAsync(p => p.Sku == sku, ct);
+
+    // Untracked IQueryable for further composition.
+    public IQueryable<Product> ActiveProducts() => repo.Query(p => p.IsActive);
+
+    // Mapster projection — throws InvalidOperationException if no IMapper is registered.
+    public IQueryable<ProductDto> ActiveProductDtos() =>
+        repo.Query<ProductDto>(p => p.IsActive);
 }
 ```
 
-#### 4. Unit of Work Pattern with Multiple Repositories
+### `WriteRepository<TEntity>` — add/update/delete/save
+
+`WriteRepository<TEntity>(DbContext dbContext, IServiceProvider? provider = null) : ReadRepository<TEntity>(dbContext), IWriteRepository<TEntity>`
+
+Inherits every read method above, plus:
 
 ```csharp
-public class OrderService
+public sealed class ProductCommandService(IWriteRepository<Product> repo)
 {
-    private readonly IRepository<Order> _orderRepository;
-    private readonly IRepository<Customer> _customerRepository;
-    private readonly IRepository<Product> _productRepository;
-    private readonly DbContext _context;
-    
-    public OrderService(
-        IRepository<Order> orderRepository,
-        IRepository<Customer> customerRepository, 
-        IRepository<Product> productRepository,
-        DbContext context)
+    public async Task<Guid> CreateAsync(Product product, CancellationToken ct)
     {
-        _orderRepository = orderRepository;
-        _customerRepository = customerRepository;
-        _productRepository = productRepository;
-        _context = context;
+        await repo.AddAsync(product, ct);
+        await repo.SaveChangesAsync(ct);
+        return product.Id;
     }
-    
-    public async Task<Order> CreateOrderAsync(CreateOrderRequest request)
+
+    public async Task CreateManyAsync(IEnumerable<Product> products, CancellationToken ct)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
-        {
-            // Validate customer exists
-            var customer = await _customerRepository.FindAsync(request.CustomerId);
-            if (customer == null)
-                throw new InvalidOperationException("Customer not found");
-            
-            // Validate products exist and update inventory
-            var products = new List<Product>();
-            foreach (var item in request.Items)
-            {
-                var product = await _productRepository.FindAsync(item.ProductId);
-                if (product == null)
-                    throw new InvalidOperationException($"Product {item.ProductId} not found");
-                
-                product.ReduceInventory(item.Quantity);
-                products.Add(product);
-            }
-            
-            // Create order
-            var order = new Order(customer.Id, request.Items);
-            await _orderRepository.AddAsync(order);
-            
-            // Save all changes in single transaction
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-            
-            return order;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        await repo.AddRangeAsync(products, ct);
+        await repo.SaveChangesAsync(ct);
+    }
+
+    public async Task RenameAsync(Product product, string name, CancellationToken ct)
+    {
+        product.Rename(name);
+        await repo.UpdateAsync(product, ct);   // marks Modified + adds any new navigation entities
+        await repo.SaveChangesAsync(ct);
+    }
+
+    public async Task RemoveAsync(Product product, CancellationToken ct)
+    {
+        repo.Delete(product);                  // synchronous — stages removal
+        await repo.SaveChangesAsync(ct);
+    }
+
+    public async Task TransferStockAsync(Product from, Product to, int qty, CancellationToken ct)
+    {
+        await using var tx = await repo.BeginTransactionAsync(ct);
+        from.Reduce(qty);
+        to.Increase(qty);
+        await repo.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
     }
 }
 ```
 
-### Advanced Usage Examples
+Notes on `SaveChangesAsync`: it first calls `dbContext.AddNewEntitiesFromNavigations(ct)` (auto-attaches new
+entities reachable from navigation properties), then delegates to
+`dbContext.SaveChangesWithConcurrencyHandlingAsync(handler, ct)`, resolving an optional keyed
+`IEfCoreExceptionHandler` registered under `dbContext.GetType().FullName`. `Entry(entity)` exposes the underlying
+`EntityEntry<TEntity>` for direct change-tracking inspection when needed.
 
-#### 1. Custom Repository with Complex Queries
+### `Repository<TEntity>` — read + write combined
+
+`Repository<TEntity> : WriteRepository<TEntity>, IRepository<TEntity>` (sealed) adds nothing new API-wise beyond
+`WriteRepository<TEntity>` except overriding `Query()` to return a **tracked** queryable
+(`dbContext.Set<TEntity>()`, no `AsNoTracking()`), since read-then-update workflows need change tracking on the
+materialized entities:
 
 ```csharp
-public class OrderRepository : Repository<Order>, IOrderRepository
+public sealed class OrderService(IRepository<Order> repo)
 {
-    public OrderRepository(DbContext dbContext, IEnumerable<IMapper>? mappers = null) 
-        : base(dbContext, mappers)
+    public async Task ApplyDiscountAsync(Guid orderId, decimal percent, CancellationToken ct)
     {
-    }
-    
-    public async Task<IEnumerable<Order>> GetOrdersByDateRangeAsync(
-        DateTime startDate, 
-        DateTime endDate,
-        CancellationToken cancellationToken = default)
-    {
-        return await Gets()
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
-            .Where(o => o.OrderDate >= startDate && o.OrderDate <= endDate)
-            .OrderByDescending(o => o.OrderDate)
-            .ToListAsync(cancellationToken);
-    }
-    
-    public async Task<decimal> GetTotalRevenueAsync(int customerId)
-    {
-        return await Gets()
-            .Where(o => o.CustomerId == customerId && o.Status == OrderStatus.Completed)
-            .SelectMany(o => o.OrderItems)
-            .SumAsync(oi => oi.Price * oi.Quantity);
+        // Tracked query — mutating the result and calling SaveChangesAsync persists it.
+        var order = await repo.Query().FirstAsync(o => o.Id == orderId, ct);
+        order.ApplyDiscount(percent);
+        await repo.SaveChangesAsync(ct);
     }
 }
 ```
 
-#### 2. Repository with AutoMapper Projections
+It has two constructors: `Repository(DbContext dbContext, IServiceProvider? provider = null)` (resolves `IMapper`
+from `provider` if present — the one used by DI) and an `internal Repository(DbContext dbContext, IMapper? mapper = null)` used by `RepositoryFactory<TDbContext>`.
+
+### `RepositoryFactory<TDbContext>` — repository-per-DbContext-instance factory
+
+`RepositoryFactory<TDbContext>(IDbContextFactory<TDbContext> dbFactory, IServiceProvider provider) : IRepositoryFactory`, `where TDbContext : DbContext`.
+
+Use this when you need a repository backed by a **freshly created, factory-owned `DbContext`** instead of the
+ambient scoped one — e.g. background workers or fan-out parallel work outside a request scope. The factory creates
+one `TDbContext` via `dbFactory.CreateDbContext()` on construction and owns its lifetime.
 
 ```csharp
-public class ProductService
+services.AddDbContextFactory<AppDbContext>(o => o.UseSqlServer(connectionString));
+services.AddRepoFactory<AppDbContext>();
+
+public sealed class BackgroundExportJob(IRepositoryFactory factory)
 {
-    private readonly IRepository<Product> _productRepository;
-    
-    public ProductService(IRepository<Product> productRepository)
+    public async Task RunAsync(CancellationToken ct)
     {
-        _productRepository = productRepository;
-    }
-    
-    // Efficient projection using AutoMapper
-    public async Task<IEnumerable<ProductListDto>> GetProductListAsync()
-    {
-        return await _productRepository.GetProjection<ProductListDto>()
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.Name)
-            .ToListAsync();
-    }
-    
-    // Projection with pagination
-    public async Task<PagedList<ProductSummaryDto>> GetProductsPagedAsync(
-        int page, 
-        int pageSize,
-        string? categoryFilter = null)
-    {
-        var query = _productRepository.GetProjection<ProductSummaryDto>();
-        
-        if (!string.IsNullOrEmpty(categoryFilter))
-        {
-            query = query.Where(p => p.Category == categoryFilter);
-        }
-        
-        return await PagedList<ProductSummaryDto>.CreateAsync(
-            query.OrderBy(p => p.Name), 
-            page, 
-            pageSize);
+        await using var repoFactory = (RepositoryFactory<AppDbContext>)factory; // or inject IRepositoryFactory directly
+        var readRepo = factory.CreateRead<Product>();
+        var writeRepo = factory.CreateWrite<Order>();
+        var repo = factory.Create<Customer>();
+        // ... use repositories; the factory disposes its owned DbContext via Dispose()/DisposeAsync().
     }
 }
 ```
 
-## Best Practices
+`Create<TEntity>()` returns `IRepository<TEntity>`, `CreateRead<TEntity>()` returns `IReadRepository<TEntity>`,
+`CreateWrite<TEntity>()` returns `IWriteRepository<TEntity>`. `Dispose()` / `DisposeAsync()` dispose the
+factory-owned `DbContext` — dispose the factory (or the resolving scope) when done, not the individual repositories.
 
-### 1. Repository Interface Design
+### `RepoExtensions` (in `RepoSpecExtensions.cs`) — the bridge to `DKNet.EfCore.Specifications`
 
-```csharp
-// Good: Domain-specific methods with business meaning
-public interface IOrderRepository : IRepository<Order>
-{
-    Task<IEnumerable<Order>> GetPendingOrdersAsync();
-    Task<Order?> GetOrderByNumberAsync(string orderNumber);
-    Task<IEnumerable<Order>> GetOrdersByCustomerAsync(int customerId);
-}
-
-// Avoid: Generic queries that leak implementation details
-public interface IOrderRepository : IRepository<Order>
-{
-    Task<IEnumerable<Order>> GetOrdersAsync(Expression<Func<Order, bool>> predicate);
-}
-```
-
-### 2. Transaction Management
+This is the deliberate seam between the two packages: extension methods on `IReadRepository<TEntity>` that accept an
+`ISpecification<TEntity>` from `DKNet.EfCore.Specifications` and apply its `FilterQuery`, `IncludeQueries`/`IncludeBuilders`,
+`OrderByQueries`/`OrderByDescendingQueries`, and `IsIgnoreQueryFilters` flag — a **local copy** of logic that is
+`internal` inside `DKNet.EfCore.Specifications`, kept in sync only for as long as this retired package ships.
 
 ```csharp
-// Good: Explicit transaction control for business operations
-public async Task<Result> ProcessBulkOrderAsync(IEnumerable<CreateOrderRequest> requests)
+using DKNet.EfCore.Repos;          // brings in the RepoExtensions extension methods
+using DKNet.EfCore.Specifications; // ISpecification<T>, Specification<T>
+
+public sealed class ActiveProductsSpec : Specification<Product>
 {
-    using var transaction = await _context.Database.BeginTransactionAsync();
-    try
+    public ActiveProductsSpec()
     {
-        foreach (var request in requests)
-        {
-            var order = await CreateOrderInternalAsync(request);
-            await _orderRepository.AddAsync(order);
-        }
-        
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return Result.Success();
-    }
-    catch (Exception ex)
-    {
-        await transaction.RollbackAsync();
-        return Result.Failure(ex.Message);
+        WithFilter(p => p.IsActive);
+        AddOrderBy(p => p.Name);
     }
 }
-```
 
-### 3. Efficient Querying
-
-```csharp
-// Good: Use projections for read-heavy operations
-public async Task<IEnumerable<CustomerSummaryDto>> GetCustomerSummariesAsync()
+public sealed class ProductSpecQueryService(IReadRepository<Product> repo)
 {
-    return await _customerRepository.GetProjection<CustomerSummaryDto>()
-        .Where(c => c.IsActive)
-        .ToListAsync();
-}
+    public IQueryable<Product> Query() => repo.QuerySpecs(new ActiveProductsSpec());
 
-// Good: Use Include for related data when needed
-public async Task<Order?> GetOrderWithDetailsAsync(int orderId)
-{
-    return await _orderRepository.Gets()
-        .Include(o => o.Customer)
-        .Include(o => o.OrderItems)
-            .ThenInclude(oi => oi.Product)
-        .FirstOrDefaultAsync(o => o.Id == orderId);
-}
-```
+    public Task<int> CountAsync(CancellationToken ct) =>
+        repo.SpecsCountAsync(new ActiveProductsSpec(), ct);
 
-### 4. Cancellation Token Usage
+    public Task<bool> AnyAsync(CancellationToken ct) =>
+        repo.SpecsAnyAsync(new ActiveProductsSpec(), ct);
 
-```csharp
-public async Task<IEnumerable<Product>> SearchProductsAsync(
-    string searchTerm, 
-    CancellationToken cancellationToken = default)
-{
-    return await _productRepository.Gets()
-        .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
-        .ToListAsync(cancellationToken);
+    public Task<Product> FirstAsync(CancellationToken ct) =>
+        repo.SpecsFirstAsync(new ActiveProductsSpec(), ct);
+
+    public Task<Product?> FirstOrDefaultAsync(CancellationToken ct) =>
+        repo.SpecsFirstOrDefaultAsync(new ActiveProductsSpec(), ct);
+
+    public Task<IList<Product>> ListAsync(CancellationToken ct) =>
+        repo.SpecsListAsync(new ActiveProductsSpec(), ct);
+
+    // Requires the specification to define at least one OrderBy/OrderByDescending, or throws NotSupportedException.
+    public IAsyncEnumerable<Product> StreamAsync() =>
+        repo.SpecsToPageEnumerable(new ActiveProductsSpec());
+
+    public Task<X.PagedList.IPagedList<Product>> PageAsync(int page, int size, CancellationToken ct) =>
+        repo.SpecsToPageListAsync(new ActiveProductsSpec(), page, size, ct);
 }
 ```
 
-### 5. Repository Testing
+`SpecsToPageEnumerable` streams results in fixed-size pages of 100 (`ToPageEnumerable(pageSize: 100)` internally,
+not configurable from the public surface) rather than materializing the whole result set, and requires ordering —
+call `EnsureSpecHasOrdering()` semantics apply: no `OrderBy`/`OrderByDescending` on the specification throws
+`NotSupportedException`. `SpecsToPageListAsync` returns an `X.PagedList.IPagedList<TEntity>` via
+`X.PagedList.EF`'s `ToPagedListAsync`.
 
-```csharp
-[Test]
-public async Task GetCustomerByEmail_ExistingEmail_ReturnsCustomer()
-{
-    // Arrange
-    var dbContext = CreateInMemoryDbContext();
-    var repository = new CustomerRepository(dbContext);
-    
-    var customer = new Customer("John", "Doe", "john@example.com");
-    await repository.AddAsync(customer);
-    await dbContext.SaveChangesAsync();
-    
-    // Act
-    var result = await repository.GetByEmailAsync("john@example.com");
-    
-    // Assert
-    Assert.NotNull(result);
-    Assert.Equal("john@example.com", result.Email);
-}
-```
+## Configuration options and defaults
 
-## Integration with Other DKNet Components
+There is no options object or configuration section — behavior is fixed by construction:
 
-DKNet.EfCore.Repos integrates seamlessly with other DKNet components:
+| Aspect | Default | How to change it |
+|---|---|---|
+| Read tracking | `ReadRepository<T>.Query()` is `AsNoTracking()` | Use `Repository<T>.Query()` (tracked) instead, or track manually via `dbContext.Entry` |
+| Mapster mapper | First `IMapper` from the injected `IEnumerable<IMapper>` (or `IServiceProvider.GetService(typeof(IMapper))` for `Repository<T>`/`RepositoryFactory<T>`) | Register exactly one `IMapper` (e.g. via Mapster's `services.AddMapster()`) — `Query<TModel>` throws `InvalidOperationException` if none is found |
+| Duplicate registration | `AddGenericRepositories<TDbContext>()` no-ops if `IReadRepository<>` is already registered | N/A — call it once per `TDbContext` |
+| `IRepositoryFactory` registration | `AddRepoFactory<TDbContext>()` no-ops if `IRepositoryFactory` is already registered | N/A |
+| Exception handling in `SaveChangesAsync` | Optional keyed `IEfCoreExceptionHandler` resolved by `dbContext.GetType().FullName` | Register a keyed service under that key to intercept concurrency/db exceptions |
+| Specification paging page size (`SpecsToPageEnumerable`) | Fixed at 100 | Not configurable — use `DKNet.EfCore.Specifications`'s own paging APIs directly if you need a different size |
 
-- **DKNet.EfCore.Abstractions**: Uses base entity types and interfaces
-- **DKNet.EfCore.Events**: Supports automatic domain event publishing
-- **DKNet.EfCore.Hooks**: Enables lifecycle event handling
-- **DKNet.EfCore.DataAuthorization**: Provides data access filtering
-- **DKNet.SlimBus.Extensions**: Integrates with CQRS message handling
-- **DKNet.Fw.Extensions**: Leverages core framework utilities
+## How it composes with other packages
 
----
+- **`DKNet.EfCore.Repos.Abstractions`** — defines `IReadRepository<T>`, `IWriteRepository<T>`, `IRepository<T>`,
+  `IRepositoryFactory` that every type here implements.
+- **`DKNet.EfCore.Extensions`** — `WriteRepository<T>.SaveChangesAsync` calls its
+  `AddNewEntitiesFromNavigations` / `GetNewEntitiesFromNavigations` / `SaveChangesWithConcurrencyHandlingAsync`
+  extension methods.
+- **`DKNet.EfCore.Specifications`** — `RepoExtensions` (`RepoSpecExtensions.cs`) is the bridge: it accepts
+  `ISpecification<TEntity>` / `Specification<TEntity>` from that package and applies it to a repository's queryable,
+  duplicating (locally, deliberately) logic that package keeps `internal`.
+- **Mapster / `MapsterMapper`** — `Query<TModel>` / `Repository<TEntity>.Query<TModel>` project via
+  `IMapper.Config` and `ProjectToType<TModel>()`.
+- **`X.PagedList.EF`** — backs `SpecsToPageListAsync`'s `IPagedList<TEntity>` result.
 
-> 💡 **Architecture Tip**: Use DKNet.EfCore.Repos to implement the infrastructure layer of your Onion Architecture. Define repository interfaces in your domain layer and implement them using these repository base classes in your infrastructure layer. This maintains proper dependency inversion and keeps your domain logic clean and testable.
+## Gotchas and limits
+
+- **This package is obsolete and unpublished.** It is source-only (`IsPackable=false`), every public type is
+  `[Obsolete]`, and it exists solely to keep pre-existing source consumers compiling. **Migrate to
+  `DKNet.EfCore.Specifications`** (`IRepositorySpec` + `SpecSetup.AddSpecRepo`) — see
+  [Migrating from DKNet.EfCore.Repos to DKNet.EfCore.Specifications](./Migrating-Repos-To-Specifications.md) for the
+  full call-site mapping, and [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) for the replacement
+  package's own docs.
+- Any code that still references `IReadRepository<T>` / `IWriteRepository<T>` / `IRepository<T>` /
+  `IRepositoryFactory` compiles only with `CS0618` (obsolete) warnings suppressed — the source files here suppress
+  it locally (`#pragma warning disable CS0618`) around each obsolete type; consumers outside this repo will see the
+  warning (and it becomes a build error under `TreatWarningsAsErrors`, DKNet's own solution-wide setting).
+  Suppress deliberately at the call site, don't disable the warning class-wide.
+  Never NuGet-installable: there is no `DKNet.EfCore.Repos` package on nuget.org — only a project/source reference
+  works, and only within (or forked from) this repository.
+- `Repository<TEntity>.Query()` is **tracked**, while `ReadRepository<TEntity>.Query()` is **not** — mixing the two
+  through `IReadRepository<T>` vs `IRepository<T>` injections in the same unit of work is an easy source of
+  "why isn't my mutation being saved" or "why is this untracked entity throwing on `SaveChanges`" bugs.
+  `DKNet.EfCore.Specifications`'s `IRepositorySpec` does not have this split — same call surface for both.
+  `Query<TModel>()` on either class throws `InvalidOperationException` at call time (not at DI composition time) if
+  no `IMapper` is registered — a startup validation for this is *not* provided.
+- `RepositoryFactory<TDbContext>` owns and disposes its own `DbContext` — repositories it creates become unusable
+  once the factory is disposed; don't let a repository outlive its factory.
+- `RepoExtensions`' specification-application logic (`ApplySpecs`, `EnsureSpecHasOrdering`, `ToPageEnumerable`) is a
+  **local copy** of internal logic in `DKNet.EfCore.Specifications` — it is not guaranteed to track future changes
+  to that package's internal behavior, since this package is retired and receives maintenance only incidentally.

@@ -19,27 +19,12 @@ This guide covers configuration and setup options for all DKNet Framework compon
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // Add core DKNet services
-    services.AddDKNetCore();
-    
-    // Add logging
+    // DKNet ships no single "core" aggregator, and no single DKNetOptions object — each package
+    // (EF Core, SlimBus, Blob Storage, etc.) is registered independently via its own extension method
+    // and, where it needs configuration, its own strongly-typed options bound from your own config section
+    // (see Blob Storage Configuration below for an example).
+
     services.AddLogging();
-    
-    // Add configuration
-    services.Configure<DKNetOptions>(Configuration.GetSection("DKNet"));
-}
-```
-
-### Configuration Options
-
-```json
-{
-  "DKNet": {
-    "EnableAuditFields": true,
-    "DefaultTimeZone": "UTC",
-    "EnableSoftDelete": true,
-    "MaxPageSize": 1000
-  }
 }
 ```
 
@@ -47,28 +32,30 @@ public void ConfigureServices(IServiceCollection services)
 
 ### Database Context Configuration
 
+Entity configuration discovery, hooks, and domain events are wired at DI-registration time via
+`DbContextOptionsBuilder`/`IServiceCollection` extensions — not by overriding `OnModelCreating`/`OnConfiguring`
+on the context itself:
+
 ```csharp
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options);
+
+public void ConfigureServices(IServiceCollection services)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    // DKNet.EfCore.Hooks — registers the DbContext and wires the hook interceptor that runs registered hooks
+    // (including the event-dispatch hook below) around SaveChanges.
+    services.AddDbContextWithHook<AppDbContext>(options =>
+        options.UseSqlServer(connectionString)
+               // DKNet.EfCore.Extensions — auto-applies IEntityTypeConfiguration<T> found in this assembly
+               .UseAutoConfigModel<AppDbContext>());
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // Apply DKNet configurations
-        modelBuilder.ApplyDKNetConfigurations();
-        
-        // Apply entity configurations
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // Enable DKNet hooks and events
-        optionsBuilder.EnableDKNetHooks();
-        optionsBuilder.EnableDKNetEvents();
-    }
+    // DKNet.EfCore.Events — dispatches events queued via entity.AddEvent(...) to every registered
+    // IEventPublisher after a successful SaveChangesAsync.
+    services.AddEventPublisher<AppDbContext, MyEventPublisher>();
 }
 ```
+
+See [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md), [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md)
+and [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) for the full API.
 
 ### Repository Registration
 
@@ -78,8 +65,8 @@ public void ConfigureServices(IServiceCollection services)
     services.AddDbContext<AppDbContext>(options =>
         options.UseSqlServer(connectionString));
 
-    // Register repositories
-    services.AddDKNetRepositories<AppDbContext>();
+    // Register the specification repository (DKNet.EfCore.Specifications)
+    services.AddSpecRepo<AppDbContext>();
     
     // Register specific repositories
     services.AddScoped<IProductRepository, ProductRepository>();
@@ -114,35 +101,28 @@ dotnet ef database update --context AppDbContext
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddSlimBus(builder =>
-    {
-        // Configure message bus
-        builder.WithProviderAzureServiceBus(config =>
-        {
-            config.ConnectionString = Configuration.GetConnectionString("ServiceBus");
-            config.TopicName = "dknet-events";
-        });
-        
-        // Register handlers
-        builder.AddHandlersFromAssembly(typeof(Program).Assembly);
-    });
-    
-    // Add DKNet integration
-    services.AddDKNetSlimBusIntegration();
+    // Auto-save the DbContext after a successful request handler (DKNet.SlimBus.Extensions)
+    services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+
+    // Optionally forward domain events raised via DKNet.EfCore.Events onto the bus
+    services.AddSlimBusEventPublisher<AppDbContext>();
+
+    // Wire up SlimMessageBus itself (transport-agnostic; plain SlimMessageBus API).
+    // DKNet brings no transport provider — plug in SlimMessageBus.Host.Memory, an Azure Service Bus
+    // provider, or any other SlimMessageBus provider package yourself.
+    services.AddSlimMessageBus(mbb => mbb
+        .AddChildBus("Memory", bus => bus
+            .WithProviderMemory()
+            .AutoDeclareFrom(typeof(Program).Assembly)));
 }
 ```
 
-### Command/Query Configuration
+### Command/Query Handlers
 
-```csharp
-// Configure CQRS pipeline
-services.AddScoped<ICommandHandler<CreateProductCommand>, CreateProductHandler>();
-services.AddScoped<IQueryHandler<GetProductQuery>, GetProductHandler>();
-
-// Add validation
-services.AddFluentValidation(fv => 
-    fv.RegisterValidatorsFromAssemblyContaining<CreateProductValidator>());
-```
+No manual per-handler DI registration — `Fluents.Requests.IHandler<>` / `Fluents.Queries.IHandler<>`
+implementations are discovered by SlimMessageBus's own `AddServicesFromAssembly(...)` call shown above.
+Request validation is bring-your-own; DKNet does not ship a validation pipeline. Handler shapes and a full
+write/read/paged-query walkthrough: [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
 
 ## 🗃️ Blob Storage Configuration
 
@@ -151,12 +131,8 @@ services.AddFluentValidation(fv =>
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddAzureStorage(options =>
-        {
-            options.ConnectionString = Configuration.GetConnectionString("AzureStorage");
-            options.ContainerName = "dknet-files";
-        }));
+    // DKNet.Svc.BlobStorage.AzureStorage — binds AzureStorageOptions from the "BlobService:AzureStorage" section
+    services.AddAzureStorageAdapter(Configuration);
 }
 ```
 
@@ -173,12 +149,8 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddAwsS3(options =>
-        {
-            options.BucketName = "dknet-files";
-            options.Region = "us-east-1";
-        }));
+    // DKNet.Svc.BlobStorage.AwsS3 — binds options from the "BlobService:S3" section
+    services.AddS3BlobService(Configuration);
 }
 ```
 
@@ -187,11 +159,8 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddLocalStorage(options =>
-        {
-            options.RootPath = Path.Combine(Environment.ContentRootPath, "uploads");
-        }));
+    // DKNet.Svc.BlobStorage.Local — binds LocalDirectoryOptions from the "BlobStorage:LocalFolder" section
+    services.AddLocalDirectoryBlobService(Configuration);
 }
 ```
 
@@ -202,22 +171,18 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // Add data authorization
-    services.AddDKNetDataAuthorization(options =>
-    {
-        options.EnableTenantFiltering = true;
-        options.TenantIdClaim = "tenant_id";
-        options.UserIdClaim = "sub";
-    });
+    // DKNet.EfCore.DataAuthorization — registers the data-ownership query filter and hook for AppDbContext,
+    // backed by your own IDataOwnerProvider implementation (e.g. reading the tenant id from the current user claims)
+    services.AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>();
 }
 ```
 
 ### Entity Configuration for Data Authorization
 
 ```csharp
-public class Product : AggregateRoot, ITenantEntity
+public class Product : AuditedEntity, IOwnedBy
 {
-    public string TenantId { get; set; }
+    public string OwnedBy { get; private set; } = string.Empty;
     public string Name { get; set; }
     // ... other properties
 }
@@ -303,12 +268,13 @@ ENTRYPOINT ["dotnet", "YourApp.dll"]
 
 ### Health Checks
 
+DKNet does not ship a health-check package. Wire up standard ASP.NET Core health checks in your own app:
+
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
     services.AddHealthChecks()
-        .AddDbContextCheck<AppDbContext>()
-        .AddDKNetHealthChecks();
+        .AddDbContextCheck<AppDbContext>();
 }
 
 public void Configure(IApplicationBuilder app)
@@ -319,14 +285,13 @@ public void Configure(IApplicationBuilder app)
 
 ### Performance Monitoring
 
+DKNet does not ship a performance-counters package; use standard .NET observability tooling such as Application Insights:
+
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
     // Add Application Insights
     services.AddApplicationInsightsTelemetry();
-    
-    // Add DKNet performance counters
-    services.AddDKNetPerformanceCounters();
 }
 ```
 
@@ -355,25 +320,15 @@ public class ProductConfiguration : DefaultEntityTypeConfiguration<Product>
 ### Custom Domain Events
 
 ```csharp
-public class ProductCreatedEvent : DomainEvent
-{
-    public string ProductId { get; }
-    public string ProductName { get; }
-    
-    public ProductCreatedEvent(string productId, string productName)
-    {
-        ProductId = productId;
-        ProductName = productName;
-    }
-}
+public record ProductCreatedEvent(string ProductId, string ProductName) : EventItem;
 
-public class ProductCreatedHandler : IDomainEventHandler<ProductCreatedEvent>
+// Raised from the aggregate: product.AddEvent(new ProductCreatedEvent(product.Id, product.Name));
+
+// Consumed on the bus once AddSlimBusEventPublisher<AppDbContext>() forwards it (see above):
+public class ProductCreatedHandler : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    public async Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        // Handle the event
-        await Task.CompletedTask;
-    }
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken) =>
+        Task.CompletedTask;
 }
 ```
 
@@ -389,9 +344,8 @@ public class TestStartup
         // Use in-memory database for testing
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase("TestDb"));
-            
-        // Register test-specific services
-        services.AddDKNetTestServices();
+
+        // Register your own test-specific fakes/mocks here — DKNet has no dedicated test-services package
     }
 }
 ```
@@ -422,7 +376,7 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
 - [Architecture Guide](Architecture.md)
 - [API Reference](API-Reference.md)
 - [Examples](Examples/README.md)
-- [Troubleshooting](Troubleshooting.md)
+- [Troubleshooting](FAQ.md#troubleshooting)
 
 ---
 

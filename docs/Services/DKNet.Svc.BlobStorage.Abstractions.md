@@ -1,530 +1,130 @@
+> [!IMPORTANT]
+> All symbols on this page are current against `src/Services/DKNet.Svc.BlobStorage.Abstractions` on `dev`. Verify against
+> that source before relying on a signature — earlier revisions of this page described an API that never existed.
+
 # DKNet.Svc.BlobStorage.Abstractions
 
-**File storage service abstractions that provide a unified interface for blob storage operations across different cloud providers and storage systems, supporting secure file management in Domain-Driven Design applications.**
+Provider-agnostic contract for blob storage. Application code depends on `IBlobService` and the shared model types;
+a concrete adapter package — [AWS S3](./DKNet.Svc.BlobStorage.AwsS3.md), [Azure Storage](./DKNet.Svc.BlobStorage.AzureStorage.md),
+or the [local filesystem](./DKNet.Svc.BlobStorage.Local.md) — supplies the implementation. Swapping providers is a DI
+change, not a code change.
 
-## What is this project?
+## When to reach for it
 
-DKNet.Svc.BlobStorage.Abstractions defines the core contracts and abstractions for blob storage operations within the DKNet framework. It provides a technology-agnostic interface for file storage operations that can be implemented by various storage providers including AWS S3, Azure Blob Storage, and local file systems.
+Reach for this package (and one provider package) whenever your application needs to store or retrieve files —
+uploaded documents, generated reports, exported PDFs — without hard-coupling business logic to Azure, AWS, or the
+local disk. Depend on `IBlobService` from your application/domain code; register the concrete provider only at the
+composition root.
 
-### Key Features
-
-- **IBlobService**: Unified interface for all blob storage operations
-- **BlobData/BlobResult**: Strongly-typed data models for blob operations
-- **BlobServiceOptions**: Configurable file validation and security options
-- **Content Type Detection**: Automatic MIME type detection based on file extensions
-- **Async Operations**: Full async/await support with cancellation tokens
-- **Validation Framework**: Built-in file size, extension, and name validation
-- **Public Access URLs**: Support for generating time-limited public access URLs
-- **Stream Support**: Efficient handling of large files through streaming
-
-## How it contributes to DDD and Onion Architecture
-
-### Application Layer Service Contract
-
-DKNet.Svc.BlobStorage.Abstractions operates in the **Application Layer** of the Onion Architecture, providing contracts that enable file storage operations without coupling to specific technologies:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  Uses: File upload endpoints, download operations              │
-│  Returns: File URLs, upload status, download streams           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  📄 IBlobService - File storage contract                       │
-│  🔧 Document processing, file validation workflows             │
-│  📊 Integration with domain aggregates for file management     │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  🎭 Domain entities may reference file locations               │
-│  📝 File metadata as value objects (file path, content type)   │
-│  🏷️ No direct dependency on storage abstractions              │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Storage Providers, External APIs)            │
-│                                                                 │
-│  🗃️ AWS S3 Implementation (DKNet.Svc.BlobStorage.AwsS3)       │
-│  ☁️ Azure Storage Implementation (DKNet.Svc.BlobStorage.Azure) │
-│  💾 Local Storage Implementation (DKNet.Svc.BlobStorage.Local) │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Aggregate File Management**: Aggregates can manage file references without storage concerns
-2. **Domain Events**: File operations can trigger domain events (DocumentUploaded, FileProcessed)
-3. **Value Objects**: File metadata (path, content type, size) as immutable value objects
-4. **Policy Enforcement**: File validation rules aligned with business policies
-5. **Ubiquitous Language**: File operations expressed in business terms (documents, attachments, assets)
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Application layer defines contracts, infrastructure implements them
-2. **Technology Independence**: Switch between storage providers without changing business logic
-3. **Testability**: Mock IBlobService for unit testing file-related operations
-4. **Separation of Concerns**: File storage separated from business rules and presentation
-5. **Pluggability**: Multiple storage providers can be used simultaneously
-
-## How to use it
-
-### Installation
+## Install and minimal wiring
 
 ```bash
 dotnet add package DKNet.Svc.BlobStorage.Abstractions
 ```
 
-### Basic Usage Examples
-
-#### 1. File Upload Operation
+`DKNet.Svc.BlobStorage.Abstractions` on its own has no `IBlobService` implementation — register one provider package
+(shown here: Local) to complete the wiring:
 
 ```csharp
 using DKNet.Svc.BlobStorage.Abstractions;
 
-public class DocumentService
-{
-    private readonly IBlobService _blobService;
-    private readonly IDocumentRepository _documentRepository;
-    
-    public DocumentService(IBlobService blobService, IDocumentRepository documentRepository)
-    {
-        _blobService = blobService;
-        _documentRepository = documentRepository;
-    }
-    
-    public async Task<Result<DocumentDto>> UploadDocumentAsync(
-        UploadDocumentRequest request, 
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Create blob data from upload request
-            var blobData = new BlobData(
-                Name: $"documents/{Guid.NewGuid()}/{request.FileName}",
-                Data: BinaryData.FromStream(request.FileStream))
-            {
-                ContentType = request.ContentType,
-                Overwrite = false
-            };
-            
-            // Save file to storage
-            var fileLocation = await _blobService.SaveAsync(blobData, cancellationToken);
-            
-            // Create domain entity
-            var document = Document.Create(
-                name: request.FileName,
-                contentType: request.ContentType,
-                size: request.FileStream.Length,
-                storageLocation: fileLocation,
-                uploadedBy: request.UserId);
-            
-            // Save to repository
-            _documentRepository.Add(document);
-            await _documentRepository.SaveChangesAsync(cancellationToken);
-            
-            return Result<DocumentDto>.Success(MapToDto(document));
-        }
-        catch (Exception ex)
-        {
-            return Result<DocumentDto>.Failure($"Failed to upload document: {ex.Message}");
-        }
-    }
-}
+// Program.cs
+builder.Services.AddLocalDirectoryBlobService(builder.Configuration);
 ```
-
-#### 2. File Download Operation
 
 ```csharp
-public class DocumentDownloadService
+public sealed class DocumentService(IBlobService blobService)
 {
-    private readonly IBlobService _blobService;
-    private readonly IDocumentRepository _documentRepository;
-    
-    public DocumentDownloadService(IBlobService blobService, IDocumentRepository documentRepository)
+    public async Task<string> UploadAsync(string fileName, Stream content, CancellationToken ct)
     {
-        _blobService = blobService;
-        _documentRepository = documentRepository;
-    }
-    
-    public async Task<Result<FileDownloadResult>> DownloadDocumentAsync(
-        Guid documentId, 
-        CancellationToken cancellationToken = default)
-    {
-        // Get document from domain
-        var document = await _documentRepository.FindAsync(documentId);
-        if (document == null)
-            return Result<FileDownloadResult>.Failure("Document not found");
-        
-        // Check if user has access (domain business rule)
-        if (!document.CanBeAccessedBy(currentUserId))
-            return Result<FileDownloadResult>.Failure("Access denied");
-        
-        // Get file from storage
-        var blobRequest = new BlobRequest(document.StorageLocation);
-        var blobResult = await _blobService.GetAsync(blobRequest, cancellationToken);
-        
-        if (blobResult == null)
-            return Result<FileDownloadResult>.Failure("File not found in storage");
-        
-        // Update download metrics (domain operation)
-        document.RecordDownload(currentUserId);
-        await _documentRepository.SaveChangesAsync(cancellationToken);
-        
-        return Result<FileDownloadResult>.Success(new FileDownloadResult(
-            FileName: document.Name,
-            ContentType: document.ContentType,
-            Data: blobResult.Data,
-            Size: blobResult.Data.ToArray().LongLength));
+        var blob = new BlobDetails.BlobData(fileName, BinaryData.FromStream(content));
+        return await blobService.SaveAsync(blob, ct); // returns the stored location
     }
 }
 ```
 
-#### 3. File Listing and Management
+## Features
 
-```csharp
-public class DocumentManagementService
-{
-    private readonly IBlobService _blobService;
-    private readonly IDocumentRepository _documentRepository;
-    
-    public async Task<IEnumerable<DocumentSummary>> ListUserDocumentsAsync(
-        Guid userId, 
-        CancellationToken cancellationToken = default)
-    {
-        // Get documents from domain repository
-        var userDocuments = await _documentRepository.GetDocumentsByUserAsync(userId);
-        
-        var summaries = new List<DocumentSummary>();
-        
-        foreach (var document in userDocuments)
-        {
-            // Get file metadata from storage
-            var blobRequest = new BlobRequest(document.StorageLocation);
-            var blobItem = await _blobService.GetItemAsync(blobRequest, cancellationToken);
-            
-            summaries.Add(new DocumentSummary(
-                Id: document.Id,
-                Name: document.Name,
-                Size: blobItem?.Details?.ContentLength ?? 0,
-                LastModified: blobItem?.Details?.LastModified ?? document.CreatedOn.DateTime,
-                ContentType: document.ContentType,
-                DownloadCount: document.DownloadCount));
-        }
-        
-        return summaries;
-    }
-    
-    public async Task<Result> DeleteDocumentAsync(
-        Guid documentId, 
-        CancellationToken cancellationToken = default)
-    {
-        // Domain operation
-        var document = await _documentRepository.FindAsync(documentId);
-        if (document == null)
-            return Result.Failure("Document not found");
-        
-        if (!document.CanBeDeletedBy(currentUserId))
-            return Result.Failure("Cannot delete document");
-        
-        try
-        {
-            // Delete from storage
-            var blobRequest = new BlobRequest(document.StorageLocation);
-            var deleted = await _blobService.DeleteAsync(blobRequest, cancellationToken);
-            
-            if (deleted)
-            {
-                // Remove from domain
-                _documentRepository.Delete(document);
-                await _documentRepository.SaveChangesAsync(cancellationToken);
-                
-                return Result.Success();
-            }
-            
-            return Result.Failure("Failed to delete file from storage");
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure($"Failed to delete document: {ex.Message}");
-        }
-    }
-}
-```
+### `IBlobService` — the unified contract
 
-#### 4. Public Access URL Generation
+Every provider implements the same seven operations:
 
-```csharp
-public class DocumentSharingService
-{
-    private readonly IBlobService _blobService;
-    private readonly IDocumentRepository _documentRepository;
-    
-    public async Task<Result<string>> GeneratePublicLinkAsync(
-        Guid documentId, 
-        TimeSpan expiry,
-        CancellationToken cancellationToken = default)
-    {
-        // Domain business rule validation
-        var document = await _documentRepository.FindAsync(documentId);
-        if (document == null)
-            return Result<string>.Failure("Document not found");
-        
-        if (!document.CanBeSharedBy(currentUserId))
-            return Result<string>.Failure("Document cannot be shared");
-        
-        if (!document.IsPublicSharingAllowed())
-            return Result<string>.Failure("Public sharing not allowed for this document type");
-        
-        try
-        {
-            // Generate public access URL
-            var blobRequest = new BlobRequest(document.StorageLocation);
-            var publicUrl = await _blobService.GetPublicAccessUrl(
-                blobRequest, 
-                expiry, 
-                cancellationToken);
-            
-            // Record sharing activity (domain event)
-            document.RecordPublicShare(currentUserId, expiry);
-            await _documentRepository.SaveChangesAsync(cancellationToken);
-            
-            return Result<string>.Success(publicUrl.ToString());
-        }
-        catch (Exception ex)
-        {
-            return Result<string>.Failure($"Failed to generate public link: {ex.Message}");
-        }
-    }
-}
-```
+| Method | Signature | Notes |
+|---|---|---|
+| Save | `Task<string> SaveAsync(BlobDetails.BlobData blob, CancellationToken ct = default)` | Returns the stored blob's location. Validates against `BlobServiceOptions` first (see below). |
+| Get | `Task<BlobDetails.BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken ct = default)` | Fetches content + metadata. **S3 and Azure return `null` when the blob is missing; the Local provider throws `FileNotFoundException` instead** — code against the abstraction defensively if you support multiple providers. |
+| Get metadata only | `Task<BlobDetails.BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken ct = default)` | No content transferred. The `BlobService` base class's default implementation is "first item from `ListItemsAsync`" — cheap for a single file, wasteful for a directory. |
+| Exists | `Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken ct = default)` | |
+| Delete | `Task<bool> DeleteAsync(BlobRequest blob, CancellationToken ct = default)` | Providers that support folders delete recursively when `blob.Type == BlobTypes.Directory`. |
+| List | `IAsyncEnumerable<BlobDetails.BlobResult> ListItemsAsync(BlobRequest blob, CancellationToken ct = default)` | Streams results — safe for large containers/folders. |
+| Public URL | `Task<Uri> GetPublicAccessUrl(BlobRequest blob, TimeSpan? expiresFromNow = null, CancellationToken ct = default)` | Support and expiry semantics are provider-specific; the Local provider always throws `NotSupportedException`. |
 
-### Advanced Usage Patterns
+There is **no `byte[]` overload and no separate "streaming" method** — every payload is a `BinaryData`
+(`BlobDetails.BlobData`/`BlobDataResult.Data`), which itself wraps either bytes or a stream (`BinaryData.FromStream(...)`,
+`BinaryData.FromString(...)`). Pass a `Stream` through `BinaryData.FromStream` for large files instead of buffering to
+`byte[]` first.
 
-#### 1. File Validation Configuration
+### Naming and path rules
 
-```csharp
-using Microsoft.Extensions.DependencyInjection;
-using DKNet.Svc.BlobStorage.Abstractions;
+- `BlobRequest(string Name)` auto-derives `Type` (`BlobTypes.File` or `BlobTypes.Directory`) from whether `Name` has a
+  file extension (`Path.GetExtension`) — a name ending in `/` or with no extension is treated as a directory.
+- The `BlobService` base class's `GetBlobLocation` normalizes every name to start with `/` before handing it to a
+  provider — this is the only naming rule enforced by the abstraction itself; path-traversal protection and
+  provider-native prefix rules are provider-specific (documented on each provider's page).
 
-public void ConfigureServices(IServiceCollection services)
-{
-    // Configure blob service options
-    services.Configure<BlobServiceOptions>(options =>
-    {
-        options.MaxFileSizeInMb = 50; // 50MB limit
-        options.MaxFileNameLength = 255;
-        options.IncludedExtensions = new[]
-        {
-            ".pdf", ".doc", ".docx", ".xls", ".xlsx",
-            ".jpg", ".jpeg", ".png", ".gif",
-            ".txt", ".csv", ".json", ".xml"
-        };
-    });
-    
-    // Register storage provider
-    services.AddScoped<IBlobService, AzureBlobService>();
-}
-```
+### Models
 
-#### 2. Multi-Provider Setup
+- `BlobRequest(string Name)` — the base request shape; every other request/result type derives from it.
+- `BlobDetails { CreatedOn, LastModified, ContentLength, required ContentType }` — metadata, nested inside:
+  - `BlobDetails.BlobResult(string Name) : BlobRequest(Name)` — adds `Details` (`null` until fetched via `GetItemAsync`/`GetAsync`).
+  - `BlobDetails.BlobDataResult(string Name, BinaryData Data) : BlobResult(Name)` — the `GetAsync` return shape (content + metadata).
+  - `BlobDetails.BlobData(string Name, BinaryData Data) : BlobRequest(Name)` — the `SaveAsync` input shape; `Overwrite`
+    (`bool`, default `false`) and `ContentType` (defaults to `Name.GetContentTypeByExtension()`) are settable via
+    object/`with` syntax on top of the positional `Name`/`Data`.
+- `BlobTypes { File, Directory }`.
 
-```csharp
-public class DocumentStorageService
-{
-    private readonly IServiceProvider _serviceProvider;
-    
-    public DocumentStorageService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-    
-    private IBlobService GetStorageProvider(DocumentType documentType)
-    {
-        return documentType switch
-        {
-            DocumentType.PublicDocument => _serviceProvider.GetKeyedService<IBlobService>("Public"),
-            DocumentType.PrivateDocument => _serviceProvider.GetKeyedService<IBlobService>("Private"),
-            DocumentType.ArchiveDocument => _serviceProvider.GetKeyedService<IBlobService>("Archive"),
-            _ => _serviceProvider.GetRequiredService<IBlobService>()
-        };
-    }
-    
-    public async Task<string> SaveDocumentAsync(Document document, BinaryData data)
-    {
-        var storageProvider = GetStorageProvider(document.Type);
-        
-        var blobData = new BlobData(
-            Name: GenerateStoragePath(document),
-            Data: data)
-        {
-            ContentType = document.ContentType
-        };
-        
-        return await storageProvider.SaveAsync(blobData);
-    }
-}
-```
+### Content-type detection
 
-#### 3. Stream Processing for Large Files
+`fileName.GetContentTypeByExtension()` maps ~20 known extensions to their MIME type and falls back to
+`"application/octet-stream"` for anything else. It throws `NullReferenceException` for a `null` input — always pass a
+non-null file name.
 
-```csharp
-public class LargeFileUploadService
-{
-    private readonly IBlobService _blobService;
-    
-    public async Task<Result<string>> UploadLargeFileAsync(
-        string fileName, 
-        Stream fileStream,
-        IProgress<UploadProgress>? progress = null,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Process file in chunks for progress reporting
-            using var bufferedStream = new MemoryStream();
-            
-            const int bufferSize = 8192;
-            var buffer = new byte[bufferSize];
-            var totalBytesRead = 0L;
-            var fileSize = fileStream.Length;
-            
-            int bytesRead;
-            while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
-            {
-                await bufferedStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-                totalBytesRead += bytesRead;
-                
-                // Report progress
-                progress?.Report(new UploadProgress(totalBytesRead, fileSize));
-                
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-            
-            // Create blob data
-            bufferedStream.Position = 0;
-            var blobData = new BlobData(
-                Name: $"large-files/{Guid.NewGuid()}/{fileName}",
-                Data: BinaryData.FromStream(bufferedStream));
-            
-            // Upload to storage
-            var location = await _blobService.SaveAsync(blobData, cancellationToken);
-            
-            return Result<string>.Success(location);
-        }
-        catch (OperationCanceledException)
-        {
-            return Result<string>.Failure("Upload was cancelled");
-        }
-        catch (Exception ex)
-        {
-            return Result<string>.Failure($"Upload failed: {ex.Message}");
-        }
-    }
-}
-```
+### Validation
 
-#### 4. Integration with Domain Events
+`BlobService.ValidateFile` runs on every `SaveAsync` call and throws `FileLoadException` (`"File name is invalid."`,
+`"File extension is invalid."`, `"File size is invalid."`) when a `BlobServiceOptions` rule is violated. See
+Configuration below for how each rule is gated.
 
-```csharp
-public class DocumentEventHandler : IEventHandler<DocumentUploadedEvent>
-{
-    private readonly IBlobService _blobService;
-    private readonly IDocumentRepository _documentRepository;
-    
-    public async Task Handle(DocumentUploadedEvent evt)
-    {
-        // Get document from domain
-        var document = await _documentRepository.FindAsync(evt.DocumentId);
-        if (document == null) return;
-        
-        try
-        {
-            // Verify file exists in storage
-            var blobRequest = new BlobRequest(document.StorageLocation);
-            var exists = await _blobService.CheckExistsAsync(blobRequest);
-            
-            if (exists)
-            {
-                // Get file metadata
-                var blobItem = await _blobService.GetItemAsync(blobRequest);
-                
-                // Update document with storage metadata
-                document.UpdateStorageMetadata(
-                    size: blobItem?.Details?.ContentLength ?? 0,
-                    lastModified: blobItem?.Details?.LastModified ?? DateTime.UtcNow);
-                
-                // Mark as processed
-                document.MarkAsProcessed();
-                
-                await _documentRepository.SaveChangesAsync();
-            }
-            else
-            {
-                // Handle missing file
-                document.MarkAsFailed("File not found in storage");
-                await _documentRepository.SaveChangesAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            document.MarkAsFailed($"Processing failed: {ex.Message}");
-            await _documentRepository.SaveChangesAsync();
-        }
-    }
-}
-```
+## Configuration — `BlobServiceOptions`
 
-## Best Practices
+Every provider's own options type (`S3Options`, `AzureStorageOptions`, `LocalDirectoryOptions`) extends this base, so
+validation behaves identically regardless of backend:
 
-### 1. File Validation
-- Always configure appropriate file size and extension restrictions
-- Validate files at the service layer before storage operations
-- Consider scanning files for malware in high-security environments
-- Use content type detection but don't rely on it for security
+| Property | Default | Effect |
+|---|---|---|
+| `IEnumerable<string> IncludedExtensions` | `[]` (empty) | No extension filtering when empty; when non-empty, only listed extensions pass `SaveAsync`. |
+| `int MaxFileNameLength` | `0` | `0` disables the check — **not** "zero-length names rejected". |
+| `int MaxFileSizeInMb` | `0` | `0` disables the check — there is no built-in size cap unless you set one. |
 
-### 2. Error Handling
-- Implement comprehensive error handling for storage operations
-- Use cancellation tokens for long-running operations
-- Provide meaningful error messages for different failure scenarios
-- Consider retry policies for transient failures
+All three checks are opt-in; do not assume a default limit exists (older revisions of this page claimed a 50MB
+default — there is none).
 
-### 3. Performance Optimization
-- Use streaming for large files to reduce memory usage
-- Implement progress reporting for long-running uploads
-- Consider compression for text-based files
-- Use appropriate content types for browser caching
+## Composing with other DKNet packages
 
-### 4. Security Considerations
-- Never expose direct storage URLs to clients
-- Use time-limited public URLs for shared access
-- Implement proper access control at the domain level
-- Consider encryption for sensitive documents
+- **`DKNet.EfCore.Events`** — raise a domain event after `SaveAsync` returns the stored location so a handler can
+  attach it to an aggregate.
+- **`DKNet.EfCore.Repos`** — store the returned location string as a value on your entity; the repository layer never
+  needs to know which blob provider is in use.
+- **`DKNet.Fw.Extensions`** — general-purpose extensions used incidentally by the storage adapters; no hard dependency
+  from your own code.
 
-### 5. Monitoring and Logging
-- Log all file operations for audit trails
-- Monitor storage usage and costs
-- Track file access patterns for optimization
-- Alert on failed operations or unusual activity
+## Gotchas and limits
 
-## Integration with Other DKNet Components
-
-DKNet.Svc.BlobStorage.Abstractions integrates seamlessly with other DKNet components:
-
-- **DKNet.EfCore.Events**: File operations trigger domain events
-- **DKNet.EfCore.Repos**: Document metadata stored in domain repositories
-- **DKNet.SlimBus.Extensions**: Async file processing through message bus
-- **DKNet.Fw.Extensions**: Content type detection and validation utilities
-
----
-
-> 💡 **Architecture Tip**: Use blob storage abstractions to keep file storage concerns separate from your domain logic. This enables you to switch storage providers based on requirements (cost, performance, compliance) without changing your business rules.
+- **No `byte[]` API.** Wrap arrays with `BinaryData.FromBytes(...)` if you have one.
+- **Inconsistent miss behavior.** `GetAsync` returns `null` on S3/Azure, throws `FileNotFoundException` on Local — an
+  abstraction leak worth a defensive `try/catch` or a provider-neutral wrapper if you need one behavior everywhere.
+- **`GetItemAsync`'s default implementation reads the whole listing** to find the first match unless a provider
+  overrides it — for a single known file, prefer `GetAsync`/`CheckExistsAsync` over `GetItemAsync` when you don't
+  actually need metadata-only semantics.
+- **Public URL support is not universal.** Always check the target provider's page before relying on
+  `GetPublicAccessUrl` — Local never supports it.

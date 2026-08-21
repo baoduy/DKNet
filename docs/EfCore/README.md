@@ -1,214 +1,72 @@
-# Entity Framework Core Extensions
+# EF Core Packages
 
-The EfCore Extensions provide comprehensive enhancements to Entity Framework Core that implement repository patterns, domain events, data access abstractions, and advanced EF Core functionality specifically designed for Domain-Driven Design (DDD) and Onion Architecture patterns.
+`DKNet.EfCore.*` is the Infrastructure Layer of the DKNet framework: EF Core building blocks for
+entities, persistence, and the SaveChanges pipeline, built for Domain-Driven Design and Onion
+Architecture. Each package below is independent and opt-in — pull in only what a given
+`DbContext` needs.
 
-## Components
+## Foundation
 
-### Core Abstractions & Patterns
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) - Core abstractions and interfaces
-- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) - Specification pattern for flexible query composition
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) — entity base classes
+  (`Entity`, `AuditedEntity`), domain-event contracts (`IEventEntity`), and the attributes
+  (`[AuditLog]`, `[SensitiveData]`, `[RaisesEvent]`, `[Sequence]`, …) that every other package
+  in this list reads. Start here.
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) — the DI/wiring layer: automatic
+  entity configuration discovery, global query filters, data seeding, GUIDv7 keys, sequences,
+  and the `SnapshotContext` shared by the hook-based packages below.
 
-### Domain Events & Lifecycle Management
-- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) - Domain event handling and dispatching
-- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) - Lifecycle hooks for EF Core operations
+## Querying & persistence
 
-### Data Access & Security
-- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) - Data authorization and access control
-- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) - EF Core functionality enhancements
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) — the specification pattern
+  and `IRepositorySpec`, including the Dynamic Predicate Builder. The current, supported way to
+  query and persist through a `DbContext`.
+- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) — **retired**, source-only generic repository,
+  superseded by Specifications. Kept for existing consumers.
+- [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) — **retired**,
+  source-only repository interfaces implemented by `DKNet.EfCore.Repos`.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — call-site
+  mapping for moving off `DKNet.EfCore.Repos`/`Repos.Abstractions` onto Specifications.
 
-### Code Generation & Development Tools
-- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) - Compile-time DTO generation from entities
+## SaveChanges pipeline
 
-### Database Utilities
-- [DKNet.EfCore.Relational.Helpers](./DKNet.EfCore.Relational.Helpers.md) - Relational database utilities
+- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) — the before/after-SaveChanges interceptor
+  pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that Events, AuditLogs, and
+  DataAuthorization all register against.
+- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) — dispatches domain events raised by
+  entities (`AddEvent`) as part of that pipeline.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity
+  changes, with `[SensitiveData]`-aware redaction.
+- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) — row-level,
+  ownership-based data authorization via global query filters.
 
-## Architecture Role in DDD & Onion Architecture
+## Data protection & generation
 
-The EfCore Extensions form the **Infrastructure Layer** in the Onion Architecture, providing all data access concerns while maintaining proper dependency inversion:
+- [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) — transparent column-level
+  encryption via an EF Core value converter.
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) — compile-time DTO generation
+  from entities via a Roslyn source generator. See also the
+  [Global Exclusions Guide](./GLOBAL_EXCLUSIONS_GUIDE.md).
+
+## Utilities
+
+- [DKNet.EfCore.Relational.Helpers](./DKNet.EfCore.Relational.Helpers.md) — small
+  provider-aware `DbContext` helpers (table existence/creation, table name resolution).
+
+## How the pieces fit together
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Dependencies: Repository Interfaces (from Domain)             │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  • IEventEntity (from EfCore.Abstractions)                    │
-│  • Domain Events (published via EfCore.Events)                │
-│  • Repository Interfaces (from EfCore.Repos.Abstractions)     │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Data Access, Persistence)                    │
-│                                                                 │
-│  🗃️ DKNet.EfCore.Repos - Repository Implementations           │
-│  📋 DKNet.EfCore.Events - Domain Event Dispatching            │
-│  🔒 DKNet.EfCore.DataAuthorization - Access Control           │
-│  ⚡ DKNet.EfCore.Hooks - Lifecycle Management                  │
-│  ⚙️ DKNet.EfCore.Extensions - EF Core Enhancements            │
-│  🏗️ DKNet.EfCore.DtoGenerator - Compile-Time DTO Generation   │
-│  🔧 DKNet.EfCore.Relational.Helpers - DB Utilities            │
-│  📐 DKNet.EfCore.Specifications - Query Specification Pattern │
-└─────────────────────────────────────────────────────────────────┘
+Abstractions  (entity base classes, event/audit attributes)
+     ↑
+Extensions    (DI wiring, global query filters, SnapshotContext)
+     ↑
+Hooks         (SaveChanges interceptor pipeline)
+     ↑
+Events · AuditLogs · DataAuthorization   (each registers a hook)
+
+Specifications (queries + writes via IRepositorySpec)  ─┐
+Repos / Repos.Abstractions (retired)                    ┴─ both consume Abstractions entities
+
+Encryption      (EF Core value converter, independent of the hook pipeline)
+DtoGenerator    (compile-time, independent of the hook pipeline)
+Relational.Helpers (standalone DbContext utilities)
 ```
-
-## Key Design Patterns Implemented
-
-### 1. Repository Pattern
-- **Abstractions**: Define contracts in the domain layer
-- **Implementations**: Concrete implementations in infrastructure layer
-- **Generic Repositories**: Common CRUD operations with type safety
-- **Specialized Repositories**: Domain-specific data access patterns
-
-### 2. Domain Events
-- **Event Sourcing**: Entities can raise domain events
-- **Event Dispatching**: Automatic event publishing after successful operations
-- **Event Handlers**: Decoupled event processing
-- **Integration Events**: Support for external system communication
-
-### 3. Unit of Work
-- **Transaction Management**: Coordinate multiple repository operations
-- **Change Tracking**: EF Core change tracking integration
-- **Bulk Operations**: Efficient batch operations
-- **Concurrency Control**: Optimistic concurrency support
-
-### 4. Data Authorization
-- **Role-Based Access Control**: Permission-based data filtering
-- **Policy-Based Authorization**: Flexible authorization rules
-- **Field-Level Security**: Granular access control
-- **Audit Logging**: Comprehensive audit trail
-
-### 5. Specification Pattern
-- **Flexible Query Logic**: Reusable query specifications without repository pattern overhead
-- **Composable Specifications**: Combine specifications using AND/OR operators
-- **Business Rule Encapsulation**: Query logic that reflects domain terminology
-- **Type-Safe Queries**: Generic specifications with compile-time type checking
-
-## DDD Implementation Benefits
-
-### 1. Aggregate Consistency
-- Entity base classes enforce identity and concurrency rules
-- Event entities support domain event publishing
-- Repository patterns maintain aggregate boundaries
-
-### 2. Domain Events
-- Loosely coupled domain logic through events
-- Cross-aggregate communication without direct dependencies
-- Integration with external systems via published events
-
-### 3. Ubiquitous Language
-- Repository interfaces use domain terminology
-- Entity configurations reflect business rules
-- Static data attributes maintain reference data consistency
-
-### 4. Bounded Context Support
-- Separate DbContexts for different bounded contexts
-- Context-specific repository implementations
-- Cross-context event integration
-
-## Onion Architecture Benefits
-
-### 1. Dependency Inversion
-- Domain layer defines repository interfaces
-- Infrastructure layer implements concrete repositories
-- Application layer depends on abstractions, not implementations
-
-### 2. Testability
-- Repository abstractions enable easy mocking
-- Domain events can be tested in isolation
-- Business logic is independent of data access technology
-
-### 3. Technology Agnostic
-- Abstract repositories can be implemented with any data access technology
-- Domain layer is completely unaware of EF Core
-- Easy to swap out persistence implementations
-
-### 4. Separation of Concerns
-- Each component has a single, well-defined responsibility
-- Cross-cutting concerns (authorization, events) are properly separated
-- Infrastructure concerns don't leak into domain logic
-
-## Integration Patterns
-
-### 1. Domain Entity with Events
-```csharp
-public class Order : Entity, IEventEntity
-{
-    // Domain properties and business logic
-    
-    public void CompleteOrder()
-    {
-        Status = OrderStatus.Completed;
-        AddEvent(new OrderCompletedEvent(Id, CustomerId));
-    }
-}
-```
-
-### 2. Repository Pattern Implementation
-```csharp
-public interface IOrderRepository : IRepository<Order>
-{
-    Task<Order?> GetByOrderNumberAsync(string orderNumber);
-}
-
-public class OrderRepository : GenericRepository<Order>, IOrderRepository
-{
-    // Implementation in infrastructure layer
-}
-```
-
-### 3. Domain Event Handling
-```csharp
-public class OrderCompletedEventHandler : IEventHandler<OrderCompletedEvent>
-{
-    public async Task Handle(OrderCompletedEvent evt)
-    {
-        // Handle cross-aggregate concerns
-        // Send notifications, update read models, etc.
-    }
-}
-```
-
-### 4. Specification Pattern Usage
-```csharp
-public class CustomerService
-{
-    public async Task<List<Customer>> GetTargetCustomersAsync(string region)
-    {
-        var activeCustomers = new ActiveCustomersSpec();
-        var inRegion = new CustomersInRegionSpec(region);
-        var highValue = new HighValueCustomersSpec(1000m);
-        
-        // Combine business rules using logical operators
-        var specification = activeCustomers & inRegion & highValue;
-        
-        return await _customerRepository.SpecsListAsync(specification);
-    }
-}
-```
-
-## Performance & Scalability Features
-
-- **Query Optimization**: IQueryable support for efficient database queries
-- **Change Tracking**: Optimized EF Core change tracking patterns
-- **Bulk Operations**: Support for high-performance batch operations
-- **Connection Management**: Proper DbContext lifecycle management
-- **Caching Integration**: Support for distributed caching patterns
-
-## Security & Compliance
-
-- **Data Authorization**: Comprehensive access control mechanisms
-- **Audit Logging**: Built-in audit trail capabilities
-- **Encryption Support**: Integration with encryption services
-- **Compliance Ready**: GDPR and other regulatory compliance support
