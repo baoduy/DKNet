@@ -166,97 +166,63 @@ public static class AsyncEnumerableExtensions
 #### Base Entities
 
 ```csharp
-namespace DKNet.EfCore.Abstractions;
+namespace DKNet.EfCore.Abstractions.Entities;
 
 /// <summary>
-/// Base class for all entities with auditing support.
+/// Base class for entities with a specified key type. Implements IEntity&lt;TKey&gt; and IEventEntity
+/// (event queuing, below) via two internal collections.
 /// </summary>
-public abstract class AggregateRoot : IAuditable, IDomainEvents
+public abstract class Entity<TKey> : IEntity<TKey>, IEventEntity
 {
-    protected AggregateRoot(Guid id, string createdBy)
-    {
-        Id = id == Guid.Empty ? Guid.NewGuid() : id;
-        CreatedBy = createdBy;
-        CreatedAt = DateTime.UtcNow;
-    }
+    protected Entity();
+    protected Entity(TKey id);
 
-    public Guid Id { get; protected set; }
-    public string CreatedBy { get; protected set; }
-    public DateTime CreatedAt { get; protected set; }
-    public string? UpdatedBy { get; protected set; }
-    public DateTime? UpdatedAt { get; protected set; }
+    public virtual TKey Id { get; private set; }
 
-    /// <summary>
-    /// Sets the user who updated the entity.
-    /// </summary>
-    /// <param name="updatedBy">The user identifier.</param>
-    protected void SetUpdatedBy(string updatedBy)
-    {
-        UpdatedBy = updatedBy;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    private readonly List<DomainEvent> _domainEvents = new();
-
-    /// <summary>
-    /// Adds a domain event to be raised when the entity is saved.
-    /// </summary>
-    /// <param name="domainEvent">The domain event.</param>
-    public void AddEvent(DomainEvent domainEvent) => _domainEvents.Add(domainEvent);
-
-    /// <summary>
-    /// Gets all uncommitted domain events.
-    /// </summary>
-    /// <returns>A read-only collection of domain events.</returns>
-    public IReadOnlyCollection<DomainEvent> GetUncommittedEvents() => _domainEvents.AsReadOnly();
-
-    /// <summary>
-    /// Clears all uncommitted domain events.
-    /// </summary>
-    public void ClearEvents() => _domainEvents.Clear();
+    public void AddEvent(object eventObj);
+    public void AddEvent<TEvent>() where TEvent : class;
+    public (object[] Events, Type[] EventTypes) GetEvents();
+    public void ClearEvents();
 }
 
-/// <summary>
-/// Interface for tenant-aware entities.
-/// </summary>
-public interface ITenantEntity
-{
-    string TenantId { get; set; }
-}
+/// <summary>Convenience specialization of Entity&lt;TKey&gt; with TKey = Guid.</summary>
+public abstract class Entity : Entity<Guid>;
 
-/// <summary>
-/// Interface for auditable entities.
-/// </summary>
-public interface IAuditable
-{
-    string CreatedBy { get; }
-    DateTime CreatedAt { get; }
-    string? UpdatedBy { get; }
-    DateTime? UpdatedAt { get; }
-}
+/// <summary>Base class for entities that also track creation/modification audit fields.</summary>
+public abstract class AuditedEntity<TKey> : Entity<TKey>, IAuditedEntity<TKey>;
 ```
+
+Full walkthrough (declarative `[RaisesEvent]`, `DefaultEntityTypeConfiguration<T>`, soft delete, etc.):
+[DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md).
 
 #### Domain Events
 
 ```csharp
-/// <summary>
-/// Base class for all domain events.
-/// </summary>
-public abstract record DomainEvent
+namespace DKNet.EfCore.Abstractions.Events;
+
+/// <summary>A publishable domain event: routing headers plus an event type name.</summary>
+public interface IEventItem
 {
-    public Guid Id { get; } = Guid.NewGuid();
-    public DateTime OccurredAt { get; } = DateTime.UtcNow;
+    IDictionary<string, string> AdditionalData { get; }
+    string EventType { get; }
 }
 
-/// <summary>
-/// Interface for domain event handlers.
-/// </summary>
-/// <typeparam name="TEvent">The domain event type.</typeparam>
-public interface IDomainEventHandler<in TEvent> where TEvent : DomainEvent
+/// <summary>Base record for domain events — implements IEventItem.</summary>
+public abstract record EventItem : IEventItem;
+
+/// <summary>Centralized event publisher; every entity-queued event is routed through this.</summary>
+public interface IEventPublisher
 {
-    Task Handle(TEvent domainEvent, CancellationToken cancellationToken = default);
+    Task PublishAsync(object eventObj, CancellationToken cancellationToken = default);
+    Task PublishAsync(IEnumerable<object> eventList, CancellationToken cancellationToken = default);
 }
 ```
+
+There is no `IDomainEventHandler` interface — an entity queues events via `AddEvent(...)` above,
+`DKNet.EfCore.Events` dispatches them to every registered `IEventPublisher` after a successful `SaveChanges`,
+and (with `DKNet.SlimBus.Extensions`) `AddSlimBusEventPublisher<TDbContext>()` forwards them onto the bus for a
+`Fluents.EventsConsumers.IHandler<TEvent>` to consume — see [Messaging & CQRS](#-messaging--cqrs) below and
+[DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md).
 
 ### DKNet.EfCore.Repos
 
@@ -480,62 +446,43 @@ public abstract class Specification<T>
 ```csharp
 namespace DKNet.SlimBus.Extensions;
 
-/// <summary>
-/// Base interface for commands.
-/// </summary>
-public interface ICommand
+public static class Fluents
 {
-    /// <summary>
-    /// Gets or sets the user who initiated the command.
-    /// </summary>
-    string? ByUser { get; set; }
-}
+    public static class Requests
+    {
+        /// <summary>A request that doesn't return a payload back — just success/failure.</summary>
+        public interface INoResponse : IRequest<IResultBase>;
+        public interface IHandler<in TRequest> : IRequestHandler<TRequest, IResultBase>
+            where TRequest : INoResponse;
 
-/// <summary>
-/// Interface for commands that return a response.
-/// </summary>
-/// <typeparam name="TResponse">The response type.</typeparam>
-public interface ICommand<TResponse> : ICommand
-{
-}
+        /// <summary>A request that returns a payload of type TResponse on success.</summary>
+        public interface IWitResponse<out TResponse> : IRequest<IResult<TResponse>>;
+        public interface IHandler<in TRequest, TResponse> : IRequestHandler<TRequest, IResult<TResponse>>
+            where TRequest : IWitResponse<TResponse>;
+    }
 
-/// <summary>
-/// Interface for queries that return a response.
-/// </summary>
-/// <typeparam name="TResponse">The response type.</typeparam>
-public interface IQuery<TResponse>
-{
-}
+    public static class Queries
+    {
+        public interface IWitResponse<out TResponse> : IRequest<TResponse?>;
+        public interface IHandler<in TQuery, TResponse> : IRequestHandler<TQuery, TResponse?>
+            where TQuery : IWitResponse<TResponse>;
 
-/// <summary>
-/// Interface for command handlers.
-/// </summary>
-/// <typeparam name="TCommand">The command type.</typeparam>
-public interface ICommandHandler<in TCommand> where TCommand : ICommand
-{
-    Task<IResultBase> OnHandle(TCommand command, CancellationToken cancellationToken = default);
-}
+        public interface IWitPageResponse<out TResponse> : IRequest<IPagedList<TResponse>>;
+        public interface IPageHandler<in TQuery, TResponse> : IRequestHandler<TQuery, IPagedList<TResponse>>
+            where TQuery : IWitPageResponse<TResponse>;
+    }
 
-/// <summary>
-/// Interface for command handlers with response.
-/// </summary>
-/// <typeparam name="TCommand">The command type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
-public interface ICommandHandler<in TCommand, TResponse> where TCommand : ICommand<TResponse>
-{
-    Task<IResult<TResponse>> OnHandle(TCommand command, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Interface for query handlers.
-/// </summary>
-/// <typeparam name="TQuery">The query type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
-public interface IQueryHandler<in TQuery, TResponse> where TQuery : IQuery<TResponse>
-{
-    Task<TResponse> OnHandle(TQuery query, CancellationToken cancellationToken = default);
+    public static class EventsConsumers
+    {
+        public interface IHandler<in TEvent> : IConsumer<TEvent>;
+    }
 }
 ```
+
+There is no `ICommand`/`ICommand<TResponse>`/`IQuery<TResponse>`/`ICommandHandler`/`IQueryHandler` — the real
+contracts nest under `Fluents.Requests`, `Fluents.Queries` and `Fluents.EventsConsumers`, built on plain
+SlimMessageBus `IRequest<TResponse>` / `IRequestHandler<,>` / `IConsumer<TEvent>`. Full walkthrough, including
+auto-save behavior and paged queries: [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
 
 #### Result Pattern
 
@@ -852,47 +799,10 @@ public static class ServiceBusExtensions
 
 ## ⚙️ Configuration Options
 
-### DKNet Configuration
-
-```csharp
-namespace DKNet.Configuration;
-
-/// <summary>
-/// Configuration options for DKNet Framework.
-/// </summary>
-public class DKNetOptions
-{
-    /// <summary>
-    /// Gets or sets whether audit fields are automatically populated.
-    /// </summary>
-    public bool EnableAuditFields { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets whether soft delete is enabled.
-    /// </summary>
-    public bool EnableSoftDelete { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets the default timezone for date operations.
-    /// </summary>
-    public string DefaultTimeZone { get; set; } = "UTC";
-
-    /// <summary>
-    /// Gets or sets the maximum page size for paged queries.
-    /// </summary>
-    public int MaxPageSize { get; set; } = 1000;
-
-    /// <summary>
-    /// Gets or sets whether detailed error information is included in responses.
-    /// </summary>
-    public bool EnableDetailedErrors { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets whether sensitive data logging is enabled.
-    /// </summary>
-    public bool EnableSensitiveDataLogging { get; set; } = false;
-}
-```
+There is no `DKNetOptions` and no aggregator to configure it through — DKNet has no single "options" object.
+Each package that needs configuration exposes its own strongly-typed options type, bound from your own config
+section via that package's own `Add*` method or `services.Configure<T>(...)` call (e.g. `AzureStorageOptions`,
+`LocalDirectoryOptions` below).
 
 ### Service Registration Extensions
 

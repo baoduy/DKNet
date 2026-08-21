@@ -216,65 +216,55 @@ public class ProductsController : ControllerBase
 ### Event Definition
 
 ```csharp
-public record ProductCreatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductCreatedEvent(Guid ProductId, string ProductName) : EventItem;
 
-public record ProductUpdatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductUpdatedEvent(Guid ProductId, string ProductName) : EventItem;
 
-public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : DomainEvent;
+public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : EventItem;
 ```
+
+Raised from the aggregate via `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched to every
+registered `IEventPublisher` by `DKNet.EfCore.Events` after a successful `SaveChangesAsync`.
+`AddSlimBusEventPublisher<AppDbContext>()` forwards each one onto SlimMessageBus for the consumers below to
+pick up — see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
 
 ### Event Handlers
 
 ```csharp
-public class ProductCreatedHandler : IDomainEventHandler<ProductCreatedEvent>
+public class ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
+    : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    private readonly ILogger<ProductCreatedHandler> _logger;
-    private readonly IEmailService _emailService;
-
-    public ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
+    public async Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken)
     {
-        _logger = logger;
-        _emailService = emailService;
-    }
-
-    public async Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Product created: {ProductId} - {ProductName}", 
-            domainEvent.ProductId, domainEvent.ProductName);
+        logger.LogInformation("Product created: {ProductId} - {ProductName}",
+            message.ProductId, message.ProductName);
 
         // Send notification email
-        await _emailService.SendProductCreatedNotificationAsync(
-            domainEvent.ProductId, domainEvent.ProductName, cancellationToken);
+        await emailService.SendProductCreatedNotificationAsync(
+            message.ProductId, message.ProductName, cancellationToken);
     }
 }
 
-public class ProductEventLogger : 
-    IDomainEventHandler<ProductCreatedEvent>,
-    IDomainEventHandler<ProductUpdatedEvent>,
-    IDomainEventHandler<ProductDeactivatedEvent>
+public class ProductEventLogger(ILogger<ProductEventLogger> logger) :
+    Fluents.EventsConsumers.IHandler<ProductCreatedEvent>,
+    Fluents.EventsConsumers.IHandler<ProductUpdatedEvent>,
+    Fluents.EventsConsumers.IHandler<ProductDeactivatedEvent>
 {
-    private readonly ILogger<ProductEventLogger> _logger;
-
-    public ProductEventLogger(ILogger<ProductEventLogger> logger)
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken)
     {
-        _logger = logger;
-    }
-
-    public Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Product created: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product created: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 
-    public Task Handle(ProductUpdatedEvent domainEvent, CancellationToken cancellationToken)
+    public Task OnHandle(ProductUpdatedEvent message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Product updated: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product updated: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 
-    public Task Handle(ProductDeactivatedEvent domainEvent, CancellationToken cancellationToken)
+    public Task OnHandle(ProductDeactivatedEvent message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Product deactivated: {ProductId}", domainEvent.ProductId);
+        logger.LogInformation("Product deactivated: {ProductId}", message.ProductId);
         return Task.CompletedTask;
     }
 }

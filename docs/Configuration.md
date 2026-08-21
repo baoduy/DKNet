@@ -19,27 +19,12 @@ This guide covers configuration and setup options for all DKNet Framework compon
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // DKNet ships no single "core" aggregator — each package (EF Core, SlimBus, Blob Storage, etc.)
-    // is registered independently via its own extension method, shown in the sections below.
+    // DKNet ships no single "core" aggregator, and no single DKNetOptions object — each package
+    // (EF Core, SlimBus, Blob Storage, etc.) is registered independently via its own extension method
+    // and, where it needs configuration, its own strongly-typed options bound from your own config section
+    // (see Blob Storage Configuration below for an example).
 
-    // Add logging
     services.AddLogging();
-
-    // Add configuration
-    services.Configure<DKNetOptions>(Configuration.GetSection("DKNet"));
-}
-```
-
-### Configuration Options
-
-```json
-{
-  "DKNet": {
-    "EnableAuditFields": true,
-    "DefaultTimeZone": "UTC",
-    "EnableSoftDelete": true,
-    "MaxPageSize": 1000
-  }
 }
 ```
 
@@ -47,28 +32,30 @@ public void ConfigureServices(IServiceCollection services)
 
 ### Database Context Configuration
 
+Entity configuration discovery, hooks, and domain events are wired at DI-registration time via
+`DbContextOptionsBuilder`/`IServiceCollection` extensions — not by overriding `OnModelCreating`/`OnConfiguring`
+on the context itself:
+
 ```csharp
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options);
+
+public void ConfigureServices(IServiceCollection services)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    // DKNet.EfCore.Hooks — registers the DbContext and wires the hook interceptor that runs registered hooks
+    // (including the event-dispatch hook below) around SaveChanges.
+    services.AddDbContextWithHook<AppDbContext>(options =>
+        options.UseSqlServer(connectionString)
+               // DKNet.EfCore.Extensions — auto-applies IEntityTypeConfiguration<T> found in this assembly
+               .UseAutoConfigModel<AppDbContext>());
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // Apply DKNet configurations
-        modelBuilder.ApplyDKNetConfigurations();
-        
-        // Apply entity configurations
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // Enable DKNet hooks and events
-        optionsBuilder.EnableDKNetHooks();
-        optionsBuilder.EnableDKNetEvents();
-    }
+    // DKNet.EfCore.Events — dispatches events queued via entity.AddEvent(...) to every registered
+    // IEventPublisher after a successful SaveChangesAsync.
+    services.AddEventPublisher<AppDbContext, MyEventPublisher>();
 }
 ```
+
+See [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md), [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md)
+and [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) for the full API.
 
 ### Repository Registration
 
@@ -130,17 +117,12 @@ public void ConfigureServices(IServiceCollection services)
 }
 ```
 
-### Command/Query Configuration
+### Command/Query Handlers
 
-```csharp
-// Configure CQRS pipeline
-services.AddScoped<ICommandHandler<CreateProductCommand>, CreateProductHandler>();
-services.AddScoped<IQueryHandler<GetProductQuery>, GetProductHandler>();
-
-// Add validation
-services.AddFluentValidation(fv => 
-    fv.RegisterValidatorsFromAssemblyContaining<CreateProductValidator>());
-```
+No manual per-handler DI registration — `Fluents.Requests.IHandler<>` / `Fluents.Queries.IHandler<>`
+implementations are discovered by SlimMessageBus's own `AddServicesFromAssembly(...)` call shown above.
+Request validation is bring-your-own; DKNet does not ship a validation pipeline. Handler shapes and a full
+write/read/paged-query walkthrough: [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
 
 ## 🗃️ Blob Storage Configuration
 
@@ -338,25 +320,15 @@ public class ProductConfiguration : DefaultEntityTypeConfiguration<Product>
 ### Custom Domain Events
 
 ```csharp
-public class ProductCreatedEvent : DomainEvent
-{
-    public string ProductId { get; }
-    public string ProductName { get; }
-    
-    public ProductCreatedEvent(string productId, string productName)
-    {
-        ProductId = productId;
-        ProductName = productName;
-    }
-}
+public record ProductCreatedEvent(string ProductId, string ProductName) : EventItem;
 
-public class ProductCreatedHandler : IDomainEventHandler<ProductCreatedEvent>
+// Raised from the aggregate: product.AddEvent(new ProductCreatedEvent(product.Id, product.Name));
+
+// Consumed on the bus once AddSlimBusEventPublisher<AppDbContext>() forwards it (see above):
+public class ProductCreatedHandler : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    public async Task Handle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        // Handle the event
-        await Task.CompletedTask;
-    }
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken) =>
+        Task.CompletedTask;
 }
 ```
 
