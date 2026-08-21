@@ -1,6 +1,6 @@
+using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace DKNet.Svc.Encryption;
 
@@ -16,7 +16,7 @@ namespace DKNet.Svc.Encryption;
 ///     - Validate user supplied Base64 with <see cref="IsBase64String" /> before decoding to avoid exceptions.
 /// </remarks>
 [SuppressMessage("Design", "CA1055:URI-like return values should not be strings")]
-public static class Base65StringExtensions
+public static class Base64StringExtensions
 {
     #region Methods
 
@@ -25,10 +25,7 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="encryptedText">The Base64-encoded string.</param>
     /// <returns>The decrypted plain text string.</returns>
-    /// <summary>
-    ///     FromBase64String operation.
-    /// </summary>
-    public static string FromBase64String(this string encryptedText)
+    public static string FromBase64String(string encryptedText)
     {
         if (string.IsNullOrWhiteSpace(encryptedText))
         {
@@ -52,14 +49,15 @@ public static class Base65StringExtensions
     ///     This method tolerates missing padding (standard for Base64URL). It does <b>not</b> accept the standard Base64
     ///     alphabet characters '+' or '/' unless they are properly transformed into '-' and '_' respectively.
     /// </remarks>
-    public static string FromBase64UrlString(this string encryptedText)
+    public static string FromBase64UrlString(string encryptedText)
     {
         if (string.IsNullOrWhiteSpace(encryptedText))
         {
             return string.Empty;
         }
 
-        return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(encryptedText));
+        var bytes = Base64Url.DecodeFromChars(encryptedText);
+        return Encoding.UTF8.GetString(bytes);
     }
 
     /// <summary>
@@ -67,66 +65,13 @@ public static class Base65StringExtensions
     /// </summary>
     /// <param name="base64String">The string to check.</param>
     /// <returns>True if the string is a valid Base64 encoded string; otherwise, false.</returns>
-    /// <summary>
-    ///     IsBase64String operation.
-    /// </summary>
-    public static bool IsBase64String(this string base64String)
+    public static bool IsBase64String(string base64String)
     {
         if (string.IsNullOrWhiteSpace(base64String))
         {
             return false;
         }
 
-        if (base64String.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)
-            || base64String.Equals(bool.FalseString, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        // Must be multiple of 4
-        if (base64String.Length % 4 != 0)
-        {
-            return false;
-        }
-
-        var paddingCount = 0;
-        var len = base64String.Length;
-
-        // Count padding characters (`=`) only at the end
-        for (var i = len - 1; i >= 0 && base64String[i] == '='; i--)
-        {
-            paddingCount++;
-        }
-
-        switch (paddingCount)
-        {
-            case > 2:
-                return false;
-
-            // If there is padding, it must only be at the end (i.e. no '=' in the “middle”)
-            case > 0:
-            {
-                // All positions before len - paddingCount must not be '='
-                for (var i = 0; i < len - paddingCount; i++)
-                {
-                    if (base64String[i] == '=')
-                    {
-                        return false;
-                    }
-                }
-
-                break;
-            }
-        }
-
-        // Character-level validation (letters, digits, +, /, =)
-        if (base64String.Select(c => char.IsLetterOrDigit(c) || c == '+' || c == '/' || c == '=')
-            .Any(valid => !valid))
-        {
-            return false;
-        }
-
-        // Try decode
         Span<byte> buffer = new byte[base64String.Length];
         return Convert.TryFromBase64String(base64String, buffer, out _);
     }
@@ -137,10 +82,7 @@ public static class Base65StringExtensions
     /// <param name="plainText">The plain text to encode.</param>
     /// <returns>The Base64-encoded string.</returns>
     /// <exception cref="ArgumentNullException">Thrown when plainText is null.</exception>
-    /// <summary>
-    ///     ToBase64String operation.
-    /// </summary>
-    public static string ToBase64String(this string plainText) =>
+    public static string ToBase64String(string plainText) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 
     /// <summary>
@@ -155,12 +97,57 @@ public static class Base65StringExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="plainText" /> is null.</exception>
     /// <example>
     ///     <code>
-    /// var token = "test".ToBase64UrlString();        // dGVzdA
-    /// var roundtrip = token.FromBase64UrlString();    // "test"
+    /// var token = Base64StringExtensions.ToBase64UrlString("test");        // dGVzdA
+    /// var roundtrip = Base64StringExtensions.FromBase64UrlString(token);    // "test"
     /// </code>
     /// </example>
+    public static string ToBase64UrlString(string plainText) =>
+        Base64Url.EncodeToString(Encoding.UTF8.GetBytes(plainText));
+
+    #endregion
+}
+
+/// <summary>
+///     Provides extension methods for working with Base64 and Base64URL encoded strings.
+/// </summary>
+/// <remarks>
+///     Obsolete: this type is misspelled. Use <see cref="Base64StringExtensions" /> instead.
+/// </remarks>
+[Obsolete("Use Base64StringExtensions instead (this type name is misspelled).")]
+[SuppressMessage("Design", "CA1055:URI-like return values should not be strings")]
+public static class Base65StringExtensions
+{
+    #region Methods
+
+    /// <summary>
+    ///     FromBase64String operation.
+    /// </summary>
+    public static string FromBase64String(this string encryptedText) =>
+        Base64StringExtensions.FromBase64String(encryptedText);
+
+    /// <summary>
+    ///     FromBase64UrlString operation.
+    /// </summary>
+    public static string FromBase64UrlString(this string encryptedText) =>
+        Base64StringExtensions.FromBase64UrlString(encryptedText);
+
+    /// <summary>
+    ///     IsBase64String operation.
+    /// </summary>
+    public static bool IsBase64String(this string base64String) =>
+        Base64StringExtensions.IsBase64String(base64String);
+
+    /// <summary>
+    ///     ToBase64String operation.
+    /// </summary>
+    public static string ToBase64String(this string plainText) =>
+        Base64StringExtensions.ToBase64String(plainText);
+
+    /// <summary>
+    ///     ToBase64UrlString operation.
+    /// </summary>
     public static string ToBase64UrlString(this string plainText) =>
-        WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(plainText));
+        Base64StringExtensions.ToBase64UrlString(plainText);
 
     #endregion
 }

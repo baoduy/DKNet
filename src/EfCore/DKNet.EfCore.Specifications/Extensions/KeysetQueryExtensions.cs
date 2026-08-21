@@ -4,6 +4,8 @@
 // </copyright>
 
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using MR.EntityFrameworkCore.KeysetPagination;
 
 namespace DKNet.EfCore.Specifications.Extensions;
 
@@ -15,6 +17,13 @@ namespace DKNet.EfCore.Specifications.Extensions;
 ///         Keyset pagination uses a cursor position instead of SQL OFFSET/FETCH, which makes it significantly
 ///         more efficient for large datasets. Instead of scanning all rows up to the offset, the database can
 ///         use an index seek directly to the cursor position.
+///     </para>
+///     <para>
+///         <see cref="AfterKeyset{TEntity,TKey}" /> and <see cref="BeforeKeyset{TEntity,TKey}" /> (and their
+///         two-key overloads) only add a <c>WHERE</c> predicate — the caller owns ordering via its own
+///         <c>OrderBy</c>. <see cref="ToKeysetPageAsync{TEntity}" /> is the arbitrary-arity surface that
+///         delegates to <c>MR.EntityFrameworkCore.KeysetPagination</c> for ordering, filtering, and the
+///         has-previous/has-next existence checks.
 ///     </para>
 ///     <para>
 ///         For a composite keyset with two columns ordered ascending the generated SQL is:
@@ -41,6 +50,17 @@ namespace DKNet.EfCore.Specifications.Extensions;
 ///                 .AfterKeyset(o => o.OrderDate, o => o.Id, lastDate, lastId)
 ///                 .Take(pageSize)
 ///                 .ToListAsync();
+///         </code>
+///     </para>
+///     <para>
+///         <b>Usage example (arbitrary arity, forward/backward, has-previous/has-next):</b>
+///         <code>
+///             // Page merchants by country asc, revenue desc, identifier asc
+///             var page = await context.Merchants.ToKeysetPageAsync(
+///                 b => b.Ascending(m => m.Country).Descending(m => m.Revenue).Ascending(m => m.Id),
+///                 pageSize,
+///                 KeysetPaginationDirection.Forward,
+///                 reference: lastSeenMerchant);
 ///         </code>
 ///     </para>
 /// </remarks>
@@ -158,6 +178,63 @@ public static class KeysetQueryExtensions
 
         var predicate = BuildCompositeKeyPredicate(key1Selector, key2Selector, cursor1, cursor2, greaterThan: false);
         return query.Where(predicate);
+    }
+
+    /// <summary>
+    ///     Pages a keyset over an arbitrary number of columns, each with its own direction (ascending or
+    ///     descending), in either the forward or backward direction, and reports whether a further page
+    ///     exists ahead of and behind the returned rows.
+    /// </summary>
+    /// <remarks>
+    ///     Costs three round trips to the database: one for the page itself, and one each for
+    ///     <c>HasPreviousAsync</c>/<c>HasNextAsync</c>. Those two existence checks come from
+    ///     MR.EntityFrameworkCore.KeysetPagination 1.6.0, which does not accept a
+    ///     <see cref="CancellationToken" /> on either call — only the page query itself observes
+    ///     <paramref name="cancellationToken" />.
+    /// </remarks>
+    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
+    /// <param name="query">The query to page.</param>
+    /// <param name="configureKeyset">
+    ///     Configures the ordered columns that make up the keyset, e.g.
+    ///     <c>b =&gt; b.Ascending(x =&gt; x.Country).Descending(x =&gt; x.Revenue).Ascending(x =&gt; x.Id)</c>.
+    /// </param>
+    /// <param name="pageSize">The maximum number of rows to return.</param>
+    /// <param name="direction">Whether to page forward or backward. Default is forward.</param>
+    /// <param name="reference">
+    ///     The last seen row (or an object whose properties match the configured column names) that the
+    ///     returned page is positioned relative to. Pass <see langword="null" /> to fetch the first (or last,
+    ///     when <paramref name="direction" /> is backward) page.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    ///     A task that returns a <see cref="KeysetPage{TEntity}" /> containing up to <paramref name="pageSize" />
+    ///     rows in declared keyset order, along with whether further pages exist ahead and behind them.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="query" /> or <paramref name="configureKeyset" /> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
+    public static async Task<KeysetPage<TEntity>> ToKeysetPageAsync<TEntity>(
+        this IQueryable<TEntity> query,
+        Action<KeysetPaginationBuilder<TEntity>> configureKeyset,
+        int pageSize,
+        KeysetPaginationDirection direction = KeysetPaginationDirection.Forward,
+        object? reference = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(configureKeyset);
+        if (pageSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
+
+        var keysetContext = query.KeysetPaginate(configureKeyset, direction, reference);
+
+        var items = await keysetContext.Query.Take(pageSize).ToListAsync(cancellationToken);
+        keysetContext.EnsureCorrectOrder(items);
+
+        var hasPrevious = await keysetContext.HasPreviousAsync(items);
+        var hasNext = await keysetContext.HasNextAsync(items);
+
+        return new KeysetPage<TEntity>(items, hasPrevious, hasNext);
     }
 
     /// <summary>

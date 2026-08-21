@@ -18,10 +18,7 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
 
     private const string DefaultChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private const string DefaultNumbers = "1234567890";
-    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{{}}|;:',.<>/?`~";
-
-    private readonly RandomNumberGenerator _cryptoGen = RandomNumberGenerator.Create();
-    private bool _disposed;
+    private const string DefaultSymbols = "!@#$%^&*()-_=+[]{}|;:',.<>/?`~";
 
     #endregion
 
@@ -30,25 +27,10 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     /// <inheritdoc />
     public void Dispose()
     {
-        _cryptoGen.Dispose();
-        _disposed = true;
     }
 
-    private char[] Generate(string validChars, int length)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, nameof(StringCreator));
-
-        var buffer = new byte[length * 8];
-        _cryptoGen.GetBytes(buffer);
-        var result = new char[length];
-        for (var i = 0; i < length; i++)
-        {
-            var rnd = BitConverter.ToUInt64(buffer, i * 8);
-            result[i] = validChars[(int)(rnd % (uint)validChars.Length)];
-        }
-
-        return result;
-    }
+    private static char[] Generate(string validChars, int length) =>
+        RandomNumberGenerator.GetItems<char>(validChars, length);
 
     /// <summary>
     ///     To a character array.

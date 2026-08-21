@@ -23,6 +23,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DKNet.AspCore.Idempotency\DKNet.AspCore.Idempotency.csproj"/>
+        <ProjectReference Include="..\DKNet.AspCore.Idempotency.Relational\DKNet.AspCore.Idempotency.Relational.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

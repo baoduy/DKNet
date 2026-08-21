@@ -66,6 +66,10 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     private readonly List<Func<IQueryable<TEntity>, IQueryable<TEntity>>> _includeBuilders = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
     private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
+    private readonly List<OrderClause<TEntity>> _orderByClauses = [];
+    private int? _skip;
+    private int? _take;
+    private bool _isReadOnly;
 
     #endregion
 
@@ -99,6 +103,26 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         _includeBuilders.AddRange(specification.IncludeBuilders);
         _orderByQueries.AddRange(specification.OrderByQueries);
         _orderByDescendingQueries.AddRange(specification.OrderByDescendingQueries);
+
+        if (specification is Specification<TEntity> source)
+        {
+            // Same-kind copy: declared ordering sequence and window/tracking state carry over as-is.
+            _orderByClauses.AddRange(source._orderByClauses);
+            _skip = source._skip;
+            _take = source._take;
+            _isReadOnly = source._isReadOnly;
+        }
+        else
+        {
+            // Foreign ISpecification: no declared sequence to copy, so synthesize one from its legacy
+            // segregated lists — ascending clauses first, then descending — preserving today's semantics.
+            _orderByClauses.AddRange(
+                specification.OrderByQueries.Select(
+                    q => new OrderClause<TEntity>(q, ListSortDirection.Ascending)));
+            _orderByClauses.AddRange(
+                specification.OrderByDescendingQueries.Select(
+                    q => new OrderClause<TEntity>(q, ListSortDirection.Descending)));
+        }
     }
 
     #endregion
@@ -135,6 +159,27 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     Gets the collection of expressions that describe ascending ordering for query results.
     /// </summary>
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
+
+    /// <summary>
+    ///     Gets the ordering clauses in the sequence they were declared, so mixed-direction ordering can be
+    ///     applied as declared instead of segregated by direction.
+    /// </summary>
+    internal IReadOnlyList<OrderClause<TEntity>> OrderByClauses => _orderByClauses;
+
+    /// <summary>
+    ///     Gets the number of leading results to skip, or <c>null</c> when no skip was declared.
+    /// </summary>
+    internal int? SkipCount => _skip;
+
+    /// <summary>
+    ///     Gets the maximum number of results to return, or <c>null</c> when no take was declared.
+    /// </summary>
+    internal int? TakeCount => _take;
+
+    /// <summary>
+    ///     Gets a value indicating whether this specification declared its query as read-only (non-tracking).
+    /// </summary>
+    internal bool IsReadOnly => _isReadOnly;
 
     #endregion
 
@@ -190,6 +235,7 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected void AddOrderBy(Expression<Func<TEntity, object>> query)
     {
         _orderByQueries.Add(query);
+        _orderByClauses.Add(new OrderClause<TEntity>(query, ListSortDirection.Ascending));
     }
 
     /// <summary>
@@ -199,6 +245,17 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected void AddOrderByDescending(Expression<Func<TEntity, object>> query)
     {
         _orderByDescendingQueries.Add(query);
+        _orderByClauses.Add(new OrderClause<TEntity>(query, ListSortDirection.Descending));
+    }
+
+    /// <summary>
+    ///     Instructs the specification to run its query as read-only, suppressing EF Core change tracking
+    ///     (<c>AsNoTracking</c>). This only affects tracking behavior; filtering, ordering, and includes are
+    ///     unaffected.
+    /// </summary>
+    protected void AsNoTracking()
+    {
+        _isReadOnly = true;
     }
 
     /// <summary>
@@ -217,6 +274,32 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected void IgnoreQueryFilters()
     {
         IsIgnoreQueryFilters = true;
+    }
+
+    /// <summary>
+    ///     Declares the number of leading results this specification's query should skip.
+    /// </summary>
+    /// <param name="count">The number of results to skip; must be greater than zero.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="count" /> is less than or equal to zero.</exception>
+    protected void Skip(int count)
+    {
+        if (count <= 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "count must be greater than zero.");
+
+        _skip = count;
+    }
+
+    /// <summary>
+    ///     Declares the maximum number of results this specification's query should return.
+    /// </summary>
+    /// <param name="count">The maximum number of results to return; must be greater than zero.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="count" /> is less than or equal to zero.</exception>
+    protected void Take(int count)
+    {
+        if (count <= 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "count must be greater than zero.");
+
+        _take = count;
     }
 
     /// <summary>

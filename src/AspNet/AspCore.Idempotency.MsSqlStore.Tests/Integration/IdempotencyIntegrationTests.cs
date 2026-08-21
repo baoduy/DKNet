@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http.Json;
 using AspCore.Idempotency.ApiTests;
 using AspCore.Idempotency.MsSqlStore.Tests.Fixtures;
+using DKNet.AspCore.Idempotency;
 
 namespace AspCore.Idempotency.MsSqlStore.Tests.Integration;
 
@@ -108,7 +109,7 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
 
         // Verify sanitized key in database - the store sanitizes: removes non-alphanumeric (except hyphens), uppercases
         await using var dbContext = fixture.GetDbContext();
-        await dbContext.Database.EnsureCreatedAsync();
+        await dbContext.Database.MigrateAsync();
 
         var storedKey = await dbContext.IdempotencyKeys
             .FirstOrDefaultAsync(k =>
@@ -273,6 +274,170 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
             .CountAsync(k => k.IdempotentKey == idempotencyKey &&
                              k.Method == "POST" && k.Endpoint == "/API/ITEMS");
         count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest()
+    {
+        // Arrange - insert an already-expired entry directly, bypassing the HTTP pipeline
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Key Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            // The store only creates the IdempotencyKeys table lazily, on its own first call - a test
+            // that seeds directly (bypassing the HTTP pipeline) can't rely on some earlier test in the
+            // class having already triggered that, so ensure the schema exists here too.
+            await seedDbContext.Database.MigrateAsync();
+
+            var expiredEntity = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/API/ITEMS",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 201,
+                    Body = "{}",
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddHours(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddHours(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredEntity);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - a request with the same key should be processed as new, not served the expired cache entry
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+        {
+            Headers = { { "X-Idempotency-Key", idempotencyKey } },
+            Content = JsonContent.Create(request)
+        };
+        var response = await fixture.HttpClient!.SendAsync(httpRequest);
+
+        // Assert - a served-from-cache response would carry the seeded entry's empty "{}" body and no name;
+        // getting the real handler's output back proves the expired key was treated as unprocessed and replayed.
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+        item!.Name.ShouldBe("Expired Key Item");
+        item.Id.ShouldNotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task CreateItem_WithExpiredInFlightReservation_ProcessesAsNewRequest()
+    {
+        // Arrange - seed an already-expired StatusCode=102 reservation placeholder directly, simulating
+        // a prior request whose handler never completed (crashed, timed out) within the reservation window.
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Reservation Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
+            // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
+            await seedDbContext.Database.MigrateAsync();
+
+            var expiredReservation = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/API/ITEMS",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 102,
+                    Body = null,
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredReservation);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - a request with the same key must not be permanently blocked by the stale reservation
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+        {
+            Headers = { { "X-Idempotency-Key", idempotencyKey } },
+            Content = JsonContent.Create(request)
+        };
+        var response = await fixture.HttpClient!.SendAsync(httpRequest);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+        item!.Name.ShouldBe("Expired Reservation Item");
+        item.Id.ShouldNotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task CreateItem_ConcurrentRequestsAgainstExpiredReservation_OnlyOneProcessed()
+    {
+        // Arrange - seed an already-expired StatusCode=102 reservation so every concurrent request's
+        // initial unexpired-row query misses it, and every request's own reservation INSERT collides
+        // with this same stale row (unique index doesn't care that it's expired). Before DRK-583, the
+        // MsSql store returned (false, null) on this collision WITHOUT reserving, so every one of these
+        // concurrent requests re-read the same stale row and ran the handler - this test pins the fix
+        // (the shared store now reclaims atomically, single-winner, matching the Npgsql store's semantics).
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var request = new CreateItemRequest { Name = "Expired Reservation Race Item" };
+
+        await using (var seedDbContext = fixture.GetDbContext())
+        {
+            // See CreateItem_WithExpiredIdempotencyKey_ProcessesAsNewRequest: the store only creates
+            // the IdempotencyKeys table lazily, so a seeding test can't rely on execution order.
+            await seedDbContext.Database.MigrateAsync();
+
+            var expiredReservation = new IdempotencyKeyEntity(
+                new IdempotentKeyInfo
+                {
+                    IdempotentKey = idempotencyKey,
+                    Endpoint = "/API/ITEMS",
+                    Method = "POST"
+                },
+                new CachedResponse
+                {
+                    StatusCode = 102,
+                    Body = null,
+                    ContentType = "application/json",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1)
+                });
+
+            seedDbContext.IdempotencyKeys.Add(expiredReservation);
+            await seedDbContext.SaveChangesAsync();
+        }
+
+        // Act - fire 5 concurrent requests against the same key, all racing the stale expired row
+        var tasks = Enumerable.Range(0, 5).Select(_ =>
+        {
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/items")
+            {
+                Headers = { { "X-Idempotency-Key", idempotencyKey } },
+                Content = JsonContent.Create(request)
+            };
+            return fixture.HttpClient!.SendAsync(httpRequest);
+        }).ToArray();
+
+        var responses = await Task.WhenAll(tasks);
+
+        // Assert - only one distinct handler execution must be observable, same as the fresh-key case
+        var createdIds = new List<Guid>();
+        foreach (var response in responses)
+        {
+            if (response.StatusCode != HttpStatusCode.Created) continue;
+            var item = await response.Content.ReadFromJsonAsync<CreateItemResponse>();
+            createdIds.Add(item!.Id);
+        }
+
+        createdIds.ShouldNotBeEmpty("At least one request should have succeeded");
+        createdIds.Distinct().Count().ShouldBe(1,
+            "The handler must have executed exactly once, even when racing an already-expired reservation row");
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

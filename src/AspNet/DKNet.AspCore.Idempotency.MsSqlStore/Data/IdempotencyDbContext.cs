@@ -8,31 +8,10 @@ using Microsoft.EntityFrameworkCore;
 namespace DKNet.AspCore.Idempotency.MsSqlStore.Data;
 
 /// <summary>
-///     Entity Framework Core DbContext for idempotency key storage in MS SQL Server.
-///     Uses EF Core 10 primary constructor pattern for cleaner, more concise code.
+///     SQL Server idempotency key storage context. All entity mapping is shared with every other
+///     relational provider via <see cref="DKNet.AspCore.Idempotency.Relational.Data.IdempotencyDbContext" />;
+///     this type exists so SQL Server gets its own closed <see cref="DbContextOptions{TContext}" /> and
+///     migrations assembly. Uses EF Core 10 primary constructor pattern for cleaner, more concise code.
 /// </summary>
-internal sealed class IdempotencyDbContext(DbContextOptions<IdempotencyDbContext> options) : DbContext(options)
-{
-    #region Properties
-
-    /// <summary>
-    ///     Gets or initializes the DbSet for IdempotencyKeyEntity entities.
-    ///     Uses EF Core 10 'required' keyword to eliminate null suppression.
-    /// </summary>
-    public required DbSet<IdempotencyKeyEntity> IdempotencyKeys { get; init; }
-
-    #endregion
-
-    #region Methods
-
-    /// <inheritdoc />
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        // EF Core 10 auto-discovery of IEntityTypeConfiguration implementations
-        // This will find and apply IdempotencyKeyConfiguration automatically
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyDbContext).Assembly);
-    }
-
-    #endregion
-}
+internal sealed class IdempotencyDbContext(DbContextOptions<IdempotencyDbContext> options)
+    : DKNet.AspCore.Idempotency.Relational.Data.IdempotencyDbContext(options);

@@ -4,7 +4,6 @@
 // File: GuidV7ValueGenerator.cs
 // Description: Generates GUIDv7-style identifiers (time-ordered) suitable for EF Core value generation.
 
-using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 
@@ -34,36 +33,10 @@ public sealed class GuidV7ValueGenerator : ValueGenerator<Guid>
     /// </summary>
     /// <param name="entry">The EF Core <see cref="EntityEntry" /> requesting a value. Can be <c>null</c> in some scenarios.</param>
     /// <returns>
-    ///     A new <see cref="Guid" /> containing a 48-bit Unix epoch milliseconds prefix and 80 bits of randomness,
+    ///     A new <see cref="Guid" /> containing a 48-bit Unix epoch milliseconds prefix and 74 bits of randomness,
     ///     with version and variant bits set for GUIDv7/RFC4122 compatibility.
     /// </returns>
-    public override Guid Next(EntityEntry entry)
-    {
-        // 16 bytes total: 6 bytes timestamp (ms since Unix epoch, big-endian), 10 bytes random
-        Span<byte> bytes = stackalloc byte[16];
-
-        // 48-bit timestamp (milliseconds)
-        var unixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-        // Write big-endian timestamp into bytes[0..6)
-        bytes[0] = (byte)(unixMs >> 40);
-        bytes[1] = (byte)(unixMs >> 32);
-        bytes[2] = (byte)(unixMs >> 24);
-        bytes[3] = (byte)(unixMs >> 16);
-        bytes[4] = (byte)(unixMs >> 8);
-        bytes[5] = (byte)unixMs;
-
-        // Fill remaining 10 bytes with cryptographic randomness
-        RandomNumberGenerator.Fill(bytes.Slice(6, 10));
-
-        // Set version to 7 (top 4 bits of bytes[6])
-        bytes[6] = (byte)((bytes[6] & 0x0F) | (7 << 4));
-
-        // Set the RFC 4122 variant (10xxxxxx) in the top two bits of bytes[8]
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
-
-        return new Guid(bytes);
-    }
+    public override Guid Next(EntityEntry entry) => Guid.CreateVersion7();
 
     #endregion
 }

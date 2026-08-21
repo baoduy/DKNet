@@ -3,6 +3,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using DKNet.AspCore.Idempotency;
+
 namespace AspCore.Idempotency.MsSqlStore.Tests.Unit;
 
 /// <summary>
@@ -86,6 +88,33 @@ public sealed class IdempotencyKeyEntityTests
         // Assert
         sanitized.ShouldNotBeNullOrEmpty();
         sanitized.Length.ShouldBeLessThanOrEqualTo(128);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void Constructor_NullOrEmptyIdempotentKey_ThrowsArgumentException(string? idempotentKey)
+    {
+        // Arrange
+        var info = new IdempotentKeyInfo
+        {
+            IdempotentKey = idempotentKey!, Endpoint = "/api/orders", Method = "POST"
+        };
+        var response = new CachedResponse
+        {
+            StatusCode = 200,
+            Body = null,
+            ContentType = "application/json",
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = null
+        };
+
+        // Act
+        var act = () => new IdempotencyKeyEntity(info, response);
+
+        // Assert - the trust-boundary guard rejects a caller that bypasses the endpoint filter's own
+        // "X-Idempotency-Key header is required" validation and constructs the entity directly.
+        Should.Throw<ArgumentException>(act);
     }
 
     #endregion
