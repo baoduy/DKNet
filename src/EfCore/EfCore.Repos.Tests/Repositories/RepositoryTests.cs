@@ -3,7 +3,8 @@ using Xunit.Abstractions;
 
 namespace EfCore.Repos.Tests.Repositories;
 
-public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output) : IClassFixture<RepositoryFixture>
+public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output)
+    : IClassFixture<RepositoryFixture>, IAsyncLifetime
 {
     #region Methods
 
@@ -160,6 +161,11 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         Assert.Equal(EntityState.Deleted, entry.State);
     }
 
+    // Shared fixture keeps one DbContext/connection for every [Fact] in this class; xUnit picks
+    // execution order from the fully-qualified test name hash, so reset before each test to make
+    // them order-independent instead of relying on incidental ordering.
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task FindAsyncDetachesEntityFromContext()
     {
@@ -274,6 +280,15 @@ public class RepositoryTests(RepositoryFixture fixture, ITestOutputHelper output
         // Assert
         Assert.NotNull(query);
         Assert.IsAssignableFrom<IQueryable<User>>(query);
+    }
+
+    public Task InitializeAsync()
+    {
+        if (fixture.DbContext!.Database.CurrentTransaction != null)
+            fixture.DbContext.Database.CurrentTransaction.Rollback();
+
+        fixture.DbContext.ChangeTracker.Clear();
+        return Task.CompletedTask;
     }
 
     [Fact]

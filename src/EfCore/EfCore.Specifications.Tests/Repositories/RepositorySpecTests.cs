@@ -7,7 +7,7 @@ namespace EfCore.Specifications.Tests.Repositories;
 /// <summary>
 ///     Comprehensive tests for the RepositorySpec implementation
 /// </summary>
-public class RepositorySpecTests : IClassFixture<TestDbFixture>
+public class RepositorySpecTests : IClassFixture<TestDbFixture>, IAsyncLifetime
 {
     #region Fields
 
@@ -170,6 +170,11 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
         count.ShouldBe(0);
     }
 
+    // Shared fixture keeps one DbContext for every [Fact] in this class; xUnit picks execution
+    // order from the fully-qualified test name hash, so reset before each test to make them
+    // order-independent instead of relying on incidental ordering.
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Entry_ModifyState_ShouldChangeEntityState()
     {
@@ -203,6 +208,14 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>
         entry.ShouldNotBeNull();
         entry.Entity.ShouldBe(product);
         entry.State.ShouldBe(EntityState.Unchanged);
+    }
+
+    public Task InitializeAsync()
+    {
+        if (_context.Database.CurrentTransaction != null) _context.Database.CurrentTransaction.Rollback();
+
+        _context.ChangeTracker.Clear();
+        return Task.CompletedTask;
     }
 
     [Fact]
