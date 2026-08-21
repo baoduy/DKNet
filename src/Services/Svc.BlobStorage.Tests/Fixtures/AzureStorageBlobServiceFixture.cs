@@ -16,7 +16,6 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
     {
         _azureContainer = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.28.0")
             .WithCommand("--skipApiVersionCheck")
-            .WithPortBinding(10000)
             .WithAutoRemove(true)
             .Build();
 
@@ -26,7 +25,7 @@ public sealed class AzureStorageBlobServiceFixture : IDisposable
             .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "BlobService:AzureStorage:ConnectionString", "UseDevelopmentStorage=true" },
+                    { "BlobService:AzureStorage:ConnectionString", _azureContainer.GetConnectionString() },
                     { "BlobService:AzureStorage:ContainerName", "test" }
                 })
             .Build();
