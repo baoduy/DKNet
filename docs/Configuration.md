@@ -180,9 +180,9 @@ public void ConfigureServices(IServiceCollection services)
 ### Entity Configuration for Data Authorization
 
 ```csharp
-public class Product : AggregateRoot, ITenantEntity
+public class Product : AuditedEntity, IOwnedBy
 {
-    public string TenantId { get; set; }
+    public string OwnedBy { get; private set; } = string.Empty;
     public string Name { get; set; }
     // ... other properties
 }

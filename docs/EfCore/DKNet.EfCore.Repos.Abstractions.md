@@ -213,7 +213,7 @@ mode, transaction scope, etc. — is a decision made entirely by the concrete im
   replaces `IRepository<TEntity>` end-to-end (see the call-site mapping table in the migration guide),
   registered via `services.AddSpecRepo<TDbContext>()` instead of `AddGenericRepositories<TDbContext>()` /
   `AddRepoFactory<TDbContext>()`.
-- **Entities** consumed through these interfaces are the `AggregateRoot`/`Entity` types defined in
+- **Entities** consumed through these interfaces are the `Entity`/`AuditedEntity` types defined in
   `DKNet.EfCore.Abstractions`; persistence of domain events raised on those aggregates during
   `SaveChangesAsync` is handled separately by `DKNet.EfCore.Events` / SaveChanges hooks — this package
   has no involvement in event dispatch itself.
