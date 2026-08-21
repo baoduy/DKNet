@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <LangVersion>default</LangVersion>
         <!-- Disable code analysis for test entities -->
         <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
         <EnableNETAnalyzers>false</EnableNETAnalyzers>
@@ -19,17 +18,9 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-        <!-- Force fixed SQLitePCLRaw (EF Sqlite pulls vulnerable 2.1.11, GHSA-2m69-gcr7-jv3q) -->
-        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-        <!-- Force fixed SSH.NET (Testcontainers pulls vulnerable 2025.1.0, GHSA-q939-rpr3-3284) -->
-        <PackageReference Include="SSH.NET" />
-        <PackageReference Include="Testcontainers.PostgreSql" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" />
-        <PackageReference Include="Bogus" />
+        <PackageReference Include="Aspire.Hosting" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="Moq" />
         <PackageReference Include="xunit" />
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -39,9 +30,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj" />
-        <ProjectReference Include="..\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj" />
-        <ProjectReference Include="..\..\SlimBus\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj" />
+        <Using Include="Xunit" />
     </ItemGroup>
-</Project>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Aspire.Hosting.ServiceBus\Aspire.Hosting.ServiceBus.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -7,7 +7,7 @@ namespace EfCore.Specifications.Tests.TestEntities;
 
 /// <summary>
 ///     A minimal entity used only to exercise three-key keyset pagination
-///     (country ascending, revenue descending, identifier ascending) against real SQL Server.
+///     (country ascending, revenue descending, identifier ascending) against real PostgreSQL.
 /// </summary>
 public class Merchant
 {
@@ -19,7 +19,7 @@ public class Merchant
 
 /// <summary>
 ///     A dedicated, minimal <see cref="DbContext" /> for the three-key keyset pagination integration
-///     scenario, kept separate from <see cref="TestDbContext" /> so it can target real SQL Server via
+///     scenario, kept separate from <see cref="TestDbContext" /> so it can target real PostgreSQL via
 ///     TestContainers without pulling in the rest of the specifications test model.
 /// </summary>
 public class MerchantDbContext(DbContextOptions<MerchantDbContext> options) : DbContext(options)
@@ -33,8 +33,8 @@ public class MerchantDbContext(DbContextOptions<MerchantDbContext> options) : Db
         modelBuilder.Entity<Merchant>(entity =>
         {
             entity.HasKey(e => e.Id);
-            // Seed data assigns explicit Ids; SQL Server rejects those against an int PK's default
-            // IDENTITY column ("Cannot insert explicit value for identity column").
+            // Seed data assigns explicit Ids; without this, PostgreSQL would substitute its own
+            // generated key values (e.g. via an identity/serial column) instead of the seeded ones.
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Revenue).HasPrecision(18, 2);
         });
