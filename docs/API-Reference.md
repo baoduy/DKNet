@@ -896,49 +896,63 @@ public class DKNetOptions
 
 ### Service Registration Extensions
 
+DKNet has no single aggregator extension — each package registers itself independently via its own
+`IServiceCollection` extension method:
+
 ```csharp
-namespace Microsoft.Extensions.DependencyInjection;
+namespace DKNet.EfCore.Specifications;
 
-public static class ServiceCollectionExtensions
+public static class SpecSetup
 {
-    /// <summary>
-    /// Adds DKNet core services to the service collection.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configuration">The configuration action.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddDKNet(
-        this IServiceCollection services,
-        Action<DKNetOptions>? configuration = null);
+    // Registers the specification repository (IRepositorySpec) for TDbContext.
+    public static IServiceCollection AddSpecRepo<TDbContext>(this IServiceCollection services)
+        where TDbContext : DbContext;
+}
 
-    /// <summary>
-    /// Adds DKNet repositories for the specified DbContext.
-    /// </summary>
-    /// <typeparam name="TContext">The DbContext type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddDKNetRepositories<TContext>(
-        this IServiceCollection services)
-        where TContext : DbContext;
+namespace Microsoft.Extensions.DependencyInjection; // DKNet.SlimBus.Extensions
 
-    /// <summary>
-    /// Adds DKNet blob storage services.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configuration">The configuration action.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddDKNetBlobStorage(
-        this IServiceCollection services,
-        Action<BlobStorageBuilder> configuration);
+public static class SlimBusEfCoreSetup
+{
+    // Registers the EF Core auto-save interceptor for request handlers.
+    public static IServiceCollection AddSlimBusEfCoreInterceptor<TDbContext>(this IServiceCollection services)
+        where TDbContext : DbContext;
 
-    /// <summary>
-    /// Adds DKNet SlimBus integration.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddDKNetSlimBus(this IServiceCollection services);
+    // Forwards domain events raised via DKNet.EfCore.Events onto the SlimMessageBus.
+    public static IServiceCollection AddSlimBusEventPublisher<TDbContext>(this IServiceCollection services)
+        where TDbContext : DbContext;
+}
+
+namespace Microsoft.Extensions.DependencyInjection; // DKNet.Svc.BlobStorage.AzureStorage / AwsS3 / Local
+
+public static class AzureStorageSetup
+{
+    public static IServiceCollection AddAzureStorageAdapter(this IServiceCollection services, IConfiguration configuration);
+}
+
+public static class S3Setup
+{
+    public static IServiceCollection AddS3BlobService(this IServiceCollection services, IConfiguration configuration);
+}
+
+public static class LocalDirectorySetup
+{
+    public static IServiceCollection AddLocalDirectoryBlobService(this IServiceCollection services, IConfiguration configuration);
+}
+
+namespace DKNet.EfCore.DataAuthorization;
+
+public static class EfCoreDataAuthSetup
+{
+    // Registers the data-ownership query filter and hook for TDbContext, backed by a custom TProvider.
+    public static IServiceCollection AddDataOwnerProvider<TDbContext, TProvider>(this IServiceCollection services)
+        where TDbContext : DbContext
+        where TProvider : class, IDataOwnerProvider;
 }
 ```
+
+Plain [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) APIs (`services.AddSlimMessageBus(...)`) are used
+for transport/handler wiring alongside `AddSlimBusEfCoreInterceptor` — see
+`src/SlimBus/DKNet.SlimBus.Extensions/README.md`.
 
 ---
 
@@ -946,8 +960,8 @@ public static class ServiceCollectionExtensions
 
 For practical usage examples of all APIs, see:
 - **[Examples & Recipes](Examples/README.md)** - Comprehensive usage examples
-- **[SlimBus Template](../src/Templates/SlimBus.ApiEndpoints/)** - Complete reference implementation
-- **[Unit Tests](../src/Tests/)** - API usage in tests
+- **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** - Complete reference implementation, in the DKNet.Templates repository
+- **Unit Tests** - API usage in the sibling `*.Tests` projects next to each package under `src/`
 
 ---
 

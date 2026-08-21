@@ -19,12 +19,12 @@ This guide covers configuration and setup options for all DKNet Framework compon
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // Add core DKNet services
-    services.AddDKNetCore();
-    
+    // DKNet ships no single "core" aggregator — each package (EF Core, SlimBus, Blob Storage, etc.)
+    // is registered independently via its own extension method, shown in the sections below.
+
     // Add logging
     services.AddLogging();
-    
+
     // Add configuration
     services.Configure<DKNetOptions>(Configuration.GetSection("DKNet"));
 }
@@ -78,8 +78,8 @@ public void ConfigureServices(IServiceCollection services)
     services.AddDbContext<AppDbContext>(options =>
         options.UseSqlServer(connectionString));
 
-    // Register repositories
-    services.AddDKNetRepositories<AppDbContext>();
+    // Register the specification repository (DKNet.EfCore.Specifications)
+    services.AddSpecRepo<AppDbContext>();
     
     // Register specific repositories
     services.AddScoped<IProductRepository, ProductRepository>();
@@ -114,21 +114,19 @@ dotnet ef database update --context AppDbContext
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddSlimBus(builder =>
-    {
-        // Configure message bus
-        builder.WithProviderAzureServiceBus(config =>
-        {
-            config.ConnectionString = Configuration.GetConnectionString("ServiceBus");
-            config.TopicName = "dknet-events";
-        });
-        
-        // Register handlers
-        builder.AddHandlersFromAssembly(typeof(Program).Assembly);
-    });
-    
-    // Add DKNet integration
-    services.AddDKNetSlimBusIntegration();
+    // Auto-save the DbContext after a successful request handler (DKNet.SlimBus.Extensions)
+    services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+
+    // Optionally forward domain events raised via DKNet.EfCore.Events onto the bus
+    services.AddSlimBusEventPublisher<AppDbContext>();
+
+    // Wire up SlimMessageBus itself (transport-agnostic; plain SlimMessageBus API).
+    // DKNet brings no transport provider — plug in SlimMessageBus.Host.Memory, an Azure Service Bus
+    // provider, or any other SlimMessageBus provider package yourself.
+    services.AddSlimMessageBus(mbb => mbb
+        .AddChildBus("Memory", bus => bus
+            .WithProviderMemory()
+            .AutoDeclareFrom(typeof(Program).Assembly)));
 }
 ```
 
@@ -151,12 +149,8 @@ services.AddFluentValidation(fv =>
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddAzureStorage(options =>
-        {
-            options.ConnectionString = Configuration.GetConnectionString("AzureStorage");
-            options.ContainerName = "dknet-files";
-        }));
+    // DKNet.Svc.BlobStorage.AzureStorage — binds AzureStorageOptions from the "BlobService:AzureStorage" section
+    services.AddAzureStorageAdapter(Configuration);
 }
 ```
 
@@ -173,12 +167,8 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddAwsS3(options =>
-        {
-            options.BucketName = "dknet-files";
-            options.Region = "us-east-1";
-        }));
+    // DKNet.Svc.BlobStorage.AwsS3 — binds options from the "BlobService:S3" section
+    services.AddS3BlobService(Configuration);
 }
 ```
 
@@ -187,11 +177,8 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddDKNetBlobStorage(builder =>
-        builder.AddLocalStorage(options =>
-        {
-            options.RootPath = Path.Combine(Environment.ContentRootPath, "uploads");
-        }));
+    // DKNet.Svc.BlobStorage.Local — binds LocalDirectoryOptions from the "BlobStorage:LocalFolder" section
+    services.AddLocalDirectoryBlobService(Configuration);
 }
 ```
 
@@ -202,13 +189,9 @@ public void ConfigureServices(IServiceCollection services)
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // Add data authorization
-    services.AddDKNetDataAuthorization(options =>
-    {
-        options.EnableTenantFiltering = true;
-        options.TenantIdClaim = "tenant_id";
-        options.UserIdClaim = "sub";
-    });
+    // DKNet.EfCore.DataAuthorization — registers the data-ownership query filter and hook for AppDbContext,
+    // backed by your own IDataOwnerProvider implementation (e.g. reading the tenant id from the current user claims)
+    services.AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>();
 }
 ```
 
@@ -303,12 +286,13 @@ ENTRYPOINT ["dotnet", "YourApp.dll"]
 
 ### Health Checks
 
+DKNet does not ship a health-check package. Wire up standard ASP.NET Core health checks in your own app:
+
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
     services.AddHealthChecks()
-        .AddDbContextCheck<AppDbContext>()
-        .AddDKNetHealthChecks();
+        .AddDbContextCheck<AppDbContext>();
 }
 
 public void Configure(IApplicationBuilder app)
@@ -319,14 +303,13 @@ public void Configure(IApplicationBuilder app)
 
 ### Performance Monitoring
 
+DKNet does not ship a performance-counters package; use standard .NET observability tooling such as Application Insights:
+
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
     // Add Application Insights
     services.AddApplicationInsightsTelemetry();
-    
-    // Add DKNet performance counters
-    services.AddDKNetPerformanceCounters();
 }
 ```
 
@@ -389,9 +372,8 @@ public class TestStartup
         // Use in-memory database for testing
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase("TestDb"));
-            
-        // Register test-specific services
-        services.AddDKNetTestServices();
+
+        // Register your own test-specific fakes/mocks here — DKNet has no dedicated test-services package
     }
 }
 ```
@@ -422,7 +404,7 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
 - [Architecture Guide](Architecture.md)
 - [API Reference](API-Reference.md)
 - [Examples](Examples/README.md)
-- [Troubleshooting](Troubleshooting.md)
+- [Troubleshooting](FAQ.md#troubleshooting)
 
 ---
 

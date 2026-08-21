@@ -585,9 +585,8 @@ await largeList.ForEachChunkedAsync(100, async chunk =>
 
 For complete working examples, check out:
 
-- **[SlimBus Template](../src/Templates/SlimBus.ApiEndpoints/README.md)** - Complete API implementation
-- **[Unit Tests](../src/Tests/)** - Comprehensive test examples
-- **[Integration Tests](../src/Templates/SlimBus.ApiEndpoints/SlimBus.App.Tests/)** - End-to-end testing
+- **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** - Complete API implementation and end-to-end tests, in the DKNet.Templates repository
+- **Unit Tests** - Comprehensive test examples in the sibling `*.Tests` projects next to each package under `src/`
 
 ---
 

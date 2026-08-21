@@ -36,7 +36,7 @@ dotnet list package --include-transitive | grep DKNet
 ```
 
 **2. Incremental Migration**
-- Start with new projects using the [SlimBus template](../src/Templates/SlimBus.ApiEndpoints/)
+- Start with new projects using the SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
 - Migrate existing projects component by component
 - Run both old and new implementations in parallel during transition
 
@@ -439,12 +439,15 @@ public static class ConfigurationMigration
 **Issue**: Service registration patterns change
 **Solution**: 
 ```csharp
-// Old
+// Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
 
-// New
+// New: repository + SlimBus (DKNet's MediatR-free CQRS package)
 services.AddScoped<IProductRepository, ProductRepository>();
-services.AddMediatR(typeof(CreateProductHandler));
+services.AddSlimMessageBus(mbb => mbb
+    .AddChildBus("Memory", builder => builder
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ---

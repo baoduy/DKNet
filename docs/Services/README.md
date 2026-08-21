@@ -4,7 +4,7 @@ Services are DKNet's pluggable, provider-agnostic adapters: application code dep
 (`IBlobService`, `IPdfGenerator`, `ITransformerService`, the various encryption/hashing interfaces), and a concrete
 package supplies the implementation. Swapping an implementation — a different blob provider, a different
 encryption algorithm — is a DI change, not a rewrite of business logic. See
-[Onion Architecture](../wiki/onion-architecture.md) for how this keeps infrastructure out of the domain and
+[Onion Architecture](../Architecture.md#onion-architecture) for how this keeps infrastructure out of the domain and
 application layers.
 
 ## Blob storage

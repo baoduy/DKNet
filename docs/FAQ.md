@@ -38,7 +38,7 @@ DKNet Framework follows semantic versioning and maintains high code coverage (99
 - **Documentation**: [Complete Documentation](README.md)
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
-- **Examples**: [SlimBus Template](../src/Templates/SlimBus.ApiEndpoints/)
+- **Examples**: SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
 
 ---
 
@@ -109,8 +109,8 @@ services.AddDbContext<CatalogContext>(options =>
 services.AddDbContext<IdentityContext>(options => 
     options.UseSqlServer(identityConnectionString));
 
-services.AddDKNetRepositories<CatalogContext>();
-services.AddDKNetRepositories<IdentityContext>();
+services.AddSpecRepo<CatalogContext>();
+services.AddSpecRepo<IdentityContext>();
 ```
 
 ### How do I handle multi-tenancy?
@@ -136,10 +136,12 @@ DKNet includes several performance optimizations:
 
 ### Do I need MediatR?
 
-The SlimBus template uses a lightweight message bus, but you can use MediatR:
+No. DKNet's CQRS/messaging package, `DKNet.SlimBus.Extensions`, is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not use or depend on MediatR. Nothing prevents you from using MediatR instead (or alongside it) in your own application, but DKNet does not ship a MediatR integration package — register handlers through SlimBus:
 ```csharp
-services.AddMediatR(typeof(CreateProductHandler));
-services.AddDKNetMediatRIntegration();
+services.AddSlimMessageBus(mbb => mbb
+    .AddChildBus("Memory", builder => builder
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ### How do I handle command validation?
@@ -317,23 +319,23 @@ DKNet is designed for scale:
 This usually indicates missing service registration:
 ```csharp
 // Ensure you've registered all required services
-services.AddDKNetRepositories<AppDbContext>();
-services.AddDKNetSlimBusIntegration();
-services.AddDKNetBlobStorage(builder => /* configuration */);
+services.AddSpecRepo<AppDbContext>();
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+services.AddAzureStorageAdapter(configuration); // or AddS3BlobService / AddLocalDirectoryBlobService
 ```
 
 ### Domain events not firing
 
 Check these common issues:
 1. **SaveChangesAsync called**: Events dispatch during save
-2. **Event handlers registered**: Use `AddDKNetEventHandlers()`
+2. **Event publisher registered**: Use `AddEventPublisher<TDbContext, TImplementation>()` (`DKNet.EfCore.Events`), or `AddSlimBusEventPublisher<TDbContext>()` to forward events onto SlimMessageBus
 3. **Async handlers**: Ensure proper async/await usage
 
 ### Repository queries not working
 
 Common issues:
 1. **DbContext registration**: Ensure context is registered in DI
-2. **Repository registration**: Call `AddDKNetRepositories<TContext>()`
+2. **Repository registration**: Call `AddSpecRepo<TContext>()`
 3. **Specifications**: Check expression syntax for specifications
 
 ### Poor query performance

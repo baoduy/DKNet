@@ -39,12 +39,12 @@ dotnet add package DKNet.Svc.BlobStorage.Local
 
 ### 2. Project Template (Recommended)
 
-For a complete reference implementation, use the SlimBus API template:
+For a complete reference implementation, use the SlimBus.ApiEndpoints template from the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository:
 
 ```bash
-# Clone the template
-git clone https://github.com/baoduy/DKNet.git
-cd DKNet/src/Templates/SlimBus.ApiEndpoints
+# Clone the templates repository
+git clone https://github.com/baoduy/DKNet.Templates.git
+cd DKNet.Templates
 
 # Restore and run
 dotnet restore
@@ -66,7 +66,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddDKNetRepositories<AppDbContext>();
+builder.Services.AddSpecRepo<AppDbContext>();
 
 var app = builder.Build();
 

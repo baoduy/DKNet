@@ -1,191 +1,44 @@
 # Testing & Coverage Strategy
 
-This document outlines the comprehensive testing strategy for the DKNet Framework to achieve and maintain 99% code coverage across all core library projects.
+DKNet's test suite uses **xUnit** with **Shouldly** assertions and **TestContainers.MsSql** for integration tests,
+so persistence is exercised against a real SQL Server rather than an in-memory provider. Every package has a
+sibling `*.Tests` project, and coverage gates are enforced in CI to keep the framework reliable.
 
-## 📊 Coverage Goals
+## Conventions
 
-- **Core Libraries**: 99% line coverage, 95% branch coverage
-- **EfCore Libraries**: 95% line coverage, 90% branch coverage  
-- **Service Libraries**: 90% line coverage, 85% branch coverage
-- **Template Projects**: 85% line coverage, 80% branch coverage
+- **Naming**: `MethodName_Scenario_ExpectedBehavior` (for example `DynamicAnd_WithMultipleConditions_CombinesCorrectly`).
+- **Stack**: xUnit + Shouldly + TestContainers.MsSql; avoid mocking the database.
+- **Isolation**: prefer `IAsyncLifetime` fixtures over shared `IClassFixture` state when isolation matters.
+- **SQL verification**: assert on `query.ToQueryString()` output alongside the materialized rows — a recurring
+  pattern in the [Specifications](./EfCore/DKNet.EfCore.Specifications.md) tests that confirms filtering is
+  translated to SQL, not run in memory.
 
-## 🧪 Testing Framework
+## Why real databases
 
-### Test Frameworks Used
-- **MSTest**: Primary testing framework for most projects
-- **xUnit**: Used in template projects and specific scenarios
-- **Shouldly**: Assertion library for fluent assertions
+Integration tests run against TestContainers.MsSql (Docker required) rather than EF Core InMemory, because the
+in-memory provider masks SQL-specific behavior. This is what validates features such as
+[Specifications](./EfCore/DKNet.EfCore.Specifications.md), its Dynamic Predicate Builder (including the mandatory
+`.AsExpandable()` expansion), and [DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md)'s query-filter
+translation. Never run these tests locally on an ARM device (no `mssql/server` ARM image) — verify via the
+`remote-tests.yml` GitHub Actions workflow instead (see the root `CLAUDE.md`).
 
-### Coverage Tools
-- **coverlet.collector**: Code coverage collection
-- **ReportGenerator**: Coverage report generation
-- **Codecov**: Coverage reporting and tracking
+## Coverage targets
 
-## 🏗️ Project Structure
+| Area | Target |
+|---|---|
+| Core libraries | 99% line |
+| EfCore libraries | 95% line |
+| Service libraries | 90% line |
+| CI gate (overall) | 80% line |
 
-```
-Solution/
-├── Core/
-│   ├── DKNet.Fw.Extensions/           # Core extension methods
-│   └── Fw.Extensions.Tests/           # 99% coverage target
-├── EfCore/
-│   ├── DKNet.EfCore.*/               # EF Core libraries
-│   └── EfCore.*.Tests/               # 95% coverage target
-├── Services/
-│   ├── DKNet.Svc.*/                  # Service libraries
-│   └── Svc.*.Tests/                  # 90% coverage target
-└── Templates/
-    └── */Tests/                      # 85% coverage target
-```
-
-## 📋 Test Categories
-
-### 1. Unit Tests
-- **Scope**: Individual methods and classes
-- **Focus**: Business logic, edge cases, error handling
-- **Coverage**: Line, branch, and method coverage
-
-### 2. Integration Tests
-- **Scope**: Component interactions
-- **Focus**: Database operations, external services
-- **Coverage**: End-to-end workflows
-
-### 3. Architecture Tests
-- **Scope**: Architectural constraints
-- **Focus**: Dependency rules, naming conventions
-- **Tool**: ArchUnitNET
-
-## 🚀 CI/CD Integration
-
-### GitHub Actions Workflows
-
-#### 1. Full Solution Testing (`test-and-coverage.yml`)
-- Runs on all pushes and PRs
-- Tests entire solution
-- Generates comprehensive coverage reports
-- Uploads to Codecov
-- Comments PR with coverage summary
-
-#### 2. Core Libraries Check (`core-coverage-check.yml`)
-- Runs on Core/EfCore changes only
-- Enforces 95% minimum coverage threshold
-- Fails build if coverage drops below threshold
-- Specialized for critical libraries
-
-### Coverage Configuration (`coverage.runsettings`)
-```xml
-<Include>
-    [DKNet*]*
-</Include>
-<Exclude>
-    [*.Tests]*
-    [*Tests]*
-    [*.TestObjects]*
-    [*TestDataLayer]*
-</Exclude>
-```
-
-## 📈 Coverage Reporting
-
-### Report Types Generated
-1. **HTML Reports**: Detailed coverage analysis
-2. **Cobertura XML**: Standard format for CI/CD
-3. **JSON Summary**: Programmatic access to metrics
-
-### Key Metrics Tracked
-- **Line Coverage**: Percentage of code lines executed
-- **Branch Coverage**: Percentage of decision branches taken  
-- **Method Coverage**: Percentage of methods called
-- **Assembly Coverage**: Per-assembly breakdown
-
-## 🔧 Best Practices
-
-### Test Design Principles
-1. **Arrange-Act-Assert**: Clear test structure
-2. **Single Responsibility**: One concept per test
-3. **Descriptive Names**: Test intent is clear
-4. **Edge Case Coverage**: Null values, empty collections, boundaries
-5. **Error Path Testing**: Exception scenarios covered
-
-### Coverage Guidelines
-1. **Focus on Business Logic**: Prioritize critical paths
-2. **Mock External Dependencies**: Isolate unit under test
-3. **Test Both Success and Failure**: Happy path and error scenarios
-4. **Boundary Value Testing**: Min/max values, edge cases
-5. **Null Reference Testing**: Handle null inputs gracefully
-
-### Code Quality Gates
-- All tests must pass before merge
-- Coverage thresholds enforced per project type
-- No reduction in coverage allowed
-- Architectural rules validated
-
-## 📚 Examples
-
-### Core Extensions Testing
-```csharp
-[TestMethod]
-public async Task ToListAsync_WithItems_ReturnsCorrectList()
-{
-    // Arrange
-    var items = new[] { 1, 2, 3, 4, 5 };
-    var asyncEnumerable = CreateAsyncEnumerable(items);
-
-    // Act
-    var result = await asyncEnumerable.ToListAsync();
-
-    // Assert
-    Assert.IsNotNull(result);
-    Assert.AreEqual(5, result.Count);
-    CollectionAssert.AreEqual(items, result.ToArray());
-}
-```
-
-### Property Extensions Testing
-```csharp
-[TestMethod]
-public void GetPropertyValueShouldReturnNullForNullObject()
-{
-    // Arrange
-    var propertyName = "Name";
-
-    // Act
-    var value = ((TestItem3)null).GetPropertyValue(propertyName);
-
-    // Assert
-    Assert.IsNull(value);
-}
-```
-
-## 🎯 Current Status
-
-### Core Libraries Achievement
-- **DKNet.Fw.Extensions**: 93.1% line coverage ✅
-- **AsyncEnumerableExtensions**: 100% coverage ✅
-- **TypeExtensions**: Significantly improved ✅
-- **PropertyExtensions**: Comprehensive coverage ✅
-- **EnumExtensions**: Enhanced with edge cases ✅
-
-### Recent Improvements
-- Added 21 new comprehensive unit tests
-- Improved coverage from 85.2% to 93.1%
-- Enhanced GitHub Actions automation
-- Better coverage reporting and visualization
-
-## 🔄 Continuous Improvement
-
-### Monitoring & Maintenance
-1. **Weekly Coverage Reviews**: Track trends and identify gaps
-2. **Automated Alerts**: Notify on coverage drops
-3. **Regular Refactoring**: Improve test maintainability
-4. **Performance Monitoring**: Ensure test suite efficiency
-
-### Future Enhancements
-- Mutation testing for test quality validation
-- Performance benchmarking integration  
-- Visual coverage trend analysis
-- Automated test generation for edge cases
+The primary CI pipeline (`.github/workflows/build-test-coverage.yml`) restores, builds in Release, runs tests with
+coverage collection, runs SonarCloud analysis, enforces the 80% gate, and comments coverage on PRs. Tests should
+encode *why* behavior matters, exercising the domain rules described in [Architecture](./Architecture.md) and the
+persistence behaviors built on Specifications.
 
 ---
 
-**Note**: This testing strategy ensures the DKNet Framework maintains high quality standards while enabling rapid development and confident deployment of new features.
+## Current status
+
+- **Codecov**: [![codecov](https://codecov.io/github/baoduy/DKNet/graph/badge.svg?token=xtNN7AtB1O)](https://codecov.io/github/baoduy/DKNet)
+- **Coverage visualization**: ![Coverage](https://codecov.io/gh/baoduy/DKNet/graphs/sunburst.svg?token=xtNN7AtB1O)
