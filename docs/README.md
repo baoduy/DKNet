@@ -10,7 +10,7 @@ Welcome to the comprehensive documentation for the DKNet Framework - a powerful 
 - **[Architecture Guide](Architecture.md)** - Understanding DDD and Onion Architecture
 
 ### 📖 Core Documentation
-- **[API Reference](API-Reference.md)** - Complete API documentation
+- **[API Reference](API-Reference.md)** - Index into the per-package API documentation
 - **[Examples & Recipes](Examples/README.md)** - Practical implementation examples
 - **[FAQ](FAQ.md)** - Frequently asked questions and troubleshooting
 
