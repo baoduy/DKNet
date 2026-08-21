@@ -1,547 +1,237 @@
-# DKNet.EfCore.Repos.Abstractions
+## DKNet.EfCore.Repos.Abstractions
 
-**Repository pattern abstractions that define contracts for data access operations, enabling clean separation between domain logic and data persistence concerns while supporting Domain-Driven Design (DDD) and Onion Architecture principles.**
+> **Retired / obsolete — source-only, not published to NuGet.**
+> `DKNet.EfCore.Repos.Abstractions.csproj` sets `<IsPackable>false</IsPackable>`. It is no longer packed
+> or advertised as a NuGet package; it stays in the source tree only so the sibling `DKNet.EfCore.Repos`
+> project (also unpublished) still builds. Every public interface in this package —
+> `IReadRepository<TEntity>`, `IWriteRepository<TEntity>`, `IRepository<TEntity>`, `IRepositoryFactory` —
+> carries this exact `[Obsolete]` message:
+>
+> ```
+> DKNet.EfCore.Repos.Abstractions is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup)
+> instead. See docs/EfCore/Migrating-Repos-To-Specifications.md.
+> ```
+>
+> **New code must use `IRepositorySpec` from [`DKNet.EfCore.Specifications`](./DKNet.EfCore.Specifications.md)
+> instead.** Existing consumers should follow
+> [`docs/EfCore/Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) to move off
+> these interfaces. The rest of this page documents the retired contracts as-is, for readers maintaining
+> code that still references them.
 
-## What is this project?
+### 1. What problem it solved (and when it WAS the answer)
 
-DKNet.EfCore.Repos.Abstractions provides the fundamental contracts and interfaces for implementing the Repository pattern in Entity Framework Core applications. It defines clear separation between read and write operations, supports projection patterns, and enables testable data access layers.
+Before `DKNet.EfCore.Specifications` existed, this package supplied the repository-pattern *contracts* used
+throughout the DKNet framework to keep domain/application code independent of EF Core:
 
-### Key Features
+- **CQRS-style split** — `IReadRepository<TEntity>` for queries/projections, `IWriteRepository<TEntity>`
+  for mutations and transactions, `IRepository<TEntity>` when a consumer genuinely needs both.
+- **Persistence ignorance** — application services depended on these interfaces, not on `DbContext`
+  or `DbSet<TEntity>` directly, so they could be unit-tested with a mock/fake repository.
+- **A factory seam** — `IRepositoryFactory` let code obtain a repository for an arbitrary entity type
+  at runtime without injecting one `IRepository<T>` per entity.
 
-- **IReadRepository<TEntity>**: Read-only operations with IQueryable support
-- **IWriteRepository<TEntity>**: Write operations with transaction management
-- **IRepository<TEntity>**: Combined read/write operations interface
-- **Projection Support**: Efficient querying with projection to DTOs/ViewModels
-- **Transaction Management**: Built-in transaction support for complex operations
-- **Bulk Operations**: Support for high-performance bulk operations (extensible)
-- **Async/Await Support**: Full async support for scalable applications
-- **Generic Design**: Type-safe operations with compile-time validation
+`DKNet.EfCore.Specifications`' `IRepositorySpec` now covers the same read/write/paging surface as
+`IRepository<TEntity>`, but composes directly with `Specification<TEntity>` objects (filter + include +
+order-by in one reusable unit) instead of loose `Expression<Func<TEntity, bool>>` filters, and is not
+generic over the entity — one injected `IRepositorySpec` instance serves every aggregate in the
+`DbContext`. That is a strictly larger feature set, which is why this package is retired rather than
+extended.
 
-## How it contributes to DDD and Onion Architecture
+### 2. Install
 
-### Repository Pattern in Onion Architecture
+Not applicable — this package is **not published to NuGet**. It exists only as project source
+(`src/EfCore/DKNet.EfCore.Repos.Abstractions`), consumed via `ProjectReference` by
+`DKNet.EfCore.Repos` inside this solution. Do not add a `PackageReference` to it; there is no package
+to restore.
 
-The Repository Abstractions implement the Repository pattern as defined in DDD, providing a clean separation between the domain and infrastructure layers:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  No direct dependencies on repository abstractions             │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Uses: IRepository<T> for orchestrating domain operations      │
-│  Benefits: Clear contracts, easy testing, dependency injection │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  📋 Defines: ICustomerRepository, IOrderRepository             │
-│  📝 Extends: IRepository<T> with domain-specific operations    │
-│  🏷️ Benefits: Technology-agnostic, testable, focused on domain │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Data Access, Persistence)                    │
-│                                                                 │
-│  🗃️ Implements: CustomerRepository : ICustomerRepository       │
-│  📊 Implements: OrderRepository : IOrderRepository             │
-│  ⚙️ Uses: EF Core, DbContext, specific database technologies    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Aggregate Boundary Enforcement**: Each repository typically corresponds to an aggregate root
-2. **Domain-Focused Interfaces**: Repository interfaces are defined in terms of domain concepts
-3. **Persistence Ignorance**: Domain layer doesn't know about EF Core, SQL, or database specifics
-4. **Testability**: Easy to mock repositories for unit testing domain logic
-5. **Encapsulation**: Hide complex queries and data access logic from domain services
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Domain defines contracts, infrastructure implements them
-2. **Technology Independence**: Can switch from EF Core to another ORM without changing domain
-3. **Testability**: Mock repositories enable fast, isolated unit tests
-4. **Separation of Concerns**: Clear boundary between domain logic and data access
-5. **Flexibility**: Different implementations for different contexts (testing, production, etc.)
-
-## How to use it
-
-### Installation
+For new work, install the active replacement instead:
 
 ```bash
-dotnet add package DKNet.EfCore.Repos.Abstractions
+dotnet add package DKNet.EfCore.Specifications
 ```
 
-### Basic Usage Examples
+### 3. The interfaces
 
-#### 1. Defining Domain-Specific Repository Interfaces
+All four types below are decorated with `[Obsolete("DKNet.EfCore.Repos.Abstractions is retired. Use
+DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See
+docs/EfCore/Migrating-Repos-To-Specifications.md.")]`. Referencing any of them from non-obsolete code
+produces a compiler warning (which is an error under this repo's `TreatWarningsAsErrors=true`).
+
+#### `IReadRepository<TEntity>`
 
 ```csharp
-using DKNet.EfCore.Repos.Abstractions;
-using DKNet.EfCore.Abstractions.Entities;
-
-// Domain entity
-public class Customer : Entity
+public interface IReadRepository<TEntity> where TEntity : class
 {
-    public string FirstName { get; private set; } = null!;
-    public string LastName { get; private set; } = null!;
-    public string Email { get; private set; } = null!;
-    public CustomerStatus Status { get; private set; }
-    
-    // Domain methods...
+    Task<int> CountAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+    ValueTask<TEntity?> FindAsync(object keyValue, CancellationToken cancellationToken = default);
+    ValueTask<TEntity?> FindAsync(object[] keyValues, CancellationToken cancellationToken = default);
+    Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default);
+    IQueryable<TEntity> Query(Expression<Func<TEntity, bool>> filter);
+    IQueryable<TEntity> Query();
+    IQueryable<TModel> Query<TModel>(Expression<Func<TEntity, bool>> filter) where TModel : class;
 }
-
-// Domain-specific repository interface (defined in Domain layer)
-public interface ICustomerRepository : IRepository<Customer>
-{
-    // Domain-specific query methods
-    Task<Customer?> GetByEmailAsync(string email);
-    Task<IEnumerable<Customer>> GetActiveCustomersAsync();
-    Task<IEnumerable<Customer>> GetCustomersByStatusAsync(CustomerStatus status);
-    Task<bool> EmailExistsAsync(string email, Guid? excludeCustomerId = null);
-    
-    // Projection methods for read models
-    Task<CustomerSummaryDto?> GetCustomerSummaryAsync(Guid customerId);
-    Task<IEnumerable<CustomerListDto>> GetCustomerListAsync(int page, int pageSize);
-}
-
-// DTOs for projections
-public record CustomerSummaryDto(Guid Id, string FullName, string Email, int OrderCount);
-public record CustomerListDto(Guid Id, string FullName, string Email, CustomerStatus Status);
 ```
 
-#### 2. Read Repository Usage
+Note the doc comment on the parameterless `Query()`: tracking behavior is **implementation-defined** —
+a `ReadRepository<TEntity>` typically returns `AsNoTracking()`, while a `Repository<TEntity>` used for
+read-then-update workflows may return a tracked queryable. Callers must not assume one tracking mode
+from the interface alone.
 
 ```csharp
-using DKNet.EfCore.Repos.Abstractions;
-
-public class CustomerQueryService
+#pragma warning disable CS0618 // retired API, kept for illustration only
+public sealed class ProductQueryService(IReadRepository<Product> repo)
 {
-    private readonly IReadRepository<Customer> _customerReadRepository;
-    
-    public CustomerQueryService(IReadRepository<Customer> customerReadRepository)
-    {
-        _customerReadRepository = customerReadRepository;
-    }
-    
-    // Basic querying with IQueryable
-    public async Task<List<Customer>> GetActiveCustomersAsync()
-    {
-        return await _customerReadRepository
-            .Gets()
-            .Where(c => c.Status == CustomerStatus.Active)
-            .OrderBy(c => c.LastName)
-            .ToListAsync();
-    }
-    
-    // Efficient projection queries
-    public async Task<List<CustomerListDto>> GetCustomerListAsync()
-    {
-        return await _customerReadRepository
-            .GetProjection<CustomerListDto>()
-            .Where(c => c.Status == CustomerStatus.Active)
-            .OrderBy(c => c.FullName)
-            .ToListAsync();
-    }
-    
-    // Find by ID
-    public async Task<Customer?> GetCustomerAsync(Guid id)
-    {
-        return await _customerReadRepository.FindAsync(id);
-    }
-    
-    // Find by filter
-    public async Task<Customer?> GetCustomerByEmailAsync(string email)
-    {
-        return await _customerReadRepository.FindAsync(c => c.Email == email);
-    }
+    public Task<int> CountActiveAsync(CancellationToken ct) =>
+        repo.CountAsync(p => p.IsActive, ct);
+
+    public Task<Product?> FindByIdAsync(Guid id, CancellationToken ct) =>
+        repo.FindAsync((object)id, ct).AsTask();
+
+    public Task<Product?> FindBySkuAsync(string sku, CancellationToken ct) =>
+        repo.FindAsync(p => p.Sku == sku, ct);
+
+    public IQueryable<ProductSummary> ActiveSummaries() =>
+        repo.Query<ProductSummary>(p => p.IsActive);
 }
+#pragma warning restore CS0618
 ```
 
-#### 3. Write Repository Usage
+#### `IWriteRepository<TEntity>`
 
 ```csharp
-using DKNet.EfCore.Repos.Abstractions;
-
-public class CustomerManagementService
+public interface IWriteRepository<TEntity> where TEntity : class
 {
-    private readonly IWriteRepository<Customer> _customerWriteRepository;
-    
-    public CustomerManagementService(IWriteRepository<Customer> customerWriteRepository)
-    {
-        _customerWriteRepository = customerWriteRepository;
-    }
-    
-    // Single entity operations
-    public async Task<Result> CreateCustomerAsync(string firstName, string lastName, string email)
-    {
-        try
-        {
-            var customer = Customer.Create(firstName, lastName, email);
-            _customerWriteRepository.Add(customer);
-            
-            await _customerWriteRepository.SaveChangesAsync();
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure($"Failed to create customer: {ex.Message}");
-        }
-    }
-    
-    // Batch operations
-    public async Task<Result> CreateMultipleCustomersAsync(IEnumerable<CreateCustomerRequest> requests)
-    {
-        try
-        {
-            var customers = requests.Select(r => Customer.Create(r.FirstName, r.LastName, r.Email));
-            _customerWriteRepository.AddRange(customers);
-            
-            await _customerWriteRepository.SaveChangesAsync();
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure($"Failed to create customers: {ex.Message}");
-        }
-    }
-    
-    // Transaction management
-    public async Task<Result> TransferCustomerDataAsync(Guid fromCustomerId, Guid toCustomerId)
-    {
-        using var transaction = await _customerWriteRepository.BeginTransactionAsync();
-        
-        try
-        {
-            // Complex business operation requiring transaction
-            var fromCustomer = await _customerWriteRepository.FindAsync(fromCustomerId);
-            var toCustomer = await _customerWriteRepository.FindAsync(toCustomerId);
-            
-            if (fromCustomer == null || toCustomer == null)
-                return Result.Failure("Customer not found");
-            
-            // Perform business logic
-            fromCustomer.DeactivateAccount();
-            toCustomer.MergeDataFrom(fromCustomer);
-            
-            _customerWriteRepository.Update(fromCustomer);
-            _customerWriteRepository.Update(toCustomer);
-            
-            await _customerWriteRepository.SaveChangesAsync();
-            await transaction.CommitAsync();
-            
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return Result.Failure($"Failed to transfer customer data: {ex.Message}");
-        }
-    }
+    ValueTask AddAsync(TEntity entity, CancellationToken cancellationToken = default);
+    ValueTask AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    void Delete(TEntity entity);
+    void DeleteRange(IEnumerable<TEntity> entities);
+    EntityEntry<TEntity> Entry(TEntity entity);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<int> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 }
 ```
-
-#### 4. Combined Repository Usage (Full CRUD)
 
 ```csharp
-using DKNet.EfCore.Repos.Abstractions;
-
-public class CustomerService
+#pragma warning disable CS0618
+public sealed class ProductWriteService(IWriteRepository<Product> repo)
 {
-    private readonly IRepository<Customer> _customerRepository;
-    
-    public CustomerService(IRepository<Customer> customerRepository)
+    public async Task CreateAsync(Product product, CancellationToken ct)
     {
-        _customerRepository = customerRepository;
+        await repo.AddAsync(product, ct);
+        await repo.SaveChangesAsync(ct);
     }
-    
-    // Create
-    public async Task<Result<Guid>> CreateCustomerAsync(CreateCustomerRequest request)
+
+    public async Task DeactivateAsync(Product product, CancellationToken ct)
     {
-        // Check if email already exists
-        var existingCustomer = await _customerRepository.FindAsync(c => c.Email == request.Email);
-        if (existingCustomer != null)
-            return Result<Guid>.Failure("Email already exists");
-        
-        var customer = Customer.Create(request.FirstName, request.LastName, request.Email);
-        _customerRepository.Add(customer);
-        
-        await _customerRepository.SaveChangesAsync();
-        return Result<Guid>.Success(customer.Id);
-    }
-    
-    // Read
-    public async Task<Result<CustomerDto>> GetCustomerAsync(Guid id)
-    {
-        var customer = await _customerRepository.FindAsync(id);
-        if (customer == null)
-            return Result<CustomerDto>.Failure("Customer not found");
-        
-        return Result<CustomerDto>.Success(MapToDto(customer));
-    }
-    
-    // Update
-    public async Task<Result> UpdateCustomerAsync(Guid id, UpdateCustomerRequest request)
-    {
-        var customer = await _customerRepository.FindAsync(id);
-        if (customer == null)
-            return Result.Failure("Customer not found");
-        
-        customer.UpdateDetails(request.FirstName, request.LastName);
-        _customerRepository.Update(customer);
-        
-        await _customerRepository.SaveChangesAsync();
-        return Result.Success();
-    }
-    
-    // Delete
-    public async Task<Result> DeleteCustomerAsync(Guid id)
-    {
-        var customer = await _customerRepository.FindAsync(id);
-        if (customer == null)
-            return Result.Failure("Customer not found");
-        
-        _customerRepository.Delete(customer);
-        await _customerRepository.SaveChangesAsync();
-        return Result.Success();
-    }
-    
-    // List with projections
-    public async Task<PagedResult<CustomerListDto>> GetCustomersAsync(int page, int pageSize)
-    {
-        var query = _customerRepository.GetProjection<CustomerListDto>();
-        
-        var totalCount = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-        
-        return new PagedResult<CustomerListDto>(items, totalCount, page, pageSize);
+        await using var tx = await repo.BeginTransactionAsync(ct);
+        product.Deactivate();
+        await repo.UpdateAsync(product, ct);
+        await repo.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
     }
 }
+#pragma warning restore CS0618
 ```
 
-### Advanced Usage Patterns
+`Delete`/`DeleteRange` are synchronous (they mark tracked entities for removal; the actual delete happens
+on `SaveChangesAsync`). `AddAsync`/`AddRangeAsync` return `ValueTask`, not `Task`.
 
-#### 1. Implementing Domain-Specific Repository
+#### `IRepository<TEntity>`
 
 ```csharp
-using DKNet.EfCore.Repos.Abstractions;
-
-// Implementation in Infrastructure layer
-public class CustomerRepository : ICustomerRepository
-{
-    private readonly IRepository<Customer> _baseRepository;
-    
-    public CustomerRepository(IRepository<Customer> baseRepository)
-    {
-        _baseRepository = baseRepository;
-    }
-    
-    // Delegate base operations
-    public IQueryable<Customer> Gets() => _baseRepository.Gets();
-    public IQueryable<TModel> GetProjection<TModel>() where TModel : class => _baseRepository.GetProjection<TModel>();
-    public ValueTask<Customer?> FindAsync(params object[] id) => _baseRepository.FindAsync(id);
-    public Task<Customer?> FindAsync(Expression<Func<Customer, bool>> filter, CancellationToken cancellationToken = default) => _baseRepository.FindAsync(filter, cancellationToken);
-    
-    public void Add(Customer entity) => _baseRepository.Add(entity);
-    public void AddRange(IEnumerable<Customer> entities) => _baseRepository.AddRange(entities);
-    public void Update(Customer entity) => _baseRepository.Update(entity);
-    public void UpdateRange(IEnumerable<Customer> entities) => _baseRepository.UpdateRange(entities);
-    public void Delete(Customer entity) => _baseRepository.Delete(entity);
-    public void DeleteRange(IEnumerable<Customer> entities) => _baseRepository.DeleteRange(entities);
-    
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => _baseRepository.SaveChangesAsync(cancellationToken);
-    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) => _baseRepository.BeginTransactionAsync(cancellationToken);
-    
-    // Domain-specific implementations
-    public async Task<Customer?> GetByEmailAsync(string email)
-    {
-        return await _baseRepository.FindAsync(c => c.Email.ToLower() == email.ToLower());
-    }
-    
-    public async Task<IEnumerable<Customer>> GetActiveCustomersAsync()
-    {
-        return await _baseRepository
-            .Gets()
-            .Where(c => c.Status == CustomerStatus.Active)
-            .OrderBy(c => c.LastName)
-            .ToListAsync();
-    }
-    
-    public async Task<IEnumerable<Customer>> GetCustomersByStatusAsync(CustomerStatus status)
-    {
-        return await _baseRepository
-            .Gets()
-            .Where(c => c.Status == status)
-            .ToListAsync();
-    }
-    
-    public async Task<bool> EmailExistsAsync(string email, Guid? excludeCustomerId = null)
-    {
-        var query = _baseRepository.Gets().Where(c => c.Email.ToLower() == email.ToLower());
-        
-        if (excludeCustomerId.HasValue)
-            query = query.Where(c => c.Id != excludeCustomerId.Value);
-        
-        return await query.AnyAsync();
-    }
-    
-    public async Task<CustomerSummaryDto?> GetCustomerSummaryAsync(Guid customerId)
-    {
-        return await _baseRepository
-            .GetProjection<CustomerSummaryDto>()
-            .FirstOrDefaultAsync(c => c.Id == customerId);
-    }
-    
-    public async Task<IEnumerable<CustomerListDto>> GetCustomerListAsync(int page, int pageSize)
-    {
-        return await _baseRepository
-            .GetProjection<CustomerListDto>()
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-    }
-}
+public interface IRepository<TEntity> : IReadRepository<TEntity>, IWriteRepository<TEntity>
+    where TEntity : class;
 ```
 
-#### 2. Unit Testing with Repository Abstractions
+A pure marker/union interface — no members of its own, just the combined read + write surface for
+consumers that need both:
 
 ```csharp
-using Moq;
-using DKNet.EfCore.Repos.Abstractions;
-
-public class CustomerServiceTests
+#pragma warning disable CS0618
+public sealed class ProductService(IRepository<Product> repo)
 {
-    private readonly Mock<ICustomerRepository> _mockRepository;
-    private readonly CustomerService _service;
-    
-    public CustomerServiceTests()
+    public async Task<Product?> RenameAsync(Guid id, string newName, CancellationToken ct)
     {
-        _mockRepository = new Mock<ICustomerRepository>();
-        _service = new CustomerService(_mockRepository.Object);
-    }
-    
-    [Fact]
-    public async Task CreateCustomerAsync_WithValidData_ShouldReturnSuccess()
-    {
-        // Arrange
-        var request = new CreateCustomerRequest("John", "Doe", "john@example.com");
-        _mockRepository.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Customer, bool>>>(), default))
-                      .ReturnsAsync((Customer?)null);
-        
-        _mockRepository.Setup(r => r.SaveChangesAsync(default))
-                      .ReturnsAsync(1);
-        
-        // Act
-        var result = await _service.CreateCustomerAsync(request);
-        
-        // Assert
-        Assert.True(result.IsSuccess);
-        _mockRepository.Verify(r => r.Add(It.IsAny<Customer>()), Times.Once);
-        _mockRepository.Verify(r => r.SaveChangesAsync(default), Times.Once);
-    }
-    
-    [Fact]
-    public async Task CreateCustomerAsync_WithExistingEmail_ShouldReturnFailure()
-    {
-        // Arrange
-        var request = new CreateCustomerRequest("John", "Doe", "john@example.com");
-        var existingCustomer = Customer.Create("Jane", "Doe", "john@example.com");
-        
-        _mockRepository.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Customer, bool>>>(), default))
-                      .ReturnsAsync(existingCustomer);
-        
-        // Act
-        var result = await _service.CreateCustomerAsync(request);
-        
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal("Email already exists", result.Error);
-        _mockRepository.Verify(r => r.Add(It.IsAny<Customer>()), Times.Never);
+        var product = await repo.FindAsync((object)id, ct);
+        if (product is null) return null;
+
+        product.Rename(newName);
+        await repo.UpdateAsync(product, ct);
+        await repo.SaveChangesAsync(ct);
+        return product;
     }
 }
+#pragma warning restore CS0618
 ```
 
-#### 3. Dependency Injection Setup
+#### `IRepositoryFactory`
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using DKNet.EfCore.Repos.Abstractions;
-
-public void ConfigureServices(IServiceCollection services)
+public interface IRepositoryFactory : IDisposable, IAsyncDisposable
 {
-    // Register DbContext
-    services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
-    
-    // Register generic repository
-    services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-    services.AddScoped(typeof(IReadRepository<>), typeof(ReadRepository<>));
-    services.AddScoped(typeof(IWriteRepository<>), typeof(WriteRepository<>));
-    
-    // Register domain-specific repositories
-    services.AddScoped<ICustomerRepository, CustomerRepository>();
-    services.AddScoped<IOrderRepository, OrderRepository>();
-    
-    // Register application services
-    services.AddScoped<CustomerService>();
-    services.AddScoped<OrderService>();
+    IRepository<TEntity> Create<TEntity>() where TEntity : class;
+    IReadRepository<TEntity> CreateRead<TEntity>() where TEntity : class;
+    IWriteRepository<TEntity> CreateWrite<TEntity>() where TEntity : class;
 }
 ```
 
-## Best Practices
+```csharp
+#pragma warning disable CS0618
+public sealed class BulkImportService(IRepositoryFactory factory)
+{
+    public async Task ImportAsync<TEntity>(IEnumerable<TEntity> rows, CancellationToken ct)
+        where TEntity : class
+    {
+        var repo = factory.CreateWrite<TEntity>();
+        await repo.AddRangeAsync(rows, ct);
+        await repo.SaveChangesAsync(ct);
+    }
+}
+#pragma warning restore CS0618
+```
 
-### 1. Repository Interface Design
-- Define repository interfaces in the domain layer
-- Keep interfaces focused on aggregate boundaries
-- Use domain terminology in method names
-- Include only operations that make sense for the domain
+`IRepositoryFactory` implements both `IDisposable` and `IAsyncDisposable`, so callers obtained from DI
+should dispose it (or let the DI container scope do so) rather than holding it indefinitely.
 
-### 2. Projection Usage
-- Use `GetProjection<T>()` for read-only scenarios
-- Create specific DTOs for different use cases
-- Avoid returning entities directly from API endpoints
-- Use projections to optimize database queries
+### 4. Configuration options and defaults
 
-### 3. Transaction Management
-- Use transactions for operations that span multiple aggregates
-- Keep transactions as short as possible
-- Handle transaction failures gracefully
-- Consider using Unit of Work pattern for complex scenarios
+None. This package is pure interface definitions — no options classes, no `AddXxx(...)` DI extension
+methods, and no configurable defaults live here. (Any behavior you might expect to configure — tracking
+mode, transaction scope, etc. — is a decision made entirely by the concrete implementation in
+`DKNet.EfCore.Repos`, not by this abstractions package.)
 
-### 4. Testing
-- Mock repository interfaces for unit tests
-- Use in-memory databases for integration tests
-- Test repository implementations separately
-- Verify both successful and failure scenarios
+### 5. How it composes with other packages
 
-### 5. Performance Considerations
-- Use `IQueryable` for complex queries
-- Implement pagination for large result sets
-- Consider bulk operations for high-volume scenarios
-- Profile and optimize database queries
+- **Implemented by [`DKNet.EfCore.Repos`](./DKNet.EfCore.Repos.md)** — the concrete
+  `ReadRepository<TEntity>`/`Repository<TEntity>`/`RepositoryFactory` classes that back these interfaces
+  against a real `DbContext`. That package is retired for the same reason and carries the same
+  `[Obsolete]` markers.
+- **Superseded by [`DKNet.EfCore.Specifications`](./DKNet.EfCore.Specifications.md)** — `IRepositorySpec`
+  replaces `IRepository<TEntity>` end-to-end (see the call-site mapping table in the migration guide),
+  registered via `services.AddSpecRepo<TDbContext>()` instead of `AddGenericRepositories<TDbContext>()` /
+  `AddRepoFactory<TDbContext>()`.
+- **Entities** consumed through these interfaces are the `AggregateRoot`/`Entity` types defined in
+  `DKNet.EfCore.Abstractions`; persistence of domain events raised on those aggregates during
+  `SaveChangesAsync` is handled separately by `DKNet.EfCore.Events` / SaveChanges hooks — this package
+  has no involvement in event dispatch itself.
 
-## Integration with Other DKNet Components
+### 6. Gotchas and limits
 
-DKNet.EfCore.Repos.Abstractions integrates seamlessly with other DKNet components:
-
-- **DKNet.EfCore.Abstractions**: Provides entity base classes and interfaces
-- **DKNet.EfCore.Repos**: Implements the repository abstractions
-- **DKNet.EfCore.Events**: Supports domain event publishing through repositories
-- **DKNet.SlimBus.Extensions**: Integrates with CQRS patterns and message handling
-
----
-
-> 💡 **Architecture Tip**: Use repository abstractions to define clear contracts in your domain layer. This enables dependency inversion and makes your domain logic completely independent of data access technology.
+- **It is obsolete and unpublished.** Do not add a `PackageReference` to `DKNet.EfCore.Repos.Abstractions`
+  in new projects — there is no NuGet package to reference. Any remaining internal usage inside this
+  solution compiles only because of scattered `#pragma warning disable CS0618` markers around the retired
+  call sites.
+- **Migrate, don't extend.** Follow
+  [`docs/EfCore/Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for the
+  registration change (`AddSpecRepo<TDbContext>()`) and the per-call mapping from `IRepository<T>`
+  members to `IRepositorySpec` + `Specification<T>` equivalents. See
+  [`docs/EfCore/DKNet.EfCore.Specifications.md`](./DKNet.EfCore.Specifications.md) for the replacement
+  API in full.
+- **`Query()` tracking behavior is not guaranteed by the interface** — it depends on which concrete
+  implementation is injected (see the note under `IReadRepository<TEntity>` above). Don't assume
+  `AsNoTracking()` just because you're holding an `IReadRepository<TEntity>`.
+- **`IRepositoryFactory` is disposable** (`IDisposable` + `IAsyncDisposable`) — leaking instances outside
+  a DI scope leaks whatever `DbContext`/connection resources the concrete factory holds.

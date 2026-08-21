@@ -6,43 +6,31 @@ Global exclusions allow you to configure a centralized list of property names th
 
 ## Configuration
 
-### Step 1: Add MSBuild Property
+### Add the MSBuild property
 
-In your `.csproj` file, add the `DtoGenerator_GlobalExclusions` property with a comma or semicolon-separated list of property names:
+In your `.csproj` file, add the `DtoGeneratorExclusions` property with a comma or semicolon-separated list of property names:
 
 ```xml
 <PropertyGroup>
-  <DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+  <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
 </PropertyGroup>
 ```
 
-### Step 2: Make Property Visible to Source Generator
-
-Add the `CompilerVisibleProperty` item to expose the property to the source generator:
-
-```xml
-<ItemGroup>
-  <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
-</ItemGroup>
-```
+That's it — no `CompilerVisibleProperty` item is needed in the consuming project. `DKNet.EfCore.DtoGenerator` ships its own `.props` file that already declares `DtoGeneratorExclusions` (and `DtoGeneratorIgnoreComplexType`) as `CompilerVisibleProperty`, and that `.props` file flows transitively to every project referencing the package.
 
 ### Complete Example
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-    
+
     <!-- Global exclusions for DTO generator -->
-    <DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+    <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <CompilerVisibleProperty Include="DtoGenerator_GlobalExclusions" />
-  </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="1.0.0" />
   </ItemGroup>
@@ -138,7 +126,7 @@ This is informational only and doesn't indicate an error. It reminds you that th
 Exclude standard audit fields across all DTOs:
 
 ```xml
-<DtoGenerator_GlobalExclusions>CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,LastModifiedBy,LastModifiedOn</DtoGenerator_GlobalExclusions>
+<DtoGeneratorExclusions>CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,LastModifiedBy,LastModifiedOn</DtoGeneratorExclusions>
 ```
 
 ### Internal Tracking
@@ -146,7 +134,7 @@ Exclude standard audit fields across all DTOs:
 Exclude internal system fields:
 
 ```xml
-<DtoGenerator_GlobalExclusions>InternalId,RowVersion,IsDeleted,DeletedAt</DtoGenerator_GlobalExclusions>
+<DtoGeneratorExclusions>InternalId,RowVersion,IsDeleted,DeletedAt</DtoGeneratorExclusions>
 ```
 
 ### Security Sensitive
@@ -154,7 +142,7 @@ Exclude internal system fields:
 Exclude sensitive or security-related fields:
 
 ```xml
-<DtoGenerator_GlobalExclusions>Password,PasswordHash,Salt,SecurityStamp,ConcurrencyToken</DtoGenerator_GlobalExclusions>
+<DtoGeneratorExclusions>Password,PasswordHash,Salt,SecurityStamp,ConcurrencyToken</DtoGeneratorExclusions>
 ```
 
 ## Benefits
@@ -184,7 +172,7 @@ public partial record CustomerDto;
 **After** (with global exclusions):
 ```xml
 <!-- In .csproj -->
-<DtoGenerator_GlobalExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGenerator_GlobalExclusions>
+<DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
 ```
 
 ```csharp
@@ -202,11 +190,10 @@ public partial record CustomerDto;
 
 ### Global Exclusions Not Applied
 
-1. **Verify MSBuild property**: Check your `.csproj` file
-2. **Verify CompilerVisibleProperty**: Ensure it's configured
-3. **Clean and rebuild**: Delete `obj` and `bin` folders
-4. **Check generated files**: Look in `obj/Generated` folder
-5. **Check build output**: Look for DKDTOGEN diagnostics
+1. **Verify MSBuild property**: Check your `.csproj` file uses `DtoGeneratorExclusions` (not an older/renamed variant)
+2. **Clean and rebuild**: Delete `obj` and `bin` folders
+3. **Check generated files**: Look in `obj/Generated` folder
+4. **Check build output**: Look for DKDTOGEN diagnostics
 
 ### Unexpected Properties in DTO
 

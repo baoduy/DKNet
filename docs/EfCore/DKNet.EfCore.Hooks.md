@@ -1,727 +1,196 @@
 # DKNet.EfCore.Hooks
 
-**Lifecycle hooks for Entity Framework Core operations that provide extensible interception points for database operations, enabling cross-cutting concerns and custom logic execution during the EF Core lifecycle while supporting Domain-Driven Design (DDD) and Onion Architecture principles.**
+**A pluggable before/after-`SaveChanges` interceptor pipeline for EF Core — the mechanism DKNet uses to attach cross-cutting concerns (audit logging, domain events, data ownership, encryption, …) to persistence without leaking that logic into domain or application code.**
 
-## What is this project?
+## 1. What problem it solves
 
-DKNet.EfCore.Hooks provides a flexible hook system for Entity Framework Core that allows you to intercept and extend database operations at various points in the EF Core lifecycle. This enables the implementation of cross-cutting concerns such as auditing, validation, performance monitoring, and custom business logic without cluttering your domain entities or application services.
+`DbContext.SaveChanges` is where most cross-cutting persistence concerns want to run: stamping audit fields, publishing domain events, enforcing row ownership, encrypting columns. Wiring each of those directly into a `SaveChangesAsync` override (or a bespoke `SaveChangesInterceptor`) per concern quickly turns into a pile of copy-pasted interceptors that all re-implement "walk the change tracker, filter by state, do work".
 
-### Key Features
+`DKNet.EfCore.Hooks` gives you one shared `SaveChangesInterceptor` (`HookRunnerInterceptor`) per `DbContext` type, and a small pair of interfaces you implement instead. Each hook is registered independently and only runs for the `DbContext` types it is registered against. Reach for this package when you need to:
 
-- **IHook Interface**: Extensible hook system for custom logic injection
-- **Pre/Post Operation Hooks**: Execute logic before and after database operations
-- **Lifecycle Integration**: Seamless integration with EF Core lifecycle events
-- **Performance Monitoring**: Built-in performance tracking and monitoring capabilities
-- **Audit Logging**: Comprehensive audit trail for entity changes
-- **Validation Hooks**: Pre-save validation with custom business rules
-- **Global Hooks**: Apply hooks across all entities or specific entity types
-- **Async Support**: Full async/await support for hook operations
-- **Error Handling**: Robust error handling and recovery mechanisms
+- run logic before a save completes (validation, stamping, mutating tracked entities) or after it succeeds (publishing events, invalidating caches, calling external systems);
+- keep that logic out of your `DbContext` and out of your entities, as an infrastructure-layer concern (Onion Architecture);
+- let several independent concerns (audit logging, domain events, data ownership, …) share the same save pipeline without composing overrides by hand;
+- temporarily suppress all hooks for a `DbContext` instance, e.g. during data seeding or migrations.
 
-## How it contributes to DDD and Onion Architecture
+If you only need to intercept SQL statements or connections, use EF Core's `SaveChangesInterceptor`/`DbCommandInterceptor` directly — this package is specifically about "run my code around change-tracked entities on save".
 
-### Cross-Cutting Concerns Layer
-
-DKNet.EfCore.Hooks implements **Cross-Cutting Concerns** that span multiple layers of the Onion Architecture, providing infrastructure services that support all layers without creating dependencies:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    🌐 Presentation Layer                        │
-│                   (Controllers, API Endpoints)                  │
-│                                                                 │
-│  Benefits from: Audit logs, performance metrics, validation    │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🎯 Application Layer                          │
-│              (Use Cases, Application Services)                  │
-│                                                                 │
-│  Benefits from: Transaction hooks, validation, error handling  │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                             │
-│           (Entities, Aggregates, Domain Services)              │
-│                                                                 │
-│  Benefits from: Domain rule enforcement, business validation   │
-│  🏷️ Remains unaware of hook implementations                    │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🗄️ Infrastructure Layer                        │
-│                  (Hooks, Persistence, Cross-cutting)           │
-│                                                                 │
-│  🎯 Hook Implementations:                                       │
-│  📊 Performance Monitoring Hooks                               │
-│  📝 Audit Logging Hooks                                        │
-│  ✅ Validation Hooks                                           │
-│  🔒 Security Hooks                                             │
-│  🔄 EF Core Integration                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### DDD Benefits
-
-1. **Domain Logic Separation**: Hooks keep infrastructure concerns out of domain entities
-2. **Business Rule Enforcement**: Pre-save hooks can enforce domain rules consistently
-3. **Audit Trail**: Comprehensive business event tracking without domain complexity
-4. **Validation**: Business rule validation without coupling to domain logic
-5. **Performance Monitoring**: Track domain operations without performance impact
-6. **Error Handling**: Consistent error handling across domain operations
-
-### Onion Architecture Benefits
-
-1. **Dependency Inversion**: Hooks are configured in infrastructure, used by all layers
-2. **Separation of Concerns**: Cross-cutting concerns isolated from business logic
-3. **Testability**: Hooks can be mocked or disabled for unit testing
-4. **Maintainability**: Centralized location for cross-cutting concerns
-5. **Extensibility**: Easy to add new hooks without changing existing code
-6. **Technology Independence**: Abstract hooks can be implemented for any data access technology
-
-## How to use it
-
-### Installation
+## 2. Install and minimum registration
 
 ```bash
 dotnet add package DKNet.EfCore.Hooks
-dotnet add package DKNet.EfCore.Abstractions
 ```
 
-### Basic Usage Examples
+The package depends on `DKNet.EfCore.Extensions` for `SnapshotContext` (see [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md)) and on `Microsoft.EntityFrameworkCore`.
 
-#### 1. Audit Logging Hook
+Minimum wiring — register your `DbContext` through `AddDbContextWithHook` instead of `AddDbContext`, then register hook implementations with `AddHook`:
 
 ```csharp
 using DKNet.EfCore.Hooks;
-using DKNet.EfCore.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
-public class AuditLoggingHook : IHook
-{
-    private readonly ILogger<AuditLoggingHook> _logger;
-    private readonly ICurrentUserService _currentUserService;
-    
-    public AuditLoggingHook(ILogger<AuditLoggingHook> logger, ICurrentUserService currentUserService)
-    {
-        _logger = logger;
-        _currentUserService = currentUserService;
-    }
-    
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var auditEntries = new List<AuditEntry>();
-        var currentUser = _currentUserService.GetCurrentUser();
-        
-        foreach (var entry in context.ChangeTracker.Entries())
-        {
-            if (entry.Entity is IAuditableEntity auditableEntity)
-            {
-                switch (entry.State)
-                {
-                    case EntityState.Added:
-                        auditableEntity.CreatedBy = currentUser?.Id;
-                        auditableEntity.CreatedAt = DateTime.UtcNow;
-                        auditableEntity.UpdatedBy = currentUser?.Id;
-                        auditableEntity.UpdatedAt = DateTime.UtcNow;
-                        
-                        auditEntries.Add(new AuditEntry
-                        {
-                            EntityName = entry.Entity.GetType().Name,
-                            Action = AuditAction.Create,
-                            EntityId = GetEntityId(entry.Entity),
-                            UserId = currentUser?.Id,
-                            Timestamp = DateTime.UtcNow,
-                            Changes = GetPropertyChanges(entry)
-                        });
-                        break;
-                        
-                    case EntityState.Modified:
-                        auditableEntity.UpdatedBy = currentUser?.Id;
-                        auditableEntity.UpdatedAt = DateTime.UtcNow;
-                        
-                        auditEntries.Add(new AuditEntry
-                        {
-                            EntityName = entry.Entity.GetType().Name,
-                            Action = AuditAction.Update,
-                            EntityId = GetEntityId(entry.Entity),
-                            UserId = currentUser?.Id,
-                            Timestamp = DateTime.UtcNow,
-                            Changes = GetPropertyChanges(entry)
-                        });
-                        break;
-                        
-                    case EntityState.Deleted:
-                        auditEntries.Add(new AuditEntry
-                        {
-                            EntityName = entry.Entity.GetType().Name,
-                            Action = AuditAction.Delete,
-                            EntityId = GetEntityId(entry.Entity),
-                            UserId = currentUser?.Id,
-                            Timestamp = DateTime.UtcNow
-                        });
-                        break;
-                }
-            }
-        }
-        
-        // Store audit entries
-        foreach (var auditEntry in auditEntries)
-        {
-            context.Set<AuditEntry>().Add(auditEntry);
-        }
-        
-        _logger.LogInformation("Audit logging completed for {Count} entities", auditEntries.Count);
-    }
-    
-    public Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        // Post-save audit logic if needed
-        return Task.CompletedTask;
-    }
-    
-    private static string GetEntityId(object entity)
-    {
-        // Extract entity ID using reflection or conventions
-        var idProperty = entity.GetType().GetProperty("Id");
-        return idProperty?.GetValue(entity)?.ToString() ?? string.Empty;
-    }
-    
-    private static Dictionary<string, object> GetPropertyChanges(EntityEntry entry)
-    {
-        var changes = new Dictionary<string, object>();
-        
-        foreach (var property in entry.Properties)
-        {
-            if (property.IsModified)
-            {
-                changes[property.Metadata.Name] = new
-                {
-                    OldValue = property.OriginalValue,
-                    NewValue = property.CurrentValue
-                };
-            }
-        }
-        
-        return changes;
-    }
-}
-```
-
-#### 2. Performance Monitoring Hook
-
-```csharp
-public class PerformanceMonitoringHook : IHook
-{
-    private readonly ILogger<PerformanceMonitoringHook> _logger;
-    private readonly IMetricsCollector _metricsCollector;
-    private readonly Dictionary<DbContext, Stopwatch> _contextTimers = new();
-    
-    public PerformanceMonitoringHook(ILogger<PerformanceMonitoringHook> logger, IMetricsCollector metricsCollector)
-    {
-        _logger = logger;
-        _metricsCollector = metricsCollector;
-    }
-    
-    public Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        _contextTimers[context] = stopwatch;
-        
-        var changeCount = context.ChangeTracker.Entries()
-            .Count(e => e.State == EntityState.Added || 
-                       e.State == EntityState.Modified || 
-                       e.State == EntityState.Deleted);
-        
-        _logger.LogInformation("Starting SaveChanges operation with {ChangeCount} changes", changeCount);
-        
-        return Task.CompletedTask;
-    }
-    
-    public async Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        if (_contextTimers.TryGetValue(context, out var stopwatch))
-        {
-            stopwatch.Stop();
-            _contextTimers.Remove(context);
-            
-            var elapsed = stopwatch.Elapsed;
-            var changeCount = context.ChangeTracker.Entries()
-                .Count(e => e.State == EntityState.Unchanged);
-            
-            _logger.LogInformation("SaveChanges completed in {ElapsedMs}ms for {ChangeCount} changes", 
-                elapsed.TotalMilliseconds, changeCount);
-            
-            // Collect metrics
-            await _metricsCollector.RecordSaveChangesMetricAsync(elapsed, changeCount);
-            
-            // Warn about slow operations
-            if (elapsed.TotalMilliseconds > 1000)
-            {
-                _logger.LogWarning("Slow SaveChanges operation detected: {ElapsedMs}ms", 
-                    elapsed.TotalMilliseconds);
-            }
-        }
-    }
-}
-```
-
-#### 3. Validation Hook
-
-```csharp
-public class ValidationHook : IHook
-{
-    private readonly ILogger<ValidationHook> _logger;
-    private readonly IServiceProvider _serviceProvider;
-    
-    public ValidationHook(ILogger<ValidationHook> logger, IServiceProvider serviceProvider)
-    {
-        _logger = logger;
-        _serviceProvider = serviceProvider;
-    }
-    
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var validationErrors = new List<ValidationError>();
-        
-        foreach (var entry in context.ChangeTracker.Entries())
-        {
-            if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
-            {
-                // Standard validation using data annotations
-                var validationContext = new ValidationContext(entry.Entity, _serviceProvider, null);
-                var validationResults = new List<ValidationResult>();
-                
-                if (!Validator.TryValidateObject(entry.Entity, validationContext, validationResults, true))
-                {
-                    foreach (var validationResult in validationResults)
-                    {
-                        validationErrors.Add(new ValidationError
-                        {
-                            EntityType = entry.Entity.GetType().Name,
-                            PropertyName = validationResult.MemberNames.FirstOrDefault(),
-                            ErrorMessage = validationResult.ErrorMessage,
-                            AttemptedValue = GetPropertyValue(entry.Entity, validationResult.MemberNames.FirstOrDefault())
-                        });
-                    }
-                }
-                
-                // Custom business rule validation
-                if (entry.Entity is IValidatableEntity validatableEntity)
-                {
-                    var businessValidationResults = await validatableEntity.ValidateAsync(cancellationToken);
-                    foreach (var result in businessValidationResults.Where(r => !r.IsValid))
-                    {
-                        validationErrors.Add(new ValidationError
-                        {
-                            EntityType = entry.Entity.GetType().Name,
-                            PropertyName = result.PropertyName,
-                            ErrorMessage = result.ErrorMessage,
-                            AttemptedValue = result.AttemptedValue
-                        });
-                    }
-                }
-            }
-        }
-        
-        if (validationErrors.Any())
-        {
-            _logger.LogWarning("Validation failed for {Count} entities", validationErrors.Count);
-            throw new ValidationException("Entity validation failed", validationErrors);
-        }
-    }
-    
-    public Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-    }
-    
-    private static object? GetPropertyValue(object entity, string? propertyName)
-    {
-        if (string.IsNullOrEmpty(propertyName)) return null;
-        
-        var property = entity.GetType().GetProperty(propertyName);
-        return property?.GetValue(entity);
-    }
-}
-```
-
-#### 4. Security Hook
-
-```csharp
-public class SecurityHook : IHook
-{
-    private readonly ILogger<SecurityHook> _logger;
-    private readonly ICurrentUserService _currentUserService;
-    private readonly IAuthorizationService _authorizationService;
-    
-    public SecurityHook(
-        ILogger<SecurityHook> logger,
-        ICurrentUserService currentUserService,
-        IAuthorizationService authorizationService)
-    {
-        _logger = logger;
-        _currentUserService = currentUserService;
-        _authorizationService = authorizationService;
-    }
-    
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        
-        foreach (var entry in context.ChangeTracker.Entries())
-        {
-            if (entry.Entity is ISecurableEntity securableEntity)
-            {
-                var operation = entry.State switch
-                {
-                    EntityState.Added => "Create",
-                    EntityState.Modified => "Update",
-                    EntityState.Deleted => "Delete",
-                    _ => null
-                };
-                
-                if (operation != null)
-                {
-                    var isAuthorized = await _authorizationService.AuthorizeAsync(
-                        currentUser,
-                        securableEntity,
-                        operation);
-                    
-                    if (!isAuthorized)
-                    {
-                        _logger.LogWarning("User {UserId} attempted unauthorized {Operation} on {EntityType} {EntityId}",
-                            currentUser?.Id, operation, entry.Entity.GetType().Name, securableEntity.Id);
-                        
-                        throw new UnauthorizedAccessException(
-                            $"User is not authorized to {operation.ToLower()} this {entry.Entity.GetType().Name}");
-                    }
-                }
-            }
-        }
-    }
-    
-    public Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-    }
-}
-```
-
-#### 5. DbContext Integration
-
-```csharp
-public class ApplicationDbContext : DbContext
-{
-    private readonly IEnumerable<IHook> _hooks;
-    
-    public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options,
-        IEnumerable<IHook> hooks) : base(options)
-    {
-        _hooks = hooks;
-    }
-    
-    public DbSet<Customer> Customers { get; set; }
-    public DbSet<Order> Orders { get; set; }
-    public DbSet<AuditEntry> AuditEntries { get; set; }
-    
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        // Execute pre-save hooks
-        foreach (var hook in _hooks)
-        {
-            await hook.OnPreSaveChangesAsync(this, cancellationToken);
-        }
-        
-        try
-        {
-            // Save changes to database
-            var result = await base.SaveChangesAsync(cancellationToken);
-            
-            // Execute post-save hooks
-            foreach (var hook in _hooks)
-            {
-                await hook.OnPostSaveChangesAsync(this, cancellationToken);
-            }
-            
-            return result;
-        }
-        catch (Exception ex)
-        {
-            // Execute error hooks if needed
-            foreach (var hook in _hooks.OfType<IErrorHook>())
-            {
-                await hook.OnErrorAsync(this, ex, cancellationToken);
-            }
-            throw;
-        }
-    }
-}
-```
-
-#### 6. Service Registration
-
-```csharp
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddEfCoreHooks(this IServiceCollection services)
-    {
-        // Register hooks
-        services.AddScoped<IHook, AuditLoggingHook>();
-        services.AddScoped<IHook, PerformanceMonitoringHook>();
-        services.AddScoped<IHook, ValidationHook>();
-        services.AddScoped<IHook, SecurityHook>();
-        
-        // Register supporting services
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<IAuthorizationService, AuthorizationService>();
-        services.AddScoped<IMetricsCollector, MetricsCollector>();
-        
-        return services;
-    }
-}
-
-// In Program.cs or Startup.cs
-services.AddDbContext<ApplicationDbContext>(options =>
+services.AddDbContextWithHook<AppDbContext>((provider, options) =>
     options.UseSqlServer(connectionString));
 
-services.AddEfCoreHooks();
+services.AddHook<AppDbContext, MyAuditHook>();
 ```
 
-### Advanced Usage Examples
-
-#### 1. Conditional Hooks
+`AddDbContextWithHook<TDbContext>` has two overloads — one taking `Action<IServiceProvider, DbContextOptionsBuilder>`, one taking `Action<DbContextOptionsBuilder<TDbContext>>` — both mirroring the standard `AddDbContext` overloads and internally calling `AddHookRunner<TDbContext>()` plus `options.UseHooks<TDbContext>(provider)` for you. If you must register the `DbContext` yourself (e.g. a base class already calls `AddDbContext`), call `UseHooks<TDbContext>(provider)` explicitly inside your own options delegate instead:
 
 ```csharp
-public class ConditionalAuditHook : IHook
+services.AddHookRunner<AppDbContext>(); // internal-only: normally implied by AddDbContextWithHook/AddHook
+services.AddDbContext<AppDbContext>((provider, options) =>
 {
-    private readonly IConfiguration _configuration;
-    
-    public ConditionalAuditHook(IConfiguration configuration)
+    options.UseSqlServer(connectionString);
+    options.UseHooks<AppDbContext>(provider);
+});
+```
+
+`AddHookRunner<TDbContext>` is `internal` — you will not call it directly from application code; `AddDbContextWithHook` and `AddHook` both call it for you, idempotently, so registration order between them does not matter.
+
+Hooks with no registered `HookRunnerInterceptor` for their `DbContext` type are silently never invoked — always register the `DbContext` via `AddDbContextWithHook` (or call `UseHooks<TDbContext>` yourself) or your `AddHook<TDbContext, THook>()` calls will have no effect.
+
+## 3. Features
+
+### 3.1 The hook interfaces
+
+All hook contracts live in `DKNet.EfCore.Hooks.IHook.cs` and operate on `SnapshotContext` from `DKNet.EfCore.Extensions.Snapshots` (see [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#snapshotcontext)):
+
+```csharp
+public interface IHookBaseAsync; // marker, implement a more specific interface below
+
+public interface IBeforeSaveHookAsync : IHookBaseAsync
+{
+    Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default);
+}
+
+public interface IAfterSaveHookAsync : IHookBaseAsync
+{
+    Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default);
+}
+
+public interface IHookAsync : IBeforeSaveHookAsync, IAfterSaveHookAsync;
+
+public abstract class HookAsync : IHookAsync
+{
+    public virtual Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public virtual Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+```
+
+Implement `IBeforeSaveHookAsync` for a before-only hook, `IAfterSaveHookAsync` for an after-only hook, `IHookAsync` (or inherit `HookAsync` and override only what you need) for both. `SnapshotContext.Entities` (an `IReadOnlyCollection<SnapshotEntityEntry>`) exposes `Entity`, `Entry` (the underlying EF Core `EntityEntry`) and `OriginalState` for every entry that was `Added`, `Modified`, or `Deleted` at the moment the snapshot was captured — the same snapshot instance is shared by every hook registered on the `DbContext`, captured once before the before-save hooks run.
+
+Example — a before-save audit stamp hook and an after-save event-publishing hook:
+
+```csharp
+using DKNet.EfCore.Hooks;
+using DKNet.EfCore.Extensions.Snapshots;
+using Microsoft.EntityFrameworkCore;
+
+public sealed class AuditStampHook(ICurrentUserService currentUser) : IBeforeSaveHookAsync
+{
+    public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        _configuration = configuration;
-    }
-    
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var auditEnabled = _configuration.GetValue<bool>("Auditing:Enabled");
-        if (!auditEnabled) return;
-        
-        var sensitiveEntities = context.ChangeTracker.Entries()
-            .Where(e => e.Entity.GetType().GetCustomAttribute<SensitiveDataAttribute>() != null)
-            .ToList();
-        
-        if (sensitiveEntities.Any())
+        var now = DateTimeOffset.UtcNow;
+        foreach (var entry in context.Entities)
         {
-            // Special handling for sensitive data
-            await ProcessSensitiveDataAuditAsync(sensitiveEntities, cancellationToken);
+            if (entry.Entity is not IAuditedProperties audited) continue;
+
+            if (entry.OriginalState == EntityState.Added)
+                audited.CreatedBy = currentUser.UserId;
+            if (entry.OriginalState is EntityState.Added or EntityState.Modified)
+                audited.UpdatedOn = now;
         }
-    }
-    
-    public Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
+
         return Task.CompletedTask;
     }
 }
-```
 
-#### 2. Soft Delete Hook
-
-```csharp
-public class SoftDeleteHook : IHook
+public sealed class DomainEventPublishingHook(IEventPublisher publisher) : IAfterSaveHookAsync
 {
-    private readonly ICurrentUserService _currentUserService;
-    
-    public SoftDeleteHook(ICurrentUserService currentUserService)
+    public async Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
-        _currentUserService = currentUserService;
-    }
-    
-    public Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        var currentUser = _currentUserService.GetCurrentUser();
-        
-        foreach (var entry in context.ChangeTracker.Entries())
+        foreach (var entry in context.Entities)
         {
-            if (entry.Entity is ISoftDeletableEntity softDeletableEntity && entry.State == EntityState.Deleted)
-            {
-                // Convert hard delete to soft delete
-                entry.State = EntityState.Modified;
-                softDeletableEntity.IsDeleted = true;
-                softDeletableEntity.DeletedAt = DateTime.UtcNow;
-                softDeletableEntity.DeletedBy = currentUser?.Id;
-            }
-        }
-        
-        return Task.CompletedTask;
-    }
-    
-    public Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-    }
-}
-```
+            if (entry.Entity is not IEventEntity eventEntity) continue;
 
-#### 3. Event Integration Hook
+            foreach (var domainEvent in eventEntity.GetEvents())
+                await publisher.PublishAsync(domainEvent, cancellationToken);
 
-```csharp
-public class EventIntegrationHook : IHook
-{
-    private readonly IEventPublisher _eventPublisher;
-    
-    public EventIntegrationHook(IEventPublisher eventPublisher)
-    {
-        _eventPublisher = eventPublisher;
-    }
-    
-    public Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        // Collect events before saving
-        return Task.CompletedTask;
-    }
-    
-    public async Task OnPostSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        // Publish integration events after successful save
-        var eventEntities = context.ChangeTracker.Entries()
-            .Where(e => e.Entity is IEventEntity && e.State != EntityState.Detached)
-            .Select(e => e.Entity as IEventEntity)
-            .ToList();
-        
-        foreach (var eventEntity in eventEntities)
-        {
-            var events = eventEntity?.GetEvents() ?? Enumerable.Empty<EntityEventItem>();
-            foreach (var eventItem in events)
-            {
-                await _eventPublisher.PublishAsync(eventItem.EventData, cancellationToken);
-            }
-            
-            eventEntity?.ClearEvents();
+            eventEntity.ClearEvents();
         }
     }
 }
 ```
 
-## Best Practices
-
-### 1. Hook Design Principles
+Register each with the `DbContext` type it should run for:
 
 ```csharp
-// Good: Focused single responsibility
-public class AuditLoggingHook : IHook
-{
-    // Only handles audit logging
-}
-
-public class ValidationHook : IHook
-{
-    // Only handles validation
-}
-
-// Avoid: Multiple responsibilities in one hook
-public class CompositeHook : IHook
-{
-    // Handles audit, validation, security, etc. (too many responsibilities)
-}
+services.AddHook<AppDbContext, AuditStampHook>();
+services.AddHook<AppDbContext, DomainEventPublishingHook>();
 ```
 
-### 2. Error Handling
+`AddHook<TDbContext, THook>()` registers `THook` as `AddKeyedScoped`, keyed by `typeof(TDbContext).FullName`, and calling it twice for the same `(TDbContext, THook)` pair is a no-op (it checks for an existing keyed registration first) — safe to call from multiple independent DI-setup methods. A hook registered for `TDbContext` also runs for any `DbContext` subclass of `TDbContext`, because `HookFactory` walks the runtime type's base-type chain when resolving keyed hooks — so hooks registered against a shared base `DbContext` are inherited by every derived context.
+
+There is no built-in hook ordering: `AddHook` registers into the DI container's keyed-service collection, and hooks run in registration order for a given phase. If two hooks must run in a specific relative order, register them in that order (or fold them into a single hook).
+
+### 3.2 Disabling hooks — `HookDisablingContext`
+
+Data seeding, bulk migrations, or fixups often need to bypass every hook (audit stamping, ownership assignment, event publishing) for a batch of saves. `DbContext.DisableHooks()` returns an `IHookDisablingContext` — dispose it (sync or async) to re-enable hooks:
 
 ```csharp
-public class ResilientHook : IHook
+using DKNet.EfCore.Hooks;
+
+await using (db.DisableHooks())
 {
-    private readonly ILogger<ResilientHook> _logger;
-    
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await ProcessHookLogicAsync(context, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Hook processing failed");
-            
-            // Decide whether to fail the entire operation or continue
-            if (IsHookCritical())
-            {
-                throw; // Fail the entire save operation
-            }
-            
-            // Log and continue for non-critical hooks
-            _logger.LogWarning("Non-critical hook failed, continuing with save operation");
-        }
-    }
+    db.Set<Product>().Add(new Product { Name = "Seed data" });
+    await db.SaveChangesAsync(); // no hooks run for this save
 }
+
+// hooks run normally again from here
 ```
 
-### 3. Performance Considerations
+The disabling is reference-counted per `DbContext` CLR type (keyed by `Type.FullName`), so nested `using`/`await using` scopes are safe — hooks stay disabled until the outermost scope disposes. Disabling is scoped by *type*, not by `DbContext` instance: while a scope is active, hooks are suppressed for **every** instance of that `DbContext` type currently saving, not just the instance the scope was created from — keep disabling scopes short-lived and don't rely on it for per-instance isolation under concurrent access.
 
-```csharp
-public class OptimizedHook : IHook
-{
-    public async Task OnPreSaveChangesAsync(DbContext context, CancellationToken cancellationToken = default)
-    {
-        // Get only relevant entities to avoid processing everything
-        var relevantEntries = context.ChangeTracker.Entries()
-            .Where(e => e.State != EntityState.Unchanged && e.Entity is IRelevantEntity)
-            .ToList();
-        
-        if (!relevantEntries.Any()) return;
-        
-        // Batch operations for efficiency
-        var tasks = relevantEntries
-            .Select(entry => ProcessEntryAsync(entry, cancellationToken))
-            .ToList();
-        
-        await Task.WhenAll(tasks);
-    }
-}
-```
+### 3.3 How it runs — `HookFactory` and `HookRunnerInterceptor`
 
-### 4. Testing Hooks
+You don't call these directly, but knowing the mechanics helps when hooks don't seem to fire:
 
-```csharp
-[Test]
-public async Task AuditLoggingHook_EntityModified_CreatesAuditEntry()
-{
-    // Arrange
-    var context = CreateInMemoryDbContext();
-    var currentUserService = new Mock<ICurrentUserService>();
-    currentUserService.Setup(x => x.GetCurrentUser()).Returns(new User { Id = "user123" });
-    
-    var hook = new AuditLoggingHook(Mock.Of<ILogger<AuditLoggingHook>>(), currentUserService.Object);
-    
-    var customer = new Customer("John", "Doe", "john@example.com");
-    context.Customers.Add(customer);
-    await context.SaveChangesAsync();
-    
-    // Modify the entity
-    customer.ChangeEmail("john.doe@example.com");
-    
-    // Act
-    await hook.OnPreSaveChangesAsync(context);
-    await context.SaveChangesAsync();
-    
-    // Assert
-    var auditEntry = context.AuditEntries.FirstOrDefault();
-    Assert.NotNull(auditEntry);
-    Assert.Equal("Customer", auditEntry.EntityName);
-    Assert.Equal(AuditAction.Update, auditEntry.Action);
-    Assert.Equal("user123", auditEntry.UserId);
-}
-```
+- `HookRunnerInterceptor` is a keyed `SaveChangesInterceptor` (one singleton per `DbContext` type, keyed by `Type.FullName`) added to `DbContextOptionsBuilder` by `UseHooks<TDbContext>`. On `SavingChangesAsync` it runs all `IBeforeSaveHookAsync` hooks; on `SavedChangesAsync` (after a successful save) it runs all `IAfterSaveHookAsync` hooks; on `SaveChangesFailedAsync` it discards the pending hook context without running after-save hooks.
+- `HookFactory.LoadHooks(dbContext)` resolves hooks from the **application** service provider (the one your `DbContext` was registered with via `AddDbContextWithHook`/`AddDbContext`), not a detached scope — this is why a `DbContext` must be registered through this package's DI extensions (or manually call `UseHooks`) for its hooks to resolve at all; otherwise `HookRunnerInterceptor` throws `InvalidOperationException` when it can't find an application service provider on the context.
+- Hooks are looked up keyed by every type name in the `DbContext`'s inheritance chain, which is what makes hook registrations on a base `DbContext` apply to derived contexts too.
+- If a save produces no tracked `Added`/`Modified`/`Deleted` entries, no hooks run for that save (the snapshot is empty and both phases short-circuit).
+- Exceptions thrown from a before-save hook abort the save (the exception propagates out of `SaveChangesAsync`); exceptions from an after-save hook propagate too — the database write has already committed by that point, so an after-save hook failure does **not** roll back the save. Wrap risky after-save work in your own try/catch if a downstream failure (e.g. a flaky event publisher) shouldn't surface as a `SaveChangesAsync` exception.
 
-## Integration with Other DKNet Components
+## 4. Configuration and defaults
 
-DKNet.EfCore.Hooks integrates seamlessly with other DKNet components:
+There is no options object for this package — behavior is controlled entirely through what you register:
 
-- **DKNet.EfCore.Abstractions**: Uses entity interfaces and base classes
-- **DKNet.EfCore.Events**: Coordinates with domain event publishing
-- **DKNet.EfCore.Repos**: Hooks execute during repository operations
-- **DKNet.EfCore.DataAuthorization**: Integrates with authorization hooks
-- **DKNet.Fw.Extensions**: Leverages core framework utilities
+| Aspect | Default | How to change it |
+|---|---|---|
+| Which `DbContext` types run hooks | None, until registered | `AddDbContextWithHook<TDbContext>(...)` or `options.UseHooks<TDbContext>(provider)` |
+| Which hooks run for a `DbContext` | None | `AddHook<TDbContext, THook>()`, once per `(TDbContext, THook)` pair |
+| Hook execution order | DI registration order, before-hooks then after-hooks per phase | Register hooks in the order you need |
+| Hook lifetime | Scoped (`AddKeyedScoped`) | Not configurable — hooks are always scoped to the owning `DbContext`'s DI scope |
+| `HookRunnerInterceptor` lifetime | Singleton, keyed per `DbContext` type | Not configurable |
+| Disabling hooks | Enabled | `dbContext.DisableHooks()` around a `using`/`await using` scope |
 
----
+## 5. Composing with Events, AuditLogs, and DataAuthorization
 
-> 💡 **Architecture Tip**: Use DKNet.EfCore.Hooks to implement cross-cutting concerns that need to execute during database operations. Hooks provide a clean way to separate infrastructure concerns from business logic while ensuring consistent behavior across your application. Keep hooks focused on single responsibilities and consider their performance impact on database operations.
+`DKNet.EfCore.Events`, `DKNet.EfCore.AuditLogs`, and `DKNet.EfCore.DataAuthorization` are all built as hooks on top of this package, sharing the same `HookRunnerInterceptor` pipeline and the same `SnapshotContext` type — verified directly against their internal hook classes:
+
+- **`DKNet.EfCore.Events`** — `EventHook : HookAsync` (`DKNet.EfCore.Events/Internals/EventHook.cs`) captures which `[RaisesEvent]`-declared events qualify for the save in `BeforeSaveAsync` (state and modified-property checks can only be evaluated before the save), then publishes collected domain events in `AfterSaveAsync` once the save has succeeded. See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+- **`DKNet.EfCore.AuditLogs`** — `EfCoreAuditHook : HookAsync` (`DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs`) builds audit log entries from `context.Entities` in `BeforeSaveAsync`, caches them per `DbContext` instance ID, and publishes them via registered `IAuditLogPublisher`s in `AfterSaveAsync`. See [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) for the sibling ownership concern.
+- **`DKNet.EfCore.DataAuthorization`** — `DataOwnerHook : IBeforeSaveHookAsync` (`DKNet.EfCore.DataAuthorization/Internals/DataOwnerHook.cs`) stamps ownership on newly added entities and guards modified entities against cross-tenant `OwnedBy` reassignment, entirely in `BeforeSaveAsync`.
+
+Because all three register through the same `AddHook<TDbContext, THook>()` extension against your `DbContext`, they compose automatically: register your `DbContext` once with `AddDbContextWithHook`, then add whichever of `AddEfCoreEventHooks`, `AddAuditLogs`/audit setup, and data-authorization setup your application needs (see each package's own docs for its specific registration call) — they run side by side without needing to know about each other. A single `dbContext.DisableHooks()` scope suppresses all of them at once, which is exactly why it's the recommended way to bypass audit/event/ownership stamping during seeding.
+
+## 6. Gotchas and limits
+
+- **Registering the `DbContext` the wrong way silently drops hooks.** If you keep using plain `AddDbContext` without also calling `options.UseHooks<TDbContext>(provider)`, `AddHook` registrations exist in DI but the interceptor that would invoke them is never attached — no exception, hooks just never run. Prefer `AddDbContextWithHook`.
+- **No application service provider → hard failure, not silent skip.** If a `DbContext` *is* intercepted by `HookRunnerInterceptor` but was constructed in a way that has no `ApplicationServiceProvider` set (e.g. hand-built `DbContextOptions` bypassing DI), resolving hooks throws `InvalidOperationException` at save time.
+- **`SnapshotContext` only ever contains `Added`/`Modified`/`Deleted` entries**, captured once per save via `ChangeTracker.DetectChanges()`. Mutating entity state from *inside* a before-save hook (adding new entities, changing state) is not re-snapshotted for hooks running later in the same phase — the snapshot is fixed for the whole `BeforeSaveAsync`/`AfterSaveAsync` run.
+- **After-save hook failures don't roll back the save.** The write has already committed once `SavedChangesAsync` runs; treat after-save hook errors as "best effort, log and move on" unless you specifically want a failed publish to surface as an exception from `SaveChangesAsync`.
+- **No built-in hook priority/ordering mechanism.** Order is purely DI registration order; there's no `[Order]` attribute or similar. Split a hook that must run first from ones that depend on it, and register them explicitly in the required order.
+- **`DisableHooks()` suppresses by `DbContext` type, not instance.** In a process with multiple concurrently-open instances of the same `DbContext` type, a disabling scope opened for suppressing seeding on one instance also suppresses hooks for every other instance of that type saving concurrently, until disposed.
+- **Hooks are scoped, not singleton** — a hook with per-save mutable state (like `EfCoreAuditHook`'s per-`ContextId` cache) needs to key any cross-phase state by `context.DbContext.ContextId.InstanceId` if the same hook instance could conceivably see multiple `DbContext` instances' saves (it normally won't, since hooks are scoped alongside the `DbContext`, but avoid assuming a 1:1 lifetime you haven't verified for your own DI setup).
