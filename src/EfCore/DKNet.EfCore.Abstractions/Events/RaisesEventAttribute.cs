@@ -6,7 +6,7 @@ namespace DKNet.EfCore.Abstractions.Events;
 /// </summary>
 /// <remarks>
 ///     <para>
-///     Two forms are supported. The type-naming form names an existing <c>[GenerateDto]</c> payload record:
+///     Three forms are supported. The type-naming form names an existing <c>[GenerateDto]</c> payload record:
 ///     <code>
 ///     [GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
 ///     public partial record OrderPlacedEvent;
@@ -15,12 +15,20 @@ namespace DKNet.EfCore.Abstractions.Events;
 ///     [RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
 ///     public class Order { public string Status { get; set; } = string.Empty; }
 ///     </code>
-///     The string form names an event that does not exist yet: the build generates a public, partial,
-///     default-shape payload record for it in the carrying entity's namespace — no hand-written
-///     <c>[GenerateDto]</c> record is needed.
+///     The convention forms name no event at all: the payload record's name is composed by fixed convention
+///     — entity name, optional label, narrowing properties, operations, then <c>Event</c> — and the build
+///     generates a public, partial, default-shape payload record for it in the carrying entity's namespace,
+///     no hand-written <c>[GenerateDto]</c> record needed.
 ///     <code>
-///     [RaisesEvent("CustomerTouched", EventOperations.Created)]
+///     [RaisesEvent(EventOperations.Created)]
 ///     public class Customer { }
+///     // generates CustomerCreatedEvent
+///     </code>
+///     The label form adds a fixed word into the composed name, ahead of any narrowing properties:
+///     <code>
+///     [RaisesEvent("Touched", EventOperations.Created)]
+///     public class Customer { }
+///     // generates CustomerTouchedEvent
 ///     </code>
 ///     </para>
 ///     <para>
@@ -60,34 +68,49 @@ public sealed class RaisesEventAttribute : Attribute
     }
 
     /// <summary>
-    ///     String form: names an event by string with no hand-written payload record. The build generates a
-    ///     public, partial, default-shape payload record for <paramref name="eventName"/> in the carrying
-    ///     entity's namespace.
+    ///     Label convention form: composes the generated record's name from the entity name, this label,
+    ///     any narrowing properties, and the declared operations. See the type remarks for the composition
+    ///     order.
     /// </summary>
-    /// <param name="eventName">The name of the event to raise; also the generated record's type name.</param>
-    /// <param name="operations">The persistence operation(s) that raise the named event.</param>
+    /// <param name="label">The label segment to compose into the generated record's name.</param>
+    /// <param name="operations">The persistence operation(s) that raise the composed event.</param>
     /// <param name="properties">
     ///     For <see cref="EventOperations.Updated"/>, the narrowing property list. Empty means any change qualifies.
     /// </param>
-    public RaisesEventAttribute(string eventName, EventOperations operations, params string[] properties)
+    public RaisesEventAttribute(string label, EventOperations operations, params string[] properties)
     {
-        EventName = eventName;
+        Label = label;
+        Operations = operations;
+        Properties = properties;
+    }
+
+    /// <summary>
+    ///     Label-less convention form: composes the generated record's name from the entity name, any
+    ///     narrowing properties, and the declared operations — no label segment. See the type remarks for
+    ///     the composition order.
+    /// </summary>
+    /// <param name="operations">The persistence operation(s) that raise the composed event.</param>
+    /// <param name="properties">
+    ///     For <see cref="EventOperations.Updated"/>, the narrowing property list. Empty means any change qualifies.
+    /// </param>
+    public RaisesEventAttribute(EventOperations operations, params string[] properties)
+    {
         Operations = operations;
         Properties = properties;
     }
 
     /// <summary>
     ///     Gets the <c>[GenerateDto]</c>-generated payload record type to raise (type-naming form).
-    ///     <see langword="null"/> for the string form; exactly one of <see cref="EventType"/>/<see cref="EventName"/>
-    ///     is set per instance.
+    ///     <see langword="null"/> for the convention forms; exactly one of <see cref="EventType"/>/<see cref="Label"/>
+    ///     is set per instance, and neither is set for the label-less convention form.
     /// </summary>
     public Type? EventType { get; }
 
     /// <summary>
-    ///     Gets the event name to raise (string form). <see langword="null"/> for the type-naming form; exactly
-    ///     one of <see cref="EventType"/>/<see cref="EventName"/> is set per instance.
+    ///     Gets the label segment composed into the generated record's name (label convention form).
+    ///     <see langword="null"/> for the type-naming and label-less convention forms.
     /// </summary>
-    public string? EventName { get; }
+    public string? Label { get; }
 
     /// <summary>
     ///     Gets the persistence operation(s) that raise the declared event.

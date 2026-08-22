@@ -20,6 +20,12 @@
         <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests.ProjectWide"/>
     </ItemGroup>
     <ItemGroup>
+        <!-- Shared with DKNet.EfCore.Abstractions so build-time and runtime event naming can never
+             disagree. A ProjectReference is not possible here: analyzer packaging requires this
+             project to reference neither DKNet.EfCore.Abstractions nor DKNet.EfCore.Events. -->
+        <Compile Include="..\DKNet.EfCore.Abstractions\Events\EventNameComposer.cs" Link="Shared\EventNameComposer.cs"/>
+    </ItemGroup>
+    <ItemGroup>
         <!-- Analyzers/generators must reference the LOWEST Roslyn they need to run under, not the
              newest: the running compiler must be >= the referenced version (CS9057). The IDE's csc
              (5.6) is older than the CLI SDK's, so pin down here rather than using the 5.9.0 CPM

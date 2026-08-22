@@ -108,7 +108,7 @@ A property counts as an excluded "navigation" when, after unwrapping arrays/`Lis
 
 ### `[RaisesEvent]` validation (`RaisesEventValidator`)
 
-`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's string form only — generates the payload record. See [`RaisesEventAttribute`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
 
 Declaring a domain event is two separate steps:
 
@@ -140,24 +140,25 @@ public class Product
 - every narrowing property (the trailing `params string[] properties`) is a direct property of the entity, not a nested path (`DKRAISEVT001`);
 - narrowing set on a rule with no `Updated` flag is pointless and warned about (`DKRAISEVT003`), since it has no runtime effect.
 
-**String form** — name an event that has no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, with the same default shape as `[GenerateDto(typeof(Entity))]` (no `Exclude`/`Include`/`IgnoreComplexType` knobs available on this form):
+**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (no `Exclude`/`Include`/`IgnoreComplexType` knobs available on these forms). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
-[RaisesEvent("CustomerTouched", EventOperations.Created)]
+[RaisesEvent("Touched", EventOperations.Created)]
 public class Customer
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
 }
+// generates CustomerTouchedCreatedEvent
 
 // Optional — extend the generated record from your own file; it is public partial record:
-public partial record CustomerTouched
+public partial record CustomerTouchedCreatedEvent
 {
     public string Greeting => $"Hello, {Name}";
 }
 ```
 
-The string form has its own diagnostics: `DKRAISEVT004` (name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges), `DKRAISEVT005` (name isn't a compile-time constant string, or isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace declare the same string-form event name — never merged into one record).
+The convention forms have their own diagnostics: `DKRAISEVT004` (composed name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges; guidance differs depending on whether the colliding type is a `[GenerateDto]` payload of the same entity), `DKRAISEVT005` (the label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace compose the same name — never merged into one record), `DKRAISEVT007` (no operation named — the declaration, of any form, can never raise anything), `DKRAISEVT008` (two declarations on the SAME entity compose the same name — never merged into one record).
 
 ### Diagnostics reference
 
@@ -173,9 +174,11 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `DKRAISEVT001` | Error | `RaisesEventValidator` | A narrowing property is a nested path, or isn't a property of the entity. |
 | `DKRAISEVT002` | Error | `RaisesEventValidator` | The named event type carries no `[GenerateDto]`, or was generated from a different entity than the one declaring the rule. |
 | `DKRAISEVT003` | Warning | `RaisesEventValidator` | Narrowing properties set on a rule with no `Updated` operation flag — ignored at runtime. |
-| `DKRAISEVT004` | Error | `RaisesEventValidator` | String-form event name already resolves to an existing, incompatible type. |
-| `DKRAISEVT005` | Error | `RaisesEventValidator` | String-form event name isn't a compile-time constant, or isn't a single valid C# identifier. |
-| `DKRAISEVT006` | Error | `RaisesEventValidator` | Two different entities in the same namespace declared the same string-form event name. |
+| `DKRAISEVT004` | Error | `RaisesEventValidator` | Composed event name already resolves to an existing, incompatible type. |
+| `DKRAISEVT005` | Error | `RaisesEventValidator` | The label isn't a compile-time constant, or the composed event name isn't a single valid C# identifier. |
+| `DKRAISEVT006` | Error | `RaisesEventValidator` | Two different entities in the same namespace compose the same event name. |
+| `DKRAISEVT007` | Error | `RaisesEventValidator` | A declaration (any form) names no operation — it could never raise anything. |
+| `DKRAISEVT008` | Error | `RaisesEventValidator` | Two declarations on the SAME entity compose the same event name. |
 
 ## Configuration options and defaults
 
@@ -192,7 +195,7 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 
 - **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs.
 - **Generated DTOs are plain data types.** No base class, no interface, no attribute left on the output — a generated DTO has zero coupling to DKNet or to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`.
-- **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.
+- **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). The one exception is the naming algorithm itself: `EventNameComposer.cs` lives in `DKNet.EfCore.Abstractions` and is `<Compile Include>`-linked (not project-referenced) into this generator, so the build-time composed name and the `DKNet.EfCore.Events` runtime-composed name are produced by the exact same source and can never disagree. A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.
 - **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md#declared-domain-events-raisesevent).
 - **No built-in Mapster/AutoMapper integration.** Unlike some earlier iterations of this generator, no mapping helper methods are emitted — you choose your own mapping approach (e.g. Mapster's `Adapt`/`ProjectToType`, or manual assignment) for entity ↔ DTO conversion.
 

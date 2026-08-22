@@ -104,7 +104,13 @@ the queue.
 declare that a persistence operation should raise a payload automatically, without touching the entity's method
 bodies. It is repeatable (`AllowMultiple = true`) — apply once per event the entity raises.
 
-Two forms:
+> **Breaking change:** the string-form argument used to be the generated record's name *verbatim*. It is now only
+> the optional **label** segment of a name composed by fixed convention — every existing string-form declaration
+> produces a differently-named record after upgrading, and each one must be revisited. Before:
+> `[RaisesEvent("CustomerTouched", EventOperations.Created)]` generated `CustomerTouched`. After, the same
+> declaration generates `CustomerTouchedCreatedEvent` (entity name + label + operation + `Event`).
+
+Three forms:
 
 ```csharp
 // Type-naming form — names an existing [GenerateDto] payload record (DKNet.EfCore.DtoGenerator)
@@ -118,11 +124,19 @@ public class Order : Entity
     public string Status { get; set; } = string.Empty;
 }
 
-// String form — no hand-written payload record; the build generates a default-shape one
-[RaisesEvent("CustomerTouched", EventOperations.Created)]
+// Label-less convention form — no hand-written payload record; the build generates and names it by convention
+[RaisesEvent(EventOperations.Created)]
 public class Customer : Entity
 {
 }
+// generates CustomerCreatedEvent
+
+// Label convention form — the label is composed into the generated name
+[RaisesEvent("Touched", EventOperations.Created)]
+public class Product : Entity
+{
+}
+// generates ProductTouchedCreatedEvent
 ```
 
 `EventOperations` is a `[Flags]` enum with `Created = 1`, `Updated = 2`, `Deleted = 4` — combine flags
@@ -131,12 +145,34 @@ optional trailing `properties` (`nameof(...)`-checked) narrow the rule to fire o
 *direct* property changed; an empty list fires on any change. Nested/owned-value changes never satisfy the
 narrowing — only direct properties of the carrying entity are observed.
 
+#### Convention-form naming
+
+Both convention forms (label and label-less) name their generated record by a fixed, non-configurable formula —
+never a literal name — composed in this order:
+
+1. The carrying entity's simple name.
+2. The label, when one is given (absent entirely for the label-less form).
+3. The narrowing properties, de-duplicated and sorted ordinally (culture-independent) — declaration order and
+   machine locale never affect the result.
+4. The declared operations, always emitted in the canonical order **Created, Updated, Deleted**, regardless of the
+   order the flags were combined in.
+5. The literal suffix `Event`.
+
+For example, `[RaisesEvent(EventOperations.Updated, nameof(Customer.Tier))]` on `Customer` composes
+`CustomerTierUpdatedEvent`; `[RaisesEvent(EventOperations.Created | EventOperations.Updated)]` composes
+`CustomerCreatedUpdatedEvent`. A declaration with no operation named (`Operations == 0`) is a build error
+(`DKRAISEVT007`) — it can never raise anything. A composed name that isn't a single valid C# identifier (e.g. a
+label containing whitespace or punctuation) is a build error (`DKRAISEVT005`) and generates no record. Two
+declarations composing to the identical name are always an error, never silently merged: on the same entity that's
+`DKRAISEVT008`, across different entities in the same namespace it's `DKRAISEVT006`.
+
 This attribute alone raises nothing at runtime: `DKNet.EfCore.DtoGenerator` validates the rule at build time (the
-named type must be a `[GenerateDto]` payload generated from the *same* entity; narrowing properties must be direct
-existing properties), and `DKNet.EfCore.Events`' save hook reads `[RaisesEvent]` via reflection to actually raise
-the payload after a successful save. A project that references only `DKNet.EfCore.Abstractions` and
-`DKNet.EfCore.DtoGenerator` builds cleanly with rules declared and simply never raises them until the application
-also registers `DKNet.EfCore.Events`.
+named type must be a `[GenerateDto]` payload generated from the *same* entity for the type-naming form; the
+composed name must be a valid, non-colliding identifier for the convention forms), and `DKNet.EfCore.Events`' save
+hook reads `[RaisesEvent]` via reflection to actually raise the payload after a successful save, composing the same
+name from the same `EventNameComposer` source the build uses — the two can never disagree. A project that
+references only `DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds cleanly with rules declared and
+simply never raises them until the application also registers `DKNet.EfCore.Events`.
 
 ### 4. Audit tracking — `IAuditedProperties`, `IAuditedEntity<TKey>`, `AuditedEntity<TKey>` / `AuditedEntity`
 

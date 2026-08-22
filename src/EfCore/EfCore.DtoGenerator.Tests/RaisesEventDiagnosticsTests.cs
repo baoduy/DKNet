@@ -40,15 +40,21 @@ public class RaisesEventDiagnosticsTests
                     Properties = properties;
                 }
 
-                public RaisesEventAttribute(string eventName, EventOperations operations, params string[] properties)
+                public RaisesEventAttribute(string label, EventOperations operations, params string[] properties)
                 {
-                    EventName = eventName;
+                    Label = label;
+                    Operations = operations;
+                    Properties = properties;
+                }
+
+                public RaisesEventAttribute(EventOperations operations, params string[] properties)
+                {
                     Operations = operations;
                     Properties = properties;
                 }
 
                 public Type? EventType { get; }
-                public string? EventName { get; }
+                public string? Label { get; }
                 public EventOperations Operations { get; }
                 public string[] Properties { get; }
             }
@@ -234,20 +240,21 @@ public class RaisesEventDiagnosticsTests
     [Fact]
     public void StringFormName_ResolvingToAnIncompatibleExistingType_FailsTheBuild()
     {
-        // Arrange - LoyaltyMembershipEvents is a plain (non-partial, non-record) type already declared;
-        // naming it by string must fail rather than silently reuse or collide with it.
+        // Arrange - LoyaltyMembershipEventsCreatedEvent is a plain (non-partial, non-record) type already
+        // declared; composing to it must fail rather than silently reuse or collide with it. It does not
+        // carry [GenerateDto], so the guidance offers only changing the label, never the type-naming form.
         const string source = """
             using System;
             using DKNet.EfCore.Abstractions.Events;
 
             namespace Probe.Entities
             {
-                public sealed class LoyaltyMembershipEvents
+                public sealed class LoyaltyMembershipEventsCreatedEvent
                 {
                     public int Points { get; set; }
                 }
 
-                [RaisesEvent("LoyaltyMembershipEvents", EventOperations.Created)]
+                [RaisesEvent("Events", EventOperations.Created)]
                 public sealed class LoyaltyMembership
                 {
                     public Guid Id { get; set; }
@@ -262,8 +269,8 @@ public class RaisesEventDiagnosticsTests
         // Assert
         var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT004" && d.Severity == DiagnosticSeverity.Error);
         error.ShouldNotBeNull();
-        error.GetMessage().ShouldContain("LoyaltyMembershipEvents");
-        error.GetMessage().ShouldContain("typeof(LoyaltyMembershipEvents)");
+        error.GetMessage().ShouldContain("LoyaltyMembershipEventsCreatedEvent");
+        error.GetMessage().ShouldContain("label");
     }
 
     [Fact]
@@ -317,21 +324,22 @@ public class RaisesEventDiagnosticsTests
     [Fact]
     public void TwoEntitiesInOneNamespace_NamingTheSameStringEvent_FailsTheBuildIdentifyingBoth()
     {
-        // Arrange
+        // Arrange - two DIFFERENT entities composing to the identical name: Order's label form
+        // ("Touched") and OrderTouched's label-less form both compose "OrderTouchedCreatedEvent".
         const string source = """
             using System;
             using DKNet.EfCore.Abstractions.Events;
 
             namespace Domain.Sales
             {
-                [RaisesEvent("RecordTouched", EventOperations.Created)]
+                [RaisesEvent("Touched", EventOperations.Created)]
                 public sealed class Order
                 {
                     public Guid Id { get; set; }
                 }
 
-                [RaisesEvent("RecordTouched", EventOperations.Created)]
-                public sealed class Invoice
+                [RaisesEvent(EventOperations.Created)]
+                public sealed class OrderTouched
                 {
                     public Guid Id { get; set; }
                 }
@@ -344,8 +352,8 @@ public class RaisesEventDiagnosticsTests
         // Assert
         var errors = result.Diagnostics.Where(d => d.Id == "DKRAISEVT006" && d.Severity == DiagnosticSeverity.Error).ToList();
         errors.Count.ShouldBe(2); // one per declaration, each identifying both entities
-        errors.ShouldAllBe(d => d.GetMessage().Contains("Order") && d.GetMessage().Contains("Invoice"));
-        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("RecordTouched", StringComparison.Ordinal));
+        errors.ShouldAllBe(d => d.GetMessage().Contains("Order") && d.GetMessage().Contains("OrderTouched"));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("OrderTouchedCreatedEvent", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -401,17 +409,17 @@ public class RaisesEventDiagnosticsTests
     public void ValidStringFormDeclaration_GeneratesAPublicPartialRecord_WithTheEntitysDefaultShapeMembers()
     {
         // Arrange
-        const string declaration = """[RaisesEvent("OrderTouched", EventOperations.Created)]""";
+        const string declaration = """[RaisesEvent(EventOperations.Created)]""";
 
         // Act
         var result = RunGenerator(declaration);
 
         // Assert
         result.Diagnostics.ShouldBeEmpty();
-        var generated = result.GeneratedSources.Single(s => s.HintName.Contains("OrderTouched.RaisesEvent.g.cs", StringComparison.Ordinal));
+        var generated = result.GeneratedSources.Single(s => s.HintName.Contains("OrderCreatedEvent.RaisesEvent.g.cs", StringComparison.Ordinal));
         var source = generated.SourceText.ToString();
         source.ShouldContain("namespace Probe.Entities");
-        source.ShouldContain("public partial record OrderTouched");
+        source.ShouldContain("public partial record OrderCreatedEvent");
         source.ShouldContain("Status");
         source.ShouldContain("DeliveryNote");
     }
@@ -427,12 +435,12 @@ public class RaisesEventDiagnosticsTests
 
             namespace Probe.Entities
             {
-                public partial record OrderTouched
+                public partial record OrderCreatedEvent
                 {
                     public string ExtraNote => "hand-authored";
                 }
 
-                [RaisesEvent("OrderTouched", EventOperations.Created)]
+                [RaisesEvent(EventOperations.Created)]
                 public sealed class Order
                 {
                     public Guid Id { get; set; }
@@ -446,7 +454,7 @@ public class RaisesEventDiagnosticsTests
 
         // Assert - no collision diagnostic, and the generator still emits its partial for the merge
         result.Diagnostics.ShouldNotContain(d => d.Id == "DKRAISEVT004");
-        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("OrderTouched.RaisesEvent.g.cs", StringComparison.Ordinal));
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("OrderCreatedEvent.RaisesEvent.g.cs", StringComparison.Ordinal));
     }
 
     private static GeneratorOutput RunGenerator(string declaration) =>

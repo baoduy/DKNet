@@ -145,7 +145,7 @@ missing `IMapper` for a mapping-based event source, and both at dispatch time (i
 - an entity queued a type-based event via `AddEvent<TEvent>()` with no `IMapper` registered;
 - an entity qualifies for a `[RaisesEvent]` declared event with no `IMapper` registered.
 
-A third case is specific to `[RaisesEvent]`'s string form (§3.1): the declared event name doesn't resolve to a
+A third case is specific to `[RaisesEvent]`'s convention forms (§3.1): the composed event name doesn't resolve to a
 generated payload type in the entity's own assembly/namespace (typically because `DKNet.EfCore.DtoGenerator`
 wasn't referenced, or the project didn't rebuild) — also thrown at dispatch time, never silently dropped.
 
@@ -179,17 +179,20 @@ public class Order
 
 `DKNet.EfCore.DtoGenerator` validates these rules at build time (payload/entity match, narrowing property names)
 but emits no runtime code for them — **this package** is what reads `[RaisesEvent]` via reflection (cached per
-entity type, and per entity-type+event-name for the string form) and raises them at save time, exactly per the
-lifecycle in §3 above. A rule naming the same payload for the same operation twice on one entity raises it once.
+entity type, and per entity-type+composed-name for the convention forms) and raises them at save time, exactly per
+the lifecycle in §3 above. A rule naming the same payload for the same operation twice on one entity raises it once.
 
 An entity may combine `[RaisesEvent]` declarations with hand-raised `AddEvent(...)` calls in the same class —
 both are published from the same save.
 
-**String form**: `[RaisesEvent("CustomerTouched", EventOperations.Created)]` skips the hand-written
-`[GenerateDto]` payload — `DKNet.EfCore.DtoGenerator` generates a default-shape `public partial record` for it in
-the entity's own namespace. At runtime, this package resolves that generated type by reflection from the entity's
-own assembly and namespace; if it isn't found, the first save that would raise it throws `EventException` naming
-the missing event.
+**Convention forms**: `[RaisesEvent("Touched", EventOperations.Created)]` (or, label-less,
+`[RaisesEvent(EventOperations.Created)]`) skips the hand-written `[GenerateDto]` payload —
+`DKNet.EfCore.DtoGenerator` generates a default-shape `public partial record` for it in the entity's own namespace,
+named by fixed convention: entity name + label (if any) + sorted narrowing properties + operations (canonical
+order Created, Updated, Deleted) + `Event` — e.g. `CustomerTouchedCreatedEvent`. At runtime, this package composes
+the identical name via the same `EventNameComposer` the build uses, then resolves that generated type by
+reflection from the entity's own assembly and namespace; if it isn't found, the first save that would raise it
+throws `EventException` naming the composed event it looked for.
 
 ## 4. Configuration and defaults
 
