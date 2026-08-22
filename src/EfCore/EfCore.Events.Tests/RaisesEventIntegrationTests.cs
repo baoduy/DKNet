@@ -324,7 +324,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
     [Fact]
     public async Task StringFormRule_GeneratesItsRecordAndRaisesIt_WithNoHandWrittenPayload()
     {
-        // Arrange - LoyaltyMembershipOtherEvents has no [GenerateDto] declaration anywhere; it exists
+        // Arrange - LoyaltyMembershipTierUpdatedEvent has no [GenerateDto] declaration anywhere; it exists
         // only because the string-form rule below told the build to generate it.
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
@@ -338,7 +338,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         await db.SaveChangesAsync();
 
         // Assert
-        var published = RaisesEventPublisher.Events.OfType<LoyaltyMembershipOtherEvents>().ToList();
+        var published = RaisesEventPublisher.Events.OfType<LoyaltyMembershipTierUpdatedEvent>().ToList();
         published.ShouldNotBeEmpty();
         published.ShouldContain(e => e.Tier == "Silver" && e.Points == 100);
     }
@@ -346,10 +346,10 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
     [Fact]
     public void GeneratedRecord_IsPublicAndPartial_InTheCarryingEntitysNamespace()
     {
-        // Assert - the build placed LoyaltyMembershipOtherEvents in LoyaltyMembership's own namespace,
+        // Assert - the build placed LoyaltyMembershipTierUpdatedEvent in LoyaltyMembership's own namespace,
         // made it public, and it accepted the hand-authored Note member declared alongside the entity
         // (see the partial record stub in RaisesEventEntities.cs) — proof the record is partially declarable.
-        var generatedType = typeof(LoyaltyMembershipOtherEvents);
+        var generatedType = typeof(LoyaltyMembershipTierUpdatedEvent);
         generatedType.IsPublic.ShouldBeTrue();
         generatedType.Namespace.ShouldBe(typeof(LoyaltyMembership).Namespace);
         generatedType.GetProperty("Note").ShouldNotBeNull();
@@ -360,7 +360,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
     public async Task BothForms_CoexistOnOneEntity_EachRaisingOnlyOnItsOwnSave()
     {
         // Arrange - LoyaltyMembership carries a type-naming rule (LoyaltyMembershipEvents, on
-        // Points changes) and a string-form rule (LoyaltyMembershipOtherEvents, narrowed to Tier).
+        // Points changes) and a string-form rule (LoyaltyMembershipTierUpdatedEvent, narrowed to Tier).
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
         var membership = new LoyaltyMembership(100, "Bronze", "verify");
@@ -378,8 +378,8 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
 
         // Assert
         afterCreate.OfType<LoyaltyMembershipEvents>().ShouldContain(e => e.Points == 100);
-        afterCreate.OfType<LoyaltyMembershipOtherEvents>().ShouldBeEmpty();
-        afterTierChange.OfType<LoyaltyMembershipOtherEvents>().ShouldContain(e => e.Tier == "Silver");
+        afterCreate.OfType<LoyaltyMembershipTierUpdatedEvent>().ShouldBeEmpty();
+        afterTierChange.OfType<LoyaltyMembershipTierUpdatedEvent>().ShouldContain(e => e.Tier == "Silver");
         afterTierChange.OfType<LoyaltyMembershipEvents>().ShouldBeEmpty();
     }
 
@@ -414,7 +414,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
     [Fact]
     public async Task StringFormDefaultShape_CarriesTheEntitysDefaultValues()
     {
-        // Arrange - CustomerTouched is generated with no shaping options: the default shape for Customer.
+        // Arrange - CustomerTouchedCreatedEvent is generated with no shaping options: the default shape for Customer.
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
         var customer = new Customer("Acme Pte Ltd", "billing@acme.example", "T08-9911", "verify");
@@ -424,7 +424,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         await db.SaveChangesAsync();
 
         // Assert
-        var published = RaisesEventPublisher.Events.OfType<CustomerTouched>().ToList();
+        var published = RaisesEventPublisher.Events.OfType<CustomerTouchedCreatedEvent>().ToList();
         published.ShouldContain(e =>
             e.Name == "Acme Pte Ltd" && e.Email == "billing@acme.example" && e.TaxIdentifier == "T08-9911");
     }
@@ -432,8 +432,8 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
     [Fact]
     public async Task NarrowedStringFormUpdateRule_StaysSilent_WhenTheNarrowedPropertyDoesNotChange()
     {
-        // Arrange - the string-form OrderStatusChanged rule is narrowed to Status, exactly like the
-        // pre-existing type-form OrderStatusChangedEvent rule on the same entity.
+        // Arrange - the label-less convention-form OrderStatusUpdatedEvent rule is narrowed to Status,
+        // exactly like the pre-existing type-form OrderStatusChangedEvent rule on the same entity.
         RaisesEventPublisher.Events.Clear();
         var db = fixture.Provider.GetRequiredService<DddContext>();
         var order = new Order("Acme Pte Ltd", "Pending", string.Empty, "verify");
@@ -446,7 +446,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         await db.SaveChangesAsync();
 
         // Assert
-        RaisesEventPublisher.Events.OfType<OrderStatusChanged>().ShouldBeEmpty();
+        RaisesEventPublisher.Events.OfType<OrderStatusUpdatedEvent>().ShouldBeEmpty();
     }
 
     [Fact]
@@ -465,7 +465,7 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         await db.SaveChangesAsync();
 
         // Assert
-        var published = RaisesEventPublisher.Events.OfType<OrderStatusChanged>().ToList();
+        var published = RaisesEventPublisher.Events.OfType<OrderStatusUpdatedEvent>().ToList();
         published.ShouldNotBeEmpty();
         published.ShouldContain(e => e.Status == "Shipped");
     }

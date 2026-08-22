@@ -32,11 +32,12 @@ public partial record CustomerUpdatedEvent;
 [GenerateDto(typeof(ShipmentLeg))]
 public partial record ShipmentLegPlacedEvent;
 
-// String-form payload — no hand-written [GenerateDto] record: the build generates
-// LoyaltyMembershipOtherEvents below from the [RaisesEvent("LoyaltyMembershipOtherEvents", ...)] rule
-// carried by LoyaltyMembership. This hand-authored declaration is the developer's own extension point —
-// a compatible partial record stub the generated partial merges into (DRK-471 §3 requirement 2).
-public partial record LoyaltyMembershipOtherEvents
+// Convention-form payload — no hand-written [GenerateDto] record: the build generates
+// LoyaltyMembershipTierUpdatedEvent below from the label-less [RaisesEvent(EventOperations.Updated,
+// nameof(Tier))] rule carried by LoyaltyMembership. This hand-authored declaration is the developer's own
+// extension point — a compatible partial record stub the generated partial merges into (DRK-471 §3
+// requirement 2).
+public partial record LoyaltyMembershipTierUpdatedEvent
 {
     /// <summary>Hand-added member proving the generated record is genuinely partially-declarable.</summary>
     public string Note => "hand-authored extension";
@@ -56,7 +57,7 @@ public partial record LoyaltyMembershipEvents;
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
 [RaisesEvent(typeof(OrderStatusChangedEvent), EventOperations.Updated, nameof(Order.Status))]
-[RaisesEvent("OrderStatusChanged", EventOperations.Updated, nameof(Order.Status))]
+[RaisesEvent(EventOperations.Updated, nameof(Order.Status))]
 [RaisesEvent(typeof(OrderChangedEvent), EventOperations.Updated)]
 [RaisesEvent(typeof(OrderCancelledEvent), EventOperations.Deleted)]
 [RaisesEvent(typeof(OrderRecordedEvent), EventOperations.Created | EventOperations.Updated)]
@@ -111,7 +112,7 @@ public sealed record OrderStatusNotifiedEvent
 
 /// <summary>
 ///     Mapped entity carrying a create rule that excludes <c>TaxIdentifier</c>, an unnarrowed update
-///     rule, and a string-form create rule (<see cref="LoyaltyMembershipOtherEvents" />-style generation,
+///     rule, and a string-form create rule (<see cref="LoyaltyMembershipTierUpdatedEvent" />-style generation,
 ///     here proving the default generated shape carries the entity's default values — name, email, tax
 ///     identifier), with an owned <see cref="OwnedAddress" /> value. Used to verify exclusion honouring
 ///     and the nested-owned-value limitation (a change confined to <see cref="Address" /> does not raise
@@ -119,7 +120,7 @@ public sealed record OrderStatusNotifiedEvent
 /// </summary>
 [RaisesEvent(typeof(CustomerRegisteredEvent), EventOperations.Created)]
 [RaisesEvent(typeof(CustomerUpdatedEvent), EventOperations.Updated)]
-[RaisesEvent("CustomerTouched", EventOperations.Created)]
+[RaisesEvent("Touched", EventOperations.Created)]
 public class Customer : EntityBase<Guid>
 {
     #region Constructors
@@ -202,10 +203,10 @@ public class ShipmentLeg : EntityBase<Guid>
 ///     guard — same payload, same behaviour as before the string form shipped) and a string-form update
 ///     rule narrowed to the unrelated <see cref="Tier" /> property, proving both forms coexist and raise
 ///     independently: a <see cref="Points" />-only save raises only <see cref="LoyaltyMembershipEvents" />,
-///     and a <see cref="Tier" /> change raises only the generated <see cref="LoyaltyMembershipOtherEvents" />.
+///     and a <see cref="Tier" /> change raises only the generated <see cref="LoyaltyMembershipTierUpdatedEvent" />.
 /// </summary>
 [RaisesEvent(typeof(LoyaltyMembershipEvents), EventOperations.Created | EventOperations.Updated, nameof(Points))]
-[RaisesEvent("LoyaltyMembershipOtherEvents", EventOperations.Updated, nameof(Tier))]
+[RaisesEvent(EventOperations.Updated, nameof(Tier))]
 public class LoyaltyMembership : EntityBase<Guid>
 {
     #region Constructors
