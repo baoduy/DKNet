@@ -421,9 +421,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return expression switch
         {
             ImplicitArrayCreationExpressionSyntax implicitArray
-                => ExtractStringLiteralsFromInitializer(implicitArray.Initializer),
+                => ExtractStringLiteralsFromInitializer(ctx, implicitArray.Initializer),
             ArrayCreationExpressionSyntax { Initializer: not null } explicitArray
-                => ExtractStringLiteralsFromInitializer(explicitArray.Initializer),
+                => ExtractStringLiteralsFromInitializer(ctx, explicitArray.Initializer),
             CollectionExpressionSyntax collectionExpr
                 => ExtractStringLiteralsFromCollectionExpression(ctx, collectionExpr),
             _ => new HashSet<string>()
@@ -431,22 +431,27 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Extracts string literals from an array initializer.
+    /// Extracts string literals from an array initializer, resolving constant expressions
+    /// such as <c>nameof(...)</c> in addition to plain string-literal tokens.
     /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
     /// <param name="initializer">The initializer expression syntax.</param>
     /// <returns>A set of string literals.</returns>
-    internal static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
+    internal static HashSet<string> ExtractStringLiteralsFromInitializer(
+        GeneratorSyntaxContext ctx,
+        InitializerExpressionSyntax initializer)
     {
         var result = new HashSet<string>();
-        
+
         foreach (var expression in initializer.Expressions)
         {
-            if (expression is LiteralExpressionSyntax literal && literal.Token.Value is string propertyName)
+            var constantValue = ctx.SemanticModel.GetConstantValue(expression);
+            if (constantValue.HasValue && constantValue.Value is string propertyName)
             {
                 result.Add(propertyName);
             }
         }
-        
+
         return result;
     }
 
@@ -1117,20 +1122,31 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="recordName">The record name — the rule's string event name.</param>
     /// <param name="recordNamespace">The namespace to emit the record in, or <see langword="null"/> for the global namespace.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
+    /// <param name="excludedProperties">The declaration's <c>Exclude</c> filter, or empty for none.</param>
+    /// <param name="includedProperties">The declaration's <c>Include</c> filter, or empty for none.</param>
+    /// <param name="globalExclusions">The project-wide <c>DtoGeneratorExclusions</c> set.</param>
     /// <returns>The generated C# source for the payload record.</returns>
     internal static string BuildRaisesEventRecordSource(
-        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation)
+        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation,
+        HashSet<string> excludedProperties, HashSet<string> includedProperties, HashSet<string> globalExclusions)
     {
         var entityProperties = GetEntityProperties(entitySymbol);
-        var includedProperties = FilterIncludedProperties(
-            entityProperties, new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), true, compilation);
+        var filteredProperties = FilterIncludedProperties(
+            entityProperties, excludedProperties, includedProperties, globalExclusions, true, compilation);
+
+        // FilterIncludedProperties short-circuits on a non-empty Include and never reaches the
+        // ignoreComplexType branch — composed payloads must omit navigation/complex-type properties
+        // unconditionally (DRK-692 §4), even when Include names one, so re-apply the filter here.
+        filteredProperties = filteredProperties
+            .Where(p => !IsComplexNavigationType(p, compilation))
+            .ToList();
 
         var typeDisplayFormat = CreateTypeDisplayFormat();
-        var requiredNamespaces = CollectRequiredNamespaces(includedProperties, recordNamespace);
+        var requiredNamespaces = CollectRequiredNamespaces(filteredProperties, recordNamespace);
         var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
         var metadata = new DtoMetadata(recordName, recordNamespace, "partial record", entityDisplayName, new HashSet<string>());
-        return BuildDtoSourceCode(metadata, includedProperties, requiredNamespaces, typeDisplayFormat);
+        return BuildDtoSourceCode(metadata, filteredProperties, requiredNamespaces, typeDisplayFormat);
     }
 
     #endregion

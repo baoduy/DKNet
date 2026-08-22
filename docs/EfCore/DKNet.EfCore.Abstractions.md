@@ -166,6 +166,35 @@ label containing whitespace or punctuation) is a build error (`DKRAISEVT005`) an
 declarations composing to the identical name are always an error, never silently merged: on the same entity that's
 `DKRAISEVT008`, across different entities in the same namespace it's `DKRAISEVT006`.
 
+#### Payload filters for composed records
+
+Either convention form can also narrow the shape of its **composed** payload record with `Exclude`/`Include`
+named arguments — they never affect the composed *name*, only the record's properties:
+
+```csharp
+[RaisesEvent(EventOperations.Created, Exclude = new[] { "InternalNote" })]
+[RaisesEvent("Touched", EventOperations.Updated, Include = new[] { nameof(Customer.Name), nameof(Customer.Email) })]
+public class Customer : Entity
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string InternalNote { get; set; } = string.Empty;
+}
+```
+
+- `Exclude` and `Include` are mutually exclusive on one declaration (`DKRAISEVT009`); a non-empty `Include` is the
+  whole truth for the payload shape and **overrides** the project-wide `DtoGeneratorExclusions` MSBuild property
+  (see `DKNet.EfCore.DtoGenerator`'s docs) for that declaration.
+- Every named property must be a direct property of the entity — an unresolvable or nested name is a build error
+  (`DKRAISEVT010`).
+- Navigation/complex-type properties are omitted from the composed payload unconditionally, even when a non-empty
+  `Include` names one by name — `Include` narrows which of the entity's own scalar properties ship, it never pulls
+  a navigation property in.
+- Neither filter is valid on the type-naming form (`DKRAISEVT011`) — that form's named payload record already
+  owns its own shape via its own `[GenerateDto]` `Exclude`/`Include`.
+- The project-wide `DtoGeneratorExclusions` list now also applies to composed convention-form payloads that set
+  neither filter (or only `Exclude`), narrowing them the same way it narrows hand-written `[GenerateDto]` DTOs.
+
 This attribute alone raises nothing at runtime: `DKNet.EfCore.DtoGenerator` validates the rule at build time (the
 named type must be a `[GenerateDto]` payload generated from the *same* entity for the type-naming form; the
 composed name must be a valid, non-colliding identifier for the convention forms), and `DKNet.EfCore.Events`' save

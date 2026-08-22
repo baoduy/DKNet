@@ -116,11 +116,15 @@ public sealed record OrderStatusNotifiedEvent
 ///     here proving the default generated shape carries the entity's default values — name, email, tax
 ///     identifier), with an owned <see cref="OwnedAddress" /> value. Used to verify exclusion honouring
 ///     and the nested-owned-value limitation (a change confined to <see cref="Address" /> does not raise
-///     the owner's update event).
+///     the owner's update event). The "Verified" rule (DRK-692 §5 @integration) is a convention-form
+///     declaration whose own <c>Exclude</c> keeps <c>TaxIdentifier</c> out of its COMPOSED payload — distinct
+///     from <see cref="CustomerRegisteredEvent" />, whose exclusion instead comes from its own hand-written
+///     <c>[GenerateDto]</c> filter.
 /// </summary>
 [RaisesEvent(typeof(CustomerRegisteredEvent), EventOperations.Created)]
 [RaisesEvent(typeof(CustomerUpdatedEvent), EventOperations.Updated)]
 [RaisesEvent("Touched", EventOperations.Created)]
+[RaisesEvent("Verified", EventOperations.Created, Exclude = new[] { nameof(TaxIdentifier) })]
 public class Customer : EntityBase<Guid>
 {
     #region Constructors
