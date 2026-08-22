@@ -582,6 +582,38 @@ public class RaisesEventDiagnosticsTests
     }
 
     [Fact]
+    public void NarrowingPropertyPassedAsAnArrayInitializerOfNameof_ResolvesAndComposesTheNarrowedName()
+    {
+        // Arrange - DRK-698 review fix regression: the narrowing params argument written as
+        // new[] { nameof(...) } (array-initializer, not a bare params value) must resolve the
+        // nameof() element and compose "CustomerStatusUpdatedEvent" — not silently narrow to nothing
+        // and compose the unnarrowed "CustomerUpdatedEvent".
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, new[] { nameof(Customer.Status) })]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusUpdatedEvent", StringComparison.Ordinal));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("CustomerUpdatedEvent.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void LabelAndNarrowingPropertyTogether_ComposeLabelFirstThenProperty()
     {
         // Arrange
@@ -1421,6 +1453,69 @@ public class RaisesEventDiagnosticsTests
         // payload's MEMBERS — assert on the property declaration shape instead.
         payload.ShouldNotContain("string Status {");
         payload.ShouldContain("string InternalNote {");
+    }
+
+    [Fact]
+    public void ComposedPayload_OmitsNavigationProperties_UnderInclude_Exclude_AndNoFilters()
+    {
+        // Arrange - DRK-698 review fix regression: a non-empty Include must not pull navigation
+        // properties into the composed payload. HomeAddress is a reference navigation, Orders is a
+        // collection navigation.
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                }
+
+                public sealed class Address
+                {
+                    public string City { get; set; } = string.Empty;
+                }
+
+                [RaisesEvent("NoFilter", EventOperations.Created)]
+                [RaisesEvent("WithInclude", EventOperations.Created, Include = new[] { "Name", "HomeAddress", "Orders" })]
+                [RaisesEvent("WithExclude", EventOperations.Created, Exclude = new[] { "Name" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public Address HomeAddress { get; set; } = new();
+                    public List<Order> Orders { get; set; } = [];
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+
+        var noFilter = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerNoFilterCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        noFilter.ShouldContain("Name");
+        noFilter.ShouldNotContain("HomeAddress");
+        noFilter.ShouldNotContain("Orders");
+
+        var withInclude = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerWithIncludeCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        withInclude.ShouldContain("Name");
+        withInclude.ShouldNotContain("HomeAddress"); // navigation named in Include is still omitted
+        withInclude.ShouldNotContain("Orders");      // collection navigation named in Include is still omitted
+
+        var withExclude = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerWithExcludeCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        withExclude.ShouldNotContain("string Name {");
+        withExclude.ShouldNotContain("HomeAddress");
+        withExclude.ShouldNotContain("Orders");
     }
 
     [Fact]

@@ -187,6 +187,9 @@ public class Customer : Entity
   (see `DKNet.EfCore.DtoGenerator`'s docs) for that declaration.
 - Every named property must be a direct property of the entity — an unresolvable or nested name is a build error
   (`DKRAISEVT010`).
+- Navigation/complex-type properties are omitted from the composed payload unconditionally, even when a non-empty
+  `Include` names one by name — `Include` narrows which of the entity's own scalar properties ship, it never pulls
+  a navigation property in.
 - Neither filter is valid on the type-naming form (`DKRAISEVT011`) — that form's named payload record already
   owns its own shape via its own `[GenerateDto]` `Exclude`/`Include`.
 - The project-wide `DtoGeneratorExclusions` list now also applies to composed convention-form payloads that set

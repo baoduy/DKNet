@@ -1134,6 +1134,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var filteredProperties = FilterIncludedProperties(
             entityProperties, excludedProperties, includedProperties, globalExclusions, true, compilation);
 
+        // FilterIncludedProperties short-circuits on a non-empty Include and never reaches the
+        // ignoreComplexType branch — composed payloads must omit navigation/complex-type properties
+        // unconditionally (DRK-692 §4), even when Include names one, so re-apply the filter here.
+        filteredProperties = filteredProperties
+            .Where(p => !IsComplexNavigationType(p, compilation))
+            .ToList();
+
         var typeDisplayFormat = CreateTypeDisplayFormat();
         var requiredNamespaces = CollectRequiredNamespaces(filteredProperties, recordNamespace);
         var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);

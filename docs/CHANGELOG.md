@@ -39,6 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
 
+### Fixed
+- `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
+  record when a non-empty `Include` names it — `Include` narrowed the entity's *own* scalar properties but was
+  silently reusing the property as-is when it named a navigation, shipping every property of the referenced type.
+  Navigation properties are now omitted unconditionally, matching `Exclude`/no-filter behaviour.
+- `[GenerateDto]`'s `Exclude`/`Include` and `[RaisesEvent]`'s narrowing `params` argument, when written as
+  `new[] { nameof(...) }` (a classic array-initializer, as opposed to the `[nameof(...)]` collection-expression
+  form), previously resolved to an empty filter and silently kept the named property instead of dropping/narrowing
+  it. This is now resolved like every other form: an affected `[GenerateDto]` DTO narrows as declared, and an
+  affected `[RaisesEvent]` narrowing list both narrows the raise condition and changes the composed event name
+  (e.g. `OrderUpdatedEvent` → `OrderStatusUpdatedEvent`) — re-check any declaration using this exact array syntax.
+
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).

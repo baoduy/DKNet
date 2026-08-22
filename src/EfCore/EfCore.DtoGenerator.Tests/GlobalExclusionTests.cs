@@ -107,5 +107,19 @@ public class GlobalExclusionTests
         hasUpdatedAt.ShouldBeFalse("UpdatedAt should not be included");
     }
 
+    [Fact]
+    public void NameofArrayExcludeTestDto_ArrayInitializerNameofExclude_NarrowsTheDto()
+    {
+        // Assert - Exclude = new[] { nameof(GlobalExclusionTestEntity.IsActive) } must resolve the
+        // nameof() element and drop IsActive, not silently keep it (DRK-698 review fix).
+        var hasId = typeof(NameofArrayExcludeTestDto).GetProperty("Id") != null;
+        var hasName = typeof(NameofArrayExcludeTestDto).GetProperty("Name") != null;
+        var hasIsActive = typeof(NameofArrayExcludeTestDto).GetProperty("IsActive") != null;
+
+        hasId.ShouldBeTrue("Id should be included");
+        hasName.ShouldBeTrue("Name should be included");
+        hasIsActive.ShouldBeFalse("IsActive should be excluded by the array-initializer nameof() Exclude");
+    }
+
     #endregion
 }
