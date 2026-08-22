@@ -1117,20 +1117,24 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="recordName">The record name — the rule's string event name.</param>
     /// <param name="recordNamespace">The namespace to emit the record in, or <see langword="null"/> for the global namespace.</param>
     /// <param name="compilation">The Roslyn compilation.</param>
+    /// <param name="excludedProperties">The declaration's <c>Exclude</c> filter, or empty for none.</param>
+    /// <param name="includedProperties">The declaration's <c>Include</c> filter, or empty for none.</param>
+    /// <param name="globalExclusions">The project-wide <c>DtoGeneratorExclusions</c> set.</param>
     /// <returns>The generated C# source for the payload record.</returns>
     internal static string BuildRaisesEventRecordSource(
-        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation)
+        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation,
+        HashSet<string> excludedProperties, HashSet<string> includedProperties, HashSet<string> globalExclusions)
     {
         var entityProperties = GetEntityProperties(entitySymbol);
-        var includedProperties = FilterIncludedProperties(
-            entityProperties, new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), true, compilation);
+        var filteredProperties = FilterIncludedProperties(
+            entityProperties, excludedProperties, includedProperties, globalExclusions, true, compilation);
 
         var typeDisplayFormat = CreateTypeDisplayFormat();
-        var requiredNamespaces = CollectRequiredNamespaces(includedProperties, recordNamespace);
+        var requiredNamespaces = CollectRequiredNamespaces(filteredProperties, recordNamespace);
         var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
         var metadata = new DtoMetadata(recordName, recordNamespace, "partial record", entityDisplayName, new HashSet<string>());
-        return BuildDtoSourceCode(metadata, includedProperties, requiredNamespaces, typeDisplayFormat);
+        return BuildDtoSourceCode(metadata, filteredProperties, requiredNamespaces, typeDisplayFormat);
     }
 
     #endregion

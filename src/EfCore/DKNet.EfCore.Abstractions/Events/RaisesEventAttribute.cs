@@ -122,4 +122,24 @@ public sealed class RaisesEventAttribute : Attribute
     ///     property change qualifies.
     /// </summary>
     public IReadOnlyList<string> Properties { get; }
+
+    /// <summary>
+    ///     Gets or sets the properties to exclude from the AUTOMATICALLY COMPOSED payload (convention forms
+    ///     only). Mutually exclusive with <see cref="Include"/> — specifying both is a build error. Takes no
+    ///     part in event-name composition (use the label to distinguish two events on one entity). Supplying
+    ///     this on the type-naming form is a build error — that form's payload record owns its own shape via
+    ///     its own <c>[GenerateDto]</c> <c>Exclude</c>/<c>Include</c>.
+    /// </summary>
+    public string[] Exclude { get; set; } = [];
+
+    /// <summary>
+    ///     Gets or sets the only properties to keep in the AUTOMATICALLY COMPOSED payload (convention forms
+    ///     only). Mutually exclusive with <see cref="Exclude"/> — specifying both is a build error. A
+    ///     non-empty value is the whole truth for the payload shape and overrides the project-wide
+    ///     <c>DtoGeneratorExclusions</c> list. Takes no part in event-name composition (use the label to
+    ///     distinguish two events on one entity). Supplying this on the type-naming form is a build error —
+    ///     that form's payload record owns its own shape via its own <c>[GenerateDto]</c>
+    ///     <c>Exclude</c>/<c>Include</c>.
+    /// </summary>
+    public string[] Include { get; set; } = [];
 }

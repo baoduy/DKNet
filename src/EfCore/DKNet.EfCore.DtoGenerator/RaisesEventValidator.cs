@@ -49,11 +49,13 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             .SelectMany(static (list, _) => list);
 
         var compilationAndDeclarations = context.CompilationProvider.Combine(declarations.Collect());
+        var withOptions = compilationAndDeclarations.Combine(context.AnalyzerConfigOptionsProvider);
 
-        context.RegisterSourceOutput(compilationAndDeclarations, static (spc, pair) =>
+        context.RegisterSourceOutput(withOptions, static (spc, pair) =>
         {
-            var (compilation, targets) = pair;
-            ValidateAndGenerate(spc, compilation, targets);
+            var ((compilation, targets), optionsProvider) = pair;
+            var globalExclusions = DtoGenerator.ExtractGlobalExclusionsFromConfig(optionsProvider);
+            ValidateAndGenerate(spc, compilation, targets, globalExclusions);
         });
     }
 
@@ -120,6 +122,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
         if (arguments.Count < 1)
             return null;
 
+        var (excludeFilter, includeFilter) = ExtractFilters(ctx, arguments);
+
         var firstArgExpression = arguments[0].Expression;
 
         if (firstArgExpression is TypeOfExpressionSyntax typeOfExpression)
@@ -136,6 +140,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
                 EventTypeSymbol = eventTypeSymbol,
                 Operations = ExtractOperations(ctx, arguments, 1),
                 Properties = ExtractProperties(ctx, arguments, 2),
+                ExcludeFilter = excludeFilter,
+                IncludeFilter = includeFilter,
                 Location = attribute.GetLocation(),
             };
         }
@@ -158,6 +164,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
                 Operations = operations,
                 Properties = properties,
                 ComposedName = EventNameComposer.Compose(entitySymbol.Name, null, properties, operations),
+                ExcludeFilter = excludeFilter,
+                IncludeFilter = includeFilter,
                 Location = attribute.GetLocation(),
             };
         }
@@ -180,8 +188,37 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             Operations = labelOperations,
             Properties = labelProperties,
             ComposedName = EventNameComposer.Compose(entitySymbol.Name, label, labelProperties, labelOperations),
+            ExcludeFilter = excludeFilter,
+            IncludeFilter = includeFilter,
             Location = attribute.GetLocation(),
         };
+    }
+
+    /// <summary>
+    /// Extracts the <c>Exclude</c>/<c>Include</c> named-argument payload filters from a [RaisesEvent]
+    /// attribute's argument list. An absent or expression-shaped-wrong argument resolves to an empty set,
+    /// which is treated identically to the argument being entirely absent.
+    /// </summary>
+    private static (HashSet<string> Exclude, HashSet<string> Include) ExtractFilters(
+        GeneratorSyntaxContext ctx, SeparatedSyntaxList<AttributeArgumentSyntax> arguments)
+    {
+        var exclude = new HashSet<string>();
+        var include = new HashSet<string>();
+
+        foreach (var arg in arguments)
+        {
+            switch (arg.NameEquals?.Name.Identifier.Text)
+            {
+                case "Exclude":
+                    exclude = DtoGenerator.ExtractExcludedPropertiesFromExpression(ctx, arg.Expression);
+                    break;
+                case "Include":
+                    include = DtoGenerator.ExtractExcludedPropertiesFromExpression(ctx, arg.Expression);
+                    break;
+            }
+        }
+
+        return (exclude, include);
     }
 
     /// <summary>
@@ -232,7 +269,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// their generated payload records.
     /// </summary>
     private static void ValidateAndGenerate(
-        SourceProductionContext context, Compilation compilation, IReadOnlyList<RaisesEventDeclaration> targets)
+        SourceProductionContext context, Compilation compilation, IReadOnlyList<RaisesEventDeclaration> targets,
+        HashSet<string> globalExclusions)
     {
         var validConventionFormDeclarations = new List<RaisesEventDeclaration>();
 
@@ -251,16 +289,73 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
             if (declaration.IsStringForm)
             {
-                if (ValidateConventionForm(context, compilation, declaration))
+                var filtersValid = ValidatePayloadFilters(context, declaration);
+                if (ValidateConventionForm(context, compilation, declaration) && filtersValid)
                     validConventionFormDeclarations.Add(declaration);
             }
             else
             {
                 ValidatePayloadEntity(context, declaration);
+                ValidateFiltersNotOnTypeNamingForm(context, declaration);
             }
         }
 
-        GenerateStringFormRecords(context, compilation, validConventionFormDeclarations);
+        GenerateStringFormRecords(context, compilation, validConventionFormDeclarations, globalExclusions);
+    }
+
+    /// <summary>
+    /// Validates a convention-form declaration's <c>Exclude</c>/<c>Include</c> payload filters: the two are
+    /// mutually exclusive (<c>DKRAISEVT009</c>), and every named property must resolve, non-nested, against
+    /// the declaring entity (<c>DKRAISEVT010</c>). An explicitly-empty filter behaves as absent. Returns
+    /// <see langword="true"/> when the declaration's filters (if any) are valid.
+    /// </summary>
+    private static bool ValidatePayloadFilters(SourceProductionContext context, RaisesEventDeclaration decl)
+    {
+        if (decl.ExcludeFilter.Count > 0 && decl.IncludeFilter.Count > 0)
+        {
+            ReportDiagnostic(context, "DKRAISEVT009", "Include and Exclude are mutually exclusive", DiagnosticSeverity.Error,
+                decl.Location,
+                "Entity {0}: [RaisesEvent] cannot specify both Include and Exclude properties for the composed payload. Use one or the other.",
+                decl.EntitySymbol.Name);
+            return false;
+        }
+
+        if (decl.ExcludeFilter.Count == 0 && decl.IncludeFilter.Count == 0)
+            return true;
+
+        var filterName = decl.ExcludeFilter.Count > 0 ? "Exclude" : "Include";
+        var filterValues = decl.ExcludeFilter.Count > 0 ? decl.ExcludeFilter : decl.IncludeFilter;
+        var entityProperties = DtoGenerator.GetEntityProperties(decl.EntitySymbol);
+        var isValid = true;
+
+        foreach (var propertyName in filterValues)
+        {
+            if (propertyName.Contains('.') || entityProperties.All(p => p.Name != propertyName))
+            {
+                ReportDiagnostic(context, "DKRAISEVT010", "Invalid payload filter property", DiagnosticSeverity.Error,
+                    decl.Location,
+                    "Entity {0}: [RaisesEvent] {1} property '{2}' is not a property of the entity.",
+                    decl.EntitySymbol.Name, filterName, propertyName);
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    /// <summary>
+    /// Reports <c>DKRAISEVT011</c> when a type-naming-form declaration supplies either payload filter — that
+    /// form's named payload record owns its own shape via its own <c>[GenerateDto]</c> Include/Exclude.
+    /// </summary>
+    private static void ValidateFiltersNotOnTypeNamingForm(SourceProductionContext context, RaisesEventDeclaration decl)
+    {
+        if (decl.ExcludeFilter.Count == 0 && decl.IncludeFilter.Count == 0)
+            return;
+
+        ReportDiagnostic(context, "DKRAISEVT011", "Payload filters not allowed on type-naming form", DiagnosticSeverity.Error,
+            decl.Location,
+            "Entity {0}: [RaisesEvent] Exclude/Include cannot be used with the type-naming form — the named payload record owns its own shape via its own [GenerateDto] Include/Exclude.",
+            decl.EntitySymbol.Name);
     }
 
     /// <summary>
@@ -463,7 +558,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// merged into one record.
     /// </summary>
     private static void GenerateStringFormRecords(
-        SourceProductionContext context, Compilation compilation, List<RaisesEventDeclaration> declarations)
+        SourceProductionContext context, Compilation compilation, List<RaisesEventDeclaration> declarations,
+        HashSet<string> globalExclusions)
     {
         var groups = declarations.GroupBy(d => (Namespace: GetEntityNamespace(d.EntitySymbol), d.ComposedName));
 
@@ -507,7 +603,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
             var declaration = groupList[0];
             var source = DtoGenerator.BuildRaisesEventRecordSource(
-                declaration.EntitySymbol, declaration.ComposedName!, group.Key.Namespace, compilation);
+                declaration.EntitySymbol, declaration.ComposedName!, group.Key.Namespace, compilation,
+                declaration.ExcludeFilter, declaration.IncludeFilter, globalExclusions);
 
             var hintName = $"{(group.Key.Namespace ?? "global")}.{declaration.ComposedName}.RaisesEvent.g.cs";
             context.AddSource(hintName, source);
@@ -554,6 +651,8 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
         public string? ComposedName { get; set; }
         public int Operations { get; set; }
         public List<string> Properties { get; set; } = [];
+        public HashSet<string> ExcludeFilter { get; set; } = [];
+        public HashSet<string> IncludeFilter { get; set; } = [];
         public Location Location { get; set; } = Location.None;
     }
 
