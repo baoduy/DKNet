@@ -449,6 +449,34 @@ public class RaisesEventIntegrationTests(RaisesEventFixture fixture) : IClassFix
         RaisesEventPublisher.Events.OfType<OrderStatusUpdatedEvent>().ShouldBeEmpty();
     }
 
+    // --- DRK-692 §5 @integration — RaisesEvent payload property filters --------------------------------
+
+    [Fact]
+    public async Task PublishedEvent_WithAnExcludedProperty_NeverCarriesTheExcludedValue()
+    {
+        // Arrange - Customer's "Verified" rule composes its own payload and excludes TaxIdentifier from it.
+        RaisesEventPublisher.Events.Clear();
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var customer = new Customer("Acme Pte Ltd", "billing@acme.example", "S1234567D", "verify");
+
+        // Act
+        db.Set<Customer>().Add(customer);
+        await db.SaveChangesAsync();
+
+        // Assert
+        var published = RaisesEventPublisher.Events.OfType<CustomerVerifiedCreatedEvent>().ToList();
+        published.ShouldNotBeEmpty();
+        published.ShouldContain(e => e.Name == "Acme Pte Ltd");
+
+        // The excluded property must not exist on the composed record at all...
+        typeof(CustomerVerifiedCreatedEvent).GetProperty("TaxIdentifier").ShouldBeNull();
+
+        // ...and, belt-and-braces, no field of the published event carries the excluded value.
+        foreach (var e in published)
+            foreach (var property in typeof(CustomerVerifiedCreatedEvent).GetProperties())
+                property.GetValue(e)?.ToString().ShouldNotBe("S1234567D");
+    }
+
     [Fact]
     public async Task NarrowedStringFormUpdateRule_Raises_WhenTheNarrowedPropertyChanges()
     {

@@ -59,6 +59,8 @@ public class RaisesEventDiagnosticsTests
                 public string? Label { get; }
                 public EventOperations Operations { get; }
                 public string[] Properties { get; }
+                public string[] Exclude { get; set; } = [];
+                public string[] Include { get; set; } = [];
             }
         }
         """;
@@ -580,6 +582,38 @@ public class RaisesEventDiagnosticsTests
     }
 
     [Fact]
+    public void NarrowingPropertyPassedAsAnArrayInitializerOfNameof_ResolvesAndComposesTheNarrowedName()
+    {
+        // Arrange - DRK-698 review fix regression: the narrowing params argument written as
+        // new[] { nameof(...) } (array-initializer, not a bare params value) must resolve the
+        // nameof() element and compose "CustomerStatusUpdatedEvent" — not silently narrow to nothing
+        // and compose the unnarrowed "CustomerUpdatedEvent".
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, new[] { nameof(Customer.Status) })]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusUpdatedEvent", StringComparison.Ordinal));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("CustomerUpdatedEvent.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void LabelAndNarrowingPropertyTogether_ComposeLabelFirstThenProperty()
     {
         // Arrange
@@ -1000,6 +1034,490 @@ public class RaisesEventDiagnosticsTests
         result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusDeletedEvent", StringComparison.Ordinal));
     }
 
+    // --- DRK-692 §5 — RaisesEvent payload property filters --------------------------------------------
+
+    [Fact]
+    public void ComposedPayload_OmitsAnExcludedProperty()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Exclude = new[] { "NationalId" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldContain("Email");
+        payload.ShouldNotContain("NationalId");
+    }
+
+    [Fact]
+    public void ComposedPayload_IncludeOnly_CarriesOnlyTheIncludedProperties()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Include = new[] { "Name" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldNotContain("Email");
+        payload.ShouldNotContain("NationalId");
+    }
+
+    [Fact]
+    public void OneEntity_GetsABroadAndANarrowEvent_ThroughLabels()
+    {
+        // Arrange - no project-wide exclusions configured; "Internal" carries everything, "External"
+        // narrows via its own Exclude. Filters take no part in name composition (§3), so only the labels
+        // tell the two declarations apart.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("Internal", EventOperations.Created)]
+                [RaisesEvent("External", EventOperations.Created, Exclude = new[] { "NationalId" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var internalPayload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerInternalCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        var externalPayload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerExternalCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+
+        internalPayload.ShouldContain("Name");
+        internalPayload.ShouldContain("Email");
+        internalPayload.ShouldContain("NationalId");
+
+        externalPayload.ShouldContain("Name");
+        externalPayload.ShouldContain("Email");
+        externalPayload.ShouldNotContain("NationalId");
+    }
+
+    [Fact]
+    public void DeclarationSupplyingBothIncludeAndExclude_IsRejected()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Include = new[] { "Name" }, Exclude = new[] { "NationalId" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT009" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        // Security-critical: never generate a payload while the conflicting filters are unresolved.
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("NationalID")] // case-mismatch: the entity's real property is "NationalId"
+    [InlineData("NationalIdx")] // outright typo
+    public void FilteredNameTheEntityDoesNotHave_IsRejected_AndNoPayloadShipsWithItSilentlyDropped(string badName)
+    {
+        // Arrange
+        var source = $$"""
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Exclude = new[] { "{{badName}}" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT010" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        error.GetMessage().ShouldContain(badName);
+        // Security-critical: a typo'd/case-mismatched exclude name must never ship the field it meant to protect.
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void FiltersOnADeclarationNamingAHandWrittenPayloadRecord_AreRejected()
+    {
+        // Arrange - CustomerRegisteredEvent already owns its shape via its own [GenerateDto] Exclude;
+        // the [RaisesEvent] declaration naming it must not also carry filters.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+            using DKNet.EfCore.DtoGenerator;
+
+            namespace Probe.Entities
+            {
+                [GenerateDto(typeof(Customer), Exclude = new[] { "NationalId" })]
+                public partial record CustomerRegisteredEvent;
+
+                [RaisesEvent(typeof(CustomerRegisteredEvent), EventOperations.Created, Exclude = new[] { "Email" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT011" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        error.GetMessage().ShouldContain("owns its own shape");
+        // Security-critical: build fails outright rather than merging or dropping the stray filter.
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void TwoUnlabelledDeclarations_DifferingOnlyByTheirFilters_AreRejected()
+    {
+        // Arrange - filters take no part in name composition (§3), so these compose the identical
+        // "CustomerCreatedEvent" exactly like two otherwise-identical declarations do today (DKRAISEVT008).
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Exclude = new[] { "NationalId" })]
+                [RaisesEvent(EventOperations.Created, Include = new[] { "Name" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var errors = result.Diagnostics.Where(d => d.Id == "DKRAISEVT008" && d.Severity == DiagnosticSeverity.Error).ToList();
+        errors.Count.ShouldBe(2);
+        errors.ShouldAllBe(d => d.GetMessage().Contains("Customer") && d.GetMessage().Contains("CustomerCreatedEvent"));
+        errors.ShouldAllBe(d => d.GetMessage().Contains("label"));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ProjectWideExcludedPropertyList_AppliesToComposedPayloads()
+    {
+        // Arrange - the project excludes NationalId project-wide; the declaration carries no filter of its own.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created)]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source, new TestGlobalExclusionsOptionsProvider("NationalId"));
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldContain("Email");
+        payload.ShouldNotContain("NationalId");
+    }
+
+    [Fact]
+    public void IncludeList_OverridesTheProjectWideExcludedPropertyList()
+    {
+        // Arrange - the project excludes NationalId project-wide; the declaration's own Include names it
+        // anyway, and Include is the whole truth for the payload shape (§3).
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Include = new[] { "Name", "NationalId" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source, new TestGlobalExclusionsOptionsProvider("NationalId"));
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldContain("NationalId");
+        payload.ShouldNotContain("Email");
+    }
+
+    [Fact]
+    public void UnfilteredDeclaration_KeepsTodaysComposedPayloadShape()
+    {
+        // Arrange - DRK-692 §3 regression invariant: no filters, no project-wide exclusions configured.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created)]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldContain("Email");
+        payload.ShouldContain("NationalId");
+    }
+
+    [Fact]
+    public void ExcludeUsingNameofInsideAnArrayInitializer_IsHonoured_NotSilentlyDropped()
+    {
+        // Arrange - DRK-695 defect reproduction. DKRAISEVT010's own remedy text and RaisesEventAttribute's
+        // XML docs on `properties` both recommend nameof() for compiler-checked names, so a developer
+        // reasonably tries it on Exclude/Include too — identical to ComposedPayload_OmitsAnExcludedProperty
+        // above except the filter name is written as nameof(Customer.NationalId) instead of a string
+        // literal, inside the classic `new[] { ... }` array-initializer form. This must exclude NationalId
+        // exactly as the string-literal form does — never fail silently to "no filter" and ship it.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created, Exclude = new[] { nameof(Customer.NationalId) })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public string Email { get; set; } = string.Empty;
+                    public string NationalId { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        payload.ShouldContain("Name");
+        payload.ShouldContain("Email");
+        payload.ShouldNotContain("NationalId");
+    }
+
+    [Fact]
+    public void ExcludingTheNarrowingProperty_LeavesTheRaiseConditionUnaffected_OnlyThePayloadNarrows()
+    {
+        // Arrange - Status both narrows the Updated rule (decides WHEN it raises) and is excluded from the
+        // payload (decides WHAT it carries). No DKRAISEVT003 warning means the narrowing list is intact and
+        // still valid — proof the two lists are validated, and act, independently of each other.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Order.Status), Exclude = new[] { "Status" })]
+                public sealed class Order
+                {
+                    public string Status { get; set; } = string.Empty;
+                    public string InternalNote { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        var payload = result.GeneratedSources
+            .Single(s => s.HintName.Contains("OrderStatusUpdatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        // "Status" alone would false-positive against the composed record name OrderStatusUpdatedEvent
+        // itself, which carries the narrowing property in its NAME even though it is excluded from the
+        // payload's MEMBERS — assert on the property declaration shape instead.
+        payload.ShouldNotContain("string Status {");
+        payload.ShouldContain("string InternalNote {");
+    }
+
+    [Fact]
+    public void ComposedPayload_OmitsNavigationProperties_UnderInclude_Exclude_AndNoFilters()
+    {
+        // Arrange - DRK-698 review fix regression: a non-empty Include must not pull navigation
+        // properties into the composed payload. HomeAddress is a reference navigation, Orders is a
+        // collection navigation.
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                }
+
+                public sealed class Address
+                {
+                    public string City { get; set; } = string.Empty;
+                }
+
+                [RaisesEvent("NoFilter", EventOperations.Created)]
+                [RaisesEvent("WithInclude", EventOperations.Created, Include = new[] { "Name", "HomeAddress", "Orders" })]
+                [RaisesEvent("WithExclude", EventOperations.Created, Exclude = new[] { "Name" })]
+                public sealed class Customer
+                {
+                    public string Name { get; set; } = string.Empty;
+                    public Address HomeAddress { get; set; } = new();
+                    public List<Order> Orders { get; set; } = [];
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+
+        var noFilter = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerNoFilterCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        noFilter.ShouldContain("Name");
+        noFilter.ShouldNotContain("HomeAddress");
+        noFilter.ShouldNotContain("Orders");
+
+        var withInclude = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerWithIncludeCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        withInclude.ShouldContain("Name");
+        withInclude.ShouldNotContain("HomeAddress"); // navigation named in Include is still omitted
+        withInclude.ShouldNotContain("Orders");      // collection navigation named in Include is still omitted
+
+        var withExclude = result.GeneratedSources
+            .Single(s => s.HintName.Contains("CustomerWithExcludeCreatedEvent", StringComparison.Ordinal))
+            .SourceText.ToString();
+        withExclude.ShouldNotContain("string Name {");
+        withExclude.ShouldNotContain("HomeAddress");
+        withExclude.ShouldNotContain("Orders");
+    }
+
     [Fact]
     public void EventNameComposer_ExistsInOnePhysicalFile_LinkedIntoTheGeneratorProject_NotDuplicated()
     {
@@ -1048,7 +1566,8 @@ public class RaisesEventDiagnosticsTests
     /// source (bypassing the single-<c>{{Declaration}}</c> template), for scenarios needing extra types
     /// or more than one entity in the compilation.
     /// </summary>
-    private static GeneratorOutput RunGeneratorWithSource(string entitySource)
+    private static GeneratorOutput RunGeneratorWithSource(
+        string entitySource, AnalyzerConfigOptionsProvider? optionsProvider = null)
     {
         var compilation = CSharpCompilation.Create(
             "ProbeCompilation",
@@ -1061,7 +1580,7 @@ public class RaisesEventDiagnosticsTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new DKNet.EfCore.DtoGenerator.RaisesEventValidator().AsSourceGenerator();
-        GeneratorDriver driver = CSharpGeneratorDriver.Create([generator]);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], optionsProvider: optionsProvider);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
         var runResult = ((CSharpGeneratorDriver)driver).GetRunResult();
 
@@ -1113,6 +1632,30 @@ public class RaisesEventDiagnosticsTests
         List<Diagnostic> Diagnostics,
         List<Diagnostic> CompilationDiagnostics,
         List<GeneratedSourceResult> GeneratedSources);
+
+    /// <summary>
+    /// Feeds a fixed <c>build_property.DtoGeneratorExclusions</c> value to the generator under test, the
+    /// same MSBuild property a real project sets in its <c>.csproj</c> (see <c>GlobalExclusionTests</c>).
+    /// </summary>
+    private sealed class TestGlobalExclusionsOptionsProvider(string exclusionsCsv) : AnalyzerConfigOptionsProvider
+    {
+        private readonly TestGlobalExclusionsOptions _globalOptions = new(exclusionsCsv);
+
+        public override AnalyzerConfigOptions GlobalOptions => _globalOptions;
+
+        public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => _globalOptions;
+
+        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => _globalOptions;
+
+        private sealed class TestGlobalExclusionsOptions(string exclusionsCsv) : AnalyzerConfigOptions
+        {
+            public override bool TryGetValue(string key, out string value)
+            {
+                value = key == "build_property.DtoGeneratorExclusions" ? exclusionsCsv : string.Empty;
+                return key == "build_property.DtoGeneratorExclusions";
+            }
+        }
+    }
 
     #endregion
 }

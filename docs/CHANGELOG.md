@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `[RaisesEvent]` convention forms now accept `Exclude`/`Include` named arguments to shape the automatically
+  composed payload record — mutually exclusive, resolved against the entity's properties at build time
+  (`DKRAISEVT009`/`DKRAISEVT010`/`DKRAISEVT011`), and never affecting the composed event name.
 - Consolidated repository-wide documentation in `docs/` folder
 - Comprehensive getting started guide
 - Configuration and setup documentation
@@ -17,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FAQ and best practices section
 
 ### Changed
+- Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
+  `DtoGeneratorExclusions` MSBuild list (the same list `[GenerateDto]` DTOs already respect), so composed
+  event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.
 - Improved documentation organization and navigation
 - Enhanced main README.md to be more concise and point to docs/
 - **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
@@ -32,6 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
+
+### Fixed
+- `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
+  record when a non-empty `Include` names it — `Include` narrowed the entity's *own* scalar properties but was
+  silently reusing the property as-is when it named a navigation, shipping every property of the referenced type.
+  Navigation properties are now omitted unconditionally, matching `Exclude`/no-filter behaviour.
+- `[GenerateDto]`'s `Exclude`/`Include` and `[RaisesEvent]`'s narrowing `params` argument, when written as
+  `new[] { nameof(...) }` (a classic array-initializer, as opposed to the `[nameof(...)]` collection-expression
+  form), previously resolved to an empty filter and silently kept the named property instead of dropping/narrowing
+  it. This is now resolved like every other form: an affected `[GenerateDto]` DTO narrows as declared, and an
+  affected `[RaisesEvent]` narrowing list both narrows the raise condition and changes the composed event name
+  (e.g. `OrderUpdatedEvent` → `OrderStatusUpdatedEvent`) — re-check any declaration using this exact array syntax.
 
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution

@@ -140,7 +140,7 @@ public class Product
 - every narrowing property (the trailing `params string[] properties`) is a direct property of the entity, not a nested path (`DKRAISEVT001`);
 - narrowing set on a rule with no `Updated` flag is pointless and warned about (`DKRAISEVT003`), since it has no runtime effect.
 
-**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (no `Exclude`/`Include`/`IgnoreComplexType` knobs available on these forms). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
+**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
 [RaisesEvent("Touched", EventOperations.Created)]
@@ -158,7 +158,22 @@ public partial record CustomerTouchedCreatedEvent
 }
 ```
 
-The convention forms have their own diagnostics: `DKRAISEVT004` (composed name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges; guidance differs depending on whether the colliding type is a `[GenerateDto]` payload of the same entity), `DKRAISEVT005` (the label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace compose the same name — never merged into one record), `DKRAISEVT007` (no operation named — the declaration, of any form, can never raise anything), `DKRAISEVT008` (two declarations on the SAME entity compose the same name — never merged into one record).
+The convention forms accept the same `Exclude`/`Include` named arguments as `[GenerateDto]` to shape the composed payload — mutually exclusive, `Include` overriding the project-wide `DtoGeneratorExclusions` list, and never affecting the composed name:
+
+```csharp
+[RaisesEvent(EventOperations.Created, Exclude = new[] { "InternalNote" })]
+public class Customer
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string InternalNote { get; set; } = string.Empty;
+}
+// generates CustomerCreatedEvent without InternalNote
+```
+
+The project-wide `DtoGeneratorExclusions` MSBuild property (see [Configuration options](#configuration-options-and-defaults) below) now also narrows composed convention-form payloads that don't set `Include`, exactly as it narrows hand-written `[GenerateDto]` DTOs.
+
+The convention forms have their own diagnostics: `DKRAISEVT004` (composed name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges; guidance differs depending on whether the colliding type is a `[GenerateDto]` payload of the same entity), `DKRAISEVT005` (the label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace compose the same name — never merged into one record), `DKRAISEVT007` (no operation named — the declaration, of any form, can never raise anything), `DKRAISEVT008` (two declarations on the SAME entity compose the same name — never merged into one record), `DKRAISEVT009` (both `Exclude` and `Include` specified on one declaration), `DKRAISEVT010` (a filter names a property that isn't a direct property of the entity), `DKRAISEVT011` (`Exclude`/`Include` supplied on the type-naming form, where the named payload record already owns its own shape).
 
 ### Diagnostics reference
 
@@ -179,6 +194,9 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `DKRAISEVT006` | Error | `RaisesEventValidator` | Two different entities in the same namespace compose the same event name. |
 | `DKRAISEVT007` | Error | `RaisesEventValidator` | A declaration (any form) names no operation — it could never raise anything. |
 | `DKRAISEVT008` | Error | `RaisesEventValidator` | Two declarations on the SAME entity compose the same event name. |
+| `DKRAISEVT009` | Error | `RaisesEventValidator` | A convention-form declaration specified both `Exclude` and `Include` for the composed payload — mutually exclusive; no record is emitted for that declaration. |
+| `DKRAISEVT010` | Error | `RaisesEventValidator` | An `Exclude`/`Include` payload filter names a property that isn't a direct property of the declaring entity (includes nested paths); no record is emitted for that declaration. |
+| `DKRAISEVT011` | Error | `RaisesEventValidator` | `Exclude`/`Include` was supplied on the type-naming form — that form's named payload record owns its own shape via its own `[GenerateDto]` filters. |
 
 ## Configuration options and defaults
 
@@ -187,7 +205,7 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `Exclude` | `[GenerateDto]` argument | `[]` | Mutually exclusive with `Include`; combined with global exclusions. |
 | `Include` | `[GenerateDto]` argument | `[]` | Overrides `Exclude`, global exclusions, and `IgnoreComplexType` when non-empty. |
 | `IgnoreComplexType` | `[GenerateDto]` argument | unset (falls through) | Per-DTO override; see precedence above. |
-| `DtoGeneratorExclusions` | MSBuild property (`.csproj`) | unset | Comma/semicolon-separated property names excluded project-wide. Already exposed to the compiler by this package's `buildTransitive` props — no manual `CompilerVisibleProperty` needed. See the Global Exclusions Guide. |
+| `DtoGeneratorExclusions` | MSBuild property (`.csproj`) | unset | Comma/semicolon-separated property names excluded project-wide. Applies to `[GenerateDto]` DTOs and to `[RaisesEvent]` convention-form composed payloads alike (unless overridden by a non-empty `Include`). Already exposed to the compiler by this package's `buildTransitive` props — no manual `CompilerVisibleProperty` needed. See the Global Exclusions Guide. |
 | `DtoGeneratorIgnoreComplexType` | MSBuild property (`.csproj`) | unset (built-in default `true` applies) | Project-wide default for `IgnoreComplexType` when a DTO doesn't set it explicitly. |
 | `EmitCompilerGeneratedFiles` / `CompilerGeneratedFilesOutputPath` | MSBuild properties | unset | Standard Roslyn generator switches (not specific to this package) to write `.g.cs` files to disk, e.g. under `obj/Generated`, for inspection/debugging. |
 
