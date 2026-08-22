@@ -892,6 +892,70 @@ public class RaisesEventDiagnosticsTests
     }
 
     [Fact]
+    public void DeclarationNamingIntConstantZeroOperations_FailsTheBuildStatingAtLeastOneOperationRequired()
+    {
+        // Arrange - DKRAISEVT007: an int constant (not an EventOperations-typed expression) implicitly
+        // converts to the flags-enum parameter and must route into the same convention-form validation as
+        // `(EventOperations)0`, rather than being silently ignored because its static type is Int32.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(0)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT007" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        error.GetMessage().ShouldContain("at least one operation");
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void DeclarationNamingIntConstantZeroWithNarrowingProperty_FailsTheBuildRatherThanCrashingTheGenerator()
+    {
+        // Arrange - DKRAISEVT007: an int constant `0` alongside a narrowing property argument must still
+        // route into the convention form and report the missing-operation error, rather than falling into
+        // the label-form branch where the narrowing property name would be treated as an attempted
+        // Convert.ToInt32 operations value and crash the generator (surfacing as CS8785).
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(0, nameof(Customer.Status))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT007" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        result.CompilationDiagnostics.ShouldNotContain(d => d.Id == "CS8785");
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void TypeNamingDeclarationNamingNoOperation_AlsoFailsTheBuild()
     {
         // Arrange - DKRAISEVT007 applies to ANY declaration form, type-naming included

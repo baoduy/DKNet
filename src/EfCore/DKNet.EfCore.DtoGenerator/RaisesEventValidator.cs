@@ -141,7 +141,10 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
         }
 
         // Label-less convention form: the first argument is the operations enum itself, not a label.
-        if (ctx.SemanticModel.GetTypeInfo(firstArgExpression).Type?.Name == "EventOperations")
+        // Check ConvertedType too — a constant int (e.g. `0`) implicitly converts to the flags enum
+        // parameter, so its own static Type is still Int32 while ConvertedType is EventOperations.
+        var firstArgTypeInfo = ctx.SemanticModel.GetTypeInfo(firstArgExpression);
+        if (firstArgTypeInfo.Type?.Name == "EventOperations" || firstArgTypeInfo.ConvertedType?.Name == "EventOperations")
         {
             var operations = ExtractOperations(ctx, arguments, 0);
             var properties = ExtractProperties(ctx, arguments, 1);

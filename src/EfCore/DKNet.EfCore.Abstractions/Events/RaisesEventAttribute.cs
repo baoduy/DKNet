@@ -28,7 +28,7 @@ namespace DKNet.EfCore.Abstractions.Events;
 ///     <code>
 ///     [RaisesEvent("Touched", EventOperations.Created)]
 ///     public class Customer { }
-///     // generates CustomerTouchedEvent
+///     // generates CustomerTouchedCreatedEvent
 ///     </code>
 ///     </para>
 ///     <para>
