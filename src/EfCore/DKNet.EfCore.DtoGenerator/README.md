@@ -17,7 +17,7 @@ A Roslyn incremental source generator that emits DTO properties from an entity t
 - **`IgnoreComplexType`** — flattens out navigation-style properties by default; per-DTO or project-wide (`DtoGeneratorIgnoreComplexType`) override.
 - **Global exclusions** (`DtoGeneratorExclusions` MSBuild property) — exclude the same properties (e.g. audit columns) across every DTO in the project.
 - **Validation attribute copy-through** — `System.ComponentModel.DataAnnotations` attributes on entity properties are copied to the generated DTO properties.
-- **`[RaisesEvent]` build-time validation** — a second generator in this package validates `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declarations against their `[GenerateDto]` payloads, and generates the payload record for the attribute's string form.
+- **`[RaisesEvent]` build-time validation** — a second generator in this package validates `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declarations against their `[GenerateDto]` payloads, and generates the payload record for the attribute's convention forms, named by fixed convention (entity name + optional label + narrowing properties + operations + `Event`).
 - **Zero runtime coupling** — generated DTOs are plain `record`/`class` types with no base type, interface, or attribute left on them.
 
 ## Quick start

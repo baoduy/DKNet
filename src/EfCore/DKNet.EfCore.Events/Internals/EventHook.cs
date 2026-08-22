@@ -17,9 +17,10 @@ internal sealed class EventHook(
 
     private static readonly ConcurrentDictionary<Type, RaisesEventAttribute[]> DeclaredEventCache = new();
 
-    // String-form rules resolve their payload record by reflection (entity's assembly + namespace); cache the
-    // result per (entity type, event name) since that lookup is not free and the mapping never changes at runtime.
-    private static readonly ConcurrentDictionary<(Type EntityType, string EventName), Type?> ResolvedEventTypeCache = new();
+    // Convention-form rules resolve their payload record by reflection (entity's assembly + namespace); cache
+    // the result per (entity type, composed name) since that lookup is not free and the mapping never changes
+    // at runtime.
+    private static readonly ConcurrentDictionary<(Type EntityType, string ComposedName), Type?> ResolvedEventTypeCache = new();
 
     private readonly IMapper? _mapper = mappers.FirstOrDefault();
     private readonly HashSet<(object Entity, Type EventType)> _declaredEvents = [];
@@ -79,19 +80,21 @@ internal sealed class EventHook(
     /// <summary>
     ///     Resolves the <see cref="Type" /> a <see cref="RaisesEventAttribute" /> rule raises: the declared
     ///     <see cref="RaisesEventAttribute.EventType" /> for the type-naming form, or the generated payload
-    ///     record resolved by name (entity's own assembly + namespace) for the string form.
+    ///     record resolved by name (entity's own assembly + namespace) for the convention forms — composed by
+    ///     <see cref="EventNameComposer" />, the same source the build-time generator uses, so the two can
+    ///     never disagree.
     /// </summary>
     /// <exception cref="EventException">
-    ///     The rule is the string form and no generated payload record with that name exists in the entity's
-    ///     namespace — never silently dropped.
+    ///     The rule is a convention form and no generated payload record with the composed name exists in the
+    ///     entity's namespace — never silently dropped.
     /// </exception>
     private static Type ResolveEventType(Type entityType, RaisesEventAttribute rule)
     {
         if (rule.EventType is not null)
             return rule.EventType;
 
-        var eventName = rule.EventName!;
-        var resolved = ResolvedEventTypeCache.GetOrAdd((entityType, eventName), static key =>
+        var composedName = EventNameComposer.Compose(entityType.Name, rule.Label, rule.Properties, (int)rule.Operations);
+        var resolved = ResolvedEventTypeCache.GetOrAdd((entityType, composedName), static key =>
         {
             var (entity, name) = key;
             var qualifiedName = entity.Namespace is null ? name : $"{entity.Namespace}.{name}";
@@ -99,7 +102,7 @@ internal sealed class EventHook(
         });
 
         return resolved ?? throw new EventException(Result.Fail(
-            $"Entity '{entityType.Name}' declares a [RaisesEvent] string-form rule naming '{eventName}', but no generated payload record named '{eventName}' was found in its namespace. Ensure DKNet.EfCore.DtoGenerator is referenced and the entity builds cleanly."));
+            $"Entity '{entityType.Name}' declares a [RaisesEvent] convention-form rule composing to '{composedName}', but no generated payload record named '{composedName}' was found in its namespace. Ensure DKNet.EfCore.DtoGenerator is referenced and the entity builds cleanly."));
     }
 
     /// <summary>
