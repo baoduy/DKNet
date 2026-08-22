@@ -421,9 +421,9 @@ public sealed class DtoGenerator : IIncrementalGenerator
         return expression switch
         {
             ImplicitArrayCreationExpressionSyntax implicitArray
-                => ExtractStringLiteralsFromInitializer(implicitArray.Initializer),
+                => ExtractStringLiteralsFromInitializer(ctx, implicitArray.Initializer),
             ArrayCreationExpressionSyntax { Initializer: not null } explicitArray
-                => ExtractStringLiteralsFromInitializer(explicitArray.Initializer),
+                => ExtractStringLiteralsFromInitializer(ctx, explicitArray.Initializer),
             CollectionExpressionSyntax collectionExpr
                 => ExtractStringLiteralsFromCollectionExpression(ctx, collectionExpr),
             _ => new HashSet<string>()
@@ -431,22 +431,27 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Extracts string literals from an array initializer.
+    /// Extracts string literals from an array initializer, resolving constant expressions
+    /// such as <c>nameof(...)</c> in addition to plain string-literal tokens.
     /// </summary>
+    /// <param name="ctx">The generator syntax context.</param>
     /// <param name="initializer">The initializer expression syntax.</param>
     /// <returns>A set of string literals.</returns>
-    internal static HashSet<string> ExtractStringLiteralsFromInitializer(InitializerExpressionSyntax initializer)
+    internal static HashSet<string> ExtractStringLiteralsFromInitializer(
+        GeneratorSyntaxContext ctx,
+        InitializerExpressionSyntax initializer)
     {
         var result = new HashSet<string>();
-        
+
         foreach (var expression in initializer.Expressions)
         {
-            if (expression is LiteralExpressionSyntax literal && literal.Token.Value is string propertyName)
+            var constantValue = ctx.SemanticModel.GetConstantValue(expression);
+            if (constantValue.HasValue && constantValue.Value is string propertyName)
             {
                 result.Add(propertyName);
             }
         }
-        
+
         return result;
     }
 
