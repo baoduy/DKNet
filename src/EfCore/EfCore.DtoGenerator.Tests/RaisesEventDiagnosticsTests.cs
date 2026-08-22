@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Globalization;
+using System.IO;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -271,6 +273,43 @@ public class RaisesEventDiagnosticsTests
         error.ShouldNotBeNull();
         error.GetMessage().ShouldContain("LoyaltyMembershipEventsCreatedEvent");
         error.GetMessage().ShouldContain("label");
+        // DRK-676 §5 — colliding with an unrelated type must never suggest the type-naming remedy.
+        error.GetMessage().ShouldNotContain("typeof");
+    }
+
+    [Fact]
+    public void ComposedNameCollidingWithAGenerateDtoPayloadOfTheSameEntity_OffersBothRemedies()
+    {
+        // Arrange - CustomerCreatedEvent already exists as a hand-written [GenerateDto] payload of
+        // Customer; the label-less rule below composes to the identical name. Since the colliding type
+        // IS a payload of the SAME entity, the type-naming form is a viable remedy alongside the label.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+            using DKNet.EfCore.DtoGenerator;
+
+            namespace Probe.Entities
+            {
+                [GenerateDto(typeof(Customer))]
+                public partial record CustomerCreatedEvent;
+
+                [RaisesEvent(EventOperations.Created)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT004" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("CustomerCreatedEvent");
+        error.GetMessage().ShouldContain("typeof");
+        error.GetMessage().ShouldContain("label");
     }
 
     [Fact]
@@ -455,6 +494,486 @@ public class RaisesEventDiagnosticsTests
         // Assert - no collision diagnostic, and the generator still emits its partial for the merge
         result.Diagnostics.ShouldNotContain(d => d.Id == "DKRAISEVT004");
         result.GeneratedSources.ShouldContain(s => s.HintName.Contains("OrderCreatedEvent.RaisesEvent.g.cs", StringComparison.Ordinal));
+    }
+
+    // --- DRK-676 §5 — convention-based naming ---------------------------------------------------------
+
+    [Fact]
+    public void CreatedOperationWithNoLabel_ComposesEntityAndOperationOnly()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Created)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerCreatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void UpdatedOperationLabelledTier_ComposesTheLabelBetweenEntityAndOperation()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("Tier", EventOperations.Updated)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Tier { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerTierUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void UpdatedOperationNarrowedToStatus_ComposesThePropertyBetweenEntityAndOperation()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Status))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void LabelAndNarrowingPropertyTogether_ComposeLabelFirstThenProperty()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("Send", EventOperations.Updated, nameof(Customer.Email))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Email { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerSendEmailUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NarrowingPropertiesDeclaredInEitherOrder_ComposeTheIdenticalSortedName()
+    {
+        // Arrange - Customer narrows Status-then-Name, Order narrows Name-then-Status; both must sort
+        // ordinally to the identical "NameStatus" segment regardless of declaration order.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Status), nameof(Customer.Name))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+
+                [RaisesEvent(EventOperations.Updated, nameof(Order.Name), nameof(Order.Status))]
+                public sealed class Order
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerNameStatusUpdatedEvent", StringComparison.Ordinal));
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("OrderNameStatusUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("tr-TR")]
+    [InlineData("sv-SE")]
+    public void ComposedNameUnderNonInvariantCulture_MatchesTheInvariantBuild(string cultureName)
+    {
+        // Arrange - narrowed to "Iban" and "Id", the exact DRK-676 §5 culture scenario. Ordinal sorting
+        // (not the current culture's) must decide the order, so tr-TR's dotless-i and sv-SE's collation
+        // rules must never change the composed name.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Iban), nameof(Customer.Id))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Iban { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        GeneratorOutput result;
+
+        // Act
+        try
+        {
+            var culture = CultureInfo.GetCultureInfo(cultureName);
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+
+            result = RunGeneratorWithSource(source);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerIbanIdUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NarrowingPropertyDeclaredTwice_AppearsOnceInTheComposedName()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Status), nameof(Customer.Status))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldBeEmpty();
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusUpdatedEvent", StringComparison.Ordinal));
+        result.GeneratedSources.Count(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal)).ShouldBe(1);
+    }
+
+    [Fact]
+    public void OperationsDeclaredInAnyCombination_ComposeInCanonicalCreatedUpdatedDeletedOrder()
+    {
+        // Arrange - flags combined out of canonical order (Deleted | Created | Updated)
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Deleted | EventOperations.Created | EventOperations.Updated)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert - exactly ONE record covering all three operations, named in canonical order
+        result.Diagnostics.ShouldBeEmpty();
+        var generated = result.GeneratedSources.Single(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal));
+        generated.HintName.ShouldContain("CustomerCreatedUpdatedDeletedEvent");
+    }
+
+    [Fact]
+    public void RenamingTheLabelOnAConventionDeclaration_ChangesOnlyTheName_NotThePayloadShape()
+    {
+        // Arrange - identical entity/properties/narrowing, only the label differs (simulates the
+        // upgrade rename: a pre-upgrade literal name is now a label on the same declaration).
+        const string beforeSource = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("Old", EventOperations.Updated, nameof(Customer.Tier))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Tier { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+        const string afterSource = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("New", EventOperations.Updated, nameof(Customer.Tier))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Tier { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var before = RunGeneratorWithSource(beforeSource);
+        var after = RunGeneratorWithSource(afterSource);
+
+        // Assert - the names differ (the rename took effect) but the payload member set is identical
+        var beforeText = before.GeneratedSources
+            .Single(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal)).SourceText.ToString();
+        var afterText = after.GeneratedSources
+            .Single(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal)).SourceText.ToString();
+
+        beforeText.ShouldContain("CustomerOldTierUpdatedEvent");
+        afterText.ShouldContain("CustomerNewTierUpdatedEvent");
+        foreach (var member in new[] { "Id", "Tier", "Name" })
+        {
+            beforeText.ShouldContain(member);
+            afterText.ShouldContain(member);
+        }
+    }
+
+    [Fact]
+    public void TwoDeclarationsOnOneEntity_ComposingTheSameName_FailTheBuildIdentifyingBoth()
+    {
+        // Arrange - DKRAISEVT008: same entity, narrowing declared in opposite order, so both compose
+        // to "CustomerNameStatusUpdatedEvent" — no longer the silent merge of the pre-upgrade behaviour.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Status), nameof(Customer.Name))]
+                [RaisesEvent(EventOperations.Updated, nameof(Customer.Name), nameof(Customer.Status))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                    public string Name { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var errors = result.Diagnostics.Where(d => d.Id == "DKRAISEVT008" && d.Severity == DiagnosticSeverity.Error).ToList();
+        errors.Count.ShouldBe(2);
+        errors.ShouldAllBe(d => d.GetMessage().Contains("Customer") && d.GetMessage().Contains("CustomerNameStatusUpdatedEvent"));
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("CustomerNameStatusUpdatedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void LabelThatCannotComposeIntoALegalIdentifier_FailsTheBuildAndGeneratesNoRecord()
+    {
+        // Arrange - "Tier Level" cannot form part of a valid C# identifier once composed
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent("Tier Level", EventOperations.Created)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT005" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        error.GetMessage().ShouldContain("event record name");
+        result.GeneratedSources.ShouldNotContain(s => s.HintName.Contains("RaisesEvent.g.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DeclarationNamingNoOperation_FailsTheBuildStatingAtLeastOneOperationRequired()
+    {
+        // Arrange - DKRAISEVT007: the convention form with an empty operations bitmask
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent((EventOperations)0)]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT007" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        error.GetMessage().ShouldContain("Customer");
+        error.GetMessage().ShouldContain("at least one operation");
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void TypeNamingDeclarationNamingNoOperation_AlsoFailsTheBuild()
+    {
+        // Arrange - DKRAISEVT007 applies to ANY declaration form, type-naming included
+        const string declaration = """[RaisesEvent(typeof(OrderPlacedEvent), (EventOperations)0)]""";
+
+        // Act
+        var result = RunGenerator(declaration);
+
+        // Assert
+        var error = result.Diagnostics.FirstOrDefault(d => d.Id == "DKRAISEVT007" && d.Severity == DiagnosticSeverity.Error);
+        error.ShouldNotBeNull();
+        result.Diagnostics.ShouldNotContain(d => d.Id == "DKRAISEVT002");
+        result.GeneratedSources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void NarrowingWithoutUpdatedOperation_StillComposesThePropertyIntoTheNameAndWarns()
+    {
+        // Arrange - R9: narrowing on a declaration without Updated still warns (DKRAISEVT003) AND
+        // still contributes to the composed name, so the name never misrepresents what was declared.
+        const string source = """
+            using System;
+            using DKNet.EfCore.Abstractions.Events;
+
+            namespace Probe.Entities
+            {
+                [RaisesEvent(EventOperations.Deleted, nameof(Customer.Status))]
+                public sealed class Customer
+                {
+                    public Guid Id { get; set; }
+                    public string Status { get; set; } = string.Empty;
+                }
+            }
+            """;
+
+        // Act
+        var result = RunGeneratorWithSource(source);
+
+        // Assert
+        result.Diagnostics.ShouldNotContain(d => d.Severity == DiagnosticSeverity.Error);
+        result.Diagnostics.ShouldContain(d => d.Id == "DKRAISEVT003" && d.Severity == DiagnosticSeverity.Warning);
+        result.GeneratedSources.ShouldContain(s => s.HintName.Contains("CustomerStatusDeletedEvent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void EventNameComposer_ExistsInOnePhysicalFile_LinkedIntoTheGeneratorProject_NotDuplicated()
+    {
+        // Arrange - locate the repo's src/ directory from the test assembly's own on-disk output path.
+        var srcDir = FindSrcDirectory();
+        var abstractionsComposerPath = Path.Combine(
+            srcDir, "EfCore", "DKNet.EfCore.Abstractions", "Events", "EventNameComposer.cs");
+        var generatorProjectDir = Path.Combine(srcDir, "EfCore", "DKNet.EfCore.DtoGenerator");
+        var generatorCsprojPath = Path.Combine(generatorProjectDir, "DKNet.EfCore.DtoGenerator.csproj");
+
+        // Act
+        var composerExists = File.Exists(abstractionsComposerPath);
+        var csprojContent = File.ReadAllText(generatorCsprojPath);
+        var duplicateImplementations = Directory
+            .EnumerateFiles(generatorProjectDir, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                        !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                        Path.GetFileName(f) != "EventNameComposer.cs")
+            .Select(File.ReadAllText)
+            .Where(text => text.Contains("static string Compose(", StringComparison.Ordinal))
+            .ToList();
+
+        // Assert - the generator links the SAME file rather than declaring its own copy or a ProjectReference
+        composerExists.ShouldBeTrue();
+        csprojContent.ShouldContain(
+            """<Compile Include="..\DKNet.EfCore.Abstractions\Events\EventNameComposer.cs" Link="Shared\EventNameComposer.cs"/>""");
+        csprojContent.ShouldNotContain("ProjectReference Include=\"..\\DKNet.EfCore.Abstractions");
+        duplicateImplementations.ShouldBeEmpty();
+    }
+
+    private static string FindSrcDirectory()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && dir.Name != "src")
+            dir = dir.Parent;
+
+        dir.ShouldNotBeNull();
+        return dir!.FullName;
     }
 
     private static GeneratorOutput RunGenerator(string declaration) =>
