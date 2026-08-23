@@ -23,7 +23,7 @@ dotnet add package DKNet.AspCore.Extensions
   `UseEndpointConfigs()` discover, version, tag, and authorize every group across your assemblies.
 - **Fluent minimal-API mappers** — `MapPost`/`MapPut`/`MapPatch`/`MapDelete`/`MapGet`/`MapGetPage`
   wire a verb straight onto a SlimMessageBus fluent command/query, plus generic `MapGetById`/
-  `MapGetList` backed by `DKNet.EfCore.Specifications`.
+  `MapGetList`/`MapDeleteById` backed by `DKNet.EfCore.Specifications`.
 - **`PagedResponse<T>`** — a shared paging envelope (`PageNumber`, `PageSize`, `PageCount`,
   `TotalItemCount`, `Items`, `HasNextPage`, `HasPreviousPage`) used by every paged endpoint.
 - **Result/ProblemDetails conversion** — `Response()`/`Response<T>()` turn a `FluentResults`
@@ -73,6 +73,18 @@ public sealed class ProductsEndpointConfig : IEndpointConfig
 `CreatedBy` from the caller's claim before the handler runs, and returns 201 Created (the mapper
 infers "Created" from the command's type name) with a FluentResults-derived `ProblemDetails` body
 on failure.
+
+`MapDeleteById<TEntity>` hard-deletes an `IEntity<Guid>` by id without a command or handler:
+
+```csharp
+group.MapDeleteById<ProductEntity>("/{id}");
+```
+
+`DELETE /v1/products/{id}` loads the entity via `IRepositorySpec`, removes it through
+`Delete`/`SaveChangesAsync` (so audit-log and domain-event hooks fire as usual), and returns
+204 No Content, 404 when no entity matches, or 409 when a referencing row blocks the removal.
+Authorization is inherited from the route group the endpoint is registered into — the handler
+performs no ownership or tenancy check of its own.
 
 ## Migration — namespace changes in this release
 

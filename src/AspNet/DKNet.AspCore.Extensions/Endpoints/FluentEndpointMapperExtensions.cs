@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using SlimMessageBus;
 
 namespace DKNet.AspCore.Extensions.Endpoints;
@@ -127,6 +128,41 @@ public static class FluentsEndpointMapperExtensions
                         return model is null ? Results.NotFound() : Results.Ok(model);
                     })
                 .Produces<TModel>()
+                .ProducesCommons();
+        }
+
+        /// <summary>
+        ///     Maps an HTTP DELETE endpoint that hard-deletes a single <typeparamref name="TEntity" /> by its
+        ///     <see cref="Guid" /> id, going through the repository's save pipeline so audit-log and domain-event
+        ///     hooks fire as for any other removal.
+        /// </summary>
+        /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        public RouteHandlerBuilder MapDeleteById<TEntity>(string endpoint)
+            where TEntity : class, IEntity<Guid>
+        {
+            return app.MapDelete(
+                    endpoint,
+                    async (Guid id, [FromServices] IRepositorySpec repo, CancellationToken cancellationToken) =>
+                    {
+                        var entity = await repo.FirstOrDefaultAsync(
+                            new EntityByIdSpecification<TEntity>(id), cancellationToken);
+                        if (entity is null) return Results.NotFound();
+
+                        repo.Delete(entity);
+                        try
+                        {
+                            await repo.SaveChangesAsync(cancellationToken);
+                        }
+                        catch (DbUpdateException)
+                        {
+                            return Results.Conflict();
+                        }
+
+                        return Results.NoContent();
+                    })
+                .Produces(StatusCodes.Status204NoContent)
                 .ProducesCommons();
         }
 
@@ -313,6 +349,19 @@ public static class FluentsEndpointMapperExtensions
 internal sealed class EntityByIdSpecification<TEntity, TModel> : ModelSpecification<TEntity, TModel>
     where TEntity : class, IEntity<Guid>
     where TModel : class
+{
+    /// <summary>Initializes the specification with a filter matching the given id.</summary>
+    /// <param name="id">The entity id to match.</param>
+    public EntityByIdSpecification(Guid id) => WithFilter(x => x.Id == id);
+}
+
+/// <summary>
+///     Specification matching a single <typeparamref name="TEntity" /> by its <see cref="Guid" /> id, used by
+///     <see cref="FluentsEndpointMapperExtensions.MapDeleteById{TEntity}" /> to load the tracked entity to delete.
+/// </summary>
+/// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
+internal sealed class EntityByIdSpecification<TEntity> : Specification<TEntity>
+    where TEntity : class, IEntity<Guid>
 {
     /// <summary>Initializes the specification with a filter matching the given id.</summary>
     /// <param name="id">The entity id to match.</param>
