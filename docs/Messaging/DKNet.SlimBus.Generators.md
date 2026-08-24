@@ -36,7 +36,8 @@ The generator only *emits* source; the consuming project still needs, at runtime
   [Endpoint emission is opt-in](#endpoint-emission-is-opt-in).
 - **`Mapster`** (namespace `MapsterMapper`) — the `IMapper` implementation generated handlers inject.
 
-Generated files use C# 14 extension-member syntax, so the consuming project's `LangVersion` must be `14` or
+Generated files call into C# 14 `extension(...)` members declared by `DKNet.AspCore.Extensions`/
+`DKNet.EfCore.Specifications`, so the consuming project's `LangVersion` must be `14` or
 later.
 
 Minimum registration to get a generated slice dispatching and auto-saving against an EF Core `DbContext`:
@@ -77,7 +78,7 @@ public class Product : Entity
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;                             // existing generator
 
-app.MapGroup("/products").MapProductCrud<ProductDto>();       // generated extension
+app.MapGroup("/products").MapProductCrud();                   // generated extension
 ```
 
 ## Features

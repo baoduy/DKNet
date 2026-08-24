@@ -22,8 +22,9 @@ The compiling project also needs, for the generated code to compile and run:
   [Endpoint emission is opt-in](#endpoint-emission-is-opt-in) below.
 - `Mapster` — the `IMapper` implementation (namespace `MapsterMapper`) generated handlers inject.
 
-Generated files use C# 14 extension-member syntax (`extension(RouteGroupBuilder)`), so the project's
-`LangVersion` must be `14` or later — this repo's `Directory.Build.props` already sets `LangVersion=latest`.
+Generated files call the C# 14 `extension(RouteGroupBuilder)` members declared by `DKNet.AspCore.Extensions`/
+`DKNet.EfCore.Specifications`, so the project's `LangVersion` must be `14` or later — this repo's
+`Directory.Build.props` already sets `LangVersion=latest`.
 
 ## Quick start
 
@@ -42,7 +43,7 @@ public class Product : Entity
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;                             // existing generator
 
-app.MapGroup("/products").MapProductCrud<ProductDto>();       // generated extension
+app.MapGroup("/products").MapProductCrud();                   // generated extension
 ```
 
 This emits, into the compiling (API) project:
