@@ -5,6 +5,7 @@
 // Description: Helpers to convert FluentResults and ModelStateDictionary into ASP.NET Core ProblemDetails.
 
 using System.Net;
+using DKNet.SlimBus.Extensions;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -48,7 +49,10 @@ public static class ProblemDetailsExtensions
     ///     when the result represents a failure; returns <c>null</c> for success results.
     /// </summary>
     /// <param name="result">The fluent result to convert.</param>
-    /// <param name="statusCode">The HTTP status code to use when creating the ProblemDetails (default 400).</param>
+    /// <param name="statusCode">
+    ///     The HTTP status code to use when creating the ProblemDetails (default 400). Overridden to 404 when
+    ///     <paramref name="result" /> carries a <see cref="NotFoundError" />.
+    /// </param>
     /// <returns>A <see cref="ProblemDetails" /> when the result is a failure; otherwise <c>null</c>.</returns>
     public static ProblemDetails? ToProblemDetails(
         this IResultBase result,
@@ -57,6 +61,9 @@ public static class ProblemDetailsExtensions
         ArgumentNullException.ThrowIfNull(result);
 
         if (result.IsSuccess) return null;
+
+        if (result.Errors.Any(e => e is NotFoundError))
+            statusCode = HttpStatusCode.NotFound;
 
         var errors = result.Errors.Select(e => e.Message)
             .Where(m => !string.IsNullOrWhiteSpace(m))
@@ -81,9 +88,9 @@ public static class ProblemDetailsExtensions
 
         var errors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, value) in status)
-        foreach (var err in value.Errors)
-            if (!string.IsNullOrWhiteSpace(err.ErrorMessage))
-                errors.Add(err.ErrorMessage);
+            foreach (var err in value.Errors)
+                if (!string.IsNullOrWhiteSpace(err.ErrorMessage))
+                    errors.Add(err.ErrorMessage);
 
         var firstMessage = errors.FirstOrDefault() ?? nameof(HttpStatusCode.BadRequest);
         return CreateProblemDetails(HttpStatusCode.BadRequest, firstMessage, errors);
