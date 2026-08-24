@@ -5,6 +5,8 @@
 // Description: A single field/operation/value filter condition accepted by the generic list endpoints, bindable from a query string.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using DKNet.EfCore.Specifications.Dynamics;
 
 namespace DKNet.AspCore.Extensions.Endpoints;
@@ -29,6 +31,7 @@ namespace DKNet.AspCore.Extensions.Endpoints;
 ///     The value to compare against, as text; coerced to the field's CLR type when the filter is applied.
 ///     For <see cref="Ops.In" />/<see cref="Ops.NotIn" /> this is a comma-separated list.
 /// </param>
+[JsonConverter(typeof(ListFilterJsonConverter))]
 public readonly record struct ListFilter(string Field, Ops Operation, string Value) : IParsable<ListFilter>
 {
     #region Fields
@@ -84,4 +87,25 @@ public readonly record struct ListFilter(string Field, Ops Operation, string Val
     public override string ToString() => $"{Field}{PartSeparator}{Operation}{PartSeparator}{Value}";
 
     #endregion
+}
+
+/// <summary>
+///     Serializes a <see cref="ListFilter" /> as its textual <c>field:operation:value</c> form.
+/// </summary>
+/// <remarks>
+///     The textual form IS the type's representation — it is what the query string carries — so JSON should
+///     carry the same string rather than an object of three properties. This is also what makes the OpenAPI
+///     document describe the <c>filter</c> parameter as an array of strings: the schema follows the JSON
+///     shape, and an object schema there would have every Swagger UI offering a JSON form for a parameter the
+///     endpoint can only bind from the colon-separated string.
+/// </remarks>
+public sealed class ListFilterJsonConverter : JsonConverter<ListFilter>
+{
+    /// <inheritdoc />
+    public override ListFilter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        => ListFilter.Parse(reader.GetString() ?? string.Empty, provider: null);
+
+    /// <inheritdoc />
+    public override void Write(Utf8JsonWriter writer, ListFilter value, JsonSerializerOptions options)
+        => writer.WriteStringValue(value.ToString());
 }

@@ -148,6 +148,52 @@ public class MapGetListFilteringTests(PagingTestHost host) : IClassFixture<Pagin
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    // --- Abuse limits: bounded work per request -------------------------------------------------------------
+
+    [Fact]
+    public async Task MapGetList_MoreFiltersThanTheCap_Returns400WithTheLimit()
+    {
+        // Every condition costs reflection, parsing, and a SQL predicate; without a ceiling one request can
+        // carry hundreds. 21 conditions is one past the cap.
+        var query = string.Join('&', Enumerable.Range(1, 21).Select(i => $"filter=name:Contains:w{i}"));
+
+        var response = await host.Client.GetAsync($"/p/widgets?{query}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("20");
+    }
+
+    [Fact]
+    public async Task MapGetList_ExactlyTheFilterCap_IsAccepted()
+    {
+        var query = string.Join('&', Enumerable.Range(1, 20).Select(i => $"filter=name:Contains:widget"));
+
+        var response = await host.Client.GetAsync($"/p/widgets?{query}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task MapGetList_SingleCharacterSearch_Returns400()
+    {
+        // One character ORs a LIKE '%x%' scan across every text column for almost no selectivity.
+        var response = await host.Client.GetAsync("/p/widgets?search=w");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("2");
+    }
+
+    [Fact]
+    public async Task MapGetList_TwoCharacterSearch_IsAccepted()
+    {
+        var response = await host.Client.GetAsync("/p/widgets?search=wi&pageSize=100");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.TotalItemCount.ShouldBe(PagingTestHost.SeededWidgetCount);
+    }
+
     // --- Free-text search across the model's text fields ---------------------------------------------------
 
     [Fact]

@@ -183,6 +183,12 @@ internal sealed class EntityListSpecification<TEntity, TModel> : ModelSpecificat
             AddOrderBy(
                 query.OrderBy,
                 query.Descending ? ListSortDirection.Descending : ListSortDirection.Ascending);
+
+            // A caller-chosen field is rarely unique, and rows tied on it have no defined order — paging over
+            // them repeats and drops rows on a real database. Appending the unique key pins the order; skipped
+            // when the caller already ordered by Id, where a second Id key would be dead weight.
+            if (!string.Equals(query.OrderBy, nameof(IEntity<Guid>.Id), StringComparison.Ordinal))
+                AddOrderByDescending(x => x.Id);
             return;
         }
 

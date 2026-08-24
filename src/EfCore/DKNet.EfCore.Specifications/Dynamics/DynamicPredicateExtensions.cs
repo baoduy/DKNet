@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic.Core.Exceptions;
 using System.Linq.Expressions;
 using DKNet.EfCore.Specifications.Dynamics;
 using DKNet.EfCore.Specifications.Extensions;
@@ -68,15 +69,24 @@ public static class DynamicPredicateExtensions
         // Build the dynamic LINQ predicate string using shared BuildClause method
         var predicateString = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, op, coercedValue, 0);
 
-
-        // Use System.Linq.Dynamic.Core to parse the predicate string
-        // For In/NotIn, value is the array passed as @0 parameter
-        var lambda = coercedValue == null
-            ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
-            : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString,
-                coercedValue);
-
-        return lambda;
+        try
+        {
+            // Use System.Linq.Dynamic.Core to parse the predicate string
+            // For In/NotIn, value is the array passed as @0 parameter
+            return coercedValue == null
+                ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
+                : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString,
+                    coercedValue);
+        }
+        catch (ParseException)
+        {
+            // The clause resolved a property but the parser rejected the comparison — a navigation property
+            // matched against a scalar value ("Category == \"x\"") being the reachable case. This is one more
+            // kind of unusable condition, and it gets the same answer as every other one: null, so DynamicAnd
+            // skips it and TryBuildPredicate reports it, instead of the exception surfacing as a 500 out of an
+            // endpoint that was handed nothing but a query string.
+            return null;
+        }
     }
 
     /// <summary>

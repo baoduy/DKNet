@@ -56,7 +56,8 @@ internal static class ListQuery
         "Filter as 'field:operation:value', repeatable; conditions combine with AND. Operations: " +
         "Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Contains, NotContains, " +
         "StartsWith, EndsWith, In, NotIn. In/NotIn take a comma-separated value list. Only fields present on " +
-        "the returned model can be filtered; anything else is rejected with 400.";
+        "the returned model can be filtered; anything else is rejected with 400. At most 20 conditions per " +
+        "request.";
 
     /// <summary>OpenAPI description for the <c>orderBy</c> parameter.</summary>
     internal const string OrderByDescription =
@@ -65,8 +66,20 @@ internal static class ListQuery
     /// <summary>OpenAPI description for the <c>search</c> parameter.</summary>
     internal const string SearchDescription =
         "Free-text search: matches rows where any text field of the returned model contains this value. " +
-        "Case sensitivity follows the database collation. Combines with 'filter' using AND. Omit or leave " +
-        "blank for no search; to match a non-text field exactly, use 'filter' instead.";
+        "At least 2 characters. Case sensitivity follows the database collation. Combines with 'filter' " +
+        "using AND. Omit or leave blank for no search; to match a non-text field exactly, use 'filter' instead.";
+
+    /// <summary>
+    ///     Most filter conditions accepted per request. Each one costs reflection, parsing, and a SQL
+    ///     predicate, so the work a single request can demand has to be bounded.
+    /// </summary>
+    internal const int MaxFilterCount = 20;
+
+    /// <summary>
+    ///     Shortest accepted search text. A single character ORs a full <c>LIKE '%…%'</c> scan across every
+    ///     text column for almost no selectivity.
+    /// </summary>
+    internal const int MinSearchLength = 2;
 
     /// <summary>Property names per type, so a case-insensitive lookup cannot throw on case-only overloads.</summary>
     private static readonly ConcurrentDictionary<Type, HashSet<string>> PropertyNames = new();
@@ -98,6 +111,13 @@ internal static class ListQuery
         var search = request.Search;
         var orderBy = request.OrderBy;
 
+        if (request.Filter is { Length: > MaxFilterCount })
+        {
+            error = $"Too many filter conditions: {request.Filter.Length}. At most {MaxFilterCount} are " +
+                    "accepted per request.";
+            return false;
+        }
+
         foreach (var filter in request.Filter ?? [])
         {
             if (!TryBuild<TEntity, TModel>(filter, out var expression, out error)) return false;
@@ -108,7 +128,14 @@ internal static class ListQuery
         // the parameter. A non-blank one ANDs its whole OR-group onto the filters.
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchExpression = Search<TEntity, TModel>(search.Trim());
+            var text = search.Trim();
+            if (text.Length < MinSearchLength)
+            {
+                error = $"Search text must be at least {MinSearchLength} characters.";
+                return false;
+            }
+
+            var searchExpression = Search<TEntity, TModel>(text);
             combined = combined is null ? searchExpression : combined.And(searchExpression);
         }
 
