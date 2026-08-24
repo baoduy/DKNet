@@ -32,9 +32,30 @@ internal static class GeneratorTestHelper
         }
         """;
 
+    // AppDomain.CurrentDomain.GetAssemblies() only returns assemblies already loaded into the process.
+    // A ProjectReference alone does not force that — .NET loads assemblies lazily on first use — so touch
+    // one public type from each reference the test sources need before collecting metadata references.
+    // (DKNet.EfCore.Repos.Abstractions is retired/obsolete and unused by any test source here, so it isn't
+    // force-loaded; its ProjectReference stays for parity with the brief's reference list.)
+    private static readonly Type[] ForceLoadedAssemblies =
+    [
+        typeof(DKNet.EfCore.Abstractions.Entities.IEntity<object>),
+        typeof(DKNet.EfCore.DtoGenerator.DtoGenerator),
+        typeof(DKNet.SlimBus.Extensions.Fluents),
+        // Fluents' generated requests implement SlimMessageBus.IRequest<T>; that assembly is only
+        // pulled in by touching one of its own types, not by touching DKNet.SlimBus.Extensions alone.
+        typeof(SlimMessageBus.IRequest<object>),
+        typeof(FluentResults.Result),
+        // Without this, [Required] fails to resolve while compiling the "Domain" source (its assembly
+        // isn't loaded yet), and the attribute silently drops rather than raising a visible diagnostic.
+        typeof(System.ComponentModel.DataAnnotations.RequiredAttribute)
+    ];
+
     public static (Compilation Output, ImmutableArray<Diagnostic> Diagnostics, GeneratorDriverRunResult Result)
         Run(string domainSource, string apiSource)
     {
+        _ = ForceLoadedAssemblies;
+
         var refs = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => MetadataReference.CreateFromFile(a.Location))
@@ -49,8 +70,10 @@ internal static class GeneratorTestHelper
             [.. refs, domain.ToMetadataReference()],
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
+        // GeneratorDriver is immutable: RunGeneratorsAndUpdateCompilation returns the driver that actually
+        // ran (carrying the run's tracked results) rather than mutating the original instance in place.
         var driver = CSharpGeneratorDriver.Create(new CrudGenerator());
-        driver.RunGeneratorsAndUpdateCompilation(api, out var output, out var diagnostics);
-        return (output, diagnostics, ((GeneratorDriver)driver).GetRunResult());
+        var ranDriver = driver.RunGeneratorsAndUpdateCompilation(api, out var output, out var diagnostics);
+        return (output, diagnostics, ranDriver.GetRunResult());
     }
 }

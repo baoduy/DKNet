@@ -6,10 +6,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Analyzers/generators must reference the LOWEST Roslyn they need to run under, not the
-             newest: the running compiler must be >= the referenced version (CS9057). Match the
-             generator project's pin so the driver in GeneratorTestHelper stays compatible. -->
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.11.0"/>
+        <!-- Use the central (current) Roslyn version here, not the generator project's 4.11.0 pin:
+             this project runs as a normal net10.0 test host, not an analyzer, and pinning it down to
+             4.11.0 causes a System.Collections.Immutable identity mismatch at runtime between that old
+             Roslyn package's own copy and the one .NET 10's shared framework provides (mirrors
+             EfCore.DtoGenerator.Tests, which also stays on the central version). -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="xunit"/>
