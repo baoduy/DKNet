@@ -632,13 +632,13 @@ Note: the 400 test requires minimal-API DataAnnotations validation to be active 
 
 - [ ] **Step 1: Write both docs** (source of truth: the spec — keep the developer-experience code block identical to the spec's).
 - [ ] **Step 2: Commit** — `docs(generators): document CRUD vertical-slice generation`
-- [ ] **Step 3: Remote full-suite verification**
+- [ ] **Step 3: Full-suite verification (local; remote only for MsSql)**
+
+Run the full solution test suite locally — every test project runs locally EXCEPT TestContainers.MsSql-backed ones (user directive 2026-08-24). This branch touches no MsSql-backed project, so no remote run is required. If an MsSql-backed project (e.g. AspCore.Idempotency.MsSqlStore.Tests) ever becomes affected, verify just that project via `gh workflow run remote-tests.yml --ref feat/crud-generation -f project=<path>`.
 
 ```bash
-git push -u origin feat/crud-generation
-gh workflow run remote-tests.yml --ref feat/crud-generation
-gh run watch <run-id> --exit-status
+dotnet test DKNet.FW.sln    # from src/; expect MsSql-backed projects to be excluded or skipped per local Docker availability
 ```
 
-(The workflow must exist on the branch — it lives on `dev`, and this branch is off `dev`.) Expected: pass. If failures, `gh run download <run-id> -n test-results`, fix, repeat.
+Expected: pass. Report any failures with output.
 - [ ] **Step 4: Report** — summarize coverage impact and any deviations from the spec for the PR description (PR base: `dev`; note breaking changes: none — all additions).
