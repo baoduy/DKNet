@@ -156,6 +156,8 @@ internal static class DynamicPredicateBuilderExtensions
                 Ops.EndsWith => $"{prop} != null && {prop}.EndsWith(@{paramIndex})",
                 Ops.In => $"@{paramIndex}.Contains({prop})",
                 Ops.NotIn => $"!@{paramIndex}.Contains({prop})",
+                Ops.IsNull => $"{prop} == null",
+                Ops.IsNotNull => $"{prop} != null",
                 _ => throw new NotSupportedException($"Operation {op} not supported.")
             }
         };

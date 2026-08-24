@@ -48,12 +48,27 @@ public class ListFilterTests
     }
 
     [Theory]
+    [InlineData("tradingName:IsNull")]
+    [InlineData("tradingName:IsNull:")]
+    [InlineData("tradingName:isnotnull")]
+    public void TryParse_ValueLessOperation_ParsesWithOrWithoutTheValueSegment(string text)
+    {
+        // IsNull/IsNotNull have no value, so demanding an empty third segment ("field:IsNull:") would be
+        // hostile — the two-part form must work. Value-carrying operations keep requiring all three parts.
+        ListFilter.TryParse(text, null, out var filter).ShouldBeTrue();
+
+        filter.Field.ShouldBe("tradingName");
+        filter.Value.ShouldBe(string.Empty);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("status")]
     [InlineData("status:Equal")]
     [InlineData(":Equal:Pending")]
+    [InlineData(":IsNull")]
     [InlineData("status:Frobnicate:Pending")]
     public void TryParse_UnusableFilter_Fails(string? text)
     {

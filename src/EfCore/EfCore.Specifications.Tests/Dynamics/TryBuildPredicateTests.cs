@@ -65,6 +65,41 @@ public class TryBuildPredicateTests
     }
 
     [Fact]
+    public void TryBuildPredicate_IsNullIgnoresTheValue_ReturnsThePredicate()
+    {
+        // The wire format always carries a value segment, so whatever arrives there must not disturb an
+        // operation that has no use for it.
+        var ok = DynamicPredicateExtensions.TryBuildPredicate<Order>(
+            "CustomerName", Ops.IsNull, "ignored", out var predicate);
+
+        ok.ShouldBeTrue();
+        predicate.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void TryBuildPredicate_IsNullOnAnEnumProperty_ReturnsThePredicate()
+    {
+        // The pipeline's enum validation rejects any value that does not convert to the enum — which is every
+        // value, for an operation that ignores its value. IsNull/IsNotNull must bypass value validation
+        // entirely or an enum column can never be null-checked.
+        var ok = DynamicPredicateExtensions.TryBuildPredicate<Order>(
+            "Status", Ops.IsNull, string.Empty, out var predicate);
+
+        ok.ShouldBeTrue();
+        predicate.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void TryBuildPredicate_IsNotNullOnUnknownProperty_StillReturnsFalse()
+    {
+        var ok = DynamicPredicateExtensions.TryBuildPredicate<Order>(
+            "NoSuchField", Ops.IsNotNull, string.Empty, out var predicate);
+
+        ok.ShouldBeFalse();
+        predicate.ShouldBeNull();
+    }
+
+    [Fact]
     public void TryBuildPredicate_UnconvertibleValue_ReturnsFalse()
     {
         var ok = DynamicPredicateExtensions.TryBuildPredicate<Product>(

@@ -75,10 +75,14 @@ public readonly record struct ListFilter(string Field, Ops Operation, string Val
         // Split on the first two separators only, so a value may contain separators of its own — an ISO-8601
         // timestamp being the case that matters.
         var parts = s.Split(PartSeparator, PartCount);
-        if (parts.Length != PartCount || parts[0].Length == 0) return false;
+        if (parts.Length < 2 || parts[0].Length == 0) return false;
         if (!Enum.TryParse<Ops>(parts[1], ignoreCase: true, out var operation)) return false;
 
-        result = new ListFilter(parts[0], operation, parts[2]);
+        // IsNull/IsNotNull take no value, so the two-part form ("field:IsNull") is accepted alongside the
+        // three-part one; every value-carrying operation still requires its third segment.
+        if (parts.Length != PartCount && operation is not (Ops.IsNull or Ops.IsNotNull)) return false;
+
+        result = new ListFilter(parts[0], operation, parts.Length == PartCount ? parts[2] : string.Empty);
         return true;
     }
 

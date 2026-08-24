@@ -165,6 +165,33 @@ public sealed class DynamicPredicateNullSemanticsTests(MerchantPostgresFixture f
             .ShouldBe([2, 3, 4, 5, 6, 7, 8, 9, 10]);
     }
 
+    // --- IsNull / IsNotNull: the value-less operations, against real NULLs ----------------------------------
+
+    [Fact]
+    public async Task DynamicAnd_IsNullOnNullableColumn_MatchesOnlyRowsWithoutAValue()
+    {
+        (await QueryIdsAsync("TradingName", Ops.IsNull, null)).ShouldBe([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    }
+
+    [Fact]
+    public async Task DynamicAnd_IsNotNullOnNullableColumn_MatchesOnlyRowsWithAValue()
+    {
+        (await QueryIdsAsync("TradingName", Ops.IsNotNull, null)).ShouldBe([1]);
+    }
+
+    [Fact]
+    public async Task DynamicAnd_IsNullOnNonNullableColumn_MatchesNothing()
+    {
+        // A column that can never be null honestly answers "no rows" — not an error, and not every row.
+        (await QueryIdsAsync("Name", Ops.IsNull, null)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task DynamicAnd_IsNotNullOnNonNullableColumn_MatchesEveryRow()
+    {
+        (await QueryIdsAsync("Name", Ops.IsNotNull, null)).ShouldBe([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    }
+
     // --- The same predicates evaluated as ordinary LINQ rather than translated to SQL --------------------
     // A relational provider never evaluates these in C#: EF Core rewrites them into null-aware SQL, which is
     // why every database-backed case above passed even before the clauses carried a null check. Anything that
@@ -215,6 +242,17 @@ public sealed class DynamicPredicateNullSemanticsTests(MerchantPostgresFixture f
 
         predicate(new Merchant { TradingName = null }).ShouldBeFalse();
         predicate(new Merchant { TradingName = "Acme Trading" }).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void DynamicAnd_IsNullCompiled_AgreesWithTheSql()
+    {
+        var predicate = PredicateBuilder.New<Merchant>(true)
+            .DynamicAnd("TradingName", Ops.IsNull, null)
+            .Compile();
+
+        predicate(new Merchant { TradingName = null }).ShouldBeTrue();
+        predicate(new Merchant { TradingName = "Acme Trading" }).ShouldBeFalse();
     }
 
     #endregion

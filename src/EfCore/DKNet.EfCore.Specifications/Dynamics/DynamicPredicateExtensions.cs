@@ -41,6 +41,24 @@ public static class DynamicPredicateExtensions
         if (propType == null)
             return null;
 
+        // IsNull/IsNotNull take no value, so none of the value validations below can apply — an enum column
+        // would otherwise be rejected because no ignored value converts to the enum. Build and parse the
+        // value-less clause directly.
+        if (operation is Ops.IsNull or Ops.IsNotNull)
+        {
+            var nullClause = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, operation, null, 0);
+            try
+            {
+                return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, nullClause);
+            }
+            catch (ParseException)
+            {
+                // A non-nullable value type cannot be compared to null; that field simply does not support
+                // the operation, reported the same way as every other unusable condition.
+                return null;
+            }
+        }
+
         // Validate array value for In/NotIn operations
         if (!DynamicPredicateBuilderExtensions.ValidateArrayValue(value, operation))
             return null;

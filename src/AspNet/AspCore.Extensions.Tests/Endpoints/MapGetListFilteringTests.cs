@@ -148,6 +148,31 @@ public class MapGetListFilteringTests(PagingTestHost host) : IClassFixture<Pagin
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    // --- IsNull / IsNotNull: value-less operations end to end ----------------------------------------------
+
+    [Fact]
+    public async Task MapGetList_IsNotNullFilter_MatchesEveryRowWithAValue()
+    {
+        // The two-part form, no trailing colon — the ergonomic shape a caller will actually type.
+        var response = await host.Client.GetAsync("/p/widgets?filter=name:IsNotNull&pageSize=100");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.TotalItemCount.ShouldBe(PagingTestHost.SeededWidgetCount);
+    }
+
+    [Fact]
+    public async Task MapGetList_IsNullFilterOnANonNullColumn_Returns200WithAnEmptyPage()
+    {
+        var response = await host.Client.GetAsync("/p/widgets?filter=name:IsNull");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.TotalItemCount.ShouldBe(0);
+    }
+
     // --- Abuse limits: bounded work per request -------------------------------------------------------------
 
     [Fact]

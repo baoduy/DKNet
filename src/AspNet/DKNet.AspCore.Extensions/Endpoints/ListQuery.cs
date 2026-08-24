@@ -55,9 +55,9 @@ internal static class ListQuery
     internal const string FilterDescription =
         "Filter as 'field:operation:value', repeatable; conditions combine with AND. Operations: " +
         "Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Contains, NotContains, " +
-        "StartsWith, EndsWith, In, NotIn. In/NotIn take a comma-separated value list. Only fields present on " +
-        "the returned model can be filtered; anything else is rejected with 400. At most 20 conditions per " +
-        "request.";
+        "StartsWith, EndsWith, In, NotIn, IsNull, IsNotNull. In/NotIn take a comma-separated value list; " +
+        "IsNull/IsNotNull take no value ('field:IsNull'). Only fields present on the returned model can be " +
+        "filtered; anything else is rejected with 400. At most 20 conditions per request.";
 
     /// <summary>OpenAPI description for the <c>orderBy</c> parameter.</summary>
     internal const string OrderByDescription =
