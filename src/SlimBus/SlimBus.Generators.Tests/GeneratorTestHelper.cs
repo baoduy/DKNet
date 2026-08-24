@@ -52,16 +52,30 @@ internal static class GeneratorTestHelper
         // Generated handlers reference IRepositorySpec/Specification/SpecRepoExtensions (all in this
         // one assembly) and MapsterMapper.IMapper (shipped inside the "Mapster" assembly).
         typeof(DKNet.EfCore.Specifications.Repositories.IRepositorySpec),
-        typeof(MapsterMapper.IMapper)
+        typeof(MapsterMapper.IMapper),
+        // Endpoint-emission tests need the FluentsEntityEndpointMapperExtensions/FluentsEndpointMapperExtensions
+        // this assembly declares, plus the ASP.NET Core RouteGroupBuilder those extension members target.
+        // The latter is only pulled in by touching one of its own types, not by touching AspCore.Extensions
+        // alone (same reasoning as the SlimMessageBus.IRequest<object> entry above).
+        typeof(DKNet.AspCore.Extensions.Endpoints.CrudMapOptions),
+        typeof(Microsoft.AspNetCore.Routing.RouteGroupBuilder)
     ];
 
+    /// <summary>
+    /// Runs the generator as <see cref="Run(string, string)" />, except any loaded assembly whose simple
+    /// name appears in <paramref name="excludedAssemblyNames" /> is left out of the "MyApi" compilation's
+    /// references — used to exercise generator behavior when a given assembly isn't referenced, without
+    /// depending on process-wide assembly load order (once force-loaded, an assembly stays loaded and
+    /// would otherwise leak into every subsequent call in the same test run).
+    /// </summary>
     public static (Compilation Output, ImmutableArray<Diagnostic> Diagnostics, GeneratorDriverRunResult Result)
-        Run(string domainSource, string apiSource)
+        Run(string domainSource, string apiSource, string[]? excludedAssemblyNames = null)
     {
         _ = ForceLoadedAssemblies;
 
         var refs = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Where(a => excludedAssemblyNames is null || !excludedAssemblyNames.Contains(a.GetName().Name))
             .Select(a => MetadataReference.CreateFromFile(a.Location))
             .Cast<MetadataReference>().ToList();
 

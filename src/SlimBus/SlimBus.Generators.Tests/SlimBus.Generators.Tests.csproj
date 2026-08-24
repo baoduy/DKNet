@@ -6,6 +6,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Needed so GeneratorTestHelper can force-load Microsoft.AspNetCore.Routing (RouteGroupBuilder)
+             for the endpoint-emission synthetic compilation; mirrors AspCore.Extensions.Tests. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Use the central (current) Roslyn version here, not the generator project's 4.11.0 pin:
              this project runs as a normal net10.0 test host, not an analyzer, and pinning it down to
              4.11.0 causes a System.Collections.Immutable identity mismatch at runtime between that old
@@ -36,6 +42,7 @@
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
         <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+        <ProjectReference Include="..\..\AspNet\DKNet.AspCore.Extensions\DKNet.AspCore.Extensions.csproj"/>
     </ItemGroup>
 
 </Project>
