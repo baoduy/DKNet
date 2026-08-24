@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Needed so GeneratorTestHelper can force-load Microsoft.AspNetCore.Routing (RouteGroupBuilder)
+             for the endpoint-emission synthetic compilation; mirrors AspCore.Extensions.Tests. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Use the central (current) Roslyn version here, not the generator project's 4.11.0 pin:
+             this project runs as a normal net10.0 test host, not an analyzer, and pinning it down to
+             4.11.0 causes a System.Collections.Immutable identity mismatch at runtime between that old
+             Roslyn package's own copy and the one .NET 10's shared framework provides (mirrors
+             EfCore.DtoGenerator.Tests, which also stays on the central version). -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Shouldly"/>
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.runner.visualstudio">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Referenced normally (not as an Analyzer): tests instantiate CrudGenerator directly via
+             CSharpGeneratorDriver rather than relying on it running against this project's own compilation. -->
+        <ProjectReference Include="..\DKNet.SlimBus.Generators\DKNet.SlimBus.Generators.csproj"/>
+        <!-- Loaded into the AppDomain so GeneratorTestHelper can resolve them as metadata references
+             for the synthetic Domain/Api compilations it builds. -->
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
+        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+        <ProjectReference Include="..\..\AspNet\DKNet.AspCore.Extensions\DKNet.AspCore.Extensions.csproj"/>
+    </ItemGroup>
+
+</Project>

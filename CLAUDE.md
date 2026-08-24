@@ -75,11 +75,11 @@ dotnet format                                    # before committing
 
 Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. `mssql/server` ships x64-only images with no ARM64 build.
 
-**Never run TestContainers.MsSql-backed tests locally on an ARM64 device (Apple Silicon, ARM dev boxes/sandboxes)** — `mssql/server` has no ARM image, and do not substitute a local ARM workaround (e.g. `azure-sql-edge`) either. Always verify these tests via the GitHub Actions x64 runner below instead.
+**All tests run locally EXCEPT TestContainers.MsSql-backed ones.** Never run TestContainers.MsSql-backed tests locally on an ARM64 device (Apple Silicon, ARM dev boxes/sandboxes) — `mssql/server` has no ARM image, and do not substitute a local ARM workaround (e.g. `azure-sql-edge`) either. Verify those (and only those) via the GitHub Actions x64 runner below. Every other test project runs locally — do not use the remote runner for non-MsSql tests.
 
-### Remote test verification (ARM / no local SQL Server)
+### Remote test verification (TestContainers.MsSql tests only)
 
-On an ARM device, verify tests on a GitHub-hosted x64 runner via the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml`. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging.
+For MsSql-backed test projects, verify on a GitHub-hosted x64 runner via the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml`. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging.
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch>                              # whole solution
@@ -92,7 +92,7 @@ gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
 
 The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
 
-`Svc.PdfGenerators.Tests` downloads an x86_64 Chromium build that cannot run on ARM sandboxes (missing x86_64 loader) — verify it on the GitHub x64 runner instead of locally:
+`Svc.PdfGenerators.Tests` runs locally too (it is not MsSql-backed). If its Chromium download ever fails on a restricted ARM sandbox, the remote runner remains a fallback:
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGenerators.Tests

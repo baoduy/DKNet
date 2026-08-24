@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <!-- Source generators must target netstandard2.0 -->
@@ -16,15 +16,7 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
     <ItemGroup>
-        <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests"/>
-        <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests.ProjectWide"/>
-        <InternalsVisibleTo Include="SlimBus.Generators.Tests.Api"/>
-    </ItemGroup>
-    <ItemGroup>
-        <!-- Shared with DKNet.EfCore.Abstractions so build-time and runtime event naming can never
-             disagree. A ProjectReference is not possible here: analyzer packaging requires this
-             project to reference neither DKNet.EfCore.Abstractions nor DKNet.EfCore.Events. -->
-        <Compile Include="..\DKNet.EfCore.Abstractions\Events\EventNameComposer.cs" Link="Shared\EventNameComposer.cs"/>
+        <InternalsVisibleTo Include="SlimBus.Generators.Tests"/>
     </ItemGroup>
     <ItemGroup>
         <!-- Analyzers/generators must reference the LOWEST Roslyn they need to run under, not the
@@ -38,12 +30,6 @@
     <ItemGroup>
         <!-- Pack the generator DLL as an analyzer -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
-
-        <!-- Include the attribute file in consuming projects -->
-        <None Include="GenerateDtoAttribute.cs" Pack="true" PackagePath="contentFiles/cs/any;content" BuildAction="Compile"/>
-
-        <!-- Pack the MSBuild props so CompilerVisibleProperty declarations reach consuming projects -->
-        <None Include="DKNet.EfCore.DtoGenerator.props" Pack="true" PackagePath="buildTransitive/"/>
 
         <!-- Standard package files -->
         <None Include="..\..\NugetLogo.png" Pack="true" PackagePath="\"/>
