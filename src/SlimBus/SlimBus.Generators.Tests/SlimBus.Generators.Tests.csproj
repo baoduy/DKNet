@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Analyzers/generators must reference the LOWEST Roslyn they need to run under, not the
+             newest: the running compiler must be >= the referenced version (CS9057). Match the
+             generator project's pin so the driver in GeneratorTestHelper stays compatible. -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.11.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Shouldly"/>
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.runner.visualstudio">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Referenced normally (not as an Analyzer): tests instantiate CrudGenerator directly via
+             CSharpGeneratorDriver rather than relying on it running against this project's own compilation. -->
+        <ProjectReference Include="..\DKNet.SlimBus.Generators\DKNet.SlimBus.Generators.csproj"/>
+        <!-- Loaded into the AppDomain so GeneratorTestHelper can resolve them as metadata references
+             for the synthetic Domain/Api compilations it builds. -->
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"/>
+        <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
+    </ItemGroup>
+
+</Project>

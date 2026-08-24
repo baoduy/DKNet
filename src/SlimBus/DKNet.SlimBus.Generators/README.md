@@ -1,0 +1,43 @@
+# DKNet.SlimBus.Generators
+
+A Roslyn incremental source generator that emits CRUD vertical-slice request records from `[CrudCreate]`/`[CrudUpdate]`-attributed entity members — no hand-written command/request boilerplate.
+
+## Install
+
+```xml
+<ItemGroup>
+  <PackageReference Include="DKNet.SlimBus.Generators" Version="{latest}" PrivateAssets="all" OutputItemType="Analyzer" />
+</ItemGroup>
+```
+
+## Features
+
+- **`[CrudCreate]`** on a constructor or method — generates a `Create{Entity}Request` (or method-named request) record implementing `DKNet.SlimBus.Extensions.Fluents.Requests.IWitResponse<TDto>`.
+- **`[CrudUpdate]`** on a method — generates an `{Method}{Entity}Request` record implementing both `IWitResponse<TDto>` and `IWithKey<TKey>`, with the target entity's key bound from the route.
+- **DTO resolution at generation time** — the entity's `[GenerateDto(typeof(Entity))]` DTO is resolved from the compiling project and referenced directly in the generated request's `IWitResponse<TDto>`.
+- **Validation attribute copy-through** — `System.ComponentModel.DataAnnotations` attributes on constructor/method parameters are copied to the generated request properties.
+- **Cross-assembly discovery** — entities may live in a referenced assembly (e.g. a `Domain` project); the generator walks both the current compilation and its references.
+
+Handler and endpoint emission for the generated requests are added by later generators layered on the same pipeline.
+
+## Quick start
+
+```csharp
+public class Product : IEntity<Guid>
+{
+    [CrudCreate]
+    public Product(string name, decimal price) { Name = name; Price = price; }
+
+    [CrudUpdate]
+    public void UpdatePrice(decimal price) => Price = price;
+
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public decimal Price { get; private set; }
+}
+
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
+
+This emits `ProductCrudRequests.g.cs` with `CreateProductRequest` and `UpdatePriceProductRequest` records in the `{AssemblyName}.Crud` namespace.
