@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using DKNet.AspCore.Extensions.Responses;
 using Shouldly;
 
 namespace SlimBus.Generators.Tests.Api;
@@ -85,11 +86,17 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
         await host.Client.PostAsJsonAsync("/gadgets", new { name = "list-a", price = 1m });
         await host.Client.PostAsJsonAsync("/gadgets", new { name = "list-b", price = 2m });
 
-        var response = await host.Client.GetAsync("/gadgets");
+        // Filters to just the two rows this test created — the shared fixture DB accumulates rows across
+        // every test in this class, so an unfiltered list can't assert an exact count deterministically.
+        var response = await host.Client.GetAsync("/gadgets?filter=name:Contains:list-");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync();
-        body.ShouldContain("list-a");
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<GadgetDto>>();
+        page.ShouldNotBeNull();
+        page.PageSize.ShouldBeGreaterThan(0);
+        page.TotalItemCount.ShouldBe(2);
+        page.Items.ShouldContain(x => x.Name == "list-a" && x.Price == 1m);
+        page.Items.ShouldContain(x => x.Name == "list-b" && x.Price == 2m);
     }
 
     [Fact]
