@@ -18,6 +18,7 @@
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests"/>
         <InternalsVisibleTo Include="EfCore.DtoGenerator.Tests.ProjectWide"/>
+        <InternalsVisibleTo Include="SlimBus.Generators.Tests.Api"/>
     </ItemGroup>
     <ItemGroup>
         <!-- Shared with DKNet.EfCore.Abstractions so build-time and runtime event naming can never
