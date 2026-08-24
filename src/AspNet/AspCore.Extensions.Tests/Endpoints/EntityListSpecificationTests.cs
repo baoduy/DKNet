@@ -18,7 +18,7 @@ public class EntityListSpecificationTests
     {
         // Name is not unique in general; without a tie-break, rows with equal names have no defined order and
         // paging over them is non-deterministic on a real database.
-        var spec = new EntityListSpecification<WidgetEntity, WidgetModel>(
+        var spec = new EntityListSpecification<WidgetEntity, Guid, WidgetModel>(
             new ListQuery<WidgetEntity>(Filter: null, OrderBy: "Name", Descending: false));
 
         spec.OrderByQueries.Count.ShouldBe(1);
@@ -33,7 +33,7 @@ public class EntityListSpecificationTests
     [Fact]
     public void CallerOrderByDescending_AppendsIdTieBreak()
     {
-        var spec = new EntityListSpecification<WidgetEntity, WidgetModel>(
+        var spec = new EntityListSpecification<WidgetEntity, Guid, WidgetModel>(
             new ListQuery<WidgetEntity>(Filter: null, OrderBy: "Name", Descending: true));
 
         spec.OrderByQueries.Count.ShouldBe(0);
@@ -44,7 +44,7 @@ public class EntityListSpecificationTests
     public void CallerOrderById_DoesNotAppendASecondIdClause()
     {
         // Id is already unique — a second Id key would be dead weight in every ORDER BY.
-        var spec = new EntityListSpecification<WidgetEntity, WidgetModel>(
+        var spec = new EntityListSpecification<WidgetEntity, Guid, WidgetModel>(
             new ListQuery<WidgetEntity>(Filter: null, OrderBy: "Id", Descending: false));
 
         (spec.OrderByQueries.Count + spec.OrderByDescendingQueries.Count).ShouldBe(1);
@@ -53,7 +53,7 @@ public class EntityListSpecificationTests
     [Fact]
     public void NoCallerOrder_KeepsTheNewestFirstDefault()
     {
-        var spec = new EntityListSpecification<WidgetEntity, WidgetModel>(
+        var spec = new EntityListSpecification<WidgetEntity, Guid, WidgetModel>(
             new ListQuery<WidgetEntity>(Filter: null, OrderBy: null, Descending: false));
 
         // Non-audited entity: Id descending alone.

@@ -34,6 +34,9 @@ public sealed class EndpointTestHost : IAsyncLifetime
     /// <summary>Id of the seeded "second" widget, positioned between two others for MapGetList ordering assertions.</summary>
     public Guid SeededWidgetId { get; } = new("00000000-0000-0000-0000-000000000002");
 
+    /// <summary>Id of the int-keyed sprocket reserved for the delete scenario, so no other test depends on it.</summary>
+    public int DeletableSprocketId { get; } = 99;
+
     /// <summary>The host's DI container — lets tests inspect endpoint metadata via <see cref="EndpointDataSource" />.</summary>
     public IServiceProvider Services => _app!.Services;
 
@@ -78,6 +81,19 @@ public sealed class EndpointTestHost : IAsyncLifetime
                 new WidgetEntity(new Guid("00000000-0000-0000-0000-000000000001"), "first"),
                 new WidgetEntity(SeededWidgetId, "second"),
                 new WidgetEntity(new Guid("00000000-0000-0000-0000-000000000003"), "third"));
+
+            // Id 99 exists only for the delete scenario, so removing it cannot disturb the ordering
+            // and lookup assertions the other non-Guid-key tests make against ids 1-3.
+            db.Sprockets.AddRange(
+                new SprocketEntity(1, "sprocket-one"),
+                new SprocketEntity(2, "sprocket-two"),
+                new SprocketEntity(3, "sprocket-three"),
+                new SprocketEntity(DeletableSprocketId, "sprocket-doomed"));
+
+            db.Coupons.AddRange(
+                new CouponEntity("SUMMER-2026", "Summer sale"),
+                new CouponEntity("WINTER-2026", "Winter sale"));
+
             await db.SaveChangesAsync();
         }
 
@@ -103,6 +119,13 @@ public sealed class EndpointTestHost : IAsyncLifetime
         group.MapGetPage<ListWidgetsPageQuery, WidgetResult>("/get-page");
         group.MapGetById<WidgetEntity, WidgetModel>("/widgets/{id}");
         group.MapGetList<WidgetEntity, WidgetModel>("/widgets");
+
+        // Non-Guid keys: an int key (a struct key the framework does not special-case) and a string key
+        // (which does not implement IParsable, so it proves minimal-API binding still resolves it).
+        group.MapGetById<SprocketEntity, int, SprocketModel>("/sprockets/{id}");
+        group.MapGetList<SprocketEntity, int, SprocketModel>("/sprockets");
+        group.MapDeleteById<SprocketEntity, int>("/sprockets/{id}");
+        group.MapGetById<CouponEntity, string, CouponModel>("/coupons/{id}");
 
         group.MapPatch<EchoNoResponseCommand>("/patch-no-response");
         group.MapPatch<RenameWidgetCommand, WidgetResult>("/patch-with-response");
