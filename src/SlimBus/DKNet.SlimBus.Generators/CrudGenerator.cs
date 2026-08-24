@@ -312,14 +312,41 @@ internal static class CrudModelBuilder
     private static string FormatTypedConstant(TypedConstant constant)
     {
         if (constant.IsNull) return "null";
-        return constant.Value switch
+        switch (constant.Kind)
         {
-            string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
-            bool b => b ? "true" : "false",
-            char c => "'" + c + "'",
-            IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-            _ => constant.Value?.ToString() ?? "null"
-        };
+            case TypedConstantKind.Type:
+                var typeArg = (ITypeSymbol)constant.Value!;
+                return $"typeof({typeArg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
+            case TypedConstantKind.Enum:
+                return FormatEnumConstant(constant);
+            case TypedConstantKind.Array:
+                return "new[] { " + string.Join(", ", constant.Values.Select(FormatTypedConstant)) + " }";
+            default:
+                return constant.Value switch
+                {
+                    string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+                    bool b => b ? "true" : "false",
+                    char c => "'" + c + "'",
+                    IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+                    _ => constant.Value?.ToString() ?? "null"
+                };
+        }
+    }
+
+    private static string FormatEnumConstant(TypedConstant constant)
+    {
+        var enumTypeName = constant.Type?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "int";
+        if (constant.Type is INamedTypeSymbol enumType && constant.Value is not null)
+        {
+            foreach (var member in enumType.GetMembers().OfType<IFieldSymbol>())
+            {
+                if (member.HasConstantValue && Equals(member.ConstantValue, constant.Value))
+                    return $"{enumTypeName}.{member.Name}";
+            }
+        }
+
+        // Combined flags or an unmatched value: cast the underlying literal.
+        return $"({enumTypeName}){constant.Value}";
     }
 
     private static string? ResolveKeyFullName(INamedTypeSymbol type)
@@ -358,7 +385,9 @@ internal static class CrudModelBuilder
     {
         var name = assembly.Identity.Name;
         foreach (var prefix in SkippedAssemblyPrefixes)
-            if (name.StartsWith(prefix, StringComparison.Ordinal)) return false;
+            // Exact name or dot-prefixed namespace only — a plain StartsWith would also skip a user
+            // assembly like "Systemic.Domain" or "MicrosoftX.Domain".
+            if (name == prefix || name.StartsWith(prefix + ".", StringComparison.Ordinal)) return false;
         return true;
     }
 

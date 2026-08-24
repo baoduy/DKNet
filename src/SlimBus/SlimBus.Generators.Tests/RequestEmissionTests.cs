@@ -105,6 +105,77 @@ public class RequestEmissionTests
     }
 
     [Fact]
+    public void Run_WithTypeValuedAttributeArgument_RendersTypeofExpression()
+    {
+        const string domain = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product(string name, [Range(typeof(decimal), "0.01", "100")] decimal price)
+                    {
+                        Name = name;
+                        Price = price;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                    public decimal Price { get; private set; }
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        // FullyQualifiedFormat renders SpecialType members (decimal, int, string, ...) as their C#
+        // keyword, not "global::System.Decimal" — consistent with how TypeFullName is rendered
+        // everywhere else in this generator (e.g. "required decimal Price").
+        text.ShouldContain("typeof(decimal)");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEnumValuedAttributeArgument_RendersFullyQualifiedMember()
+    {
+        const string domain = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([DataType(DataType.EmailAddress)] string name, decimal price)
+                    {
+                        Name = name;
+                        Price = price;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                    public decimal Price { get; private set; }
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("global::System.ComponentModel.DataAnnotations.DataType.EmailAddress");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Run_WithNameOverride_UsesOverriddenRequestName()
     {
         const string domain = """
