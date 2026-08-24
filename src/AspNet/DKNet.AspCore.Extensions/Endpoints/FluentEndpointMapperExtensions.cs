@@ -237,5 +237,30 @@ public static class FluentsEndpointMapperExtensions
                     return rs.Response();
                 }).ProducesCommons();
         }
+
+        /// <summary>
+        ///     Maps an HTTP PUT endpoint that binds the target key from the route into the command before dispatch.
+        /// </summary>
+        /// <typeparam name="TCommand">
+        ///     Command type implementing <see cref="Fluents.Requests.IWitResponse{TResponse}" /> and
+        ///     <see cref="Fluents.Requests.IWithKey{TKey}" />.
+        /// </typeparam>
+        /// <typeparam name="TKey">The entity key type bound from the route.</typeparam>
+        /// <typeparam name="TResponse">Response type returned by the command.</typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        public RouteHandlerBuilder MapPutById<TCommand, TKey, TResponse>(string endpoint = "{id}")
+            where TCommand : class, Fluents.Requests.IWitResponse<TResponse>, Fluents.Requests.IWithKey<TKey>
+        {
+            return app.MapPut(
+                    endpoint,
+                    async (IMessageBus bus, TKey id, TCommand request) =>
+                    {
+                        request.Id = id;
+                        var rs = await bus.Send(request);
+                        return rs.Response();
+                    }).Produces<TResponse>()
+                .ProducesCommons();
+        }
     }
 }

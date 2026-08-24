@@ -71,6 +71,18 @@ public record FindWidgetQuery : Fluents.Queries.IWitResponse<WidgetResult>
 /// <summary>Paged query returning a fixed, known page shape.</summary>
 public record ListWidgetsPageQuery : Fluents.Queries.IWitPageResponse<WidgetResult>;
 
+/// <summary>Command bound via MapPutById — <see cref="Id" /> is overwritten from the route, never the body.</summary>
+public sealed record RenameThingRequest : Fluents.Requests.IWitResponse<string>, Fluents.Requests.IWithKey<Guid>
+{
+    #region Properties
+
+    public Guid Id { get; set; }
+
+    public string Name { get; init; } = string.Empty;
+
+    #endregion
+}
+
 internal sealed class CreateWidgetHandler : Fluents.Requests.IHandler<CreateWidgetCommand, WidgetResult>
 {
     #region Methods
@@ -154,6 +166,16 @@ internal sealed class ListWidgetsPageHandler : Fluents.Queries.IPageHandler<List
             totalItemCount: 5);
         return Task.FromResult(page);
     }
+
+    #endregion
+}
+
+internal sealed class RenameThingHandler : Fluents.Requests.IHandler<RenameThingRequest, string>
+{
+    #region Methods
+
+    public Task<IResult<string>> OnHandle(RenameThingRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<string>>(Result.Ok($"{request.Id}:{request.Name}"));
 
     #endregion
 }
