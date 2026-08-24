@@ -104,4 +104,37 @@ public class HandlerEmissionTests
         text.ShouldContain("class UpdatePriceProductHandler");
         diagnostics.ShouldContain(d => d.Id == "DKCRUDGEN005");
     }
+
+    [Fact]
+    public void Run_WithHandWrittenHandlerUsingQualifiedRequestName_SkipsGeneratedHandler()
+    {
+        // Override detection must resolve the request's simple name from a namespace-qualified
+        // type argument too, not just a bare identifier.
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using DKNet.SlimBus.Extensions;
+            using FluentResults;
+            using MyDomain;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Product))]
+                public partial record ProductDto;
+
+                internal sealed class CustomCreateProductHandler : Fluents.Requests.IHandler<MyApi.CreateProductRequest, MyApi.ProductDto>
+                {
+                    public Task<IResult<ProductDto>> OnHandle(CreateProductRequest request, CancellationToken cancellationToken) =>
+                        throw new System.NotImplementedException();
+                }
+            }
+            """;
+
+        var (_, diagnostics, result) = GeneratorTestHelper.Run(DomainWithCreateAndUpdate, api);
+
+        var text = GeneratedText(result);
+        text.ShouldNotContain("class CreateProductHandler");
+        diagnostics.ShouldContain(d => d.Id == "DKCRUDGEN005");
+    }
 }
