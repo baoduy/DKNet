@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace DKNet.SlimBus.Generators;
@@ -64,6 +65,12 @@ internal static class CrudDiagnostics
         "CRUD member is not public",
         "Member '{0}.{1}' is marked [CrudCreate]/[CrudUpdate] but is not public",
         Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor HandWrittenHandlerOverride = new(
+        "DKCRUDGEN005",
+        "Hand-written handler overrides generated handler",
+        "A hand-written type implementing IHandler<{0}, ...> was found; the generated handler for '{0}' was skipped",
+        Category, DiagnosticSeverity.Info, isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor EntityMissingIEntity = new(
         "DKCRUDGEN006",
@@ -139,12 +146,18 @@ internal static class CrudModelBuilder
         // DTO resolution is scoped to the current compilation only (spec step 4).
         var dtoLookup = BuildDtoLookup(compilation.Assembly, ct);
 
+        // Hand-written handler overrides are looked up by the generated request's simple type name: the
+        // request type itself is emitted by this same generator run, so it can never be resolved as a
+        // symbol from this (pre-generation) compilation. Scanning syntax for a base-list entry naming
+        // "IHandler<TRequest, ...>" textually is the only way to see the override before it exists.
+        var handlerOverrides = FindHandWrittenHandlerOverrides(compilation, ct);
+
         foreach (var assembly in EnumerateScannedAssemblies(compilation))
         {
             foreach (var type in GetAllTypes(assembly.GlobalNamespace))
             {
                 ct.ThrowIfCancellationRequested();
-                var model = TryBuildEntityModel(type, dtoLookup, diagnostics);
+                var model = TryBuildEntityModel(type, dtoLookup, handlerOverrides, diagnostics);
                 if (model is not null) entities.Add(model);
             }
         }
@@ -179,6 +192,7 @@ internal static class CrudModelBuilder
     private static CrudEntityModel? TryBuildEntityModel(
         INamedTypeSymbol type,
         Dictionary<string, List<INamedTypeSymbol>> dtoLookup,
+        Dictionary<string, Location> handlerOverrides,
         ImmutableArray<Diagnostic>.Builder diagnostics)
     {
         if (type.TypeKind is not (TypeKind.Class or TypeKind.Struct)) return null;
@@ -206,7 +220,7 @@ internal static class CrudModelBuilder
 
             hasAnyCrudMember = true;
             if (EnsurePublic(method, type, diagnostics))
-                updateMembers.Add(BuildMemberModel(type, method, updateAttribute, isConstructor: false));
+                updateMembers.Add(BuildMemberModel(type, method, updateAttribute, isConstructor: false, handlerOverrides, diagnostics));
         }
 
         if (!hasAnyCrudMember) return null;
@@ -220,7 +234,7 @@ internal static class CrudModelBuilder
         {
             var (member, attribute, isConstructor) = createCandidates[0];
             if (EnsurePublic(member, type, diagnostics))
-                createMember = BuildMemberModel(type, member, attribute, isConstructor);
+                createMember = BuildMemberModel(type, member, attribute, isConstructor, handlerOverrides, diagnostics);
         }
 
         var keyFullName = ResolveKeyFullName(type);
@@ -261,7 +275,13 @@ internal static class CrudModelBuilder
         return false;
     }
 
-    private static CrudMemberModel BuildMemberModel(INamedTypeSymbol type, IMethodSymbol member, AttributeData attribute, bool isConstructor)
+    private static CrudMemberModel BuildMemberModel(
+        INamedTypeSymbol type,
+        IMethodSymbol member,
+        AttributeData attribute,
+        bool isConstructor,
+        Dictionary<string, Location> handlerOverrides,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
     {
         var overrideName = GetNamedArgString(attribute, "Name");
         var requestName = overrideName ?? (isConstructor
@@ -272,8 +292,67 @@ internal static class CrudModelBuilder
         foreach (var parameter in member.Parameters)
             parameters.Add(BuildParamModel(parameter));
 
-        return new CrudMemberModel(requestName, isConstructor ? ".ctor" : member.Name, isConstructor, parameters.ToImmutable());
+        var hasHandWrittenHandler = handlerOverrides.TryGetValue(requestName, out var overrideLocation);
+        if (hasHandWrittenHandler)
+            diagnostics.Add(Diagnostic.Create(CrudDiagnostics.HandWrittenHandlerOverride, overrideLocation, requestName));
+
+        return new CrudMemberModel(
+            requestName, isConstructor ? ".ctor" : member.Name, isConstructor, parameters.ToImmutable(), hasHandWrittenHandler);
     }
+
+    /// <summary>
+    /// Scans the current compilation's own syntax trees (never referenced assemblies, which have no
+    /// syntax) for a type declaration whose base list names <c>IHandler&lt;TRequest, TResponse&gt;</c>,
+    /// keyed by <c>TRequest</c>'s simple name. Purely syntactic because the generated request type this
+    /// is matched against does not exist as a symbol in this (pre-generation) compilation.
+    /// </summary>
+    private static Dictionary<string, Location> FindHandWrittenHandlerOverrides(Compilation compilation, CancellationToken ct)
+    {
+        var overrides = new Dictionary<string, Location>(StringComparer.Ordinal);
+
+        foreach (var tree in compilation.SyntaxTrees)
+        {
+            ct.ThrowIfCancellationRequested();
+            foreach (var typeDeclaration in tree.GetRoot(ct).DescendantNodes().OfType<TypeDeclarationSyntax>())
+            {
+                if (typeDeclaration.BaseList is null) continue;
+
+                foreach (var baseType in typeDeclaration.BaseList.Types)
+                {
+                    var handlerGeneric = AsIHandlerGeneric(baseType.Type);
+                    if (handlerGeneric is null || handlerGeneric.TypeArgumentList.Arguments.Count != 2) continue;
+
+                    var requestName = SimpleTypeName(handlerGeneric.TypeArgumentList.Arguments[0]);
+                    if (requestName is not null)
+                        overrides[requestName] = typeDeclaration.Identifier.GetLocation();
+                }
+            }
+        }
+
+        return overrides;
+    }
+
+    // Unwraps a (possibly qualified, e.g. "Fluents.Requests.IHandler<...>") base-type reference down to
+    // its generic name, when that name is "IHandler".
+    private static GenericNameSyntax? AsIHandlerGeneric(TypeSyntax type) =>
+        type switch
+        {
+            GenericNameSyntax { Identifier.Text: "IHandler" } generic => generic,
+            QualifiedNameSyntax qualified => AsIHandlerGeneric(qualified.Right),
+            _ => null
+        };
+
+    // The simple (unqualified, non-generic) name of a type-argument syntax node, e.g. "CreateProductRequest"
+    // from "MyApi.CreateProductRequest" or plain "CreateProductRequest".
+    private static string? SimpleTypeName(TypeSyntax type) =>
+        type switch
+        {
+            IdentifierNameSyntax identifier => identifier.Identifier.Text,
+            GenericNameSyntax generic => generic.Identifier.Text,
+            QualifiedNameSyntax qualified => SimpleTypeName(qualified.Right),
+            AliasQualifiedNameSyntax alias => SimpleTypeName(alias.Name),
+            _ => null
+        };
 
     private static CrudParamModel BuildParamModel(IParameterSymbol parameter)
     {
@@ -436,6 +515,10 @@ internal static class Emitter
         {
             var source = BuildSource(entity, result.Namespace);
             context.AddSource($"{entity.EntityName}CrudRequests.g.cs", SourceText.From(source, Encoding.UTF8));
+
+            var handlersSource = BuildHandlersSource(entity, result.Namespace);
+            if (handlersSource is not null)
+                context.AddSource($"{entity.EntityName}CrudHandlers.g.cs", SourceText.From(handlersSource, Encoding.UTF8));
         }
     }
 
@@ -508,4 +591,120 @@ internal static class Emitter
             if (i < member.Params.Length - 1) builder.AppendLine();
         }
     }
+
+    /// <summary>
+    /// Builds the handlers file for an entity, or <see langword="null"/> when every one of its
+    /// Create/Update members already has a hand-written <c>IHandler</c> (see <see cref="CrudMemberModel.HasHandWrittenHandler"/>).
+    /// </summary>
+    private static string? BuildHandlersSource(CrudEntityModel entity, string ns)
+    {
+        var emitCreate = entity.Create is not null && !entity.Create.HasHandWrittenHandler;
+        var updatesToEmit = entity.Updates.Where(u => !u.HasHandWrittenHandler).ToImmutableArray();
+        if (!emitCreate && updatesToEmit.Length == 0) return null;
+
+        var builder = new StringBuilder();
+        builder.AppendLine("// <auto-generated by DKNet.SlimBus.Generators />");
+        builder.AppendLine("#nullable enable");
+        // Only update handlers call the IRepositorySpec.FirstOrDefaultAsync extension member; it's only
+        // reachable via extension-invocation syntax (repository.FirstOrDefaultAsync(...)), which needs its
+        // declaring namespace in scope.
+        if (updatesToEmit.Length > 0)
+            builder.AppendLine("using DKNet.EfCore.Specifications.Extensions;");
+        builder.Append("namespace ").Append(ns).AppendLine(";");
+        builder.AppendLine();
+
+        if (updatesToEmit.Length > 0)
+        {
+            AppendByIdSpec(builder, entity);
+            builder.AppendLine();
+        }
+
+        if (emitCreate)
+        {
+            AppendCreateHandler(builder, entity, entity.Create!);
+            builder.AppendLine();
+        }
+
+        foreach (var update in updatesToEmit)
+        {
+            AppendUpdateHandler(builder, entity, update);
+            builder.AppendLine();
+        }
+
+        return builder.ToString();
+    }
+
+    private static void AppendByIdSpec(StringBuilder builder, CrudEntityModel entity)
+    {
+        builder.Append("/// <summary>Matches a single ").Append(entity.EntityName)
+            .AppendLine(" by id; used by this file's generated update handlers to fetch the entity.</summary>");
+        builder.Append("file sealed class ").Append(entity.EntityName).Append("ByIdCrudSpec : global::DKNet.EfCore.Specifications.Definitions.Specification<")
+            .Append(entity.EntityFullName).AppendLine(">");
+        builder.AppendLine("{");
+        builder.AppendLine("    /// <summary>Initializes the specification with a filter matching the given id.</summary>");
+        builder.Append("    public ").Append(entity.EntityName).Append("ByIdCrudSpec(").Append(entity.KeyFullName)
+            .AppendLine(" id) => WithFilter(x => x.Id.Equals(id));");
+        builder.AppendLine("}");
+    }
+
+    private static void AppendCreateHandler(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
+    {
+        var handlerName = ToHandlerName(member.RequestName);
+        builder.Append("/// <summary>Generated create handler for ").Append(entity.EntityName)
+            .AppendLine(". Write a class implementing the same IHandler to replace it.</summary>");
+        AppendHandlerHeader(builder, handlerName, member, entity);
+        builder.AppendLine("    {");
+        builder.Append("        var entity = new ").Append(entity.EntityFullName).Append('(')
+            .Append(string.Join(", ", member.Params.Select(p => "request." + p.PascalName))).AppendLine(");");
+        builder.AppendLine("        await repository.AddAsync(entity, cancellationToken);");
+        AppendReturnMappedResult(builder, entity);
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+    }
+
+    private static void AppendUpdateHandler(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
+    {
+        var handlerName = ToHandlerName(member.RequestName);
+        builder.Append("/// <summary>Generated update handler for ").Append(entity.EntityName).Append('.')
+            .Append(member.MemberName).AppendLine(". Write a class implementing the same IHandler to replace it.</summary>");
+        AppendHandlerHeader(builder, handlerName, member, entity);
+        builder.AppendLine("    {");
+        builder.Append("        var entity = await repository.FirstOrDefaultAsync(new ").Append(entity.EntityName)
+            .AppendLine("ByIdCrudSpec(request.Id), cancellationToken);");
+        builder.AppendLine("        if (entity is null)");
+        builder.Append("            return global::FluentResults.Result.Fail<").Append(entity.DtoFullName).AppendLine(">(");
+        builder.Append("                new global::DKNet.SlimBus.Extensions.NotFoundError($\"").Append(entity.EntityName)
+            .AppendLine(" '{request.Id}' was not found.\"));");
+        builder.Append("        entity.").Append(member.MemberName).Append('(')
+            .Append(string.Join(", ", member.Params.Select(p => "request." + p.PascalName))).AppendLine(");");
+        AppendReturnMappedResult(builder, entity);
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+    }
+
+    private static void AppendHandlerHeader(StringBuilder builder, string handlerName, CrudMemberModel member, CrudEntityModel entity)
+    {
+        builder.Append("internal sealed class ").Append(handlerName).AppendLine("(");
+        builder.AppendLine("    global::DKNet.EfCore.Specifications.Repositories.IRepositorySpec repository,");
+        builder.AppendLine("    global::MapsterMapper.IMapper mapper)");
+        builder.Append("    : global::DKNet.SlimBus.Extensions.Fluents.Requests.IHandler<").Append(member.RequestName)
+            .Append(", ").Append(entity.DtoFullName).AppendLine(">");
+        builder.AppendLine("{");
+        builder.AppendLine("    /// <inheritdoc />");
+        builder.Append("    public async global::System.Threading.Tasks.Task<global::FluentResults.IResult<")
+            .Append(entity.DtoFullName).AppendLine(">> OnHandle(");
+        builder.Append("        ").Append(member.RequestName)
+            .AppendLine(" request, global::System.Threading.CancellationToken cancellationToken)");
+    }
+
+    private static void AppendReturnMappedResult(StringBuilder builder, CrudEntityModel entity)
+    {
+        builder.Append("        return global::DKNet.SlimBus.Extensions.LazyMapper.LazyMapExtensions.ResultOf<")
+            .Append(entity.DtoFullName).AppendLine(">(mapper, entity);");
+    }
+
+    private static string ToHandlerName(string requestName) =>
+        requestName.EndsWith("Request", StringComparison.Ordinal)
+            ? requestName.Substring(0, requestName.Length - "Request".Length) + "Handler"
+            : requestName + "Handler";
 }

@@ -54,11 +54,16 @@ internal sealed record CrudParamModel(
 /// <param name="MemberName">The member's name (<c>.ctor</c> for a constructor).</param>
 /// <param name="IsConstructor"><see langword="true"/> when the member is the entity's constructor.</param>
 /// <param name="Params">The member's parameters, in declaration order.</param>
+/// <param name="HasHandWrittenHandler">
+/// <see langword="true"/> when the current compilation already declares a type implementing
+/// <c>Fluents.Requests.IHandler&lt;RequestName, TDto&gt;</c>; handler emission is skipped for this member.
+/// </param>
 internal sealed record CrudMemberModel(
     string RequestName,
     string MemberName,
     bool IsConstructor,
-    ImmutableArray<CrudParamModel> Params)
+    ImmutableArray<CrudParamModel> Params,
+    bool HasHandWrittenHandler = false)
 {
     /// <inheritdoc />
     public bool Equals(CrudMemberModel? other) =>
@@ -66,6 +71,7 @@ internal sealed record CrudMemberModel(
         RequestName == other.RequestName &&
         MemberName == other.MemberName &&
         IsConstructor == other.IsConstructor &&
+        HasHandWrittenHandler == other.HasHandWrittenHandler &&
         Params.SequenceEqual(other.Params);
 
     /// <inheritdoc />
@@ -77,6 +83,7 @@ internal sealed record CrudMemberModel(
             hash = hash * 31 + RequestName.GetHashCode();
             hash = hash * 31 + MemberName.GetHashCode();
             hash = hash * 31 + IsConstructor.GetHashCode();
+            hash = hash * 31 + HasHandWrittenHandler.GetHashCode();
             foreach (var param in Params) hash = hash * 31 + param.GetHashCode();
             return hash;
         }

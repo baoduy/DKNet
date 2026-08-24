@@ -48,7 +48,11 @@ internal static class GeneratorTestHelper
         typeof(FluentResults.Result),
         // Without this, [Required] fails to resolve while compiling the "Domain" source (its assembly
         // isn't loaded yet), and the attribute silently drops rather than raising a visible diagnostic.
-        typeof(System.ComponentModel.DataAnnotations.RequiredAttribute)
+        typeof(System.ComponentModel.DataAnnotations.RequiredAttribute),
+        // Generated handlers reference IRepositorySpec/Specification/SpecRepoExtensions (all in this
+        // one assembly) and MapsterMapper.IMapper (shipped inside the "Mapster" assembly).
+        typeof(DKNet.EfCore.Specifications.Repositories.IRepositorySpec),
+        typeof(MapsterMapper.IMapper)
     ];
 
     public static (Compilation Output, ImmutableArray<Diagnostic> Diagnostics, GeneratorDriverRunResult Result)

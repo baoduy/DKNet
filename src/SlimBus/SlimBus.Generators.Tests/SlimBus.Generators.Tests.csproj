@@ -34,6 +34,7 @@
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Abstractions\DKNet.EfCore.Abstractions.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Repos.Abstractions\DKNet.EfCore.Repos.Abstractions.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.DtoGenerator\DKNet.EfCore.DtoGenerator.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
         <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
     </ItemGroup>
 
