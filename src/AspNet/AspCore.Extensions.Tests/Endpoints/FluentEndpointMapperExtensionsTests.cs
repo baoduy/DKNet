@@ -15,9 +15,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AspCore.Extensions.Tests.Endpoints;
 
 /// <summary>
-///     Exercises the endpoint mappers end to end through a real ASP.NET Core minimal-API pipeline (TestServer) with
-///     a real in-memory SlimMessageBus and real handlers — verb, route, dispatch, status code, and response shape —
-///     rather than asserting the mapper merely returned a non-null <see cref="RouteHandlerBuilder" />.
+///     Exercises the SlimMessageBus command/query endpoint mappers end to end through a real ASP.NET Core
+///     minimal-API pipeline (TestServer) with a real in-memory SlimMessageBus and real handlers — verb, route,
+///     dispatch, status code, and response shape — rather than asserting the mapper merely returned a non-null
+///     <see cref="RouteHandlerBuilder" />. The entity-oriented mappers have their own suite (see
+///     <see cref="FluentEntityEndpointMapperExtensionsTests" />).
 /// </summary>
 public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClassFixture<EndpointTestHost>
 {
@@ -182,42 +184,6 @@ public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClass
         page.Items.Select(i => i.Name).ShouldBe(["a", "b"]);
     }
 
-    // --- GET by id: generic entity -> model projection, backed by a real IRepositorySpec / EF Core store ----
-
-    [Fact]
-    public async Task MapGetById_ExistingId_Returns200WithProjectedModel()
-    {
-        var response = await host.Client.GetAsync($"/t/widgets/{host.SeededWidgetId}");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var model = await response.Content.ReadFromJsonAsync<WidgetModel>();
-        model.ShouldNotBeNull();
-        model.Id.ShouldBe(host.SeededWidgetId);
-        model.Name.ShouldBe("second");
-    }
-
-    [Fact]
-    public async Task MapGetById_UnknownId_Returns404()
-    {
-        var response = await host.Client.GetAsync($"/t/widgets/{Guid.NewGuid()}");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    // --- GET list: generic entity -> model page, newest-first ordering ---------------------------------------
-
-    [Fact]
-    public async Task MapGetList_Returns200WithAllSeededWidgets_NewestIdFirst()
-    {
-        var response = await host.Client.GetAsync("/t/widgets?pageNumber=1&pageSize=10");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
-        page.ShouldNotBeNull();
-        page.TotalItemCount.ShouldBe(3);
-        page.Items.Select(i => i.Name).ShouldBe(["third", "second", "first"]);
-    }
-
     // --- ProducesCommons: shared error status codes are advertised on endpoint metadata ---------------------
 
     [Fact]
@@ -265,14 +231,6 @@ public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClass
         var producesType = GetSuccessProducesType("/t/get-page", HttpStatusCode.OK);
 
         producesType.ShouldBe(typeof(PagedResponse<WidgetResult>));
-    }
-
-    [Fact]
-    public void MapGetList_DeclaresPagedResponseAsThe200ResponseType()
-    {
-        var producesType = GetSuccessProducesType("/t/widgets", HttpStatusCode.OK);
-
-        producesType.ShouldBe(typeof(PagedResponse<WidgetModel>));
     }
 
     [Fact]
