@@ -9,6 +9,7 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="FluentResults"/>
+        <PackageReference Include="Mapster"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
         <PackageReference Include="SlimMessageBus"/>
         <PackageReference Include="SlimMessageBus.Host"/>
