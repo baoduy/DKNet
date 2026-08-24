@@ -92,5 +92,15 @@ public static class Fluents
         /// </summary>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
         public interface IWitResponse<out TResponse> : IRequest<IResult<TResponse>>;
+
+        /// <summary>
+        ///     Represents a request carrying the target entity's key, populated from the route by MapPutById.
+        /// </summary>
+        /// <typeparam name="TKey">The entity key type.</typeparam>
+        public interface IWithKey<TKey>
+        {
+            /// <summary>The target entity's identifier.</summary>
+            TKey Id { get; set; }
+        }
     }
 }

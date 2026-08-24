@@ -83,5 +83,9 @@ public sealed class WidgetDbContext(DbContextOptions<WidgetDbContext> options) :
 
     public DbSet<GadgetEntity> Gadgets => Set<GadgetEntity>();
 
+    public DbSet<SprocketEntity> Sprockets => Set<SprocketEntity>();
+
+    public DbSet<CouponEntity> Coupons => Set<CouponEntity>();
+
     #endregion
 }

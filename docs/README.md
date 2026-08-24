@@ -51,6 +51,7 @@ Comprehensive EF Core enhancements that implement the specification pattern, dom
 SlimMessageBus integration for implementing CQRS patterns and event-driven architecture.
 
 - [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) - SlimMessageBus extensions for EF Core
+- [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) - Roslyn incremental generator emitting CRUD vertical slices (requests, handlers, endpoints) from attributed entity members
 
 ### 🔧 [Service Layer](./Services/README.md)
 Application services including blob storage abstractions and data transformation utilities.

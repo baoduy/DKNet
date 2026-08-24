@@ -25,6 +25,9 @@
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
+        <!-- Force fixed SQLitePCLRaw (EF Sqlite pulls vulnerable 2.1.11, GHSA-2m69-gcr7-jv3q) -->
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="SlimMessageBus.Host.Memory"/>
@@ -42,6 +45,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DKNet.AspCore.Extensions\DKNet.AspCore.Extensions.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.AuditLogs\DKNet.EfCore.AuditLogs.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Events\DKNet.EfCore.Events.csproj"/>
     </ItemGroup>
 
 </Project>

@@ -58,7 +58,13 @@ public sealed class MerchantPostgresFixture : IAsyncLifetime
         // cannot express.
         var merchants = new[]
         {
-            new Merchant { Id = 1, Country = "Indonesia", Revenue = 500m, Name = "Jakarta Foods" },
+            // Exactly one merchant carries a TradingName; the other nine leave it NULL, so the null semantics
+            // of the string and negation operations are observable as a 1-versus-9 split.
+            new Merchant
+            {
+                Id = 1, Country = "Indonesia", Revenue = 500m, Name = "Jakarta Foods",
+                TradingName = "Acme Trading"
+            },
             new Merchant { Id = 2, Country = "Indonesia", Revenue = 500m, Name = "Borneo Trading" },
             new Merchant { Id = 3, Country = "Indonesia", Revenue = 500m, Name = "Sumatra Spice" },
             new Merchant { Id = 4, Country = "Indonesia", Revenue = 300m, Name = "Bali Crafts" },

@@ -69,5 +69,17 @@ public enum Ops
     ///     Translates to SQL NOT IN clause.
     ///     Example: CategoryId NOT IN (1, 2, 3)
     /// </summary>
-    NotIn
+    NotIn,
+
+    /// <summary>
+    ///     Checks if the property value is null. The filter value is ignored.
+    ///     Translates to SQL IS NULL.
+    /// </summary>
+    IsNull,
+
+    /// <summary>
+    ///     Checks if the property value is not null. The filter value is ignored.
+    ///     Translates to SQL IS NOT NULL.
+    /// </summary>
+    IsNotNull
 }
