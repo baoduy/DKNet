@@ -49,7 +49,7 @@ internal static class DynamicPredicateBuilderExtensions
     /// </summary>
     private static readonly HashSet<Type> CoercibleNonEnumTypes =
     [
-        typeof(bool), typeof(DateTime), typeof(DateOnly), typeof(TimeOnly), typeof(Guid)
+        typeof(bool), typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly), typeof(TimeOnly), typeof(Guid)
     ];
 
     #endregion
@@ -143,10 +143,17 @@ internal static class DynamicPredicateBuilderExtensions
                 Ops.GreaterThanOrEqual => $"{prop} >= @{paramIndex}",
                 Ops.LessThan => $"{prop} < @{paramIndex}",
                 Ops.LessThanOrEqual => $"{prop} <= @{paramIndex}",
-                Ops.Contains => $"{prop}.Contains(@{paramIndex})",
-                Ops.NotContains => $"!{prop}.Contains(@{paramIndex})",
-                Ops.StartsWith => $"{prop}.StartsWith(@{paramIndex})",
-                Ops.EndsWith => $"{prop}.EndsWith(@{paramIndex})",
+                // The string operations carry an explicit null check so the predicate means the same thing
+                // however it is evaluated. A relational provider never needs it — EF Core rewrites these into
+                // null-aware SQL, and the guard folds away in the query plan — but the same expression
+                // evaluated as ordinary LINQ (the InMemory provider, client-side evaluation, or a caller
+                // compiling the predicate from TryBuildPredicate) would dereference the null and throw.
+                // NotContains admits nulls for the same reason: that is what the translated SQL already does,
+                // and "does not contain x" is true of a row that holds nothing at all.
+                Ops.Contains => $"{prop} != null && {prop}.Contains(@{paramIndex})",
+                Ops.NotContains => $"({prop} == null || !{prop}.Contains(@{paramIndex}))",
+                Ops.StartsWith => $"{prop} != null && {prop}.StartsWith(@{paramIndex})",
+                Ops.EndsWith => $"{prop} != null && {prop}.EndsWith(@{paramIndex})",
                 Ops.In => $"@{paramIndex}.Contains({prop})",
                 Ops.NotIn => $"!@{paramIndex}.Contains({prop})",
                 _ => throw new NotSupportedException($"Operation {op} not supported.")
@@ -213,6 +220,30 @@ internal static class DynamicPredicateBuilderExtensions
     }
 
     /// <summary>
+    ///     Converts a value to an enum type, accepting the member name ("Pending") as well as its numeric
+    ///     form ("0" or <c>0</c>).
+    /// </summary>
+    /// <remarks>
+    ///     <c>TryConvertToEnum</c> goes through <see cref="Convert.ChangeType(object, Type, IFormatProvider)" />,
+    ///     which only understands the numeric form — but a name is what an API surface serializes, and therefore
+    ///     what a caller filters by.
+    /// </remarks>
+    /// <param name="enumType">The target enum type; may be a nullable enum.</param>
+    /// <param name="value">The value to convert.</param>
+    /// <param name="converted">The converted enum value on success; otherwise <see langword="null" />.</param>
+    /// <returns><see langword="true" /> when the value converted; otherwise <see langword="false" />.</returns>
+    internal static bool TryConvertEnum(this Type enumType, object? value, out object? converted)
+    {
+        if (value is string name
+            && Enum.TryParse(enumType.GetNonNullableType(), name, ignoreCase: true, out converted)
+            && converted is not null)
+            return true;
+
+        converted = null;
+        return value is not null && enumType.TryConvertToEnum(value, out converted);
+    }
+
+    /// <summary>
     ///     Validates if a value can be used with an enum property.
     ///     For non-nullable enums with null values, or invalid enum values, returns false.
     ///     Supports both single enum values and arrays of enum values (for In/NotIn operations).
@@ -232,12 +263,13 @@ internal static class DynamicPredicateBuilderExtensions
 
         // Handle single value: TryCoerceValue converts it to the enum type further down the pipeline,
         // so any value convertible to the underlying enum type is acceptable here.
-        if (value is not (IEnumerable enumerable and not string)) return enumType.TryConvertToEnum(value, out _);
+        if (value is not (IEnumerable enumerable and not string)) return enumType.TryConvertEnum(value, out _);
 
-        // Handle array/collection of values (for In/NotIn operations): element-wise coercion is out of
-        // scope (DRK-39), so an array is only valid when its elements are already the enum type itself
-        // (e.g. OrderStatus[]) - an int[]/string[] would reach the Dynamic LINQ parser unconverted and
-        // throw on Contains() type-mismatch, so it must be rejected here instead.
+        // Handle array/collection of values (for In/NotIn operations): element-wise coercion of non-string
+        // elements is out of scope (DRK-39), so an array is only valid when its elements are already the
+        // enum type itself (e.g. OrderStatus[]) - an int[] would reach the Dynamic LINQ parser unconverted
+        // and throw on Contains() type-mismatch, so it must be rejected here instead. A string[] is coerced
+        // to OrderStatus[] by TryCoerceArray before reaching this check.
         return enumerable.OfType<object>().All(enumType.IsInstanceOfType);
     }
 
@@ -275,7 +307,7 @@ internal static class DynamicPredicateBuilderExtensions
         }
 
         if (targetType.IsEnumType())
-            return targetType.TryConvertToEnum(value, out coerced);
+            return targetType.TryConvertEnum(value, out coerced);
 
         if (!targetType.IsNumericType() && !CoercibleNonEnumTypes.Contains(targetType))
         {
@@ -292,6 +324,10 @@ internal static class DynamicPredicateBuilderExtensions
             {
                 _ when targetType == typeof(Guid) =>
                     Guid.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture),
+                // DateTimeOffset has no TypeCode, so Convert.ChangeType cannot reach it — parse explicitly.
+                _ when targetType == typeof(DateTimeOffset) =>
+                    DateTimeOffset.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind),
                 _ when targetType == typeof(DateOnly) =>
                     DateOnly.Parse(text ?? value.ToString()!, CultureInfo.InvariantCulture),
                 _ when targetType == typeof(TimeOnly) =>
@@ -306,6 +342,42 @@ internal static class DynamicPredicateBuilderExtensions
             coerced = null;
             return false;
         }
+    }
+
+    /// <summary>
+    ///     Coerces every element of a string collection supplied for an <c>In</c>/<c>NotIn</c> operation to the
+    ///     resolved property's CLR type, producing a strongly typed array the Dynamic LINQ
+    ///     <c>@0.Contains(prop)</c> clause can bind against. Without this, the <c>string[]</c> a query string
+    ///     yields reaches the parser unconverted and throws on a <c>Contains()</c> type mismatch.
+    /// </summary>
+    /// <param name="propertyType">The resolved property type; a nullable type yields a nullable element array.</param>
+    /// <param name="values">The string values to coerce.</param>
+    /// <param name="coerced">The typed array on success; otherwise <see langword="null" />.</param>
+    /// <returns>
+    ///     <see langword="true" /> when every element coerced successfully; <see langword="false" /> when
+    ///     <paramref name="values" /> is empty or any element failed to convert.
+    /// </returns>
+    internal static bool TryCoerceArray(this Type propertyType, IEnumerable<string> values, out object? coerced)
+    {
+        coerced = null;
+
+        var elementType = propertyType.GetNonNullableType();
+        var converted = new List<object>();
+        foreach (var item in values)
+        {
+            if (!elementType.TryCoerceValue(item, out var element) || element is null) return false;
+            converted.Add(element);
+        }
+
+        if (converted.Count == 0) return false;
+
+        // Build the array as the property's own type (nullable included) so a Nullable<T> property still
+        // binds — Array.SetValue boxes a T into a T?[] slot for us.
+        var array = Array.CreateInstance(propertyType, converted.Count);
+        for (var i = 0; i < converted.Count; i++) array.SetValue(converted[i], i);
+
+        coerced = array;
+        return true;
     }
 
     #endregion

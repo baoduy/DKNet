@@ -44,15 +44,24 @@ public static class DynamicPredicateExtensions
         if (!DynamicPredicateBuilderExtensions.ValidateArrayValue(value, operation))
             return null;
 
+        // Coerce a string collection for In/NotIn element-wise up front, so the string[] a query string yields
+        // becomes the typed array both the enum validation below and the Dynamic LINQ Contains() clause need.
+        // A collection of any other element type is left untouched for the checks below to accept (an already
+        // typed OrderStatus[]) or skip (an int[] for an enum property - element-wise coercion of non-string
+        // elements remains out of scope, DRK-39).
+        var coercedValue = value;
+        if (operation is Ops.In or Ops.NotIn && value is IEnumerable<string> textValues
+            && !propType.TryCoerceArray(textValues, out coercedValue))
+            return null;
+
         // Adjust operation for type
         var op = propType.AdjustOperationForValueType(operation);
 
         // Validate enum value if needed
-        if (!propType.ValidateEnumValue(value))
+        if (!propType.ValidateEnumValue(coercedValue))
             return null;
 
-        // Coerce scalar values (e.g. strings) to the property's CLR type; In/NotIn arrays are left untouched
-        var coercedValue = value;
+        // Coerce scalar values (e.g. strings) to the property's CLR type; In/NotIn arrays are already typed
         if (operation is not (Ops.In or Ops.NotIn) && !propType.TryCoerceValue(value, out coercedValue))
             return null;
 
@@ -68,6 +77,33 @@ public static class DynamicPredicateExtensions
                 coercedValue);
 
         return lambda;
+    }
+
+    /// <summary>
+    ///     Builds a standalone predicate for a single property filter, reporting failure explicitly instead of
+    ///     silently skipping it the way <c>DynamicAnd</c>/<c>DynamicOr</c> do.
+    /// </summary>
+    /// <remarks>
+    ///     Silently dropping an unusable condition is the right behaviour when composing internally — a caller
+    ///     that passes an absent optional filter wants the predicate unchanged. It is the wrong behaviour at a
+    ///     trust boundary such as an HTTP endpoint, where a dropped filter hands the caller unfiltered data
+    ///     under a query that looked like it applied. Validate with this first, then compose.
+    /// </remarks>
+    /// <typeparam name="T">Entity type.</typeparam>
+    /// <param name="propertyName">Property name or dotted path.</param>
+    /// <param name="operation">Filter operation.</param>
+    /// <param name="value">Filter value; a collection for <see cref="Ops.In" />/<see cref="Ops.NotIn" />.</param>
+    /// <param name="predicate">The parsed predicate on success; otherwise <see langword="null" />.</param>
+    /// <returns>
+    ///     <see langword="true" /> when the property resolved on <typeparamref name="T" /> and
+    ///     <paramref name="value" /> was usable with <paramref name="operation" />; otherwise
+    ///     <see langword="false" />.
+    /// </returns>
+    public static bool TryBuildPredicate<T>(string propertyName, Ops operation, object? value,
+        out Expression<Func<T, bool>>? predicate)
+    {
+        predicate = BuildDynamicExpression<T>(propertyName, operation, value);
+        return predicate is not null;
     }
 
     #endregion

@@ -87,9 +87,15 @@ public static class FluentsEntityEndpointMapperExtensions
         }
 
         /// <summary>
-        ///     Maps an HTTP GET endpoint that returns a page of <typeparamref name="TEntity" /> records, newest first,
-        ///     projected to <typeparamref name="TModel" />.
+        ///     Maps an HTTP GET endpoint that returns a page of <typeparamref name="TEntity" /> records projected to
+        ///     <typeparamref name="TModel" />, newest first, optionally filtered and re-ordered by the caller.
         /// </summary>
+        /// <remarks>
+        ///     Filtering and sorting are restricted to the fields <typeparamref name="TModel" /> already exposes, so
+        ///     the endpoint stays generic without widening what a caller can reach. An unusable <c>filter</c> or
+        ///     <c>orderBy</c> is answered with <see cref="StatusCodes.Status400BadRequest" /> rather than silently
+        ///     ignored, which would answer a filtered query with unfiltered data.
+        /// </remarks>
         /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
         /// <typeparam name="TModel">Model type each entity is projected to.</typeparam>
         /// <param name="endpoint">The URL template for the endpoint.</param>
@@ -102,14 +108,15 @@ public static class FluentsEntityEndpointMapperExtensions
                     endpoint,
                     async (
                         [FromServices] IRepositorySpec repo,
-                        int pageNumber = 1,
-                        [Description("Number of items per page. Values above 100 are clamped to 100.")]
-                        int pageSize = 20) =>
+                        [AsParameters] ListQueryRequest request) =>
                     {
+                        if (!ListQuery.TryValidate<TEntity, TModel>(request, out var query, out var error))
+                            return Results.Problem(error, statusCode: StatusCodes.Status400BadRequest);
+
                         var page = await repo.ToPagedListAsync(
-                            new EntityListSpecification<TEntity, TModel>(),
-                            pageNumber < 1 ? 1 : pageNumber,
-                            pageSize < 1 ? 20 : Math.Min(pageSize, 100));
+                            new EntityListSpecification<TEntity, TModel>(query!),
+                            request.PageNumberValue,
+                            request.PageSizeValue);
                         return Results.Ok(new PagedResponse<TModel>(page));
                     })
                 .Produces<PagedResponse<TModel>>()
@@ -147,8 +154,9 @@ internal sealed class EntityByIdSpecification<TEntity> : Specification<TEntity>
 }
 
 /// <summary>
-///     Specification listing <typeparamref name="TEntity" /> records ordered newest-first, used by
-///     <see cref="FluentsEntityEndpointMapperExtensions.MapGetList{TEntity,TModel}" />.
+///     Specification listing <typeparamref name="TEntity" /> records for
+///     <see cref="FluentsEntityEndpointMapperExtensions.MapGetList{TEntity,TModel}" />, applying the caller's
+///     validated filter and ordering over a newest-first default.
 /// </summary>
 /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" /> with a <see cref="Guid" /> key.</typeparam>
 /// <typeparam name="TModel">Model type each entity is projected to.</typeparam>
@@ -157,12 +165,27 @@ internal sealed class EntityListSpecification<TEntity, TModel> : ModelSpecificat
     where TModel : class
 {
     /// <summary>
-    ///     Initializes the specification with the default newest-first ordering: audited entities order by
-    ///     <c>CreatedOn</c> descending with <c>Id</c> as a tie-break; non-audited entities order by <c>Id</c>
-    ///     descending alone.
+    ///     Initializes the specification from the endpoint's validated query inputs. A caller-supplied
+    ///     <see cref="ListQuery{TEntity}.OrderBy" /> replaces the default ordering outright; without one the
+    ///     default is newest-first — audited entities order by <c>CreatedOn</c> descending with <c>Id</c> as a
+    ///     tie-break, non-audited entities by <c>Id</c> descending alone.
     /// </summary>
-    public EntityListSpecification()
+    /// <param name="query">The validated filter and ordering inputs.</param>
+    public EntityListSpecification(ListQuery<TEntity> query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query.Filter is not null)
+            WithFilter(query.Filter);
+
+        if (query.OrderBy is not null)
+        {
+            AddOrderBy(
+                query.OrderBy,
+                query.Descending ? ListSortDirection.Descending : ListSortDirection.Ascending);
+            return;
+        }
+
         if (typeof(IAuditedEntity<Guid>).IsAssignableFrom(typeof(TEntity)))
             AddOrderBy(nameof(IAuditedProperties.CreatedOn), ListSortDirection.Descending);
 

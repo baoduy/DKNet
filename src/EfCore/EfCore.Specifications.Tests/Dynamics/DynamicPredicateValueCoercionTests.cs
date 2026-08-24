@@ -232,6 +232,55 @@ public class DynamicPredicateValueCoercionTests(TestDbFixture fixture) : IClassF
 
     #endregion
 
+    #region String collection to In filter
+
+    [Fact]
+    public async Task DynamicAnd_WithStringArrayForEnumInFilter_CoercesElementsAndFilters()
+    {
+        // A string[] is what a query string yields, so unlike the int[] case above it IS coerced element-wise
+        // — to OrderStatus[] — rather than skipped. Skipping instead would silently widen the result set to
+        // every order, and leaving it uncoerced would throw at Dynamic LINQ parse time on Contains().
+        var statusValues = new[] { nameof(OrderStatus.Pending), nameof(OrderStatus.Shipped) };
+        var predicate = PredicateBuilder.New<Order>(true);
+
+        var result = predicate.DynamicAnd("Status", Ops.In, statusValues);
+
+        var query = _context.Orders.AsExpandable().Where(result);
+        var orders = await query.ToListAsync();
+
+        orders.ShouldAllBe(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Shipped);
+        query.ToQueryString().ShouldContain("IN");
+    }
+
+    [Fact]
+    public async Task DynamicAnd_WithEnumNameString_CoercesAndFilters()
+    {
+        // The name is what an API surface serializes, so it is what a caller filters by — but the enum
+        // conversion this pipeline used went through Convert.ChangeType, which only reads the numeric form.
+        var predicate = PredicateBuilder.New<Order>(true);
+
+        var result = predicate.DynamicAnd("Status", Ops.Equal, nameof(OrderStatus.Shipped));
+
+        var orders = await _context.Orders.AsExpandable().Where(result).ToListAsync();
+
+        orders.ShouldNotBeEmpty();
+        orders.ShouldAllBe(o => o.Status == OrderStatus.Shipped);
+    }
+
+    [Fact]
+    public void DynamicAnd_WithUnparseableStringArrayForEnumInFilter_SkipsCondition()
+    {
+        var predicate = PredicateBuilder.New<Order>(o => o.TotalAmount > 0);
+
+        var result = predicate.DynamicAnd("Status", Ops.In, new[] { "NotAStatus" });
+
+        var sql = _context.Orders.AsExpandable().Where(result).ToQueryString();
+        sql.ShouldNotContain("IN");
+        sql.ShouldContain("\"TotalAmount\"");
+    }
+
+    #endregion
+
     #region DynamicOr coercion parity
 
     [Fact]

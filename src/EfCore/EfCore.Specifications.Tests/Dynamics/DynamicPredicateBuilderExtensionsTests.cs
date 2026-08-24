@@ -117,8 +117,9 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         // Arrange & Act
         var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.Contains, "test", 0);
 
-        // Assert
-        clause.ShouldBe("Name.Contains(@0)");
+        // Assert - the null check keeps the clause total, so it means the same thing translated to SQL or
+        // evaluated as plain LINQ. Dropping it reintroduces a NullReferenceException on a null column.
+        clause.ShouldBe("Name != null && Name.Contains(@0)");
     }
 
     [Fact]
@@ -128,7 +129,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.EndsWith, "test", 0);
 
         // Assert
-        clause.ShouldBe("Name.EndsWith(@0)");
+        clause.ShouldBe("Name != null && Name.EndsWith(@0)");
     }
 
     [Fact]
@@ -192,7 +193,9 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.NotContains, "test", 0);
 
         // Assert
-        clause.ShouldBe("!Name.Contains(@0)");
+        // A null admits the negation: "does not contain" is true of a row holding nothing, which is also what
+        // the SQL EF Core generates for this filter returns.
+        clause.ShouldBe("(Name == null || !Name.Contains(@0))");
     }
 
     [Fact]
@@ -212,7 +215,7 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
         var clause = DynamicPredicateBuilderExtensions.BuildClause("Name", Ops.StartsWith, "test", 0);
 
         // Assert
-        clause.ShouldBe("Name.StartsWith(@0)");
+        clause.ShouldBe("Name != null && Name.StartsWith(@0)");
     }
 
     [Fact]

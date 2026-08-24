@@ -15,6 +15,12 @@ public class Merchant
     public string Country { get; set; } = string.Empty;
     public decimal Revenue { get; set; }
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     A genuinely nullable text column, so the null semantics of the string and negation operations can be
+    ///     asserted against a real database rather than inferred.
+    /// </summary>
+    public string? TradingName { get; set; }
 }
 
 /// <summary>
