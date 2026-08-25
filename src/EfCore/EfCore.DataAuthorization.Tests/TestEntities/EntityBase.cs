@@ -31,6 +31,13 @@ public abstract class EntityBase<TKey> : AuditedEntity<TKey>, IOwnedBy
         OwnedBy = ownerKey;
     }
 
+    /// <summary>
+    ///     Test-only bridge to the protected <see cref="AuditedEntity{TKey}.SetUpdatedBy" />, simulating a
+    ///     domain method that explicitly records its own modifier before saving.
+    /// </summary>
+    public void RecordModifier(string modifiedBy, DateTimeOffset? modifiedOn = null) =>
+        SetUpdatedBy(modifiedBy, modifiedOn);
+
     public override string ToString() => $"{GetType().Name} '{Id}'";
 
     #endregion
@@ -44,6 +51,19 @@ public class Root(string name, string ownedBy) : AggregateRoot(Guid.Empty, owned
     #region Properties
 
     public string Name { get; private set; } = name;
+
+    /// <summary>Test-only delete marker — this repo has no <c>ISoftDeletableEntity</c> implementation yet.</summary>
+    public bool IsDeleted { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>An ordinary domain mutation that never touches the audit modifier itself.</summary>
+    public void Rename(string name) => Name = name;
+
+    /// <summary>Simulates marking a record deleted as an ordinary modification (no real soft-delete here).</summary>
+    public void MarkDeleted() => IsDeleted = true;
 
     #endregion
 }
