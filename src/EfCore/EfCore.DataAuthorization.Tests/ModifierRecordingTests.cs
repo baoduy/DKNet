@@ -32,6 +32,13 @@ public class ModifierRecordingTests(ModifierRecordingFixture fixture) : IClassFi
         entity.UpdatedOn.ShouldNotBeNull();
         entity.UpdatedOn!.Value.ShouldBeGreaterThanOrEqualTo(before);
         entity.UpdatedOn.Value.ShouldBeLessThanOrEqualTo(after);
+
+        // Assert: the stamp reached the database, not just the tracked instance
+        var reloaded = await db.Set<Root>().AsNoTracking().FirstAsync(r => r.Id == entity.Id);
+        reloaded.UpdatedBy.ShouldBe("Steven");
+        reloaded.UpdatedOn.ShouldNotBeNull();
+        reloaded.UpdatedOn!.Value.ShouldBeGreaterThanOrEqualTo(before);
+        reloaded.UpdatedOn.Value.ShouldBeLessThanOrEqualTo(after);
     }
 
     [Fact]
@@ -79,6 +86,31 @@ public class ModifierRecordingTests(ModifierRecordingFixture fixture) : IClassFi
     }
 
     [Fact]
+    public async Task ExplicitModifier_EqualToThePreviouslyRecordedOne_IsStillPreserved()
+    {
+        // Arrange: an earlier save already recorded "night-batch" as the modifier
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var entity = new Root("Acme Recurring Sync", "Steven");
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        var firstRun = new DateTimeOffset(2026, 3, 1, 3, 0, 0, TimeSpan.Zero);
+        entity.RecordModifier("night-batch", firstRun);
+        await db.SaveChangesAsync();
+
+        // Act: a later save explicitly records the SAME modifier again alongside an ordinary mutation —
+        // the "no change" comparison on UpdatedBy alone must not mistake this for an implicit save
+        var secondRun = new DateTimeOffset(2026, 3, 2, 3, 0, 0, TimeSpan.Zero);
+        entity.RecordModifier("night-batch", secondRun);
+        entity.Rename("Acme Recurring Sync Pte Ltd");
+        await db.SaveChangesAsync();
+
+        // Assert: the explicit modifier and its time stand — neither is overwritten by the ambient context
+        entity.UpdatedBy.ShouldBe("night-batch");
+        entity.UpdatedOn.ShouldBe(secondRun);
+    }
+
+    [Fact]
     public async Task MarkingARecordDeleted_IsRecordedAsAnOrdinaryModification()
     {
         // Arrange: a record that has never been modified
@@ -110,6 +142,44 @@ public class ModifierRecordingTests(ModifierRecordingFixture fixture) : IClassFi
         entity.CreatedBy.ShouldBe(createdBy);
         entity.UpdatedBy.ShouldBeNull();
         entity.LastModifiedBy.ShouldBe(entity.CreatedBy);
+    }
+
+    [Fact]
+    public async Task Modification_OnOwnedOnlyEntity_SavesWithoutErrorAndIsNotStamped()
+    {
+        // Arrange: an IOwnedBy entity that does NOT implement IAuditedProperties
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var entity = new OwnedOnlyEntity("Acme Owned-Only", "Steven");
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        // Act: modify it — StampModifiedEntity must bail out on the IAuditedProperties check, not throw
+        entity.Rename("Acme Owned-Only Pte Ltd");
+        await Should.NotThrowAsync(() => db.SaveChangesAsync());
+
+        // Assert: nothing to stamp, so nothing changed beyond the rename
+        var reloaded = await db.Set<OwnedOnlyEntity>().AsNoTracking().FirstAsync(r => r.Id == entity.Id);
+        reloaded.Name.ShouldBe("Acme Owned-Only Pte Ltd");
+        reloaded.OwnedBy.ShouldBe("Steven");
+    }
+
+    [Fact]
+    public async Task Modification_OnAuditedEntityWithUnmappedUpdatedBy_SavesWithoutError()
+    {
+        // Arrange: an audited entity whose UpdatedBy column is Ignore()'d in its configuration
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var entity = new AuditedNoUpdatedByColumnEntity("Acme No UpdatedBy Column", "Steven");
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        // Act: modify it — StampModifiedEntity must bail out on the FindProperty(UpdatedBy) guard, not throw
+        entity.Rename("Acme No UpdatedBy Column Pte Ltd");
+        await Should.NotThrowAsync(() => db.SaveChangesAsync());
+
+        // Assert
+        var reloaded =
+            await db.Set<AuditedNoUpdatedByColumnEntity>().AsNoTracking().FirstAsync(r => r.Id == entity.Id);
+        reloaded.Name.ShouldBe("Acme No UpdatedBy Column Pte Ltd");
     }
 
     [Fact]

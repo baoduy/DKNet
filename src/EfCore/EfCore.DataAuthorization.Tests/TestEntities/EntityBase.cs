@@ -81,3 +81,87 @@ internal sealed class RootEfConfig : DefaultEntityTypeConfiguration<Root>
 
     #endregion
 }
+
+/// <summary>
+///     A plain <see cref="IOwnedBy" /> implementer with no audit tracking at all — used to prove that a
+///     modified entity which is <see cref="IOwnedBy" /> but not <see cref="IAuditedProperties" /> saves
+///     without error and is never stamped by <c>StampModifiedEntity</c>.
+/// </summary>
+public class OwnedOnlyEntity(string name, string ownedBy) : IOwnedBy
+{
+    #region Properties
+
+    public Guid Id { get; private set; }
+
+    public string Name { get; private set; } = name;
+
+    public string OwnedBy { get; private set; } = ownedBy;
+
+    #endregion
+
+    #region Methods
+
+    public void Rename(string name) => Name = name;
+
+    #endregion
+}
+
+internal sealed class OwnedOnlyEntityEfConfig : DefaultEntityTypeConfiguration<OwnedOnlyEntity>
+{
+    #region Methods
+
+    public override void Configure(EntityTypeBuilder<OwnedOnlyEntity> builder)
+    {
+        base.Configure(builder);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100);
+    }
+
+    #endregion
+}
+
+/// <summary>
+///     An audited entity whose <see cref="IAuditedProperties.UpdatedBy" /> column is deliberately unmapped —
+///     used to prove a modified entity saves without error when <c>StampModifiedEntity</c>'s
+///     <c>FindProperty(UpdatedBy)</c> guard finds nothing to stamp.
+/// </summary>
+public sealed class AuditedNoUpdatedByColumnEntity : AuditedEntity<Guid>
+{
+    #region Constructors
+
+    public AuditedNoUpdatedByColumnEntity(string name, string createdBy) : base(Guid.Empty)
+    {
+        Name = name;
+        SetCreatedBy(createdBy);
+    }
+
+    #endregion
+
+    #region Properties
+
+    public string Name { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public void Rename(string name) => Name = name;
+
+    #endregion
+}
+
+internal sealed class AuditedNoUpdatedByColumnEntityEfConfig
+    : DefaultEntityTypeConfiguration<AuditedNoUpdatedByColumnEntity>
+{
+    #region Methods
+
+    public override void Configure(EntityTypeBuilder<AuditedNoUpdatedByColumnEntity> builder)
+    {
+        base.Configure(builder);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100);
+        builder.Ignore(x => x.UpdatedBy);
+    }
+
+    #endregion
+}

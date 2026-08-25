@@ -97,22 +97,40 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     /// <param name="entry">The snapshot entry for the modified entity.</param>
     /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
     /// <remarks>
-    ///     An explicit modifier is detected by comparing <see cref="IAuditedProperties.UpdatedBy" />'s current
-    ///     value against its <c>OriginalValue</c> for this change set: a difference means a domain method already
-    ///     set it, so both <see cref="IAuditedProperties.UpdatedBy" /> and <see cref="IAuditedProperties.UpdatedOn" />
-    ///     are left untouched. Otherwise the value is overwritten, even when a prior save already recorded a
-    ///     modifier, so the latest save always wins.
+    ///     An explicit modifier is detected by comparing <see cref="IAuditedProperties.UpdatedBy" /> and
+    ///     <see cref="IAuditedProperties.UpdatedOn" />'s current values against their <c>OriginalValue</c>s for
+    ///     this change set: a difference in either means a domain method already called <c>SetUpdatedBy</c> (which
+    ///     always writes both together), so both properties are left untouched — even when the modifier it
+    ///     supplied equals the one recorded by an earlier save. Otherwise neither value changed explicitly, so the
+    ///     ambient ownership key and current time are stamped.
     /// </remarks>
     private static void StampModifiedEntity(SnapshotEntityEntry entry, string ownerKey)
     {
         if (entry.Entity is not IAuditedProperties au) return;
         if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedBy)) is null) return;
-
-        var originalUpdatedBy = entry.Entry.Property(nameof(IAuditedProperties.UpdatedBy)).OriginalValue as string;
-        if (!string.Equals(originalUpdatedBy, au.UpdatedBy, StringComparison.Ordinal)) return;
+        if (HasExplicitModifier(entry, au)) return;
 
         SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
         SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>
+    ///     Determines whether a domain method already recorded an explicit modifier for this change set, by
+    ///     comparing <see cref="IAuditedProperties.UpdatedBy" /> and <see cref="IAuditedProperties.UpdatedOn" />
+    ///     against their original values.
+    /// </summary>
+    /// <param name="entry">The snapshot entry for the modified entity.</param>
+    /// <param name="au">The entity's audited-properties view.</param>
+    private static bool HasExplicitModifier(SnapshotEntityEntry entry, IAuditedProperties au)
+    {
+        var originalUpdatedBy = entry.Entry.Property(nameof(IAuditedProperties.UpdatedBy)).OriginalValue as string;
+        if (!string.Equals(originalUpdatedBy, au.UpdatedBy, StringComparison.Ordinal)) return true;
+
+        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedOn)) is null) return false;
+
+        var originalUpdatedOn =
+            entry.Entry.Property(nameof(IAuditedProperties.UpdatedOn)).OriginalValue as DateTimeOffset?;
+        return originalUpdatedOn != au.UpdatedOn;
     }
 
     /// <summary>
