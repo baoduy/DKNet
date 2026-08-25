@@ -165,3 +165,50 @@ internal sealed class AuditedNoUpdatedByColumnEntityEfConfig
 
     #endregion
 }
+
+/// <summary>
+///     An audited entity whose <see cref="IAuditedProperties.UpdatedOn" /> column is deliberately unmapped —
+///     used to prove <c>HasExplicitModifier</c>'s <c>FindProperty(UpdatedOn)</c> guard returns <see langword="false" />
+///     when <see cref="IAuditedProperties.UpdatedBy" /> is mapped but <c>UpdatedOn</c> is not, so a modified entity
+///     saves without error and is still stamped with the ambient ownership key.
+/// </summary>
+public sealed class AuditedNoUpdatedOnColumnEntity : AuditedEntity<Guid>
+{
+    #region Constructors
+
+    public AuditedNoUpdatedOnColumnEntity(string name, string createdBy) : base(Guid.Empty)
+    {
+        Name = name;
+        SetCreatedBy(createdBy);
+    }
+
+    #endregion
+
+    #region Properties
+
+    public string Name { get; private set; }
+
+    #endregion
+
+    #region Methods
+
+    public void Rename(string name) => Name = name;
+
+    #endregion
+}
+
+internal sealed class AuditedNoUpdatedOnColumnEntityEfConfig
+    : DefaultEntityTypeConfiguration<AuditedNoUpdatedOnColumnEntity>
+{
+    #region Methods
+
+    public override void Configure(EntityTypeBuilder<AuditedNoUpdatedOnColumnEntity> builder)
+    {
+        base.Configure(builder);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100);
+        builder.Ignore(x => x.UpdatedOn);
+    }
+
+    #endregion
+}

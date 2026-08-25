@@ -183,6 +183,28 @@ public class ModifierRecordingTests(ModifierRecordingFixture fixture) : IClassFi
     }
 
     [Fact]
+    public async Task Modification_OnAuditedEntityWithUnmappedUpdatedOn_SavesWithoutErrorAndStampsUpdatedBy()
+    {
+        // Arrange: an audited entity whose UpdatedOn column is Ignore()'d in its configuration, so UpdatedBy
+        // is mapped but UpdatedOn is not — the combination HasExplicitModifier's FindProperty(UpdatedOn) guard
+        // exists to handle
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var entity = new AuditedNoUpdatedOnColumnEntity("Acme No UpdatedOn Column", "Steven");
+        await db.AddAsync(entity);
+        await db.SaveChangesAsync();
+
+        // Act: modify it — HasExplicitModifier must bail out on the FindProperty(UpdatedOn) guard, not throw
+        entity.Rename("Acme No UpdatedOn Column Pte Ltd");
+        await Should.NotThrowAsync(() => db.SaveChangesAsync());
+
+        // Assert: UpdatedBy is still stamped with the ambient ownership key
+        var reloaded =
+            await db.Set<AuditedNoUpdatedOnColumnEntity>().AsNoTracking().FirstAsync(r => r.Id == entity.Id);
+        reloaded.Name.ShouldBe("Acme No UpdatedOn Column Pte Ltd");
+        reloaded.UpdatedBy.ShouldBe("Steven");
+    }
+
+    [Fact]
     public async Task RejectedTenantReassignment_StillRecordsAcceptingContextAsModifier()
     {
         // Arrange: a record owned by "Steven", the current context may not act for "intruder"
