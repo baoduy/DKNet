@@ -14,6 +14,7 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 /// <remarks>
 ///     This hook is responsible for:
 ///     - Automatically setting ownership information on newly created entities
+///     - Automatically stamping the modifier and modification time on modified entities
 ///     - Ensuring proper data authorization context is maintained
 ///     - Managing entity ownership during the save process
 /// </remarks>
@@ -38,8 +39,9 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    ///     Updates the ownership information for newly added entities and guards existing ownership on modified
-    ///     entities against silent reassignment.
+    ///     Updates the ownership information for newly added entities, guards existing ownership on modified
+    ///     entities against silent reassignment, and stamps the modifier and modification time on modified
+    ///     entities.
     /// </summary>
     /// <param name="context">The snapshot context containing entity changes.</param>
     private void UpdatingOwner(SnapshotContext context)
@@ -61,6 +63,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
                     case EntityState.Modified:
                         GuardOwnedByReassignment(entry, accessibleKeys);
+                        if (!string.IsNullOrEmpty(ownerKey)) StampModifiedEntity(entry, ownerKey);
                         break;
                 }
         }
@@ -85,6 +88,49 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
         if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
             SetOwnedProperty(own, nameof(IOwnedBy.OwnedBy), ownerKey);
+    }
+
+    /// <summary>
+    ///     Stamps modification audit properties on a modified entity with the current context's ownership key,
+    ///     unless an explicit modifier was already supplied for this change set.
+    /// </summary>
+    /// <param name="entry">The snapshot entry for the modified entity.</param>
+    /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
+    /// <remarks>
+    ///     An explicit modifier is detected by comparing <see cref="IAuditedProperties.UpdatedBy" /> and
+    ///     <see cref="IAuditedProperties.UpdatedOn" />'s current values against their <c>OriginalValue</c>s for
+    ///     this change set: a difference in either means a domain method already called <c>SetUpdatedBy</c> (which
+    ///     always writes both together), so both properties are left untouched — even when the modifier it
+    ///     supplied equals the one recorded by an earlier save. Otherwise neither value changed explicitly, so the
+    ///     ambient ownership key and current time are stamped.
+    /// </remarks>
+    private static void StampModifiedEntity(SnapshotEntityEntry entry, string ownerKey)
+    {
+        if (entry.Entity is not IAuditedProperties au) return;
+        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedBy)) is null) return;
+        if (HasExplicitModifier(entry, au)) return;
+
+        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
+        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>
+    ///     Determines whether a domain method already recorded an explicit modifier for this change set, by
+    ///     comparing <see cref="IAuditedProperties.UpdatedBy" /> and <see cref="IAuditedProperties.UpdatedOn" />
+    ///     against their original values.
+    /// </summary>
+    /// <param name="entry">The snapshot entry for the modified entity.</param>
+    /// <param name="au">The entity's audited-properties view.</param>
+    private static bool HasExplicitModifier(SnapshotEntityEntry entry, IAuditedProperties au)
+    {
+        var originalUpdatedBy = entry.Entry.Property(nameof(IAuditedProperties.UpdatedBy)).OriginalValue as string;
+        if (!string.Equals(originalUpdatedBy, au.UpdatedBy, StringComparison.Ordinal)) return true;
+
+        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedOn)) is null) return false;
+
+        var originalUpdatedOn =
+            entry.Entry.Property(nameof(IAuditedProperties.UpdatedOn)).OriginalValue as DateTimeOffset?;
+        return originalUpdatedOn != au.UpdatedOn;
     }
 
     /// <summary>
