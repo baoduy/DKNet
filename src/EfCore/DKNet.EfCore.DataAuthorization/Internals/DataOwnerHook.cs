@@ -14,6 +14,7 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 /// <remarks>
 ///     This hook is responsible for:
 ///     - Automatically setting ownership information on newly created entities
+///     - Automatically stamping the modifier and modification time on modified entities
 ///     - Ensuring proper data authorization context is maintained
 ///     - Managing entity ownership during the save process
 /// </remarks>
@@ -38,8 +39,9 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    ///     Updates the ownership information for newly added entities and guards existing ownership on modified
-    ///     entities against silent reassignment.
+    ///     Updates the ownership information for newly added entities, guards existing ownership on modified
+    ///     entities against silent reassignment, and stamps the modifier and modification time on modified
+    ///     entities.
     /// </summary>
     /// <param name="context">The snapshot context containing entity changes.</param>
     private void UpdatingOwner(SnapshotContext context)
@@ -61,6 +63,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
                     case EntityState.Modified:
                         GuardOwnedByReassignment(entry, accessibleKeys);
+                        if (!string.IsNullOrEmpty(ownerKey)) StampModifiedEntity(entry, ownerKey);
                         break;
                 }
         }
@@ -85,6 +88,31 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
 
         if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
             SetOwnedProperty(own, nameof(IOwnedBy.OwnedBy), ownerKey);
+    }
+
+    /// <summary>
+    ///     Stamps modification audit properties on a modified entity with the current context's ownership key,
+    ///     unless an explicit modifier was already supplied for this change set.
+    /// </summary>
+    /// <param name="entry">The snapshot entry for the modified entity.</param>
+    /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
+    /// <remarks>
+    ///     An explicit modifier is detected by comparing <see cref="IAuditedProperties.UpdatedBy" />'s current
+    ///     value against its <c>OriginalValue</c> for this change set: a difference means a domain method already
+    ///     set it, so both <see cref="IAuditedProperties.UpdatedBy" /> and <see cref="IAuditedProperties.UpdatedOn" />
+    ///     are left untouched. Otherwise the value is overwritten, even when a prior save already recorded a
+    ///     modifier, so the latest save always wins.
+    /// </remarks>
+    private static void StampModifiedEntity(SnapshotEntityEntry entry, string ownerKey)
+    {
+        if (entry.Entity is not IAuditedProperties au) return;
+        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedBy)) is null) return;
+
+        var originalUpdatedBy = entry.Entry.Property(nameof(IAuditedProperties.UpdatedBy)).OriginalValue as string;
+        if (!string.Equals(originalUpdatedBy, au.UpdatedBy, StringComparison.Ordinal)) return;
+
+        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
+        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
     }
 
     /// <summary>
