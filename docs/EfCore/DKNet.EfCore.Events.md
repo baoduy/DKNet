@@ -139,6 +139,12 @@ await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher o
 6. **Regardless of publish outcome**, `EventContext.ClearEvents()` clears every event from every entity's queue.
    The next `SaveChanges` starts with empty queues.
 
+![Sequence diagram of one SaveChangesAsync call: HookRunnerInterceptor runs EventHook.BeforeSaveAsync to capture declared events before the write, then EventHook.AfterSaveAsync to map and publish them only once the write has succeeded.](../diagrams/efcore-events-savechanges.svg)
+
+The split across the write is the part worth internalising: declared-event capture has to happen before EF Core writes,
+publishing can only happen after it succeeds, and both halves run inside the one `HookRunnerInterceptor` that
+`DKNet.EfCore.Hooks` installs — which is also why a failed save publishes nothing at all.
+
 ### `EventException`
 
 `EventException(IResultBase status)` (from `FluentResults`) is thrown in exactly two situations, both about a
