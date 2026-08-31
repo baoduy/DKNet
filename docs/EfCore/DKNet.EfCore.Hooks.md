@@ -1,21 +1,26 @@
 # DKNet.EfCore.Hooks
 
-**A pluggable before/after-`SaveChanges` interceptor pipeline for EF Core — the mechanism DKNet uses to attach cross-cutting concerns (audit logging, domain events, data ownership, encryption, …) to persistence without leaking that logic into domain or application code.**
+A pluggable before/after-`SaveChanges` interceptor pipeline for EF Core — one shared interceptor per `DbContext` type
+plus a small pair of interfaces you implement.
 
-## 1. What problem it solves
+## ✨ Why use it?
 
-`DbContext.SaveChanges` is where most cross-cutting persistence concerns want to run: stamping audit fields, publishing domain events, enforcing row ownership, encrypting columns. Wiring each of those directly into a `SaveChangesAsync` override (or a bespoke `SaveChangesInterceptor`) per concern quickly turns into a pile of copy-pasted interceptors that all re-implement "walk the change tracker, filter by state, do work".
+- **One interceptor instead of a pile of them** — audit logging, domain events, ownership stamping, and your own
+  concerns all register as hooks on the same `HookRunnerInterceptor` rather than each re-implementing "walk the change
+  tracker, filter by state, do work".
+- **Cross-cutting logic stays out of the domain** — hooks live in the infrastructure layer; neither your `DbContext`
+  nor your entities reference them.
+- **Both phases, with the right guarantees** — `IBeforeSaveHookAsync` runs while you can still mutate tracked
+  entities and abort the save; `IAfterSaveHookAsync` runs only once the write has committed.
+- **Registered per `DbContext` type, inheritance included** — a hook added against a base `DbContext` applies to
+  derived contexts, and a hook never runs for a context it was not registered against.
+- **One switch to suppress everything** — `dbContext.DisableHooks()` turns off audit, events, and ownership stamping
+  together for a seeding or migration scope, with no per-package opt-out to remember.
 
-`DKNet.EfCore.Hooks` gives you one shared `SaveChangesInterceptor` (`HookRunnerInterceptor`) per `DbContext` type, and a small pair of interfaces you implement instead. Each hook is registered independently and only runs for the `DbContext` types it is registered against. Reach for this package when you need to:
+Reach for this package when you need code to run around change-tracked entities on save. If you only need to intercept
+SQL statements or connections, use EF Core's `SaveChangesInterceptor`/`DbCommandInterceptor` directly.
 
-- run logic before a save completes (validation, stamping, mutating tracked entities) or after it succeeds (publishing events, invalidating caches, calling external systems);
-- keep that logic out of your `DbContext` and out of your entities, as an infrastructure-layer concern (Onion Architecture);
-- let several independent concerns (audit logging, domain events, data ownership, …) share the same save pipeline without composing overrides by hand;
-- temporarily suppress all hooks for a `DbContext` instance, e.g. during data seeding or migrations.
-
-If you only need to intercept SQL statements or connections, use EF Core's `SaveChangesInterceptor`/`DbCommandInterceptor` directly — this package is specifically about "run my code around change-tracked entities on save".
-
-## 2. Install and minimum registration
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Hooks
@@ -50,9 +55,9 @@ services.AddDbContext<AppDbContext>((provider, options) =>
 
 Hooks with no registered `HookRunnerInterceptor` for their `DbContext` type are silently never invoked — always register the `DbContext` via `AddDbContextWithHook` (or call `UseHooks<TDbContext>` yourself) or your `AddHook<TDbContext, THook>()` calls will have no effect.
 
-## 3. Features
+## 🧩 Features
 
-### 3.1 The hook interfaces
+### The hook interfaces
 
 All hook contracts live in `DKNet.EfCore.Hooks.IHook.cs` and operate on `SnapshotContext` from `DKNet.EfCore.Extensions.Snapshots` (see [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#snapshotcontext)):
 
@@ -134,7 +139,7 @@ services.AddHook<AppDbContext, DomainEventPublishingHook>();
 
 There is no built-in hook ordering: `AddHook` registers into the DI container's keyed-service collection, and hooks run in registration order for a given phase. If two hooks must run in a specific relative order, register them in that order (or fold them into a single hook).
 
-### 3.2 Disabling hooks — `HookDisablingContext`
+### Disabling hooks — `HookDisablingContext`
 
 Data seeding, bulk migrations, or fixups often need to bypass every hook (audit stamping, ownership assignment, event publishing) for a batch of saves. `DbContext.DisableHooks()` returns an `IHookDisablingContext` — dispose it (sync or async) to re-enable hooks:
 
@@ -152,7 +157,7 @@ await using (db.DisableHooks())
 
 The disabling is reference-counted per `DbContext` CLR type (keyed by `Type.FullName`), so nested `using`/`await using` scopes are safe — hooks stay disabled until the outermost scope disposes. Disabling is scoped by *type*, not by `DbContext` instance: while a scope is active, hooks are suppressed for **every** instance of that `DbContext` type currently saving, not just the instance the scope was created from — keep disabling scopes short-lived and don't rely on it for per-instance isolation under concurrent access.
 
-### 3.3 How it runs — `HookFactory` and `HookRunnerInterceptor`
+### How it runs — `HookFactory` and `HookRunnerInterceptor`
 
 You don't call these directly, but knowing the mechanics helps when hooks don't seem to fire:
 
@@ -162,7 +167,7 @@ You don't call these directly, but knowing the mechanics helps when hooks don't 
 - If a save produces no tracked `Added`/`Modified`/`Deleted` entries, no hooks run for that save (the snapshot is empty and both phases short-circuit).
 - Exceptions thrown from a before-save hook abort the save (the exception propagates out of `SaveChangesAsync`); exceptions from an after-save hook propagate too — the database write has already committed by that point, so an after-save hook failure does **not** roll back the save. Wrap risky after-save work in your own try/catch if a downstream failure (e.g. a flaky event publisher) shouldn't surface as a `SaveChangesAsync` exception.
 
-## 4. Configuration and defaults
+## ⚙️ Configuration reference
 
 There is no options object for this package — behavior is controlled entirely through what you register:
 
@@ -175,17 +180,17 @@ There is no options object for this package — behavior is controlled entirely 
 | `HookRunnerInterceptor` lifetime | Singleton, keyed per `DbContext` type | Not configurable |
 | Disabling hooks | Enabled | `dbContext.DisableHooks()` around a `using`/`await using` scope |
 
-## 5. Composing with Events, AuditLogs, and DataAuthorization
+## 🧱 Where it fits
 
 `DKNet.EfCore.Events`, `DKNet.EfCore.AuditLogs`, and `DKNet.EfCore.DataAuthorization` are all built as hooks on top of this package, sharing the same `HookRunnerInterceptor` pipeline and the same `SnapshotContext` type — verified directly against their internal hook classes:
 
 - **`DKNet.EfCore.Events`** — `EventHook : HookAsync` (`DKNet.EfCore.Events/Internals/EventHook.cs`) captures which `[RaisesEvent]`-declared events qualify for the save in `BeforeSaveAsync` (state and modified-property checks can only be evaluated before the save), then publishes collected domain events in `AfterSaveAsync` once the save has succeeded. See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
-- **`DKNet.EfCore.AuditLogs`** — `EfCoreAuditHook : HookAsync` (`DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs`) builds audit log entries from `context.Entities` in `BeforeSaveAsync`, caches them per `DbContext` instance ID, and publishes them via registered `IAuditLogPublisher`s in `AfterSaveAsync`. See [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) for the sibling ownership concern.
+- **`DKNet.EfCore.AuditLogs`** — `EfCoreAuditHook : HookAsync` (`DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs`) builds audit log entries from `context.Entities` in `BeforeSaveAsync`, caches them per `DbContext` instance ID, and publishes them via registered `IAuditLogPublisher`s in `AfterSaveAsync`. See [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md).
 - **`DKNet.EfCore.DataAuthorization`** — `DataOwnerHook : IBeforeSaveHookAsync` (`DKNet.EfCore.DataAuthorization/Internals/DataOwnerHook.cs`) stamps ownership on newly added entities and guards modified entities against cross-tenant `OwnedBy` reassignment, entirely in `BeforeSaveAsync`.
 
-Because all three register through the same `AddHook<TDbContext, THook>()` extension against your `DbContext`, they compose automatically: register your `DbContext` once with `AddDbContextWithHook`, then add whichever of `AddEfCoreEventHooks`, `AddAuditLogs`/audit setup, and data-authorization setup your application needs (see each package's own docs for its specific registration call) — they run side by side without needing to know about each other. A single `dbContext.DisableHooks()` scope suppresses all of them at once, which is exactly why it's the recommended way to bypass audit/event/ownership stamping during seeding.
+Because all three register through the same `AddHook<TDbContext, THook>()` extension against your `DbContext`, they compose automatically: register your `DbContext` once with `AddDbContextWithHook`, then add whichever of `AddEventPublisher<TDbContext, TPublisher>()`, `AddEfCoreAuditLogs<TDbContext, TPublisher>()`, and `AddDataOwnerProvider<TDbContext, TProvider>()` your application needs — they run side by side without needing to know about each other. A single `dbContext.DisableHooks()` scope suppresses all of them at once, which is exactly why it's the recommended way to bypass audit/event/ownership stamping during seeding.
 
-## 6. Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **Registering the `DbContext` the wrong way silently drops hooks.** If you keep using plain `AddDbContext` without also calling `options.UseHooks<TDbContext>(provider)`, `AddHook` registrations exist in DI but the interceptor that would invoke them is never attached — no exception, hooks just never run. Prefer `AddDbContextWithHook`.
 - **No application service provider → hard failure, not silent skip.** If a `DbContext` *is* intercepted by `HookRunnerInterceptor` but was constructed in a way that has no `ApplicationServiceProvider` set (e.g. hand-built `DbContextOptions` bypassing DI), resolving hooks throws `InvalidOperationException` at save time.
@@ -194,3 +199,16 @@ Because all three register through the same `AddHook<TDbContext, THook>()` exten
 - **No built-in hook priority/ordering mechanism.** Order is purely DI registration order; there's no `[Order]` attribute or similar. Split a hook that must run first from ones that depend on it, and register them explicitly in the required order.
 - **`DisableHooks()` suppresses by `DbContext` type, not instance.** In a process with multiple concurrently-open instances of the same `DbContext` type, a disabling scope opened for suppressing seeding on one instance also suppresses hooks for every other instance of that type saving concurrently, until disposed.
 - **Hooks are scoped, not singleton** — a hook with per-save mutable state (like `EfCoreAuditHook`'s per-`ContextId` cache) needs to key any cross-phase state by `context.DbContext.ContextId.InstanceId` if the same hook instance could conceivably see multiple `DbContext` instances' saves (it normally won't, since hooks are scoped alongside the `DbContext`, but avoid assuming a 1:1 lifetime you haven't verified for your own DI setup).
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – dispatches domain events as a hook on this pipeline. Reach for it
+  instead of writing your own after-save publishing hook.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – field-level change capture as a hook on this pipeline. Reach
+  for it instead of writing your own change-diffing hook.
+- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – ownership stamping and reassignment guarding
+  as a before-save hook. Reach for it for row-level multi-tenant isolation.
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – owns `SnapshotContext` and the model-building/wiring layer
+  the hooks read. Reach for it for automatic entity configuration, global query filters, and seeding.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the entity base classes and attributes hooks act on.
+  Reach for it when modelling the entities themselves.

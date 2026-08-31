@@ -1,31 +1,31 @@
 # DKNet.EfCore.Specifications
 
-## Problem it solves
+The Specification pattern for EF Core — filter, includes, and order-by as one reusable object, executed through a
+single non-generic `IRepositorySpec`, plus a runtime dynamic predicate builder.
 
-Ad-hoc repository query methods rot fast: every new filter combination (`FindActiveByRegion`,
-`FindActiveByRegionAndMinOrders`, `FindActiveByRegionOrVip`, …) either becomes a new repository method or an
-`IQueryable<T>` leaking out of the persistence layer into application code. Neither is testable in isolation, and
-neither composes — you cannot reuse "active customers" as a building block for three different queries without
-copy-pasting the predicate.
+## ✨ Why use it?
 
-The Specification pattern fixes this by giving filter + include + order-by a name and a home: a small,
-constructor-configured `Specification<TEntity>` class that a repository executes. `DKNet.EfCore.Specifications` is
-the DKNet implementation of that pattern, plus its signature feature — a **dynamic predicate builder** that
-constructs type-safe EF Core predicates from `(propertyName, operation, value)` triples at runtime, for search/filter
-APIs where the criteria are not known at compile time.
-
-This package is the **flagship successor to the retired `DKNet.EfCore.Repos`**. `DKNet.EfCore.Repos`,
-`DKNet.EfCore.Repos.Abstractions`, and `DKNet.EfCore.DtoEntities` are no longer packed or published — their types
-carry `[Obsolete]` and point here. `IRepositorySpec` (this package) covers the same read/write/paging surface as the
-old `IRepository<T>`, but is not generic over the entity: one injected instance serves every aggregate in the
-`DbContext`, because the entity type is inferred from the `Specification<TEntity>` passed to each call. See
-[`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for a full call-site mapping.
+- **Query logic gets a name and a home** — "active customers in a region" becomes a `Specification<TEntity>` class
+  you can reuse and unit-test, instead of a new repository method per filter combination or an `IQueryable<T>` leaking
+  out of the persistence layer.
+- **Filters compose instead of being copy-pasted** — filter, include, and order-by live on one object, so a building
+  block can be reused across several queries without duplicating the predicate.
+- **One repository for every aggregate** — `IRepositorySpec` is not generic over the entity; the entity type is
+  inferred per call from the specification passed in, so one injected instance serves the whole `DbContext`.
+- **Runtime criteria without string SQL** — the dynamic predicate builder turns
+  `(propertyName, operation, value)` triples into type-safe EF Core predicates, which is what search boxes,
+  query-string filters, and admin grids actually need.
+- **Keyset pagination and streaming built in** — cursor pagination and page-at-a-time async enumeration are part of
+  the surface rather than something each caller reimplements.
 
 Reach for this package whenever you need reusable, testable query logic against an EF Core `DbContext` — especially
-when some of the filter criteria are supplied by a caller at runtime (search boxes, query-string filters, admin
-grids).
+when some of the filter criteria are supplied by a caller at runtime.
 
-## Install and minimum wiring
+It is the successor to the retired `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions`, whose types carry
+`[Obsolete]` and point here. `IRepositorySpec` covers the same read/write/paging surface as the old `IRepository<T>`.
+See [`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for a full call-site mapping.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Specifications
@@ -52,9 +52,9 @@ Model projection (`Query<TEntity, TModel>`, and every `*Async<TEntity, TModel>` 
 requires a Mapster `IMapper` registered in DI — `RepositorySpec<TDbContext>` resolves it via
 `IServiceProvider.GetService<IMapper>()` and throws `InvalidOperationException` at query time if none is found.
 
-## Features
+## 🧩 Features
 
-### 1. `Specification<TEntity>` — filter, include, and order-by in one object
+### `Specification<TEntity>` — filter, include, and order-by in one object
 
 `Specification<TEntity>` is the abstract base you derive from. Configure it entirely from the constructor, using its
 `protected` builder methods — they are not callable from outside the subclass, which is what keeps a specification's
@@ -86,7 +86,7 @@ The public surface a repository (or your own `IQueryable` code, via `ApplySpecs`
 Additional protected builders on `Specification<TEntity>`:
 
 - `AddOrderBy(string orderBy, ListSortDirection direction)` — orders by a **property name string** (normalized to
-  PascalCase the same way the dynamic predicate builder does — see Feature 3), for when the sort column itself is
+  PascalCase the same way the dynamic predicate builder does — see *Dynamic Predicate Builder* below), for when the sort column itself is
   runtime-supplied (e.g. an `?orderBy=` query parameter). Builds an `Expression<Func<TEntity, object>>` via
   reflection (`Expression.PropertyOrField`) and routes it through the same ordering path as the expression overload.
 - `AddOrderBy` / `AddOrderByDescending` (expression overloads) record ordering **in declaration order** internally
@@ -102,12 +102,12 @@ Additional protected builders on `Specification<TEntity>`:
 - `CreatePredicate(Expression<Func<TEntity, bool>>? expression = null)` — returns a LinqKit
   `ExpressionStarter<TEntity>` (via `PredicateBuilder.New<TEntity>()` or `PredicateBuilder.New(expression)`), the
   idiomatic starting point for combining static predicates with the dynamic predicate builder inside a
-  specification's constructor (Feature 3).
+  specification's constructor (see *Dynamic Predicate Builder* below).
 - A copy constructor, `Specification(ISpecification<TEntity> specification)`, clones filter/include/order-by state
-  from an existing specification — useful for `ModelSpecification<TEntity, TModel>` (Feature 4) built from an
+  from an existing specification — useful for `ModelSpecification<TEntity, TModel>` (see *projections* below) built from an
   existing entity specification.
 
-### 2. `IRepositorySpec` — the non-generic repository surface
+### `IRepositorySpec` — the non-generic repository surface
 
 `IRepositorySpec` is injected once and used for every entity type in the `DbContext`; the entity type comes from the
 `ISpecification<TEntity>` (or explicit type argument) passed to each call:
@@ -140,16 +140,16 @@ implemented as extension members on `IRepositorySpec`:
 | `CountAsync<TEntity>(spec, ct)` | `Task<int>` |
 | `FirstAsync<TEntity>(spec, ct)` | `Task<TEntity>` (throws if empty) |
 | `FirstOrDefaultAsync<TEntity>(spec, ct)` | `Task<TEntity?>` |
-| `FirstAsync<TEntity, TModel>` / `FirstOrDefaultAsync<TEntity, TModel>(spec, ct)` | projected model (Feature 4) |
+| `FirstAsync<TEntity, TModel>` / `FirstOrDefaultAsync<TEntity, TModel>(spec, ct)` | projected model (see *`ModelSpecification<TEntity, TModel>` — projections*) |
 | `ToListAsync<TEntity>(spec, ct)` / `ToListAsync<TEntity, TModel>(spec, ct)` | `Task<IList<T>>` |
 | `ToPagedListAsync<TEntity>(spec, pageNumber, pageSize, ct)` / `<TEntity, TModel>` overload | `Task<IPagedList<T>>` (X.PagedList) |
-| `ToPageEnumerable<TEntity>(spec)` / `<TEntity, TModel>` overload | `IAsyncEnumerable<T>`, internally paged (Feature 5) |
-| `ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)` / two-key overload | `Task<IList<TEntity>>` (Feature 5) |
+| `ToPageEnumerable<TEntity>(spec)` / `<TEntity, TModel>` overload | `IAsyncEnumerable<T>`, internally paged (see *Keyset (cursor) pagination and streaming enumeration*) |
+| `ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)` / two-key overload | `Task<IList<TEntity>>` (see *Keyset (cursor) pagination and streaming enumeration*) |
 
 `repo.Query<TEntity>(spec)` and `Query<TEntity, TModel>(spec)` also return the raw `IQueryable<T>` — call
 `.ToQueryString()` on it to inspect generated SQL, the pattern used throughout the test suite.
 
-### 3. Dynamic Predicate Builder — the signature feature
+### Dynamic Predicate Builder — the signature feature
 
 For filters whose shape is only known at runtime (search boxes, `?field=value` query strings, admin grids), build a
 predicate from `(propertyName, operation, value)` triples instead of hand-writing `Expression<Func<T, bool>>` trees.
@@ -221,7 +221,7 @@ overload, this one is fail-loud: it validates the expression against a blocklist
 (`System.`, `Reflection.`, `Process.`, `File.`, `SqlCommand`, `Environment.`, …) and throws `ArgumentException` if
 one is found, and lets `System.Linq.Dynamic.Core` parse/throw normally otherwise.
 
-### 4. `ModelSpecification<TEntity, TModel>` — projections
+### `ModelSpecification<TEntity, TModel>` — projections
 
 For read paths that should never materialize the full entity, derive from `ModelSpecification<TEntity, TModel>`
 instead of `Specification<TEntity>`. It adds no new members — same protected builders — but flags the specification
@@ -246,9 +246,9 @@ IList<ProductSummaryDto> summaries =
 of `.AsNoTracking()` — projected reads are always non-tracking regardless of whether the specification called
 `AsNoTracking()` itself.
 
-### 5. Keyset (cursor) pagination and streaming enumeration
+### Keyset (cursor) pagination and streaming enumeration
 
-**`ToPageEnumerable`** (Feature 2's table) streams a specification's results as an `IAsyncEnumerable<T>`, fetching
+**`ToPageEnumerable`** (in the `IRepositorySpec` table above) streams a specification's results as an `IAsyncEnumerable<T>`, fetching
 pages of 100 rows internally (`Skip`/`Take`) rather than materializing the whole result set:
 
 ```csharp
@@ -304,7 +304,20 @@ richest:
    `HasNext` existence checks (and per `MR.EntityFrameworkCore.KeysetPagination` 1.6.0, those two checks do not
    accept a `CancellationToken`; only the page query itself observes it).
 
-## Configuration options and defaults
+## ⚙️ Configuration reference
+
+There is no options object or configuration section — behaviour is set per specification and per registration:
+
+| Knob | Where | Default | Effect |
+|---|---|---|---|
+| `AddSpecRepo<TDbContext>()` | DI | not registered | Registers `IRepositorySpec` for `TDbContext`. Idempotent. |
+| `AsNoTracking()` | specification constructor | tracking on (EF Core default) | Opts that specification's entity query into a no-tracking query. Projected (`TModel`) queries are always no-tracking. |
+| `IgnoreQueryFilters()` | specification constructor | `false` | Bypasses global query filters whose `GlobalQueryFilter.IsIgnorable` is `true`; a filter overriding it to `false` is never bypassed. |
+| `Skip` / `Take` | specification constructor | unset | Applied only when the specification is executed via `Query<TEntity>` / `Query<TEntity, TModel>` (see the note below). |
+| `ToPageEnumerable` page size | internal constant `PageAsyncEnumeratorExtensions.DefaultPageSize` | `100` | Rows fetched per round trip while streaming. Not exposed as a parameter. |
+| Keyset ordering | `configureKeyset` delegate | none — required | Defines the keyset columns and direction. A specification with no ordering throws `NotSupportedException`. |
+
+The same points in full:
 
 - **`AddSpecRepo<TDbContext>` is idempotent** — safe to call more than once; it checks `IsRegistered<IRepositorySpec>()`
   first and no-ops if already registered.
@@ -321,7 +334,7 @@ richest:
   specification is executed via `Query<TEntity>`/`Query<TEntity, TModel>` (directly or through the `IRepositorySpec`
   extensions above), not when you read `FilterQuery`/`IncludeQueries`/etc. and build the query yourself.
 
-## How it composes with other packages
+## 🧱 Where it fits
 
 - **Replaces `DKNet.EfCore.Repos`.** `IRepositorySpec` is the direct successor to `IRepository<T>` /
   `IReadRepository<T>` / `IWriteRepository<T>` — see
@@ -340,7 +353,7 @@ richest:
 - **Model projections need Mapster** (`Mapster`/`MapsterMapper`, referenced by this package) registered in DI for
   `Query<TEntity, TModel>` and every `*<TEntity, TModel>` repository extension to work.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **Forgetting `.AsExpandable()` breaks dynamic predicate translation — but only outside `IRepositorySpec`.**
   `RepositorySpec<TDbContext>.Query<TEntity>` already calls `.AsExpandable()` before applying the specification, so
@@ -350,7 +363,7 @@ richest:
   it, and the query fails or silently mistranslates at execution time.
 - **Do not reintroduce manual null checks around `DynamicAnd`/`DynamicOr`.** They already null-handle internally —
   `Equal`/`NotEqual` against a `null` value produce `IS NULL`/`IS NOT NULL`, and invalid values are dropped rather
-  than throwing (see Feature 3). Wrapping calls in `if (value != null)` before calling `DynamicAnd` only hides the
+  than throwing (see *Dynamic Predicate Builder* below). Wrapping calls in `if (value != null)` before calling `DynamicAnd` only hides the
   library's own handling and risks accidentally skipping a legitimate `null`-equality filter.
 - **Materializing before `.Where(...)` gives wrong results and kills performance.** Call `ToListAsync()`/
   `ToListAsync<TEntity, TModel>()` (or any other terminal operator) only *after* the specification/predicate has been
@@ -371,3 +384,20 @@ richest:
 - **`ToKeysetPageAsync` (arbitrary-arity, `IQueryable` overload) owns ordering.** Don't chain it after your own
   `OrderBy`/`OrderByDescending` — pass the ordering into `configureKeyset` instead — and remember its
   `HasPrevious`/`HasNext` checks add two extra round trips per call.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `Entity`/`AuditedEntity` aggregates
+  specifications are usually written against. Reach for it when modelling the entities themselves.
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – owns `GlobalQueryFilter`, the mechanism
+  `IgnoreQueryFilters()` interacts with, plus the concurrency-handling save extension `RepositorySpec` calls. Reach
+  for it to register a global filter or configure the model.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping from the retired
+  repository interfaces onto `IRepositorySpec`. Reach for it when converting existing code.
+- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) – the retired predecessor. Reach for it only to understand behaviour
+  code you still maintain depends on.
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – generates the DTO types
+  `ModelSpecification<TEntity, TModel>` projects onto. Reach for it so the projection target does not have to be
+  hand-maintained.
+- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level ownership filtering. Reach for it
+  for multi-tenant isolation, and note its filter is deliberately exempt from `IgnoreQueryFilters()`.

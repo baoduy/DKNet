@@ -1,8 +1,27 @@
 # DKNet.EfCore.Relational.Helpers
 
-Small set of `DbContext` extension methods for relational-provider bookkeeping that EF Core doesn't expose directly: ensuring a single table exists without a full migration, getting an already-open connection, resolving an entity's actual schema/table name, and checking whether a table exists before you query it. Reach for it when you're writing infrastructure code (seed scripts, diagnostics, multi-tenant table provisioning, health checks) that needs to know or touch the physical schema behind a `DbContext`, rather than going through `Database.Migrate()` or raw ADO.NET yourself.
+Four `DbContext` extension methods for relational-provider bookkeeping that EF Core does not expose directly — table
+creation, connection access, table-name resolution, and table-existence checks.
 
-## Install and minimum usage
+## ✨ Why use it?
+
+- **Provision one table without a migration** — `CreateTableAsync<TEntity>()` does the
+  `IDatabaseCreator` → `RelationalDatabaseCreator` cast, the database-exists check, and the table-exists check for you,
+  so first-run/test provisioning is a single call instead of a dozen lines of EF Core internals.
+- **Reach the connection EF Core is already using** — `GetDbConnection()` returns the context's own `DbConnection`,
+  opened if closed, so raw ADO.NET runs on the same connection (and the same transaction) rather than a second one.
+- **Know an entity's real schema and table** — `GetTableName<TEntity>()` walks EF Core's fallback chain
+  (`GetSchema()` → `GetDefaultSchema()` → SQL Server's `dbo`) so diagnostics, seed scripts, and hand-written SQL do not
+  hard-code names the model may have remapped.
+- **Ask whether a table exists without an exception** — `TableExistsAsync<TEntity>()` turns the provider's
+  "invalid object name" `DbException` into a `bool`, which is what a health check or a conditional-DDL guard actually
+  wants.
+
+Reach for this package when writing infrastructure code — seed routines, diagnostics, multi-tenant table
+provisioning, health checks — that needs to know or touch the physical schema behind a `DbContext`. It is standalone:
+no other DKNet package is required.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Relational.Helpers
@@ -14,7 +33,7 @@ using DKNet.EfCore.Relational.Helpers;
 var (schema, table) = dbContext.GetTableName<Product>();
 ```
 
-## Extension methods
+## 🧩 Features
 
 All four methods live on the single static class `DbContextHelpers` and extend `DbContext`.
 
@@ -86,18 +105,25 @@ if (!await dbContext.TableExistsAsync<Product>())
 
 Note this issues a real query against the table (`SELECT ... WHERE EXISTS/LIMIT 1`-style), not a metadata-only check — on a large or locked table that carries the same cost as any other query.
 
-## Configuration options
-
-None. There's no options class, no DI registration, and no `IServiceCollection` extension — these are plain static extension methods you call directly on a `DbContext` instance. Nothing to configure or wire up.
-
-## Composition with other DKNet packages
+## 🧱 Where it fits
 
 Standalone. This package has no dependency beyond `Microsoft.EntityFrameworkCore` and `Microsoft.EntityFrameworkCore.Relational`, doesn't reference `DKNet.EfCore.Abstractions` or any other DKNet package, and none of the other EfCore packages (`Repos`, `Events`, `Hooks`, `Specifications`) call into it. It's a small relational-provider utility you can add to any EF Core project independent of the rest of the DKNet stack.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
+- **There is nothing to configure and nothing to register.** No options class, no `IServiceCollection`
+  extension — these are plain static extension methods called directly on a `DbContext` instance.
 - **Not a migration tool.** `CreateTableAsync` uses `EnsureCreatedAsync`/`CreateTablesAsync`, which is incompatible with EF Core Migrations on the same database — mixing the two leads to a database with tables but no (or an inconsistent) `__EFMigrationsHistory`. Use it for first-run/dev/test provisioning, not as a substitute for `dbContext.Database.Migrate()` in production.
 - **Requires a relational provider.** All four methods depend on `Microsoft.EntityFrameworkCore.Relational` types (`RelationalDatabaseCreator`, `DbConnection`, schema/table metadata) — they will not work with non-relational providers (e.g. Cosmos).
 - **`dbo` default schema is SQL Server–only.** `GetTableName<TEntity>` only substitutes `"dbo"` when the provider name is exactly `Microsoft.EntityFrameworkCore.SqlServer` (case-insensitive). On PostgreSQL, SQLite, or any other provider, an entity with no explicit schema returns `Schema = null` — callers must not assume `dbo` cross-provider.
 - **`TableExistsAsync` swallows only `DbException`.** Any other exception (e.g. a cancellation, or a provider throwing something outside `DbException`) still propagates.
 - **`GetDbConnection` mutates connection state.** It opens the connection as a side effect if closed; callers are responsible for not leaving it open longer than intended when managing the connection outside of EF Core's own lifecycle.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – the DI/wiring layer. Reach for it instead when you want
+  automatic entity configuration discovery, seeding, or sequences rather than one-off schema pokes.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the entity base classes and attributes the rest of
+  the EfCore stack reads. Reach for it when you are modelling entities, not inspecting schema.
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the supported way to query and persist through a
+  `DbContext`. Reach for it for application-level data access; this package is for infrastructure-level schema work.
