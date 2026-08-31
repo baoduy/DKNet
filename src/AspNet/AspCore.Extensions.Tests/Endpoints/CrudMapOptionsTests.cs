@@ -40,4 +40,29 @@ public class CrudMapOptionsTests
 
         returned.ShouldBeSameAs(options);
     }
+
+    [Fact]
+    public void Exclude_Action_ExcludesOnlyAction()
+    {
+        var options = new CrudMapOptions();
+
+        options.Exclude(CrudOp.Action);
+
+        options.IsExcluded(CrudOp.Action).ShouldBeTrue();
+        options.IsExcluded(CrudOp.Update).ShouldBeFalse();
+        options.IsExcluded(CrudOp.Create).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void CrudOp_Action_IsAppendedLast_PreservingExistingOrdinals()
+    {
+        // Action was appended as the LAST member specifically so every pre-existing member keeps its numeric
+        // value; a consumer that persisted/serialized a CrudOp by its raw int must not silently shift meaning.
+        ((int)CrudOp.GetById).ShouldBe(0);
+        ((int)CrudOp.GetList).ShouldBe(1);
+        ((int)CrudOp.Create).ShouldBe(2);
+        ((int)CrudOp.Update).ShouldBe(3);
+        ((int)CrudOp.Delete).ShouldBe(4);
+        ((int)CrudOp.Action).ShouldBe(5);
+    }
 }

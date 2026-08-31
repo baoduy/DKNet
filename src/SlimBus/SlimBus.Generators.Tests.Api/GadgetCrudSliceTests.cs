@@ -100,6 +100,59 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
     }
 
     [Fact]
+    public async Task PostGadgetApprove_WithExistingId_Returns200AndApprovedDto()
+    {
+        var created = await host.Client.PostAsJsonAsync("/gadgets", new { name = "approve-me", price = 7m });
+        var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
+
+        var response = await host.Client.PostAsJsonAsync($"/gadgets/{createdDto!.Id}/approve", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
+        dto.ShouldNotBeNull();
+        dto.Id.ShouldBe(createdDto.Id);
+        dto.IsApproved.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task PostGadgetApprove_WithUnknownId_Returns404()
+    {
+        var response = await host.Client.PostAsJsonAsync($"/gadgets/{Guid.NewGuid()}/approve", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostGadgetApprove_AgainstGroupWithActionsExcluded_ServesUpdatesButNotTheActionRoute()
+    {
+        var created = await host.Client.PostAsJsonAsync("/gadgets-no-actions", new { name = "excluded-actions", price = 8m });
+        var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
+
+        var updateResponse = await host.Client.PutAsJsonAsync($"/gadgets-no-actions/{createdDto!.Id}", new { price = 88m });
+        updateResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var approveResponse = await host.Client.PostAsJsonAsync($"/gadgets-no-actions/{createdDto.Id}/approve", new { });
+        approveResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostGadgetDiscontinue_WithExistingId_HandWrittenHandlerDecidesTheOutcome()
+    {
+        // DiscontinueGadgetRequest has a hand-written IHandler (CustomDiscontinueGadgetHandler) that suppresses
+        // the generated one and deliberately does NOT flip IsDiscontinued — proving this dispatched to the
+        // hand-written handler, not a generated one (spec §3.10).
+        var created = await host.Client.PostAsJsonAsync("/gadgets", new { name = "discontinue-me", price = 3m });
+        var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
+
+        var response = await host.Client.PostAsJsonAsync($"/gadgets/{createdDto!.Id}/discontinue", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
+        dto.ShouldNotBeNull();
+        dto.IsDiscontinued.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task DeleteGadgetById_WithExistingId_RemovesRow()
     {
         var created = await host.Client.PostAsJsonAsync("/gadgets", new { name = "delete-me", price = 3m });

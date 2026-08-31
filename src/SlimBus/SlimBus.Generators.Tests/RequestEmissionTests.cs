@@ -175,6 +175,56 @@ public class RequestEmissionTests
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
 
+    private const string DomainWithActionAndAnnotatedParameter = """
+        using System;
+        using System.ComponentModel.DataAnnotations;
+        using DKNet.EfCore.Abstractions.Attributes;
+        using DKNet.EfCore.Abstractions.Entities;
+
+        namespace MyDomain
+        {
+            public class Order : IEntity<Guid>
+            {
+                [CrudCreate]
+                public Order(string customer) => Customer = customer;
+
+                [CrudAction("approval")]
+                public void Approve([Required, StringLength(50)] string approver) => Approver = approver;
+
+                public Guid Id { get; private set; }
+                public string Customer { get; private set; } = string.Empty;
+                public string? Approver { get; private set; }
+            }
+        }
+        """;
+
+    private const string ApiWithOrderDto = """
+        using DKNet.EfCore.DtoGenerator;
+        using MyDomain;
+
+        namespace MyApi
+        {
+            [GenerateDto(typeof(Order))]
+            public partial record OrderDto;
+        }
+        """;
+
+    [Fact]
+    public void Run_WithActionMember_EmitsRequestCarryingKeyAndParamsWithAnnotations()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithActionAndAnnotatedParameter, ApiWithOrderDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("sealed partial record ApproveOrderRequest");
+        text.ShouldContain("IWitResponse<global::MyApi.OrderDto>");
+        text.ShouldContain("IWithKey<global::System.Guid>");
+        text.ShouldContain("public global::System.Guid Id { get; set; }");
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.Required]");
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.StringLength(50)]");
+        text.ShouldContain("public required string Approver { get; init; }");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
     [Fact]
     public void Run_WithNameOverride_UsesOverriddenRequestName()
     {
