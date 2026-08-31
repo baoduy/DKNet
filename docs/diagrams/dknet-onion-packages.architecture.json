@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet package dependencies across the onion rings",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1500,
+      760
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 4,
+    "origin": [
+      60,
+      150
+    ],
+    "gapX": 180,
+    "gapY": 140,
+    "cellW": 210,
+    "cellH": 78
+  },
+  "components": [
+    {
+      "id": "aspcore",
+      "type": "frontend",
+      "label": "DKNet.AspCore.Extensions",
+      "sublabel": "minimal-API endpoints",
+      "tag": "Presentation",
+      "row": 1,
+      "col": 0,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "slimbus",
+      "type": "backend",
+      "label": "DKNet.SlimBus.Extensions",
+      "sublabel": "CQRS handlers",
+      "tag": "Application",
+      "row": 0,
+      "col": 1,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "specs",
+      "type": "database",
+      "label": "DKNet.EfCore.Specifications",
+      "sublabel": "IRepositorySpec",
+      "tag": "Infrastructure",
+      "row": 2,
+      "col": 1,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "events",
+      "type": "messagebus",
+      "label": "DKNet.EfCore.Events",
+      "sublabel": "domain event dispatch",
+      "tag": "Infrastructure",
+      "row": 0,
+      "col": 2,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "hooks",
+      "type": "backend",
+      "label": "DKNet.EfCore.Hooks",
+      "sublabel": "SaveChanges pipeline",
+      "tag": "Infrastructure",
+      "row": 1,
+      "col": 2,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "crosscut",
+      "type": "security",
+      "label": "AuditLogs · DataAuthorization",
+      "sublabel": "opt-in interceptors",
+      "tag": "Infrastructure",
+      "row": 2,
+      "col": 2,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "abstractions",
+      "type": "backend",
+      "label": "DKNet.EfCore.Abstractions",
+      "sublabel": "Entity · IEventEntity",
+      "tag": "Domain core",
+      "row": 0,
+      "col": 3,
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "dbcontext",
+      "type": "external",
+      "label": "EF Core DbContext",
+      "sublabel": "change tracker",
+      "row": 2,
+      "col": 3,
+      "size": [
+        210,
+        78
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "endpoints-to-handlers",
+      "from": "aspcore",
+      "to": "slimbus",
+      "label": "commands / queries",
+      "variant": "emphasis"
+    },
+    {
+      "id": "endpoints-to-specs",
+      "from": "aspcore",
+      "to": "specs",
+      "label": "reads / writes"
+    },
+    {
+      "id": "handlers-publish",
+      "from": "slimbus",
+      "to": "events",
+      "label": "publishes domain events"
+    },
+    {
+      "id": "events-to-abstractions",
+      "from": "events",
+      "to": "abstractions",
+      "label": "IEventEntity, IEventPublisher",
+      "variant": "emphasis"
+    },
+    {
+      "id": "events-is-a-hook",
+      "from": "events",
+      "to": "hooks",
+      "label": "EventHook : HookAsync",
+      "labelDy": 24
+    },
+    {
+      "id": "crosscut-to-hooks",
+      "from": "crosscut",
+      "to": "hooks",
+      "label": "registered via AddHook",
+      "variant": "security"
+    },
+    {
+      "id": "hooks-intercept",
+      "from": "hooks",
+      "to": "dbcontext",
+      "label": "SaveChanges interceptor"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Rings are packages",
+      "items": [
+        "Every arrow is a real project reference in src/, not just a conceptual layer",
+        "A consuming app references only the rings it needs"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Dependencies point inward",
+      "items": [
+        "Infrastructure depends on DKNet.EfCore.Abstractions; never the reverse",
+        "Domain code compiles against Abstractions alone, with nothing dispatching until Events is registered"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "One save pipeline",
+      "items": [
+        "Events, AuditLogs and DataAuthorization all attach as DKNet.EfCore.Hooks hooks",
+        "Hooks installs a single SaveChangesInterceptor per DbContext"
+      ]
+    }
+  ]
+}

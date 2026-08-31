@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "What DKNet.EfCore.Events does during one SaveChangesAsync",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1360,
+      830
+    ],
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Save path"
+        },
+        "dashed": {
+          "label": "Mapping / cleanup"
+        },
+        "return": {
+          "label": "Result back to caller"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "app",
+      "type": "external",
+      "label": "Application code",
+      "sublabel": "adds / changes entities"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "DbContext",
+      "sublabel": "change tracker"
+    },
+    {
+      "id": "interceptor",
+      "type": "backend",
+      "label": "HookRunnerInterceptor",
+      "sublabel": "one per DbContext instance"
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "EventHook",
+      "sublabel": "IHookAsync"
+    },
+    {
+      "id": "provider",
+      "type": "database",
+      "label": "Database",
+      "sublabel": "EF Core provider"
+    },
+    {
+      "id": "mapper",
+      "type": "cloud",
+      "label": "IMapper",
+      "sublabel": "entity to payload"
+    },
+    {
+      "id": "publisher",
+      "type": "messagebus",
+      "label": "IEventPublisher",
+      "sublabel": "one or many"
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 348,
+      "label": "Before the save"
+    },
+    {
+      "from": 358,
+      "to": 432,
+      "label": "EF Core writes"
+    },
+    {
+      "from": 442,
+      "to": 724,
+      "label": "Only after a successful save"
+    }
+  ],
+  "messages": [
+    {
+      "id": "save",
+      "from": "app",
+      "to": "db",
+      "y": 190,
+      "label": "SaveChangesAsync()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "saving",
+      "from": "db",
+      "to": "interceptor",
+      "y": 232,
+      "label": "SavingChangesAsync"
+    },
+    {
+      "id": "before-save",
+      "from": "interceptor",
+      "to": "hook",
+      "y": 272,
+      "label": "BeforeSaveAsync(snapshot)",
+      "note": "Records which [RaisesEvent] rules qualify, while IsModified still means something. Hand-raised events stay queued on the entity."
+    },
+    {
+      "id": "declared-captured",
+      "from": "hook",
+      "to": "interceptor",
+      "y": 326,
+      "label": "declared events captured",
+      "variant": "return"
+    },
+    {
+      "id": "write",
+      "from": "db",
+      "to": "provider",
+      "y": 372,
+      "label": "INSERT / UPDATE / DELETE",
+      "variant": "emphasis"
+    },
+    {
+      "id": "written",
+      "from": "provider",
+      "to": "db",
+      "y": 412,
+      "label": "rows affected",
+      "variant": "return"
+    },
+    {
+      "id": "saved",
+      "from": "db",
+      "to": "interceptor",
+      "y": 458,
+      "label": "SavedChangesAsync"
+    },
+    {
+      "id": "after-save",
+      "from": "interceptor",
+      "to": "hook",
+      "y": 498,
+      "label": "AfterSaveAsync(snapshot)"
+    },
+    {
+      "id": "map",
+      "from": "hook",
+      "to": "mapper",
+      "y": 540,
+      "label": "map TEvent-only and declared payloads",
+      "variant": "dashed",
+      "note": "Throws EventException when a mapping-based event has no IMapper registered."
+    },
+    {
+      "id": "payloads",
+      "from": "mapper",
+      "to": "hook",
+      "y": 594,
+      "label": "event objects",
+      "variant": "return"
+    },
+    {
+      "id": "publish",
+      "from": "hook",
+      "to": "publisher",
+      "y": 622,
+      "label": "PublishAsync(combined list)",
+      "variant": "emphasis",
+      "note": "Each publisher runs in its own try/catch: one that throws is logged and skipped, and the save is already committed."
+    },
+    {
+      "id": "published",
+      "from": "publisher",
+      "to": "hook",
+      "y": 676,
+      "label": "logged and skipped on failure",
+      "variant": "return"
+    },
+    {
+      "id": "clear",
+      "from": "hook",
+      "to": "db",
+      "y": 716,
+      "label": "ClearEvents() on every entity",
+      "variant": "dashed"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "db",
+      "from": 185,
+      "to": 724,
+      "type": "database"
+    },
+    {
+      "participant": "interceptor",
+      "from": 227,
+      "to": 504,
+      "type": "backend"
+    },
+    {
+      "participant": "hook",
+      "from": 267,
+      "to": 722,
+      "type": "backend"
+    },
+    {
+      "participant": "provider",
+      "from": 367,
+      "to": 418,
+      "type": "database"
+    },
+    {
+      "participant": "mapper",
+      "from": 535,
+      "to": 600,
+      "type": "cloud"
+    },
+    {
+      "participant": "publisher",
+      "from": 617,
+      "to": 682,
+      "type": "messagebus"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Why the split matters",
+      "items": [
+        "[RaisesEvent] narrowing is evaluated before the write, because EntityEntry.Property(...).IsModified is meaningless afterwards",
+        "Hand-raised AddEvent(...) events are read after the write, from the same snapshot"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "The failure path",
+      "items": [
+        "If EF Core throws, SaveChangesFailedAsync disposes the hook state and AfterSaveAsync never runs",
+        "No event is published for a failed save, hand-raised or declared"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Not an events-only pipeline",
+      "items": [
+        "EventHook shares one HookRunnerInterceptor with every other hook on the same DbContext",
+        "dbContext.DisableHooks() therefore also suppresses event dispatch"
+      ]
+    }
+  ]
+}

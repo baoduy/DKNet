@@ -223,6 +223,13 @@ request handler and, on success, saves any registered `DbContext` with pending c
 The interceptor and its `DbContext` type registry are internal; you opt in purely through
 `AddSlimBusEfCoreInterceptor<TDbContext>()`.
 
+![Sequence of one write request: the caller sends the request on IMessageBus, which walks the interceptor chain — your own interceptors first, then the auto-save interceptor, whose Order of int.MaxValue puts it last so it wraps the handler. The handler loads and changes entities and returns an IResultBase without ever calling SaveChangesAsync. The auto-save interceptor then checks ChangeTracker.HasChanges, skipping entirely for a null response, a failed result, or a non-write request, and otherwise calls SaveChangesWithConcurrencyHandlingAsync. That save fires the EfCore.Events after-save hook, which hands the raised events to SlimBusEventPublisher; the publisher forwards them to IMessageBus one at a time, in order. Finally the response travels back out through the chain to the caller.](../diagrams/slimbus-request-pipeline.svg)
+
+Read the wrapping order from the diagram rather than the bullet list: because auto-save is registered last, the
+handler's result passes through it on the way out, which is where the save — and therefore the event publish — actually
+happens. Event publishing is a second, separate opt-in: without `AddSlimBusEventPublisher<TDbContext>()` the save
+still runs and nothing reaches the bus.
+
 ### Your own interceptors
 
 Because auto-save is just a SlimMessageBus `IRequestHandlerInterceptor<TRequest, TResponse>`, add validation, logging,

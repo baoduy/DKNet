@@ -1,0 +1,261 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Request flow through the idempotency endpoint filter",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Filter / handler step"
+        },
+        "security": {
+          "label": "Validation & policy"
+        },
+        "database": {
+          "label": "Key store call"
+        },
+        "external": {
+          "label": "Client request"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "filter",
+      "label": "Idempotency filter"
+    },
+    {
+      "id": "store",
+      "label": "IIdempotencyKeyStore"
+    },
+    {
+      "id": "handler",
+      "label": "Endpoint handler"
+    },
+    {
+      "id": "shortcircuit",
+      "label": "Short-circuit responses",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "intake",
+      "label": "Key + validation",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "decide",
+      "label": "Duplicate check",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "run",
+      "label": "Run once, then cache",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "request",
+    "validate",
+    "check",
+    "handler",
+    "cacheable",
+    "mark",
+    "response"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "request"
+    ],
+    "allowedTerminals": [
+      "badrequest",
+      "duplicate",
+      "response"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "filter",
+      "col": 0,
+      "type": "external",
+      "label": "Incoming request",
+      "sublabel": "X-Idempotency-Key header",
+      "width": 178
+    },
+    {
+      "id": "validate",
+      "lane": "filter",
+      "col": 1,
+      "type": "security",
+      "label": "Compose + validate key",
+      "sublabel": "key + route + method + scope",
+      "width": 178
+    },
+    {
+      "id": "badrequest",
+      "lane": "shortcircuit",
+      "col": 1,
+      "type": "security",
+      "label": "400 Bad Request",
+      "sublabel": "handler never runs",
+      "width": 178
+    },
+    {
+      "id": "check",
+      "lane": "store",
+      "col": 2,
+      "type": "database",
+      "label": "IsKeyProcessedAsync",
+      "sublabel": "check and reserve the key",
+      "tag": "no try/catch here",
+      "width": 178
+    },
+    {
+      "id": "duplicate",
+      "lane": "shortcircuit",
+      "col": 2,
+      "type": "security",
+      "label": "Duplicate response",
+      "sublabel": "409, or the cached replay",
+      "width": 178
+    },
+    {
+      "id": "handler",
+      "lane": "handler",
+      "col": 3,
+      "type": "backend",
+      "label": "Endpoint handler",
+      "sublabel": "runs exactly once",
+      "width": 178
+    },
+    {
+      "id": "cacheable",
+      "lane": "filter",
+      "col": 4,
+      "type": "backend",
+      "label": "Cacheable status?",
+      "sublabel": "200-299 plus extras",
+      "width": 178
+    },
+    {
+      "id": "mark",
+      "lane": "store",
+      "col": 5,
+      "type": "database",
+      "label": "MarkKeyAsProcessedAsync",
+      "sublabel": "status, body, content type",
+      "width": 204
+    },
+    {
+      "id": "response",
+      "lane": "filter",
+      "col": 5,
+      "type": "backend",
+      "label": "Result to the client",
+      "sublabel": "returned either way",
+      "width": 178
+    }
+  ],
+  "edges": [
+    {
+      "id": "to-validate",
+      "from": "request",
+      "to": "validate",
+      "variant": "default"
+    },
+    {
+      "id": "invalid-key",
+      "from": "validate",
+      "to": "badrequest",
+      "label": "invalid",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "valid-key",
+      "from": "validate",
+      "to": "check",
+      "label": "valid",
+      "variant": "emphasis"
+    },
+    {
+      "id": "already-processed",
+      "from": "check",
+      "to": "duplicate",
+      "label": "already processed",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "new-key",
+      "from": "check",
+      "to": "handler",
+      "label": "new key reserved",
+      "variant": "emphasis"
+    },
+    {
+      "id": "handler-result",
+      "from": "handler",
+      "to": "cacheable",
+      "variant": "default"
+    },
+    {
+      "id": "cache-it",
+      "from": "cacheable",
+      "to": "mark",
+      "label": "yes",
+      "variant": "default"
+    },
+    {
+      "id": "skip-cache",
+      "from": "cacheable",
+      "to": "response",
+      "label": "no, left unrecorded",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "cached-then-return",
+      "from": "mark",
+      "to": "response",
+      "variant": "default",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One gate, three exits",
+      "items": [
+        "A malformed key never reaches the handler",
+        "A duplicate key never reaches it either",
+        "Only a genuinely new key runs it"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Caching is selective",
+      "items": [
+        "Only statuses inside MinStatusCodeForCaching..MaxStatusCodeForCaching or AdditionalCacheableStatusCodes are stored",
+        "A failed attempt stays retryable as a new request"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failure asymmetry",
+      "items": [
+        "A store outage during the duplicate check propagates and fails the request",
+        "A failure while caching the response is caught and logged; the client still gets its result"
+      ]
+    }
+  ]
+}

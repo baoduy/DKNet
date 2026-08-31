@@ -63,6 +63,13 @@ It intercepts every request to that route, extracts and validates the idempotenc
 result, runs the handler only for genuinely new requests, and caches the response afterward when applicable — all
 without touching the handler code itself.
 
+![Request flow through the idempotency filter: an incoming request has its composite key composed from the header value, route template, HTTP method and caller scope, then validated; an invalid key short-circuits to 400 Bad Request without running the handler. A valid key goes to IsKeyProcessedAsync on the store, which either reports the key as already processed — short-circuiting to 409 Conflict or the cached replay — or reserves it as new, in which case the endpoint handler runs exactly once. Afterwards the filter checks whether the response status is cacheable, calls MarkKeyAsProcessedAsync when it is, and returns the handler result to the client either way.](../diagrams/idempotency-request-flow.svg)
+
+The three exits matter: a malformed key and a duplicate key both stop before the handler, and only a genuinely new key
+reaches it. Note the asymmetry in failure handling — `IsKeyProcessedAsync` is not wrapped in a `try`/`catch`, so a store
+outage on the duplicate check fails the request, while a failure while caching the response afterwards is caught and
+logged and the client still gets its result.
+
 ### Composite key validation (400 Bad Request)
 
 Before touching the store, the filter validates the incoming key against `IdempotencyOptions`:

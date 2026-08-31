@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One write request through the SlimBus pipeline, auto-save and event publishing",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1360,
+      840
+    ],
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Write path"
+        },
+        "dashed": {
+          "label": "Conditional step"
+        },
+        "return": {
+          "label": "Result back to caller"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "Caller",
+      "sublabel": "endpoint or job"
+    },
+    {
+      "id": "bus",
+      "type": "messagebus",
+      "label": "IMessageBus",
+      "sublabel": "SlimMessageBus"
+    },
+    {
+      "id": "custom",
+      "type": "backend",
+      "label": "Your interceptors",
+      "sublabel": "IRequestHandlerInterceptor"
+    },
+    {
+      "id": "autosave",
+      "type": "backend",
+      "label": "Auto-save interceptor",
+      "sublabel": "Order = int.MaxValue"
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Request handler",
+      "sublabel": "Fluents.Requests.IHandler"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "DbContext",
+      "sublabel": "registered for auto-save"
+    },
+    {
+      "id": "publisher",
+      "type": "cloud",
+      "label": "Event publisher",
+      "sublabel": "SlimBusEventPublisher"
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 336,
+      "label": "Request in"
+    },
+    {
+      "from": 346,
+      "to": 440,
+      "label": "Handler runs"
+    },
+    {
+      "from": 450,
+      "to": 736,
+      "label": "Auto-save, then publish"
+    }
+  ],
+  "messages": [
+    {
+      "id": "send",
+      "from": "caller",
+      "to": "bus",
+      "y": 190,
+      "label": "Send(request)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "interceptor-chain",
+      "from": "bus",
+      "to": "custom",
+      "y": 232,
+      "label": "OnHandle(request, next)"
+    },
+    {
+      "id": "next-custom",
+      "from": "custom",
+      "to": "autosave",
+      "y": 272,
+      "label": "next()",
+      "note": "Order = int.MaxValue puts auto-save last in the chain, so it wraps the handler and runs after your own interceptors."
+    },
+    {
+      "id": "next-handler",
+      "from": "autosave",
+      "to": "handler",
+      "y": 326,
+      "label": "next()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mutate",
+      "from": "handler",
+      "to": "db",
+      "y": 366,
+      "label": "load and change entities",
+      "note": "The handler never calls SaveChangesAsync itself."
+    },
+    {
+      "id": "result",
+      "from": "handler",
+      "to": "autosave",
+      "y": 420,
+      "label": "IResultBase",
+      "variant": "return"
+    },
+    {
+      "id": "has-changes",
+      "from": "autosave",
+      "to": "db",
+      "y": 464,
+      "label": "ChangeTracker.HasChanges()?",
+      "variant": "dashed",
+      "note": "Skipped entirely when the response is null, is a failed IResultBase, or the request is not a Fluents.Requests write."
+    },
+    {
+      "id": "save",
+      "from": "autosave",
+      "to": "db",
+      "y": 528,
+      "label": "SaveChangesWithConcurrencyHandlingAsync",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hook-publish",
+      "from": "db",
+      "to": "publisher",
+      "y": 572,
+      "label": "after-save hook hands over the raised events"
+    },
+    {
+      "id": "bus-publish",
+      "from": "publisher",
+      "to": "bus",
+      "y": 612,
+      "label": "Publish(event), one at a time in order",
+      "note": "For an IEventItem, AdditionalData is copied onto the message as case-insensitive headers."
+    },
+    {
+      "id": "respond",
+      "from": "autosave",
+      "to": "bus",
+      "y": 670,
+      "label": "response",
+      "variant": "return"
+    },
+    {
+      "id": "to-caller",
+      "from": "bus",
+      "to": "caller",
+      "y": 710,
+      "label": "response",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "bus",
+      "from": 185,
+      "to": 736,
+      "type": "messagebus"
+    },
+    {
+      "participant": "custom",
+      "from": 227,
+      "to": 676,
+      "type": "backend"
+    },
+    {
+      "participant": "autosave",
+      "from": 267,
+      "to": 674,
+      "type": "backend"
+    },
+    {
+      "participant": "handler",
+      "from": 321,
+      "to": 426,
+      "type": "backend"
+    },
+    {
+      "participant": "db",
+      "from": 361,
+      "to": 618,
+      "type": "database"
+    },
+    {
+      "participant": "publisher",
+      "from": 567,
+      "to": 618,
+      "type": "cloud"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Auto-save is opt-in and narrow",
+      "items": [
+        "It only fires for Fluents.Requests.INoResponse and IWitResponse<T> requests",
+        "Queries and raw SlimMessageBus IRequest<T> handlers are never auto-saved, even if they changed the DbContext"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "One interceptor, many contexts",
+      "items": [
+        "Every DbContext registered through AddSlimBusEfCoreInterceptor<TDbContext>() is checked, and only those with changes are saved",
+        "Concurrency handling resolves an IEfCoreExceptionHandler keyed by the DbContext's full type name, falling back to an unkeyed registration",
+        "Each context gets AddNewEntitiesFromNavigations before the save, so entities reachable only through navigations are tracked"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Publishing is a separate opt-in",
+      "items": [
+        "Events only reach the bus when AddSlimBusEventPublisher<TDbContext>() is registered as well",
+        "There is no batching: a collection is published one event at a time, awaiting each"
+      ]
+    }
+  ]
+}
