@@ -6,7 +6,7 @@
 # DKNet.Svc.Transformation
 
 Template-token substitution: given a template string containing bracketed tokens (`[Name]`, `{Email}`, `<Amount>`,
-`{{Ref}}`) and one or more data objects, it resolves each token by reflection or dictionary lookup and formats the
+{% raw %}`{{Ref}}`{% endraw %}) and one or more data objects, it resolves each token by reflection or dictionary lookup and formats the
 value back into the string. It is **not** an object mapper and has no currency/date "converter" plugin architecture —
 formatting is a single pluggable `IValueFormatter`.
 
@@ -63,7 +63,7 @@ Four built-in `ITokenDefinition`s, any combination of which can be active at onc
 | `TransformOptions.SquareBrackets` (default) | `[Token]` |
 | `TransformOptions.CurlyBrackets` | `{Token}` |
 | `TransformOptions.AngledBrackets` | `<Token>` |
-| `TransformOptions.DoubleCurlyBrackets` | `{{Token}}` |
+| `TransformOptions.DoubleCurlyBrackets` | {% raw %}`{{Token}}`{% endraw %} |
 
 ```csharp
 services.AddTransformerService(options =>
