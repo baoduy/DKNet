@@ -1,15 +1,27 @@
 # DKNet.AspCore.Idempotency.MsSqlStore
 
-SQL Server-backed store for [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency.md), built on the shared
+SQL Server-backed `IIdempotencyKeyStore` for
+[`DKNet.AspCore.Idempotency`](DKNet.AspCore.Idempotency.md), built on the shared
 [relational base](DKNet.AspCore.Idempotency.Relational.md).
 
-## 🧭 When to use it
+## ✨ Why use it?
 
-Pick this store when SQL Server is already part of your stack and you want idempotency keys to survive
-restarts without standing up Redis — see the "Choosing a store" section on the
-[core idempotency page](DKNet.AspCore.Idempotency.md) for the full Redis-vs-relational comparison.
+- **Idempotency keys survive restarts and scale-out** without standing up Redis — they live in a
+  SQL Server table alongside your business data, with the same backups and the same operational
+  tooling.
+- **Atomic, not best-effort.** The unique index `UX_CompositeKey` makes duplicate-request
+  reservation race-free, closing the check-then-act window the core package's built-in
+  distributed-cache store can only narrow.
+- **Auditable.** Unlike a Redis store, the processed-key ledger is an ordinary table you can query:
+  which key, which endpoint, which verb, what status code, when it expires.
+- **One registration call.** `AddIdempotencyWithMsSqlStore(connectionString)` registers the
+  `DbContext`, its factory, and the store; migrations apply themselves on first use.
 
-## 🚀 Install & register
+Reach for this store when SQL Server is already part of your stack — see
+[Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) on the core page for the full
+Redis-vs-relational comparison, which is not repeated here.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.AspCore.Idempotency.MsSqlStore
@@ -28,70 +40,122 @@ builder.Services.AddIdempotencyWithMsSqlStore(
         options.Expiration = TimeSpan.FromHours(48);
         options.ConflictHandling = IdempotentConflictHandling.CachedResult;
     });
+
+var app = builder.Build();
+
+app.MapPost("/orders", CreateOrder)
+    .RequiredIdempotentKey();
+
+await app.RunAsync();
 ```
 
 `AddIdempotencyWithMsSqlStore` (in `IdempotencyMsSqlSetup`) does two things: it calls
-`AddIdempotencyMsSqlStore(connectionString)` to register `IdempotencyDbContext` — as a scoped `AddDbContext`
-plus an `IDbContextFactory<IdempotencyDbContext>`, guarded so a second call with a different connection
-string is a no-op — and then `AddIdempotentKey<IdempotencySqlServerStore>(config)` to wire the store into
-the core `IIdempotencyKeyStore`. Call it once at startup, then use `.RequiredIdempotentKey()` on endpoints
+`AddIdempotencyMsSqlStore(connectionString)` to register `IdempotencyDbContext` — a scoped
+`AddDbContext` with a singleton `DbContextOptions`, plus an
+`IDbContextFactory<IdempotencyDbContext>` — and then
+`AddIdempotentKey<IdempotencySqlServerStore>(config)` to wire the store in as the
+`IIdempotencyKeyStore`. Call it once at start-up, then use `.RequiredIdempotentKey()` on endpoints
 as described on the core page.
 
-## 🗄️ SQL Server specifics
+## 🧩 Features
 
-The `Initial` migration creates one table, `IdempotencyKeys`:
+### The `IdempotencyKeys` table
+
+The `Initial` migration creates one table:
 
 | Column | Type | Notes |
 |---|---|---|
-| `Id` | `uniqueidentifier` | primary key |
-| `CompositeKey` | `nvarchar(128)` | unique — see below |
+| `Id` | `uniqueidentifier` | Primary key `PK_IdempotencyKeys` |
+| `CompositeKey` | `nvarchar(128)` | Unique — see below |
 | `Endpoint` | `nvarchar(250)` | |
-| `IdempotentKey`, `Method` | `varchar(150)` / `varchar(20)`, non-unicode | |
-| `Body` | `nvarchar(max)` | SQL-Server-specific override of the shared entity mapping |
-| `ContentType` | `varchar(256)`, non-unicode | nullable |
+| `IdempotentKey`, `Method` | `varchar(150)` / `varchar(20)`, non-Unicode | |
+| `Body` | `nvarchar(max)`, max 1,048,576 chars | SQL Server override of the shared entity mapping |
+| `ContentType` | `varchar(256)`, non-Unicode | Nullable |
 | `StatusCode` | `int` | `CK_StatusCode_Valid` check constraint, `100`–`599` |
 | `CreatedAt`, `ExpiresAt` | `datetimeoffset` | `ExpiresAt` nullable |
 
-Two indexes back the store's behaviour: `UX_CompositeKey` (unique, on `CompositeKey`) is what makes the
-reserve-then-insert flow in the relational base race-free — only one concurrent insert for the same key
-succeeds, every other caller hits a unique violation and reads the winner's row back instead. `IX_IdempotencyKeys_ExpiresAt`
-speeds up the expired-reservation reclaim.
+### Atomic reservation via `UX_CompositeKey`
 
-`IdempotencyDbContext` here is just the shared relational context closed over SQL Server's
-`DbContextOptions`. `DbContextFactory` (an `IDesignTimeDbContextFactory<IdempotencyDbContext>`) exists only
-so `dotnet ef` design-time tooling can build a context outside of your app's DI container — it reads its
-connection string from the `IDEMPOTENCY_MSSQL_CONNECTION` environment variable, not from app configuration.
+Two indexes back the store's behaviour. `UX_CompositeKey` (unique, on `CompositeKey`) is what makes
+the reserve-then-insert flow in the relational base race-free — only one concurrent insert for the
+same key succeeds; every other caller hits a unique violation and reads the winner's row back
+instead of proceeding. `IX_IdempotencyKeys_ExpiresAt` speeds up the expired-reservation reclaim.
 
-## ⚙️ Configuration
+`IdempotencySqlServerStore` classifies that collision by `SqlException.Number` — `2601` (duplicate
+key in a unique index) or `2627` (unique/primary key constraint violation) — never by message text,
+which is localized by the server's login language:
+
+```csharp
+protected override bool IsProviderUniqueViolation(DbUpdateException ex) =>
+    ex.InnerException is SqlException { Number: 2601 or 2627 };
+```
+
+See `IdempotencySqlServerStoreUniqueViolationTests` for the exact scenarios this guards against.
+
+### Design-time tooling
+
+`IdempotencyDbContext` here is the shared relational context closed over SQL Server's
+`DbContextOptions`. `DbContextFactory` (an `IDesignTimeDbContextFactory<IdempotencyDbContext>`)
+exists only so `dotnet ef` design-time tooling can build a context outside your app's DI container
+— it reads its connection string from the `IDEMPOTENCY_MSSQL_CONNECTION` environment variable, not
+from app configuration, and throws `InvalidOperationException` when that variable is unset.
+
+## ⚙️ Configuration reference
 
 There is no SQL-Server-specific options type — `AddIdempotencyWithMsSqlStore` configures the same
-`IdempotencyOptions` the core package defines (`Expiration`, `ConflictHandling`, `InFlightReservationTimeout`,
-etc.). What SQL Server itself gets, fixed rather than exposed as options:
+`IdempotencyOptions` the core package defines (`Expiration`, `ConflictHandling`,
+`InFlightReservationTimeout`, …); see the
+[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
 
-- `EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null)` — 3 retries, 5 seconds apart.
-- `QuerySplittingBehavior.SplitQuery`.
-- Migrations history table `[migrate].[IdempotencyDbContext]`, separate from your app's own `__EFMigrationsHistory`.
+What SQL Server itself gets is fixed by this package rather than exposed as options:
 
-## 🧱 How it composes
+| Setting | Value | Effect |
+|---|---|---|
+| `EnableRetryOnFailure` | `3` retries, `5` seconds apart | Transient-fault resilience on idempotency queries. |
+| `UseQuerySplittingBehavior` | `QuerySplittingBehavior.SplitQuery` | EF Core split-query mode for this context. |
+| `MigrationsAssembly` | this package's assembly | Migrations ship with the store, not with your app. |
+| `MigrationsHistoryTable` | `[migrate].[IdempotencyDbContext]` | Separate from your app's own `__EFMigrationsHistory`. |
+| `optionsLifetime` | `ServiceLifetime.Singleton` | Options are shared; the `DbContext` itself stays scoped. |
 
-This package supplies only what's provider-specific: the closed `IdempotencyDbContext`, the SQL Server
-column types and check-constraint SQL for `IdempotencyKeyConfiguration`, the `Initial` migration, and
-`IdempotencySqlServerStore.IsProviderUniqueViolation`. Everything else — the reserve/check/complete flow,
-the migration guard, the expired-reservation reclaim — lives in
-[DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational.md); the HTTP-facing pieces
-(endpoint filter, key scope resolution, `IdempotencyOptions`) live in
+## 🧱 Where it fits
+
+This package supplies only what is provider-specific: the closed `IdempotencyDbContext`, the SQL
+Server column type and check-constraint SQL for `IdempotencyKeyConfiguration`, the `Initial`
+migration, and `IdempotencySqlServerStore.IsProviderUniqueViolation`. Everything else — the
+reserve/check/complete flow, the migration guard, the expired-reservation reclaim — lives in
+[DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational.md); the HTTP-facing
+pieces (endpoint filter, key scope resolution, `IdempotencyOptions`) live in
 [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency.md).
 
-## ⚠️ Gotchas
+## ⚠️ Gotchas & limits
 
 - **Migration ownership** — migrations ship inside this package's own assembly
   (`sqlOptions.MigrationsAssembly(typeof(IdempotencyMsSqlSetup).Assembly)`); don't add your own
   `IdempotencyDbContext` migrations to your application's assembly.
-- **Running migrations** — the relational base lazily calls `Database.MigrateAsync()` the first time the
-  store is used against a given connection string, so most apps never run migrations by hand. For a
-  controlled production rollout instead, set `IDEMPOTENCY_MSSQL_CONNECTION` and run
-  `dotnet ef database update --context IdempotencyDbContext` from a project that references this package.
-- **Unique-violation handling** — SQL Server reports the `UX_CompositeKey` collision as error number
-  `2601` or `2627`, classified by `SqlException.Number`, never by message text (which is localized by the
-  server's login language). See `IdempotencySqlServerStoreUniqueViolationTests` for the exact scenarios
-  this guards against.
+- **Migrations run automatically, with no opt-out** — the relational base checks for and applies
+  pending migrations the first time the store is used against a given connection string, under a
+  lock. Most apps never run migrations by hand, but the first request against a fresh database pays
+  that cost. For a controlled production rollout instead, set `IDEMPOTENCY_MSSQL_CONNECTION` and
+  run `dotnet ef database update --context IdempotencyDbContext` from a project that references
+  this package before traffic arrives.
+- **Registration is first-wins** — `AddIdempotencyMsSqlStore` returns early once
+  `IdempotencyDbContext` is registered, and `AddIdempotentKey<TStore>` returns early once an
+  `IIdempotencyKeyStore` is registered. A second call with a *different* connection string is
+  silently a no-op.
+- **Nothing purges expired rows.** `ExpiresAt` is indexed and expired rows are reclaimed
+  opportunistically when a request collides with one, but the table grows until you add your own
+  cleanup job for keys that are never retried.
+- **Every protected request costs a database round-trip.** If your SQL Server is a bottleneck or
+  the endpoint is very high-throughput, the
+  [Redis store](DKNet.AspCore.Idempotency.RedisStore.md) avoids the query planner entirely.
+
+## 🔗 Related packages
+
+- [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency.md) — the core package this store plugs
+  into; start there to wire idempotency into an app at all.
+- [DKNet.AspCore.Idempotency.NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore.md) — the same
+  store shape for PostgreSQL; reach for it instead when Postgres, not SQL Server, is your database.
+- [DKNet.AspCore.Idempotency.RedisStore](DKNet.AspCore.Idempotency.RedisStore.md) — reach for it
+  when you want the lowest latency and no schema or migrations to own.
+- [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational.md) — read it only if
+  you are adding a *new* relational provider to the family.
