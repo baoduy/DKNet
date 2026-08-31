@@ -23,7 +23,7 @@ DKNet Framework is a suite of independent .NET NuGet packages built around **Dom
 only what it needs and can swap an implementation (a blob provider, an idempotency store) without touching domain
 code.
 
-![Package dependency map of DKNet: DKNet.AspCore.Extensions (Presentation) depends on DKNet.SlimBus.Extensions (Application) and DKNet.EfCore.Specifications; SlimBus.Extensions depends on DKNet.EfCore.Events, which depends on both DKNet.EfCore.Abstractions (Domain core) and DKNet.EfCore.Hooks; AuditLogs and DataAuthorization also register into DKNet.EfCore.Hooks, which installs a SaveChanges interceptor on the EF Core DbContext. Every arrow points inward, toward the domain.](./diagrams/dknet-onion-packages.svg)
+![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks.](./diagrams/dknet-onion-packages.svg)
 
 The rings above are packages, and every arrow is a real project reference in `src/`: dependencies only ever point
 inward, toward `DKNet.EfCore.Abstractions`. `DKNet.Svc.*` (blob storage, encryption, PDF, transformation) sits in the
