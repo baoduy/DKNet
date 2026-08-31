@@ -1,0 +1,5 @@
+title: DKNet
+description: Documentation for the DKNet framework — DDD building blocks, EF Core extensions, and messaging for .NET.
+theme: jekyll-theme-primer
+exclude:
+  - superpowers
