@@ -1,28 +1,34 @@
-> [!IMPORTANT]
-> This page was previously a near-complete fabrication (types like `ICustomConverter`, `TransformationException`,
-> and template syntax such as `{amount:currency:USD}` never existed in source). Everything below is re-derived from
-> `src/Services/DKNet.Svc.Transformation` on `dev` — treat any older cached copy of this page as wrong.
-
 # DKNet.Svc.Transformation
 
-Template-token substitution: given a template string containing bracketed tokens (`[Name]`, `{Email}`, `<Amount>`,
-{% raw %}`{{Ref}}`{% endraw %}) and one or more data objects, it resolves each token by reflection or dictionary lookup and formats the
-value back into the string. It is **not** an object mapper and has no currency/date "converter" plugin architecture —
-formatting is a single pluggable `IValueFormatter`.
+Fills bracketed tokens in a template string — `[Name]`, `{Email}`, `<Amount>`, {% raw %}`{{Ref}}`{% endraw %} — from
+plain objects or string dictionaries by reflection, formatting each resolved value on the way in.
 
-## When to reach for it
+> [!IMPORTANT]
+> This page was previously a near-complete fabrication (types like `ICustomConverter`, `TransformationException`, and
+> template syntax such as `{amount:currency:USD}` never existed in source). Everything below is re-derived from
+> `src/Services/DKNet.Svc.Transformation` on `dev` — treat any older cached copy of this page as wrong.
 
-Use it for filling human-readable templates — email bodies, notification text, generated document placeholders —
-from a plain object or dictionary, without hand-writing `string.Replace` chains.
+## ✨ Why use it?
 
-## Install and minimal wiring
+- **No `string.Replace` chains.** One `Transform(template, data)` call resolves every token in the template against the
+  objects you pass, in order.
+- **The data source can be whatever you already have.** A DTO, an anonymous object, an `IDictionary<string, string>`, or
+  a collection of those — property lookup is case-insensitive.
+- **Values are formatted, not just stringified.** Numbers, dates, and booleans go through a pluggable
+  `IValueFormatter`, so `true` renders as `Yes` and `1234.5` as `1,234.50` without per-call formatting code.
+- **Your template's brackets, not the library's.** Square brackets by default; curly, angled, double-curly, or a custom
+  pair are one option away — useful when the template also has to survive another templating layer.
+
+Reach for it when filling human-readable templates: email bodies, notification text, generated document placeholders.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.Transformation
 ```
 
 ```csharp
-using DKNet.Svc.Transformation;
+using Microsoft.Extensions.DependencyInjection;
 
 builder.Services.AddTransformerService(); // ITransformerService, transient
 ```
@@ -35,27 +41,42 @@ public sealed class WelcomeEmailBuilder(ITransformerService transformer)
 }
 ```
 
-## Features
+`AddTransformerService(Action<TransformOptions>?)` builds one `TransformOptions`, registers it as
+`IOptions<TransformOptions>`, and registers `ITransformerService → TransformerService` as transient. It returns
+immediately if `ITransformerService` is already registered — so the **first** call's options win and a later call's
+configuration delegate is silently ignored.
 
-### Transform a template (`ITransformerService`)
+## 🧩 Features
+
+### Transforming a template (`ITransformerService`)
 
 ```csharp
 string Transform(string templateString, params object[] parameters);
 Task<string> TransformAsync(string templateString, params object[] parameters);
 ```
 
-`parameters` can be plain objects (resolved via case-insensitive public-then-non-public property lookup),
-`IDictionary<string,string>` instances, or nested `IEnumerable<object>` collections — the resolver tries each
-`parameters` entry in order, then falls back to `TransformOptions.GlobalParameters`. Resolved values are cached per
-`ITransformerService` instance (a `ConcurrentDictionary`), so repeated tokens in one template resolve once.
+Both overloads extract every token, resolve each one, and rebuild the string in a single pass. `TransformAsync` differs
+only in that extraction runs on the thread pool (`Task.Run`) — resolution itself is synchronous reflection either way, so
+prefer `Transform` unless you are already on an async path.
 
 ```csharp
-var result = transformer.Transform("Order [OrderId] for [Customer.Name]", order);
+var order = new { OrderId = 4711, Total = 129.5m, Placed = new DateTime(2026, 3, 1), Paid = true };
+var text = transformer.Transform("Order [OrderId] — [Total] on [Placed]. Paid: [Paid]", order);
+// Order 4,711 — 129.50 on 01/03/2026 12.00.00. Paid: Yes
 ```
+
+Resolution walks the `parameters` array in order, then falls back to `TransformOptions.GlobalParameters`. For each entry:
+
+- an `IDictionary<string, string>` is looked up by key, case-insensitively;
+- an `IEnumerable<object>` is searched recursively, item by item;
+- anything else is treated as an object — a public instance property matching the token name wins, and a non-public one
+  is tried next.
+
+The first non-`null` value wins.
 
 ### Token syntax — pick your brackets
 
-Four built-in `ITokenDefinition`s, any combination of which can be active at once via
+Four built-in `ITokenDefinition` values; any combination can be active at once through
 `TransformOptions.DefaultDefinitions`:
 
 | Definition | Syntax |
@@ -73,10 +94,14 @@ services.AddTransformerService(options =>
 });
 ```
 
-Define a custom bracket pair with `new TokenDefinition(begin, end)` (throws `ArgumentException` for a
-null/whitespace begin or end tag) if none of the four built-ins fit.
+`DefaultDefinitions` is add-only (there is no setter) and already contains `SquareBrackets`, so the square-bracket style
+stays active alongside anything you add.
 
-### What happens when a token can't be resolved
+Define your own pair with `new TokenDefinition(begin, end)` — it throws `ArgumentException` for a null or whitespace tag.
+A candidate only counts as a token when its inner text is non-empty and contains **no** character from either tag, so
+`[Total (USD)]` resolves but `[a[b]` does not.
+
+### Unresolved tokens
 
 ```csharp
 public enum TokenNotFoundBehavior { LeaveAsIs, Remove, ThrowError } // default: ThrowError
@@ -86,58 +111,99 @@ public enum TokenNotFoundBehavior { LeaveAsIs, Remove, ThrowError } // default: 
 services.AddTransformerService(options => options.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs);
 ```
 
-`ThrowError` (the default) throws `UnResolvedTokenException` for the first token nothing in `parameters` or
-`GlobalParameters` can resolve.
+`ThrowError` (the default) throws `UnResolvedTokenException` on the first token nothing can resolve; `LeaveAsIs` keeps
+the token text verbatim; `Remove` replaces it with an empty string. A property that exists but holds `null` counts as
+unresolved — there is no way to distinguish "missing" from "null" here.
 
 ### Value formatting (`IValueFormatter`)
 
-The default `ValueFormatter` converts a resolved value to its display string:
+The default `ValueFormatter` turns a resolved value into its display string:
 
 ```csharp
-virtual string DateFormat { get; }    // "dd/MM/yyyy hh.mm.ss"
-virtual string IntegerFormat { get; } // "###,##0"
-virtual string NumberFormat { get; }  // "###,##0.00"
+public virtual string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";
+public virtual string IntegerFormat { get; set; } = "###,##0";
+public virtual string NumberFormat { get; set; } = "###,##0.00";
 ```
 
-`bool` becomes `"Yes"`/`"No"`; numeric types use `IntegerFormat`/`NumberFormat`; `DateTime`/`DateTimeOffset` use
-`DateFormat`; anything else falls back to `.ToString()`. Subclass `ValueFormatter` and override the format strings,
-or implement `IValueFormatter` from scratch, then set `TransformOptions.Formatter`.
+`bool` becomes `"Yes"`/`"No"`; `int`/`long` use `IntegerFormat`; `double`/`decimal`/`float` use `NumberFormat`;
+`DateTime`/`DateTimeOffset` use `DateFormat`; everything else falls back to `ToString()`. All numeric and date formatting
+runs against `CultureInfo.InvariantCulture`, so output does not shift with the thread's culture.
+
+Subclass it to change the formats, or implement `IValueFormatter` for full control, then assign
+`TransformOptions.Formatter`:
+
+```csharp
+public sealed class IsoDateFormatter : ValueFormatter
+{
+    public override string DateFormat { get; set; } = "yyyy-MM-dd";
+}
+
+services.AddTransformerService(options => options.Formatter = new IsoDateFormatter());
+```
+
+`Convert` receives the `IToken` as well as the value, so a custom formatter can branch on `token.Key` when one template
+needs a token-specific format.
 
 ### Global parameters
 
 ```csharp
-services.AddTransformerService(options => options.GlobalParameters = [new { CompanyName = "Acme Corp" } ]);
+services.AddTransformerService(options => options.GlobalParameters = [new { CompanyName = "Acme Corp" }]);
 ```
 
-Tokens resolve against every template's own `parameters` first, then fall back to `GlobalParameters` — useful for
-values (a company name, a support email) shared across every template your app renders.
+Tokens resolve against the call's own `parameters` first and fall back to `GlobalParameters` — the place for values
+shared by every template the app renders (company name, support address). With no `parameters` at all, resolution uses
+`GlobalParameters` only.
 
-## Configuration — `TransformOptions`
+## ⚙️ Configuration reference
 
-| Property | Default | Notes |
-|---|---|---|
-| `ICollection<ITokenDefinition> DefaultDefinitions` | `[SquareBrackets]` | Add more bracket styles as needed. |
-| `IValueFormatter Formatter` | `new ValueFormatter()` | Swap for custom formatting. |
-| `IEnumerable<object> GlobalParameters` | `[]` | Shared fallback resolution sources. |
-| `TokenNotFoundBehavior TokenNotFoundBehavior` | `ThrowError` | `LeaveAsIs`/`Remove` for lenient rendering. |
-
-Configured entirely in code via the `Action<TransformOptions>` passed to `AddTransformerService` — there is no
+`TransformOptions`, configured in code through the delegate passed to `AddTransformerService`. There is no
 `IConfiguration`/`appsettings.json` binding path for this package.
 
-## Composing with other DKNet packages
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `DefaultDefinitions` | `ICollection<ITokenDefinition>` (get-only) | `[SquareBrackets]` | Bracket styles recognized; add more, cannot be replaced or cleared through the property setter. |
+| `Formatter` | `IValueFormatter` | `new ValueFormatter()` | Converts each resolved value to its display string. |
+| `GlobalParameters` | `IEnumerable<object>` | `[]` | Fallback resolution sources tried after the call's own parameters. |
+| `TokenNotFoundBehavior` | `TokenNotFoundBehavior` | `ThrowError` | `LeaveAsIs` / `Remove` for lenient rendering. |
 
-Pairs naturally with [`DKNet.Svc.PdfGenerators`](./DKNet.Svc.PdfGenerators.md) — transform a Markdown/HTML template
-with dynamic data, then convert the result to PDF — and with
-[`DKNet.Svc.BlobStorage.*`](./DKNet.Svc.BlobStorage.Abstractions.md) to store the rendered output.
+## 🧱 Where it fits
 
-## Gotchas and limits
+- **[DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md)** — fill a Markdown or HTML template here, then convert the
+  filled result to PDF.
+- **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — store the rendered output, or read
+  the template itself out of blob storage before transforming it.
+- **Standalone otherwise** — the package depends only on the options and DI abstractions, so it is safe to call from a
+  domain service, a message handler, or a background worker.
 
-- Resolution caching is per `ITransformerService` instance and always on — there is no option to disable it (an
-  earlier revision of this page claimed a `DisabledLocalCache` option; it does not exist).
-- There is no built-in currency/date "converter" registry and no `{token:format:culture}` syntax — formatting is a
-  single `IValueFormatter.Convert` call per resolved value. Build your own formatting inside a custom
-  `IValueFormatter` if you need per-token format specifiers.
-- A dictionary parameter must be `IDictionary<string,string>` — passing a dictionary with non-string values throws
-  `ArgumentException`.
-- `ITokenExtractor`/`ITokenResolver`/`TokenResult` implementations are `internal` — extend behavior through
-  `TransformOptions` (definitions, formatter, not-found behavior), not by implementing these interfaces directly.
+## ⚠️ Gotchas & limits
+
+- **Resolved values are cached per token text, ignoring the data you pass.** The cache key is the token string (e.g.
+  `[Name]`), so the *same* `ITransformerService` instance reused for a second template returns the first resolution of
+  that token — a second customer's email would render the first customer's name. The registration is transient, so a
+  fresh instance per resolution avoids this; never cache or reuse one instance across records, and never register it as
+  a singleton. There is no option to disable the cache (an earlier revision of this page claimed a `DisabledLocalCache`
+  option; it does not exist).
+- **No nested-property or dotted paths.** `[Customer.Name]` is looked up as a single property literally named
+  `Customer.Name`, which normally fails; flatten your data (project to an anonymous object or dictionary) first. An
+  earlier revision of this page showed `[Customer.Name]` as a working sample — it does not resolve.
+- **The default date format is 12-hour with no meridiem.** `"dd/MM/yyyy hh.mm.ss"` renders 13:05 as `01.05.00` —
+  override `DateFormat` (e.g. `"HH:mm"`) for anything a reader must interpret unambiguously.
+- **A dictionary parameter must be `IDictionary<string, string>`.** Any other `IDictionary` throws `ArgumentException`
+  during resolution — including `Dictionary<string, object>`.
+- **Non-public properties are readable.** Resolution falls back to non-public instance properties, so a token can pull a
+  value the type does not expose publicly. Don't pass entities with sensitive internal state into a user-authored
+  template.
+- **Overlapping bracket styles are ambiguous.** Enabling both `CurlyBrackets` and `DoubleCurlyBrackets` means the same
+  text can match two definitions and be substituted twice; pick one of the two.
+- **`ITokenExtractor`/`ITokenResolver` implementations are `internal`.** Extend behaviour through `TransformOptions`
+  (definitions, formatter, not-found behaviour), not by implementing those interfaces.
+- **No conditionals, loops, or partials.** This is token substitution, not a template engine — reach for Razor,
+  Scriban, or Handlebars if a template needs logic.
+
+## 🔗 Related packages
+
+- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) – reach for it to render the filled template into a PDF.
+- [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) – reach for it to read templates from,
+  or write rendered output to, blob storage.
+- [DKNet.Fw.Extensions](../Core/DKNet.Fw.Extensions.md) – reach for it for the general-purpose string, type, and
+  reflection helpers used across DKNet.

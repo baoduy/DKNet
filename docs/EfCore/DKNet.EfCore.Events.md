@@ -156,7 +156,7 @@ wasn't referenced, or the project didn't rebuild) — also thrown at dispatch ti
 
 Besides hand-raising events from code, an entity can *declare* them instead — no `IEventEntity`, no `Entity<TKey>`
 base class required. Declaring is two steps: shape the payload as a
-[DtoGenerator](./DKNet.EfCore.DtoGenerator.md#declaring-domain-events-raisesevent)-generated record via
+[DtoGenerator](./DKNet.EfCore.DtoGenerator.md)-generated record via
 `[GenerateDto]`, then apply the repeatable
 `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s)
 (`EventOperations.Created | Updated | Deleted`), and — for `Updated` — an optional narrowing property list:

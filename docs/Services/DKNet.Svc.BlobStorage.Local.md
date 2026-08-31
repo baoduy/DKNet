@@ -1,16 +1,24 @@
 # DKNet.Svc.BlobStorage.Local
 
-Local-filesystem implementation of [`IBlobService`](./DKNet.Svc.BlobStorage.Abstractions.md) — `LocalBlobService`
-stores blobs under a configured root folder with path-traversal protection. For the operations, models, and
-validation rules every provider shares, read the Abstractions page first — this page covers only what's specific to
-this provider.
+Local-filesystem implementation of [`IBlobService`](./DKNet.Svc.BlobStorage.Abstractions.md) that stores blobs under a
+configured root folder with path-traversal protection.
 
-## When to reach for it
+For the operations, models, and validation rules every provider shares, read the
+[Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) page first — this page covers only what is specific to this
+provider.
 
-Use this provider for local development, tests, and single-instance deployments that don't need cloud storage. It's
-also the simplest provider to run in CI, since it needs no external service.
+## ✨ Why use it?
 
-## Install and minimal wiring
+- **No cloud account to run the app.** Local development, unit tests, and CI get a real `IBlobService` with nothing to
+  provision and nothing to clean up but a folder.
+- **Production code stays identical.** The same `IBlobService` consumers that run against S3 or Azure in production run
+  against a directory here — one registration line differs.
+- **Escaping the root folder is blocked, not trusted.** Every request path is resolved and checked against the
+  configured root, so a caller-supplied `../` cannot reach outside it.
+- **Good enough for single-instance deployments.** An app on one host with a mounted volume can ship on this provider
+  rather than taking a storage-SDK dependency.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.BlobStorage.Local
@@ -34,42 +42,113 @@ public sealed class ReportStorage(IBlobService blobService)
 `AddLocalDirectoryBlobService(IServiceCollection, IConfiguration)` binds `LocalDirectoryOptions` from
 `"BlobStorage:LocalFolder"` and registers `IBlobService → LocalBlobService` as `Scoped`; the call is idempotent.
 
-## Provider-specific behavior
+## 🧩 Features
 
-- **Root folder defaults to `{CurrentDirectory}/LocalStore`** when `RootFolder` is left unset — fine for a quick
-  local run, but set it explicitly for anything you deploy.
-- **Path-traversal guard.** Every path is resolved to a full path and checked against the configured root; a path
-  that would escape the root (e.g. `../../etc/passwd`) throws `UnauthorizedAccessException`. Comparison is
-  case-insensitive on Windows, ordinal elsewhere.
-- **`GetAsync` throws `FileNotFoundException` on a miss** — the only provider that does; S3 and Azure return `null`.
-  Code that needs to run against any provider should handle both cases.
-- **`GetPublicAccessUrl` always throws `NotSupportedException`.** There is no concept of a public URL for a local
-  path — don't call it against this provider.
-- **`SaveAsync` throws `InvalidOperationException("File already existed")`** when the target exists and `Overwrite`
-  is `false`; missing directories are created automatically.
-- **`ListItemsAsync` over a directory** yields files first (recursive), then bare directory entries (recursive, no
-  `Details`) — an entry for a single file path yields just that one file.
+### Root folder resolution
 
-## Configuration — `LocalDirectoryOptions` (extends `BlobServiceOptions`)
+`RootFolder` is the base of every path this provider touches. Left unset, it falls back to
+`{CurrentDirectory}/LocalStore` — fine for a quick local run, but set it explicitly for anything you deploy, because the
+current directory is whatever the process happened to start in.
 
-| Property | Default | Notes |
-|---|---|---|
-| `string? RootFolder` | `null` → falls back to `{CurrentDirectory}/LocalStore` at runtime | Set explicitly outside local dev. |
-| `static string Name` | `"BlobStorage:LocalFolder"` | Configuration section key used by `AddLocalDirectoryBlobService`. |
+### Path-traversal guard
 
-Plus the shared `IncludedExtensions`/`MaxFileNameLength`/`MaxFileSizeInMb` from
-[`BlobServiceOptions`](./DKNet.Svc.BlobStorage.Abstractions.md#configuration--blobserviceoptions).
+Every request name is combined with the root and resolved to a full path; if the result does not sit under the root, the
+call throws `UnauthorizedAccessException` instead of touching the filesystem:
 
-## Composing with other DKNet packages
+```csharp
+// throws UnauthorizedAccessException — resolves outside the configured root
+await blobService.GetAsync(new BlobRequest("../../etc/passwd"));
+```
 
-Depend on `IBlobService` from `DKNet.Svc.BlobStorage.Abstractions` in application code; only the composition root
-needs `AddLocalDirectoryBlobService`. Useful as the "swap-in" provider for local/dev environments that otherwise run
-S3 or Azure in production — the calling code never changes.
+Comparison is case-insensitive on Windows and ordinal elsewhere. A single leading `/` on the name is stripped first, so
+`"/reports/monthly.pdf"` and `"reports/monthly.pdf"` address the same file.
 
-## Gotchas and limits
+### Read misses throw instead of returning null
 
-- No blob-name-length or upload-size cap beyond the shared, opt-in `BlobServiceOptions` checks.
-- No public-URL support at all — plan for that if your application's blob-consuming code assumes every provider can
-  hand back a shareable link.
-- The `FileNotFoundException`-vs-`null` mismatch with S3/Azure on `GetAsync` is the single biggest behavioral trap
-  when writing provider-agnostic code — see the Abstractions page's Gotchas section.
+`GetAsync` throws `FileNotFoundException` when the file does not exist. Each provider signals a miss differently — S3
+returns `null`, Azure Storage throws `Azure.RequestFailedException` (`404`) — so code that has to run against any
+provider must handle every shape:
+
+```csharp
+BlobDetails.BlobDataResult? found;
+try
+{
+    found = await blobService.GetAsync(new BlobRequest("reports/monthly.pdf"), ct);
+}
+catch (FileNotFoundException)
+{
+    found = null; // Local provider's "missing" signal
+}
+```
+
+`CheckExistsAsync` has no such split — it returns `false` for a missing file (or missing directory, for a directory
+request) on every provider.
+
+### Save, overwrite, and directory creation
+
+`SaveAsync` validates against `BlobServiceOptions`, then throws `InvalidOperationException("File already existed")` when
+the target exists and `Overwrite` is `false` (the shared default). Missing parent directories are created automatically,
+and the returned location is the name you passed in:
+
+```csharp
+var blob = new BlobDetails.BlobData("reports/2026/q1.pdf", BinaryData.FromString("..."))
+{
+    Overwrite = true // replace an existing file instead of throwing
+};
+var location = await blobService.SaveAsync(blob, ct); // "reports/2026/q1.pdf"
+```
+
+### Listing a directory
+
+`ListItemsAsync` against a directory yields every file underneath it recursively (each with `Details` populated from
+`FileInfo`), then every nested directory as a bare entry with no `Details`. Against a single file path it yields just
+that one file, or nothing when the file is absent. Names come back relative to the root folder.
+
+### No public URLs
+
+`GetPublicAccessUrl` always throws `NotSupportedException` — a local path has no shareable URL to hand out. Use S3 or
+Azure Storage if the calling code needs one.
+
+## ⚙️ Configuration reference
+
+`LocalDirectoryOptions` extends [`BlobServiceOptions`](./DKNet.Svc.BlobStorage.Abstractions.md):
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `RootFolder` | `string?` | `null` → `{CurrentDirectory}/LocalStore` at runtime | Base directory for every blob; also the boundary the traversal guard enforces. |
+| `Name` (static) | `string` | `"BlobStorage:LocalFolder"` | Configuration section key `AddLocalDirectoryBlobService` binds from. |
+
+The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` checks apply unchanged.
+
+## 🧱 Where it fits
+
+- **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `LocalBlobService` derives from
+  its `BlobService` base class, so validation and path normalization behave the same as on the cloud providers.
+- **Application code** depends on `IBlobService` only; swap this registration for
+  [S3](./DKNet.Svc.BlobStorage.AwsS3.md) or [Azure](./DKNet.Svc.BlobStorage.AzureStorage.md) per environment without
+  touching a consumer.
+- **Test projects** register this provider against a temporary directory to exercise blob-writing code paths without a
+  storage emulator.
+
+## ⚠️ Gotchas & limits
+
+- **`GetAsync`'s `FileNotFoundException` is the biggest provider-agnostic trap.** S3 returns `null` and Azure throws
+  `RequestFailedException` for the same miss — see the [Abstractions gotchas](./DKNet.Svc.BlobStorage.Abstractions.md).
+- **No public-URL support at all.** Plan for it if blob-consuming code assumes every provider hands back a shareable
+  link.
+- **`RootFolder`'s default depends on the process working directory**, which differs between `dotnet run`, a published
+  binary, and a container — always set it outside local dev.
+- **No blob-name-length or upload-size cap** beyond the shared, opt-in `BlobServiceOptions` checks.
+- **Deleting a directory is recursive and unconditional** (`Directory.Delete(path, true)`) — a `BlobRequest` whose name
+  has no file extension is treated as a directory, so a missing extension on a delete can remove a subtree.
+- **Not safe as shared storage for multiple instances.** There is no locking or coordination; two processes writing the
+  same path race on the filesystem.
+
+## 🔗 Related packages
+
+- [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) – the contract, models, and shared
+  validation; the package application code should reference.
+- [DKNet.Svc.BlobStorage.AwsS3](./DKNet.Svc.BlobStorage.AwsS3.md) – reach for it when the deployed environment stores
+  blobs in S3 or an S3-compatible service.
+- [DKNet.Svc.BlobStorage.AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage.md) – reach for it when the deployed
+  environment stores blobs in an Azure Storage account.

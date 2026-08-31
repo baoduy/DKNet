@@ -1,29 +1,37 @@
+# DKNet.Svc.BlobStorage.Abstractions
+
+Provider-agnostic blob storage contract — application code depends on `IBlobService` and the shared model types, and a
+concrete adapter package supplies the implementation.
+
 > [!IMPORTANT]
 > All symbols on this page are current against `src/Services/DKNet.Svc.BlobStorage.Abstractions` on `dev`. Verify against
 > that source before relying on a signature — earlier revisions of this page described an API that never existed.
 
-# DKNet.Svc.BlobStorage.Abstractions
+## ✨ Why use it?
 
-Provider-agnostic contract for blob storage. Application code depends on `IBlobService` and the shared model types;
-a concrete adapter package — [AWS S3](./DKNet.Svc.BlobStorage.AwsS3.md), [Azure Storage](./DKNet.Svc.BlobStorage.AzureStorage.md),
-or the [local filesystem](./DKNet.Svc.BlobStorage.Local.md) — supplies the implementation. Swapping providers is a DI
-change, not a code change.
+- **Swapping storage backends is a DI change, not a code change.** Business logic takes `IBlobService`; the composition
+  root decides whether that is [AWS S3](./DKNet.Svc.BlobStorage.AwsS3.md),
+  [Azure Storage](./DKNet.Svc.BlobStorage.AzureStorage.md), or the
+  [local filesystem](./DKNet.Svc.BlobStorage.Local.md).
+- **One payload type for every size of file.** Everything moves as `BinaryData`, so a 2 KB text blob and a 2 GB stream
+  use the same call — no `byte[]`-versus-`Stream` overload matrix to choose between.
+- **Save-time guard rails are shared, not re-implemented per provider.** Extension allow-list, name length, and size
+  limits live in `BlobServiceOptions` and run inside the base class every provider derives from.
+- **Content type is derived, not demanded.** `BlobDetails.BlobData` fills `ContentType` from the file extension, so
+  callers that don't care never set it.
 
-## When to reach for it
+Reach for this package (plus exactly one provider package) whenever the application stores or retrieves files —
+uploaded documents, generated reports, exported PDFs — and you don't want Azure, AWS, or `System.IO` types leaking into
+domain code.
 
-Reach for this package (and one provider package) whenever your application needs to store or retrieve files —
-uploaded documents, generated reports, exported PDFs — without hard-coupling business logic to Azure, AWS, or the
-local disk. Depend on `IBlobService` from your application/domain code; register the concrete provider only at the
-composition root.
-
-## Install and minimal wiring
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.BlobStorage.Abstractions
 ```
 
-`DKNet.Svc.BlobStorage.Abstractions` on its own has no `IBlobService` implementation — register one provider package
-(shown here: Local) to complete the wiring:
+This package ships no `IBlobService` implementation. Register one provider package (Local shown here) to complete the
+wiring:
 
 ```csharp
 using DKNet.Svc.BlobStorage.Abstractions;
@@ -43,7 +51,7 @@ public sealed class DocumentService(IBlobService blobService)
 }
 ```
 
-## Features
+## 🧩 Features
 
 ### `IBlobService` — the unified contract
 
@@ -52,7 +60,7 @@ Every provider implements the same seven operations:
 | Method | Signature | Notes |
 |---|---|---|
 | Save | `Task<string> SaveAsync(BlobDetails.BlobData blob, CancellationToken ct = default)` | Returns the stored blob's location. Validates against `BlobServiceOptions` first (see below). |
-| Get | `Task<BlobDetails.BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken ct = default)` | Fetches content + metadata. **S3 and Azure return `null` when the blob is missing; the Local provider throws `FileNotFoundException` instead** — code against the abstraction defensively if you support multiple providers. |
+| Get | `Task<BlobDetails.BlobDataResult?> GetAsync(BlobRequest blob, CancellationToken ct = default)` | Fetches content + metadata. **Only S3 returns `null` when the blob is missing — Local throws `FileNotFoundException` and Azure throws the SDK's `RequestFailedException` (`404`)** — code against the abstraction defensively if you support more than one provider. |
 | Get metadata only | `Task<BlobDetails.BlobResult?> GetItemAsync(BlobRequest blob, CancellationToken ct = default)` | No content transferred. The `BlobService` base class's default implementation is "first item from `ListItemsAsync`" — cheap for a single file, wasteful for a directory. |
 | Exists | `Task<bool> CheckExistsAsync(BlobRequest blob, CancellationToken ct = default)` | |
 | Delete | `Task<bool> DeleteAsync(BlobRequest blob, CancellationToken ct = default)` | Providers that support folders delete recursively when `blob.Type == BlobTypes.Directory`. |
@@ -89,28 +97,31 @@ There is **no `byte[]` overload and no separate "streaming" method** — every p
 `"application/octet-stream"` for anything else. It throws `NullReferenceException` for a `null` input — always pass a
 non-null file name.
 
-### Validation
+### Save-time validation
 
 `BlobService.ValidateFile` runs on every `SaveAsync` call and throws `FileLoadException` (`"File name is invalid."`,
-`"File extension is invalid."`, `"File size is invalid."`) when a `BlobServiceOptions` rule is violated. See
-Configuration below for how each rule is gated.
+`"File extension is invalid."`, `"File size is invalid."`) when a `BlobServiceOptions` rule is violated. Each rule is
+gated on its own option being set — see the reference below.
 
-## Configuration — `BlobServiceOptions`
+## ⚙️ Configuration reference
 
 Every provider's own options type (`S3Options`, `AzureStorageOptions`, `LocalDirectoryOptions`) extends this base, so
 validation behaves identically regardless of backend:
 
-| Property | Default | Effect |
-|---|---|---|
-| `IEnumerable<string> IncludedExtensions` | `[]` (empty) | No extension filtering when empty; when non-empty, only listed extensions pass `SaveAsync`. |
-| `int MaxFileNameLength` | `0` | `0` disables the check — **not** "zero-length names rejected". |
-| `int MaxFileSizeInMb` | `0` | `0` disables the check — there is no built-in size cap unless you set one. |
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `IncludedExtensions` | `IEnumerable<string>` | `[]` (empty) | No extension filtering when empty; when non-empty, only listed extensions pass `SaveAsync` (compared case-insensitively, leading dot included). |
+| `MaxFileNameLength` | `int` | `0` | `0` disables the check — **not** "zero-length names rejected". |
+| `MaxFileSizeInMb` | `int` | `0` | `0` disables the check — there is no built-in size cap unless you set one. |
 
 All three checks are opt-in; do not assume a default limit exists (older revisions of this page claimed a 50MB
 default — there is none).
 
-## Composing with other DKNet packages
+## 🧱 Where it fits
 
+- **Provider adapters** — [AwsS3](./DKNet.Svc.BlobStorage.AwsS3.md),
+  [AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage.md), and [Local](./DKNet.Svc.BlobStorage.Local.md) derive from the
+  `BlobService` base class in this package and are the only components that reference a storage SDK.
 - **`DKNet.EfCore.Events`** — raise a domain event after `SaveAsync` returns the stored location so a handler can
   attach it to an aggregate.
 - **`DKNet.EfCore.Repos`** — store the returned location string as a value on your entity; the repository layer never
@@ -118,13 +129,29 @@ default — there is none).
 - **`DKNet.Fw.Extensions`** — general-purpose extensions used incidentally by the storage adapters; no hard dependency
   from your own code.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **No `byte[]` API.** Wrap arrays with `BinaryData.FromBytes(...)` if you have one.
-- **Inconsistent miss behavior.** `GetAsync` returns `null` on S3/Azure, throws `FileNotFoundException` on Local — an
-  abstraction leak worth a defensive `try/catch` or a provider-neutral wrapper if you need one behavior everywhere.
+- **Inconsistent miss behavior.** `GetAsync` returns `null` on S3, throws `FileNotFoundException` on Local, and throws
+  `Azure.RequestFailedException` (`404`) on Azure Storage — an abstraction leak worth a defensive `try/catch` or a
+  provider-neutral wrapper if you need one behavior everywhere.
+- **`MaxFileSizeInMb` counts decimal megabytes.** The limit is `MaxFileSizeInMb * 1_000_000` bytes, not `* 1024 * 1024` —
+  a "10 MB" cap rejects at 10,000,000 bytes.
 - **`GetItemAsync`'s default implementation reads the whole listing** to find the first match unless a provider
   overrides it — for a single known file, prefer `GetAsync`/`CheckExistsAsync` over `GetItemAsync` when you don't
   actually need metadata-only semantics.
 - **Public URL support is not universal.** Always check the target provider's page before relying on
   `GetPublicAccessUrl` — Local never supports it.
+- **Configuration section keys are not uniform across providers.** Local binds `BlobStorage:LocalFolder`, S3 binds
+  `BlobService:S3`, Azure binds `BlobService:AzureStorage` — check each provider page rather than assuming one prefix.
+
+## 🔗 Related packages
+
+- [DKNet.Svc.BlobStorage.AwsS3](./DKNet.Svc.BlobStorage.AwsS3.md) – reach for it when blobs live in AWS S3 or an
+  S3-compatible store (MinIO, Cloudflare R2).
+- [DKNet.Svc.BlobStorage.AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage.md) – reach for it when blobs live in an
+  Azure Storage account, especially with managed-identity auth.
+- [DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md) – reach for it in local development, tests, and CI
+  where no cloud account should be needed.
+- [DKNet.Svc.Encryption](./DKNet.Svc.Encryption.md) – reach for it when a blob's bytes must be encrypted before they
+  reach the store.

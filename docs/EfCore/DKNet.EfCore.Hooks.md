@@ -59,7 +59,7 @@ Hooks with no registered `HookRunnerInterceptor` for their `DbContext` type are 
 
 ### The hook interfaces
 
-All hook contracts live in `DKNet.EfCore.Hooks.IHook.cs` and operate on `SnapshotContext` from `DKNet.EfCore.Extensions.Snapshots` (see [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#snapshotcontext)):
+All hook contracts live in `DKNet.EfCore.Hooks.IHook.cs` and operate on `SnapshotContext` from `DKNet.EfCore.Extensions.Snapshots` (see [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#capture-a-save-time-snapshot-for-hooks)):
 
 ```csharp
 public interface IHookBaseAsync; // marker, implement a more specific interface below
