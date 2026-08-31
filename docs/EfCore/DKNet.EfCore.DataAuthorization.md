@@ -1,27 +1,26 @@
 # DKNet.EfCore.DataAuthorization
 
-Row-level, ownership-based data authorization for EF Core: automatic global query filtering plus SaveChanges-time
-ownership stamping, so multi-tenant or per-user data isolation doesn't have to be repeated in every query.
+Row-level, ownership-based data authorization for EF Core — an automatic global query filter on reads plus
+`SaveChanges`-time owner stamping on writes.
 
-## 1. Problem it solves / when to reach for it
+## ✨ Why use it?
 
-Any application where rows belong to a principal — a tenant, a user, a branch, a department — has to answer the
-same question at every read: "does the caller own this row, or is it in the set of rows the caller may see?" Doing
-that by hand means every `Where(...)` clause across the codebase has to remember to add the ownership predicate, and
-every insert has to remember to stamp the owner. Miss one query and you leak another tenant's data; miss one insert
-and the row becomes unowned/orphaned.
+- **No `Where` clause to remember** — an EF Core global query filter is attached once, at model-build time, to every
+  entity implementing `IOwnedBy`. Missing an ownership predicate at one call site is no longer a way to leak another
+  tenant's rows.
+- **New rows cannot be born unowned** — a `SaveChanges` hook stamps the current owner key onto every added `IOwnedBy`
+  entity, so an insert that forgot to set `OwnedBy` does not create an orphan row.
+- **Reassignment is guarded** — an attempt to move an existing row to an owner the caller is not allowed to write as
+  is reverted to its original value before the save reaches the database.
+- **Deny by default** — an empty `AccessibleKeys` matches no rows rather than all of them, so a misconfigured or
+  half-initialised principal fails closed.
+- **One explicit escape hatch** — `IsUnrestrictedAccess` is the only way to see every row, which makes admin/system
+  contexts a deliberate, greppable decision rather than an accident.
 
-`DKNet.EfCore.DataAuthorization` centralizes both halves of that problem as infrastructure:
+Reach for this package when rows belong to a principal — a tenant, a user, a branch, a department — and you want that
+rule enforced by the persistence layer rather than by convention in application code.
 
-- **Reads** — an EF Core global query filter is applied once, at model-build time, to every entity that opts in
-  (`IOwnedBy`). No call site needs to add or remember a `Where` clause.
-- **Writes** — a `SaveChanges` hook stamps the current owner onto newly added entities, and reverts any attempt to
-  silently move an existing row to an owner the current caller isn't allowed to write as.
-
-Reach for this package when you have row-level or multi-tenant ownership rules to enforce and you want them applied
-uniformly by the persistence layer rather than by convention in application code.
-
-## 2. Install and minimum wiring
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.DataAuthorization
@@ -55,7 +54,7 @@ public sealed class TenantOwnerProvider(ICurrentTenant currentTenant) : IDataOwn
 {
     public string? GetOwnershipKey() => currentTenant.TenantId;
     // Default GetAccessibleKeys() wraps GetOwnershipKey() into a single-key collection;
-    // override it if a caller may see more than one key (see section 3).
+    // override it if a caller may see more than one key (see `IDataOwnerProvider.GetAccessibleKeys()` below).
 }
 
 // 4. Registration
@@ -80,9 +79,9 @@ Two things it does **not** do for you, because they belong to the packages it bu
   (from `DKNet.EfCore.Hooks`) does this for you; if you build the `DbContext` another way, add
   `options.UseHooks<TDbContext>(provider)` yourself or `DataOwnerHook` is registered in DI but never runs.
 
-## 3. Features
+## 🧩 Features
 
-### 3.1 `IOwnedBy` — ownership marker
+### `IOwnedBy` — ownership marker
 
 ```csharp
 public interface IOwnedBy
@@ -94,11 +93,11 @@ public interface IOwnedBy
 Implement this on any entity that should be subject to ownership filtering and stamping. Only entities that
 implement `IOwnedBy` are touched by the filter or the hook — everything else in the model is unaffected. The
 getter-only shape signals intent: consumers should mutate `OwnedBy` through a domain method or a private setter, not
-assign it arbitrarily (the hook and its reassignment guard, section 3.3, assume that discipline).
+assign it arbitrarily (the hook and its reassignment guard, below, assume that discipline).
 
-### 3.2 Automatic global query filter (`DataOwnerAuthQuery`)
+### Automatic global query filter (`DataOwnerAuthQuery`)
 
-Registering the provider (section 2) applies a global EF Core query filter to every entity type in the model that
+Registering the provider (see [Quick Start](#-quick-start)) applies a global EF Core query filter to every entity type in the model that
 implements `IOwnedBy` (excluding TPH-discriminated subtypes — `GetDiscriminatorValue() == null` — since EF Core
 already applies a base type's filter down the hierarchy). The filter, evaluated per query against your
 `IDataOwnerDbContext`:
@@ -125,7 +124,7 @@ Key behaviors, verified from `DataOwnerAuthQuery`:
   `AccessibleKeys`/`IsUnrestrictedAccess` are read fresh on every query, not fixed once at model-build time — a
   scoped `IDataOwnerDbContext` implementation naturally gets per-request/per-scope values.
 
-### 3.3 Ownership stamping and reassignment guard (`DataOwnerHook`)
+### Ownership stamping and reassignment guard (`DataOwnerHook`)
 
 `DataOwnerHook` implements `IBeforeSaveHookAsync` and runs inside the `SaveChanges` pipeline for every registered
 `TDbContext` (see section 5 for how the hook actually gets invoked). For every tracked entity it:
@@ -147,7 +146,7 @@ Key behaviors, verified from `DataOwnerAuthQuery`:
 This saves you from writing that stamping/guard logic in every aggregate's constructor or every command handler —
 it happens once, uniformly, for anything that implements `IOwnedBy`.
 
-### 3.4 `IDataOwnerProvider.GetAccessibleKeys()` default
+### `IDataOwnerProvider.GetAccessibleKeys()` default
 
 ```csharp
 public ICollection<string> GetAccessibleKeys()
@@ -162,11 +161,11 @@ Most providers only need to implement `GetOwnershipKey()` (the key stamped on ne
 reassignment guard. Override `GetAccessibleKeys()` directly when a caller can legitimately see/write more than one
 key — e.g. a head-office user who spans several branch keys.
 
-Note this is a different member than `IDataOwnerDbContext.AccessibleKeys` (section 3.2): the provider supplies the
+Note this is a different member than `IDataOwnerDbContext.AccessibleKeys` (see *Automatic global query filter* above): the provider supplies the
 data used by both the DbContext's `AccessibleKeys` property (your implementation typically just forwards
 `_provider.GetAccessibleKeys()`) and the hook's reassignment guard — the DbContext is what the query filter reads.
 
-## 4. Configuration options and defaults
+## ⚙️ Configuration reference
 
 There is no `appsettings.json`-driven configuration — everything is expressed through the three interfaces you
 implement:
@@ -180,7 +179,7 @@ implement:
 | `DataOwnerAuthQuery.FilterKey` | fixed | `nameof(DataOwnerAuthQuery)` | Named EF Core 10 query filter key; used internally, not configurable. |
 | `DataOwnerAuthQuery.IsIgnorable` | fixed | `false` | Cannot be bypassed via `ISpecification.IsIgnoreQueryFilters`. |
 
-## 5. How it composes with other DKNet packages
+## 🧱 Where it fits
 
 This package is a consumer of two other EF Core building blocks, not a standalone interceptor:
 
@@ -204,7 +203,7 @@ This package is a consumer of two other EF Core building blocks, not a standalon
   "ignorable" global filters, but `DataOwnerAuthQuery.IsIgnorable => false` means row-level ownership isolation
   is exempt from that bypass by design.
 
-## 6. Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **`IDataOwnerDbContext.AccessibleKeys` must be `IEnumerable<string>`, never `ICollection<string>`.** EF Core's
   query-filter translator can turn `Enumerable.Contains` over an `IEnumerable<string>` into a SQL `IN (...)`
@@ -239,3 +238,18 @@ This package is a consumer of two other EF Core building blocks, not a standalon
   registered once for the root type; EF Core applies a base type's query filter to derived types in the same
   hierarchy automatically, so this is expected behavior, not a limitation — but a derived type that implements
   `IOwnedBy` independently of its base (uncommon) will not get its own filter registration.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – supplies the `GlobalQueryFilter` base and the
+  `UseAutoConfigModel` wiring this package's filter depends on. Reach for it directly to write a global filter of your
+  own.
+- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline `DataOwnerHook` runs in. Reach for it
+  when you need a custom before/after-save hook.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `IAuditedProperties` contract the hook also
+  stamps. Reach for it for entity base classes and the audit/event attributes.
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the query surface application code uses on top of
+  the filter. Reach for it for reusable filter/include/order-by objects; note its `IsIgnoreQueryFilters` flag cannot
+  bypass ownership isolation.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – records *what* changed on the same hook pipeline. Reach for
+  it when you need a change trail as well as access control.

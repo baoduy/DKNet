@@ -1,34 +1,62 @@
 # DKNet.Fw.Extensions
 
-`DKNet.Fw.Extensions` is the framework-agnostic, dependency-light base library for the DKNet
-suite. It has no domain or infrastructure dependencies (it only pulls in
-`Microsoft.Extensions.DependencyInjection.Abstractions` and
-`System.ComponentModel.Annotations`), which is why it sits at the innermost layer and is safe to
-reference from anything — a domain model, an EF Core configuration, an ASP.NET Core middleware,
-or a plain console app.
+Framework-agnostic reflection, type, string, enum and DI-inspection helpers shared by every layer of a
+DKNet solution.
 
-Reach for it when you find yourself hand-rolling: reflection-based property get/set, "does this
-type implement X" checks, enum-to-Display-attribute mapping, digit extraction from a formatted
-string, or scanning assemblies for types matching a shape. These are small, focused, well-tested
-utilities — use them instead of re-implementing the same reflection snippet in every project.
+## ✨ Why use it?
 
-### Install
+- **Safe to reference from anywhere** – it pulls in only
+  `Microsoft.Extensions.DependencyInjection.Abstractions` and `System.ComponentModel.Annotations`, so a
+  domain model, an EF Core configuration, an ASP.NET Core middleware and a plain console app can all take
+  it without dragging infrastructure along. That is why it sits at the innermost layer of the suite.
+- **Stop re-writing the same reflection snippet** – get/set a property by name (including dotted paths
+  such as `"Owner.Address.City"`), check for an attribute, or read a `[Display]` attribute off an enum
+  value, once here instead of once per project.
+- **Type-shape checks that understand open generics** – `Type.IsImplementOf(typeof(IRepository<>))`
+  answers "does this implement that shape" across interfaces, base classes and generic definitions;
+  a hand-written `IsAssignableFrom` call does not.
+- **Readable assembly scanning** –
+  `assemblies.Extract().Classes().NotAbstract().IsInstanceOf<IEventHandler>()` replaces a hand-rolled
+  `GetTypes().Where(...)` chain, and is evaluated lazily.
+- **Duplicate-registration guards for DI** – `IsRegistered<T>()` and
+  `IsRegisteredWithImplementation<T>(...)` let a library extension method stay idempotent without
+  inspecting `ServiceDescriptor`s by hand.
+
+Reach for it whenever you catch yourself hand-rolling reflection-based property access, a
+"does this type implement X" check, enum-to-`Display` mapping, digit extraction from a formatted string,
+or an assembly scan for types matching a shape.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Fw.Extensions
 ```
 
-No DI registration, no configuration, no startup wiring is required for the extension methods —
-they are static/extension methods, so referencing the package and adding a `using` is the entire
-setup. The one exception is the `ServiceCollectionExtensions` feature described below, which you
-call explicitly wherever you build up an `IServiceCollection`.
+```csharp
+using DKNet.Fw.Extensions.Reflection;
 
-### Features
+var product = new Product { Name = "Laptop", Price = 999.99m };
 
-#### String extensions (`StringExtensions`)
+var name = product.GetPropertyValue("name");                  // "Laptop" — lookup is case-insensitive
+product.SetPropertyValue("Price", 1099.99m);                  // converted to the property's type
+
+typeof(List<string>).IsImplementOf(typeof(IEnumerable<>));    // true — open generic match
+```
+
+No DI registration, no configuration and no startup wiring is required for the extension methods — they are
+static/extension methods, so referencing the package and adding the right `using` is the entire setup. The
+one exception is the `ServiceCollectionExtensions` feature described below, which you call explicitly
+wherever you build up an `IServiceCollection`.
+
+Members are grouped into per-area namespaces rather than one flat `DKNet.Fw.Extensions` namespace — see
+the `using` line on each example below.
+
+## 🧩 Features
+
+### String extensions (`StringExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Primitives;
 
 "Price: $123.45".ExtractDigits();   // "123.45"
 "99.99".IsNumber();                 // true
@@ -45,10 +73,10 @@ using DKNet.Fw.Extensions;
   (or the type's) unwrapped type is `string` or a value type; used to decide whether a value is
   "simple" enough to display/serialize directly.
 
-#### Type extensions (`TypeExtensions`)
+### Type extensions (`TypeExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 
 typeof(int?).GetNonNullableType();          // typeof(int)
 typeof(List<string>).IsImplementOf(typeof(IEnumerable<>)); // true (open generic match)
@@ -75,11 +103,11 @@ typeof(MyEnum).TryConvertToEnum(1, out var value); // true, value = (MyEnum)1
   `OverflowException`. Throws `ArgumentException` up front if the non-generic overload's
   `enumType` isn't actually an enum.
 
-#### Enum extensions with `Display` attribute info (`EnumExtensions`, `EnumInfo`)
+### Enum extensions with `Display` attribute info (`EnumExtensions`, `EnumInfo`)
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Enums;
 
 public enum OrderStatus
 {
@@ -119,10 +147,10 @@ name. Null-check `Name` after calling `GetEumInfo()`.
 Note the method names are `GetEumInfo`/`GetEumInfos` (missing the "n") — that's the real,
 published API; don't "fix" the typo when calling it.
 
-#### DateTime extensions (`DateTimeExtensions`)
+### DateTime extensions (`DateTimeExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Primitives;
 
 DateTime.Today.InQuarter();          // 1, 2, 3, or 4
 DateTime.Today.LastDayOfMonth();     // e.g. 2026-08-31, Kind = Local
@@ -134,10 +162,10 @@ DateTime.Today.LastDayOfMonth();     // e.g. 2026-08-31, Kind = Local
   month, preserving hour/minute/second/millisecond. The result's `Kind` is always forced to
   `DateTimeKind.Local`, regardless of the input's `Kind` — see Gotchas.
 
-#### Async enumerable extensions (`AsyncEnumerableExtensions`)
+### Async enumerable extensions (`AsyncEnumerableExtensions`)
 
 ```csharp
-using System.Collections.Generic; // note: not DKNet.Fw.Extensions
+using System.Collections.Generic; // note: not a DKNet.Fw.Extensions.* namespace
 
 IAsyncEnumerable<int> source = GetAsyncNumbers();
 IList<int> all = await source.ToListAsync();
@@ -148,10 +176,10 @@ IList<int> all = await source.ToListAsync();
   so it shows up for any file that already has `using System.Collections.Generic;` — no extra
   `using` needed. Throws `ArgumentNullException` if the source sequence is `null`.
 
-#### Property extensions (`PropertyExtensions`)
+### Property extensions (`PropertyExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 
 var product = new Product { Name = "Laptop", Price = 999.99m };
 
@@ -182,10 +210,10 @@ product.TrySetPropertyValue("DoesNotExist", 1);  // swallows the failure instead
 - `Type.IsNullableType()` — true only for `Nullable<T>` (not for reference types); throws
   `ArgumentNullException` if `type` is `null`.
 
-#### Attribute extensions (`AttributeExtensions`)
+### Attribute extensions (`AttributeExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Reflection;
 
 typeof(Product).HasAttribute<ObsoleteAttribute>();                 // Type overload
 productType.GetProperty("Price").HasAttribute<RequiredAttribute>(); // PropertyInfo overload
@@ -198,10 +226,10 @@ product.HasAttributeOnProperty<RequiredAttribute>("Price");         // by proper
   the property by name (via `PropertyExtensions.GetProperty`, case-insensitive) and then checks
   for the attribute; returns `false` if the property doesn't exist.
 
-#### Collection extensions (`CollectionExtensions`)
+### Collection extensions (`CollectionExtensions`)
 
 ```csharp
-using DKNet.Fw.Extensions;
+using DKNet.Fw.Extensions.Collections;
 
 ICollection<int> target = [1, 2, 3];
 target.AddRange([4, 5, 6]); // target now has 6 items
@@ -210,14 +238,13 @@ target.AddRange([4, 5, 6]); // target now has 6 items
 - `ICollection<T>.AddRange(IEnumerable<T> items)` — adds every item from `items` one at a time
   (there's no bulk/`List<T>.AddRange`-style fast path; it's a plain `foreach` + `Add`).
 
-#### Service-collection / DI extensions (`ServiceCollectionExtensions`, `ServiceCollectionRegistrationExtensions`)
+### Service-collection / DI extensions (`ServiceCollectionExtensions`, `ServiceCollectionRegistrationExtensions`)
 
 These are inspection/guard helpers you call while assembling an `IServiceCollection` — they don't
 register anything themselves.
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using DKNet.Fw.Extensions; // brings the "extension" members into scope
+using Microsoft.Extensions.DependencyInjection; // ServiceCollectionExtensions lives in this namespace
 
 // Guard a single-active-implementation contract from being registered twice.
 if (!services.IsRegistered<IIdempotencyKeyStore>())
@@ -247,7 +274,7 @@ bool isKeyedFoo = descriptor.IsKeyedImplementationOf<IFoo>("fooKey");
   descriptor (`IsKeyedService`) whose key reference-equals `keyName` and whose implementation
   matches.
 
-#### `TypeExtractors` — fluent assembly/type scanning
+### `TypeExtractors` — fluent assembly/type scanning
 
 ```csharp
 using System.Reflection;
@@ -280,14 +307,18 @@ var handlerTypes = assemblies
   `ArgumentException` if constructed with a null/empty assembly array; duplicate assemblies passed
   in are de-duplicated automatically.
 
-### Configuration
+## ⚙️ Configuration reference
 
-There is nothing to configure. No options object, no `IOptions<T>`, no environment-specific
-behavior — every member above is a static or extension method with fixed behavior. The only
-"configuration" surface is the `BindingFlags` parameter you can optionally pass to
-`GetProperty(...)`.
+There is no options object, no `IOptions<T>` and no environment-specific behavior — every member above is a
+static or extension method with fixed behavior. The only configurable surface is a single optional
+parameter:
 
-### How it composes with other DKNet packages
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `GetProperty(propertyName, flags)` – `flags` | `BindingFlags` | `IgnoreCase \| Public \| NonPublic \| Instance` | Which properties the reflection lookup considers. `GetPropertyValue`, `SetPropertyValue`, `TrySetPropertyValue` and `HasAttributeOnProperty` all resolve through this default and do not expose the parameter themselves. |
+| `HasAttribute<TAttribute>(inherit)` / `HasAttributeOnProperty<TAttribute>(propertyName, inherit)` – `inherit` | `bool` | `true` | Whether attributes inherited from a base type/property count as present. |
+
+## 🧱 Where it fits
 
 `DKNet.Fw.Extensions` sits at the bottom of the dependency graph and is referenced directly by:
 
@@ -300,7 +331,7 @@ behavior — every member above is a static or extension method with fixed behav
 `DKNet.SlimBus.Extensions` does not reference this package directly; it picks it up transitively
 through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`.
 
-### Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **`GetEumInfos`/`GetEumInfo` naming** — the real, published method names are missing the "n"
   (`GetEumInfo`, not `GetEnumInfo`). There is no `Quarter()` method either — it's `InQuarter()`.
@@ -325,6 +356,21 @@ through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`.
   overloads swallow `ArgumentNullException`/`ArgumentException`; the `PropertyInfo`-keyed
   overloads swallow `ArgumentNullException`/`FormatException`. A type-conversion failure that
   throws something else (e.g. `InvalidCastException`) will still propagate.
+- **There is no flat `DKNet.Fw.Extensions` namespace.** Members live in per-area namespaces —
+  `DKNet.Fw.Extensions.Primitives` (string, `DateTime`), `.Reflection` (type, property, attribute),
+  `.Enums`, `.Collections`, `.TypeExtractors` — while `ServiceCollectionExtensions` is declared in
+  `Microsoft.Extensions.DependencyInjection` and `ToListAsync` in `System.Collections.Generic`. A single
+  `using DKNet.Fw.Extensions;` does not compile.
 - **`AsyncEnumerableExtensions.ToListAsync` lives in `System.Collections.Generic`**, not
   `DKNet.Fw.Extensions` — that's deliberate (so it's picked up without an extra `using`), but it
   means you won't find it by browsing the `DKNet.Fw.Extensions` namespace in IntelliSense.
+
+## 🔗 Related packages
+
+- [DKNet.RandomCreator](./DKNet.RandomCreator.md) – the other Core package; cryptographically secure random
+  strings and characters. Reach for it when you need a secret value, not a reflection helper.
+- [DKNet.EfCore.Extensions](../EfCore/DKNet.EfCore.Extensions.md) – the first-line consumer of
+  `IsImplementOf` and `TypeExtractors`; reach for it when the convention you want applied is an EF Core
+  model convention rather than a raw reflection call.
+- [DKNet.AspCore.Idempotency](../AspNetCore/DKNet.AspCore.Idempotency.md) – uses the DI registration
+  guards and `GetProperty(...)` from this package; a worked example of both in a real registration path.

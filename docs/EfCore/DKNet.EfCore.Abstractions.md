@@ -1,20 +1,29 @@
 # DKNet.EfCore.Abstractions
 
-## Problem it solves
+The shared, persistence-agnostic vocabulary every other `DKNet.EfCore.*` package builds on — entity base classes,
+domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour.
 
-Every EF Core package in DKNet needs a common vocabulary for "what is an entity", "what changed and who changed it",
-"what happened that other code should react to", and "which fields are sensitive/derived". Without a shared, tiny,
-persistence-agnostic contract, each package (Events, Hooks, AuditLogs, DataAuthorization, Encryption, DtoGenerator,
-Extensions, Repos) would invent its own entity marker interface and attribute set, and none of them could
-interoperate.
+## ✨ Why use it?
 
-`DKNet.EfCore.Abstractions` is that shared vocabulary. It has **no dependency on `Microsoft.EntityFrameworkCore`
-itself** (only on `Microsoft.EntityFrameworkCore.Abstractions`, `System.ComponentModel.Annotations`, and
-`FluentResults`), so a domain project can define entities, raise events, and declare audit/sensitivity rules
-without pulling in the full EF Core runtime. Reach for this package first when modeling a new domain entity in a
-DKNet-based solution — every other EfCore package below builds directly on the types declared here.
+- **One entity contract instead of eight** — Events, Hooks, AuditLogs, DataAuthorization, Extensions, DtoGenerator,
+  and the retired Repos packages all read the same `IEntity<TKey>` / `IAuditedProperties` / `IEventEntity` /
+  `IConcurrencyEntity<T>` / `ISoftDeletableEntity` contracts, so they interoperate on the same model instead of each
+  inventing its own marker interface.
+- **The domain layer stays free of EF Core** — the package references
+  `Microsoft.EntityFrameworkCore.Abstractions`, `System.ComponentModel.Annotations`, and `FluentResults`, **not**
+  `Microsoft.EntityFrameworkCore`. A domain project can define entities, raise events, and declare audit rules
+  without pulling in the EF Core runtime.
+- **Events queue on the aggregate, not on infrastructure** — `AddEvent(...)` records a business fact on the entity;
+  what dispatches it is a separate package's problem, so the domain method has no messaging dependency.
+- **Cross-cutting policy is declared next to the model** — `[AuditLog]`, `[IgnoreAuditLog]`, `[SensitiveData]`,
+  `[RaisesEvent]`, `[Sequence]`, `[SqlSequence]`, and `[IgnoreEntity]` put audit, event, and mapping rules on the
+  type they describe rather than in configuration elsewhere.
+- **Concurrency and soft delete come pre-shaped** — implement the interface and `DKNet.EfCore.Extensions` configures
+  the `RowVersion` token or the audit columns for you.
 
-## Install and minimum wiring
+Reach for this package first when modelling a new domain entity in a DKNet-based solution.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Abstractions
@@ -43,12 +52,12 @@ public class Product : Entity // Entity<Guid>
 ```
 
 Runtime behavior — actually dispatching events, writing audit logs, redacting sensitive fields, enforcing row
-ownership, encrypting columns — comes from the sibling packages described in "Composition" below; this package only
+ownership, encrypting columns — comes from the sibling packages described in [Where it fits](#-where-it-fits) below; this package only
 supplies the shapes they agree on.
 
-## Features
+## 🧩 Features
 
-### 1. Entity identity — `IEntity<TKey>`, `Entity<TKey>` / `Entity`
+### Entity identity — `IEntity<TKey>`, `Entity<TKey>` / `Entity`
 
 `IEntity<out TKey>` is the minimal contract: a single `TKey Id { get; }`. `Entity<TKey>` is the base class you
 actually derive from — it implements `IEntity<TKey>` and `IEventEntity` (see below), exposes `Id` with a
@@ -68,7 +77,7 @@ public class Category : Entity<int>
 Both constructors that take an `id` exist mainly for EF Core data-seeding scenarios (per their own XML docs) —
 day-to-day creation typically leaves EF Core / a value generator to assign `Id`.
 
-### 2. Domain events queued on the entity — `IEventEntity`, `Entity<TKey>`
+### Domain events queued on the entity — `IEventEntity`, `Entity<TKey>`
 
 `IEventEntity` lets an entity queue up domain events during a business operation, to be drained and published once
 the surrounding `SaveChanges` succeeds:
@@ -98,7 +107,7 @@ public class Order : Entity
 Queuing an event here does nothing by itself — see "Composition" for how `DKNet.EfCore.Events` drains and publishes
 the queue.
 
-### 3. Declarative events — `[RaisesEvent]`, `EventOperations`
+### Declarative events — `[RaisesEvent]`, `EventOperations`
 
 `[RaisesEvent]` is an alternative (or complement) to hand-calling `AddEvent(...)`: apply it to the entity class to
 declare that a persistence operation should raise a payload automatically, without touching the entity's method
@@ -203,7 +212,7 @@ name from the same `EventNameComposer` source the build uses — the two can nev
 references only `DKNet.EfCore.Abstractions` and `DKNet.EfCore.DtoGenerator` builds cleanly with rules declared and
 simply never raises them until the application also registers `DKNet.EfCore.Events`.
 
-### 4. Audit tracking — `IAuditedProperties`, `IAuditedEntity<TKey>`, `AuditedEntity<TKey>` / `AuditedEntity`
+### Audit tracking — `IAuditedProperties`, `IAuditedEntity<TKey>`, `AuditedEntity<TKey>` / `AuditedEntity`
 
 `IAuditedProperties` declares the four audit fields every audited entity needs: `CreatedOn`, `CreatedBy`,
 `UpdatedOn`, `UpdatedBy` (all decorated `[IgnoreAuditLog]` on the interface itself — see feature 6). `CreatedBy`
@@ -244,7 +253,7 @@ performed by whichever hook or interceptor your application wires up (DKNet ship
 into a candidate for audit *logging* (feature 6) — an entity that doesn't implement it is invisible to
 `DKNet.EfCore.AuditLogs` regardless of any attributes you put on it.
 
-### 5. Optimistic concurrency — `IConcurrencyEntity<TType>`
+### Optimistic concurrency — `IConcurrencyEntity<TType>`
 
 Declares a nullable `RowVersion` (typed `TType`, e.g. `byte[]`), pre-annotated `[Timestamp]` and
 `[Column(Order = 1000)]` so the concurrency token consistently sorts last in generated schemas, plus
@@ -264,7 +273,7 @@ automatically configures the `RowVersion` property as a concurrency token / row-
 `ValueGeneratedOnAddOrUpdate()` — you do not need to configure it yourself in `OnModelCreating` if you use that base
 configuration.
 
-### 6. Soft deletion — `ISoftDeletableEntity`
+### Soft deletion — `ISoftDeletableEntity`
 
 Declares `IsDeleted`, `DeletedOn`, `DeletedBy` (`[MaxLength(250)]`) plus a `Delete(byUser, deletedOn = null)` method
 that returns `FluentResults.IResultBase` so implementers can fail the delete (e.g. business-rule violation) without
@@ -293,7 +302,7 @@ soft one automatically"). Implementing `ISoftDeletableEntity` gives you a consis
 query filter (`modelBuilder.Entity<T>().HasQueryFilter(e => !e.IsDeleted)`) against — it does not wire one up for
 you.
 
-### 7. Sequential values — `[Sequence]`
+### Sequential values — `[Sequence]`
 
 Applied to a `field` (not a property) to request database-generated sequential values. Constructor takes an
 optional `Type` (defaults to `int`; only `byte`, `short`, `int`, `long` are supported — anything else throws
@@ -302,13 +311,13 @@ optional `Type` (defaults to `int`; only `byte`, `short`, `int`, `long` are supp
 `DKNet.EfCore.Extensions`' `SequenceExtensions`/`EfCoreExtensions` read this attribute to register the sequence
 against the model when the provider is SQL Server or Npgsql.
 
-### 8. Enum-backed SQL sequences — `[SqlSequence]`
+### Enum-backed SQL sequences — `[SqlSequence]`
 
 Applied to an `enum` to associate it with a database sequence schema, e.g. `[SqlSequence("billing")] public enum
 InvoiceKind { ... }`. Single constructor parameter `schema`, defaulting to `"seq"`, exposed as the read-only
 `Schema` property.
 
-### 9. Audit-log opt-in and redaction — `[AuditLog]`, `[IgnoreAuditLog]`, `[SensitiveDataAttribute]`
+### Audit-log opt-in and redaction — `[AuditLog]`, `[IgnoreAuditLog]`, `[SensitiveDataAttribute]`
 
 These three attributes are pure markers read by `DKNet.EfCore.AuditLogs` (there is zero behavior in this package
 itself) but they only make sense in terms of that consumer, so they're covered together:
@@ -341,7 +350,7 @@ public class Customer : AuditedEntity
 an entity that doesn't implement `IAuditedProperties` is skipped before any of these attributes are even inspected
 — attaching `[AuditLog]` to a plain `Entity` does nothing.
 
-### 10. Excluding a class from automatic mapping — `[IgnoreEntity]`
+### Excluding a class from automatic mapping — `[IgnoreEntity]`
 
 A class-level marker documented as excluding a type "from the automatic entity mapper", intended for delivered
 (non-EF-mapped) types. **Verified caveat**: as of this writing, no shipped DKNet package (`Extensions`,
@@ -351,7 +360,7 @@ declared-but-not-yet-wired extension point rather than something that changes ru
 don't rely on it to keep a type out of your model until you've confirmed the specific mapper/generator you're using
 reads it.
 
-### 11. Publishing contract — `IEventPublisher`, `DefaultEventPublisher`, `IEventItem` / `EventItem`
+### Publishing contract — `IEventPublisher`, `DefaultEventPublisher`, `IEventItem` / `EventItem`
 
 `IEventPublisher` is the sink domain events are handed to: `PublishAsync(object, CancellationToken)` for one event,
 `PublishAsync(IEnumerable<object>, CancellationToken)` for a batch. `DefaultEventPublisher` is an `abstract` base
@@ -367,7 +376,7 @@ defaulting `AdditionalData` to an ordinal-case-insensitive dictionary and `Event
 originating entity's full type name for every dispatched event that implements `IEventItem`, whether or not you
 derive from `EventItem` yourself.
 
-## Composition with other DKNet packages
+## 🧱 Where it fits
 
 This package is deliberately inert — every other EfCore package supplies the runtime behavior against the types
 declared here. Concretely (all verified by reading the consuming source, not assumed):
@@ -384,7 +393,7 @@ declared here. Concretely (all verified by reading the consuming source, not ass
   `Entity<TKey>` doesn't reference `DKNet.EfCore.Hooks` at all; the hook pipeline reaches in from the outside via
   the `IEventEntity`/`IAuditedProperties` interfaces.
 - **`DKNet.EfCore.AuditLogs`** is the sole consumer of `[AuditLog]`, `[IgnoreAuditLog]`, and
-  `[SensitiveDataAttribute]`, and it gates everything on `IAuditedProperties` first (see feature 9). It also reads
+  `[SensitiveDataAttribute]`, and it gates everything on `IAuditedProperties` first (see *Audit-log opt-in and redaction* below). It also reads
   `IAuditedProperties.CreatedBy`/`UpdatedBy` directly for the "who" side of each audit entry.
 - **`DKNet.EfCore.DataAuthorization`** stamps `IAuditedProperties.CreatedBy` on newly added entities (when empty)
   as part of assigning row ownership, and generally targets entities exposing the abstractions in this package
@@ -408,7 +417,7 @@ declared here. Concretely (all verified by reading the consuming source, not ass
   examples across the docs) is to back repositories with `Entity`/`Entity<TKey>`-derived aggregates so the rest of
   the stack (events, audit, concurrency) applies uniformly.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **Implementing an interface is not enough by itself.** `IAuditedProperties`, `IConcurrencyEntity<>`,
   `ISoftDeletableEntity`, and `IEventEntity` are pure contracts — none of them stamp values, filter queries, or
@@ -425,7 +434,7 @@ declared here. Concretely (all verified by reading the consuming source, not ass
 - **`[RaisesEvent]` narrowing is shallow.** Only direct properties of the carrying entity qualify for `Updated`
   narrowing; a change confined to a nested owned value never satisfies it. Narrowing a rule whose `operations` has
   no `Updated` flag is accepted by the compiler but is a no-op reported as a build warning by `DtoGenerator`.
-- **`[IgnoreEntity]` currently has no consumer in this repo** (see feature 10) — don't treat it as a working
+- **`[IgnoreEntity]` currently has no consumer in this repo** (see *Excluding a class from automatic mapping* above) — don't treat it as a working
   exclusion mechanism without confirming the specific tool you're using reads it.
 - **`SetCreatedBy`/`SetUpdatedBy` are first-write-wins / monotonic, not "always overwrite".** `SetCreatedBy` is a
   no-op once `CreatedBy` is set; `SetUpdatedBy` silently ignores a supplied `updatedOn` older than the current
@@ -436,3 +445,23 @@ declared here. Concretely (all verified by reading the consuming source, not ass
   technology-agnostic) but means nothing in this package can validate itself against a real `DbContext` — mistakes
   (e.g. a `[Sequence]` on an unsupported type) surface as an attribute-construction `NotSupportedException`, not an
   EF Core model-building error.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – turns these contracts into model configuration: primary
+  keys and GUID v7 generators, audit columns, `RowVersion` concurrency tokens, `[Sequence]` registration. Reach for it
+  to make the declarations here take effect.
+- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline the runtime packages plug into. Reach for
+  it when you need a custom before/after-save hook.
+- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – dispatches the events queued with `AddEvent` and raised by
+  `[RaisesEvent]`. Reach for it to actually publish them.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – the sole consumer of `[AuditLog]`, `[IgnoreAuditLog]`, and
+  `[SensitiveData]`. Reach for it for a field-level change trail.
+- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level ownership on top of these
+  entities. Reach for it for multi-tenant isolation.
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – compile-time validation of `[RaisesEvent]` and
+  generation of its payload records. Reach for it when a declared event will not resolve.
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the supported way to query and persist these
+  entities. Reach for it for reusable filter/include/order-by objects.
+- [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) – column-level encryption via its own `[Encrypted]`
+  attribute. Reach for it to protect a value at rest; `[SensitiveData]` here only affects the audit trail.
