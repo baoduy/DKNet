@@ -58,12 +58,22 @@ internal sealed record CrudParamModel(
 /// <see langword="true"/> when the current compilation already declares a type implementing
 /// <c>Fluents.Requests.IHandler&lt;RequestName, TDto&gt;</c>; handler emission is skipped for this member.
 /// </param>
+/// <param name="RouteSegment">
+/// The <c>{id}/{segment}</c> route segment for a <c>[CrudAction]</c> member, or <see langword="null"/> for
+/// a create/update member.
+/// </param>
+/// <param name="HttpMethod">
+/// The HTTP method registered for a <c>[CrudAction]</c> member (e.g. <c>"POST"</c>), or
+/// <see langword="null"/> for a create/update member.
+/// </param>
 internal sealed record CrudMemberModel(
     string RequestName,
     string MemberName,
     bool IsConstructor,
     ImmutableArray<CrudParamModel> Params,
-    bool HasHandWrittenHandler = false)
+    bool HasHandWrittenHandler = false,
+    string? RouteSegment = null,
+    string? HttpMethod = null)
 {
     /// <inheritdoc />
     public bool Equals(CrudMemberModel? other) =>
@@ -72,6 +82,8 @@ internal sealed record CrudMemberModel(
         MemberName == other.MemberName &&
         IsConstructor == other.IsConstructor &&
         HasHandWrittenHandler == other.HasHandWrittenHandler &&
+        RouteSegment == other.RouteSegment &&
+        HttpMethod == other.HttpMethod &&
         Params.SequenceEqual(other.Params);
 
     /// <inheritdoc />
@@ -84,6 +96,8 @@ internal sealed record CrudMemberModel(
             hash = hash * 31 + MemberName.GetHashCode();
             hash = hash * 31 + IsConstructor.GetHashCode();
             hash = hash * 31 + HasHandWrittenHandler.GetHashCode();
+            hash = hash * 31 + (RouteSegment?.GetHashCode() ?? 0);
+            hash = hash * 31 + (HttpMethod?.GetHashCode() ?? 0);
             foreach (var param in Params) hash = hash * 31 + param.GetHashCode();
             return hash;
         }
@@ -101,6 +115,7 @@ internal sealed record CrudMemberModel(
 /// <param name="DtoName">The DTO's simple type name.</param>
 /// <param name="Create">The resolved <c>[CrudCreate]</c> member, or <see langword="null"/> when none is declared.</param>
 /// <param name="Updates">The resolved <c>[CrudUpdate]</c> members, in declaration order.</param>
+/// <param name="Actions">The resolved <c>[CrudAction]</c> members, in declaration order.</param>
 internal sealed record CrudEntityModel(
     string EntityFullName,
     string EntityName,
@@ -108,8 +123,13 @@ internal sealed record CrudEntityModel(
     string DtoFullName,
     string DtoName,
     CrudMemberModel? Create,
-    ImmutableArray<CrudMemberModel> Updates)
+    ImmutableArray<CrudMemberModel> Updates,
+    ImmutableArray<CrudMemberModel> Actions = default)
 {
+    // A default (uninitialized) ImmutableArray<T> has no backing array and throws on enumeration; the
+    // default-argument callers that predate [CrudAction] never pass one, so it's normalized to Empty here.
+    public ImmutableArray<CrudMemberModel> Actions { get; init; } = Actions.IsDefault ? ImmutableArray<CrudMemberModel>.Empty : Actions;
+
     /// <inheritdoc />
     public bool Equals(CrudEntityModel? other) =>
         other is not null &&
@@ -119,7 +139,8 @@ internal sealed record CrudEntityModel(
         DtoFullName == other.DtoFullName &&
         DtoName == other.DtoName &&
         Equals(Create, other.Create) &&
-        Updates.SequenceEqual(other.Updates);
+        Updates.SequenceEqual(other.Updates) &&
+        Actions.SequenceEqual(other.Actions);
 
     /// <inheritdoc />
     public override int GetHashCode()
@@ -134,6 +155,7 @@ internal sealed record CrudEntityModel(
             hash = hash * 31 + DtoName.GetHashCode();
             hash = hash * 31 + (Create?.GetHashCode() ?? 0);
             foreach (var update in Updates) hash = hash * 31 + update.GetHashCode();
+            foreach (var action in Actions) hash = hash * 31 + action.GetHashCode();
             return hash;
         }
     }

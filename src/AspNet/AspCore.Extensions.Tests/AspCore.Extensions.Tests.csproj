@@ -29,6 +29,7 @@
         <!-- Force fixed SQLitePCLRaw (EF Sqlite pulls vulnerable 2.1.11, GHSA-2m69-gcr7-jv3q) -->
         <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NetArchTest.Rules"/>
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="SlimMessageBus.Host.Memory"/>
         <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson"/>

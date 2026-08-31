@@ -83,6 +83,16 @@ public sealed record RenameThingRequest : Fluents.Requests.IWitResponse<string>,
     #endregion
 }
 
+/// <summary>Command bound via MapActionById — same route-id-wins-over-body-id contract as <see cref="RenameThingRequest" />.</summary>
+public sealed record ArchiveThingRequest : Fluents.Requests.IWitResponse<string>, Fluents.Requests.IWithKey<Guid>
+{
+    #region Properties
+
+    public Guid Id { get; set; }
+
+    #endregion
+}
+
 internal sealed class CreateWidgetHandler : Fluents.Requests.IHandler<CreateWidgetCommand, WidgetResult>
 {
     #region Methods
@@ -176,6 +186,16 @@ internal sealed class RenameThingHandler : Fluents.Requests.IHandler<RenameThing
 
     public Task<IResult<string>> OnHandle(RenameThingRequest request, CancellationToken cancellationToken) =>
         Task.FromResult<IResult<string>>(Result.Ok($"{request.Id}:{request.Name}"));
+
+    #endregion
+}
+
+internal sealed class ArchiveThingHandler : Fluents.Requests.IHandler<ArchiveThingRequest, string>
+{
+    #region Methods
+
+    public Task<IResult<string>> OnHandle(ArchiveThingRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<string>>(Result.Ok($"archived:{request.Id}"));
 
     #endregion
 }

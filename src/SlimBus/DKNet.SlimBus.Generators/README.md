@@ -1,8 +1,9 @@
 # DKNet.SlimBus.Generators
 
 A Roslyn incremental source generator that emits a full CRUD vertical slice — request records, SlimBus
-handlers, and (optionally) minimal-API endpoint registration — from `[CrudCreate]`/`[CrudUpdate]`-attributed
-entity members. No hand-written command/handler/endpoint boilerplate.
+handlers, and (optionally) minimal-API endpoint registration — from
+`[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. No hand-written command/handler/endpoint
+boilerplate.
 
 ## Install
 
@@ -92,6 +93,36 @@ builder.Services
 Additional `[CrudUpdate]` methods are routed in declaration order; the first one keeps the plain `{id}` PUT,
 every one after gets its method name kebab-cased onto the route (e.g. `UpdatePrice` → `{id}/update-price`).
 
+### Domain actions — `[CrudAction]`
+
+A method marked `[CrudAction]` is a named operation on the entity, published at its own `{id}/{segment}`
+route — it never claims the plain `{id}` route, whatever verb it uses:
+
+```csharp
+[CrudAction("approval")]
+public void Approve([Required] string approver) { ... AddEvent<OrderApproved>(); }
+
+[CrudAction(Verb = CrudActionVerb.Patch)]
+public void Archive() { ... }
+```
+
+| Constructor arg / property | Meaning | Default |
+|---|---|---|
+| `Route` (positional) | The route segment appended after `{id}/`. | Kebab-cased method name (e.g. `Archive` → `archive`). |
+| `Verb` | The registered HTTP verb — `Post`, `Put`, or `Patch`. `Delete` is not supported. | `Post` |
+| `Name` | Overrides the generated request type name. | `{Method}{Entity}Request` |
+
+| Operation | Route | Status |
+|---|---|---|
+| `[CrudAction]` (default `Post`) | `{id}/{segment}` | 200 + DTO body, or 404 |
+| `[CrudAction(Verb = Put)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
+| `[CrudAction(Verb = Patch)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
+
+`[CrudAction]` vs. `[CrudUpdate]` with `Verb = Put`: an update replaces state and, positionally, may claim the
+plain `{id}` route; an action is always a named operation at its own segment and is never positional — it
+never lands on `{id}` regardless of declaration order or verb. `Verb = Patch` only changes the advertised HTTP
+method — there is no partial-update or merge semantics behind it.
+
 ### Endpoint emission is opt-in
 
 `ProductCrudEndpoints.g.cs` is only emitted when the compiling project references `DKNet.AspCore.Extensions`.
@@ -105,7 +136,7 @@ app.MapGroup("/products").MapProductCrud(o => o.Exclude(CrudOp.Delete));
 ```
 
 `CrudMapOptions.Exclude` takes any number of `CrudOp` values (`GetById`, `GetList`, `Create`, `Update`,
-`Delete`); excluded operations are skipped entirely, not just hidden.
+`Delete`, `Action`); excluded operations are skipped entirely, not just hidden.
 
 ## Validation attributes are metadata, not enforcement
 
@@ -150,6 +181,8 @@ same shape, so mixing them is seamless.
 | `DKCRUDGEN004` | Error | A member marked `[CrudCreate]`/`[CrudUpdate]` is not public. |
 | `DKCRUDGEN005` | Info | A hand-written `IHandler<TRequest, ...>` was found for a generated request; the generated handler was skipped. |
 | `DKCRUDGEN006` | Error | The entity does not implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>`. |
+| `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one — the member is emitted as neither. |
+| `DKCRUDGEN008` | Error | Two members on the entity resolve to the same route segment; give one an explicit distinct segment. |
 
 ## Cross-assembly discovery
 

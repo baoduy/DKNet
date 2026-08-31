@@ -1,3 +1,4 @@
+using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.EfCore.Specifications;
 using DKNet.SlimBus.Extensions;
 using Mapster;
@@ -69,6 +70,9 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         }
 
         app.MapGroup("/gadgets").MapGadgetCrud();
+        // Same generated MapGadgetCrud(), same underlying data — only the registration options differ, proving
+        // an actions-excluded group still serves updates while dropping the action route(s) (spec §3.7).
+        app.MapGroup("/gadgets-no-actions").MapGadgetCrud(o => o.Exclude(CrudOp.Action));
 
         await app.StartAsync();
         _app = app;
