@@ -1,13 +1,10 @@
-## DKNet.EfCore.Extensions
+# DKNet.EfCore.Extensions
 
-`DKNet.EfCore.Extensions` is the wiring layer for the EF Core area of DKNet. On its own it provides
-convention-based entity configuration discovery, global query filters, data seeding, time-ordered GUID
-keys, SQL sequence support and a couple of `DbContext`/`EntityEntry` helper extensions. Just as importantly,
-it defines the `SnapshotContext` type that `DKNet.EfCore.Hooks` (and, through it, `DKNet.EfCore.Events`,
-`DKNet.EfCore.AuditLogs` and `DKNet.EfCore.DataAuthorization`) pass into every save-pipeline hook — so this
-package is a dependency of most of the rest of the EfCore family even when you never call its APIs directly.
+The wiring layer for the EF Core area of DKNet: convention-based entity configuration, global query filters,
+data seeding, GUID v7 keys, SQL sequences, and the `SnapshotContext` type the rest of the family's save
+hooks are built on.
 
-### When to reach for it
+## ✨ Why use it?
 
 - You want entity configurations (`IEntityTypeConfiguration<T>`) applied automatically from one or more
   assemblies instead of calling `modelBuilder.ApplyConfigurationsFromAssembly(...)` yourself in every
@@ -22,7 +19,12 @@ package is a dependency of most of the rest of the EfCore family even when you n
 - You are building another EF Core add-on (a hook, an audit log, a data-authorization filter) and need the
   shared `SnapshotContext` abstraction that the rest of the family already speaks.
 
-### Install and minimum registration
+Note that `DKNet.EfCore.Hooks` — and through it `DKNet.EfCore.Events`, `DKNet.EfCore.AuditLogs` and
+`DKNet.EfCore.DataAuthorization` — all pass this package's `SnapshotContext` into every save-pipeline hook,
+so it is already in your dependency graph if you use any of those, even when you never call its APIs
+directly.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Extensions
@@ -66,9 +68,9 @@ assembly list as a `IDbContextOptionsExtension` and replaces EF Core's `IModelCu
 `AutoConfigModelCustomizer`, which runs the discovery/registration steps below once per model build, then
 delegates to the original customizer (so it composes with a provider's own customizer, e.g. Npgsql's).
 
-### Features
+## 🧩 Features
 
-#### 1. Automatic entity configuration discovery
+### Apply entity configurations by assembly scan
 
 `AutoConfigModelCustomizer.Customize` calls `modelBuilder.ApplyConfigurationsFromAssembly(assembly)` (EF
 Core's own scanner) for every assembly registered via `UseAutoConfigModel`. In practice this means: write
@@ -109,7 +111,7 @@ public class ProductConfiguration : DefaultEntityTypeConfiguration<Product>
 }
 ```
 
-#### 2. Global query filters
+### Apply global query filters across entity types
 
 `IGlobalModelBuilder` (`Configurations/IGlobalModelBuilder.cs`) is the extension point:
 
@@ -165,7 +167,7 @@ internal sealed class SoftDeleteFilter : GlobalQueryFilter
 }
 ```
 
-#### 3. Data seeding
+### Seed data through EF Core's native seeding hooks
 
 `IDataSeedingConfiguration` (`Configurations/IDataSeedingConfiguration.cs`) describes a seed unit; the
 abstract `DataSeedingConfiguration<TEntity>` base does the plumbing so you only implement `GetDataAsync`:
@@ -199,7 +201,7 @@ options.UseSqlServer(connectionString)
 attaches them to EF Core's native `UseSeeding`/`UseAsyncSeeding` hooks (run by `EnsureCreated`/migration
 flows), so seeding runs through the same mechanism as any other EF Core seed data, not a bespoke one.
 
-#### 4. GUID v7 keys
+### Generate time-ordered GUID keys
 
 `GuidV7ValueGenerator` (`Convertors/GuidV7ValueGenerator.cs`) is a `ValueGenerator<Guid>` whose `Next`
 returns `Guid.CreateVersion7()` — a time-ordered GUID (RFC 9562 v7), which avoids the index-fragmentation
@@ -212,7 +214,7 @@ directly: `DefaultEntityTypeConfiguration<TEntity>` attaches it automatically to
 builder.Property(e => e.Id).HasValueGenerator<GuidV7ValueGenerator>();
 ```
 
-#### 5. Sequence support
+### Declare SQL sequences from an enum
 
 `[SqlSequenceAttribute(schema)]` (on an enum, from `DKNet.EfCore.Abstractions`) plus `[SequenceAttribute]`
 (on each enum member) declare one SQL sequence per member. `SequenceExtensions.RegisterSequences` (internal,
@@ -238,7 +240,7 @@ string formatted = await db.NextSeqValueWithFormat(InvoiceSequences.InvoiceNumbe
 `NextSeqValue` issues a raw `SELECT NEXT VALUE FOR ...` (SQL Server) or `SELECT nextval(...)` (Npgsql)
 against `context.Database.GetDbConnection()`; it throws `NotSupportedException` on any other provider.
 
-#### 6. Navigation helpers
+### Work with change-tracked graphs
 
 `NavigationExtensions.cs` adds a handful of `EntityEntry`/`DbContext` extensions used to work with
 change-tracked graphs without hand-rolled reflection:
@@ -257,7 +259,7 @@ await db.AddNewEntitiesFromNavigations(); // finds and stages order.Items automa
 await db.SaveChangesAsync();
 ```
 
-#### 7. Exception handling (concurrency)
+### Retry a save on a concurrency conflict
 
 `IEfCoreExceptionHandler` / `EfCoreExceptionHandler` (`Extensions/EfCoreExceptionHandler.cs`) classify a
 `DbUpdateConcurrencyException` into `RetrySaveChanges`, `IgnoreChanges` or `RethrowException`. The default
@@ -276,7 +278,7 @@ Register a custom, per-`DbContext` handler through DI (keyed by the `DbContext`'
 services.AddEfCoreExceptionHandler<AppDbContext, MyConcurrencyHandler>();
 ```
 
-#### 8. SnapshotContext / SnapshotEntityEntry
+### Capture a save-time snapshot for hooks
 
 `SnapshotContext` (`Snapshots/SnapshotContext.cs`) wraps a `DbContext` and, once `Initialize()` is called,
 captures every `Added`/`Modified`/`Deleted` `EntityEntry` at that moment into a read-only list of
@@ -294,7 +296,7 @@ foreach (var e in snapshot.Entities)
 
 You will rarely construct this yourself in application code — see the next section for who does.
 
-### Configuration options and defaults
+## ⚙️ Configuration reference
 
 | Setting | Default | Where |
 |---|---|---|
@@ -307,7 +309,7 @@ You will rarely construct this yourself in application code — see the next sec
 | `SqlSequenceAttribute.Schema` | `"seq"` | `SqlSequenceAttribute` |
 | Sequence registration | Only runs when `context.IsSqlServer()` or `context.IsNpgsql()` | `AutoConfigModelCustomizer` |
 
-### How it composes with other packages
+## 🧱 Where it fits
 
 - **`DKNet.EfCore.Hooks`** is the primary consumer of `SnapshotContext`. `HookContext` (its internal
   save-pipeline coordinator) constructs `new SnapshotContext(db)` once per `SaveChanges` call and passes it
@@ -342,7 +344,7 @@ You will rarely construct this yourself in application code — see the next sec
 - **`DKNet.EfCore.Repos`**: consumes whatever model this package builds (entity configurations, global
   filters, sequences already applied) — it doesn't call into this package's APIs directly.
 
-### Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **Auto-configuration ≠ auto-discovery of entities.** Assembly scanning only finds and *applies*
   `IEntityTypeConfiguration<T>` classes (via EF Core's own `ApplyConfigurationsFromAssembly`); an entity with
@@ -371,3 +373,21 @@ You will rarely construct this yourself in application code — see the next sec
   referenced anywhere in this package's discovery/customizer code — it isn't wired into
   `AutoConfigModelCustomizer`, so decorating an entity with it has no effect on auto-configuration today.
 - **`AddGlobalModelBuilder<T>()` and assembly-scanned filters are merged and de-duplicated by type** (`Union(...).Distinct()`), so registering a filter both ways is harmless, but each filter is instantiated via `Activator.CreateInstance` — implementations needing constructor dependencies must be registered by hand and cannot rely on assembly scanning.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the entity base classes and marker
+  interfaces (`IAuditedProperties`, `IConcurrencyEntity<T>`, `SqlSequenceAttribute`) this package's
+  conventions read. Reach for it first when defining the domain model itself.
+- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the save-pipeline hook infrastructure that consumes
+  `SnapshotContext`. Reach for it when you want to run logic around `SaveChanges`, not to shape the model.
+- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – domain-event dispatch built on those hooks; reach for it
+  when aggregates raise events that must be published after a successful save.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – property-level audit trail, also hook-based;
+  reach for it when you need a record of what changed, not just who changed it.
+- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level ownership filtering
+  implemented as a non-ignorable `GlobalQueryFilter`; reach for it instead of writing that filter yourself.
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the query/repository layer that runs on
+  top of the model this package builds.
+- [DKNet.Fw.Extensions](../Core/DKNet.Fw.Extensions.md) – the reflection and type-scanning helpers
+  (`IsImplementOf`, `TypeExtractors`) this package's discovery is written against.
