@@ -2,8 +2,8 @@
 
 A Roslyn incremental source generator, sibling to `DKNet.EfCore.DtoGenerator`, that emits a full CRUD
 vertical slice — request records, SlimBus handlers, and (optionally) minimal-API endpoint registration —
-from `[CrudCreate]`/`[CrudUpdate]`-attributed entity members. The only hand-written feature code is the
-entity method itself; everything else is generated at compile time into the consuming project.
+from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. The only hand-written feature
+code is the entity method itself; everything else is generated at compile time into the consuming project.
 
 ## When to reach for it
 
@@ -149,7 +149,36 @@ Additional `[CrudUpdate]` methods route in declaration order: the first keeps th
 after gets its method name kebab-cased onto the route (`UpdatePrice` → `{id}/update-price`).
 
 `CrudMapOptions.Exclude(params CrudOp[])` (in `DKNet.AspCore.Extensions`) skips the named operations
-entirely — nothing is registered for them, not merely hidden.
+entirely — nothing is registered for them, not merely hidden. `CrudOp` values: `GetById`, `GetList`,
+`Create`, `Update`, `Delete`, `Action`.
+
+#### Domain actions — `[CrudAction]`
+
+A method marked `[CrudAction]` is a named operation on the entity, published at its own `{id}/{segment}`
+route — it never claims the plain `{id}` route, whatever verb it uses:
+
+```csharp
+[CrudAction("approval")]
+public void Approve([Required] string approver) { ... AddEvent<OrderApproved>(); }
+
+[CrudAction(Verb = CrudActionVerb.Patch)]
+public void Archive() { ... }
+```
+
+| Constructor arg / property | Meaning | Default |
+|---|---|---|
+| `Route` (positional) | The route segment appended after `{id}/`. | Kebab-cased method name (e.g. `Archive` → `archive`). |
+| `Verb` | The registered HTTP verb — `Post`, `Put`, or `Patch`. `Delete` is not supported. | `Post` |
+| `Name` | Overrides the generated request type name. | `{Method}{Entity}Request` |
+
+| Operation | Route | Response |
+|---|---|---|
+| `[CrudAction]` (any verb) | `{id}/{segment}` | 200 + DTO body / 404 |
+
+`[CrudAction]` vs. `[CrudUpdate]` with `Verb = Put`: an update replaces state and, positionally, may claim the
+plain `{id}` route; an action is always a named operation at its own segment and is never positional — it
+never lands on `{id}` regardless of declaration order or verb. `Verb = Patch` only changes the advertised HTTP
+method — there is no partial-update or merge semantics behind it.
 
 #### Endpoint emission is opt-in
 
@@ -184,6 +213,8 @@ Per-operation exclusion at *mapping* time is a separate mechanism — see `CrudM
 | `DKCRUDGEN004` | Error | A member marked `[CrudCreate]`/`[CrudUpdate]` is not public. |
 | `DKCRUDGEN005` | Info | A hand-written `IHandler<TRequest, ...>` was found for a generated request; the generated handler was skipped. |
 | `DKCRUDGEN006` | Error | The entity does not implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>`. |
+| `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one — the member is emitted as neither. |
+| `DKCRUDGEN008` | Error | Two members on the entity resolve to the same route segment; give one an explicit distinct segment. |
 
 ## Composition with other DKNet packages
 
