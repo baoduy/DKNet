@@ -84,7 +84,7 @@ Startup orchestration, minimal-API, and idempotency utilities for web/API worklo
 
 The DKNet Framework is built around **Domain-Driven Design (DDD)** principles and implements the **Onion Architecture** pattern. Each component is designed to support specific layers of this architecture:
 
-![Diagram](https://raw.githubusercontent.com/baoduy/DKNet/e84b5ba3c035d5f12d03ba348e396976d1b0219b/Diagram.png)
+![Diagram](https://raw.githubusercontent.com/baoduy/DKNet/main/Diagram.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

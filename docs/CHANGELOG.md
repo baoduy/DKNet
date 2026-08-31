@@ -197,22 +197,22 @@ All packages include security enhancements:
 For detailed package-specific changes, see:
 
 ### Core
-- [DKNet.Fw.Extensions Changelog](../src/Core/DKNet.Fw.Extensions/CHANGELOG.md)
+- [DKNet.Fw.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/Core/DKNet.Fw.Extensions/CHANGELOG.md)
 
 ### Entity Framework Core
-- [DKNet.EfCore.Abstractions Changelog](../src/EfCore/DKNet.EfCore.Abstractions/CHANGELOG.md)
-- [DKNet.EfCore.Extensions Changelog](../src/EfCore/DKNet.EfCore.Extensions/CHANGELOG.md)
-- [DKNet.EfCore.Repos Changelog](../src/EfCore/DKNet.EfCore.Repos/CHANGELOG.md)
-- [DKNet.EfCore.Hooks Changelog](../src/EfCore/DKNet.EfCore.Hooks/CHANGELOG.md)
+- [DKNet.EfCore.Abstractions Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/CHANGELOG.md)
+- [DKNet.EfCore.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Extensions/CHANGELOG.md)
+- [DKNet.EfCore.Repos Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Repos/CHANGELOG.md)
+- [DKNet.EfCore.Hooks Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Hooks/CHANGELOG.md)
 
 ### Messaging
-- [DKNet.SlimBus.Extensions Changelog](../src/SlimBus/DKNet.SlimBus.Extensions/CHANGELOG.md)
+- [DKNet.SlimBus.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/SlimBus/DKNet.SlimBus.Extensions/CHANGELOG.md)
 
 ### Services
-- [DKNet.Svc.BlobStorage.Abstractions Changelog](../src/Services/DKNet.Svc.BlobStorage.Abstractions/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.AzureStorage Changelog](../src/Services/DKNet.Svc.BlobStorage.AzureStorage/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.AwsS3 Changelog](../src/Services/DKNet.Svc.BlobStorage.AwsS3/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.Local Changelog](../src/Services/DKNet.Svc.BlobStorage.Local/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.Abstractions Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.Abstractions/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.AzureStorage Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.AzureStorage/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.AwsS3 Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.AwsS3/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.Local Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.Local/CHANGELOG.md)
 
 ---
 

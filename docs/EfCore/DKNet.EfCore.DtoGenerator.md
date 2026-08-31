@@ -108,7 +108,7 @@ A property counts as an excluded "navigation" when, after unwrapping arrays/`Lis
 
 ### `[RaisesEvent]` validation (`RaisesEventValidator`)
 
-`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
 
 Declaring a domain event is two separate steps:
 
@@ -140,7 +140,7 @@ public class Product
 - every narrowing property (the trailing `params string[] properties`) is a direct property of the entity, not a nested path (`DKRAISEVT001`);
 - narrowing set on a rule with no `Updated` flag is pointless and warned about (`DKRAISEVT003`), since it has no runtime effect.
 
-**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
+**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
 [RaisesEvent("Touched", EventOperations.Created)]
