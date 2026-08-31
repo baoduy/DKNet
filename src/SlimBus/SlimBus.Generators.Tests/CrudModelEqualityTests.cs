@@ -24,9 +24,16 @@ public class CrudModelEqualityTests
     private static CrudMemberModel BuildUpdate() =>
         new("UpdatePriceProductRequest", "UpdatePrice", false, [BuildParam()]);
 
+    private static CrudMemberModel BuildAction(string routeSegment = "approve", string httpMethod = "POST") =>
+        new("ApproveProductRequest", "Approve", false, [], RouteSegment: routeSegment, HttpMethod: httpMethod);
+
     private static CrudEntityModel BuildEntity(CrudMemberModel? create) =>
         new("global::MyDomain.Product", "Product", "global::System.Guid",
             "global::MyApi.ProductDto", "ProductDto", create, [BuildUpdate()]);
+
+    private static CrudEntityModel BuildEntityWithActions(ImmutableArray<CrudMemberModel> actions) =>
+        new("global::MyDomain.Product", "Product", "global::System.Guid",
+            "global::MyApi.ProductDto", "ProductDto", BuildCreate(), [BuildUpdate()], actions);
 
     private static CrudGenerationResult BuildResult(Diagnostic diagnostic, string ns = "MyApi", bool emitEndpoints = true) =>
         new([BuildEntity(BuildCreate())], [diagnostic], ns, emitEndpoints);
@@ -94,6 +101,60 @@ public class CrudModelEqualityTests
     public void Equals_EntityModelsDifferingOnlyInCreate_AreNotEqual()
     {
         BuildEntity(BuildCreate()).Equals(BuildEntity(null)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Equals_MemberModelsDifferingOnlyInRouteSegment_AreNotEqual()
+    {
+        // The segment decides which route is generated; a cache hit across it would emit a stale endpoint.
+        BuildAction(routeSegment: "approve").Equals(BuildAction(routeSegment: "approval")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Equals_MemberModelsDifferingOnlyInHttpMethod_AreNotEqual()
+    {
+        // The verb decides which HTTP method is registered; a cache hit across it would emit a stale endpoint.
+        BuildAction(httpMethod: "POST").Equals(BuildAction(httpMethod: "PATCH")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Equals_SeparatelyBuiltIdenticalActionMemberModels_AreEqualWithSameHashCode()
+    {
+        var first = BuildAction();
+        var second = BuildAction();
+
+        first.Equals(second).ShouldBeTrue();
+        first.GetHashCode().ShouldBe(second.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_EntityModelsDifferingOnlyInActions_AreNotEqual()
+    {
+        BuildEntityWithActions([BuildAction()]).Equals(BuildEntityWithActions([])).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Equals_SeparatelyBuiltIdenticalEntityModelsWithActions_AreEqualWithSameHashCode()
+    {
+        var first = BuildEntityWithActions([BuildAction()]);
+        var second = BuildEntityWithActions([BuildAction()]);
+
+        first.Equals(second).ShouldBeTrue();
+        first.GetHashCode().ShouldBe(second.GetHashCode());
+    }
+
+    [Fact]
+    public void Actions_ConstructedWithoutArgument_NormalizesToEmptyArrayRatherThanThrowing()
+    {
+        // Every caller that predates [CrudAction] constructs a CrudEntityModel without an Actions argument;
+        // a default (uninitialized) ImmutableArray<T> has no backing array and throws on enumeration, so
+        // this normalization is what keeps every one of those call sites safe to enumerate/compare.
+        var entity = new CrudEntityModel(
+            "global::MyDomain.Product", "Product", "global::System.Guid",
+            "global::MyApi.ProductDto", "ProductDto", BuildCreate(), [BuildUpdate()]);
+
+        entity.Actions.IsDefault.ShouldBeFalse();
+        entity.Actions.ShouldBeEmpty();
     }
 
     [Fact]

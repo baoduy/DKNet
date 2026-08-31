@@ -77,6 +77,18 @@ internal static class CrudDiagnostics
         "Entity does not implement IEntity<TKey>",
         "Entity '{0}' has [CrudCreate]/[CrudUpdate] members but does not implement DKNet.EfCore.Abstractions.Entities.IEntity<TKey>",
         Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor BothUpdateAndAction = new(
+        "DKCRUDGEN007",
+        "Member is marked both [CrudUpdate] and [CrudAction]",
+        "Member '{0}.{1}' is marked both [CrudUpdate] and [CrudAction]; keep exactly one",
+        Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor DuplicateRouteSegment = new(
+        "DKCRUDGEN008",
+        "Two CRUD members resolve to the same route segment",
+        "Entity '{0}' members '{1}' and '{2}' both resolve to route segment '{3}'; give one an explicit distinct segment",
+        Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
 }
 
 /// <summary>
@@ -120,6 +132,7 @@ internal static class CrudModelBuilder
 {
     private const string CrudCreateAttributeFullName = "DKNet.EfCore.Abstractions.Attributes.CrudCreateAttribute";
     private const string CrudUpdateAttributeFullName = "DKNet.EfCore.Abstractions.Attributes.CrudUpdateAttribute";
+    private const string CrudActionAttributeFullName = "DKNet.EfCore.Abstractions.Attributes.CrudActionAttribute";
     private const string GenerateDtoAttributeFullName = "DKNet.EfCore.DtoGenerator.GenerateDtoAttribute";
     private const string EntityInterfaceNamespace = "DKNet.EfCore.Abstractions.Entities";
     private const string EntityInterfaceName = "IEntity";
@@ -215,6 +228,7 @@ internal static class CrudModelBuilder
 
         var createCandidates = new List<(IMethodSymbol Member, AttributeData Attribute, bool IsConstructor)>();
         var updateMembers = ImmutableArray.CreateBuilder<CrudMemberModel>();
+        var actionMembers = ImmutableArray.CreateBuilder<CrudMemberModel>();
         var hasAnyCrudMember = false;
 
         foreach (var member in type.GetMembers())
@@ -232,12 +246,31 @@ internal static class CrudModelBuilder
             if (isConstructor) continue;
 
             var updateAttribute = GetAttribute(method, CrudUpdateAttributeFullName);
-            if (updateAttribute is null) continue;
+            var actionAttribute = GetAttribute(method, CrudActionAttributeFullName);
+            if (updateAttribute is null && actionAttribute is null) continue;
 
             hasAnyCrudMember = true;
-            if (EnsurePublic(method, type, diagnostics))
-                updateMembers.Add(BuildMemberModel(type, method, updateAttribute, isConstructor: false, handlerOverrides, diagnostics));
+
+            // Both annotations on one member is never silently resolved in favour of either — the member
+            // is reported and emitted as neither an update nor an action (spec §3.8 / DKCRUDGEN007).
+            if (updateAttribute is not null && actionAttribute is not null)
+            {
+                diagnostics.Add(Diagnostic.Create(CrudDiagnostics.BothUpdateAndAction, Location.None, type.Name, method.Name));
+                continue;
+            }
+
+            if (updateAttribute is not null)
+            {
+                if (EnsurePublic(method, type, diagnostics))
+                    updateMembers.Add(BuildMemberModel(type, method, updateAttribute, isConstructor: false, isAction: false, handlerOverrides, diagnostics));
+            }
+            else if (EnsurePublic(method, type, diagnostics))
+            {
+                actionMembers.Add(BuildMemberModel(type, method, actionAttribute!, isConstructor: false, isAction: true, handlerOverrides, diagnostics));
+            }
         }
+
+        CheckDuplicateRouteSegments(type, updateMembers, actionMembers, diagnostics);
 
         if (!hasAnyCrudMember) return null;
 
@@ -250,7 +283,7 @@ internal static class CrudModelBuilder
         {
             var (member, attribute, isConstructor) = createCandidates[0];
             if (EnsurePublic(member, type, diagnostics))
-                createMember = BuildMemberModel(type, member, attribute, isConstructor, handlerOverrides, diagnostics);
+                createMember = BuildMemberModel(type, member, attribute, isConstructor, isAction: false, handlerOverrides, diagnostics);
         }
 
         var keyFullName = ResolveKeyFullName(type);
@@ -281,7 +314,8 @@ internal static class CrudModelBuilder
             dto.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             dto.Name,
             createMember,
-            updateMembers.ToImmutable());
+            updateMembers.ToImmutable(),
+            actionMembers.ToImmutable());
     }
 
     private static bool EnsurePublic(ISymbol member, INamedTypeSymbol type, ImmutableArray<Diagnostic>.Builder diagnostics)
@@ -291,11 +325,50 @@ internal static class CrudModelBuilder
         return false;
     }
 
+    // Every [CrudUpdate] member past the first (index 0 owns the plain "{id}" route) and every [CrudAction]
+    // member resolves to a route segment; two members landing on the same segment is an error regardless
+    // of declaration order or which verbs are involved (spec §3.7 / DKCRUDGEN008).
+    private static void CheckDuplicateRouteSegments(
+        INamedTypeSymbol type,
+        ImmutableArray<CrudMemberModel>.Builder updateMembers,
+        ImmutableArray<CrudMemberModel>.Builder actionMembers,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        var seenSegments = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        for (var i = 1; i < updateMembers.Count; i++)
+        {
+            var update = updateMembers[i];
+            CheckSegment(type, Emitter.ToKebabCase(update.MemberName), update.MemberName, seenSegments, diagnostics);
+        }
+
+        foreach (var action in actionMembers)
+            CheckSegment(type, action.RouteSegment!, action.MemberName, seenSegments, diagnostics);
+    }
+
+    private static void CheckSegment(
+        INamedTypeSymbol type,
+        string segment,
+        string memberName,
+        Dictionary<string, string> seenSegments,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        if (seenSegments.TryGetValue(segment, out var existingMemberName))
+        {
+            diagnostics.Add(Diagnostic.Create(
+                CrudDiagnostics.DuplicateRouteSegment, Location.None, type.Name, existingMemberName, memberName, segment));
+            return;
+        }
+
+        seenSegments[segment] = memberName;
+    }
+
     private static CrudMemberModel BuildMemberModel(
         INamedTypeSymbol type,
         IMethodSymbol member,
         AttributeData attribute,
         bool isConstructor,
+        bool isAction,
         Dictionary<string, Location> handlerOverrides,
         ImmutableArray<Diagnostic>.Builder diagnostics)
     {
@@ -312,8 +385,34 @@ internal static class CrudModelBuilder
         if (hasHandWrittenHandler)
             diagnostics.Add(Diagnostic.Create(CrudDiagnostics.HandWrittenHandlerOverride, overrideLocation, requestName));
 
+        string? routeSegment = null;
+        string? httpMethod = null;
+        if (isAction)
+        {
+            var explicitRoute = attribute.ConstructorArguments.Length > 0
+                ? attribute.ConstructorArguments[0].Value as string
+                : null;
+            routeSegment = string.IsNullOrWhiteSpace(explicitRoute) ? Emitter.ToKebabCase(member.Name) : explicitRoute;
+            httpMethod = ResolveActionHttpMethod(attribute);
+        }
+
         return new CrudMemberModel(
-            requestName, isConstructor ? ".ctor" : member.Name, isConstructor, parameters.ToImmutable(), hasHandWrittenHandler);
+            requestName, isConstructor ? ".ctor" : member.Name, isConstructor, parameters.ToImmutable(), hasHandWrittenHandler,
+            routeSegment, httpMethod);
+    }
+
+    // CrudActionVerb.Post = 0, Put = 1, Patch = 2 (spec §3.6 / R3); absent named argument defaults to Post.
+    private static string ResolveActionHttpMethod(AttributeData attribute)
+    {
+        foreach (var namedArgument in attribute.NamedArguments)
+        {
+            if (namedArgument.Key != "Verb") continue;
+            return namedArgument.Value.Value is int verb
+                ? verb switch { 1 => "PUT", 2 => "PATCH", _ => "POST" }
+                : "POST";
+        }
+
+        return "POST";
     }
 
     /// <summary>
@@ -560,7 +659,13 @@ internal static class Emitter
 
         foreach (var update in entity.Updates)
         {
-            AppendUpdateRequest(builder, entity, update);
+            AppendUpdateRequest(builder, entity, update, "Update");
+            builder.AppendLine();
+        }
+
+        foreach (var action in entity.Actions)
+        {
+            AppendUpdateRequest(builder, entity, action, "Action");
             builder.AppendLine();
         }
 
@@ -581,9 +686,9 @@ internal static class Emitter
         builder.AppendLine("}");
     }
 
-    private static void AppendUpdateRequest(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
+    private static void AppendUpdateRequest(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member, string kind)
     {
-        builder.Append("/// <summary>Update request generated from ")
+        builder.Append("/// <summary>").Append(kind).Append(" request generated from ")
             .Append(entity.EntityName).Append('.').Append(member.MemberName).AppendLine(".</summary>");
         builder.Append("public sealed partial record ").Append(member.RequestName).AppendLine(" :");
         builder.Append("    ").Append(WitResponseInterface).Append(entity.DtoFullName).AppendLine(">,");
@@ -622,20 +727,21 @@ internal static class Emitter
     {
         var emitCreate = entity.Create is not null && !entity.Create.HasHandWrittenHandler;
         var updatesToEmit = entity.Updates.Where(u => !u.HasHandWrittenHandler).ToImmutableArray();
-        if (!emitCreate && updatesToEmit.Length == 0) return null;
+        var actionsToEmit = entity.Actions.Where(a => !a.HasHandWrittenHandler).ToImmutableArray();
+        if (!emitCreate && updatesToEmit.Length == 0 && actionsToEmit.Length == 0) return null;
 
         var builder = new StringBuilder();
         builder.AppendLine("// <auto-generated by DKNet.SlimBus.Generators />");
         builder.AppendLine("#nullable enable");
-        // Only update handlers call the IRepositorySpec.FirstOrDefaultAsync extension member; it's only
-        // reachable via extension-invocation syntax (repository.FirstOrDefaultAsync(...)), which needs its
-        // declaring namespace in scope.
-        if (updatesToEmit.Length > 0)
+        // Only update/action handlers call the IRepositorySpec.FirstOrDefaultAsync extension member; it's
+        // only reachable via extension-invocation syntax (repository.FirstOrDefaultAsync(...)), which needs
+        // its declaring namespace in scope.
+        if (updatesToEmit.Length > 0 || actionsToEmit.Length > 0)
             builder.AppendLine("using DKNet.EfCore.Specifications.Extensions;");
         builder.Append("namespace ").Append(ns).AppendLine(";");
         builder.AppendLine();
 
-        if (updatesToEmit.Length > 0)
+        if (updatesToEmit.Length > 0 || actionsToEmit.Length > 0)
         {
             AppendByIdSpec(builder, entity);
             builder.AppendLine();
@@ -649,7 +755,13 @@ internal static class Emitter
 
         foreach (var update in updatesToEmit)
         {
-            AppendUpdateHandler(builder, entity, update);
+            AppendUpdateHandler(builder, entity, update, "update");
+            builder.AppendLine();
+        }
+
+        foreach (var action in actionsToEmit)
+        {
+            AppendUpdateHandler(builder, entity, action, "action");
             builder.AppendLine();
         }
 
@@ -684,10 +796,10 @@ internal static class Emitter
         builder.AppendLine("}");
     }
 
-    private static void AppendUpdateHandler(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
+    private static void AppendUpdateHandler(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member, string kind)
     {
         var handlerName = ToHandlerName(member.RequestName);
-        builder.Append("/// <summary>Generated update handler for ").Append(entity.EntityName).Append('.')
+        builder.Append("/// <summary>Generated ").Append(kind).Append(" handler for ").Append(entity.EntityName).Append('.')
             .Append(member.MemberName).AppendLine(". Write a class implementing the same IHandler to replace it.</summary>");
         AppendHandlerHeader(builder, handlerName, member, entity);
         builder.AppendLine("    {");
@@ -754,7 +866,8 @@ internal static class Emitter
         builder.Append("/// <summary>Registers the generated CRUD endpoints for ").Append(entity.EntityName).AppendLine(".</summary>");
         builder.Append("public static class ").Append(entity.EntityName).AppendLine("CrudEndpointExtensions");
         builder.AppendLine("{");
-        builder.Append("    /// <summary>Maps GET {id}, GET /, POST /, PUT {id} (per update request) and DELETE {id} for ")
+        builder.Append("    /// <summary>Maps GET {id}, GET /, POST /, PUT {id} (per update request), DELETE {id}")
+            .Append(" and each generated domain-action endpoint for ")
             .Append(entity.EntityName).AppendLine(".</summary>");
         builder.Append("    public static ").Append(groupType).Append(" Map").Append(entity.EntityName).AppendLine("Crud(");
         builder.Append("        this ").Append(groupType).AppendLine(" group,");
@@ -782,6 +895,11 @@ internal static class Emitter
                 $"group.MapPutById<{update.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{route}\");");
         }
 
+        // An action never claims the plain "{id}" route, whatever verb it uses (spec §3.11 / R1).
+        foreach (var action in entity.Actions)
+            AppendMapCall(builder, opType, "Action",
+                $"group.MapActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");");
+
         builder.AppendLine("        return group;");
         builder.AppendLine("    }");
         builder.AppendLine("}");
@@ -794,9 +912,10 @@ internal static class Emitter
         builder.Append("            ").AppendLine(mapCallStatement);
     }
 
-    // "UpdatePrice" -> "update-price". Used only for the second-and-later [CrudUpdate] route segment
-    // (task spec: first update maps to "{id}", each additional to "{id}/{kebab-case-method-name}").
-    private static string ToKebabCase(string memberName)
+    // "UpdatePrice" -> "update-price". Used for the second-and-later [CrudUpdate] route segment (first
+    // update maps to "{id}", each additional to "{id}/{kebab-case-method-name}") and as the default
+    // [CrudAction] route segment when its author does not supply an explicit one.
+    internal static string ToKebabCase(string memberName)
     {
         var builder = new StringBuilder();
         for (var i = 0; i < memberName.Length; i++)

@@ -24,7 +24,10 @@ public enum CrudOp
     Update,
 
     /// <summary>The DELETE-by-id endpoint.</summary>
-    Delete
+    Delete,
+
+    /// <summary>The generated domain-action endpoint(s).</summary>
+    Action
 }
 
 /// <summary>

@@ -140,6 +140,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
         group.MapPut<EchoNoResponseCommand>("/put-no-response");
         group.MapPut<RenameWidgetCommand, WidgetResult>("/put-with-response");
         group.MapPutById<RenameThingRequest, Guid, string>("/things/{id}");
+        group.MapActionById<ArchiveThingRequest, Guid, string>("/things/{id}/archive", "PATCH");
     }
 
     #endregion
