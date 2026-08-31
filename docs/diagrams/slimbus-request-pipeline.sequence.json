@@ -218,32 +218,5 @@
       "to": 618,
       "type": "cloud"
     }
-  ],
-  "cards": [
-    {
-      "dot": "cyan",
-      "title": "Auto-save is opt-in and narrow",
-      "items": [
-        "It only fires for Fluents.Requests.INoResponse and IWitResponse<T> requests",
-        "Queries and raw SlimMessageBus IRequest<T> handlers are never auto-saved, even if they changed the DbContext"
-      ]
-    },
-    {
-      "dot": "emerald",
-      "title": "One interceptor, many contexts",
-      "items": [
-        "Every DbContext registered through AddSlimBusEfCoreInterceptor<TDbContext>() is checked, and only those with changes are saved",
-        "Concurrency handling resolves an IEfCoreExceptionHandler keyed by the DbContext's full type name, falling back to an unkeyed registration",
-        "Each context gets AddNewEntitiesFromNavigations before the save, so entities reachable only through navigations are tracked"
-      ]
-    },
-    {
-      "dot": "orange",
-      "title": "Publishing is a separate opt-in",
-      "items": [
-        "Events only reach the bus when AddSlimBusEventPublisher<TDbContext>() is registered as well",
-        "There is no batching: a collection is published one event at a time, awaiting each"
-      ]
-    }
   ]
 }

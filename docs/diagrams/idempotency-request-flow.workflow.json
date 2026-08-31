@@ -219,7 +219,7 @@
       "id": "skip-cache",
       "from": "cacheable",
       "to": "response",
-      "label": "no, left unrecorded",
+      "label": "no — reservation held",
       "variant": "dashed",
       "role": "branch"
     },
@@ -229,33 +229,6 @@
       "to": "response",
       "variant": "default",
       "role": "return"
-    }
-  ],
-  "cards": [
-    {
-      "dot": "cyan",
-      "title": "One gate, three exits",
-      "items": [
-        "A malformed key never reaches the handler",
-        "A duplicate key never reaches it either",
-        "Only a genuinely new key runs it"
-      ]
-    },
-    {
-      "dot": "emerald",
-      "title": "Caching is selective",
-      "items": [
-        "Only statuses inside MinStatusCodeForCaching..MaxStatusCodeForCaching or AdditionalCacheableStatusCodes are stored",
-        "A failed attempt stays retryable as a new request"
-      ]
-    },
-    {
-      "dot": "rose",
-      "title": "Failure asymmetry",
-      "items": [
-        "A store outage during the duplicate check propagates and fails the request",
-        "A failure while caching the response is caught and logged; the client still gets its result"
-      ]
     }
   ]
 }

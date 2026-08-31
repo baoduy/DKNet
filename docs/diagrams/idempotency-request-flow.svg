@@ -344,7 +344,7 @@ rect.c-bg-rect { fill: var(--bg); }
         <path data-edge-from="handler" data-edge-to="cacheable" data-edge-key="3" data-edge-id="handler-result" data-composition-points="649,346;649,120;680,120" d="M 649 346 L 649 120 L 680 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="validate" data-edge-to="badrequest" data-edge-label="invalid" data-edge-key="4" data-edge-id="invalid-key" data-composition-points="254,120;238,120;238,294;343,294;343,472" d="M 254 120 L 238 120 L 238 294 L 343 294 L 343 472" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
         <path data-edge-from="check" data-edge-to="handler" data-edge-label="new key reserved" data-edge-key="5" data-edge-id="new-key" data-composition-points="529,212;529,162;649,162;649,346" d="M 529 212 L 529 162 L 649 162 L 649 346" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="cacheable" data-edge-to="response" data-edge-label="no, left unrecorded" data-edge-key="6" data-edge-id="skip-cache" data-composition-points="858,120;967.2,120" d="M 858 120 L 967.2 120" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="cacheable" data-edge-to="response" data-edge-label="no — reservation held" data-edge-key="6" data-edge-id="skip-cache" data-composition-points="858,120;967.2,120" d="M 858 120 L 967.2 120" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="request" data-edge-to="validate" data-edge-key="7" data-edge-id="to-validate" data-composition-points="226,120;254,120" d="M 226 120 L 254 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="validate" data-edge-to="check" data-edge-label="valid" data-edge-key="8" data-edge-id="valid-key" data-composition-points="350,146;350,246;440,246" d="M 350 146 L 350 246 L 440 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
@@ -474,9 +474,9 @@ rect.c-bg-rect { fill: var(--bg); }
           <rect x="545.6" y="142" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="589" y="152" class="t-backend" font-size="8" text-anchor="middle">new key reserved</text>
         </g>
-        <g data-edge-from="cacheable" data-edge-to="response" data-edge-label="no, left unrecorded" data-edge-key="6" data-edge-id="skip-cache">
-          <rect x="862" y="100" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="912.6" y="110" class="t-database" font-size="8" text-anchor="middle">no, left unrecorded</text>
+        <g data-edge-from="cacheable" data-edge-to="response" data-edge-label="no — reservation held" data-edge-key="6" data-edge-id="skip-cache">
+          <rect x="859.5" y="100" width="106.3" height="14" rx="3" class="c-mask"/>
+          <text x="912.6" y="110" class="t-database" font-size="8" text-anchor="middle">no — reservation held</text>
         </g>
 
         <g data-edge-from="validate" data-edge-to="check" data-edge-label="valid" data-edge-key="8" data-edge-id="valid-key">

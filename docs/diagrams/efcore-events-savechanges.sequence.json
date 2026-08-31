@@ -40,7 +40,7 @@
       "id": "interceptor",
       "type": "backend",
       "label": "HookRunnerInterceptor",
-      "sublabel": "one per DbContext instance"
+      "sublabel": "one per DbContext type"
     },
     {
       "id": "hook",
@@ -225,32 +225,6 @@
       "from": 617,
       "to": 682,
       "type": "messagebus"
-    }
-  ],
-  "cards": [
-    {
-      "dot": "cyan",
-      "title": "Why the split matters",
-      "items": [
-        "[RaisesEvent] narrowing is evaluated before the write, because EntityEntry.Property(...).IsModified is meaningless afterwards",
-        "Hand-raised AddEvent(...) events are read after the write, from the same snapshot"
-      ]
-    },
-    {
-      "dot": "rose",
-      "title": "The failure path",
-      "items": [
-        "If EF Core throws, SaveChangesFailedAsync disposes the hook state and AfterSaveAsync never runs",
-        "No event is published for a failed save, hand-raised or declared"
-      ]
-    },
-    {
-      "dot": "orange",
-      "title": "Not an events-only pipeline",
-      "items": [
-        "EventHook shares one HookRunnerInterceptor with every other hook on the same DbContext",
-        "dbContext.DisableHooks() therefore also suppresses event dispatch"
-      ]
     }
   ]
 }

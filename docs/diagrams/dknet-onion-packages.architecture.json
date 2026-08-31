@@ -173,31 +173,5 @@
       "to": "dbcontext",
       "label": "SaveChanges interceptor"
     }
-  ],
-  "cards": [
-    {
-      "dot": "cyan",
-      "title": "Rings are packages",
-      "items": [
-        "Every arrow is a real project reference in src/, not just a conceptual layer",
-        "A consuming app references only the rings it needs"
-      ]
-    },
-    {
-      "dot": "emerald",
-      "title": "Dependencies point inward",
-      "items": [
-        "Infrastructure depends on DKNet.EfCore.Abstractions; never the reverse",
-        "Domain code compiles against Abstractions alone, with nothing dispatching until Events is registered"
-      ]
-    },
-    {
-      "dot": "rose",
-      "title": "One save pipeline",
-      "items": [
-        "Events, AuditLogs and DataAuthorization all attach as DKNet.EfCore.Hooks hooks",
-        "Hooks installs a single SaveChangesInterceptor per DbContext"
-      ]
-    }
   ]
 }
