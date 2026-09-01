@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
   as a singleton built from a caller-supplied key.
+- **Breaking:** `AddEncryptionServices()` no longer registers `IAesGcmEncryption` or the obsolete `IAesEncryption`
+  either — both were transients over a constructor that generates a fresh random key per instance. Every injection
+  therefore got a different key, the key was persisted nowhere, and any ciphertext written through one resolution
+  became permanently unreadable, silently. Callers must now opt in with
+  `services.AddAesGcmEncryption(base64Key)` — a singleton `IAesGcmEncryption` over a plain Base64 128/192/256-bit
+  key — or, for migration only, `services.AddAesEncryption(keyString)`, a singleton `IAesEncryption` over the
+  combined Base64 `key:iv` value that `AesEncryption.Key` returns (that method is itself `[Obsolete]`). Both throw `ArgumentException` on a null, empty,
+  or whitespace key. `AddEncryptionServices()` now registers only the keyless `IShaHashing` and `IHmacHashing`
+  transients; `new AesGcmEncryption()` still generates an ephemeral key and stays valid for data that never
+  outlives the process.
 - **Breaking:** `EndpointRegistrationOptions.EnableRequestValidation` and `EndpointRegistrationOptions.SystemAccountName`
   have been removed from `DKNet.AspCore.Extensions`, and `UseEndpointConfigs()` no longer stamps `RequestBase.ByUser`
   or applies FluentValidation auto-validation on its own. A consumer that had set either setting gets a compile
@@ -54,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
+- Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
+  made every value they encrypted unrecoverable (DKNet.Svc.Encryption).
 
 ## [2024.12.0] - 2024-12-XX
 

@@ -29,7 +29,8 @@ dotnet add package DKNet.Svc.Encryption
 using DKNet.Svc.Encryption;
 using DKNet.Svc.Encryption.Ciphers;
 
-builder.Services.AddEncryptionServices(); // AES-GCM, HMAC, SHA (AddRsaEncryption(key) separately if needed)
+builder.Services.AddEncryptionServices();                                       // HMAC + SHA hashing
+builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
 
 public sealed class SecretStore(IAesGcmEncryption aesGcm)
 {
