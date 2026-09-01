@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "What the PostgreSQL store package supplies, and what Postgres has to hold",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1400,
+      560
+    ]
+  },
+  "components": [
+    {
+      "id": "app",
+      "type": "external",
+      "label": "Your app",
+      "sublabel": "AddIdempotencyWithNpgsqlStore",
+      "pos": [
+        40,
+        210
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "tag": "one call at start-up"
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "DKNet.AspCore.Idempotency",
+      "sublabel": "endpoint filter and options",
+      "pos": [
+        380,
+        60
+      ],
+      "size": [
+        220,
+        68
+      ]
+    },
+    {
+      "id": "store",
+      "type": "security",
+      "label": "IdempotencyPostgresStore",
+      "sublabel": "internal; PostgresException 23505",
+      "pos": [
+        380,
+        360
+      ],
+      "size": [
+        220,
+        68
+      ]
+    },
+    {
+      "id": "base",
+      "type": "backend",
+      "label": "IdempotencyRelationalStore",
+      "sublabel": "reserve, complete, reclaim, migrate",
+      "pos": [
+        740,
+        360
+      ],
+      "size": [
+        230,
+        68
+      ]
+    },
+    {
+      "id": "table",
+      "type": "database",
+      "label": "IdempotencyKeys",
+      "sublabel": "UX_CompositeKey, IX_ExpiresAt",
+      "pos": [
+        1120,
+        360
+      ],
+      "size": [
+        220,
+        68
+      ],
+      "tag": "text body column"
+    },
+    {
+      "id": "history",
+      "type": "database",
+      "label": "migrate.IdempotencyDbContext",
+      "sublabel": "this package's migrations history",
+      "pos": [
+        1100,
+        60
+      ],
+      "size": [
+        240,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "app-core",
+      "from": "app",
+      "to": "core",
+      "label": "RequiredIdempotentKey() per route",
+      "variant": "dashed"
+    },
+    {
+      "id": "core-store",
+      "from": "core",
+      "to": "store",
+      "label": "IIdempotencyKeyStore",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "id": "store-base",
+      "from": "store",
+      "to": "base",
+      "label": "inherits every shared step",
+      "variant": "dashed",
+      "labelDy": -36
+    },
+    {
+      "id": "base-table",
+      "from": "base",
+      "to": "table",
+      "label": "INSERT, UPDATE, SELECT",
+      "variant": "emphasis",
+      "labelDy": -36,
+      "labelDx": 60
+    },
+    {
+      "id": "base-history",
+      "from": "base",
+      "to": "history",
+      "label": "MigrateAsync on first use",
+      "variant": "security"
+    }
+  ]
+}

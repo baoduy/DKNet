@@ -57,6 +57,36 @@ registered — e.g. to run migrations from a start-up job — without replacing 
 
 ## 🧩 Features
 
+### Registration entry points
+
+`IdempotencyNpgsqlSetup` is the package's only public type, and it declares exactly two extension methods on
+`IServiceCollection`:
+
+| Method | Registers | Does **not** register |
+|---|---|---|
+| `AddIdempotencyNpgsqlStore(string connectionString)` | `IdempotencyDbContext` via `AddDbContext` (scoped context, singleton `DbContextOptions`) plus `AddDbContextFactory<IdempotencyDbContext>` | The key store. Called on its own, no `IIdempotencyKeyStore` exists and `RequiredIdempotentKey()` cannot resolve the filter's dependency. |
+| `AddIdempotencyWithNpgsqlStore(string connectionString, Action<IdempotencyOptions>? config = null)` | Everything the first method does, then `AddIdempotentKey<IdempotencyPostgresStore>(config)` | Nothing — this is the call an application makes. |
+
+Both throw `ArgumentNullException` on a null `services` and `ArgumentException` on a null, empty or
+whitespace connection string, and both are first-wins: a second call with a different connection string is
+silently a no-op once `IdempotencyDbContext` (or any `IIdempotencyKeyStore`) is already registered.
+
+`IdempotencyPostgresStore` is `internal`, so `AddIdempotentKey<IdempotencyPostgresStore>()` is not something
+application code can write — `AddIdempotencyWithNpgsqlStore(...)` is the supported way in. Reach for
+`AddIdempotencyNpgsqlStore(...)` on its own only when you want the `DbContext` registered without replacing
+the key store, for example to run migrations from a start-up job.
+
+### What the package creates, and what you provide
+
+| Thing | Who provides it |
+|---|---|
+| The `IdempotencyKeys` table, `UX_CompositeKey`, `IX_IdempotencyKeys_ExpiresAt` and `CK_StatusCode_Valid` | The package — created by the shipped `Initial` migration |
+| Applying that migration | The package, automatically, on first use per connection string (or you, ahead of time — see [Gotchas & limits](#️-gotchas--limits)) |
+| The `migrate.IdempotencyDbContext` migrations-history table and the `migrate` schema | The package, through EF Core |
+| A reachable PostgreSQL database and a role that can create tables and schemas in it | **You** |
+| Row expiry / cleanup of keys nobody ever retries | **You** — `ExpiresAt` is indexed, but nothing sweeps it |
+| Backup, retention and PII policy for cached response bodies | **You** — `Body` holds the serialized response verbatim |
+
 ### The `IdempotencyKeys` table
 
 The shipped `Initial` migration creates one table:
@@ -117,6 +147,8 @@ Registration bakes in Npgsql-specific EF Core configuration rather than exposing
 | `optionsLifetime` | `ServiceLifetime.Singleton` | Options are shared; the `DbContext` itself stays scoped. |
 
 ## 🧱 Where it fits
+
+![Architecture diagram: one AddIdempotencyWithNpgsqlStore call wires the core package's endpoint filter to IdempotencyPostgresStore, which inherits every shared step from IdempotencyRelationalStore and reaches PostgreSQL's IdempotencyKeys table, applying this package's own migrations history on first use.](../diagrams/idempotency-npgsql-composition.svg)
 
 `IdempotencyPostgresStore` supplies only the Postgres unique-violation check; the reserve → check →
 complete flow, the expired-reservation reclaim, and the per-connection-string migration guard all

@@ -69,6 +69,29 @@ builder.Services.AddIdempotencyWithRedisStore(
 
 ## 🧩 Features
 
+### Registration entry points
+
+`IdempotencyRedisSetup` is the package's only public type. It declares three extension methods on
+`IServiceCollection`, and only the third one wires up the key store:
+
+| Method | Registers | Guard |
+|---|---|---|
+| `AddIdempotencyRedisStore(string connectionString)` | `IDistributedCache` via `AddStackExchangeRedisCache`, **and** a singleton `IConnectionMultiplexer` built with `ConnectionMultiplexer.Connect(connectionString)` | Each of the two is registered only when nothing is registered for it yet — they are guarded independently, so an app that already owns one still gets the other. |
+| `AddIdempotencyRedisStore(IConnectionMultiplexer connectionMultiplexer)` | The supplied multiplexer as a singleton | Returns early if any `IConnectionMultiplexer` is already registered. Registers no `IDistributedCache`. |
+| `AddIdempotencyWithRedisStore(string connectionString, Action<IdempotencyOptions>? config = null)` | Calls the connection-string overload, then `AddIdempotentKey<IdempotencyRedisStore>(config)` | First-wins on `IIdempotencyKeyStore`, as everywhere else. |
+
+The first two throw `ArgumentNullException` on a null `services` (and on a null multiplexer); the
+connection-string overloads also throw `ArgumentException` on an empty or whitespace connection string.
+
+### What the package creates, and what you provide
+
+| Thing | Who provides it |
+|---|---|
+| Key layout, reservation entries and TTLs | The package — nothing is provisioned ahead of time, and there is no schema, migration or design-time factory |
+| A reachable Redis instance or cluster | **You** |
+| Redis memory sizing and its eviction policy | **You** — an eviction under memory pressure silently makes a key look new again |
+| Key-space isolation from unrelated data | **You**, via `IdempotencyOptions.CachePrefix` |
+
 ### Key format and prefixing
 
 Every composite key (`Scope:Method:Endpoint:IdempotentKey`) is hashed with SHA-256 and rendered as
@@ -162,6 +185,8 @@ the [core configuration reference](DKNet.AspCore.Idempotency.md#️-configuratio
 | `JsonSerializerOptions` | camelCase | Serializing `CachedResponse` to/from the Redis string value |
 
 ## 🧱 Where it fits
+
+![Sequence diagram of one protected request: the filter calls IsKeyProcessedAsync, the store GETs the prefixed SHA-256 key, misses, reserves it with SET NX at the InFlightReservationTimeout TTL, and answers (false, null); the handler then runs once and the filter calls MarkKeyAsProcessedAsync, which overwrites the reservation with an unconditional SET at the Expiration TTL.](../diagrams/idempotency-redis-setnx.svg)
 
 This package supplies only the `IIdempotencyKeyStore` implementation. Key validation, the endpoint
 filter, conflict handling (`ConflictHandling`), and scope resolution all come from

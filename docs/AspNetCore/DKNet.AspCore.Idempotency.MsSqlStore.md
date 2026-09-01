@@ -59,6 +59,37 @@ as described on the core page.
 
 ## 🧩 Features
 
+### Registration entry points
+
+`IdempotencyMsSqlSetup` is the package's only public type, and it declares exactly two extension methods on
+`IServiceCollection`:
+
+| Method | Registers | Does **not** register |
+|---|---|---|
+| `AddIdempotencyMsSqlStore(string connectionString)` | `IdempotencyDbContext` via `AddDbContext` (scoped context, singleton `DbContextOptions`) plus `AddDbContextFactory<IdempotencyDbContext>` | The key store. Called on its own, no `IIdempotencyKeyStore` exists and `RequiredIdempotentKey()` cannot resolve the filter's dependency. |
+| `AddIdempotencyWithMsSqlStore(string connectionString, Action<IdempotencyOptions>? config = null)` | Everything the first method does, then `AddIdempotentKey<IdempotencySqlServerStore>(config)` | Nothing — this is the call an application makes. |
+
+Both throw `ArgumentNullException` on a null `services` and `ArgumentException` on a null, empty or
+whitespace connection string. Both are first-wins: `AddIdempotencyMsSqlStore` returns early once
+`IdempotencyDbContext` is registered, and `AddIdempotentKey<TStore>` returns early once any
+`IIdempotencyKeyStore` is registered, so a second call with a different connection string is silently a no-op.
+
+`IdempotencySqlServerStore` is `internal`, so `AddIdempotentKey<IdempotencySqlServerStore>()` is not something
+application code can write — `AddIdempotencyWithMsSqlStore(...)` is the supported way in. Reach for the
+`AddIdempotencyMsSqlStore(...)` overload on its own only when you want the `DbContext` registered without
+replacing the key store — for example to run `Database.MigrateAsync()` from a start-up job.
+
+### What the package creates, and what you provide
+
+| Thing | Who provides it |
+|---|---|
+| The `IdempotencyKeys` table, `UX_CompositeKey`, `IX_IdempotencyKeys_ExpiresAt` and `CK_StatusCode_Valid` | The package — created by the shipped `Initial` migration |
+| Applying that migration | The package, automatically, on first use per connection string (or you, ahead of time — see [Gotchas & limits](#️-gotchas--limits)) |
+| The `migrate.IdempotencyDbContext` migrations-history table and the `migrate` schema | The package, through EF Core |
+| A reachable SQL Server database and a login that can create tables in it | **You** |
+| Row expiry / cleanup of keys nobody ever retries | **You** — `ExpiresAt` is indexed, but nothing sweeps it |
+| Backup, retention and PII policy for cached response bodies | **You** — `Body` holds the serialized response verbatim |
+
 ### The `IdempotencyKeys` table
 
 The `Initial` migration creates one table:
@@ -118,6 +149,8 @@ What SQL Server itself gets is fixed by this package rather than exposed as opti
 | `optionsLifetime` | `ServiceLifetime.Singleton` | Options are shared; the `DbContext` itself stays scoped. |
 
 ## 🧱 Where it fits
+
+![Architecture diagram: one AddIdempotencyWithMsSqlStore call wires the core package's endpoint filter to IdempotencySqlServerStore, which inherits every shared step from IdempotencyRelationalStore and reaches SQL Server's IdempotencyKeys table, applying this package's own migrations history on first use.](../diagrams/idempotency-mssql-composition.svg)
 
 This package supplies only what is provider-specific: the closed `IdempotencyDbContext`, the SQL
 Server column type and check-constraint SQL for `IdempotencyKeyConfiguration`, the `Initial`
