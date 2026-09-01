@@ -3,6 +3,25 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "CrudGenerator: one pass over the compilation, three generated files",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Generated request records"
+        },
+        "backend": {
+          "label": "Compilation input and handlers"
+        },
+        "database": {
+          "label": "Types the generator reuses"
+        },
+        "security": {
+          "label": "Build diagnostics"
+        },
+        "cloud": {
+          "label": "Generated endpoint mapping"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "lanes": [

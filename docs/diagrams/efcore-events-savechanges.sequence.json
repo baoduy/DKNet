@@ -11,6 +11,9 @@
     ],
     "legend": {
       "entries": {
+        "default": {
+          "label": "EF Core interceptor callback"
+        },
         "emphasis": {
           "label": "Save path"
         },

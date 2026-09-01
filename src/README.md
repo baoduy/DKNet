@@ -1,133 +1,77 @@
-# DKNet Framework
+# DKNet source tree
 
 [![codecov](https://codecov.io/github/baoduy/DKNet/graph/badge.svg?token=xtNN7AtB1O)](https://codecov.io/github/baoduy/DKNet)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![GitHub release](https://img.shields.io/github/release/baoduy/DKNet.svg)](https://github.com/baoduy/DKNet/releases)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../LICENSE)
 
-A comprehensive .NET framework designed to enhance enterprise application development using **Domain-Driven Design (DDD)
-** principles and **Onion Architecture** patterns.
+This directory is the solution root for every DKNet package. If you are **using** DKNet, start from the
+[documentation hub](../docs/README.md) instead — this page is for working on the code.
 
-## 🚀 Quick Start
+## Layout
 
-### Installation
+| Path | Contents |
+|---|---|
+| `Core/` | `DKNet.Fw.Extensions`, `DKNet.RandomCreator` — no dependencies on the rest of the suite |
+| `EfCore/` | the twelve `DKNet.EfCore.*` projects, including the two retired `Repos` ones |
+| `SlimBus/` | `DKNet.SlimBus.Extensions` and the `DKNet.SlimBus.Generators` source generator |
+| `AspNet/` | `DKNet.AspCore.Extensions`, `.Tasks`, and the idempotency family |
+| `Services/` | the `DKNet.Svc.*` blob storage, encryption, PDF, and transformation packages |
+| `Aspire/` | `Aspire.Hosting.ServiceBus` |
+| `DKNet.FW.sln` | the solution containing all of the above plus every test project |
 
-```bash
-# Core framework extensions
-dotnet add package DKNet.Fw.Extensions
+Every package has a sibling test project in the same area folder — `EfCore/EfCore.Specifications.Tests`,
+`Services/Svc.Encryption.Tests`, and so on. They are the most current usage reference for any API.
 
-# Entity Framework Core extensions
-dotnet add package DKNet.EfCore.Extensions
-
-# Messaging & CQRS
-dotnet add package DKNet.SlimBus.Extensions
-
-# Blob storage (choose your provider)
-dotnet add package DKNet.Svc.BlobStorage.AzureStorage
-```
-
-### Get Started with Template
+## Build and test
 
 ```bash
-# Use the complete SlimBus API template
-git clone https://github.com/baoduy/DKNet.git
-cd DKNet/src/Templates/SlimBus.ApiEndpoints
-dotnet run --project SlimBus.Api
+cd src
+
+dotnet restore DKNet.FW.sln
+dotnet build   DKNet.FW.sln --configuration Release
+
+# Tests with coverage collection, as CI runs them
+dotnet test DKNet.FW.sln --settings coverage.runsettings --collect:"XPlat Code Coverage"
 ```
 
-## 🏗️ Key Features
+Integration tests use **TestContainers.MsSql**, so Docker must be running. `mcr.microsoft.com/mssql/server`
+publishes no ARM64 image: on an ARM machine, run the MsSql-backed test projects on an x64 runner via the
+`remote-tests.yml` workflow rather than substituting a different database engine. Every other test project runs
+locally. See [Testing Strategy](../docs/Testing-Strategy.md).
 
-- **🎯 Domain-Driven Design**: Rich domain models with business logic encapsulation
-- **🧅 Onion Architecture**: Clean separation of concerns with dependency inversion
-- **⚡ CQRS Pattern**: Command/Query separation for scalable applications
-- **🔄 Event-Driven**: Domain events for loose coupling and integration
-- **🗄️ Repository Pattern**: Abstracted data access with specifications
-- **🗃️ Multi-Storage**: Azure Blob, AWS S3, and local file storage
-- **🧪 Test-Ready**: 99% code coverage with TestContainers integration
+## Solution-wide conventions
 
-## 📋 Core Packages
+| File | What it fixes for every project |
+|---|---|
+| `Directory.Build.props` | `TreatWarningsAsErrors`, `Nullable=enable`, `LangVersion=latest`, `GenerateDocumentationFile`, and the Microsoft analyzers |
+| `Directory.Packages.props` | central package version management — add or upgrade NuGet versions here, never in an individual `.csproj` |
+| `global.json` | SDK `10.0.0` with `rollForward: latestMajor` |
+| `coverage.runsettings` | coverage collection settings shared by local runs and CI |
+| `stylecop.json` | StyleCop configuration, linked into every project |
 
-| Package                      | Description                             | NuGet                                                                                                                         |
-|------------------------------|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| **DKNet.Fw.Extensions**      | Core framework utilities and extensions | [![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)           |
-| **DKNet.EfCore.Extensions**  | Entity Framework Core enhancements      | [![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/)   |
-| **DKNet.SlimBus.Extensions** | CQRS and messaging integration          | [![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Extensions)](https://www.nuget.org/packages/DKNet.SlimBus.Extensions/) |
+Because `TreatWarningsAsErrors` and `GenerateDocumentationFile` are both on, a new warning, a missing XML doc
+comment on a public member, or a nullable mismatch fails the build.
 
-[**→ View All Packages**](docs/README.md#component-documentation)
+`verify_nuget_package.sh` packs the solution locally so a package's contents can be inspected before release.
+Generated output — `nupkgs/`, `TestResults/`, `coverage-report*/` — is never committed.
 
-## 📖 Documentation
+## Documentation
 
-| Section                                              | Description                                        |
-|------------------------------------------------------|----------------------------------------------------|
-| **[📚 Complete Documentation](docs/README.md)**      | Comprehensive guides organized by functional areas |
-| **[🤖 GitHub Copilot Skills](../Skills/README.md)**  | AI-powered code generation skills for DKNet        |
-| **[🚀 Getting Started](docs/Getting-Started.md)**    | Installation, setup, and first steps               |
-| **[🏗️ Architecture Guide](docs/Architecture.md)**   | Understanding DDD and Onion Architecture           |
-| **[⚙️ Configuration](docs/Configuration.md)**        | Setup and configuration options                    |
-| **[📝 Examples & Recipes](docs/Examples/README.md)** | Practical implementation examples                  |
-| **[📖 API Reference](docs/API-Reference.md)**        | Complete API documentation                         |
-| **[❓ FAQ](docs/FAQ.md)**                             | Frequently asked questions                         |
+| Page | What it covers |
+|---|---|
+| [Documentation hub](../docs/README.md) | all 28 published packages, and a problem-to-package table |
+| [Architecture Guide](../docs/Architecture.md) | the onion rings, the package dependency graph, a request and a domain event end to end |
+| [Getting Started](../docs/Getting-Started.md) | prerequisites and a first working setup |
+| [Configuration & Setup](../docs/Configuration.md) | the registration conventions the packages share, and where each extension method lives |
+| [Examples & Recipes](../docs/Examples/README.md) | runnable implementations |
+| [API Reference](../docs/API-Reference.md) | per-package index |
+| [FAQ](../docs/FAQ.md) | common questions and troubleshooting |
+| [Testing Strategy](../docs/Testing-Strategy.md) | test stack and coverage targets |
 
-## 🔧 Example Usage
+Contributor notes for this tree live in [`AGENTS.md`](AGENTS.md); the repository-level guide is
+[`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
-### Domain Entity with Events
+## License
 
-```csharp
-public class Product : AggregateRoot
-{
-    public Product(string name, decimal price, string createdBy)
-        : base(Guid.NewGuid(), createdBy)
-    {
-        Name = name;
-        Price = price;
-    }
-
-    public string Name { get; private set; }
-    public decimal Price { get; private set; }
-
-    public void UpdatePrice(decimal newPrice, string userId)
-    {
-        var oldPrice = Price;
-        Price = newPrice;
-        SetUpdatedBy(userId);
-        
-        AddEvent(new ProductPriceChangedEvent(Id, oldPrice, newPrice));
-    }
-}
-```
-
-### CQRS Command Handler
-
-```csharp
-public class CreateProductHandler : IRequestHandler<CreateProductCommand, ProductResult>
-{
-    private readonly IProductRepository _repository;
-
-    public async Task<ProductResult> Handle(CreateProductCommand request, CancellationToken cancellationToken)
-    {
-        var product = new Product(request.Name, request.Price, request.UserId);
-        await _repository.AddAsync(product, cancellationToken);
-        return _mapper.Map<ProductResult>(product);
-    }
-}
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](docs/Contributing.md) for details on:
-
-- Development setup
-- Coding standards
-- Pull request process
-- Testing requirements
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
-
----
-
-> 💡 **New to DKNet?** Start with our [Getting Started Guide](docs/Getting-Started.md) or explore
-> the [SlimBus Template](src/Templates/SlimBus.ApiEndpoints/README.md) for a complete working example!
+[MIT](../LICENSE)

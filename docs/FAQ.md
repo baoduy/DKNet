@@ -1,13 +1,11 @@
-# Frequently Asked Questions (FAQ)
+# Frequently Asked Questions
 
-Common questions and answers about the DKNet Framework.
+## Contents
 
-## 📋 Table of Contents
-
-- [General Questions](#general-questions)
-- [Architecture & Design](#architecture--design)
+- [General](#general)
+- [Architecture & design](#architecture--design)
 - [Entity Framework Core](#entity-framework-core)
-- [CQRS & Messaging](#cqrs--messaging)
+- [CQRS & messaging](#cqrs--messaging)
 - [Performance](#performance)
 - [Testing](#testing)
 - [Deployment](#deployment)
@@ -15,389 +13,372 @@ Common questions and answers about the DKNet Framework.
 
 ---
 
-## 🤔 General Questions
+## General
 
-### What is DKNet Framework?
+### What is DKNet?
 
-DKNet is a comprehensive .NET framework designed to enhance enterprise application development using Domain-Driven Design (DDD) principles and Onion Architecture patterns. It provides a collection of libraries that simplify building scalable, maintainable applications.
+A suite of 28 independent .NET NuGet packages for building enterprise applications around Domain-Driven Design
+and Onion Architecture. There is no framework to adopt wholesale: each package registers itself and is usable on
+its own. Start from [Which package do I need?](README.md#which-package-do-i-need).
 
 ### Which .NET versions are supported?
 
-DKNet Framework requires **.NET 10.0** or later. All packages are built and tested against .NET 10.0.
+.NET 10.0. Every project targets `net10.0`, and `src/global.json` pins SDK `10.0.0` with
+`rollForward: latestMajor`.
 
-### Is DKNet Framework free to use?
+### Is it free to use?
 
-Yes! DKNet Framework is released under the [MIT License](https://github.com/baoduy/DKNet/blob/main/LICENSE), making it free for both commercial and non-commercial use.
+Yes — [MIT licensed](https://github.com/baoduy/DKNet/blob/main/LICENSE), for commercial and non-commercial use.
 
-### How stable is DKNet Framework?
+### How is quality enforced?
 
-DKNet Framework follows semantic versioning and maintains high code coverage (99% for core libraries). It includes comprehensive testing, CI/CD pipelines, and code quality checks.
+`src/Directory.Build.props` sets `TreatWarningsAsErrors`, `Nullable=enable` and `GenerateDocumentationFile`
+solution-wide, so a new warning, a missing XML doc comment, or a nullable mismatch breaks the build. Every
+package has a sibling `*.Tests` project, and CI fails below 80% line coverage. The stricter per-area targets are
+in [Testing Strategy](Testing-Strategy.md) — they are targets, not a measured guarantee.
 
 ### Where can I get help?
 
-- **Documentation**: [Complete Documentation](README.md)
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
-- **Examples**: SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
+- **Examples**: [Examples & Recipes](Examples/README.md), or the SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository
 
 ---
 
-## 🏗️ Architecture & Design
+## Architecture & design
 
-### Why use Domain-Driven Design (DDD)?
+### Do I have to use DDD?
 
-DDD helps manage complexity in large applications by:
-- **Focusing on business domain**: Core business logic is central
-- **Ubiquitous language**: Shared terminology between developers and domain experts
-- **Bounded contexts**: Clear boundaries between different parts of the system
-- **Rich domain models**: Business rules are expressed in code
+No. Most packages have nothing to do with DDD — `DKNet.Fw.Extensions`, `DKNet.RandomCreator`, the blob storage
+family, `DKNet.Svc.PdfGenerators`, `DKNet.Svc.Transformation`, `DKNet.AspCore.Tasks`, and
+`DKNet.AspCore.Idempotency` all work in any architecture. The DDD-shaped ones are `DKNet.EfCore.Abstractions`
+(entities with a domain-event queue) and the packages that build on it.
 
-### What is Onion Architecture?
+### Do I need every EF Core package?
 
-Onion Architecture is a architectural pattern that:
-- **Inverts dependencies**: Inner layers don't depend on outer layers
-- **Separates concerns**: Each layer has a specific responsibility
-- **Enables testing**: Business logic can be tested in isolation
-- **Supports flexibility**: Infrastructure can be easily replaced
+No. A useful minimum is `DKNet.EfCore.Abstractions` plus `DKNet.EfCore.Extensions`; add the rest as the need
+appears:
 
-### When should I use CQRS?
+- **Querying and persistence** → `DKNet.EfCore.Specifications`
+- **Domain events** → `DKNet.EfCore.Events` (which needs `DKNet.EfCore.Hooks` wiring via `AddDbContextWithHook`)
+- **Change history** → `DKNet.EfCore.AuditLogs`
+- **Row-level isolation** → `DKNet.EfCore.DataAuthorization`
 
-Consider CQRS (Command Query Responsibility Segregation) when:
-- **Complex business logic**: Commands and queries have different requirements
-- **Scalability needs**: Read and write operations need different scaling strategies
-- **Event sourcing**: You want to capture all changes as events
-- **Audit requirements**: Full traceability of operations is needed
+`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired and never published to NuGet. Use
+`DKNet.EfCore.Specifications`; the call-site mapping is in
+[Migrating-Repos-To-Specifications](EfCore/Migrating-Repos-To-Specifications.md).
 
-### Can I use DKNet without DDD?
+### Why is there no `AddDKNet()`?
 
-While DKNet is designed with DDD in mind, you can use individual components:
-- **Core Extensions**: `DKNet.Fw.Extensions` works standalone
-- **EF Core Extensions**: Repository patterns can be used without full DDD
-- **Blob Storage**: Service abstractions work independently
+Because there is nothing for it to do. No package needs another to be registered first (beyond the ordering
+listed in [Registration order that matters](Configuration.md#registration-order-that-matters)), and an aggregator
+would force references you do not want. See [Configuration & Setup](Configuration.md).
+
+### Where do I read the whole story end to end?
+
+[Architecture Guide](Architecture.md) — it carries the layer map, the package dependency graph, a request
+lifecycle across packages, and the domain-event path from an entity method to a bus consumer.
 
 ---
 
-## 🗄️ Entity Framework Core
+## Entity Framework Core
 
-### Do I need to use all EF Core packages?
+### How do I handle migrations?
 
-No, you can pick and choose based on your needs:
-- **Minimum**: `DKNet.EfCore.Abstractions` + `DKNet.EfCore.Extensions`
-- **Repository Pattern**: Add `DKNet.EfCore.Repos`
-- **Domain Events**: Add `DKNet.EfCore.Events`
-- **Data Authorization**: Add `DKNet.EfCore.DataAuthorization`
-
-### How do I handle database migrations?
+Standard EF Core tooling — DKNet adds nothing:
 
 ```bash
-# Create migration
 dotnet ef migrations add YourMigrationName
-
-# Update database
 dotnet ef database update
 
-# For production
-dotnet ef script --idempotent > migration.sql
+# For a deployment pipeline
+dotnet ef migrations script --idempotent --output migration.sql
 ```
 
-### Can I use multiple database contexts?
+### Can I use multiple DbContexts?
 
-Yes! Each context can be configured independently:
+Yes, and each is configured independently:
+
 ```csharp
-services.AddDbContext<CatalogContext>(options => 
-    options.UseSqlServer(connectionString));
-services.AddDbContext<IdentityContext>(options => 
-    options.UseSqlServer(identityConnectionString));
+services.AddDbContext<CatalogContext>(options => options.UseSqlServer(catalogConnectionString));
+services.AddDbContext<IdentityContext>(options => options.UseSqlServer(identityConnectionString));
 
 services.AddSpecRepo<CatalogContext>();
 services.AddSpecRepo<IdentityContext>();
 ```
 
+One caveat: `AddDataOwnerProvider` registers its query filter in a **static** model-builder list, so it applies to
+every `DbContext` that calls `UseAutoConfigModel()` — not only the one passed as `TDbContext`. A second context
+whose model contains `IOwnedBy` entities must also implement `IDataOwnerDbContext`, or keep those entities out of
+its model.
+
 ### How do I handle multi-tenancy?
 
-DKNet provides built-in multi-tenancy support via `DKNet.EfCore.DataAuthorization`:
-1. **Implement `IOwnedBy`** on your entities
-2. **Implement `IDataOwnerDbContext`** on your `DbContext` — required, and enforced by the generic constraint on
-   `AddDataOwnerProvider<TDbContext, TProvider>()`
-3. **Register an `IDataOwnerProvider`** in DI via `AddDataOwnerProvider<TDbContext, TProvider>()`
-4. **A global query filter automatically scopes** every query by the current owner
+Via `DKNet.EfCore.DataAuthorization`:
 
-See [Multi-tenant Example](Examples/README.md#multi-tenant-application) for details.
+1. Implement `IOwnedBy` on the entities that belong to a tenant.
+2. Implement `IDataOwnerDbContext` on the `DbContext` — required, and enforced by the generic constraint on
+   `AddDataOwnerProvider<TDbContext, TProvider>()`.
+3. Register an `IDataOwnerProvider` that returns the current owner key.
+4. Build the model through `UseAutoConfigModel<TContext>()`, which is what attaches the filter.
 
-### What about database performance?
-
-DKNet includes several performance optimizations:
-- **Specification pattern** for complex queries
-- **Lazy loading support** where appropriate
-- **Efficient change tracking** in repositories
-- **Bulk operations** for large datasets
-
----
-
-## 📨 CQRS & Messaging
-
-### Do I need MediatR?
-
-No. DKNet's CQRS/messaging package, `DKNet.SlimBus.Extensions`, is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not use or depend on MediatR. Nothing prevents you from using MediatR instead (or alongside it) in your own application, but DKNet does not ship a MediatR integration package — register handlers through SlimBus:
-```csharp
-services.AddSlimMessageBus(mbb => mbb
-    .AddChildBus("Memory", builder => builder
-        .WithProviderMemory()
-        .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
-```
-
-### How do I handle command validation?
-
-Use FluentValidation with the command pipeline:
-```csharp
-public class CreateProductValidator : AbstractValidator<CreateProductCommand>
-{
-    public CreateProductValidator()
-    {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Price).GreaterThan(0);
-    }
-}
-```
+A global query filter then scopes every read, and a `SaveChanges` hook stamps the owner on new rows. Worked
+example: [Multi-tenant application](Examples/README.md#multi-tenant-application).
 
 ### When are domain events dispatched?
 
-Domain events are dispatched when `SaveChangesAsync()` is called on the DbContext. This ensures events are only sent after successful database commits.
+In the **after-save** hook, so only once the database write has succeeded. Collection happens in the before-save
+hook (that is the only point where `[RaisesEvent]` property narrowing can read `IsModified`). A failed save
+publishes nothing. Details: [A domain event end to end](Architecture.md#a-domain-event-end-to-end).
 
-### Can I use async event handlers?
+### Why did my domain event not fire?
 
-Yes, all event handlers support async operations:
+Four common causes, in order of likelihood:
+
+1. **The `DbContext` was registered with `AddDbContext`, not `AddDbContextWithHook`** — no hook interceptor, so no
+   dispatch.
+2. **No publisher is registered.** Use `AddEventPublisher<TDbContext, TImplementation>()`, or
+   `AddSlimBusEventPublisher<TDbContext>()` to forward events onto SlimMessageBus.
+3. **The save failed.** Events are published after the write commits, not before.
+4. **A publisher threw.** Publisher failures are logged and swallowed, so the save succeeds and the event is
+   lost — check the logs for the publisher's type name.
+
+`AddEvent<TEvent>()` and `[RaisesEvent]` additionally require an `IMapper` registration; without one the save
+throws `EventException` rather than dropping the event silently.
+
+---
+
+## CQRS & messaging
+
+### Do I need MediatR?
+
+No. `DKNet.SlimBus.Extensions` is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not
+reference MediatR. Nothing stops you using MediatR elsewhere in your own application, but DKNet ships no MediatR
+integration. Handler discovery is SlimMessageBus's own API:
+
 ```csharp
-// Consumed on the bus once AddSlimBusEventPublisher<AppDbContext>() forwards it — see Configuration & Setup.
-public class ProductCreatedHandler(IEmailService _emailService) : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
+services.AddSlimMessageBus(mbb => mbb
+    .AddJsonSerializer()
+    .AddServicesFromAssembly(typeof(Program).Assembly)   // discovers your Fluents handlers
+    .AddChildBus("Memory", bus => bus
+        .WithProviderMemory()
+        .AutoDeclareFrom(typeof(Program).Assembly)));
+```
+
+### How do I validate a command?
+
+Bring your own. DKNet ships **no validation pipeline** — declaring a FluentValidation `AbstractValidator<T>` next
+to a command does nothing on its own. To run validation before a handler, register a SlimMessageBus
+`IRequestHandlerInterceptor<TRequest, TResponse>` that resolves your validators and short-circuits with a failed
+`Result`.
+
+### Why does my handler not need SaveChangesAsync?
+
+`AddSlimBusEfCoreInterceptor<TDbContext>()` registers an interceptor with `Order = int.MaxValue`, so it wraps the
+handler and runs last. After the handler returns, it saves — but only when the response is non-null, is not a
+failed `IResultBase`, and the request is a `Fluents.Requests` write. A failed command therefore leaves nothing
+behind and needs no rollback code.
+
+### Can event consumers be async?
+
+Yes — `Fluents.EventsConsumers.IHandler<TEvent>.OnHandle` returns a `Task`:
+
+```csharp
+public class ProductCreatedHandler(IEmailService emailService)
+    : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
-    public async Task OnHandle(ProductCreatedEvent domainEvent, CancellationToken cancellationToken)
-    {
-        await _emailService.SendNotificationAsync(...);
-    }
+    public Task OnHandle(ProductCreatedEvent message, CancellationToken cancellationToken) =>
+        emailService.SendNotificationAsync($"Product {message.ProductId} created");
 }
 ```
 
 ---
 
-## ⚡ Performance
+## Performance
 
-### How does DKNet impact performance?
+### What does DKNet cost at runtime?
 
-DKNet is designed for performance:
-- **Minimal allocations** in hot paths
-- **Efficient repository patterns** with proper caching
-- **Optimized queries** using specifications
-- **Async patterns** throughout
+No published benchmarks exist, so treat any figure you see as unmeasured. What can be stated from the code:
 
-Benchmark results show minimal overhead compared to raw EF Core.
+- The hook pipeline is **one** EF Core interceptor per `DbContext` type, shared by Events, AuditLogs, and
+  DataAuthorization — not one interceptor each.
+- `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` do their work at compile time and add no runtime
+  reflection.
+- `[RaisesEvent]` attribute lookups are cached per entity `Type` for the lifetime of the process.
+- `DKNet.EfCore.Specifications` composes a normal `IQueryable`, so EF Core's own query plan caching applies.
 
-### Should I worry about domain events performance?
+Anything beyond that should be measured in your own application.
 
-Domain events are designed to be lightweight:
-- **In-memory dispatch** by default
-- **Batched processing** during SaveChanges
-- **Async handlers** don't block the main thread
-- **Optional external messaging** for scalability
+### How do I keep queries cheap?
 
-### How do I optimize queries?
+Real APIs the packages give you, rather than general advice:
 
-1. **Use specifications** for complex queries
-2. **Project to DTOs** for read operations
-3. **Enable query splitting** for large includes
-4. **Use raw SQL** for performance-critical scenarios
-
-```csharp
-// Projection example
-var results = await repository.Query()
-    .Select(p => new ProductDto { Id = p.Id, Name = p.Name })
-    .ToListAsync();
-```
+1. **Project instead of materialising entities.** `repo.ToListAsync<TEntity, TModel>(spec, ct)` and
+   `repo.FirstOrDefaultAsync<TEntity, TModel>(spec, ct)` project through Mapster — they need an `IMapper`
+   registration, and they apply `AsNoTracking()` for you.
+2. **Use keyset pagination for deep pages.** `repo.ToKeysetPageAsync(spec, keySelector, cursor, pageSize, ct)`
+   generates an index seek instead of the growing `OFFSET` that `ToPagedListAsync` produces.
+3. **Delete in the database.** `repo.BulkDeleteAsync<TEntity>(predicate, ct)` issues `ExecuteDeleteAsync` rather
+   than loading and tracking rows.
+4. **Stream large result sets.** `repo.ToPageEnumerable(spec)` returns an `IAsyncEnumerable<TEntity>` and requires
+   the specification to declare an ordering.
+5. **Check the SQL.** `repo.Query(spec).ToQueryString()` shows what the specification actually translated to —
+   the pattern used throughout the test suite.
 
 ---
 
-## 🧪 Testing
+## Testing
 
-### How do I test with DKNet?
+### What does DKNet's own test suite use?
 
-DKNet promotes testability:
-- **TestContainers** for integration tests
-- **In-memory providers** for unit tests
-- **Mocking repositories** where needed
-- **Domain event testing** utilities
+xUnit, Shouldly, and TestContainers.MsSql for integration tests — no mocked `DbContext`. See
+[Testing Strategy](Testing-Strategy.md) for conventions and coverage targets.
 
-### Should I use TestContainers or in-memory databases?
+### TestContainers or the in-memory provider?
 
-**TestContainers** for integration tests (recommended):
-- Real database behavior
-- SQL Server features work correctly
-- Catches database-specific issues
+**TestContainers** for anything that exercises persistence. The EF Core in-memory provider does not translate
+global query filters, generated SQL, or sequences, so it silently passes tests that would fail against a real
+database — which is exactly the behaviour several DKNet packages depend on.
 
-**In-memory** for unit tests:
-- Faster execution
-- No external dependencies
-- Focus on business logic
+**In-memory or no database at all** for pure domain logic: entity invariants, the domain-event queue, and
+specification construction all test fine without a provider.
 
-### How do I test domain events?
+### How do I test that a domain method raised an event?
+
+`IEventEntity.GetEvents()` returns the queued event instances and the queued event types as a tuple, so no DKNet
+test helper is needed:
 
 ```csharp
-[Test]
-public async Task CreateProduct_ShouldRaiseEvent()
+[Fact]
+public void UpdatePrice_RaisesPriceChangedEvent()
 {
-    // Arrange
-    var product = Product.Create("Test", 10.0m, "user");
-    
-    // Act
+    var product = Product.Create("Widget", 10.0m, "user");
+
     product.UpdatePrice(15.0m, "user");
-    
-    // Assert
+
     var (events, _) = product.GetEvents();
-    events.Should().ContainSingle().Which.Should().BeOfType<ProductPriceChangedEvent>();
+    events.ShouldHaveSingleItem().ShouldBeOfType<ProductPriceChangedEvent>();
 }
 ```
 
-### How do I test with multiple tenants?
+### How do I test ownership filtering?
+
+Register a fake `IDataOwnerProvider` and let the filter do its job — it is attached at model-build time and cannot
+be disabled per query:
 
 ```csharp
-[Test]
-public async Task Query_ShouldFilterByOwner()
+[Fact]
+public async Task Query_OnlyReturnsRowsForTheCurrentOwner()
 {
-    // Arrange — a fake IDataOwnerProvider scoping every query to "tenant1"
-    var ownerProvider = new Mock<IDataOwnerProvider>();
-    ownerProvider.Setup(x => x.GetOwnershipKey()).Returns("tenant1");
+    // The provider is what decides the current owner; the filter is already on the model.
+    var invoices = await context.Set<Invoice>().ToListAsync();
 
-    // Act & Assert — the global query filter registered by AddDataOwnerProvider<TDbContext, TProvider>()
-    // scopes every query to the current owner automatically; no per-query filtering code needed.
-    var products = await context.Set<Product>().ToListAsync();
-    products.Should().OnlyContain(p => p.OwnedBy == "tenant1");
+    invoices.ShouldAllBe(i => i.OwnedBy == "tenant1");
 }
 ```
 
----
-
-## 🚀 Deployment
-
-### How do I deploy DKNet applications?
-
-DKNet applications can be deployed like any .NET application:
-- **Docker containers** (recommended)
-- **Azure App Service**
-- **AWS ECS/EKS**
-- **On-premises IIS**
-
-The SlimBus template includes Docker support and deployment configurations.
-
-### What about database migrations in production?
-
-**Recommended approach**:
-1. Generate idempotent scripts: `dotnet ef script --idempotent`
-2. Run scripts during deployment pipeline
-3. Never run migrations from application startup in production
-
-**Alternative**: Use migration bundles for zero-downtime deployments.
-
-### How do I handle configuration secrets?
-
-Use standard .NET configuration providers:
-- **Azure Key Vault** for Azure deployments
-- **AWS Secrets Manager** for AWS deployments
-- **Environment variables** for containerized deployments
-- **User secrets** for development
-
-### Do I need special considerations for scaling?
-
-DKNet is designed for scale:
-- **Stateless services** enable horizontal scaling
-- **Event-driven architecture** supports distributed systems
-- **Repository pattern** works with caching layers
-- **CQRS** enables read/write scaling separation
+Keep `UseAutoConfigModel<TContext>()` in the test host's registration. Dropping it removes the filter, and the
+test then passes for the wrong reason.
 
 ---
 
-## 🔧 Troubleshooting
+## Deployment
 
-### "Unable to resolve service" errors
+### How do I deploy an application that uses DKNet?
 
-This usually indicates missing service registration:
+Like any .NET application — DKNet adds no deployment requirement. Two things are worth checking:
+
+- **`DKNet.Svc.PdfGenerators` needs a Chromium browser** (PuppeteerSharp downloads or locates one). A slim
+  container image may not have its dependencies.
+- **The relational idempotency stores need their table.** `DKNet.AspCore.Idempotency.Relational` ships a
+  `DbContext` for it; create it with a migration or with
+  `DKNet.EfCore.Relational.Helpers`' `CreateTableAsync<TEntity>()`.
+
+### Migrations in production?
+
+Generate an idempotent script (`dotnet ef migrations script --idempotent`) or a migration bundle and run it as a
+deployment step, rather than migrating from application start-up.
+
+### Where do secrets go?
+
+Standard .NET configuration providers — Azure Key Vault, AWS Secrets Manager, environment variables, user secrets
+for local work. The DKNet-specific values are the blob adapter connection strings, the idempotency store
+connection string, and the AES/RSA key material. See
+[Environment and secrets](Configuration.md#environment-and-secrets).
+
+---
+
+## Troubleshooting
+
+### "does not contain a definition for `AddDbContextWithHook`" (or another `Add*`)
+
+A missing `using`, not a missing package. Several DKNet extensions live in their own namespace rather than
+`Microsoft.Extensions.DependencyInjection` — the full map is in
+[Where each extension method lives](Configuration.md#where-each-extension-method-lives). The ones that catch
+people most often:
+
+| Method | Namespace |
+|---|---|
+| `AddDbContextWithHook<T>()` | `DKNet.EfCore.Hooks` |
+| `AddSpecRepo<T>()` | `DKNet.EfCore.Specifications` |
+| `ToListAsync(spec, ct)` and friends | `DKNet.EfCore.Specifications.Extensions` |
+| `AddIdempotencyWithRedisStore(...)` | `DKNet.AspCore.Idempotency.RedisStore` |
+| `.Response(...)` | `DKNet.AspCore.Extensions.Responses` |
+
+### "`ModelBuilder` does not contain a definition for `UseAutoConfigModel`"
+
+It is a `DbContextOptionsBuilder<TContext>` extension, not a `ModelBuilder` one. It goes inside the
+`AddDbContext`/`AddDbContextWithHook` callback:
+
 ```csharp
-// Ensure you've registered all required services
-services.AddSpecRepo<AppDbContext>();
-services.AddSlimBusEfCoreInterceptor<AppDbContext>();
-services.AddAzureStorageAdapter(configuration); // or AddS3BlobService / AddLocalDirectoryBlobService
+services.AddDbContextWithHook<AppDbContext>(options => options
+    .UseSqlServer(connectionString)
+    .UseAutoConfigModel<AppDbContext>());
 ```
 
-### Domain events not firing
+### CS0311 on `AddDataOwnerProvider<TDbContext, TProvider>()`
 
-Check these common issues:
-1. **SaveChangesAsync called**: Events dispatch during save
-2. **Event publisher registered**: Use `AddEventPublisher<TDbContext, TImplementation>()` (`DKNet.EfCore.Events`), or `AddSlimBusEventPublisher<TDbContext>()` to forward events onto SlimMessageBus
-3. **Async handlers**: Ensure proper async/await usage
+Your `DbContext` does not implement `IDataOwnerDbContext`. The constraint is deliberate — the older, unconstrained
+signature let you register a context the ownership filter could not read, which silently disabled row isolation.
+Fix and background: [Migration Guide](Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
 
-### Repository queries not working
+### "Unable to resolve service for type `IRepositorySpec`"
 
-Common issues:
-1. **DbContext registration**: Ensure context is registered in DI
-2. **Repository registration**: Call `AddSpecRepo<TContext>()`
-3. **Specifications**: Check expression syntax for specifications
+`AddSpecRepo<TDbContext>()` was not called, or was called for a different `DbContext` type than the one registered.
 
-### Poor query performance
+### A dynamic predicate returns everything, or throws at query time
 
-Performance optimization steps:
-1. **Enable query logging**: See generated SQL queries
-2. **Use specifications**: Instead of complex LINQ expressions
-3. **Project to DTOs**: Avoid loading full entities for display
-4. **Check indexes**: Ensure proper database indexing
+Two separate causes:
 
-### Migration fails
+- **Running it outside `IRepositorySpec`.** `RepositorySpec<TDbContext>.Query<TEntity>` calls `.AsExpandable()`
+  for you; a predicate you build and execute against a raw `DbSet` needs that call by hand or LinqKit cannot
+  expand it.
+- **Wrapping calls in null checks.** `DynamicAnd`/`DynamicOr` already handle a null or unusable value by skipping
+  the clause rather than throwing, so an outer `if (value != null)` only hides which clause was dropped.
 
-Migration troubleshooting:
-1. **Check connection string**: Ensure database connectivity
-2. **Permissions**: Verify database permissions
-3. **Concurrent migrations**: Avoid running multiple migrations simultaneously
-4. **Backup first**: Always backup before major migrations
+### An idempotent endpoint is not deduplicating
 
----
+Two causes:
 
-## 💡 Best Practices
+- **No store registered.** `.RequiredIdempotentKey()` always adds the filter, but the filter needs an
+  `IIdempotencyKeyStore` from `AddIdempotentKey`/`AddIdempotencyWith*Store`; without it the route fails on its
+  first request rather than running unprotected.
+- **A second `AddIdempotentKey` call was ignored.** It returns early when a store is already registered, so a
+  later call with different `IdempotencyOptions` has no effect. Register the store once, with the options you
+  want.
 
-### Code Organization
-
-1. **Follow Onion Architecture**: Keep dependencies pointing inward
-2. **Use feature folders**: Organize by business capability
-3. **Separate concerns**: Commands, queries, events in separate files
-4. **Consistent naming**: Follow established conventions
-
-### Domain Modeling
-
-1. **Rich domain models**: Put business logic in entities
-2. **Value objects**: Use for concepts without identity
-3. **Aggregate boundaries**: Keep aggregates small and focused
-4. **Domain events**: Use for side effects and integration
-
-### Performance
-
-1. **Project early**: Don't load full entities for display
-2. **Lazy loading carefully**: Be aware of N+1 query problems
-3. **Async all the way**: Use async/await consistently
-4. **Monitor queries**: Use logging to identify problematic queries
-
-### Testing
-
-1. **Test business logic**: Focus on domain entities and services
-2. **Use real databases**: TestContainers for integration tests
-3. **Mock external dependencies**: Keep tests focused and fast
-4. **Test edge cases**: Null values, empty collections, boundaries
+If deduplication works but two callers collide or fail to, check the caller scope — see
+[Security](Security.md#idempotency-keys).
 
 ---
 
-## 📚 Additional Resources
+## More
 
-- **[Getting Started Guide](Getting-Started.md)**: Step-by-step setup
-- **[Configuration Guide](Configuration.md)**: Detailed setup options
-- **[Examples & Recipes](Examples/README.md)**: Practical implementations
-- **[Migration Guide](Migration-Guide.md)**: Upgrade instructions
-- **[API Reference](API-Reference.md)**: Detailed API documentation
+- **[Getting Started](Getting-Started.md)** — prerequisites and a first working setup
+- **[Configuration & Setup](Configuration.md)** — registration conventions and ordering
+- **[Examples & Recipes](Examples/README.md)** — runnable implementations
+- **[Architecture Guide](Architecture.md)** — the composition story
+- **[API Reference](API-Reference.md)** — per-package index
 
----
-
-> 💡 **Still have questions?** Don't hesitate to [open an issue](https://github.com/baoduy/DKNet/issues) or start a [discussion](https://github.com/baoduy/DKNet/discussions). The community is here to help!
+Still stuck? [Open an issue](https://github.com/baoduy/DKNet/issues) or start a
+[discussion](https://github.com/baoduy/DKNet/discussions).

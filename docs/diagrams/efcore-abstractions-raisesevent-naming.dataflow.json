@@ -3,9 +3,19 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "How a [RaisesEvent] declaration becomes a payload record",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Name that reaches the payload"
+        },
+        "default": {
+          "label": "Filters carried along"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
-      1120,
+      1069,
       640
     ]
   },

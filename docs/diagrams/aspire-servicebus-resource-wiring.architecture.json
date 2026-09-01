@@ -3,6 +3,31 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "AddServiceBus: what one call adds to the Aspire AppHost",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Aspire AppHost"
+        },
+        "backend": {
+          "label": "Consuming service"
+        },
+        "database": {
+          "label": "Other Aspire resource"
+        },
+        "cloud": {
+          "label": "Container and endpoints"
+        },
+        "security": {
+          "label": "Injected connection string"
+        },
+        "messagebus": {
+          "label": "Service Bus resource"
+        },
+        "external": {
+          "label": "Emulator configuration file"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "layout": {

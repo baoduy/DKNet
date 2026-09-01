@@ -3,6 +3,19 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "How one changed entity becomes an AuditLogEntry",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Captured path"
+        },
+        "security": {
+          "label": "Skipped or redacted"
+        },
+        "database": {
+          "label": "Change-tracker snapshot"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1080,

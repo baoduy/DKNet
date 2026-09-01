@@ -3,9 +3,25 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "What the SQL Server store package supplies, and what SQL Server has to hold",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Your application"
+        },
+        "backend": {
+          "label": "Shared idempotency building blocks"
+        },
+        "security": {
+          "label": "Provider-specific store"
+        },
+        "database": {
+          "label": "What SQL Server must hold"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
-      1400,
+      1395,
       560
     ]
   },

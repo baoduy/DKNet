@@ -3,6 +3,22 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "How TypeExtractor turns assemblies into the type list DKNet scans for",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Lazy extraction path"
+        },
+        "security": {
+          "label": "Rejected input"
+        },
+        "database": {
+          "label": "Materialised type list"
+        },
+        "default": {
+          "label": "Further narrowing"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [1080, 620]
   },

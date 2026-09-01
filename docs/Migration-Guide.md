@@ -2,28 +2,37 @@
 
 This guide helps you migrate between different versions of DKNet Framework and provides guidance for handling breaking changes.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Current Migration Scenarios](#current-migration-scenarios)
-- [Migration from Legacy DKNet](#migration-from-legacy-dknet)
-- [Version-Specific Migrations](#version-specific-migrations)
-- [Breaking Changes Reference](#breaking-changes-reference)
-- [Migration Tools](#migration-tools)
-- [Common Issues](#common-issues)
+- [Current migration scenarios](#current-migration-scenarios)
+- [Version-specific migrations](#version-specific-migrations)
+  - [Off `DKNet.EfCore.Repos` onto Specifications](#entity-framework-core-migration)
+  - [`DKNet.Svc.Encryption` — AES ciphers are now opt-in](#dknetsvcencryption--aes-ciphers-are-now-opt-in)
+  - [`DKNet.EfCore.DataAuthorization` — `IDataOwnerDbContext` is now required](#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required)
+- [Architecture migration](#architecture-migration)
+- [CQRS migration](#cqrs-migration)
+- [Database migration](#database-migration)
+- [Testing migration](#testing-migration)
+- [Migration tools](#migration-tools)
+- [Common issues](#common-issues)
+- [Migration checklist](#migration-checklist)
 
 ---
 
-## 🚀 Current Migration Scenarios
+## Current Migration Scenarios
 
 ### From Legacy DKNet to 2024.12.0+
 
 This is a **major architectural migration** from legacy packages to the new Domain-Driven Design framework.
 
 #### Key Changes
-- **Architecture**: Complete shift to DDD/Onion Architecture
-- **Technology**: Upgrade to .NET 10.0 with C# 14 features
-- **Patterns**: Introduction of CQRS, Repository patterns, Domain Events
-- **Testing**: New testing strategy with TestContainers
+- **Architecture**: complete shift to DDD/Onion Architecture — see the [Architecture Guide](Architecture.md)
+- **Technology**: .NET 10.0; every package targets `net10.0` with `LangVersion=latest`
+- **Patterns**: CQRS via SlimMessageBus, the specification pattern instead of generic repositories, and domain
+  events dispatched from the `SaveChanges` pipeline
+- **Testing**: TestContainers.MsSql for anything touching persistence — see [Testing Strategy](Testing-Strategy.md)
+
+Released versions and their breaking changes are listed in the [Changelog](CHANGELOG.md).
 
 #### Migration Strategy
 
@@ -49,19 +58,20 @@ dotnet list package --include-transitive | grep DKNet
 
 ---
 
-## 📦 Version-Specific Migrations
+## Version-Specific Migrations
 
 ### Upgrading to .NET 10.0
 
-**Prerequisites**
-```bash
-# Install .NET 10.0 SDK
-./src/dotnet-install.sh --version 10.0.100
+**Prerequisites** — install the .NET 10 SDK from
+[dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), then pin it. DKNet's own
+`src/global.json` uses `rollForward` so a newer patch SDK still builds:
 
-# Update global.json
+```json
 {
   "sdk": {
-    "version": "10.0.100"
+    "version": "10.0.0",
+    "rollForward": "latestMajor",
+    "allowPrerelease": false
   }
 }
 ```
@@ -76,40 +86,11 @@ dotnet list package --include-transitive | grep DKNet
 <PackageReference Include="Microsoft.AspNetCore.App" />
 ```
 
-**C# 14 Language Features**
-
-Take advantage of new C# 14 features in your code:
-
-```csharp
-// Params collections - more efficient parameter passing
-public static void ProcessItems(params ReadOnlySpan<string> items)
-{
-    foreach (var item in items)
-    {
-        // Process item
-    }
-}
-
-// Enhanced pattern matching
-public decimal CalculateDiscount(Order order) => order switch
-{
-    { Total: > 1000, IsPremium: true } => 0.20m,
-    { Total: > 500 } => 0.10m,
-    { ItemCount: > 10 } => 0.05m,
-    _ => 0m
-};
-
-// Lock object improvements - better performance
-private readonly Lock _lock = new();
-
-public void SafeOperation()
-{
-    lock (_lock)
-    {
-        // Thread-safe operations
-    }
-}
-```
+**Language version.** Every DKNet project sets `LangVersion=latest`, so on .NET 10 the packages are built with
+C# 14 — including the C# 14 extension-member syntax several of them use for their public API
+(`SpecRepoExtensions`, `SetupEfCoreHook`, `PropertyExtensions`). Your own project does not have to match: the
+compiled API surface is ordinary extension methods, callable from any language version that can consume
+`net10.0`.
 
 ### Entity Framework Core Migration
 
@@ -193,19 +174,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public IEnumerable<string> AccessibleKeys { get; init; } = [];
     // IsUnrestrictedAccess defaults to false via the interface —
     // override it only for system/admin contexts that must bypass ownership filtering.
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.UseAutoConfigModel(); // required for the filter to be attached
 }
 ```
 
 Keep `AccessibleKeys` declared as `IEnumerable<string>` — EF Core cannot translate `ICollection<string>.Contains`
-inside a query filter. Once the interface is in place the registration compiles unchanged:
+inside a query filter.
+
+The ownership filter is attached by `UseAutoConfigModel<TContext>()`, which is a
+`DbContextOptionsBuilder<TContext>` extension — it belongs in the registration callback, **not** in
+`OnModelCreating`, where no `DbContextOptionsBuilder` exists:
 
 ```csharp
+using DKNet.EfCore.DataAuthorization;
+using DKNet.EfCore.Hooks;
+using Microsoft.EntityFrameworkCore;
+
 services
     .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
-    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
+    .AddDbContextWithHook<AppDbContext>(options => options
+        .UseSqlServer(connectionString)
+        .UseAutoConfigModel<AppDbContext>());   // required for the filter to be attached
 ```
 
 **Also check every other `DbContext` in the process** — the compile error is not the only way this upgrade bites.
@@ -220,7 +208,7 @@ Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorizatio
 
 ---
 
-## 🏗️ Architecture Migration
+## Architecture Migration
 
 ### From N-Layer to Onion Architecture
 
@@ -286,7 +274,7 @@ public class Product : AuditedEntity
 
 ---
 
-## 🔄 CQRS Migration
+## CQRS Migration
 
 ### Command/Query Separation
 
@@ -339,7 +327,7 @@ internal sealed class GetProductHandler(AppDbContext db) : Fluents.Queries.IHand
 
 ---
 
-## 📊 Database Migration
+## Database Migration
 
 ### Schema Updates
 
@@ -368,51 +356,57 @@ ALTER TABLE Products ADD UpdatedAt DATETIME2 NULL;
 
 ---
 
-## 🧪 Testing Migration
+## Testing Migration
 
-### From Legacy Testing to Modern Patterns
+DKNet's own suite uses xUnit, Shouldly, and TestContainers.MsSql, and the same reasoning applies to your tests of
+DKNet-backed persistence: the EF Core in-memory provider does not translate global query filters, generated SQL,
+or sequences, so it silently passes tests that would fail against a real database. See
+[Testing Strategy](Testing-Strategy.md).
 
-**Before**
+**Before** — in-memory, so the ownership filter and the generated SQL are never exercised:
+
 ```csharp
-[Test]
-public async Task CreateProduct_ShouldReturnProduct()
+[Fact]
+public async Task ActiveProducts_AreReturned()
 {
-    // In-memory database setup
-    var options = new DbContextOptionsBuilder<DbContext>()
-        .UseInMemoryDatabase(databaseName: "TestDb")
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseInMemoryDatabase("TestDb")
         .Options;
-        
-    using var context = new DbContext(options);
-    var repository = new ProductRepository(context);
-    
+
+    await using var context = new AppDbContext(options);
+
     // Test logic
 }
 ```
 
-**After**
+**After** — a real SQL Server, with the model built the way production builds it:
+
 ```csharp
-[Test]
-public async Task CreateProduct_ShouldReturnProduct()
+[Fact]
+public async Task ActiveProducts_AreReturned()
 {
-    // TestContainers setup
     await using var container = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
-        
+
     await container.StartAsync();
-    
-    var connectionString = container.GetConnectionString();
+
     var services = new ServiceCollection();
-    services.AddDbContext<AppDbContext>(options => 
-        options.UseSqlServer(connectionString));
-    
-    // Test with real database
+    services.AddDbContextWithHook<AppDbContext>(options => options
+        .UseSqlServer(container.GetConnectionString())
+        // Keep this: dropping it removes the global query filters, and the test then
+        // passes for the wrong reason.
+        .UseAutoConfigModel<AppDbContext>());
+    services.AddSpecRepo<AppDbContext>();
+
+    // Test against the real provider
 }
 ```
 
----
+> `mcr.microsoft.com/mssql/server` publishes no ARM64 image. On an ARM development machine, run these tests on an
+> x64 runner rather than substituting a different engine — DKNet does this via the `remote-tests.yml` workflow.
 
-## 🛠️ Migration Tools
+## Migration Tools
 
 ### Automated Migration Helper
 
@@ -462,8 +456,11 @@ public static class ConfigurationMigration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Point each package's own Add* method at the config section it expects, then let it bind itself
-        services.AddLocalDirectoryBlobService(configuration); // reads its own "BlobStorage" section
+        // Point each package's own Add* method at your configuration, then let it bind itself.
+        // The section name is the options type's own constant — LocalDirectoryOptions.Name is
+        // "BlobStorage:LocalFolder"; the Azure and S3 adapters use "BlobService:AzureStorage"
+        // and "BlobService:S3".
+        services.AddLocalDirectoryBlobService(configuration);
 
         return services;
     }
@@ -472,7 +469,7 @@ public static class ConfigurationMigration
 
 ---
 
-## ⚠️ Common Issues
+## Common Issues
 
 ### 1. ID Type Changes
 
@@ -506,9 +503,12 @@ public static class ConfigurationMigration
 // Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
 
-// New: repository + SlimBus (DKNet's MediatR-free CQRS package)
-services.AddScoped<IProductRepository, ProductRepository>();
+// New: one IRepositorySpec for every entity, plus SlimBus (DKNet's MediatR-free CQRS package).
+// No per-entity repository registration, and no per-handler registration either.
+services.AddSpecRepo<AppDbContext>();
 services.AddSlimMessageBus(mbb => mbb
+    .AddJsonSerializer()
+    .AddServicesFromAssembly(typeof(CreateProductHandler).Assembly)
     .AddChildBus("Memory", builder => builder
         .WithProviderMemory()
         .AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
@@ -516,7 +516,7 @@ services.AddSlimMessageBus(mbb => mbb
 
 ---
 
-## 📋 Migration Checklist
+## Migration Checklist
 
 ### Pre-Migration
 - [ ] Backup production databases
@@ -541,7 +541,7 @@ services.AddSlimMessageBus(mbb => mbb
 
 ---
 
-## 🆘 Getting Help
+## Getting Help
 
 If you encounter issues during migration:
 

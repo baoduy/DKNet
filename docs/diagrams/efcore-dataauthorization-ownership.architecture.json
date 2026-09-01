@@ -3,6 +3,19 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Row ownership: the read filter and the save-time stamp",
+    "legend": {
+      "entries": {
+        "security": {
+          "label": "Ownership decision point"
+        },
+        "backend": {
+          "label": "Your DbContext and its hook"
+        },
+        "database": {
+          "label": "Rows the caller sees"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1200,

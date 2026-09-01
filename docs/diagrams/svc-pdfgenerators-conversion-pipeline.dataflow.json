@@ -3,6 +3,22 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "PdfGenerator: what actually happens between Markdown and the PDF on disk",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Markdown to PDF path"
+        },
+        "default": {
+          "label": "Options passed through"
+        },
+        "dashed": {
+          "label": "No code path"
+        },
+        "database": {
+          "label": "Written PDF"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1068,

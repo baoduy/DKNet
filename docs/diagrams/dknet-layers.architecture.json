@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "The DKNet onion: which ring owns which package",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Presentation package"
+        },
+        "backend": {
+          "label": "Application or wiring package"
+        },
+        "database": {
+          "label": "Persistence package"
+        },
+        "messagebus": {
+          "label": "Domain-event dispatch"
+        },
+        "security": {
+          "label": "Opt-in cross-cutting concern"
+        },
+        "external": {
+          "label": "Dependency-free foundation"
+        }
+      }
+    },
+    "viewBox": [
+      1210,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "aspcoreExt",
+      "type": "frontend",
+      "label": "DKNet.AspCore.Extensions",
+      "sublabel": "endpoints, Result → ProblemDetails",
+      "tag": "Presentation",
+      "pos": [
+        60,
+        100
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "aspcoreIdem",
+      "type": "frontend",
+      "label": "DKNet.AspCore.Idempotency",
+      "sublabel": "+ MsSql / Npgsql / Redis stores",
+      "pos": [
+        350,
+        100
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "aspcoreTasks",
+      "type": "frontend",
+      "label": "DKNet.AspCore.Tasks",
+      "sublabel": "start-up background jobs",
+      "pos": [
+        640,
+        100
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "slimbus",
+      "type": "backend",
+      "label": "DKNet.SlimBus.Extensions",
+      "sublabel": "CQRS handlers, auto-save",
+      "tag": "Application",
+      "pos": [
+        60,
+        230
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "svc",
+      "type": "backend",
+      "label": "DKNet.Svc.*",
+      "sublabel": "blob, encryption, PDF, transformation",
+      "pos": [
+        350,
+        230
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "events",
+      "type": "messagebus",
+      "label": "DKNet.EfCore.Events",
+      "sublabel": "dispatches AddEvent queues",
+      "tag": "Infrastructure",
+      "pos": [
+        60,
+        360
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "hooks",
+      "type": "backend",
+      "label": "DKNet.EfCore.Hooks",
+      "sublabel": "before/after SaveChanges pipeline",
+      "pos": [
+        350,
+        360
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "extensions",
+      "type": "backend",
+      "label": "DKNet.EfCore.Extensions",
+      "sublabel": "model build, filters, seeding",
+      "pos": [
+        640,
+        360
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "specs",
+      "type": "database",
+      "label": "DKNet.EfCore.Specifications",
+      "sublabel": "IRepositorySpec, predicates",
+      "pos": [
+        930,
+        360
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "crosscut",
+      "type": "security",
+      "label": "AuditLogs · DataAuthorization",
+      "sublabel": "each registers its own hook",
+      "pos": [
+        350,
+        480
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "abstractions",
+      "type": "backend",
+      "label": "DKNet.EfCore.Abstractions",
+      "sublabel": "Entity, AuditedEntity, IEventEntity",
+      "tag": "Domain core",
+      "pos": [
+        60,
+        610
+      ],
+      "size": [
+        220,
+        72
+      ]
+    },
+    {
+      "id": "fw",
+      "type": "external",
+      "label": "DKNet.Fw.Extensions · DKNet.RandomCreator",
+      "sublabel": "no EF Core or ASP.NET Core dependency",
+      "tag": "Foundation",
+      "pos": [
+        640,
+        610
+      ],
+      "size": [
+        330,
+        72
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Presentation ring — DKNet.AspCore.*",
+      "wraps": [
+        "aspcoreExt",
+        "aspcoreIdem",
+        "aspcoreTasks"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Application ring",
+      "wraps": [
+        "slimbus",
+        "svc"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Infrastructure ring — DKNet.EfCore.*",
+      "wraps": [
+        "events",
+        "hooks",
+        "extensions",
+        "specs",
+        "crosscut"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "endpointToHandler",
+      "from": "aspcoreExt",
+      "to": "slimbus",
+      "label": "sends requests",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "handlerToEvents",
+      "from": "slimbus",
+      "to": "events",
+      "label": "forwards domain events",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "eventsToAbstractions",
+      "from": "events",
+      "to": "abstractions",
+      "label": "reads AddEvent queue",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "eventsHook",
+      "from": "events",
+      "to": "hooks",
+      "label": "registers a hook",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 60
+    },
+    {
+      "id": "crosscutHook",
+      "from": "crosscut",
+      "to": "hooks",
+      "label": "register hooks",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "hooksModel",
+      "from": "hooks",
+      "to": "extensions",
+      "label": "shares SnapshotContext",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 60
+    },
+    {
+      "id": "specsModel",
+      "from": "specs",
+      "to": "extensions",
+      "label": "applies query filters",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelDy": 60
+    },
+    {
+      "id": "modelToFoundation",
+      "from": "extensions",
+      "to": "fw",
+      "label": "type scanning",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ]
+}

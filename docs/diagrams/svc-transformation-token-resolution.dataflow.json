@@ -3,6 +3,22 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "TransformerService: from template text to a filled string",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Resolved token path"
+        },
+        "default": {
+          "label": "Extraction and lookup order"
+        },
+        "security": {
+          "label": "Nothing resolved"
+        },
+        "dashed": {
+          "label": "Not-found policy outcome"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1068,

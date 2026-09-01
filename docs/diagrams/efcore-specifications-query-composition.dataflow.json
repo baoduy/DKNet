@@ -3,6 +3,16 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "The order ApplySpecs composes a specification onto the queryable",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Composition order"
+        },
+        "database": {
+          "label": "Final queryable"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1080,

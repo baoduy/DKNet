@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How a domain event travels from an entity method to a bus consumer",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1068,
+      600
+    ],
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Path every raised event takes"
+        },
+        "default": {
+          "label": "Only when a rule matched"
+        },
+        "security": {
+          "label": "Fails without an IMapper"
+        },
+        "database": {
+          "label": "The database write"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Raised in the domain"
+    },
+    {
+      "label": "Before the save"
+    },
+    {
+      "label": "The write"
+    },
+    {
+      "label": "After the save"
+    },
+    {
+      "label": "Out of the DbContext"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "entity",
+      "type": "external",
+      "label": "Your entity",
+      "sublabel": "AddEvent(...) in a domain method",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "declared",
+      "type": "external",
+      "label": "[RaisesEvent]",
+      "sublabel": "declared on the entity type",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "before",
+      "type": "backend",
+      "label": "EventHook before-save",
+      "sublabel": "operation + property narrowing",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "IsModified is only readable here"
+    },
+    {
+      "id": "save",
+      "type": "database",
+      "label": "SaveChangesAsync",
+      "sublabel": "rows committed",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "after",
+      "type": "backend",
+      "label": "EventHook after-save",
+      "sublabel": "drains queues, maps declared rules",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "mapper",
+      "type": "security",
+      "label": "IMapper",
+      "sublabel": "EventException when missing",
+      "stage": 3,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "publishers",
+      "type": "messagebus",
+      "label": "IEventPublisher",
+      "sublabel": "every publisher for this DbContext",
+      "stage": 4,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "consumer",
+      "type": "frontend",
+      "label": "Bus consumer",
+      "sublabel": "Fluents.EventsConsumers.IHandler",
+      "stage": 4,
+      "row": 2,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "entity",
+      "to": "save",
+      "label": "queue rides on the entity",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "declared",
+      "to": "before",
+      "label": "matched against the entry",
+      "variant": "emphasis",
+      "labelDy": 53
+    },
+    {
+      "from": "before",
+      "to": "save",
+      "label": "matches held for later"
+    },
+    {
+      "from": "save",
+      "to": "after",
+      "label": "committed",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "after",
+      "to": "mapper",
+      "label": "type-based and declared events",
+      "variant": "security",
+      "labelDy": 48
+    },
+    {
+      "from": "after",
+      "to": "publishers",
+      "label": "each publisher in turn",
+      "variant": "emphasis",
+      "classification": "a publisher that throws is logged, never rethrown",
+      "labelDx": -45
+    },
+    {
+      "from": "publishers",
+      "to": "consumer",
+      "label": "Publish(event), one at a time",
+      "variant": "emphasis",
+      "labelDy": 80
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two ways in",
+      "items": [
+        "AddEvent(instance) queues a pre-built event; AddEvent<TEvent>() and [RaisesEvent] map the entity onto the event type, so both need an IMapper.",
+        "Two [RaisesEvent] rules naming the same payload for the same operation raise it once."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Guarantees and gaps",
+      "items": [
+        "Nothing is published until the write succeeds, and each IEventItem carries a sourceType header.",
+        "Publisher failures are logged and swallowed — the save still succeeds and the event is lost."
+      ]
+    }
+  ]
+}
