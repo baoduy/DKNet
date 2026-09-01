@@ -336,6 +336,11 @@ The same points in full:
 
 ## 🧱 Where it fits
 
+A specification is inert data until `ApplySpecs` folds it onto an `IQueryable`, and it does that in a fixed order —
+filters, then includes, then ordering, then the tracking/window flags:
+
+![Data-flow diagram of ApplySpecs: the specification is applied to the queryable as IgnoreQueryFilters and Where, then Include and ThenInclude chains, then OrderBy and ThenBy in declaration sequence, and finally AsNoTracking, Skip and Take before EF Core executes the query.](../diagrams/efcore-specifications-query-composition.svg)
+
 - **Replaces `DKNet.EfCore.Repos`.** `IRepositorySpec` is the direct successor to `IRepository<T>` /
   `IReadRepository<T>` / `IWriteRepository<T>` — see
   [`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for the full call-site mapping and

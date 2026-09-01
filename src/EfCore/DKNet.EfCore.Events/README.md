@@ -1,7 +1,7 @@
 # DKNet.EfCore.Events
 
 [![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Events)](https://www.nuget.org/packages/DKNet.EfCore.Events/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
 
 Dispatches domain events raised by entities during EF Core `SaveChanges`. An entity queues a plain object from a
 business method (`AddEvent(...)`); this package publishes it after the save has actually committed — never
@@ -60,8 +60,23 @@ db.Orders.Add(new Order(Guid.NewGuid(), 42.00m));
 await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher only after this commits
 ```
 
+## Customisation reference
+
+There is no options class — every knob is a DI registration.
+
+| Knob | Lifetime | Required? | Effect |
+|---|---|---|---|
+| `AddEventPublisher<TDbContext, TPublisher>()` | publisher is scoped | yes | Registers `TPublisher` as an `IEventPublisher` and `EventHook` as a hook for `TDbContext`. Repeating it with the same implementation is a no-op; different implementations all register, and **every one runs on every save**. |
+| `AddDbContextWithHook<TDbContext>()` or `options.UseHooks<TDbContext>(provider)` | — | yes | Installs the interceptor. Without it `EventHook` sits in DI and is never invoked. |
+| `MapsterMapper.IMapper` | your choice | only for `AddEvent<TEvent>()` and `[RaisesEvent]` | Maps the entity onto the payload type. `EventHook` uses the first registered `IMapper`. Missing it throws `EventException` at dispatch time. |
+| `ILogger<EventHook>` | your choice | no | One informational entry per `AfterSaveAsync`, one error entry per failed publisher. |
+
+Behaviour that is deliberately not configurable: dispatch happens only after a successful save, a publisher that
+throws is logged and swallowed so the other publishers still run, and there is no retry, ordering knob, or
+dead-letter path.
+
 ## Full documentation
 
 Registration details, the complete dispatch lifecycle, `[RaisesEvent]` declared events, configuration, and how
 this composes with `DKNet.EfCore.Abstractions` and `DKNet.EfCore.Hooks`:
-https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Events.md
+https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Events.md

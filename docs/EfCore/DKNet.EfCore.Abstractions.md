@@ -302,20 +302,42 @@ soft one automatically"). Implementing `ISoftDeletableEntity` gives you a consis
 query filter (`modelBuilder.Entity<T>().HasQueryFilter(e => !e.IsDeleted)`) against — it does not wire one up for
 you.
 
-### Sequential values — `[Sequence]`
+### Sequential values — `[Sequence]`, `[SqlSequence]`
 
-Applied to a `field` (not a property) to request database-generated sequential values. Constructor takes an
-optional `Type` (defaults to `int`; only `byte`, `short`, `int`, `long` are supported — anything else throws
-`NotSupportedException` at attribute-construction time). Settable options: `Cyclic` (default `true`),
-`FormatString`, `IncrementsBy` (default `-1`), `Max` (default `-1`), `Min` (default `-1`), `StartAt` (default `-1`).
-`DKNet.EfCore.Extensions`' `SequenceExtensions`/`EfCoreExtensions` read this attribute to register the sequence
-against the model when the provider is SQL Server or Npgsql.
+The two sequence attributes are used together: `[SqlSequence]` goes on the **enum** that names your sequences and
+fixes their database schema; `[Sequence]` goes on each **enum field** and describes that one sequence.
 
-### Enum-backed SQL sequences — `[SqlSequence]`
+```csharp
+using DKNet.EfCore.Abstractions.Attributes;
 
-Applied to an `enum` to associate it with a database sequence schema, e.g. `[SqlSequence("billing")] public enum
-InvoiceKind { ... }`. Single constructor parameter `schema`, defaulting to `"seq"`, exposed as the read-only
-`Schema` property.
+[SqlSequence("billing")]           // schema for every sequence in this enum; defaults to "seq"
+public enum InvoiceSequences
+{
+    [Sequence(typeof(long), StartAt = 1000, IncrementsBy = 1, FormatString = "INV-{1:00000000}")]
+    InvoiceNumber,
+
+    [Sequence]                     // int, all database defaults
+    CreditNoteNumber
+}
+```
+
+`FormatString` has a fixed two-placeholder contract, applied by `DKNet.EfCore.Extensions`'
+`NextSeqValueWithFormat`: **`{1}` is the sequence value**, and the literal token `DateTime` is rewritten to `{0}`
+and bound to `DateTime.UtcNow` — so `"T{DateTime:yyMMdd}{1:00000}"` renders as `T26090100042`. A format string
+that uses `{0}` directly gets the timestamp, not the number.
+
+`[Sequence]` targets `AttributeTargets.Field` — it goes on the enum member, not on an entity property. The
+constructor's optional `Type` defaults to `int` and only `byte`, `short`, `int` and `long` are accepted; anything
+else throws `NotSupportedException` while the attribute is being constructed. The four numeric options
+(`StartAt`, `IncrementsBy`, `Min`, `Max`) all default to `-1`, which `DKNet.EfCore.Extensions` reads as "leave it
+to the database" — only values greater than zero are applied. `Cyclic` is always applied, defaulting to `true`.
+Full property list: [Configuration reference](#️-configuration-reference).
+
+`DKNet.EfCore.Extensions` registers these against the model during `UseAutoConfigModel`, and only when the provider
+is SQL Server or Npgsql. Each sequence is named `Seq_{enumMemberName}` in the `[SqlSequence]` schema, and an enum
+member without its own `[Sequence]` is skipped. Read a value back with
+`dbContext.NextSeqValue(InvoiceSequences.InvoiceNumber)`, or `NextSeqValueWithFormat(...)` to get `FormatString`
+applied.
 
 ### Audit-log opt-in and redaction — `[AuditLog]`, `[IgnoreAuditLog]`, `[SensitiveDataAttribute]`
 
@@ -360,6 +382,43 @@ declared-but-not-yet-wired extension point rather than something that changes ru
 don't rely on it to keep a type out of your model until you've confirmed the specific mapper/generator you're using
 reads it.
 
+### Vertical-slice CRUD markers — `[CrudCreate]`, `[CrudUpdate]`, `[CrudAction]`
+
+Three method/constructor markers that declare which members of an entity become generated HTTP endpoints. They are
+**declared here** but consumed entirely by `DKNet.SlimBus.Generators`, which emits the request records, handlers,
+and minimal-API registration from them — this package contributes only the attribute types.
+
+```csharp
+using DKNet.EfCore.Abstractions.Attributes;
+
+public class Order : Entity
+{
+    [CrudCreate]                                   // one per entity; ctor or method
+    public Order(string customer) => Customer = customer;
+
+    [CrudUpdate]                                   // any public instance method
+    public void Rename(string customer) => Customer = customer;
+
+    [CrudAction("approval", Verb = CrudActionVerb.Patch)]
+    public void Approve(string approvedBy) => ApprovedBy = approvedBy;
+
+    public string Customer { get; private set; }
+    public string? ApprovedBy { get; private set; }
+}
+```
+
+- `[CrudCreate]` — on a public constructor or method, at most once per entity. Its parameters become the Create
+  request.
+- `[CrudUpdate]` — on any public instance method; one generated request per marked method. The first one keeps the
+  plain `PUT {id}` route, later ones get `PUT {id}/{kebab-case-method-name}`.
+- `[CrudAction]` — a named operation at its own `{id}/{segment}` route. `Verb` picks `Post` (default), `Put` or
+  `Patch`; there is no `Delete`. The positional `route` argument overrides the kebab-cased method name.
+
+All three expose a `Name` property that overrides the generated request type's name. Marking one member with both
+`[CrudUpdate]` and `[CrudAction]` is a build error. Property tables:
+[Configuration reference](#️-configuration-reference); the generated code, routes, and full diagnostics list live in
+[DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md).
+
 ### Publishing contract — `IEventPublisher`, `DefaultEventPublisher`, `IEventItem` / `EventItem`
 
 `IEventPublisher` is the sink domain events are handed to: `PublishAsync(object, CancellationToken)` for one event,
@@ -376,10 +435,100 @@ defaulting `AdditionalData` to an ordinal-case-insensitive dictionary and `Event
 originating entity's full type name for every dispatched event that implements `IEventItem`, whether or not you
 derive from `EventItem` yourself.
 
+## ⚙️ Configuration reference
+
+There is no options object and no DI registration in this package — its entire customisation surface is the
+attributes below plus the interfaces you implement. Every default is taken from the attribute's own source.
+
+### `RaisesEventAttribute` (`DKNet.EfCore.Abstractions.Events`)
+
+`[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]` — repeatable, one per event the
+entity raises, and never inherited by a derived entity.
+
+Three constructor forms, exactly one of which each declaration uses:
+
+| Form | Signature | Names the payload |
+|---|---|---|
+| Type-naming | `(Type eventType, EventOperations operations, params string[] properties)` | You do — it must be a `[GenerateDto]` record generated from the same entity. |
+| Label convention | `(string label, EventOperations operations, params string[] properties)` | Composed: entity + label + properties + operations + `Event`. |
+| Label-less convention | `(EventOperations operations, params string[] properties)` | Composed: entity + properties + operations + `Event`. |
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `EventType` | `Type?` | `null` | Set only by the type-naming form; the payload record to raise. |
+| `Label` | `string?` | `null` | Set only by the label form; one extra segment in the composed name. Takes no part in the payload's shape. |
+| `Operations` | `EventOperations` | required, no default | `Created = 1`, `Updated = 2`, `Deleted = 4`, combinable. `0` is a build error (`DKRAISEVT007`). |
+| `Properties` | `IReadOnlyList<string>` (trailing `params`) | empty | Narrows an `Updated` rule to fire only when a listed property changed. Empty means any change qualifies. Direct properties only. |
+| `Exclude` | `string[]` | `[]` | Convention forms only. Properties to drop from the composed payload. Mutually exclusive with `Include` (`DKRAISEVT009`); a build error on the type-naming form (`DKRAISEVT011`). |
+| `Include` | `string[]` | `[]` | Convention forms only. When non-empty, the whole truth for the composed payload's shape, overriding the project-wide `DtoGeneratorExclusions`. Same exclusivity and same type-form restriction as `Exclude`. |
+
+### `SequenceAttribute` (`DKNet.EfCore.Abstractions.Attributes`)
+
+`[AttributeUsage(AttributeTargets.Field)]` — applies to an enum member, not to an entity property.
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `Type` (ctor arg, optional) | `Type` | `typeof(int)` | The sequence's data type. Only `byte`, `short`, `int`, `long`; anything else throws `NotSupportedException` when the attribute is constructed. |
+| `Cyclic` | `bool` | `true` | Whether the sequence wraps back to its minimum after reaching its maximum. |
+| `StartAt` | `long` | `-1` | Starting value. Applied only when greater than zero; otherwise the database default stands. |
+| `IncrementsBy` | `int` | `-1` | Step size. Applied only when greater than zero. |
+| `Min` | `long` | `-1` | Minimum value. Applied only when greater than zero. |
+| `Max` | `long` | `-1` | Maximum value. Applied only when greater than zero. |
+| `FormatString` | `string?` | `null` | Format applied by `NextSeqValueWithFormat`. `{1}` is the sequence value; the literal token `DateTime` becomes `{0}` bound to `DateTime.UtcNow`. |
+
+### `SqlSequenceAttribute` (`DKNet.EfCore.Abstractions.Attributes`)
+
+`[AttributeUsage(AttributeTargets.Enum)]`.
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `Schema` (ctor arg, optional) | `string` | `"seq"` | Database schema every sequence declared by that enum is created in. Read-only after construction. |
+
+### Audit-log markers (`DKNet.EfCore.Abstractions.Attributes`)
+
+None of these carry properties — presence is the whole configuration. All are `sealed` and `Inherited = false`.
+
+| Attribute | Targets | Effect |
+|---|---|---|
+| `AuditLogAttribute` | `Class`, `Property` | On a class: opts the entity in under `AuditLogBehaviour.OnlyAttributedAuditedEntities`. On a property: forces plaintext capture past the sensitive-name patterns, and allow-lists it under `AuditPropertyPolicy.OnlyAttributedProperties`. |
+| `IgnoreAuditLogAttribute` | `Class`, `Property` | Excludes it from audit logging unconditionally, whatever the behaviour and policy. |
+| `SensitiveDataAttribute` | `Property` | Always redacts the value in the audit log, even alongside `[AuditLog]` on the same property. |
+| `IgnoreEntityAttribute` | `Class` | Declared as an opt-out from automatic entity mapping — see the caveat in [Excluding a class from automatic mapping](#excluding-a-class-from-automatic-mapping--ignoreentity). |
+
+### CRUD vertical-slice markers (`DKNet.EfCore.Abstractions.Attributes`)
+
+Consumed by `DKNet.SlimBus.Generators`. All three are `AllowMultiple = false`.
+
+| Attribute | Targets | Member | Type | Default | Effect |
+|---|---|---|---|---|---|
+| `CrudCreateAttribute` | `Constructor`, `Method` | `Name` | `string?` | `null` | Overrides the generated Create request type's name. |
+| `CrudUpdateAttribute` | `Method` | `Name` | `string?` | `null` | Overrides the generated Update request type's name. |
+| `CrudActionAttribute` | `Method` | `route` (ctor arg, optional) | `string?` | `null` → kebab-cased method name | Route segment appended after `{id}/`. |
+| | | `Verb` | `CrudActionVerb` | `Post` | `Post`, `Put` or `Patch`. There is no `Delete`. |
+| | | `Name` | `string?` | `null` | Overrides the generated request type's name. |
+
+### Interfaces you implement
+
+| Contract | Member with a default | Default | Effect |
+|---|---|---|---|
+| `IEntity<out TKey>` | — | — | `TKey Id { get; }` only. |
+| `IAuditedProperties` | — | — | `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`; all four carry `[IgnoreAuditLog]`, and the two `By` properties `[MaxLength(500)]` — note `DKNet.EfCore.Extensions` overrides that to 255 in `DefaultEntityTypeConfiguration<T>`. |
+| `IConcurrencyEntity<TType>` | `RowVersion` | — | Pre-annotated `[Timestamp]` and `[Column(Order = 1000)]` so the token sorts last in generated schemas. |
+| `ISoftDeletableEntity` | `Delete(byUser, deletedOn)` | `deletedOn` defaults to `null` | Returns `IResultBase`, so an implementation can refuse the delete without throwing. |
+| `IEventItem` / `EventItem` | `AdditionalData` | ordinal case-insensitive dictionary | `[JsonIgnore]`; meant for message headers. `DKNet.EfCore.Events` stamps `sourceType` into it. |
+| `IEventItem` / `EventItem` | `EventType` | `GetType().FullName` | String type tag carried on the serialized payload. |
+| `IEventPublisher` / `DefaultEventPublisher` | batch `PublishAsync` | sequential `foreach` | Override only the single-event method to get a working batch implementation. |
+
 ## 🧱 Where it fits
 
-This package is deliberately inert — every other EfCore package supplies the runtime behavior against the types
-declared here. Concretely (all verified by reading the consuming source, not assumed):
+The one mechanism in this package with real machinery behind it is `[RaisesEvent]` name composition — the same
+`EventNameComposer` source file is compiled into this assembly *and* linked into `DKNet.EfCore.DtoGenerator`, so
+the name the build emits and the name the save hook looks up can never disagree:
+
+![Data-flow diagram of a RaisesEvent declaration: the type-naming form points straight at a hand-written GenerateDto record, while both convention forms go through EventNameComposer, whose composed name the DtoGenerator emits as a payload record and the runtime EventHook re-composes at save time.](../diagrams/efcore-abstractions-raisesevent-naming.svg)
+
+Otherwise this package is deliberately inert — every other EfCore package supplies the runtime behavior against the
+types declared here. Concretely (all verified by reading the consuming source, not assumed):
 
 - **`DKNet.EfCore.Events`** is the direct consumer of `IEventEntity`/`IEventPublisher`/`IEventItem`/
   `RaisesEventAttribute`/`EventOperations`. Its `EventContext` scans tracked entries for `IEventEntity`, calls
@@ -439,6 +588,11 @@ declared here. Concretely (all verified by reading the consuming source, not ass
 - **`SetCreatedBy`/`SetUpdatedBy` are first-write-wins / monotonic, not "always overwrite".** `SetCreatedBy` is a
   no-op once `CreatedBy` is set; `SetUpdatedBy` silently ignores a supplied `updatedOn` older than the current
   `UpdatedOn`. Both still validate `userName` even when they're about to no-op on the timestamp check.
+- **`[Sequence]` goes on an enum field, not an entity property.** It is `AttributeTargets.Field`, and its numeric
+  options all default to `-1` meaning "leave it to the database" — a `StartAt`/`Min`/`Max`/`IncrementsBy` of zero
+  or less is silently not applied rather than rejected.
+- **The CRUD markers do nothing on their own.** `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` are inert unless the
+  project also references `DKNet.SlimBus.Generators`; this package only defines the attribute types.
 - **`[SensitiveDataAttribute]` only affects the audit log**, not storage, serialization, or logging elsewhere in
   your application — it has nothing to do with `DKNet.EfCore.Encryption`'s `[Encrypted]`.
 - **No dependency on `Microsoft.EntityFrameworkCore`.** This is intentional (keeps the domain layer persistence-
@@ -465,3 +619,5 @@ declared here. Concretely (all verified by reading the consuming source, not ass
   entities. Reach for it for reusable filter/include/order-by objects.
 - [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) – column-level encryption via its own `[Encrypted]`
   attribute. Reach for it to protect a value at rest; `[SensitiveData]` here only affects the audit trail.
+- [DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md) – the only consumer of `[CrudCreate]`,
+  `[CrudUpdate]` and `[CrudAction]`. Reach for it when you want those markers to actually produce endpoints.
