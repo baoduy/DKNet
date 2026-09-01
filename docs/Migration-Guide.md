@@ -184,11 +184,15 @@ services
     .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
 ```
 
-**Also note** — the same release makes `DataOwnerAuthQuery` throw `InvalidOperationException` at model-build time
-when a context reaches the filter without the interface, instead of quietly applying no filter. If you register the
-filter directly via `AddGlobalModelBuilder<DataOwnerAuthQuery>()` rather than through `AddDataOwnerProvider`, the
-compile-time constraint does not cover you and that exception is what you will see. Details:
-[DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
+**Also check every other `DbContext` in the process** — the compile error is not the only way this upgrade bites.
+The same release makes `DataOwnerAuthQuery` throw `InvalidOperationException` at model-build time when a context
+reaches the filter without the interface, instead of quietly applying no filter. And `AddDataOwnerProvider`
+registers that filter in `EfCoreSetup.GlobalModelBuilders`, which is **static**: every `DbContext` calling
+`UseAutoConfigModel()` applies it, not only the one you passed as `TDbContext`. A second context — an audit or
+reporting `DbContext`, say — whose model contains `IOwnedBy` entities and that does not implement
+`IDataOwnerDbContext` therefore starts throwing at model-build time after this upgrade, with no compile error
+pointing at it. Implement `IDataOwnerDbContext` on that context too, or keep `IOwnedBy` entities out of its model.
+Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
 
 ---
 

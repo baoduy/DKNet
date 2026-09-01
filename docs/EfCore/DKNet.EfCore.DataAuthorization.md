@@ -232,11 +232,18 @@ This package is a consumer of two other EF Core building blocks, not a standalon
 - **`IDataOwnerDbContext` on the `DbContext` is mandatory, and enforced twice.**
   `AddDataOwnerProvider<TDbContext, TProvider>()` constrains `TDbContext` to `DbContext, IDataOwnerDbContext`, so the
   usual mistake cannot compile; and `HasQueryFilter` throws `InvalidOperationException` at model-build time if a
-  context still reaches it without the interface (possible when the filter is registered through
-  `AddGlobalModelBuilder<DataOwnerAuthQuery>()` directly instead of the typed registration API). Earlier versions
+  context still reaches it without the interface (see the next bullet for how that happens). Earlier versions
   guarded this with `Debug.Fail(...)` and returned `null`; `Debug.Fail` is compiled out in Release builds, so in
   Release the entity type ended up with **no** ownership filter and every caller saw every row. Implement
   `IDataOwnerDbContext` on the exact `DbContext` type you register.
+- **The filter is registered process-wide, so a *second* `DbContext` can trip the throw.**
+  `AddDataOwnerProvider` puts `DataOwnerAuthQuery` into `EfCoreSetup.GlobalModelBuilders`, a **static** bag, and
+  every `DbContext` that calls `UseAutoConfigModel()` applies every entry in it — not just the one named in the type
+  argument. So once any registration runs, an unrelated audit or reporting `DbContext` in the same process is
+  filtered too; if its model contains `IOwnedBy` entities and it does not implement `IDataOwnerDbContext`, its model
+  build now throws. The tightened constraint gives you no compile error pointing at that context, because you never
+  passed it to `AddDataOwnerProvider`. Either implement `IDataOwnerDbContext` on it as well, or keep `IOwnedBy`
+  entities out of its model.
 - **Forgetting `UseHooks<TDbContext>` means new rows are never stamped.** `AddHook<TDbContext, DataOwnerHook>()`
   registers the hook in DI, but `HookRunnerInterceptor` only invokes it if the `DbContext`'s options include
   `UseHooks<TDbContext>(provider)` — use `AddDbContextWithHook<TDbContext>(...)` or add that call yourself.
