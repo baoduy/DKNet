@@ -114,5 +114,85 @@ public class IdempotentKeyInfoTests
         result.IsFailed.ShouldBeFalse();
     }
 
+    [Fact]
+    public void IsValid_WhenKeyEndsWithSingleTrailingNewline_ReturnsOk()
+    {
+        // "$" without RegexOptions.Multiline still matches immediately before a single trailing '\n',
+        // so a key ending in one line break passes the default format pattern unmodified.
+        var info = new IdempotentKeyInfo { IdempotentKey = "order-42\n", Endpoint = "/api/test", Method = "POST" };
+        var result = info.IsValid(DefaultOptions);
+        result.IsFailed.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void SafeKey_WhenKeyIsNull_ReturnsEmptyString()
+    {
+        var info = new IdempotentKeyInfo { IdempotentKey = null, Endpoint = "/api/test", Method = "POST" };
+        info.SafeKey.ShouldBe(string.Empty);
+    }
+
+    [Fact]
+    public void SafeKey_WhenKeyIsEmpty_ReturnsEmptyString()
+    {
+        var info = new IdempotentKeyInfo { IdempotentKey = "", Endpoint = "/api/test", Method = "POST" };
+        info.SafeKey.ShouldBe(string.Empty);
+    }
+
+    [Theory]
+    [InlineData("abc\r\ndef", "abc def")]
+    [InlineData("abc\ndef", "abc def")]
+    [InlineData("abc\rdef", "abc def")]
+    [InlineData("abc\tdef", "abcdef")]
+    [InlineData("order-42\n", "order-42 ")]
+    public void SafeKey_WhenKeyContainsLineBreaksOrControlChars_NeverContainsARawLineBreak(
+        string rawKey,
+        string expectedSafeKey)
+    {
+        var info = new IdempotentKeyInfo { IdempotentKey = rawKey, Endpoint = "/api/test", Method = "POST" };
+
+        info.SafeKey.ShouldBe(expectedSafeKey);
+        info.SafeKey.ShouldNotContain('\n');
+        info.SafeKey.ShouldNotContain('\r');
+    }
+
+    [Theory]
+    [InlineData(0x2028)] // LINE SEPARATOR
+    [InlineData(0x2029)] // PARAGRAPH SEPARATOR
+    public void SafeKey_WhenKeyContainsUnicodeLineOrParagraphSeparator_RemovesIt(int codepoint)
+    {
+        var separator = (char)codepoint;
+        var info = new IdempotentKeyInfo
+            { IdempotentKey = $"abc{separator}def", Endpoint = "/api/test", Method = "POST" };
+
+        info.SafeKey.ShouldBe("abcdef");
+    }
+
+    [Fact]
+    public void CompositeKey_WhenKeyHasTrailingNewline_UsesRawKeyUnchanged()
+    {
+        // Storage/lookup must keep using the raw key, never the log-safe projection.
+        var info = new IdempotentKeyInfo
+            { IdempotentKey = "order-42\n", Endpoint = "/api/orders", Method = "POST" };
+        info.CompositeKey.ShouldBe(":POST:/api/orders:order-42\n");
+    }
+
+    [Fact]
+    public void ToString_NeverIncludesScopeOrRawKey()
+    {
+        var info = new IdempotentKeyInfo
+        {
+            Scope = "user:user-42",
+            IdempotentKey = "order-42\n",
+            Endpoint = "/api/orders",
+            Method = "POST"
+        };
+
+        var text = info.ToString();
+
+        text.ShouldBe("Key=order-42 , Method=POST, Endpoint=/api/orders");
+        text.ShouldNotContain("user:");
+        text.ShouldNotContain('\n');
+    }
+
     #endregion
 }
