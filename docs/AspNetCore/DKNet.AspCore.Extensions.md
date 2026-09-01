@@ -404,6 +404,10 @@ The generated file is skipped entirely when the compilation does not reference t
 What you write:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.DtoGenerator;
+
 public class Product : IEntity<Guid>
 {
     [CrudCreate]

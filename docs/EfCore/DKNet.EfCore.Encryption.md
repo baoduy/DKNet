@@ -23,7 +23,7 @@ Transparent, column-level encryption for EF Core `string` properties, applied at
 
 Do **not** reach for it when you need to filter, sort, or `LIKE`-search on the encrypted value in SQL — a random IV
 per write makes encrypted columns opaque to the database. See
-[Gotchas & limits](#️-gotchas--limits).
+[Gotchas & limits](#-gotchas--limits).
 
 ## 🚀 Quick Start
 
@@ -139,7 +139,7 @@ public AesGcmColumnEncryptionProvider(byte[] key) // key.Length must be 16, 24, 
 - `Encrypt(string? plaintext)` — generates a random 12-byte IV per call, encrypts with AES-GCM, and returns Base64 of `IV (12 bytes) + Tag (16 bytes) + ciphertext`. Null/empty input passes through unchanged (never encrypted).
 - `Decrypt(string? ciphertext)` — reverses the packing; throws `ArgumentException` if the Base64 payload is shorter than `IV + Tag` (invalid format), or `InvalidOperationException` if AES-GCM authentication fails (wrong key or corrupted/tampered data).
 
-Because the IV is random per call, encrypting the same plaintext twice produces different ciphertext — this is by design (semantic security) but has query implications, see [Gotchas](#️-gotchas--limits).
+Because the IV is random per call, encrypting the same plaintext twice produces different ciphertext — this is by design (semantic security) but has query implications, see [Gotchas](#-gotchas--limits).
 
 ### `IEncryptionKeyProvider` / `EncryptionKeyProvider` (`DKNet.EfCore.Encryption.Encryption`) — where key material comes from
 ```csharp

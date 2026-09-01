@@ -7,7 +7,7 @@ reserve/check/complete flow — that every relational idempotency store for
 > **Not for app authors.** This package has no `AddIdempotency...` extension of its own and
 > nothing in it is `public`. If you are wiring idempotency into an app, use
 > [`DKNet.AspCore.Idempotency`](DKNet.AspCore.Idempotency.md) — its
-> [Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) section covers when a
+> [Choosing a store](DKNet.AspCore.Idempotency.md#-choosing-a-store) section covers when a
 > relational store is the right call — plus a concrete provider package
 > ([MsSqlStore](DKNet.AspCore.Idempotency.MsSqlStore.md) /
 > [NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore.md)). Read on only if you are adding
@@ -113,7 +113,7 @@ across a longer-lived scope.
 
 Own the migrations too: they live in the derived provider project (a `Migrations/` folder, its own
 `MigrationsAssembly`), never in this base package — see
-[Gotchas & limits](#️-gotchas--limits).
+[Gotchas & limits](#-gotchas--limits).
 
 ## 🧩 Features
 
@@ -136,7 +136,7 @@ The `IEntityTypeConfiguration<IdempotencyKeyEntity>` base every provider's own c
 derives from. It owns every mapping detail that is identical across providers — key, lengths,
 unicode flags, the `ExpiresAt` index, the unique `UX_CompositeKey` index — and defers exactly two
 `protected abstract` members to the derived type (see
-[Configuration reference](#️-configuration-reference)).
+[Configuration reference](#-configuration-reference)).
 
 ### `IdempotencyDbContext` — mapping discovery from the derived assembly
 
@@ -182,7 +182,7 @@ sense the other pages on this site do: `IdempotencyRelationalStore<TContext>`,
 declares, and all four are `internal`. There is no options class, no `Add…` extension, and nothing
 a consuming application can name, configure, or subclass. Runtime behaviour is driven entirely by
 the core package's `IdempotencyOptions` — see the
-[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+[core configuration reference](DKNet.AspCore.Idempotency.md#-configuration-reference).
 
 What follows is the **internal implementation contract** for the in-repo provider packages that
 this package's `InternalsVisibleTo` list already names, reproduced here because that is the only

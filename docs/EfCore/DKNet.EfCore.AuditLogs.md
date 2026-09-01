@@ -83,7 +83,7 @@ public sealed record AuditFieldChange
 
 Its mechanics, split across the two save phases:
 
-- **`BeforeSaveAsync`** — for every tracked entity whose original state is `Added`, `Modified`, or `Deleted`, calls an internal `entry.BuildAuditLog(...)` to produce an `AuditLogEntry` (entities that don't implement `IAuditedProperties`, or that are excluded per the configured behaviour — see [Configuration reference](#️-configuration-reference) — yield `null` and are skipped). The resulting entries are cached in memory keyed by the `DbContext` instance's `ContextId`, so entries built here survive to the after-save phase of the *same* save call.
+- **`BeforeSaveAsync`** — for every tracked entity whose original state is `Added`, `Modified`, or `Deleted`, calls an internal `entry.BuildAuditLog(...)` to produce an `AuditLogEntry` (entities that don't implement `IAuditedProperties`, or that are excluded per the configured behaviour — see [Configuration reference](#-configuration-reference) — yield `null` and are skipped). The resulting entries are cached in memory keyed by the `DbContext` instance's `ContextId`, so entries built here survive to the after-save phase of the *same* save call.
 - **`AfterSaveAsync`** — after the save has completed successfully, retrieves the cached entries for this `DbContext` instance, removes them from the cache, and publishes them to every `IAuditLogPublisher` registered for that `DbContext` type. This is a normal `await` inside `AfterSaveAsync` — publishing latency is part of `SaveChangesAsync`'s own completion time, it is not fire-and-forget.
 
 For `Created` entities, `Changes` is always empty — the field-diff loop only runs when the original state is not `Added` — so a create audit entry carries `Action = Created`, `Keys`, and the audit metadata, but no field-level detail. For `Deleted` entities, every captured property gets `NewValue = null` and `OldValue` set to the last known value (or the redaction sentinel).
@@ -97,7 +97,7 @@ public interface IAuditLogPublisher
 }
 ```
 
-This is the extension point: implement it to ship a `SaveChangesAsync` call's audit batch to a database table, queue, log sink, or anywhere else. Publishers are registered as **keyed scoped services**, keyed by `typeof(TDbContext).FullName`, so different `DbContext` types can have entirely different publishers, and multiple publishers can be registered for the same `DbContext` (all are invoked; one publisher throwing does not stop the others — see [Gotchas & limits](#️-gotchas--limits)).
+This is the extension point: implement it to ship a `SaveChangesAsync` call's audit batch to a database table, queue, log sink, or anywhere else. Publishers are registered as **keyed scoped services**, keyed by `typeof(TDbContext).FullName`, so different `DbContext` types can have entirely different publishers, and multiple publishers can be registered for the same `DbContext` (all are invoked; one publisher throwing does not stop the others — see [Gotchas & limits](#-gotchas--limits)).
 
 ```csharp
 public sealed class ConsoleAuditLogPublisher : IAuditLogPublisher
@@ -135,7 +135,7 @@ var publishers = serviceProvider.GetAuditLogPublishers<AppDbContext>();
 This interacts with three attributes defined in `DKNet.EfCore.Abstractions.Attributes`:
 
 - **`[IgnoreAuditLog]`** (class or property) — excludes the entity or property from audit capture entirely; an ignored property never appears in `Changes` at all, redacted or not. An entity type marked at class level produces no `AuditLogEntry` regardless of `AuditLogBehaviour`.
-- **`[AuditLog]`** (class or property) — at class level, required for the entity to be audited under `AuditLogBehaviour.OnlyAttributedAuditedEntities` (see [Configuration reference](#️-configuration-reference)). At property level, it forces plaintext capture of that property under `AuditPropertyPolicy.RedactSensitive` even if its name matches a sensitive pattern — but it does **not** override `[SensitiveData]` on the same property.
+- **`[AuditLog]`** (class or property) — at class level, required for the entity to be audited under `AuditLogBehaviour.OnlyAttributedAuditedEntities` (see [Configuration reference](#-configuration-reference)). At property level, it forces plaintext capture of that property under `AuditPropertyPolicy.RedactSensitive` even if its name matches a sensitive pattern — but it does **not** override `[SensitiveData]` on the same property.
 - **`[SensitiveData]`** (property only) — always redacts the property's value, unconditionally, even if the same property also carries `[AuditLog]`. Use it for values that don't match the built-in name patterns but must never appear in an audit trail (e.g. a `Notes` field that happens to hold PII).
 
 ```csharp
