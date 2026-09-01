@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using DKNet.EfCore.Extensions.Configurations;
 using Microsoft.EntityFrameworkCore;
@@ -41,11 +40,12 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
     protected override Expression<Func<TEntity, bool>>? HasQueryFilter<TEntity>(DbContext context)
         where TEntity : class
     {
+        // Fail closed: a DbContext that cannot supply AccessibleKeys/IsUnrestrictedAccess must never
+        // fall through as "no filter", or every IOwnedBy row becomes visible to every caller.
         if (context is not IDataOwnerDbContext dataOwnerContext)
-        {
-            Debug.Fail("The DbContext must implement IDataOwnerDbContext to use DataOwnerAuthQueryRegister.");
-            return null;
-        }
+            throw new InvalidOperationException(
+                $"DbContext '{context.GetType().Name}' must implement IDataOwnerDbContext to use the data-owner query filter. " +
+                "Returning no filter would disable row-level ownership isolation.");
 
         // Capture the context in the closure so EF Core can evaluate AccessibleKeys/IsUnrestrictedAccess per query
         // An empty AccessibleKeys collection denies access by default (deny-all); only an explicit
