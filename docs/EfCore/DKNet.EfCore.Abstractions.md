@@ -185,6 +185,9 @@ Either convention form can also narrow the shape of its **composed** payload rec
 named arguments — they never affect the composed *name*, only the record's properties:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent(EventOperations.Created, Exclude = new[] { "InternalNote" })]
 [RaisesEvent("Touched", EventOperations.Updated, Include = new[] { nameof(Customer.Name), nameof(Customer.Email) })]
 public class Customer : Entity
@@ -394,6 +397,7 @@ and minimal-API registration from them — this package contributes only the att
 
 ```csharp
 using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
 
 public class Order : Entity
 {
