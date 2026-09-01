@@ -204,7 +204,7 @@ no boolean `.And()`/`.Or()`/`.Not()` combinator; compose criteria by passing the
 constructor instead. See [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) for the full API.
 
 ```csharp
-using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
 
 public sealed class ActiveProductsInPriceRangeSpec : Specification<Product>
 {

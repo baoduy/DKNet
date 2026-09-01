@@ -262,8 +262,9 @@ Its signature feature is the **Dynamic Predicate Builder**, for building type-sa
 at compile time:
 
 ```csharp
-using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
 using DKNet.EfCore.Specifications.Dynamics;
+using DKNet.EfCore.Specifications.Extensions;
 using LinqKit;
 
 public sealed class ProductSearchSpec : Specification<Product>

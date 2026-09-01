@@ -23,8 +23,10 @@ its own. Start from [Which package do I need?](README.md#which-package-do-i-need
 
 ### Which .NET versions are supported?
 
-.NET 10.0. Every project targets `net10.0`, and `src/global.json` pins SDK `10.0.0` with
-`rollForward: latestMajor`.
+.NET 10.0. `src/Directory.Packages.props` sets `net10.0` solution-wide, so every shipped package targets it —
+the two exceptions are the Roslyn source generators, `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators`,
+which must target `netstandard2.0` to load into the compiler. They still generate code for your `net10.0` project.
+`src/global.json` pins SDK `10.0.0` with `rollForward: latestMajor`.
 
 ### Is it free to use?
 
@@ -100,6 +102,9 @@ dotnet ef migrations script --idempotent --output migration.sql
 Yes, and each is configured independently:
 
 ```csharp
+using DKNet.EfCore.Specifications;
+using Microsoft.EntityFrameworkCore;
+
 services.AddDbContext<CatalogContext>(options => options.UseSqlServer(catalogConnectionString));
 services.AddDbContext<IdentityContext>(options => options.UseSqlServer(identityConnectionString));
 
@@ -157,6 +162,10 @@ reference MediatR. Nothing stops you using MediatR elsewhere in your own applica
 integration. Handler discovery is SlimMessageBus's own API:
 
 ```csharp
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+using SlimMessageBus.Host.Serialization.SystemTextJson;
+
 services.AddSlimMessageBus(mbb => mbb
     .AddJsonSerializer()
     .AddServicesFromAssembly(typeof(Program).Assembly)   // discovers your Fluents handlers
@@ -184,6 +193,8 @@ behind and needs no rollback code.
 Yes — `Fluents.EventsConsumers.IHandler<TEvent>.OnHandle` returns a `Task`:
 
 ```csharp
+using DKNet.SlimBus.Extensions;
+
 public class ProductCreatedHandler(IEmailService emailService)
     : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
@@ -249,6 +260,9 @@ specification construction all test fine without a provider.
 test helper is needed:
 
 ```csharp
+using Shouldly;
+using Xunit;
+
 [Fact]
 public void UpdatePrice_RaisesPriceChangedEvent()
 {
@@ -267,6 +281,10 @@ Register a fake `IDataOwnerProvider` and let the filter do its job — it is att
 be disabled per query:
 
 ```csharp
+using Microsoft.EntityFrameworkCore;
+using Shouldly;
+using Xunit;
+
 [Fact]
 public async Task Query_OnlyReturnsRowsForTheCurrentOwner()
 {
@@ -331,6 +349,9 @@ It is a `DbContextOptionsBuilder<TContext>` extension, not a `ModelBuilder` one.
 `AddDbContext`/`AddDbContextWithHook` callback:
 
 ```csharp
+using DKNet.EfCore.Hooks;
+using Microsoft.EntityFrameworkCore;
+
 services.AddDbContextWithHook<AppDbContext>(options => options
     .UseSqlServer(connectionString)
     .UseAutoConfigModel<AppDbContext>());

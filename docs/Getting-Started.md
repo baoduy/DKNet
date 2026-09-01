@@ -6,7 +6,9 @@ that actually runs, and where to go next.
 
 ## Prerequisites
 
-- **.NET 10.0 SDK** — the whole suite targets `net10.0`, and `src/global.json` pins SDK `10.0.0` with
+- **.NET 10.0 SDK** — every package you reference targets `net10.0` (the two Roslyn source generators,
+  `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators`, target `netstandard2.0` so the compiler can load
+  them — that does not change what your app targets), and `src/global.json` pins SDK `10.0.0` with
   `rollForward: latestMajor`.
 - **Visual Studio 2022** (17.13+), **Visual Studio Code**, or **JetBrains Rider**.
 - A **relational database** if you use the EF Core packages. The samples below use SQL Server; the packages
@@ -107,7 +109,7 @@ A `Specification<TEntity>` is configured from its constructor and carries the fi
 one reusable object:
 
 ```csharp
-using DKNet.EfCore.Specifications;
+using DKNet.EfCore.Specifications.Definitions;
 using DKNet.EfCore.Specifications.Extensions;
 using DKNet.EfCore.Specifications.Repositories;
 

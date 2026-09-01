@@ -67,6 +67,7 @@ project already has; others need their own. This is the single most common "why 
 | `.Response(...)` on a `Result` | `DKNet.AspCore.Extensions.Responses` |
 | `UseEndpointConfigs(...)` | `DKNet.AspCore.Extensions.Endpoints` |
 | `DefaultEntityTypeConfiguration<TEntity>` | `DKNet.EfCore.Extensions.Configurations` |
+| `Specification<TEntity>` (base class for your specs) | `DKNet.EfCore.Specifications.Definitions` — **not** `DKNet.EfCore.Specifications`, which holds only `AddSpecRepo` |
 
 ## What is bound from IConfiguration
 
@@ -164,6 +165,10 @@ using DKNet.EfCore.AuditLogs;                // AddEfCoreAuditLogs
 using DKNet.EfCore.Hooks;                    // AddDbContextWithHook
 using DKNet.EfCore.Specifications;           // AddSpecRepo
 using Microsoft.EntityFrameworkCore;         // UseAutoConfigModel, UseSqlServer
+using SlimMessageBus;                        // IMessageBus
+using SlimMessageBus.Host;                   // AddSlimMessageBus, AddChildBus, AddServicesFromAssembly
+using SlimMessageBus.Host.Memory;            // WithProviderMemory, AutoDeclareFrom
+using SlimMessageBus.Host.Serialization.SystemTextJson;  // AddJsonSerializer
 
 var builder = WebApplication.CreateBuilder(args);
 

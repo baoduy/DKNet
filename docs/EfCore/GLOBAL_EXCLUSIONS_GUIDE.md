@@ -116,6 +116,8 @@ generated payload narrowed by `DtoGeneratorExclusions` exactly like the table ab
 ```csharp
 // <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
 
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent(EventOperations.Created)]
 public class Customer { /* ... */ }
 // CustomerCreatedEvent is generated without CreatedBy, UpdatedBy, CreatedAt, UpdatedAt

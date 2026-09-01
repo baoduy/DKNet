@@ -27,7 +27,9 @@ This is a **major architectural migration** from legacy packages to the new Doma
 
 #### Key Changes
 - **Architecture**: complete shift to DDD/Onion Architecture — see the [Architecture Guide](Architecture.md)
-- **Technology**: .NET 10.0; every package targets `net10.0` with `LangVersion=latest`
+- **Technology**: .NET 10.0; every package targets `net10.0` with `LangVersion=latest`, except the two Roslyn
+  source generators (`DKNet.EfCore.DtoGenerator`, `DKNet.SlimBus.Generators`) which target `netstandard2.0` to be
+  loadable by the compiler
 - **Patterns**: CQRS via SlimMessageBus, the specification pattern instead of generic repositories, and domain
   events dispatched from the `SaveChanges` pipeline
 - **Testing**: TestContainers.MsSql for anything touching persistence — see [Testing Strategy](Testing-Strategy.md)
@@ -96,6 +98,8 @@ compiled API surface is ordinary extension methods, callable from any language v
 
 **Before (Legacy)**
 ```csharp
+using Microsoft.EntityFrameworkCore;
+
 public class ProductRepository
 {
     private readonly DbContext _context;
@@ -119,6 +123,10 @@ current repository surface. It is not generic over the entity — the entity typ
 passed to each call:
 
 ```csharp
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Extensions;
+using DKNet.EfCore.Specifications.Repositories;
+
 public sealed class ProductService(IRepositorySpec repo)
 {
     // Specification support
@@ -140,11 +148,15 @@ never persisted, so the resolution that used to succeed was already producing ci
 
 **Before**
 ```csharp
+using DKNet.Svc.Encryption;
+
 builder.Services.AddEncryptionServices(); // also registered IAesGcmEncryption and IAesEncryption
 ```
 
 **After** — supply the key from configuration or a key vault:
 ```csharp
+using DKNet.Svc.Encryption;
+
 builder.Services.AddEncryptionServices();                                       // IShaHashing, IHmacHashing
 builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
 ```
@@ -168,6 +180,9 @@ the fix surfacing a real, previously silent, data-isolation hole.
 **Fix** — implement `IDataOwnerDbContext` on the exact `DbContext` type you register:
 
 ```csharp
+using DKNet.EfCore.DataAuthorization;
+using Microsoft.EntityFrameworkCore;
+
 public class AppDbContext(DbContextOptions<AppDbContext> options)
     : DbContext(options), IDataOwnerDbContext
 {
@@ -247,6 +262,7 @@ public class Product
 need audit fields) — see [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md):
 ```csharp
 using DKNet.EfCore.Abstractions.Entities;
+using System.ComponentModel.DataAnnotations.Schema;
 
 [Table("Products", Schema = "catalog")]
 public class Product : AuditedEntity
@@ -366,6 +382,9 @@ or sequences, so it silently passes tests that would fail against a real databas
 **Before** — in-memory, so the ownership filter and the generated SQL are never exercised:
 
 ```csharp
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
 [Fact]
 public async Task ActiveProducts_AreReturned()
 {
@@ -382,6 +401,13 @@ public async Task ActiveProducts_AreReturned()
 **After** — a real SQL Server, with the model built the way production builds it:
 
 ```csharp
+using DKNet.EfCore.Hooks;
+using DKNet.EfCore.Specifications;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Testcontainers.MsSql;
+using Xunit;
+
 [Fact]
 public async Task ActiveProducts_AreReturned()
 {
@@ -411,6 +437,8 @@ public async Task ActiveProducts_AreReturned()
 ### Automated Migration Helper
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
+
 public class MigrationHelper
 {
     public static async Task MigrateDataAsync(IServiceProvider serviceProvider)
@@ -450,6 +478,9 @@ strongly-typed options, bound from your own config section via that package's ow
 [Configuration & Setup](Configuration.md) for the full list; for example, migrating blob storage config:
 
 ```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
 public static class ConfigurationMigration
 {
     public static IServiceCollection MigrateFromLegacy(
@@ -500,6 +531,11 @@ public static class ConfigurationMigration
 **Issue**: Service registration patterns change
 **Solution**: 
 ```csharp
+using DKNet.EfCore.Specifications;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+using SlimMessageBus.Host.Serialization.SystemTextJson;
+
 // Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
 
