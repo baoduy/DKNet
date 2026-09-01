@@ -1,4 +1,4 @@
-<svg viewBox="0 0 1366 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1366" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
+<svg viewBox="0 0 1216 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1216" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
@@ -310,178 +310,178 @@ rect.c-bg-rect { fill: var(--bg); }
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Swimlanes -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1310" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1160" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / IdempotencyRelationalStore</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1310" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1160" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="200" class="t-dim" font-size="10" font-weight="600">02 / Provider database</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1310" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1160" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="326" class="t-dim" font-size="10" font-weight="600">03 / Returned to the endpoint filter</text>
 
         <!-- Phase headers -->
-        <line x1="100" y1="35" x2="312" y2="35" class="a-default" stroke-width="1.1"/>
-        <rect x="100" y="27" width="212" height="16" rx="4" class="c-mask"/>
-        <text x="206" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Read</text>
-        <line x1="340" y1="35" x2="735.8" y2="35" class="a-emphasis" stroke-width="1.1"/>
-        <rect x="340" y="27" width="395.79999999999995" height="16" rx="4" class="c-mask"/>
-        <text x="537.9" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Reserve</text>
-        <line x1="966.8" y1="35" x2="1280.8" y2="35" class="a-dashed" stroke-width="1.1"/>
-        <rect x="966.8" y="27" width="314" height="16" rx="4" class="c-mask"/>
-        <text x="1123.8" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Reclaim an expired row</text>
+        <line x1="73.5" y1="35" x2="285.5" y2="35" class="a-default" stroke-width="1.1"/>
+        <rect x="73.5" y="27" width="212" height="16" rx="4" class="c-mask"/>
+        <text x="179.5" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Read</text>
+        <line x1="313.5" y1="35" x2="662.8" y2="35" class="a-emphasis" stroke-width="1.1"/>
+        <rect x="313.5" y="27" width="349.29999999999995" height="16" rx="4" class="c-mask"/>
+        <text x="488.15" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Reserve</text>
+        <line x1="863.3" y1="35" x2="1144.3" y2="35" class="a-dashed" stroke-width="1.1"/>
+        <rect x="863.3" y="27" width="281" height="16" rx="4" class="c-mask"/>
+        <text x="1003.8" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Reclaim an expired row</text>
 
         <!-- Workflow groups -->
 
 
         <!-- Edge paths -->
-        <path data-edge-from="insert" data-edge-to="violation" data-edge-label="unique violation" data-edge-key="0" data-edge-id="insert-loses" data-composition-points="386,146;386,174;689.8,174;689.8,154" d="M 386 146 L 386 174 L 689.8 174 L 689.8 154" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="insert" data-edge-to="won" data-edge-label="insert wins" data-edge-key="1" data-edge-id="insert-wins" data-composition-points="386,146;386,231;689.8,231;689.8,346" d="M 386 146 L 386 231 L 689.8 231 L 689.8 346" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="lookup" data-edge-to="hit" data-edge-label="live row found" data-edge-key="2" data-edge-id="live-row" data-composition-points="266,272;266,294;386,294;386,346" d="M 266 272 L 266 294 L 386 294 L 386 346" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="lookup" data-edge-to="insert" data-edge-label="absent or expired" data-edge-key="3" data-edge-id="no-live-row" data-composition-points="266,220;266,168;386,168;386,146" d="M 266 220 L 266 168 L 386 168 L 386 146" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="reclaim" data-edge-to="blocked" data-edge-label="0 rows updated" data-edge-key="4" data-edge-id="reclaim-loses" data-composition-points="1012.8,146;1012.8,231;889.8,231;889.8,372;905.8,372" d="M 1012.8 146 L 1012.8 231 L 889.8 231 L 889.8 372 L 905.8 372" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="reclaim" data-edge-to="reclaimed" data-edge-label="1 row updated" data-edge-key="5" data-edge-id="reclaim-wins" data-composition-points="1114.8,120;1234.8,120;1234.8,346" d="M 1114.8 120 L 1234.8 120 L 1234.8 346" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="violation" data-edge-to="reclaim" data-edge-label="blocking row expired" data-edge-key="6" data-edge-id="stale-row" data-composition-points="689.8,154;689.8,174;1012.8,174;1012.8,146" d="M 689.8 154 L 689.8 174 L 1012.8 174 L 1012.8 146" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="violation" data-edge-to="blocked" data-edge-label="blocking row still live" data-edge-key="7" data-edge-id="still-live" data-composition-points="689.8,154;689.8,231;889.8,231;889.8,372;905.8,372" d="M 689.8 154 L 689.8 231 L 889.8 231 L 889.8 372 L 905.8 372" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="enter" data-edge-to="lookup" data-edge-key="8" data-edge-id="to-lookup" data-composition-points="244,120;266,120;266,220" d="M 244 120 L 266 120 L 266 220" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="insert" data-edge-to="violation" data-edge-label="unique violation" data-edge-key="0" data-edge-id="insert-loses" data-composition-points="359.5,146;359.5,174;616.8,174;616.8,154" d="M 359.5 146 L 359.5 174 L 616.8 174 L 616.8 154" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="insert" data-edge-to="won" data-edge-label="insert wins" data-edge-key="1" data-edge-id="insert-wins" data-composition-points="359.5,146;359.5,231;616.8,231;616.8,346" d="M 359.5 146 L 359.5 231 L 616.8 231 L 616.8 346" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="lookup" data-edge-to="hit" data-edge-label="live row found" data-edge-key="2" data-edge-id="live-row" data-composition-points="239.5,272;239.5,294;359.5,294;359.5,346" d="M 239.5 272 L 239.5 294 L 359.5 294 L 359.5 346" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="lookup" data-edge-to="insert" data-edge-label="absent or expired" data-edge-key="3" data-edge-id="no-live-row" data-composition-points="239.5,220;239.5,168;359.5,168;359.5,146" d="M 239.5 220 L 239.5 168 L 359.5 168 L 359.5 146" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="reclaim" data-edge-to="blocked" data-edge-label="0 rows updated" data-edge-key="4" data-edge-id="reclaim-loses" data-composition-points="997.3,120;1013.3,120;1013.3,231;909.3,231;909.3,346" d="M 997.3 120 L 1013.3 120 L 1013.3 231 L 909.3 231 L 909.3 346" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="reclaim" data-edge-to="reclaimed" data-edge-label="1 row updated" data-edge-key="5" data-edge-id="reclaim-wins" data-composition-points="997.3,120;1013.3,120;1013.3,231;1098.3,231;1098.3,346" d="M 997.3 120 L 1013.3 120 L 1013.3 231 L 1098.3 231 L 1098.3 346" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="violation" data-edge-to="reclaim" data-edge-label="blocking row expired" data-edge-key="6" data-edge-id="stale-row" data-composition-points="616.8,154;616.8,174;909.3,174;909.3,146" d="M 616.8 154 L 616.8 174 L 909.3 174 L 909.3 146" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="violation" data-edge-to="blocked" data-edge-label="blocking row still live" data-edge-key="7" data-edge-id="still-live" data-composition-points="616.8,154;616.8,231;909.3,231;909.3,346" d="M 616.8 154 L 616.8 231 L 909.3 231 L 909.3 346" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="enter" data-edge-to="lookup" data-edge-key="8" data-edge-id="to-lookup" data-composition-points="191,120;239.5,120;239.5,220" d="M 191 120 L 239.5 120 L 239.5 220" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
 
         <!-- Nodes -->
         <g id="node-enter" data-node-id="enter" data-node-label="IsKeyProcessedAsync" tabindex="0" role="button" aria-label="Focus IsKeyProcessedAsync, SHA-256 of the composite key, IdempotencyRelationalStore › Read" aria-pressed="false" data-node-kind="external" data-node-sublabel="SHA-256 of the composite key" data-node-context="IdempotencyRelationalStore › Read">
           <title>IsKeyProcessedAsync · SHA-256 of the composite key · IdempotencyRelationalStore › Read</title>
-          <rect x="48" y="94" width="196" height="52" rx="6" class="c-mask"/>
-          <rect x="48" y="94" width="196" height="52" rx="6" class="c-external" stroke-width="1.5"/>
+          <rect x="48" y="94" width="143" height="52" rx="6" class="c-mask"/>
+          <rect x="48" y="94" width="143" height="52" rx="6" class="c-external" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(54 100) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="146" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IsKeyProcessedAsync</text>
-          <text data-detail="context" x="146" y="132" class="t-muted" font-size="8" text-anchor="middle">SHA-256 of the composite key</text>
+          <text data-node-label="" data-detail-anchor="" x="119.5" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IsKeyProcessedAsync</text>
+          <text data-detail="context" x="119.5" y="132" class="t-muted" font-size="8" text-anchor="middle">SHA-256 of the composite key</text>
         </g>
 
         <g id="node-insert" data-node-id="insert" data-node-label="INSERT reservation row" tabindex="0" role="button" aria-label="Focus INSERT reservation row, StatusCode 102 placeholder, IdempotencyRelationalStore › Reserve" aria-pressed="false" data-node-kind="database" data-node-sublabel="StatusCode 102 placeholder" data-node-context="IdempotencyRelationalStore › Reserve">
           <title>INSERT reservation row · StatusCode 102 placeholder · IdempotencyRelationalStore › Reserve</title>
-          <rect x="284" y="94" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="284" y="94" width="204" height="52" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(290 100) scale(0.6875)">
+          <rect x="287.5" y="94" width="144" height="52" rx="6" class="c-mask"/>
+          <rect x="287.5" y="94" width="144" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(293.5 100) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="386" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">INSERT reservation row</text>
-          <text data-detail="context" x="386" y="132" class="t-muted" font-size="8" text-anchor="middle">StatusCode 102 placeholder</text>
+          <text data-node-label="" data-detail-anchor="" x="359.5" y="115" class="t-primary" font-size="10.3" font-weight="600" text-anchor="middle">INSERT reservation row</text>
+          <text data-detail="context" x="359.5" y="132" class="t-muted" font-size="8" text-anchor="middle">StatusCode 102 placeholder</text>
         </g>
 
         <g id="node-violation" data-node-id="violation" data-node-label="IsProviderUniqueViolation" tabindex="0" role="button" aria-label="Focus IsProviderUniqueViolation, SQL Server 2601/2627, Postgres 23505, IdempotencyRelationalStore › Reserve" aria-pressed="false" data-node-kind="security" data-node-sublabel="SQL Server 2601/2627, Postgres 23505" data-node-tag="never matched on message text" data-node-context="IdempotencyRelationalStore › Reserve">
           <title>IsProviderUniqueViolation · SQL Server 2601/2627, Postgres 23505 · IdempotencyRelationalStore › Reserve · never matched on message text</title>
-          <rect x="582.8" y="86" width="214" height="68" rx="6" class="c-mask"/>
-          <rect x="582.8" y="86" width="214" height="68" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(588.8 92) scale(0.6875)">
+          <rect x="526.3" y="86" width="181" height="68" rx="6" class="c-mask"/>
+          <rect x="526.3" y="86" width="181" height="68" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(532.3 92) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="689.8" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IsProviderUniqueViolation</text>
-          <text data-detail="context" x="689.8" y="124" class="t-muted" font-size="8" text-anchor="middle">SQL Server 2601/2627, Postgres 23505</text>
-        <text data-detail="fine" x="689.8" y="142" class="t-security" font-size="7" text-anchor="middle">never matched on message text</text>
+          <text data-node-label="" data-detail-anchor="" x="616.8" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IsProviderUniqueViolation</text>
+          <text data-detail="context" x="616.8" y="124" class="t-muted" font-size="8" text-anchor="middle">SQL Server 2601/2627, Postgres 23505</text>
+        <text data-detail="fine" x="616.8" y="142" class="t-security" font-size="7" text-anchor="middle">never matched on message text</text>
         </g>
 
         <g id="node-reclaim" data-node-id="reclaim" data-node-label="Conditional UPDATE" tabindex="0" role="button" aria-label="Focus Conditional UPDATE, only while the row is still expired, IdempotencyRelationalStore › Reclaim an expired row" aria-pressed="false" data-node-kind="database" data-node-sublabel="only while the row is still expired" data-node-context="IdempotencyRelationalStore › Reclaim an expired row">
           <title>Conditional UPDATE · only while the row is still expired · IdempotencyRelationalStore › Reclaim an expired row</title>
-          <rect x="910.8" y="94" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="910.8" y="94" width="204" height="52" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(916.8 100) scale(0.6875)">
+          <rect x="821.3" y="94" width="176" height="52" rx="6" class="c-mask"/>
+          <rect x="821.3" y="94" width="176" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(827.3 100) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1012.8" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Conditional UPDATE</text>
-          <text data-detail="context" x="1012.8" y="132" class="t-muted" font-size="8" text-anchor="middle">only while the row is still expired</text>
+          <text data-node-label="" data-detail-anchor="" x="909.3" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Conditional UPDATE</text>
+          <text data-detail="context" x="909.3" y="132" class="t-muted" font-size="8" text-anchor="middle">only while the row is still expired</text>
         </g>
 
         <g id="node-lookup" data-node-id="lookup" data-node-label="SELECT unexpired row" tabindex="0" role="button" aria-label="Focus SELECT unexpired row, CompositeKey match, ExpiresAt in the future, Provider database › Read" aria-pressed="false" data-node-kind="database" data-node-sublabel="CompositeKey match, ExpiresAt in the future" data-node-context="Provider database › Read">
           <title>SELECT unexpired row · CompositeKey match, ExpiresAt in the future · Provider database › Read</title>
-          <rect x="159" y="220" width="214" height="52" rx="6" class="c-mask"/>
-          <rect x="159" y="220" width="214" height="52" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(165 226) scale(0.6875)">
+          <rect x="132" y="220" width="215" height="52" rx="6" class="c-mask"/>
+          <rect x="132" y="220" width="215" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(138 226) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="266" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SELECT unexpired row</text>
-          <text data-detail="context" x="266" y="258" class="t-muted" font-size="7.9" text-anchor="middle">CompositeKey match, ExpiresAt in the future</text>
+          <text data-node-label="" data-detail-anchor="" x="239.5" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SELECT unexpired row</text>
+          <text data-detail="context" x="239.5" y="258" class="t-muted" font-size="8" text-anchor="middle">CompositeKey match, ExpiresAt in the future</text>
         </g>
 
         <g id="node-hit" data-node-id="hit" data-node-label="Duplicate" tabindex="0" role="button" aria-label="Focus Duplicate, (true, response), or (true, null) at 102, Returned to the endpoint filter › Reserve" aria-pressed="false" data-node-kind="backend" data-node-sublabel="(true, response), or (true, null) at 102" data-node-context="Returned to the endpoint filter › Reserve">
           <title>Duplicate · (true, response), or (true, null) at 102 · Returned to the endpoint filter › Reserve</title>
-          <rect x="281" y="346" width="210" height="52" rx="6" class="c-mask"/>
-          <rect x="281" y="346" width="210" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(287 352) scale(0.6875)">
+          <rect x="259.5" y="346" width="200" height="52" rx="6" class="c-mask"/>
+          <rect x="259.5" y="346" width="200" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(265.5 352) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="386" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Duplicate</text>
-          <text data-detail="context" x="386" y="384" class="t-muted" font-size="8" text-anchor="middle">(true, response), or (true, null) at 102</text>
+          <text data-node-label="" data-detail-anchor="" x="359.5" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Duplicate</text>
+          <text data-detail="context" x="359.5" y="384" class="t-muted" font-size="8" text-anchor="middle">(true, response), or (true, null) at 102</text>
         </g>
 
         <g id="node-won" data-node-id="won" data-node-label="Proceed" tabindex="0" role="button" aria-label="Focus Proceed, (false, null) — this caller runs the handler, Returned to the endpoint filter › Reserve" aria-pressed="false" data-node-kind="backend" data-node-sublabel="(false, null) — this caller runs the handler" data-node-context="Returned to the endpoint filter › Reserve">
           <title>Proceed · (false, null) — this caller runs the handler · Returned to the endpoint filter › Reserve</title>
-          <rect x="577.8" y="346" width="224" height="52" rx="6" class="c-mask"/>
-          <rect x="577.8" y="346" width="224" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(583.8 352) scale(0.6875)">
+          <rect x="506.79999999999995" y="346" width="220" height="52" rx="6" class="c-mask"/>
+          <rect x="506.79999999999995" y="346" width="220" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(512.8 352) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="689.8" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Proceed</text>
-          <text data-detail="context" x="689.8" y="384" class="t-muted" font-size="8" text-anchor="middle">(false, null) — this caller runs the handler</text>
+          <text data-node-label="" data-detail-anchor="" x="616.8" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Proceed</text>
+          <text data-detail="context" x="616.8" y="384" class="t-muted" font-size="8" text-anchor="middle">(false, null) — this caller runs the handler</text>
         </g>
 
         <g id="node-blocked" data-node-id="blocked" data-node-label="Another caller holds it" tabindex="0" role="button" aria-label="Focus Another caller holds it, winner&#39;s state re-read and returned, Returned to the endpoint filter › Reclaim an expired row" aria-pressed="false" data-node-kind="backend" data-node-sublabel="winner&#39;s state re-read and returned" data-node-context="Returned to the endpoint filter › Reclaim an expired row">
           <title>Another caller holds it · winner&#39;s state re-read and returned · Returned to the endpoint filter › Reclaim an expired row</title>
-          <rect x="905.8" y="346" width="214" height="52" rx="6" class="c-mask"/>
-          <rect x="905.8" y="346" width="214" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(911.8 352) scale(0.6875)">
+          <rect x="821.3" y="346" width="176" height="52" rx="6" class="c-mask"/>
+          <rect x="821.3" y="346" width="176" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(827.3 352) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1012.8" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Another caller holds it</text>
-          <text data-detail="context" x="1012.8" y="384" class="t-muted" font-size="8" text-anchor="middle">winner&#39;s state re-read and returned</text>
+          <text data-node-label="" data-detail-anchor="" x="909.3" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Another caller holds it</text>
+          <text data-detail="context" x="909.3" y="384" class="t-muted" font-size="8" text-anchor="middle">winner&#39;s state re-read and returned</text>
         </g>
 
         <g id="node-reclaimed" data-node-id="reclaimed" data-node-label="Proceed" tabindex="0" role="button" aria-label="Focus Proceed, (false, null) — expired row reclaimed, Returned to the endpoint filter › Reclaim an expired row" aria-pressed="false" data-node-kind="backend" data-node-sublabel="(false, null) — expired row reclaimed" data-node-context="Returned to the endpoint filter › Reclaim an expired row">
           <title>Proceed · (false, null) — expired row reclaimed · Returned to the endpoint filter › Reclaim an expired row</title>
-          <rect x="1127.8" y="346" width="214" height="52" rx="6" class="c-mask"/>
-          <rect x="1127.8" y="346" width="214" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1133.8 352) scale(0.6875)">
+          <rect x="1005.3" y="346" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1005.3" y="346" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1011.3 352) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1234.8" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Proceed</text>
-          <text data-detail="context" x="1234.8" y="384" class="t-muted" font-size="8" text-anchor="middle">(false, null) — expired row reclaimed</text>
+          <text data-node-label="" data-detail-anchor="" x="1098.3" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Proceed</text>
+          <text data-detail="context" x="1098.3" y="384" class="t-muted" font-size="8" text-anchor="middle">(false, null) — expired row reclaimed</text>
         </g>
 
         <!-- Edge labels -->
         <g data-detail="context" data-edge-from="insert" data-edge-to="violation" data-edge-label="unique violation" data-edge-key="0" data-edge-id="insert-loses">
-          <rect x="494.5" y="154" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="537.9" y="164" class="t-security" font-size="8" text-anchor="middle">unique violation</text>
+          <rect x="444.75" y="154" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="488.15" y="164" class="t-security" font-size="8" text-anchor="middle">unique violation</text>
         </g>
         <g data-detail="context" data-edge-from="insert" data-edge-to="won" data-edge-label="insert wins" data-edge-key="1" data-edge-id="insert-wins">
-          <rect x="506.5" y="211" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="537.9" y="221" class="t-backend" font-size="8" text-anchor="middle">insert wins</text>
+          <rect x="456.75" y="211" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="488.15" y="221" class="t-backend" font-size="8" text-anchor="middle">insert wins</text>
         </g>
         <g data-detail="context" data-edge-from="lookup" data-edge-to="hit" data-edge-label="live row found" data-edge-key="2" data-edge-id="live-row">
-          <rect x="287.4" y="274" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="326" y="284" class="t-security" font-size="8" text-anchor="middle">live row found</text>
+          <rect x="260.9" y="274" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="299.5" y="284" class="t-security" font-size="8" text-anchor="middle">live row found</text>
         </g>
         <g data-detail="context" data-edge-from="lookup" data-edge-to="insert" data-edge-label="absent or expired" data-edge-key="3" data-edge-id="no-live-row">
-          <rect x="280.2" y="148" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="326" y="158" class="t-backend" font-size="8" text-anchor="middle">absent or expired</text>
+          <rect x="253.7" y="148" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="299.5" y="158" class="t-backend" font-size="8" text-anchor="middle">absent or expired</text>
         </g>
         <g data-detail="context" data-edge-from="reclaim" data-edge-to="blocked" data-edge-label="0 rows updated" data-edge-key="4" data-edge-id="reclaim-loses">
-          <rect x="912.6999999999999" y="211" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="951.3" y="221" class="t-database" font-size="8" text-anchor="middle">0 rows updated</text>
+          <rect x="922.6999999999999" y="211" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="961.3" y="221" class="t-database" font-size="8" text-anchor="middle">0 rows updated</text>
         </g>
         <g data-detail="context" data-edge-from="reclaim" data-edge-to="reclaimed" data-edge-label="1 row updated" data-edge-key="5" data-edge-id="reclaim-wins">
-          <rect x="1138.6" y="100" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="1174.8" y="110" class="t-backend" font-size="8" text-anchor="middle">1 row updated</text>
+          <rect x="1019.5999999999999" y="211" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="1055.8" y="221" class="t-backend" font-size="8" text-anchor="middle">1 row updated</text>
         </g>
         <g data-detail="context" data-edge-from="violation" data-edge-to="reclaim" data-edge-label="blocking row expired" data-edge-key="6" data-edge-id="stale-row">
-          <rect x="798.3" y="154" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="851.3" y="164" class="t-muted" font-size="8" text-anchor="middle">blocking row expired</text>
+          <rect x="710.05" y="154" width="106" height="14" rx="3" class="c-mask"/>
+          <text x="763.05" y="164" class="t-muted" font-size="8" text-anchor="middle">blocking row expired</text>
         </g>
         <g data-detail="context" data-edge-from="violation" data-edge-to="blocked" data-edge-label="blocking row still live" data-edge-key="7" data-edge-id="still-live">
-          <rect x="729.5999999999999" y="211" width="120.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="789.8" y="221" class="t-security" font-size="8" text-anchor="middle">blocking row still live</text>
+          <rect x="702.8499999999999" y="211" width="120.39999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="763.05" y="221" class="t-security" font-size="8" text-anchor="middle">blocking row still live</text>
         </g>
 
 

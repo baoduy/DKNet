@@ -6,8 +6,8 @@
     "quality_profile": "showcase",
     "column_fit": "spread",
     "viewBox": [
-      1360,
-      830
+      1080,
+      693
     ],
     "legend": {
       "entries": {
@@ -42,8 +42,8 @@
     {
       "id": "interceptor",
       "type": "backend",
-      "label": "HookRunnerInterceptor",
-      "sublabel": "one per DbContext type"
+      "label": "Hook runner",
+      "sublabel": "HookRunnerInterceptor"
     },
     {
       "id": "hook",
@@ -72,18 +72,18 @@
   ],
   "segments": [
     {
-      "from": 165,
-      "to": 348,
+      "from": 150,
+      "to": 297,
       "label": "Before the save"
     },
     {
-      "from": 358,
-      "to": 432,
+      "from": 305,
+      "to": 364,
       "label": "EF Core writes"
     },
     {
-      "from": 442,
-      "to": 724,
+      "from": 372,
+      "to": 603,
       "label": "Only after a successful save"
     }
   ],
@@ -92,7 +92,7 @@
       "id": "save",
       "from": "app",
       "to": "db",
-      "y": 190,
+      "y": 170,
       "label": "SaveChangesAsync()",
       "variant": "emphasis"
     },
@@ -100,14 +100,15 @@
       "id": "saving",
       "from": "db",
       "to": "interceptor",
-      "y": 232,
-      "label": "SavingChangesAsync"
+      "y": 204,
+      "label": "SavingChangesAsync",
+      "note": "One HookRunnerInterceptor is registered per DbContext type."
     },
     {
       "id": "before-save",
       "from": "interceptor",
       "to": "hook",
-      "y": 272,
+      "y": 236,
       "label": "BeforeSaveAsync(snapshot)",
       "note": "Records which [RaisesEvent] rules qualify, while IsModified still means something. Hand-raised events stay queued on the entity."
     },
@@ -115,7 +116,7 @@
       "id": "declared-captured",
       "from": "hook",
       "to": "interceptor",
-      "y": 326,
+      "y": 279,
       "label": "declared events captured",
       "variant": "return"
     },
@@ -123,7 +124,7 @@
       "id": "write",
       "from": "db",
       "to": "provider",
-      "y": 372,
+      "y": 316,
       "label": "INSERT / UPDATE / DELETE",
       "variant": "emphasis"
     },
@@ -131,7 +132,7 @@
       "id": "written",
       "from": "provider",
       "to": "db",
-      "y": 412,
+      "y": 348,
       "label": "rows affected",
       "variant": "return"
     },
@@ -139,21 +140,21 @@
       "id": "saved",
       "from": "db",
       "to": "interceptor",
-      "y": 458,
+      "y": 385,
       "label": "SavedChangesAsync"
     },
     {
       "id": "after-save",
       "from": "interceptor",
       "to": "hook",
-      "y": 498,
+      "y": 417,
       "label": "AfterSaveAsync(snapshot)"
     },
     {
       "id": "map",
       "from": "hook",
       "to": "mapper",
-      "y": 540,
+      "y": 451,
       "label": "map TEvent-only and declared payloads",
       "variant": "dashed",
       "note": "Throws EventException when a mapping-based event has no IMapper registered."
@@ -162,7 +163,7 @@
       "id": "payloads",
       "from": "mapper",
       "to": "hook",
-      "y": 594,
+      "y": 494,
       "label": "event objects",
       "variant": "return"
     },
@@ -170,7 +171,7 @@
       "id": "publish",
       "from": "hook",
       "to": "publisher",
-      "y": 622,
+      "y": 522,
       "label": "PublishAsync(combined list)",
       "variant": "emphasis",
       "note": "Each publisher runs in its own try/catch: one that throws is logged and skipped, and the save is already committed."
@@ -179,7 +180,7 @@
       "id": "published",
       "from": "publisher",
       "to": "hook",
-      "y": 676,
+      "y": 565,
       "label": "logged and skipped on failure",
       "variant": "return"
     },
@@ -187,7 +188,7 @@
       "id": "clear",
       "from": "hook",
       "to": "db",
-      "y": 716,
+      "y": 597,
       "label": "ClearEvents() on every entity",
       "variant": "dashed"
     }
@@ -195,38 +196,38 @@
   "activations": [
     {
       "participant": "db",
-      "from": 185,
-      "to": 724,
+      "from": 166,
+      "to": 603,
       "type": "database"
     },
     {
       "participant": "interceptor",
-      "from": 227,
-      "to": 504,
+      "from": 200,
+      "to": 422,
       "type": "backend"
     },
     {
       "participant": "hook",
-      "from": 267,
-      "to": 722,
+      "from": 232,
+      "to": 602,
       "type": "backend"
     },
     {
       "participant": "provider",
-      "from": 367,
-      "to": 418,
+      "from": 312,
+      "to": 353,
       "type": "database"
     },
     {
       "participant": "mapper",
-      "from": 535,
-      "to": 600,
+      "from": 447,
+      "to": 500,
       "type": "cloud"
     },
     {
       "participant": "publisher",
-      "from": 617,
-      "to": 682,
+      "from": 517,
+      "to": 570,
       "type": "messagebus"
     }
   ]

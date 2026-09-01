@@ -19,7 +19,11 @@
         }
       }
     },
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "viewBox": [
+      1050,
+      652
+    ]
   },
   "lanes": [
     {

@@ -82,7 +82,7 @@
       "type": "external",
       "label": "app.UseEndpointConfigs()",
       "sublabel": "options plus assemblies to scan",
-      "width": 196
+      "width": 158
     },
     {
       "id": "noversioning",
@@ -90,9 +90,9 @@
       "col": 0,
       "type": "security",
       "label": "InvalidOperationException",
-      "sublabel": "EnableVersioning on, AddApiVersioning missing",
+      "sublabel": "EnableVersioning on, no AddApiVersioning",
       "tag": "thrown before discovery",
-      "width": 214
+      "width": 200
     },
     {
       "id": "discovery",
@@ -102,7 +102,7 @@
       "label": "Discover IEndpointConfig",
       "sublabel": "non-abstract, non-generic classes",
       "tag": "every loaded assembly by default",
-      "width": 196
+      "width": 167
     },
     {
       "id": "nogroups",
@@ -111,7 +111,7 @@
       "type": "external",
       "label": "Empty list returned",
       "sublabel": "nothing is mapped",
-      "width": 178
+      "width": 124
     },
     {
       "id": "versioned",
@@ -121,7 +121,7 @@
       "label": "Versioned route group",
       "sublabel": "MapGroup, version metadata, tags",
       "tag": "one ApiVersionSet for every config",
-      "width": 204
+      "width": 162
     },
     {
       "id": "population",
@@ -130,7 +130,7 @@
       "type": "security",
       "label": "Contextual population filter",
       "sublabel": "added first, ahead of host filters",
-      "width": 204
+      "width": 185
     },
     {
       "id": "nopopulation",
@@ -139,7 +139,7 @@
       "type": "security",
       "label": "InvalidOperationException",
       "sublabel": "declared source, mechanism never registered",
-      "width": 214
+      "width": 215
     },
     {
       "id": "hostsetup",
@@ -148,16 +148,16 @@
       "type": "backend",
       "label": "ConfigureGroup(group, config)",
       "sublabel": "host filters, e.g. validation",
-      "width": 204
+      "width": 192
     },
     {
       "id": "authmap",
       "lane": "group",
       "col": 5,
       "type": "backend",
-      "label": "RequireAuthorization, then Map",
-      "sublabel": "AuthPolicy, or plain authentication",
-      "width": 210
+      "label": "RequireAuthorization, Map",
+      "sublabel": "AuthPolicy, or no policy",
+      "width": 164
     }
   ],
   "edges": [
@@ -215,7 +215,9 @@
       "id": "then-auth",
       "from": "hostsetup",
       "to": "authmap",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "bottom"
     }
   ]
 }

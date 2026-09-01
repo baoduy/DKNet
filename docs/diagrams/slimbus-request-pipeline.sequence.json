@@ -6,8 +6,8 @@
     "quality_profile": "showcase",
     "column_fit": "spread",
     "viewBox": [
-      1360,
-      840
+      1080,
+      696
     ],
     "legend": {
       "entries": {
@@ -42,13 +42,12 @@
     {
       "id": "custom",
       "type": "backend",
-      "label": "Your interceptors",
-      "sublabel": "IRequestHandlerInterceptor"
+      "label": "Your interceptors"
     },
     {
       "id": "autosave",
       "type": "backend",
-      "label": "Auto-save interceptor",
+      "label": "Auto-save",
       "sublabel": "Order = int.MaxValue"
     },
     {
@@ -72,18 +71,18 @@
   ],
   "segments": [
     {
-      "from": 165,
-      "to": 336,
+      "from": 150,
+      "to": 287,
       "label": "Request in"
     },
     {
-      "from": 346,
-      "to": 440,
+      "from": 295,
+      "to": 370,
       "label": "Handler runs"
     },
     {
-      "from": 450,
-      "to": 736,
+      "from": 378,
+      "to": 606,
       "label": "Auto-save, then publish"
     }
   ],
@@ -92,7 +91,7 @@
       "id": "send",
       "from": "caller",
       "to": "bus",
-      "y": 190,
+      "y": 170,
       "label": "Send(request)",
       "variant": "emphasis"
     },
@@ -100,14 +99,15 @@
       "id": "interceptor-chain",
       "from": "bus",
       "to": "custom",
-      "y": 232,
-      "label": "OnHandle(request, next)"
+      "y": 204,
+      "label": "OnHandle(request, next)",
+      "note": "Every IRequestHandlerInterceptor<TRequest, TResponse> you register runs here, in Order sequence."
     },
     {
       "id": "next-custom",
       "from": "custom",
       "to": "autosave",
-      "y": 272,
+      "y": 236,
       "label": "next()",
       "note": "Order = int.MaxValue puts auto-save last in the chain, so it wraps the handler and runs after your own interceptors."
     },
@@ -115,7 +115,7 @@
       "id": "next-handler",
       "from": "autosave",
       "to": "handler",
-      "y": 326,
+      "y": 279,
       "label": "next()",
       "variant": "emphasis"
     },
@@ -123,7 +123,7 @@
       "id": "mutate",
       "from": "handler",
       "to": "db",
-      "y": 366,
+      "y": 311,
       "label": "load and change entities",
       "note": "The handler never calls SaveChangesAsync itself."
     },
@@ -131,7 +131,7 @@
       "id": "result",
       "from": "handler",
       "to": "autosave",
-      "y": 420,
+      "y": 354,
       "label": "IResultBase",
       "variant": "return"
     },
@@ -139,7 +139,7 @@
       "id": "has-changes",
       "from": "autosave",
       "to": "db",
-      "y": 464,
+      "y": 389,
       "label": "ChangeTracker.HasChanges()?",
       "variant": "dashed",
       "note": "Skipped entirely when the response is null, is a failed IResultBase, or the request is not a Fluents.Requests write."
@@ -148,7 +148,7 @@
       "id": "save",
       "from": "autosave",
       "to": "db",
-      "y": 528,
+      "y": 440,
       "label": "SaveChangesWithConcurrencyHandlingAsync",
       "variant": "emphasis"
     },
@@ -156,14 +156,14 @@
       "id": "hook-publish",
       "from": "db",
       "to": "publisher",
-      "y": 572,
+      "y": 475,
       "label": "after-save hook hands over the raised events"
     },
     {
       "id": "bus-publish",
       "from": "publisher",
       "to": "bus",
-      "y": 612,
+      "y": 507,
       "label": "Publish(event), one at a time in order",
       "note": "For an IEventItem, AdditionalData is copied onto the message as case-insensitive headers."
     },
@@ -171,7 +171,7 @@
       "id": "respond",
       "from": "autosave",
       "to": "bus",
-      "y": 670,
+      "y": 553,
       "label": "response",
       "variant": "return"
     },
@@ -179,7 +179,7 @@
       "id": "to-caller",
       "from": "bus",
       "to": "caller",
-      "y": 710,
+      "y": 585,
       "label": "response",
       "variant": "return"
     }
@@ -187,38 +187,38 @@
   "activations": [
     {
       "participant": "bus",
-      "from": 185,
-      "to": 736,
+      "from": 166,
+      "to": 606,
       "type": "messagebus"
     },
     {
       "participant": "custom",
-      "from": 227,
-      "to": 676,
+      "from": 200,
+      "to": 558,
       "type": "backend"
     },
     {
       "participant": "autosave",
-      "from": 267,
-      "to": 674,
+      "from": 232,
+      "to": 556,
       "type": "backend"
     },
     {
       "participant": "handler",
-      "from": 321,
-      "to": 426,
+      "from": 275,
+      "to": 359,
       "type": "backend"
     },
     {
       "participant": "db",
-      "from": 361,
-      "to": 618,
+      "from": 307,
+      "to": 512,
       "type": "database"
     },
     {
       "participant": "publisher",
-      "from": 567,
-      "to": 618,
+      "from": 471,
+      "to": 512,
       "type": "cloud"
     }
   ]

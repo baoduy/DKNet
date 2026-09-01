@@ -7,7 +7,7 @@
     "column_fit": "spread",
     "viewBox": [
       1085,
-      820
+      655
     ],
     "legend": {
       "entries": {
@@ -51,18 +51,18 @@
   ],
   "segments": [
     {
-      "from": 170,
-      "to": 432,
+      "from": 154,
+      "to": 363,
       "label": "Check and reserve"
     },
     {
-      "from": 452,
-      "to": 538,
+      "from": 378,
+      "to": 447,
       "label": "Run once"
     },
     {
-      "from": 558,
-      "to": 686,
+      "from": 463,
+      "to": 565,
       "label": "Cache the response"
     }
   ],
@@ -71,7 +71,7 @@
       "id": "check",
       "from": "filter",
       "to": "store",
-      "y": 190,
+      "y": 170,
       "label": "IsKeyProcessedAsync(keyInfo)",
       "variant": "emphasis"
     },
@@ -79,7 +79,7 @@
       "id": "get",
       "from": "store",
       "to": "redis",
-      "y": 234,
+      "y": 205,
       "label": "GET prefix + sha256(compositeKey)",
       "note": "Only the lowercase hex SHA-256 digest of Scope:Method:Endpoint:Key reaches Redis, behind CachePrefix."
     },
@@ -87,7 +87,7 @@
       "id": "miss",
       "from": "redis",
       "to": "store",
-      "y": 278,
+      "y": 240,
       "label": "nil",
       "variant": "return"
     },
@@ -95,7 +95,7 @@
       "id": "setnx",
       "from": "store",
       "to": "redis",
-      "y": 322,
+      "y": 275,
       "label": "SET key <102 reservation> NX, TTL InFlightReservationTimeout",
       "variant": "emphasis",
       "note": "Atomicity primitive. A losing caller re-reads the key: (true, null) while the 102 sentinel holds, (true, response) once the winner completed."
@@ -104,7 +104,7 @@
       "id": "reserved",
       "from": "redis",
       "to": "store",
-      "y": 366,
+      "y": 310,
       "label": "OK, reservation held",
       "variant": "return"
     },
@@ -112,7 +112,7 @@
       "id": "proceed",
       "from": "store",
       "to": "filter",
-      "y": 410,
+      "y": 345,
       "label": "(false, null)",
       "variant": "return"
     },
@@ -120,7 +120,7 @@
       "id": "invoke",
       "from": "filter",
       "to": "handler",
-      "y": 474,
+      "y": 396,
       "label": "next(context)",
       "variant": "emphasis"
     },
@@ -128,7 +128,7 @@
       "id": "result",
       "from": "handler",
       "to": "filter",
-      "y": 518,
+      "y": 431,
       "label": "result",
       "variant": "return"
     },
@@ -136,7 +136,7 @@
       "id": "mark",
       "from": "filter",
       "to": "store",
-      "y": 580,
+      "y": 481,
       "label": "MarkKeyAsProcessedAsync(keyInfo, response)",
       "note": "Only reached when the status code is cacheable; otherwise the reservation is left to expire on its own."
     },
@@ -144,7 +144,7 @@
       "id": "set",
       "from": "store",
       "to": "redis",
-      "y": 624,
+      "y": 516,
       "label": "SET key <response>, TTL Expiration",
       "variant": "emphasis",
       "note": "Unconditional SET: the reservation is overwritten and the TTL becomes Expiration, four hours by default."
@@ -153,7 +153,7 @@
       "id": "done",
       "from": "store",
       "to": "filter",
-      "y": 668,
+      "y": 551,
       "label": "cached",
       "variant": "return"
     }
@@ -161,20 +161,20 @@
   "activations": [
     {
       "participant": "store",
-      "from": 185,
-      "to": 674,
+      "from": 166,
+      "to": 556,
       "type": "backend"
     },
     {
       "participant": "redis",
-      "from": 229,
-      "to": 630,
+      "from": 201,
+      "to": 521,
       "type": "database"
     },
     {
       "participant": "handler",
-      "from": 469,
-      "to": 524,
+      "from": 392,
+      "to": 436,
       "type": "backend"
     }
   ]

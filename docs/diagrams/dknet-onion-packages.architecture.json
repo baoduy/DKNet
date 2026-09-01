@@ -27,7 +27,7 @@
     },
     "quality_profile": "showcase",
     "viewBox": [
-      1500,
+      1395,
       760
     ]
   },
@@ -38,7 +38,7 @@
       60,
       150
     ],
-    "gapX": 180,
+    "gapX": 150,
     "gapY": 140,
     "cellW": 210,
     "cellH": 78

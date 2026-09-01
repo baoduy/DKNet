@@ -80,7 +80,7 @@
       "label": "Register the tasks",
       "sublabel": "AddBackgroundJob or AddBackgroundJobFrom",
       "tag": "scoped, de-duplicated by implementation type",
-      "width": 216
+      "width": 200
     },
     {
       "id": "addhost",
@@ -89,7 +89,7 @@
       "type": "backend",
       "label": "AddHostedService",
       "sublabel": "BackgroundJobHost, added once",
-      "width": 196
+      "width": 148
     },
     {
       "id": "start",
@@ -98,7 +98,7 @@
       "type": "backend",
       "label": "Generic host starts",
       "sublabel": "logs \"Background job host started\"",
-      "width": 204
+      "width": 172
     },
     {
       "id": "scope",
@@ -108,7 +108,7 @@
       "label": "One shared async scope",
       "sublabel": "resolves every IBackgroundTask",
       "tag": "not one scope per task",
-      "width": 204
+      "width": 152
     },
     {
       "id": "runall",
@@ -118,7 +118,7 @@
       "label": "Task.WhenAll(RunAsync)",
       "sublabel": "all tasks run concurrently",
       "tag": "no ordering guarantee",
-      "width": 204
+      "width": 144
     },
     {
       "id": "failed",
@@ -127,7 +127,7 @@
       "type": "security",
       "label": "Exception logged, swallowed",
       "sublabel": "\"{TaskType} job failed\" at Error level",
-      "width": 216
+      "width": 191
     },
     {
       "id": "finish",
@@ -136,7 +136,7 @@
       "type": "backend",
       "label": "Scope disposed",
       "sublabel": "logs \"Background job host finished\"",
-      "width": 204
+      "width": 176
     }
   ],
   "edges": [
@@ -162,7 +162,6 @@
       "id": "to-runall",
       "from": "scope",
       "to": "runall",
-      "label": "one scope, every task",
       "variant": "emphasis"
     },
     {
