@@ -14,7 +14,7 @@ protecting `POST`/`PUT`/`PATCH` handlers from network retries, double-clicks, an
   (`CachedResult`) or an explicit `409 Conflict` (`ConflictResponse`, the default).
 - **Pluggable storage** – The filter talks to an `IIdempotencyKeyStore` abstraction. Ship with the built-in
   distributed-cache store, or swap in an atomic store from the ecosystem (see
-  [Choosing a store](#️-choosing-a-store)).
+  [Choosing a store](#-choosing-a-store)).
 - **Minimal API-native** – A single `.RequiredIdempotentKey()` call on a `RouteHandlerBuilder` is all that's needed
   to protect an endpoint.
 

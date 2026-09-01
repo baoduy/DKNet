@@ -134,7 +134,7 @@ public sealed class ImportOrdersTask(IOrderImporter importer) : IBackgroundTask
 
 Whatever side effects the task performed *before* the throw are not rolled back — there is no
 automatic retry or compensation, so keep each `RunAsync` safe to have partially run (see
-[Gotchas & limits](#️-gotchas--limits)).
+[Gotchas & limits](#-gotchas--limits)).
 
 ## ⚙️ Configuration reference
 
@@ -202,7 +202,7 @@ below.
 
 - **There is nothing to configure.** The package has no options type, no `appsettings.json`
   binding, and no tunable timeouts or concurrency limits — the only inputs are the ones listed
-  under [Configuration reference](#️-configuration-reference). If you need throttling, ordering, or
+  under [Configuration reference](#-configuration-reference). If you need throttling, ordering, or
   scheduling, build it into your task implementations (or reach for a package designed for it)
   rather than expecting this one to grow the knob.
 - **The tasks do not block start-up.** `BackgroundJobHost` is a `BackgroundService`, so the host

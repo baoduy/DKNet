@@ -43,9 +43,11 @@ public class Product : Entity
 ```
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // API project
 [GenerateDto(typeof(Product))]
-public partial record ProductDto;                 // DKNet.EfCore.DtoGenerator
+public partial record ProductDto;
 
 app.MapGroup("/products").MapProductCrud();       // generated extension method
 ```

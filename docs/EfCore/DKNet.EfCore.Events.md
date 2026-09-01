@@ -90,7 +90,7 @@ public class Order : Entity<Guid>
 
 `AddEvent(object)` just queues the instance you pass — no mapping, no `IMapper` needed. A second overload,
 `AddEvent<TEvent>()`, queues the *type* instead: at dispatch time the entity itself is mapped onto `TEvent` via
-the registered `IMapper` (see [Configuration reference](#️-configuration-reference)) — useful when the event should mirror current entity state at save time rather
+the registered `IMapper` (see [Configuration reference](#-configuration-reference)) — useful when the event should mirror current entity state at save time rather
 than at call time.
 
 ### The publisher you write
@@ -128,7 +128,7 @@ await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher o
    `EventContext` over the same save's `SnapshotContext`. `EventContext.GetEvents()` walks every tracked entity
    that is `IEventEntity`, reads its queued `(object[] Events, Type[] EventTypes)` via `GetEvents()`, keeps the
    object instances as-is, and maps any `TEvent`-only entries onto their type via the registered `IMapper` —
-   throwing `EventException` if none is registered (see [Gotchas & limits](#️-gotchas--limits)). It also stamps a `sourceType` entry (the entity's
+   throwing `EventException` if none is registered (see [Gotchas & limits](#-gotchas--limits)). It also stamps a `sourceType` entry (the entity's
    full type name) into `AdditionalData` for any event implementing `IEventItem`.
 4. Declared events captured in step 1 are now mapped from their entity onto their declared payload type (again
    via `IMapper`, again `EventException` if missing) and merged with the hand-raised ones from the same save —
@@ -169,6 +169,7 @@ base class required. Declaring is two steps: shape the payload as a
 
 ```csharp
 using DKNet.EfCore.Abstractions.Events;
+using DKNet.EfCore.DtoGenerator;
 
 [GenerateDto(typeof(Order))]
 public partial record OrderPlacedEvent;
@@ -231,7 +232,7 @@ Behaviour worth knowing beyond the table:
 - **Logging**: `ILogger<EventHook>` is optional (nullable constructor parameter) — an informational entry on
   `AfterSaveAsync`, an error entry per failed publisher. No log is emitted for individual successful publishes.
 - **No retry, no ordering knob, no dead-lettering.** These aren't configurable because the package doesn't
-  implement them at all — see [Gotchas & limits](#️-gotchas--limits).
+  implement them at all — see [Gotchas & limits](#-gotchas--limits).
 
 ## 🧱 Where it fits
 

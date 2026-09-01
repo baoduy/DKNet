@@ -122,6 +122,10 @@ bodies. It is repeatable (`AllowMultiple = true`) — apply once per event the e
 Three forms:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.EfCore.DtoGenerator;
+
 // Type-naming form — names an existing [GenerateDto] payload record (DKNet.EfCore.DtoGenerator)
 [GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
 public partial record OrderPlacedEvent;
@@ -331,7 +335,7 @@ constructor's optional `Type` defaults to `int` and only `byte`, `short`, `int` 
 else throws `NotSupportedException` while the attribute is being constructed. The four numeric options
 (`StartAt`, `IncrementsBy`, `Min`, `Max`) all default to `-1`, which `DKNet.EfCore.Extensions` reads as "leave it
 to the database" — only values greater than zero are applied. `Cyclic` is always applied, defaulting to `true`.
-Full property list: [Configuration reference](#️-configuration-reference).
+Full property list: [Configuration reference](#-configuration-reference).
 
 `DKNet.EfCore.Extensions` registers these against the model during `UseAutoConfigModel`, and only when the provider
 is SQL Server or Npgsql. Each sequence is named `Seq_{enumMemberName}` in the `[SqlSequence]` schema, and an enum
@@ -416,7 +420,7 @@ public class Order : Entity
 
 All three expose a `Name` property that overrides the generated request type's name. Marking one member with both
 `[CrudUpdate]` and `[CrudAction]` is a build error. Property tables:
-[Configuration reference](#️-configuration-reference); the generated code, routes, and full diagnostics list live in
+[Configuration reference](#-configuration-reference); the generated code, routes, and full diagnostics list live in
 [DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md).
 
 ### Publishing contract — `IEventPublisher`, `DefaultEventPublisher`, `IEventItem` / `EventItem`

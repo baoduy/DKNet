@@ -44,6 +44,8 @@ That's it — no `CompilerVisibleProperty` item is needed in the consuming proje
 ### Example 1: Basic Usage with Global Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // Entity with audit properties
 public class Product
 {
@@ -66,6 +68,8 @@ public partial record ProductDto;
 ### Example 2: Combining Global and Local Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 public class Order
 {
     public Guid Id { get; set; }
@@ -87,6 +91,8 @@ public partial record OrderDto;
 ### Example 3: Include Overrides Global Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // Include specific properties, ignoring global exclusions
 [GenerateDto(typeof(Product), Include = [
     nameof(Product.Id),
@@ -182,6 +188,8 @@ Exclude sensitive or security-related fields:
 
 **Before** (without global exclusions):
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 [GenerateDto(typeof(Product), Exclude = ["CreatedBy", "UpdatedBy", "CreatedAt", "UpdatedAt"])]
 public partial record ProductDto;
 
@@ -199,6 +207,8 @@ public partial record CustomerDto;
 ```
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;
 

@@ -18,7 +18,7 @@ SQL Server-backed `IIdempotencyKeyStore` for
   `DbContext`, its factory, and the store; migrations apply themselves on first use.
 
 Reach for this store when SQL Server is already part of your stack — see
-[Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) on the core page for the full
+[Choosing a store](DKNet.AspCore.Idempotency.md#-choosing-a-store) on the core page for the full
 Redis-vs-relational comparison, which is not repeated here.
 
 ## 🚀 Quick Start
@@ -84,7 +84,7 @@ replacing the key store — for example to run `Database.MigrateAsync()` from a 
 | Thing | Who provides it |
 |---|---|
 | The `IdempotencyKeys` table, `UX_CompositeKey`, `IX_IdempotencyKeys_ExpiresAt` and `CK_StatusCode_Valid` | The package — created by the shipped `Initial` migration |
-| Applying that migration | The package, automatically, on first use per connection string (or you, ahead of time — see [Gotchas & limits](#️-gotchas--limits)) |
+| Applying that migration | The package, automatically, on first use per connection string (or you, ahead of time — see [Gotchas & limits](#-gotchas--limits)) |
 | The `migrate.IdempotencyDbContext` migrations-history table and the `migrate` schema | The package, through EF Core |
 | A reachable SQL Server database and a login that can create tables in it | **You** |
 | Row expiry / cleanup of keys nobody ever retries | **You** — `ExpiresAt` is indexed, but nothing sweeps it |
@@ -136,7 +136,7 @@ from app configuration, and throws `InvalidOperationException` when that variabl
 There is no SQL-Server-specific options type — `AddIdempotencyWithMsSqlStore` configures the same
 `IdempotencyOptions` the core package defines (`Expiration`, `ConflictHandling`,
 `InFlightReservationTimeout`, …); see the
-[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+[core configuration reference](DKNet.AspCore.Idempotency.md#-configuration-reference).
 
 What SQL Server itself gets is fixed by this package rather than exposed as options:
 

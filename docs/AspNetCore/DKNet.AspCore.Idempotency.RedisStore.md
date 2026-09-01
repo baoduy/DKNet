@@ -18,7 +18,7 @@ Redis-backed `IIdempotencyKeyStore` for
 
 Reach for Redis over a relational store when you already run Redis and want the lowest-latency
 option with no schema to manage. See
-[Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) on the core page for the full
+[Choosing a store](DKNet.AspCore.Idempotency.md#-choosing-a-store) on the core page for the full
 Redis-vs-relational comparison.
 
 ## 🚀 Quick Start
@@ -175,7 +175,7 @@ if (processed && cachedResponse is not null)
 
 There is no Redis-specific options type. `IdempotencyRedisStore` reads these `IdempotencyOptions`,
 configured via the `config` delegate on `AddIdempotencyWithRedisStore`; the full option set lives in
-the [core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference):
+the [core configuration reference](DKNet.AspCore.Idempotency.md#-configuration-reference):
 
 | Option | Default | Used for |
 |---|---|---|
