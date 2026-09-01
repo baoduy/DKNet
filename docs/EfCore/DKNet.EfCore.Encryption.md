@@ -48,11 +48,11 @@ public sealed class AppEncryptionKeyProvider : EncryptionKeyProvider
 **b) Register it in DI**, via `EfCoreEncryptionSetup.AddEfCoreEncryption<TKeyServiceImplementation>`:
 
 ```csharp
-var services = new ServiceCollection();
-services.AddEfCoreEncryption<AppEncryptionKeyProvider>(); // registers IEncryptionKeyProvider as a singleton
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddEfCoreEncryption<AppEncryptionKeyProvider>(); // registers IEncryptionKeyProvider as a singleton
 ```
 
-Note the extension's exact signature: `public static ServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this ServiceCollection services) where TKeyServiceImplementation : class, IEncryptionKeyProvider`. It extends the **concrete** `ServiceCollection` class, not `IServiceCollection` — see [Gotchas](#️-gotchas--limits).
+The extension takes and returns `IServiceCollection`, so it is callable on `builder.Services` and chains with any other registration call.
 
 **c) Apply it in `OnModelCreating`** via `ModelBuilderExtensions.UseColumnEncryption`, and mark the property:
 
@@ -169,7 +169,7 @@ Throws `ArgumentNullException` if either argument is null.
 
 ### `EfCoreEncryptionSetup.AddEfCoreEncryption<TKeyServiceImplementation>` — DI registration
 ```csharp
-public static ServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this ServiceCollection services)
+public static IServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this IServiceCollection services)
     where TKeyServiceImplementation : class, IEncryptionKeyProvider
 ```
 Registers `TKeyServiceImplementation` as the singleton `IEncryptionKeyProvider`, but only if one isn't already registered (idempotent — safe to call more than once, or alongside a manual registration you added yourself).
@@ -184,7 +184,7 @@ There is no options/settings class and no `appsettings.json` binding shipped by 
 |---|---|---|---|
 | `IEncryptionKeyProvider.GetKey(Type entityType)` | `byte[]` | none — you must implement it | Supplies the AES key for every `[Encrypted]` property on that entity type. Evaluated once per property at model-build time. |
 | `AesGcmColumnEncryptionProvider(byte[] key)` | `byte[]` | none — required | Key material. Must be exactly 16, 24, or 32 bytes; anything else throws `ArgumentException`, `null` throws `ArgumentNullException`. |
-| `AddEfCoreEncryption<TKeyServiceImplementation>()` | `ServiceCollection` extension | — | Registers `TKeyServiceImplementation` as the singleton `IEncryptionKeyProvider`, only if one is not already registered. |
+| `AddEfCoreEncryption<TKeyServiceImplementation>()` | `IServiceCollection` extension | — | Registers `TKeyServiceImplementation` as the singleton `IEncryptionKeyProvider`, only if one is not already registered. |
 | `ModelBuilderExtensions.UseColumnEncryption(...)` | `ModelBuilder` extension | — | Must be called from `OnModelCreating`; without it, `[Encrypted]` has no effect. |
 
 Behaviour worth knowing beyond the table:
@@ -211,7 +211,6 @@ Behaviour worth knowing beyond the table:
 - **One key per entity type, not per property.** `GetKey(Type entityType)` gives you the declaring entity type only; two `[Encrypted]` properties on the same entity always share the same key.
 - **No built-in key rotation or ciphertext versioning.** Changing the key requires an explicit re-encryption migration; there's no support for decrypting old ciphertext with a previous key while encrypting new writes with a new one.
 - **Ciphertext is longer than plaintext.** Stored value is Base64 of `12-byte IV + 16-byte tag + ciphertext`, so a `nvarchar`/`varchar` column must be sized with headroom (roughly plaintext-bytes + 28, then ×~1.33 for Base64) or migrations/writes can truncate.
-- **`AddEfCoreEncryption` extends `ServiceCollection`, not `IServiceCollection`.** If your hosting code only exposes `IServiceCollection` (some builder abstractions do), the extension method won't be callable on it directly — register `IEncryptionKeyProvider` yourself with `services.AddSingleton<IEncryptionKeyProvider, TImpl>()` instead in that case.
 - **Corrupted or wrong-key ciphertext throws, not silently returns garbage.** `Decrypt` throws `ArgumentException` for a malformed payload and `InvalidOperationException` when AES-GCM authentication fails (tampered data or wrong key) — handle these at the boundary if a bad key/rotation could reach production data.
 - **Not the same package as `DKNet.Svc.Encryption` / `DKNet.Svc.BlobStorage.Encryption`.** Those are general-purpose cryptography utilities under `src/Services` with no EF Core dependency; use this package specifically for EF Core column-level encryption.
 

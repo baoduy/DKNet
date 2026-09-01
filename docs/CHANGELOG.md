@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.
 - Improved documentation organization and navigation
 - Enhanced main README.md to be more concise and point to docs/
+- **Breaking (binary only):** `EfCoreEncryptionSetup.AddEfCoreEncryption<T>()` now takes and returns
+  `IServiceCollection` instead of the concrete `ServiceCollection`, so it is callable on `builder.Services`.
+  Source-compatible for existing callers; pre-compiled assemblies referencing the old signature must be recompiled.
 - **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
