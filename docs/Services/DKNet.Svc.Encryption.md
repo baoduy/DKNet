@@ -34,10 +34,11 @@ dotnet add package DKNet.Svc.Encryption
 ```csharp
 using DKNet.Svc.Encryption;
 
-// IAesGcmEncryption, IHmacHashing, IShaHashing (and the obsolete IAesEncryption), all transient
+// IShaHashing and IHmacHashing — the keyless hashing services, transient
 builder.Services.AddEncryptionServices();
 
-// IRsaEncryption is separate — a singleton built from the private key you supply
+// Every cipher is opt-in and takes the key you supply — one singleton per key
+builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);
 builder.Services.AddRsaEncryption(builder.Configuration["Crypto:RsaPrivateKey"]!);
 ```
 
@@ -49,15 +50,16 @@ public sealed class SecretStore(IAesGcmEncryption aesGcm)
 }
 ```
 
-`AddEncryptionServices` does **not** register `IRsaEncryption`; `AddRsaEncryption` throws `ArgumentException` for a
-null, empty, or whitespace key. Both methods are idempotent — calling either twice does not double-register.
+`AddEncryptionServices` registers **no cipher** — only the hashing services. Each cipher has its own key-taking
+registration: `AddAesGcmEncryption`, `AddRsaEncryption`, and (migration only) `AddAesEncryption`. All four methods are
+idempotent — calling any of them twice does not double-register — and the three cipher methods throw `ArgumentException`
+for a null, empty, or whitespace key.
 
 > [!IMPORTANT]
-> `AddEncryptionServices` registers `IAesGcmEncryption` as **transient**, and a transient `AesGcmEncryption` generates a
-> **new random key per resolution**. That is fine for encrypt-then-decrypt inside one scope, but a value encrypted in one
-> request cannot be decrypted in the next. To persist ciphertext, construct the instance from a stored key
-> (`new AesGcmEncryption(storedBase64Key)`) and register that yourself, e.g.
-> `services.AddSingleton<IAesGcmEncryption>(_ => new AesGcmEncryption(storedBase64Key))`.
+> A cipher's key is yours to supply and persist. `AddAesGcmEncryption(base64Key)` registers `IAesGcmEncryption` as a
+> **singleton** built from that key, so every resolution shares it and a value encrypted in one request is decryptable in
+> the next. Source the key from configuration or a key vault — never hardcode it. `new AesGcmEncryption()` with no key
+> still generates a random one, which is fine only for data that never outlives the process.
 
 ## 🧩 Features
 
@@ -168,9 +170,10 @@ methods, and forwards to the same logic — migrate off it.
 ### AES-CBC (`IAesEncryption`) — obsolete, do not adopt
 
 `[Obsolete]` on both the interface and the implementation: "Uses AES-CBC which is vulnerable to padding oracle attacks.
-Use `IAesGcmEncryption` instead." It stays registered by `AddEncryptionServices` only for consumers still migrating off
-it. Its IV is fixed per instance, so identical plaintext always produces identical ciphertext, and its `Key` packs
-`key:iv` into one Base64 string — a shape `AesGcmEncryption` explicitly rejects. New code uses `IAesGcmEncryption`.
+Use `IAesGcmEncryption` instead." It is not registered by `AddEncryptionServices`; a consumer still migrating off it opts
+in with `services.AddAesEncryption(keyString)` — itself `[Obsolete]` — passing the combined Base64 `key:iv` value that
+`AesEncryption.Key` returns. Its IV is fixed per instance, so identical plaintext always produces identical ciphertext, and that `key:iv`
+shape is one `AesGcmEncryption` explicitly rejects. New code uses `IAesGcmEncryption`.
 
 ## 🧱 Where it fits
 
@@ -184,8 +187,9 @@ it. Its IV is fixed per instance, so identical plaintext always produces identic
 
 ## ⚠️ Gotchas & limits
 
-- **Transient AES-GCM registration means a per-resolution random key.** Ciphertext produced by one resolved instance
-  cannot be decrypted by the next unless you register an instance built from a stored key — see the Quick Start note.
+- **Cipher registrations are singletons over the key you passed in.** One `AddAesGcmEncryption` call means one key for
+  the whole application; rotating it means new configuration and a restart. A hand-built `new AesGcmEncryption()`
+  generates a throwaway key instead, so ciphertext produced from it dies with the instance.
 - **No password-based key derivation.** To encrypt with a user-supplied password, derive a key yourself (e.g.
   `Rfc2898DeriveBytes`) before constructing `AesGcmEncryption`. An earlier revision of this page documented a
   `PasswordAesEncryption` type; it does not exist in source.
