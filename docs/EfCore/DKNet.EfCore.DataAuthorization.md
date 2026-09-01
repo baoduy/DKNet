@@ -39,7 +39,9 @@ public class Invoice : IOwnedBy
     // ... other members
 }
 
-// 2. DbContext exposes the current caller's access
+// 2. DbContext exposes the current caller's access.
+//    Implementing IDataOwnerDbContext is mandatory: AddDataOwnerProvider<TDbContext, TProvider>()
+//    constrains TDbContext to it, so a context without the interface does not compile.
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IDataOwnerDbContext
 {
     public IEnumerable<string> AccessibleKeys { get; init; } = [];
@@ -64,7 +66,11 @@ services
 ```
 
 `AddDataOwnerProvider<TDbContext, TProvider>()` is an `extension(IServiceCollection)` member on
-`EfCoreDataAuthSetup` (C# 14 extension members). It:
+`EfCoreDataAuthSetup` (C# 14 extension members), declared
+`where TDbContext : DbContext, IDataOwnerDbContext`. Registering a `DbContext` that does not implement
+`IDataOwnerDbContext` is therefore a compile error at the call site rather than a runtime surprise — see the
+[Migration Guide](../Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required)
+if you hit that error on upgrade. It:
 
 1. Registers `DataOwnerAuthQuery` as a global model builder (`AddGlobalModelBuilder<DataOwnerAuthQuery>()`) — a
    no-op if it's already registered (checked via `IsRegistered<IDataOwnerProvider>()`).
@@ -117,6 +123,9 @@ Key behaviors, verified from `DataOwnerAuthQuery`:
   owned rows. Empty must never be read as "unrestricted"; that has to be requested explicitly (next point).
 - **Explicit unrestricted-access escape hatch.** `IDataOwnerDbContext.IsUnrestrictedAccess` (default `false`) is the
   only way to bypass the filter entirely. Set it to `true` only on system/admin contexts.
+- **Fails closed on a context without the interface.** If a `DbContext` reaches the filter without implementing
+  `IDataOwnerDbContext`, `HasQueryFilter` throws `InvalidOperationException` while the model is being built, so the
+  `DbContext` cannot be used at all. It never silently returns "no filter" (see the gotcha below).
 - **Not ignorable.** `DataOwnerAuthQuery.IsIgnorable => false`. If your app uses `DKNet.EfCore.Specifications`,
   a specification's `IsIgnoreQueryFilters` flag — which can bypass "ignorable" filters such as soft-delete — has no
   effect on this one. Row-level ownership isolation cannot be turned off from a query-time flag.
@@ -220,11 +229,21 @@ This package is a consumer of two other EF Core building blocks, not a standalon
 - **Forgetting `UseAutoConfigModel` disables filtering silently.** The query filter is only attached to the model
   when the DbContext calls `UseAutoConfigModel(...)`. There is no runtime error if you skip it — `IOwnedBy` entities
   simply have no query filter and every query returns all owners' rows.
-- **A `DbContext` that doesn't implement `IDataOwnerDbContext` fails open in Release builds.** `HasQueryFilter`
-  guards with `Debug.Fail(...)` when `context is not IDataOwnerDbContext`, then returns `null` (no filter). `Debug.Fail`
-  is compiled out in Release builds, so in Release this path is a silent no-op: the entity type ends up with **no**
-  ownership filter at all, and every caller sees every row. Always implement `IDataOwnerDbContext` on the exact
-  `DbContext` type you register with `AddDataOwnerProvider<TDbContext, TProvider>()`.
+- **`IDataOwnerDbContext` on the `DbContext` is mandatory, and enforced twice.**
+  `AddDataOwnerProvider<TDbContext, TProvider>()` constrains `TDbContext` to `DbContext, IDataOwnerDbContext`, so the
+  usual mistake cannot compile; and `HasQueryFilter` throws `InvalidOperationException` at model-build time if a
+  context still reaches it without the interface (see the next bullet for how that happens). Earlier versions
+  guarded this with `Debug.Fail(...)` and returned `null`; `Debug.Fail` is compiled out in Release builds, so in
+  Release the entity type ended up with **no** ownership filter and every caller saw every row. Implement
+  `IDataOwnerDbContext` on the exact `DbContext` type you register.
+- **The filter is registered process-wide, so a *second* `DbContext` can trip the throw.**
+  `AddDataOwnerProvider` puts `DataOwnerAuthQuery` into `EfCoreSetup.GlobalModelBuilders`, a **static** bag, and
+  every `DbContext` that calls `UseAutoConfigModel()` applies every entry in it — not just the one named in the type
+  argument. So once any registration runs, an unrelated audit or reporting `DbContext` in the same process is
+  filtered too; if its model contains `IOwnedBy` entities and it does not implement `IDataOwnerDbContext`, its model
+  build now throws. The tightened constraint gives you no compile error pointing at that context, because you never
+  passed it to `AddDataOwnerProvider`. Either implement `IDataOwnerDbContext` on it as well, or keep `IOwnedBy`
+  entities out of its model.
 - **Forgetting `UseHooks<TDbContext>` means new rows are never stamped.** `AddHook<TDbContext, DataOwnerHook>()`
   registers the hook in DI, but `HookRunnerInterceptor` only invokes it if the `DbContext`'s options include
   `UseHooks<TDbContext>(provider)` — use `AddDbContextWithHook<TDbContext>(...)` or add that call yourself.

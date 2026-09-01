@@ -117,8 +117,10 @@ services.AddSpecRepo<IdentityContext>();
 
 DKNet provides built-in multi-tenancy support via `DKNet.EfCore.DataAuthorization`:
 1. **Implement `IOwnedBy`** on your entities
-2. **Register an `IDataOwnerProvider`** in DI via `AddDataOwnerProvider<TDbContext, TProvider>()`
-3. **A global query filter automatically scopes** every query by the current owner
+2. **Implement `IDataOwnerDbContext`** on your `DbContext` — required, and enforced by the generic constraint on
+   `AddDataOwnerProvider<TDbContext, TProvider>()`
+3. **Register an `IDataOwnerProvider`** in DI via `AddDataOwnerProvider<TDbContext, TProvider>()`
+4. **A global query filter automatically scopes** every query by the current owner
 
 See [Multi-tenant Example](Examples/README.md#multi-tenant-application) for details.
 

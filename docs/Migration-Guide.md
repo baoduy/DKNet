@@ -172,6 +172,52 @@ builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  
 the obsolete AES-CBC type call `AddAesEncryption(keyString)` with the combined `key:iv` value that `AesEncryption.Key`
 returns. Ciphertext produced under the old registration cannot be recovered — its key was discarded with the instance.
 
+### Upgrading DKNet.EfCore.DataAuthorization: IDataOwnerDbContext is now required
+
+**Symptom** — after upgrading, a registration that used to build now fails to compile with a generic-constraint
+error (`CS0311`) on the `AddDataOwnerProvider<TDbContext, TProvider>()` call, saying your `DbContext` cannot be used
+as `TDbContext` because it is not convertible to `DKNet.EfCore.DataAuthorization.IDataOwnerDbContext`.
+
+**Cause** — `AddDataOwnerProvider<TDbContext, TProvider>()` is now declared
+`where TDbContext : DbContext, IDataOwnerDbContext` (it previously constrained `TDbContext` to `DbContext` only).
+The old signature let you register a `DbContext` that the ownership query filter could not read: the filter was then
+skipped for every `IOwnedBy` entity in Release builds, so every caller saw every owner's rows. The compile error is
+the fix surfacing a real, previously silent, data-isolation hole.
+
+**Fix** — implement `IDataOwnerDbContext` on the exact `DbContext` type you register:
+
+```csharp
+public class AppDbContext(DbContextOptions<AppDbContext> options)
+    : DbContext(options), IDataOwnerDbContext
+{
+    public IEnumerable<string> AccessibleKeys { get; init; } = [];
+    // IsUnrestrictedAccess defaults to false via the interface —
+    // override it only for system/admin contexts that must bypass ownership filtering.
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+        => modelBuilder.UseAutoConfigModel(); // required for the filter to be attached
+}
+```
+
+Keep `AccessibleKeys` declared as `IEnumerable<string>` — EF Core cannot translate `ICollection<string>.Contains`
+inside a query filter. Once the interface is in place the registration compiles unchanged:
+
+```csharp
+services
+    .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
+    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
+```
+
+**Also check every other `DbContext` in the process** — the compile error is not the only way this upgrade bites.
+The same release makes `DataOwnerAuthQuery` throw `InvalidOperationException` at model-build time when a context
+reaches the filter without the interface, instead of quietly applying no filter. And `AddDataOwnerProvider`
+registers that filter in `EfCoreSetup.GlobalModelBuilders`, which is **static**: every `DbContext` calling
+`UseAutoConfigModel()` applies it, not only the one you passed as `TDbContext`. A second context — an audit or
+reporting `DbContext`, say — whose model contains `IOwnedBy` entities and that does not implement
+`IDataOwnerDbContext` therefore starts throwing at model-build time after this upgrade, with no compile error
+pointing at it. Implement `IDataOwnerDbContext` on that context too, or keep `IOwnedBy` entities out of its model.
+Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
+
 ---
 
 ## 🏗️ Architecture Migration

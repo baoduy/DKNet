@@ -6,6 +6,7 @@
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Runtime.ExceptionServices;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DKNet.EfCore.Extensions.Configurations;
@@ -76,8 +77,16 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
         foreach (var entityType in entityTypes)
         {
             var genericMethod = _method.MakeGenericMethod(entityType.ClrType);
-            // Invoke the generic ApplyQueryFilter<TEntity>(ModelBuilder, DbContext)
-            genericMethod.Invoke(this, [modelBuilder, context]);
+            try
+            {
+                // Invoke the generic ApplyQueryFilter<TEntity>(ModelBuilder, DbContext)
+                genericMethod.Invoke(this, [modelBuilder, context]);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                // Unwrap so callers (and tests) see the real exception, not a reflection wrapper.
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
         }
     }
 

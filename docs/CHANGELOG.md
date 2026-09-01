@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
+- **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
+  `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
+  implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership
+  isolation at runtime in Release builds. Migration: implement `IDataOwnerDbContext` (supply `AccessibleKeys`;
+  override `IsUnrestrictedAccess` only for admin/system contexts) on the `DbContext` type you register — see the
+  [Migration Guide](Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
 
 ### Fixed
 - `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
@@ -66,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (DKNet.Svc.Encryption).
 - Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
   made every value they encrypted unrecoverable (DKNet.Svc.Encryption).
+- `DKNet.EfCore.DataAuthorization` now fails closed when a `DbContext` does not implement `IDataOwnerDbContext`.
+  `DataOwnerAuthQuery.HasQueryFilter` previously guarded that case with `Debug.Fail(...)` and returned `null`;
+  `Debug.Fail` is compiled out in Release, and a `null` filter means "apply nothing", so in Release builds every
+  `IOwnedBy` entity was left with no ownership filter and every caller could read every owner's rows — a complete
+  row-level isolation bypass. It now throws `InvalidOperationException` at model-build time, and the tightened
+  `AddDataOwnerProvider` constraint (see **Changed**) stops the mistake at compile time.
 
 ## [2024.12.0] - 2024-12-XX
 
