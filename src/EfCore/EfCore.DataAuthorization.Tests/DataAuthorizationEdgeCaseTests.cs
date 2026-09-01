@@ -173,10 +173,16 @@ public class DataAuthorizationUnrestrictedAccessTests(UnrestrictedAccessFixture 
 /// <summary>
 ///     Tests for the internal filter logic.
 /// </summary>
+/// <remarks>
+///     DRK-898: <see cref="DataOwnerAuthQuery.HasQueryFilter{TEntity}" /> used to <c>Debug.Fail</c> and return
+///     <c>null</c> for a non-<see cref="IDataOwnerDbContext" /> context — compiled out in Release, silently
+///     disabling row-level ownership isolation. It now fails closed: throws <see cref="InvalidOperationException" />
+///     in every configuration.
+/// </remarks>
 public class DataAuthorizationFilterTests
 {
     [Fact]
-    public void HasQueryFilter_WithInvalidContext_ReturnsNull()
+    public void HasQueryFilter_WithInvalidContext_ThrowsInvalidOperationExceptionNamingTheInterface()
     {
         // Arrange
         var options = new DbContextOptionsBuilder<SimpleContext>().UseSqlite("DataSource=:memory:").Options;
@@ -184,18 +190,20 @@ public class DataAuthorizationFilterTests
         var filter = new DataOwnerAuthQuery();
 
         // Act
-        // Using reflection to call protected method
-        var method = typeof(DataOwnerAuthQuery).GetMethod("HasQueryFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        // Using reflection to call protected method directly (not through GlobalQueryFilter.Apply),
+        // so the exception here is un-wrapped by definition — see FailClosedFilterTests for the
+        // Apply()-path assertion that would catch a regression of that unwrap.
+        var method = typeof(DataOwnerAuthQuery).GetMethod("HasQueryFilter",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var genericMethod = method?.MakeGenericMethod(typeof(Root));
-        
-        object? result = null;
-        var ex = Record.Exception(() => {
-            result = genericMethod?.Invoke(filter, new object[] { context });
-        });
 
-        // Assert
-        // If Debug.Fail is called, it throws DebugAssertException
+        var ex = Record.Exception(() => genericMethod?.Invoke(filter, [context]));
+
+        // Assert: reflection wraps it in TargetInvocationException; the real failure is the InnerException
         ex.ShouldNotBeNull();
-        result.ShouldBeNull();
+        var inner = ex!.InnerException;
+        inner.ShouldBeOfType<InvalidOperationException>();
+        inner!.Message.ShouldContain(nameof(IDataOwnerDbContext));
+        inner.Message.ShouldContain(nameof(SimpleContext));
     }
 }
