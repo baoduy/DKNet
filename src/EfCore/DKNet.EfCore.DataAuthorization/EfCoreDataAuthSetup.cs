@@ -44,7 +44,10 @@ public static class EfCoreDataAuthSetup
         /// <summary>
         ///     Configures automatic data key management for a specific DbContext.
         /// </summary>
-        /// <typeparam name="TDbContext">The DbContext type to configure.</typeparam>
+        /// <typeparam name="TDbContext">
+        ///     The DbContext type to configure. Must implement <see cref="IDataOwnerDbContext" /> so the
+        ///     data-owner query filter can fail closed instead of silently applying no filter.
+        /// </typeparam>
         /// <typeparam name="TProvider">The type implementing <see cref="IDataOwnerProvider" />.</typeparam>
         /// <returns>The service collection for chaining.</returns>
         /// <remarks>
@@ -52,9 +55,11 @@ public static class EfCoreDataAuthSetup
         ///     - The data ownership provider
         ///     - Automatic key management through hooks
         ///     - Integration with the specified DbContext
+        ///     This is a source-breaking change for consumers whose <typeparamref name="TDbContext" /> does not
+        ///     implement <see cref="IDataOwnerDbContext" />.
         /// </remarks>
         public IServiceCollection AddDataOwnerProvider<TDbContext, TProvider>()
-            where TDbContext : DbContext
+            where TDbContext : DbContext, IDataOwnerDbContext
             where TProvider : class, IDataOwnerProvider =>
             services
                 .AddDataOwnerProvider<TProvider>()

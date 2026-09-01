@@ -1,21 +1,30 @@
 # DKNet.EfCore.DtoGenerator
 
-**A Roslyn incremental source generator that emits DTO properties from an entity type at compile time — no hand-written mapping boilerplate, no runtime reflection.**
+A Roslyn incremental source generator that emits DTO properties from an entity type at compile time — no hand-written
+mapping boilerplate, no runtime reflection.
 
-## What problem this solves
+## ✨ Why use it?
 
-Hand-written DTOs drift: an entity gains a property, the DTO doesn't, and nobody notices until a client complains about a missing field — or the reverse, a DTO leaks an entity's internal field because someone forgot to update an exclusion list. `DKNet.EfCore.DtoGenerator` removes the copy-paste step entirely: you declare an empty `partial` shell, point it at an entity type with `[GenerateDto]`, and the generator mirrors the entity's public readable properties onto the DTO every time you build.
+- **DTOs stop drifting from entities** — declare an empty `partial` shell, point it at an entity with
+  `[GenerateDto]`, and the property list is regenerated on every build instead of maintained by hand.
+- **Exclusions are enforced, not remembered** — per-DTO `Exclude`/`Include` plus a project-wide
+  `DtoGeneratorExclusions` MSBuild property mean an entity's internal field cannot reach a DTO because someone forgot
+  an exclusion list.
+- **Event payloads that cannot mismatch their entity** — payload records for `[RaisesEvent]` (see
+  [DKNet.EfCore.Events](./DKNet.EfCore.Events.md)) are generated from the same entity, and the generator validates the
+  declarations at compile time with `DKRAISEVT*` diagnostics.
+- **Zero runtime footprint** — the generator is a `netstandard2.0` analyzer (`DevelopmentDependency`,
+  `PrivateAssets="all"`) that runs inside the compiler. A generated DTO is a plain `record`/`class` with `init`-only
+  properties and no dependency on this package or any other DKNet package.
 
-It works at compile time only — the generator itself is a `netstandard2.0` analyzer package (`DevelopmentDependency`, `PrivateAssets="all"`) that runs inside the compiler process. Nothing it produces takes a runtime dependency on this package or any other DKNet package: a generated DTO is a plain `record`/`class` with `init`-only properties.
+Reach for it when you want read-model / API-response DTOs or event payloads that mirror an entity's shape (or a
+filtered subset of it) without maintaining the property list yourself.
 
-Reach for it when:
-- You want read-model / API-response DTOs that always mirror an entity's shape (or a filtered subset of it) without maintaining the property list by hand.
-- You're shaping event payloads for `[RaisesEvent]` (see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md)) and want the payload record generated from the same entity, guaranteed to match.
-- You want per-DTO or project-wide control over which properties (or whole categories, like navigation properties) are ever allowed onto a DTO.
+It does **not** generate mapping methods (no `FromEntity`/`ToEntity`/`FromEntities`) — mapping between the entity and
+the generated DTO is left entirely to you (Mapster, manual assignment, or a projection expression). The generator's
+only output is plain data.
 
-It does **not** generate mapping methods (no `FromEntity`/`ToEntity`/`FromEntities`) — mapping between the entity and the generated DTO is left entirely to you (e.g. Mapster, a manual assignment, or a projection expression). This keeps the generator's only output "plain data".
-
-## Install and minimum usage
+## 🚀 Quick Start
 
 ```xml
 <ItemGroup>
@@ -41,7 +50,7 @@ public partial record ProductDto;
 
 This emits `ProductDto.g.cs` with `Id`, `required string Name`, and `Price` as `init`-only properties. The DTO shell must be `partial` — a `record`, `record struct`, or `class` all work; the generator infers the matching partial declaration ("partial record", "partial record struct", or "partial class") from what you wrote.
 
-## Features
+## 🧩 Features
 
 ### `[GenerateDto(Type entityType)]` — the attribute
 
@@ -108,7 +117,7 @@ A property counts as an excluded "navigation" when, after unwrapping arrays/`Lis
 
 ### `[RaisesEvent]` validation (`RaisesEventValidator`)
 
-`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
 
 Declaring a domain event is two separate steps:
 
@@ -140,7 +149,7 @@ public class Product
 - every narrowing property (the trailing `params string[] properties`) is a direct property of the entity, not a nested path (`DKRAISEVT001`);
 - narrowing set on a rule with no `Updated` flag is pointless and warned about (`DKRAISEVT003`), since it has no runtime effect.
 
-**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](../../src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
+**Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
 [RaisesEvent("Touched", EventOperations.Created)]
@@ -171,7 +180,7 @@ public class Customer
 // generates CustomerCreatedEvent without InternalNote
 ```
 
-The project-wide `DtoGeneratorExclusions` MSBuild property (see [Configuration options](#configuration-options-and-defaults) below) now also narrows composed convention-form payloads that don't set `Include`, exactly as it narrows hand-written `[GenerateDto]` DTOs.
+The project-wide `DtoGeneratorExclusions` MSBuild property (see [Configuration reference](#️-configuration-reference) below) now also narrows composed convention-form payloads that don't set `Include`, exactly as it narrows hand-written `[GenerateDto]` DTOs.
 
 The convention forms have their own diagnostics: `DKRAISEVT004` (composed name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges; guidance differs depending on whether the colliding type is a `[GenerateDto]` payload of the same entity), `DKRAISEVT005` (the label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace compose the same name — never merged into one record), `DKRAISEVT007` (no operation named — the declaration, of any form, can never raise anything), `DKRAISEVT008` (two declarations on the SAME entity compose the same name — never merged into one record), `DKRAISEVT009` (both `Exclude` and `Include` specified on one declaration), `DKRAISEVT010` (a filter names a property that isn't a direct property of the entity), `DKRAISEVT011` (`Exclude`/`Include` supplied on the type-naming form, where the named payload record already owns its own shape).
 
@@ -198,7 +207,7 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `DKRAISEVT010` | Error | `RaisesEventValidator` | An `Exclude`/`Include` payload filter names a property that isn't a direct property of the declaring entity (includes nested paths); no record is emitted for that declaration. |
 | `DKRAISEVT011` | Error | `RaisesEventValidator` | `Exclude`/`Include` was supplied on the type-naming form — that form's named payload record owns its own shape via its own `[GenerateDto]` filters. |
 
-## Configuration options and defaults
+## ⚙️ Configuration reference
 
 | Setting | Where | Default | Notes |
 |---|---|---|---|
@@ -209,15 +218,15 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `DtoGeneratorIgnoreComplexType` | MSBuild property (`.csproj`) | unset (built-in default `true` applies) | Project-wide default for `IgnoreComplexType` when a DTO doesn't set it explicitly. |
 | `EmitCompilerGeneratedFiles` / `CompilerGeneratedFilesOutputPath` | MSBuild properties | unset | Standard Roslyn generator switches (not specific to this package) to write `.g.cs` files to disk, e.g. under `obj/Generated`, for inspection/debugging. |
 
-## How it composes with other DKNet packages
+## 🧱 Where it fits
 
 - **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs.
 - **Generated DTOs are plain data types.** No base class, no interface, no attribute left on the output — a generated DTO has zero coupling to DKNet or to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`.
 - **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). The one exception is the naming algorithm itself: `EventNameComposer.cs` lives in `DKNet.EfCore.Abstractions` and is `<Compile Include>`-linked (not project-referenced) into this generator, so the build-time composed name and the `DKNet.EfCore.Events` runtime-composed name are produced by the exact same source and can never disagree. A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.
-- **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md#declared-domain-events-raisesevent).
+- **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
 - **No built-in Mapster/AutoMapper integration.** Unlike some earlier iterations of this generator, no mapping helper methods are emitted — you choose your own mapping approach (e.g. Mapster's `Adapt`/`ProjectToType`, or manual assignment) for entity ↔ DTO conversion.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **`Include` and `Exclude` are mutually exclusive on the same DTO.** Specifying both doesn't merge them — it produces `DKDTOGEN004` and **skips generation entirely** for that DTO (not even the unfiltered property set is emitted).
 - **The DTO shell must be `partial`.** A non-`partial` `record`/`class`/`struct` can't receive the generator's emitted partial declaration; the C# compiler itself will report a conflicting-partial-modifier error, not this generator.
@@ -227,4 +236,17 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 - **Generic entities have limited support** — the DTO shell itself must be non-generic; there is no generated generic DTO shape for a generic entity.
 - **Nullability drives the generated shape, not just the type name:** non-nullable `string` → `required`; non-nullable collection → initialized with `= [];`; a non-nullable complex reference type that *is* generated (e.g. `IgnoreComplexType = false`, or an `[Owned]`/record/BCL type) → initialized with `= null!;` to satisfy nullable-reference-type analysis. Nullable variants get no initializer.
 - **Only `System.ComponentModel.DataAnnotations` attributes are copied** from entity property to DTO property (best-effort re-serialization of the attribute's constructor/named arguments) — custom validation attributes and attributes from other namespaces are not copied.
-- **Diagnostics don't all stop the build.** `DKDTOGEN00x` codes are Warning/Info only — a mistake there degrades the generated DTO shape but still compiles. `DKRAISEVT00x` codes mix Warning (`003`) and Error (`001`, `002`, `004`, `005`, `006`) — the Error-level ones fail the build.
+- **Diagnostics don't all stop the build.** `DKDTOGEN00x` codes are Warning/Info only — a mistake there degrades the generated DTO shape but still compiles. `DKRAISEVT00x` codes are all Error except `003`, which is a Warning — every Error-level one fails the build.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – the runtime counterpart. Reach for it to actually raise the
+  `[RaisesEvent]` payloads this generator emits and validates.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – declares `[RaisesEvent]`, `EventOperations`, and the
+  entity base classes the generated DTOs are derived from. Reach for it when modelling the entity itself.
+- [Global Exclusions Guide](./GLOBAL_EXCLUSIONS_GUIDE.md) – the full behaviour of the project-wide
+  `DtoGeneratorExclusions` / `DtoGeneratorIgnoreComplexType` MSBuild properties. Reach for it when tuning exclusions
+  across a whole project rather than one DTO.
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – `ModelSpecification<TEntity, TModel>` projects an
+  entity onto a model type in the query itself. Reach for it when you want the projection pushed into SQL; reach for
+  this generator when you want the DTO *type* written for you.

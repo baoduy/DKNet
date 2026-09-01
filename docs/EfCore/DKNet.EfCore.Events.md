@@ -1,26 +1,29 @@
 # DKNet.EfCore.Events
 
-Dispatches domain events raised by entities during `SaveChanges` — the runtime half of DKNet's domain-events
-feature. The companion package `DKNet.EfCore.Abstractions` defines the contracts entities and publishers
-implement; this package is what actually collects and fires the events.
+Dispatches domain events raised by entities during `SaveChanges` — the runtime half of DKNet's domain-events feature.
 
-## 1. What problem this solves
+## ✨ Why use it?
 
-An aggregate's business method (`order.Complete()`, `customer.ChangeEmail()`) often needs to trigger something
-outside itself — send an email, update a read model, notify another bounded context — without knowing or caring
-who's listening. Wiring that by hand means every write path has to remember to call a mediator/bus right after
-`SaveChangesAsync`, and the domain method ends up depending on messaging infrastructure it shouldn't know about.
+- **The domain method stops depending on messaging** — a business method queues a plain object with `AddEvent(...)`;
+  it never references a publisher, a bus, or this package.
+- **No call site has to remember to dispatch** — the hook notices the queued events during that entity's next
+  `SaveChanges` instead of every write path calling a mediator right after `SaveChangesAsync`.
+- **Events fire only after the save actually committed** — dispatch happens in the after-save phase, so a rolled-back
+  transaction cannot publish "an order was placed" for an order that does not exist.
+- **Declarative events for the common cases** — `[RaisesEvent]` on the entity raises a generated payload record on
+  create/update/delete, with the payload type produced and validated at compile time by
+  [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md).
+- **You own the transport** — implement `IEventPublisher` to hand events to SlimMessageBus, MassTransit, an outbox
+  table, or anything else; several publishers can be registered and all of them run.
 
-`DKNet.EfCore.Events` closes that gap for EF Core: a business method queues a plain object on the entity
-(`AddEvent(...)`); the package notices it during the entity's next `SaveChanges`, waits until the save has
-actually committed, then hands every queued event to whatever `IEventPublisher` you registered. The domain method
-never references the publisher, the bus, or even this package.
+Reach for it when you model rich aggregates and want cross-aggregate or cross-cutting side effects triggered by
+business facts ("an order was placed") rather than by call sites remembering to trigger them. Skip it for plain CRUD
+with no such side effects — there is nothing to dispatch.
 
-Reach for it when you're modeling rich aggregates and want cross-aggregate or cross-cutting side effects
-triggered by business facts ("an order was placed") rather than by call sites remembering to trigger them. Skip
-it for plain CRUD with no such side effects — there's nothing to dispatch.
+`DKNet.EfCore.Abstractions` defines the contracts entities and publishers implement; this package collects and fires
+the events.
 
-## 2. Install and minimum registration
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.EfCore.Events
@@ -51,7 +54,7 @@ exact implementation type is already registered), and calls `DKNet.EfCore.Hooks`
 `AddHook<TDbContext, EventHook>()` to add the package's internal `EventHook` to the save pipeline for
 `TDbContext`.
 
-## 3. The full lifecycle
+## 🧩 Features
 
 ### The type you write: an event-raising entity
 
@@ -87,7 +90,7 @@ public class Order : Entity<Guid>
 
 `AddEvent(object)` just queues the instance you pass — no mapping, no `IMapper` needed. A second overload,
 `AddEvent<TEvent>()`, queues the *type* instead: at dispatch time the entity itself is mapped onto `TEvent` via
-the registered `IMapper` (see §4) — useful when the event should mirror current entity state at save time rather
+the registered `IMapper` (see [Configuration reference](#️-configuration-reference)) — useful when the event should mirror current entity state at save time rather
 than at call time.
 
 ### The publisher you write
@@ -115,7 +118,7 @@ await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher o
 ```
 
 1. **Before the save** (`EventHook.BeforeSaveAsync`, an `IBeforeSaveHookAsync`): for every tracked entity, the
-   hook checks its `[RaisesEvent]` declarations (§3.1) against the pending operation and records which ones
+   hook checks its `[RaisesEvent]` declarations (see *Declared events* below) against the pending operation and records which ones
    qualify. This has to happen here, before EF Core writes anything, because
    `EntityEntry.Property(...).IsModified` is meaningless once the save completes. Hand-raised events
    (`AddEvent(...)`) are untouched at this point — they stay queued on the entity.
@@ -125,7 +128,7 @@ await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher o
    `EventContext` over the same save's `SnapshotContext`. `EventContext.GetEvents()` walks every tracked entity
    that is `IEventEntity`, reads its queued `(object[] Events, Type[] EventTypes)` via `GetEvents()`, keeps the
    object instances as-is, and maps any `TEvent`-only entries onto their type via the registered `IMapper` —
-   throwing `EventException` if none is registered (see §6). It also stamps a `sourceType` entry (the entity's
+   throwing `EventException` if none is registered (see [Gotchas & limits](#️-gotchas--limits)). It also stamps a `sourceType` entry (the entity's
    full type name) into `AdditionalData` for any event implementing `IEventItem`.
 4. Declared events captured in step 1 are now mapped from their entity onto their declared payload type (again
    via `IMapper`, again `EventException` if missing) and merged with the hand-raised ones from the same save —
@@ -136,6 +139,12 @@ await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher o
 6. **Regardless of publish outcome**, `EventContext.ClearEvents()` clears every event from every entity's queue.
    The next `SaveChanges` starts with empty queues.
 
+![Sequence diagram of one SaveChangesAsync call: HookRunnerInterceptor runs EventHook.BeforeSaveAsync to capture declared events before the write, then EventHook.AfterSaveAsync to map and publish them only once the write has succeeded.](../diagrams/efcore-events-savechanges.svg)
+
+The split across the write is the part worth internalising: declared-event capture has to happen before EF Core writes,
+publishing can only happen after it succeeds, and both halves run inside the one `HookRunnerInterceptor` that
+`DKNet.EfCore.Hooks` installs — which is also why a failed save publishes nothing at all.
+
 ### `EventException`
 
 `EventException(IResultBase status)` (from `FluentResults`) is thrown in exactly two situations, both about a
@@ -145,15 +154,15 @@ missing `IMapper` for a mapping-based event source, and both at dispatch time (i
 - an entity queued a type-based event via `AddEvent<TEvent>()` with no `IMapper` registered;
 - an entity qualifies for a `[RaisesEvent]` declared event with no `IMapper` registered.
 
-A third case is specific to `[RaisesEvent]`'s convention forms (§3.1): the composed event name doesn't resolve to a
+A third case is specific to `[RaisesEvent]`'s convention forms (see *Declared events* below): the composed event name doesn't resolve to a
 generated payload type in the entity's own assembly/namespace (typically because `DKNet.EfCore.DtoGenerator`
 wasn't referenced, or the project didn't rebuild) — also thrown at dispatch time, never silently dropped.
 
-### 3.1 Declared events (`[RaisesEvent]`)
+### Declared events (`[RaisesEvent]`)
 
 Besides hand-raising events from code, an entity can *declare* them instead — no `IEventEntity`, no `Entity<TKey>`
 base class required. Declaring is two steps: shape the payload as a
-[DtoGenerator](./DKNet.EfCore.DtoGenerator.md#declaring-domain-events-raisesevent)-generated record via
+[DtoGenerator](./DKNet.EfCore.DtoGenerator.md)-generated record via
 `[GenerateDto]`, then apply the repeatable
 `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s)
 (`EventOperations.Created | Updated | Deleted`), and — for `Updated` — an optional narrowing property list:
@@ -180,7 +189,7 @@ public class Order
 `DKNet.EfCore.DtoGenerator` validates these rules at build time (payload/entity match, narrowing property names)
 but emits no runtime code for them — **this package** is what reads `[RaisesEvent]` via reflection (cached per
 entity type, and per entity-type+composed-name for the convention forms) and raises them at save time, exactly per
-the lifecycle in §3 above. A rule naming the same payload for the same operation twice on one entity raises it once.
+the lifecycle described above. A rule naming the same payload for the same operation twice on one entity raises it once.
 
 An entity may combine `[RaisesEvent]` declarations with hand-raised `AddEvent(...)` calls in the same class —
 both are published from the same save.
@@ -194,9 +203,18 @@ the identical name via the same `EventNameComposer` the build uses, then resolve
 reflection from the entity's own assembly and namespace; if it isn't found, the first save that would raise it
 throws `EventException` naming the composed event it looked for.
 
-## 4. Configuration and defaults
+## ⚙️ Configuration reference
 
-There is no options object — the single knob is which `IEventPublisher` implementation(s) you register.
+There is no options object — every knob is a DI registration:
+
+| Registration | Lifetime | Required? | Effect |
+|---|---|---|---|
+| `AddEventPublisher<TDbContext, TPublisher>()` | scoped publisher | required | Registers `TPublisher` as an `IEventPublisher` and `EventHook` as a hook for `TDbContext`. |
+| `MapsterMapper.IMapper` | your choice | only for `AddEvent<TEvent>()` / `[RaisesEvent]` | Maps the entity onto the event payload type. `EventHook` uses `mappers.FirstOrDefault()`. |
+| `ILogger<EventHook>` | your choice | optional | One informational entry per `AfterSaveAsync`, one error entry per failed publisher. |
+| `AddDbContextWithHook<TDbContext>()` / `options.UseHooks<TDbContext>(provider)` | — | required | Installs `HookRunnerInterceptor`. Without it `EventHook` is in DI but never invoked. |
+
+Behaviour worth knowing beyond the table:
 
 - **Publisher lifetime**: scoped, added via `AddScoped<IEventPublisher, TImplementation>()`. Calling
   `AddEventPublisher` twice with the *same* `TImplementation` is a no-op (guarded via
@@ -213,9 +231,9 @@ There is no options object — the single knob is which `IEventPublisher` implem
 - **Logging**: `ILogger<EventHook>` is optional (nullable constructor parameter) — an informational entry on
   `AfterSaveAsync`, an error entry per failed publisher. No log is emitted for individual successful publishes.
 - **No retry, no ordering knob, no dead-lettering.** These aren't configurable because the package doesn't
-  implement them at all — see §6.
+  implement them at all — see [Gotchas & limits](#️-gotchas--limits).
 
-## 5. How this composes with Abstractions and Hooks
+## 🧱 Where it fits
 
 This is the part worth understanding before adopting the package: **Events doesn't define entities, event bases,
 or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` defines, running inside a pipeline
@@ -259,7 +277,7 @@ or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` 
   seeding/migrations) also suppresses event dispatch for that scope — there's no separate "disable events only"
   switch.
 
-## 6. Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **Events are cleared unconditionally after `AfterSaveAsync`**, whether every publisher succeeded or not. A
   publisher exception is logged, not rethrown — it neither undoes the already-committed save nor requeues the
@@ -285,3 +303,16 @@ or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` 
 - **`DisableHooks()` silently disables event dispatch too**, since `EventHook` is just another hook on the shared
   pipeline — don't be surprised when events stop firing during a seeding/migration scope that disabled hooks for
   an unrelated reason.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – defines `IEventEntity`, `AddEvent`, `IEventPublisher`,
+  `[RaisesEvent]`, and `EventOperations`. Reach for it to make an entity raise events in the first place.
+- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline `EventHook` runs in, and the owner of
+  `DisableHooks()`. Reach for it when you need a custom hook or need to suppress the pipeline for seeding.
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – generates and compile-time-validates the payload
+  records for `[RaisesEvent]`. Reach for it when a declared event will not resolve or a payload shape is wrong.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – records changes on the same pipeline. Reach for it when the
+  requirement is a change trail rather than a reaction.
+- [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md) – a ready-made transport to publish the
+  dispatched events onto. Reach for it when your `IEventPublisher` should hand off to SlimMessageBus.

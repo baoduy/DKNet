@@ -26,8 +26,8 @@ public sealed class AppEncryptionKeyProvider : EncryptionKeyProvider
     public override byte[] GetKey(Type entityType) => _key;
 }
 
-var services = new ServiceCollection();
-services.AddEfCoreEncryption<AppEncryptionKeyProvider>();
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddEfCoreEncryption<AppEncryptionKeyProvider>();
 
 public class Customer
 {

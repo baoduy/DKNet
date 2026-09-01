@@ -32,6 +32,10 @@ internal class SimpleKeyProvider : IEncryptionKeyProvider
     #endregion
 }
 
+// Non-ServiceCollection IServiceCollection implementation — pins that the extension
+// resolves through the interface, not just the concrete Microsoft ServiceCollection type.
+internal sealed class FakeServiceCollection : List<ServiceDescriptor>, IServiceCollection;
+
 // Another test implementation
 internal class ConfigurableKeyProvider : IEncryptionKeyProvider
 {
@@ -178,7 +182,7 @@ public class EfCoreEncryptionSetupTests
     }
 
     [Fact]
-    public void AddEfCoreEncryption_ShouldReturnServiceCollection()
+    public void AddEfCoreEncryption_ShouldReturnIServiceCollection()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -187,7 +191,42 @@ public class EfCoreEncryptionSetupTests
         var result = services.AddEfCoreEncryption<SimpleKeyProvider>();
 
         // Assert
+        result.ShouldBeAssignableTo<IServiceCollection>();
         result.ShouldBe(services);
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_CalledThroughIServiceCollectionVariable_ShouldRegisterKeyProvider()
+    {
+        // Arrange — declared as the interface, not the concrete ServiceCollection, so this
+        // only compiles/passes when the extension targets IServiceCollection.
+        IServiceCollection services = new ServiceCollection();
+
+        // Act
+        var result = services.AddEfCoreEncryption<SimpleKeyProvider>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        result.ShouldBeSameAs(services);
+        serviceProvider.GetService<IEncryptionKeyProvider>().ShouldBeOfType<SimpleKeyProvider>();
+    }
+
+    [Fact]
+    public void AddEfCoreEncryption_WithNonServiceCollectionImplementation_ShouldRegisterKeyProvider()
+    {
+        // Arrange — a non-Microsoft IServiceCollection implementation proves the extension
+        // depends only on the interface contract, not ServiceCollection-specific behavior.
+        IServiceCollection services = new FakeServiceCollection();
+
+        // Act
+        services.AddEfCoreEncryption<SimpleKeyProvider>();
+        services.AddEfCoreEncryption<ConfigurableKeyProvider>();
+
+        // Assert
+        services.Count(s => s.ServiceType == typeof(IEncryptionKeyProvider)).ShouldBe(1);
+        services.OfType<ServiceDescriptor>()
+            .Single(s => s.ServiceType == typeof(IEncryptionKeyProvider))
+            .ImplementationType.ShouldBe(typeof(SimpleKeyProvider));
     }
 
     [Fact]

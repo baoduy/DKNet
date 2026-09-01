@@ -12,24 +12,17 @@ public static class EncryptionSetup
     #region Methods
 
     /// <summary>
-    ///     AddEncryptionServices operation.
+    ///     Registers the keyless hashing services (<see cref="IShaHashing" />, <see cref="IHmacHashing" />). For the
+    ///     key-taking ciphers, call <see cref="AddAesGcmEncryption" />, <see cref="AddAesEncryption" />, or
+    ///     <see cref="AddRsaEncryption" /> with an explicit key so resolutions stay key-stable.
     /// </summary>
     public static IServiceCollection AddEncryptionServices(this IServiceCollection services)
     {
-        // Keep AES-CBC registration for backward compatibility while obsolete APIs are phased out.
-#pragma warning disable CS0618
-        if (!services.Any(s => s.ServiceType == typeof(IAesEncryption)))
-            services.AddTransient<IAesEncryption, AesEncryption>();
-#pragma warning restore CS0618
-
         if (!services.Any(s => s.ServiceType == typeof(IShaHashing)))
             services.AddTransient<IShaHashing, ShaHashing>();
 
         if (!services.Any(s => s.ServiceType == typeof(IHmacHashing)))
             services.AddTransient<IHmacHashing, HmacHashing>();
-
-        if (!services.Any(s => s.ServiceType == typeof(IAesGcmEncryption)))
-            services.AddTransient<IAesGcmEncryption, AesGcmEncryption>();
 
         return services;
     }
@@ -53,6 +46,57 @@ public static class EncryptionSetup
 
         if (!services.Any(s => s.ServiceType == typeof(IRsaEncryption)))
             services.AddSingleton<IRsaEncryption>(_ => new RsaEncryption(privateKeyBase64));
+
+        return services;
+    }
+
+    /// <summary>
+    ///     Registers <see cref="IAesGcmEncryption" /> as a singleton constructed from the supplied Base64 encoded
+    ///     AES-GCM key. The same instance (and therefore the same key) is returned for every resolution, so data
+    ///     encrypted via one resolution can be decrypted via another.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="base64Key">
+    ///     The Base64 encoded 128/192/256-bit AES-GCM key. Source this from configuration or a key vault — never
+    ///     hardcode it.
+    /// </param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentException">
+    ///     Thrown when <paramref name="base64Key" /> is null, empty, or whitespace.
+    /// </exception>
+    public static IServiceCollection AddAesGcmEncryption(this IServiceCollection services, string base64Key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(base64Key);
+
+        if (!services.Any(s => s.ServiceType == typeof(IAesGcmEncryption)))
+            services.AddSingleton<IAesGcmEncryption>(_ => new AesGcmEncryption(base64Key));
+
+        return services;
+    }
+
+    /// <summary>
+    ///     Registers <see cref="IAesEncryption" /> as a singleton constructed from the supplied key string. The same
+    ///     instance (and therefore the same key) is returned for every resolution, so data encrypted via one
+    ///     resolution can be decrypted via another.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="keyString">
+    ///     The combined Base64 <c>key:iv</c> string as returned by <see cref="AesEncryption.Key" /> — not a bare
+    ///     Base64 key. Source this from configuration or a key vault — never hardcode it.
+    /// </param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentException">
+    ///     Thrown when <paramref name="keyString" /> is null, empty, or whitespace.
+    /// </exception>
+    [Obsolete("Uses AES-CBC which is vulnerable to padding oracle attacks. Use AddAesGcmEncryption instead.")]
+    public static IServiceCollection AddAesEncryption(this IServiceCollection services, string keyString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(keyString);
+
+#pragma warning disable CS0618
+        if (!services.Any(s => s.ServiceType == typeof(IAesEncryption)))
+            services.AddSingleton<IAesEncryption>(_ => new AesEncryption(keyString));
+#pragma warning restore CS0618
 
         return services;
     }

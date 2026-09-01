@@ -1,43 +1,64 @@
 # DKNet.Svc.PdfGenerators
 
-Documentation-grade PDF generation: converts HTML or Markdown into PDF via headless Chromium (PuppeteerSharp), with
-GitHub-flavored rendering (Markdig), a table of contents, syntax highlighting, and pluggable themes. It's a fork of
-[Markdown2Pdf](https://github.com/) 2.x, extended with additional PDF generation options — see
-`src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md` for the upstream attribution.
+Converts HTML or Markdown into a PDF file using headless Chromium (PuppeteerSharp) and Markdig, with page layout,
+header/footer, and margin control.
 
-## When to reach for it
+> [!NOTE]
+> This package is a fork of Markdown2Pdf 2.x — see `src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md` for the
+> upstream attribution. Several option types carried over from upstream are **not wired into the current
+> `PdfGenerator`** pipeline; the [Configuration reference](./DKNet.Svc.PdfGenerators.md) marks exactly which options affect
+> the output today.
 
-Reach for this package when you need to turn Markdown documentation, generated reports, or arbitrary HTML into a
-downloadable PDF — README-to-PDF exports, invoices rendered from an HTML template, changelogs with a table of
-contents.
+## ✨ Why use it?
 
-## Install and minimal wiring
+- **One call from Markdown to a PDF on disk.** `ConvertMarkdownFileAsync("notes.md")` writes `notes.pdf` next to it —
+  no template engine, no browser lifecycle, no temp-file bookkeeping in your code.
+- **Chromium fetches itself.** With no `ChromePath` configured, the first conversion downloads a matching build through
+  PuppeteerSharp, so a container needs no browser baked in.
+- **Real print layout.** Paper format, orientation, scale, margins, and repeated HTML header/footer templates come from
+  Chromium's own print pipeline rather than CSS guesswork.
+- **Several Markdown files, one document.** `ConvertMultipleMarkdownFilesAsync` concatenates sources in order — the
+  shape a changelog or a multi-chapter export needs.
+
+Reach for it to turn Markdown documentation, generated reports, or arbitrary HTML into a downloadable PDF.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.PdfGenerators
 ```
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
 using DKNet.Svc.PdfGenerators;
+using DKNet.Svc.PdfGenerators.Options;
 
-builder.Services.AddPdfGenerator(); // IPdfGenerator, singleton
+builder.Services.AddPdfGenerator(new PdfGeneratorOptions
+{
+    IsLandscape = false,
+    MarginOptions = new MarginOptions { Top = "2cm", Bottom = "2cm", Left = "1.5cm", Right = "1.5cm" }
+});
 ```
 
 ```csharp
 public sealed class ReportExporter(IPdfGenerator pdfGenerator)
 {
+    // writes ./reports/monthly.pdf and returns its full path
     public Task<string> ExportAsync(string markdownPath) =>
-        pdfGenerator.ConvertMarkdownFileAsync(markdownPath, "report.pdf");
+        pdfGenerator.ConvertMarkdownFileAsync(markdownPath, "reports/monthly.pdf");
 }
 ```
 
-The first conversion auto-downloads a matching Chromium build via PuppeteerSharp's `BrowserFetcher` unless
-`PdfGeneratorOptions.ChromePath` points at an existing install — expect a one-time download delay in a fresh
-container or CI runner.
+`AddPdfGenerator(options)` builds one `PdfGenerator` immediately and registers it as a singleton `IPdfGenerator`; the
+call is idempotent, and the options passed to the **first** call are the ones the instance keeps for the process
+lifetime. Pass no argument for defaults.
 
-## Features
+The first conversion downloads a Chromium build via PuppeteerSharp's `BrowserFetcher` unless `ChromePath` points at an
+existing install — expect a one-time delay in a fresh container or CI runner.
 
-### Every conversion entry point (`IPdfGenerator`)
+## 🧩 Features
+
+### Conversion entry points (`IPdfGenerator`)
 
 ```csharp
 Task<string> ConvertHtmlAsync(string htmlContent, string? outputPath = null);
@@ -47,88 +68,141 @@ Task<FileInfo> ConvertMarkdownFileAsync(FileInfo markdownFile);
 Task<string> ConvertMultipleMarkdownFilesAsync(string[] markdownFilePaths, string outputFilePath);
 ```
 
-Four input shapes are supported: a raw HTML string, an HTML file, a single Markdown file, or several Markdown files
-concatenated into one PDF. There is no Razor-template or model-binding API — feed it HTML/Markdown text, not a view.
+Four input shapes: a raw HTML string, an HTML file, a single Markdown file, or several Markdown files concatenated into
+one PDF. There is no Razor-template or model-binding API — render your own HTML/Markdown text first, then convert it.
 
-### Markdown rendering extras
+Output paths follow simple rules:
 
-Markdig-based rendering supports GitHub-flavored Markdown plus:
-- **Table of contents** — auto-inserted at a `[TOC]`, `[[_TOC_]]`, or `<!-- toc -->` marker; opt a heading out with
-  `<!-- omit from toc -->` immediately above it. Configure via `PdfGeneratorOptions.TableOfContents`.
-- **Syntax highlighting** — `CodeHighlightTheme` ships ~60 highlight.js themes as static members (`.Github` default,
-  `.GithubDark`, `.Monokai`, `.Nord`, `.None`, …).
-- **MathJax / Mermaid diagrams** — loaded via `ModuleOptions` (remote CDN by default, or a local npm install).
+| Call | Output when the path argument is omitted |
+|---|---|
+| `ConvertHtmlAsync` / `ConvertHtmlFileAsync` | `{CurrentDirectory}/output_from_html.pdf` |
+| `ConvertMarkdownFileAsync(string, …)` | the input path with its extension changed to `.pdf` |
+| `ConvertMarkdownFileAsync(FileInfo)` | same, returned as a `FileInfo` |
+| `ConvertMultipleMarkdownFilesAsync` | *(output path is required)* |
 
-### Themes
+Markdown conversion resolves both paths to full paths and creates the output directory if it is missing.
+`ConvertHtmlFileAsync` throws `FileNotFoundException` when the input HTML file does not exist.
 
-`Theme` is the page's visual theme (distinct from `CodeHighlightTheme`, which only affects code blocks):
-`Theme.Github` (default), `Theme.Latex`, `Theme.None`, or `Theme.Custom(cssPath)` for your own stylesheet.
+### Markdown rendering
 
-### Table of contents depth control
+Markdown is rendered by Markdig with three extensions enabled:
+
+- **Advanced extensions** (`UseAdvancedExtensions`) — GitHub-flavored tables, task lists, auto-links, footnotes,
+  definition lists, and the rest of the Markdig "advanced" bundle.
+- **YAML front matter** (`UseYamlFrontMatter`) — a leading `---` block is parsed as front matter instead of being
+  rendered as content.
+- **Emoji and smileys** (`UseEmojiAndSmiley`) — `:smile:` style shortcodes are converted.
+
+The pipeline is fixed; there is no hook to add or remove Markdig extensions. Multi-file conversion joins the raw
+Markdown sources with `Environment.NewLine` **before** rendering, so a construct may span the boundary between two
+files.
+
+### Page layout, header, and footer
+
+Layout comes from `PdfGeneratorOptions` and is passed to Chromium's print options: `Format`, `IsLandscape`, `Scale`, and
+`MarginOptions` (CSS-style strings such as `"1cm"`). `HeaderHtml`/`FooterHtml` are Chromium header/footer templates and
+are only displayed when at least one of them is set:
 
 ```csharp
-new TableOfContentsOptions
+using PuppeteerSharp.Media; // PaperFormat
+
+new PdfGeneratorOptions
 {
-    MinDepthLevel = 1,   // 1-6, throws ArgumentOutOfRangeException outside that range
-    MaxDepthLevel = 6,   // 1-6, same
-    ListStyle = ListStyle.OrderedDefault, // None, OrderedDefault, Unordered, Decimals
-    HasColoredLinks = false,
-    PageNumberOptions = new PageNumberOptions { TabLeader = Leader.Dots }, // None, Dots, Underline, Dashes
+    Format = PaperFormat.Letter,
+    IsLandscape = true,
+    Scale = 0.9m,
+    HeaderHtml = "<div style='font-size:10px;width:100%;text-align:center'>Monthly report</div>",
+    FooterHtml = "<div style='font-size:10px;width:100%;text-align:center'>" +
+                 "<span class='pageNumber'></span> / <span class='totalPages'></span></div>"
 };
 ```
 
-### Remote vs. local module assets
+Background graphics are always printed (`PrintBackground = true`) and the page is rendered with the `screen` media type,
+so `@media print` rules in your CSS do not apply.
 
-```csharp
-options.ModuleOptions = ModuleOptions.Remote; // default — loads MathJax/Mermaid/highlight.js from a CDN, needs internet
-options.ModuleOptions = ModuleOptions.FromLocalPath("./node_modules"); // offline — expects mathjax@3, mermaid@10,
-                                                                        // font-awesome, @highlightjs/cdn-assets@11,
-                                                                        // github-markdown-css, latex.css installed there
-```
+### Container and CI behaviour
 
-Use `FromLocalPath` for air-gapped/offline PDF generation.
-
-### Page layout options (`PdfGeneratorOptions`)
-
-| Property | Default |
-|---|---|
-| `PaperFormat Format` | `PaperFormat.A4` |
-| `bool IsLandscape` | `false` |
-| `decimal Scale` | `1` |
-| `MarginOptions? MarginOptions` | `null` (Puppeteer defaults) |
-| `string? HeaderHtml` / `string? FooterHtml` | `null` |
-| `string? DocumentTitle` / `string? MetadataTitle` | `null` |
-| `string? CustomHeadContent` | `null` — inject extra `<head>` markup |
-| `bool KeepHtml` | `false` — keep the intermediate HTML file for debugging |
-| `bool EnableAutoLanguageDetection` | `false` |
-| `string? ChromePath` | `null` — auto-download if unset |
-| `CodeHighlightTheme CodeHighlightTheme` | `.Github` |
-| `Theme Theme` | `Theme.Github` |
-| `ModuleOptions ModuleOptions` | `ModuleOptions.Remote` |
-| `TableOfContentsOptions? TableOfContents` | `null` |
-
-`MarginOptions` (`Top`/`Bottom`/`Left`/`Right`, all `string?`, default `null`) accepts CSS-style values (`"1cm"`).
+When the `CI` or `GITHUB_ACTIONS` environment variable equals `"true"`, Chromium is launched with `--no-sandbox
+--disable-setuid-sandbox` — the flags a containerized runner normally needs. Chromium downloads are serialized behind a
+process-wide semaphore, so concurrent first calls do not race each other.
 
 ### Serializable options round-trip
 
-`SerializableOptions` mirrors `PdfGeneratorOptions` with flat, string-typed properties (handy for JSON config or a
-CLI) and converts back via `ToPdfGeneratorOptions()` — an invalid theme/format name falls back to the default rather
-than throwing.
+`SerializableOptions` mirrors `PdfGeneratorOptions` with flat, mostly string-typed properties (handy for JSON config or
+a CLI) and converts via `ToPdfGeneratorOptions()`. Named values are resolved by reflection against the target type's
+static properties, with a sensible fallback: an unknown `Theme` string becomes `Theme.Custom(value)`, an unknown
+`ModuleOptions` string becomes `ModuleOptions.FromLocalPath(value)`, and an unknown `CodeHighlightTheme` string is
+ignored rather than throwing.
 
-## Composing with other DKNet packages
+```csharp
+var options = JsonSerializer
+    .Deserialize<SerializableOptions>(configJson)!
+    .ToPdfGeneratorOptions();
 
-Save the generated PDF with [`DKNet.Svc.BlobStorage.*`](./DKNet.Svc.BlobStorage.Abstractions.md) once it's on disk —
-`ConvertMarkdownFileAsync` returns a file path/`FileInfo`, ready to hand to `IBlobService.SaveAsync`.
+builder.Services.AddPdfGenerator(options);
+```
 
-## Gotchas and limits
+## ⚙️ Configuration reference
 
-- **Chromium download.** The first call in a fresh environment downloads a Chromium build unless `ChromePath` is
-  set; the download is serialized so concurrent first calls don't race each other, but budget for the delay in cold
-  containers/CI. On ARM sandboxes this package's own test suite downloads an x86_64 Chromium build that can't run —
-  verify PDF-generation changes on an x64 runner.
-- **No Razor/template-model API.** Despite what earlier revisions of this page claimed, there is no
-  `GenerateFromTemplateAsync` or model-binding step — render your Markdown/HTML string yourself, then convert it.
-- **`IConversionEvents` (`HtmlConverting`, `TemplateModelCreating`, `TempPdfCreated`) is defined but not wired into
-  `PdfGenerator`** in the current source — don't build on these events expecting them to fire.
+`PdfGeneratorOptions` — the **Applied** column says whether the current `PdfGenerator` pipeline reads the value:
+
+| Option | Type | Default | Effect | Applied |
+|---|---|---|---|---|
+| `Format` | `PaperFormat` (PuppeteerSharp) | `PaperFormat.A4` | Paper size passed to Chromium. | ✅ |
+| `IsLandscape` | `bool` | `false` | Landscape orientation. | ✅ |
+| `Scale` | `decimal` | `1` | Render scale. | ✅ |
+| `MarginOptions` | `MarginOptions?` (this package's, not PuppeteerSharp's) | `null` (Chromium defaults) | `Top`/`Bottom`/`Left`/`Right` as CSS strings, e.g. `"1cm"`. | ✅ |
+| `HeaderHtml` | `string?` | `null` | Chromium header template; setting it (or `FooterHtml`) turns the header/footer on. | ✅ |
+| `FooterHtml` | `string?` | `null` | Chromium footer template. | ✅ |
+| `ChromePath` | `string?` | `null` | Path to an existing Chromium/Chrome; when `null`, a build is downloaded on demand. | ✅ |
+| `Theme` | `Theme` | `Theme.Github` | `Theme.Github` / `.Latex` / `.None` / `.Custom(cssPath)`. | ❌ |
+| `CodeHighlightTheme` | `CodeHighlightTheme` | `.Github` | One of ~60 highlight.js themes exposed as static members. | ❌ |
+| `ModuleOptions` | `ModuleOptions` | `ModuleOptions.Remote` | `Remote` / `None` / `FromLocalPath(path)` for MathJax, Mermaid, highlight.js assets. | ❌ |
+| `TableOfContents` | `TableOfContentsOptions?` | `null` | `MinDepthLevel`/`MaxDepthLevel` (1–6, else `ArgumentOutOfRangeException`), `ListStyle`, `HasColoredLinks`, `PageNumberOptions`. | ❌ |
+| `DocumentTitle` | `string?` | `null` | Document title. | ❌ |
+| `MetadataTitle` | `string?` | `null` | PDF metadata title. | ❌ |
+| `CustomHeadContent` | `string?` | `null` | Extra markup for the generated `<head>`. | ❌ |
+| `KeepHtml` | `bool` | `false` | Keep the intermediate HTML for debugging. | ❌ |
+| `EnableAutoLanguageDetection` | `bool` | `false` | Auto-detect code-block languages. | ❌ |
+
+The ❌ rows are settable, serializable, and unit-tested as standalone types, but `PdfGenerator` renders Markdown to HTML
+and hands it straight to Chromium — it never builds the theme, module, table-of-contents, or metadata pipeline that would
+consume them. Treat them as inert until they are wired up; do not design a document around them.
+
+## 🧱 Where it fits
+
+- **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — conversion returns a path or a
+  `FileInfo`, so the natural next step is `IBlobService.SaveAsync` with `BinaryData.FromStream(File.OpenRead(path))`.
+- **`DKNet.AspCore.Tasks`** — generating a PDF is slow and CPU-bound; run it in a background job rather than inside a
+  request when the document is large.
+- **Everything else in DKNet** is independent of this package: it depends on PuppeteerSharp and Markdig only, with no EF
+  Core or messaging coupling.
+
+## ⚠️ Gotchas & limits
+
+- **Most option surface is currently inert.** Theme, code highlighting, module assets, table of contents, metadata,
+  `KeepHtml`, and `EnableAutoLanguageDetection` are not read by `PdfGenerator` — see the Applied column above. Earlier
+  revisions of this page documented `[TOC]` markers and theme switching as working features; they are not wired in
+  source.
+- **No Razor/template-model API.** There is no `GenerateFromTemplateAsync` or model binding — render the string
+  yourself, then convert.
+- **`IConversionEvents` (`HtmlConverting`, `TemplateModelCreating`, `TempPdfCreated`) never fires from
+  `PdfGenerator`.** Only the unwired helper services subscribe to it.
+- **Chromium download.** The first call in a fresh environment downloads a Chromium build unless `ChromePath` is set.
+  On ARM sandboxes this package's own test suite downloads an x86_64 build that cannot run — verify PDF changes on an
+  x64 runner.
+- **A browser per conversion.** Every call launches and disposes its own Chromium instance; there is no page or browser
+  pool, so high-volume conversion needs your own queueing.
+- **Options are frozen at registration.** The singleton is constructed by `AddPdfGenerator`, so per-request layout
+  changes mean constructing `new PdfGenerator(options)` yourself instead of resolving `IPdfGenerator`.
+- **Relative asset URLs in HTML do not resolve.** Content is set with `SetContentAsync`, not loaded from a base URL, so
+  images and stylesheets need absolute URLs or inline data.
 - Do not edit `THIRD-PARTY-NOTICES.md` or the test fixture `Sample.md` — the legal attribution and packaging tests
   depend on their exact contents.
+
+## 🔗 Related packages
+
+- [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) – reach for it to store or serve the
+  generated PDF instead of leaving it on local disk.
+- [DKNet.Svc.Transformation](./DKNet.Svc.Transformation.md) – reach for it to fill placeholders in a Markdown or HTML
+  template before conversion.

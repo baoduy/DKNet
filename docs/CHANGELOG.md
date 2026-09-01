@@ -25,10 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.
 - Improved documentation organization and navigation
 - Enhanced main README.md to be more concise and point to docs/
+- **Breaking (binary only):** `EfCoreEncryptionSetup.AddEfCoreEncryption<T>()` now takes and returns
+  `IServiceCollection` instead of the concrete `ServiceCollection`, so it is callable on `builder.Services`.
+  Source-compatible for existing callers; pre-compiled assemblies referencing the old signature must be recompiled.
 - **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
   as a singleton built from a caller-supplied key.
+- **Breaking:** `AddEncryptionServices()` no longer registers `IAesGcmEncryption` or the obsolete `IAesEncryption`
+  either — both were transients over a constructor that generates a fresh random key per instance. Every injection
+  therefore got a different key, the key was persisted nowhere, and any ciphertext written through one resolution
+  became permanently unreadable, silently. Callers must now opt in with
+  `services.AddAesGcmEncryption(base64Key)` — a singleton `IAesGcmEncryption` over a plain Base64 128/192/256-bit
+  key — or, for migration only, `services.AddAesEncryption(keyString)`, a singleton `IAesEncryption` over the
+  combined Base64 `key:iv` value that `AesEncryption.Key` returns (that method is itself `[Obsolete]`). Both throw `ArgumentException` on a null, empty,
+  or whitespace key. `AddEncryptionServices()` now registers only the keyless `IShaHashing` and `IHmacHashing`
+  transients; `new AesGcmEncryption()` still generates an ephemeral key and stays valid for data that never
+  outlives the process.
 - **Breaking:** `EndpointRegistrationOptions.EnableRequestValidation` and `EndpointRegistrationOptions.SystemAccountName`
   have been removed from `DKNet.AspCore.Extensions`, and `UseEndpointConfigs()` no longer stamps `RequestBase.ByUser`
   or applies FluentValidation auto-validation on its own. A consumer that had set either setting gets a compile
@@ -38,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
+- **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
+  `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
+  implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership
+  isolation at runtime in Release builds. Migration: implement `IDataOwnerDbContext` (supply `AccessibleKeys`;
+  override `IsUnrestrictedAccess` only for admin/system contexts) on the `DbContext` type you register — see the
+  [Migration Guide](Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
 
 ### Fixed
 - `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
@@ -54,6 +73,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
+- Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
+  made every value they encrypted unrecoverable (DKNet.Svc.Encryption).
+- `DKNet.EfCore.DataAuthorization` now fails closed when a `DbContext` does not implement `IDataOwnerDbContext`.
+  `DataOwnerAuthQuery.HasQueryFilter` previously guarded that case with `Debug.Fail(...)` and returned `null`;
+  `Debug.Fail` is compiled out in Release, and a `null` filter means "apply nothing", so in Release builds every
+  `IOwnedBy` entity was left with no ownership filter and every caller could read every owner's rows — a complete
+  row-level isolation bypass. It now throws `InvalidOperationException` at model-build time, and the tightened
+  `AddDataOwnerProvider` constraint (see **Changed**) stops the mistake at compile time.
 
 ## [2024.12.0] - 2024-12-XX
 
@@ -197,22 +224,22 @@ All packages include security enhancements:
 For detailed package-specific changes, see:
 
 ### Core
-- [DKNet.Fw.Extensions Changelog](../src/Core/DKNet.Fw.Extensions/CHANGELOG.md)
+- [DKNet.Fw.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/Core/DKNet.Fw.Extensions/CHANGELOG.md)
 
 ### Entity Framework Core
-- [DKNet.EfCore.Abstractions Changelog](../src/EfCore/DKNet.EfCore.Abstractions/CHANGELOG.md)
-- [DKNet.EfCore.Extensions Changelog](../src/EfCore/DKNet.EfCore.Extensions/CHANGELOG.md)
-- [DKNet.EfCore.Repos Changelog](../src/EfCore/DKNet.EfCore.Repos/CHANGELOG.md)
-- [DKNet.EfCore.Hooks Changelog](../src/EfCore/DKNet.EfCore.Hooks/CHANGELOG.md)
+- [DKNet.EfCore.Abstractions Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/CHANGELOG.md)
+- [DKNet.EfCore.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Extensions/CHANGELOG.md)
+- [DKNet.EfCore.Repos Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Repos/CHANGELOG.md)
+- [DKNet.EfCore.Hooks Changelog](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Hooks/CHANGELOG.md)
 
 ### Messaging
-- [DKNet.SlimBus.Extensions Changelog](../src/SlimBus/DKNet.SlimBus.Extensions/CHANGELOG.md)
+- [DKNet.SlimBus.Extensions Changelog](https://github.com/baoduy/DKNet/blob/main/src/SlimBus/DKNet.SlimBus.Extensions/CHANGELOG.md)
 
 ### Services
-- [DKNet.Svc.BlobStorage.Abstractions Changelog](../src/Services/DKNet.Svc.BlobStorage.Abstractions/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.AzureStorage Changelog](../src/Services/DKNet.Svc.BlobStorage.AzureStorage/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.AwsS3 Changelog](../src/Services/DKNet.Svc.BlobStorage.AwsS3/CHANGELOG.md)
-- [DKNet.Svc.BlobStorage.Local Changelog](../src/Services/DKNet.Svc.BlobStorage.Local/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.Abstractions Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.Abstractions/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.AzureStorage Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.AzureStorage/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.AwsS3 Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.AwsS3/CHANGELOG.md)
+- [DKNet.Svc.BlobStorage.Local Changelog](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.BlobStorage.Local/CHANGELOG.md)
 
 ---
 

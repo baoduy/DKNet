@@ -1,5 +1,8 @@
 # DKNet.EfCore.Repos
 
+Retired generic-repository implementations over EF Core (`ReadRepository<T>`, `WriteRepository<T>`, `Repository<T>`,
+`RepositoryFactory<TDbContext>`), kept in source only for readers maintaining code that still references them.
+
 > ⚠️ **Retired / obsolete — source-only, not published to NuGet.**
 > The project sets `<IsPackable>false</IsPackable>`, so it is **never packed or published**; it exists purely so
 > existing source consumers keep compiling. Every public type — `ReadRepository<TEntity>`, `WriteRepository<TEntity>`,
@@ -14,23 +17,31 @@
 > and [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md). This page documents the retired API only for
 > teams that still reference it from source.
 
-## What problem it solved, and when it was the answer
+## ✨ Why use it?
 
-Before `DKNet.EfCore.Specifications` existed, `DKNet.EfCore.Repos` was DKNet's generic repository layer over EF Core:
-one injectable `IReadRepository<TEntity>` / `IWriteRepository<TEntity>` / `IRepository<TEntity>` per aggregate type,
-giving application code CRUD, projection, and transaction primitives without depending on `DbContext` or
-`DbSet<TEntity>` directly — the classic Infrastructure-layer repository pattern for an Onion Architecture, defined
-against the interfaces in `DKNet.EfCore.Repos.Abstractions`.
+You should not — this package is retired, and every public type in it is `[Obsolete]`. It is documented here for one
+reader: someone maintaining code that still injects these repositories. What it solved, and why that no longer needs
+solving:
 
-That was the right shape while queries were expressed as ad-hoc `Expression<Func<TEntity, bool>>` filters passed
-into `Query(filter)` / `FindAsync(filter)`. Once `DKNet.EfCore.Specifications` introduced `Specification<TEntity>`
-(filter + includes + order-by as one composable, reusable object) and `IRepositorySpec` (a single non-generic
-repository whose entity type is inferred per call from the specification), the second query layer this package
-bolted on top of EF Core became redundant. `DKNet.EfCore.Repos` is kept only so source builds that still reference
-`IRepository<T>` / `IReadRepository<T>` / `IWriteRepository<T>` keep compiling — **new code should use
-`DKNet.EfCore.Specifications` directly.**
+- **Persistence ignorance per aggregate** — application services depended on `IReadRepository<TEntity>` /
+  `IWriteRepository<TEntity>` / `IRepository<TEntity>` rather than on `DbContext` or `DbSet<TEntity>`, so they could
+  be unit-tested against a fake.
+- **CRUD, projection, and transaction primitives in one injectable** — `FindAsync`, `Query`, `Query<TModel>`,
+  `AddAsync`, `UpdateAsync`, `Delete`, `BeginTransactionAsync`, `SaveChangesAsync` on a single per-entity surface.
+- **A runtime factory seam** — `RepositoryFactory<TDbContext>` produced a repository for an arbitrary entity type
+  without injecting one `IRepository<T>` per entity.
+- **A bridge to specifications** — `RepoExtensions` accepted `Specification<TEntity>` objects against these
+  repositories once that pattern arrived, which is the seam the replacement package grew out of.
 
-## Install and minimum registration
+That shape was right while queries were ad-hoc `Expression<Func<TEntity, bool>>` filters passed into
+`Query(filter)` / `FindAsync(filter)`. Once [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md)
+introduced `Specification<TEntity>` (filter + includes + order-by as one composable, reusable object) and
+`IRepositorySpec` (one non-generic repository whose entity type is inferred per call from the specification), this
+second query layer on top of EF Core became redundant. **New code should use `DKNet.EfCore.Specifications`
+directly**; existing consumers should follow
+[Migrating from DKNet.EfCore.Repos to DKNet.EfCore.Specifications](./Migrating-Repos-To-Specifications.md).
+
+## 🚀 Quick Start
 
 This package is **not on NuGet** — `<IsPackable>false</IsPackable>` in `DKNet.EfCore.Repos.csproj` means it is never
 packed or published. The only way to consume it is a source/project reference from within this repository (or a
@@ -60,7 +71,7 @@ a second, independent registration for the factory flavor (see below):
 services.AddRepoFactory<AppDbContext>();
 ```
 
-## Features for existing consumers
+## 🧩 Features
 
 ### `ReadRepository<TEntity>` — query-only access
 
@@ -251,7 +262,7 @@ call `EnsureSpecHasOrdering()` semantics apply: no `OrderBy`/`OrderByDescending`
 `NotSupportedException`. `SpecsToPageListAsync` returns an `X.PagedList.IPagedList<TEntity>` via
 `X.PagedList.EF`'s `ToPagedListAsync`.
 
-## Configuration options and defaults
+## ⚙️ Configuration reference
 
 There is no options object or configuration section — behavior is fixed by construction:
 
@@ -264,7 +275,7 @@ There is no options object or configuration section — behavior is fixed by con
 | Exception handling in `SaveChangesAsync` | Optional keyed `IEfCoreExceptionHandler` resolved by `dbContext.GetType().FullName` | Register a keyed service under that key to intercept concurrency/db exceptions |
 | Specification paging page size (`SpecsToPageEnumerable`) | Fixed at 100 | Not configurable — use `DKNet.EfCore.Specifications`'s own paging APIs directly if you need a different size |
 
-## How it composes with other packages
+## 🧱 Where it fits
 
 - **`DKNet.EfCore.Repos.Abstractions`** — defines `IReadRepository<T>`, `IWriteRepository<T>`, `IRepository<T>`,
   `IRepositoryFactory` that every type here implements.
@@ -278,7 +289,7 @@ There is no options object or configuration section — behavior is fixed by con
   `IMapper.Config` and `ProjectToType<TModel>()`.
 - **`X.PagedList.EF`** — backs `SpecsToPageListAsync`'s `IPagedList<TEntity>` result.
 
-## Gotchas and limits
+## ⚠️ Gotchas & limits
 
 - **This package is obsolete and unpublished.** It is source-only (`IsPackable=false`), every public type is
   `[Obsolete]`, and it exists solely to keep pre-existing source consumers compiling. **Migrate to
@@ -291,16 +302,29 @@ There is no options object or configuration section — behavior is fixed by con
   it locally (`#pragma warning disable CS0618`) around each obsolete type; consumers outside this repo will see the
   warning (and it becomes a build error under `TreatWarningsAsErrors`, DKNet's own solution-wide setting).
   Suppress deliberately at the call site, don't disable the warning class-wide.
-  Never NuGet-installable: there is no `DKNet.EfCore.Repos` package on nuget.org — only a project/source reference
-  works, and only within (or forked from) this repository.
+- **Never NuGet-installable.** There is no `DKNet.EfCore.Repos` package on nuget.org — only a project/source
+  reference works, and only within (or forked from) this repository.
 - `Repository<TEntity>.Query()` is **tracked**, while `ReadRepository<TEntity>.Query()` is **not** — mixing the two
   through `IReadRepository<T>` vs `IRepository<T>` injections in the same unit of work is an easy source of
   "why isn't my mutation being saved" or "why is this untracked entity throwing on `SaveChanges`" bugs.
   `DKNet.EfCore.Specifications`'s `IRepositorySpec` does not have this split — same call surface for both.
-  `Query<TModel>()` on either class throws `InvalidOperationException` at call time (not at DI composition time) if
+- `Query<TModel>()` on either class throws `InvalidOperationException` at call time (not at DI composition time) if
   no `IMapper` is registered — a startup validation for this is *not* provided.
 - `RepositoryFactory<TDbContext>` owns and disposes its own `DbContext` — repositories it creates become unusable
   once the factory is disposed; don't let a repository outlive its factory.
 - `RepoExtensions`' specification-application logic (`ApplySpecs`, `EnsureSpecHasOrdering`, `ToPageEnumerable`) is a
   **local copy** of internal logic in `DKNet.EfCore.Specifications` — it is not guaranteed to track future changes
   to that package's internal behavior, since this package is retired and receives maintenance only incidentally.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the active replacement. Reach for
+  `IRepositorySpec` + `Specification<TEntity>` and `SpecSetup.AddSpecRepo` for all new work.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping off this package.
+  Reach for it when moving existing code.
+- [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) – the retired interfaces every type here
+  implements. Reach for it to read the contracts rather than the implementations.
+- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – supplies the navigation-scanning and
+  concurrency-handling extension methods `WriteRepository<T>.SaveChangesAsync` calls. Still current.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `Entity`/`AuditedEntity` types these repositories
+  were used against. Still current.

@@ -20,7 +20,8 @@ dotnet add package DKNet.EfCore.DataAuthorization
   entities (and `CreatedBy`/`CreatedOn` when the entity is also audited), and reverts any attempt to silently
   reassign an existing row's owner to a key the caller can't access.
 - **One DI call to wire it up** — `AddDataOwnerProvider<TDbContext, TProvider>()` registers the query filter, the
-  hook, and your `IDataOwnerProvider` implementation together.
+  hook, and your `IDataOwnerProvider` implementation together. `TDbContext` must implement `IDataOwnerDbContext`;
+  the requirement is compile-enforced by the method's generic constraint.
 
 ## Quick start
 
@@ -47,6 +48,10 @@ services
     .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
     .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
 ```
+
+`AddDataOwnerProvider<TDbContext, TProvider>()` is declared `where TDbContext : DbContext, IDataOwnerDbContext`, so a
+`DbContext` without the interface does not compile — and a context that reaches the query filter without it throws
+`InvalidOperationException` at model-build time rather than quietly applying no ownership filter.
 
 Full documentation, configuration options, and gotchas:
 [DKNet.EfCore.DataAuthorization docs](https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.DataAuthorization.md)

@@ -1,11 +1,13 @@
-## DKNet.EfCore.Repos.Abstractions
+# DKNet.EfCore.Repos.Abstractions
+
+Retired repository-pattern contracts (`IReadRepository<T>`, `IWriteRepository<T>`, `IRepository<T>`,
+`IRepositoryFactory`) kept in source only, for readers maintaining code that still references them.
 
 > **Retired / obsolete — source-only, not published to NuGet.**
 > `DKNet.EfCore.Repos.Abstractions.csproj` sets `<IsPackable>false</IsPackable>`. It is no longer packed
 > or advertised as a NuGet package; it stays in the source tree only so the sibling `DKNet.EfCore.Repos`
-> project (also unpublished) still builds. Every public interface in this package —
-> `IReadRepository<TEntity>`, `IWriteRepository<TEntity>`, `IRepository<TEntity>`, `IRepositoryFactory` —
-> carries this exact `[Obsolete]` message:
+> project (also unpublished) still builds. Every public interface in this package carries this exact
+> `[Obsolete]` message:
 >
 > ```
 > DKNet.EfCore.Repos.Abstractions is retired. Use DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup)
@@ -15,10 +17,9 @@
 > **New code must use `IRepositorySpec` from [`DKNet.EfCore.Specifications`](./DKNet.EfCore.Specifications.md)
 > instead.** Existing consumers should follow
 > [`docs/EfCore/Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) to move off
-> these interfaces. The rest of this page documents the retired contracts as-is, for readers maintaining
-> code that still references them.
+> these interfaces.
 
-### 1. What problem it solved (and when it WAS the answer)
+## ✨ Why use it?
 
 Before `DKNet.EfCore.Specifications` existed, this package supplied the repository-pattern *contracts* used
 throughout the DKNet framework to keep domain/application code independent of EF Core:
@@ -37,7 +38,7 @@ generic over the entity — one injected `IRepositorySpec` instance serves every
 `DbContext`. That is a strictly larger feature set, which is why this package is retired rather than
 extended.
 
-### 2. Install
+## 🚀 Quick Start
 
 Not applicable — this package is **not published to NuGet**. It exists only as project source
 (`src/EfCore/DKNet.EfCore.Repos.Abstractions`), consumed via `ProjectReference` by
@@ -50,14 +51,14 @@ For new work, install the active replacement instead:
 dotnet add package DKNet.EfCore.Specifications
 ```
 
-### 3. The interfaces
+## 🧩 Features
 
 All four types below are decorated with `[Obsolete("DKNet.EfCore.Repos.Abstractions is retired. Use
 DKNet.EfCore.Specifications (IRepositorySpec + SpecSetup) instead. See
 docs/EfCore/Migrating-Repos-To-Specifications.md.")]`. Referencing any of them from non-obsolete code
 produces a compiler warning (which is an error under this repo's `TreatWarningsAsErrors=true`).
 
-#### `IReadRepository<TEntity>`
+### `IReadRepository<TEntity>` — queries and projections
 
 ```csharp
 public interface IReadRepository<TEntity> where TEntity : class
@@ -97,7 +98,7 @@ public sealed class ProductQueryService(IReadRepository<Product> repo)
 #pragma warning restore CS0618
 ```
 
-#### `IWriteRepository<TEntity>`
+### `IWriteRepository<TEntity>` — mutations and transactions
 
 ```csharp
 public interface IWriteRepository<TEntity> where TEntity : class
@@ -139,7 +140,7 @@ public sealed class ProductWriteService(IWriteRepository<Product> repo)
 `Delete`/`DeleteRange` are synchronous (they mark tracked entities for removal; the actual delete happens
 on `SaveChangesAsync`). `AddAsync`/`AddRangeAsync` return `ValueTask`, not `Task`.
 
-#### `IRepository<TEntity>`
+### `IRepository<TEntity>` — the combined surface
 
 ```csharp
 public interface IRepository<TEntity> : IReadRepository<TEntity>, IWriteRepository<TEntity>
@@ -167,7 +168,7 @@ public sealed class ProductService(IRepository<Product> repo)
 #pragma warning restore CS0618
 ```
 
-#### `IRepositoryFactory`
+### `IRepositoryFactory` — a repository per entity type at runtime
 
 ```csharp
 public interface IRepositoryFactory : IDisposable, IAsyncDisposable
@@ -196,14 +197,7 @@ public sealed class BulkImportService(IRepositoryFactory factory)
 `IRepositoryFactory` implements both `IDisposable` and `IAsyncDisposable`, so callers obtained from DI
 should dispose it (or let the DI container scope do so) rather than holding it indefinitely.
 
-### 4. Configuration options and defaults
-
-None. This package is pure interface definitions — no options classes, no `AddXxx(...)` DI extension
-methods, and no configurable defaults live here. (Any behavior you might expect to configure — tracking
-mode, transaction scope, etc. — is a decision made entirely by the concrete implementation in
-`DKNet.EfCore.Repos`, not by this abstractions package.)
-
-### 5. How it composes with other packages
+## 🧱 Where it fits
 
 - **Implemented by [`DKNet.EfCore.Repos`](./DKNet.EfCore.Repos.md)** — the concrete
   `ReadRepository<TEntity>`/`Repository<TEntity>`/`RepositoryFactory` classes that back these interfaces
@@ -218,8 +212,12 @@ mode, transaction scope, etc. — is a decision made entirely by the concrete im
   `SaveChangesAsync` is handled separately by `DKNet.EfCore.Events` / SaveChanges hooks — this package
   has no involvement in event dispatch itself.
 
-### 6. Gotchas and limits
+## ⚠️ Gotchas & limits
 
+- **There is nothing to configure.** This package is pure interface definitions — no options classes, no
+  `AddXxx(...)` DI extension methods, no configurable defaults. Anything you might expect to configure
+  (tracking mode, transaction scope) is decided entirely by the concrete implementation in
+  `DKNet.EfCore.Repos`.
 - **It is obsolete and unpublished.** Do not add a `PackageReference` to `DKNet.EfCore.Repos.Abstractions`
   in new projects — there is no NuGet package to reference. Any remaining internal usage inside this
   solution compiles only because of scattered `#pragma warning disable CS0618` markers around the retired
@@ -235,3 +233,16 @@ mode, transaction scope, etc. — is a decision made entirely by the concrete im
   `AsNoTracking()` just because you're holding an `IReadRepository<TEntity>`.
 - **`IRepositoryFactory` is disposable** (`IDisposable` + `IAsyncDisposable`) — leaking instances outside
   a DI scope leaks whatever `DbContext`/connection resources the concrete factory holds.
+
+## 🔗 Related packages
+
+- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the active replacement. Reach for
+  `IRepositorySpec` + `Specification<TEntity>` for all new work; it covers the same read/write/paging
+  surface without being generic over the entity.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping from
+  these interfaces to their `IRepositorySpec` equivalents. Reach for it when moving existing code off this
+  package.
+- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) – the concrete implementations of these contracts, retired
+  for the same reason. Reach for it only to understand behaviour code you still maintain depends on.
+- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `Entity`/`AuditedEntity` types the
+  retired interfaces were used against; still current.
