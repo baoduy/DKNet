@@ -176,14 +176,26 @@ The `IIdempotencyKeyStore` implementation itself:
 
 ## ⚙️ Configuration reference
 
-The base exposes no options type. What a derived configuration must supply:
+**This package has no public API surface at all**, so it has no customisation reference in the
+sense the other pages on this site do: `IdempotencyRelationalStore<TContext>`,
+`IdempotencyDbContext`, `IdempotencyKeyEntity` and `IdempotencyKeyConfiguration` are every type it
+declares, and all four are `internal`. There is no options class, no `Add…` extension, and nothing
+a consuming application can name, configure, or subclass. Runtime behaviour is driven entirely by
+the core package's `IdempotencyOptions` — see the
+[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+
+What follows is the **internal implementation contract** for the in-repo provider packages that
+this package's `InternalsVisibleTo` list already names, reproduced here because that is the only
+audience this page has. None of it is available outside those assemblies.
+
+What a derived configuration must supply:
 
 | Member | Type | Purpose |
 |---|---|---|
 | `BodyColumnType` | `protected abstract string` | Provider column type for the response body — `nvarchar(max)` on SQL Server, `text` on PostgreSQL. |
 | `StatusCodeCheckConstraintSql` | `protected abstract string` | `CK_StatusCode_Valid` SQL, differing only in identifier quoting — `[StatusCode] BETWEEN 100 AND 599` vs `"StatusCode" BETWEEN 100 AND 599`. |
 
-Everything else is fixed by the shared mapping:
+Everything else is fixed by the shared mapping, and a derived provider cannot change it:
 
 | Column | Type / constraint | Notes |
 |---|---|---|
@@ -197,11 +209,18 @@ Everything else is fixed by the shared mapping:
 | `ContentType` | max 256, non-Unicode | MIME type, nullable |
 | `CreatedAt` / `ExpiresAt` | `DateTimeOffset` / `DateTimeOffset?` | `ExpiresAt` is indexed (`IX_IdempotencyKeys_ExpiresAt`) for cleanup queries |
 
-Runtime behaviour is driven by the core package's `IdempotencyOptions` — this store reads
-`InFlightReservationTimeout` for the reservation window; see the
-[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+Of the core package's options, the shared store itself reads only `InFlightReservationTimeout`
+(the reservation window on both the fresh-insert and reclaim paths). `Expiration`, the status-code
+window and every other option are applied by the endpoint filter before the store is ever called.
 
 ## 🧱 Where it fits
+
+![Workflow diagram of the shared check-and-reserve flow: a SELECT for an unexpired row either returns a duplicate or falls through to an INSERT of a 102 reservation row; the insert either wins outright or raises a provider unique violation, which is classified, and a still-live blocking row returns the winner's state while an expired one is reclaimed by a conditional UPDATE whose affected-row count picks a single winner.](../diagrams/idempotency-relational-reserve.svg)
+
+The two "Proceed" exits on the right are the only paths that let a caller run the protected
+handler, and each is reached through exactly one atomic step — the unique-index insert, or the
+conditional `UPDATE` whose affected-row count is `1`. Everything else converges on a duplicate
+answer.
 
 ```text
 DKNet.AspCore.Idempotency            core: IIdempotencyKeyStore, IdempotencyOptions, AddIdempotentKey<TStore>

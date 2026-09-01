@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One protected request against the Redis store: SET NX reservation, then replay cache",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1360,
+      820
+    ],
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Atomic step"
+        },
+        "return": {
+          "label": "Reply to the caller"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "filter",
+      "type": "external",
+      "label": "Endpoint filter",
+      "sublabel": "RequiredIdempotentKey()"
+    },
+    {
+      "id": "store",
+      "type": "backend",
+      "label": "IdempotencyRedisStore",
+      "sublabel": "internal IIdempotencyKeyStore"
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "StackExchange.Redis IDatabase"
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Endpoint handler",
+      "sublabel": "runs at most once per key"
+    }
+  ],
+  "segments": [
+    {
+      "from": 170,
+      "to": 432,
+      "label": "Check and reserve"
+    },
+    {
+      "from": 452,
+      "to": 538,
+      "label": "Run once"
+    },
+    {
+      "from": 558,
+      "to": 686,
+      "label": "Cache the response"
+    }
+  ],
+  "messages": [
+    {
+      "id": "check",
+      "from": "filter",
+      "to": "store",
+      "y": 190,
+      "label": "IsKeyProcessedAsync(keyInfo)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "get",
+      "from": "store",
+      "to": "redis",
+      "y": 234,
+      "label": "GET prefix + sha256(compositeKey)",
+      "note": "Only the lowercase hex SHA-256 digest of Scope:Method:Endpoint:Key reaches Redis, behind CachePrefix."
+    },
+    {
+      "id": "miss",
+      "from": "redis",
+      "to": "store",
+      "y": 278,
+      "label": "nil",
+      "variant": "return"
+    },
+    {
+      "id": "setnx",
+      "from": "store",
+      "to": "redis",
+      "y": 322,
+      "label": "SET key <102 reservation> NX, TTL InFlightReservationTimeout",
+      "variant": "emphasis",
+      "note": "Atomicity primitive. A losing caller re-reads the key: (true, null) while the 102 sentinel holds, (true, response) once the winner completed."
+    },
+    {
+      "id": "reserved",
+      "from": "redis",
+      "to": "store",
+      "y": 366,
+      "label": "OK, reservation held",
+      "variant": "return"
+    },
+    {
+      "id": "proceed",
+      "from": "store",
+      "to": "filter",
+      "y": 410,
+      "label": "(false, null)",
+      "variant": "return"
+    },
+    {
+      "id": "invoke",
+      "from": "filter",
+      "to": "handler",
+      "y": 474,
+      "label": "next(context)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "result",
+      "from": "handler",
+      "to": "filter",
+      "y": 518,
+      "label": "result",
+      "variant": "return"
+    },
+    {
+      "id": "mark",
+      "from": "filter",
+      "to": "store",
+      "y": 580,
+      "label": "MarkKeyAsProcessedAsync(keyInfo, response)",
+      "note": "Only reached when the status code is cacheable; otherwise the reservation is left to expire on its own."
+    },
+    {
+      "id": "set",
+      "from": "store",
+      "to": "redis",
+      "y": 624,
+      "label": "SET key <response>, TTL Expiration",
+      "variant": "emphasis",
+      "note": "Unconditional SET: the reservation is overwritten and the TTL becomes Expiration, four hours by default."
+    },
+    {
+      "id": "done",
+      "from": "store",
+      "to": "filter",
+      "y": 668,
+      "label": "cached",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "store",
+      "from": 185,
+      "to": 674,
+      "type": "backend"
+    },
+    {
+      "participant": "redis",
+      "from": 229,
+      "to": 630,
+      "type": "database"
+    },
+    {
+      "participant": "handler",
+      "from": 469,
+      "to": 524,
+      "type": "backend"
+    }
+  ]
+}

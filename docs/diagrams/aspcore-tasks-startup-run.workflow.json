@@ -1,0 +1,192 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "From registration to a finished batch of start-up background tasks",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Host / task step"
+        },
+        "security": {
+          "label": "Error isolation"
+        },
+        "external": {
+          "label": "Registration"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "registration",
+      "label": "Service registration"
+    },
+    {
+      "id": "host",
+      "label": "BackgroundJobHost"
+    },
+    {
+      "id": "failures",
+      "label": "Failed task",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "register",
+      "label": "Registration",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "startup",
+      "label": "Host start-up",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "run",
+      "label": "Run, then finish",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "register",
+    "addhost",
+    "start",
+    "scope",
+    "runall",
+    "finish"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "register"
+    ],
+    "allowedTerminals": [
+      "finish"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "register",
+      "lane": "registration",
+      "col": 0,
+      "type": "external",
+      "label": "Register the tasks",
+      "sublabel": "AddBackgroundJob or AddBackgroundJobFrom",
+      "tag": "scoped, de-duplicated by implementation type",
+      "width": 216
+    },
+    {
+      "id": "addhost",
+      "lane": "registration",
+      "col": 1,
+      "type": "backend",
+      "label": "AddHostedService",
+      "sublabel": "BackgroundJobHost, added once",
+      "width": 196
+    },
+    {
+      "id": "start",
+      "lane": "host",
+      "col": 2,
+      "type": "backend",
+      "label": "Generic host starts",
+      "sublabel": "logs \"Background job host started\"",
+      "width": 204
+    },
+    {
+      "id": "scope",
+      "lane": "host",
+      "col": 3,
+      "type": "backend",
+      "label": "One shared async scope",
+      "sublabel": "resolves every IBackgroundTask",
+      "tag": "not one scope per task",
+      "width": 204
+    },
+    {
+      "id": "runall",
+      "lane": "host",
+      "col": 4,
+      "type": "backend",
+      "label": "Task.WhenAll(RunAsync)",
+      "sublabel": "all tasks run concurrently",
+      "tag": "no ordering guarantee",
+      "width": 204
+    },
+    {
+      "id": "failed",
+      "lane": "failures",
+      "col": 4,
+      "type": "security",
+      "label": "Exception logged, swallowed",
+      "sublabel": "\"{TaskType} job failed\" at Error level",
+      "width": 216
+    },
+    {
+      "id": "finish",
+      "lane": "host",
+      "col": 5,
+      "type": "backend",
+      "label": "Scope disposed",
+      "sublabel": "logs \"Background job host finished\"",
+      "width": 204
+    }
+  ],
+  "edges": [
+    {
+      "id": "to-host",
+      "from": "register",
+      "to": "addhost",
+      "variant": "default"
+    },
+    {
+      "id": "to-start",
+      "from": "addhost",
+      "to": "start",
+      "variant": "emphasis"
+    },
+    {
+      "id": "to-scope",
+      "from": "start",
+      "to": "scope",
+      "variant": "default"
+    },
+    {
+      "id": "to-runall",
+      "from": "scope",
+      "to": "runall",
+      "label": "one scope, every task",
+      "variant": "emphasis"
+    },
+    {
+      "id": "task-throws",
+      "from": "runall",
+      "to": "failed",
+      "label": "task throws",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "isolated",
+      "from": "failed",
+      "to": "finish",
+      "label": "siblings still complete",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "all-returned",
+      "from": "runall",
+      "to": "finish",
+      "label": "all RunAsync returned",
+      "variant": "emphasis"
+    }
+  ]
+}

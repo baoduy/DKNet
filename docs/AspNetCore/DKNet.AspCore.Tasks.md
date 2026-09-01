@@ -94,6 +94,8 @@ satisfy it directly.
 
 ### `BackgroundJobHost` — how execution is sequenced and scoped
 
+![Workflow diagram: registering a task also adds BackgroundJobHost once; at host start-up the host opens one shared async scope, resolves every IBackgroundTask, runs them all concurrently through Task.WhenAll, logs and swallows any exception, and finally disposes the scope.](../diagrams/aspcore-tasks-startup-run.svg)
+
 Both registration methods route through a private `AddHost()` helper that calls
 `services.AddHostedService<BackgroundJobHost>()` — but only the first time; it checks whether a
 `BackgroundJobHost` hosted-service descriptor already exists on that `IServiceCollection` first, so
@@ -133,6 +135,26 @@ public sealed class ImportOrdersTask(IOrderImporter importer) : IBackgroundTask
 Whatever side effects the task performed *before* the throw are not rolled back — there is no
 automatic retry or compensation, so keep each `RunAsync` safe to have partially run (see
 [Gotchas & limits](#️-gotchas--limits)).
+
+## ⚙️ Configuration reference
+
+**There is no options type in this package** — no `Action<TOptions>` overload, no `appsettings.json`
+section, and nothing bound from configuration. That is provable from the public surface: the
+assembly exposes exactly two public types, `IBackgroundTask` and the `TaskSetups` registration
+class, and neither takes a settings object. The customisation surface is therefore the interface
+you implement and the two type/parameter slots the registration methods expose:
+
+| Knob | Kind | Default | Effect |
+|---|---|---|---|
+| `IBackgroundTask.RunAsync(CancellationToken)` | interface method you implement | none — required | The whole body of a start-up task. Returning completes it; throwing is caught, logged at `Error` as `{TaskFullTypeName} job failed`, and swallowed. |
+| `TJob` on `AddBackgroundJob<TJob>()` | type parameter, `where TJob : class, IBackgroundTask` | none — required | The single task type to register. Registered as `AddScoped<IBackgroundTask, TJob>()`, skipped when a descriptor for the same implementation type already exists. |
+| `assemblies` on `AddBackgroundJobFrom(Assembly[])` | `Assembly[]` | none — required, and not `params` | Every non-abstract class in these assemblies that implements `IBackgroundTask` is registered the same way `AddBackgroundJob<TJob>()` registers one. |
+| `cancellationToken` on `RunAsync` | `CancellationToken` | `default` in the signature; the host always passes its own | The token `BackgroundService.ExecuteAsync` receives on host shutdown. Nothing in the package shortens it — there is no per-task timeout. |
+
+There is deliberately no knob for ordering, concurrency limits, retries, or per-task scoping: the
+host resolves every registered task from one shared scope and runs them all through a single
+`Task.WhenAll`. If you need any of those, build them inside your `RunAsync`, or open a private
+scope as shown under [Where it fits](#-where-it-fits).
 
 ## 🧱 Where it fits
 
@@ -179,10 +201,14 @@ below.
 ## ⚠️ Gotchas & limits
 
 - **There is nothing to configure.** The package has no options type, no `appsettings.json`
-  binding, and no tunable timeouts or concurrency limits — the only inputs are which task types you
-  register and the `CancellationToken` the host passes to `RunAsync` on shutdown. If you need
-  throttling, ordering, or scheduling, build it into your task implementations (or reach for a
-  package designed for it) rather than expecting this one to grow the knob.
+  binding, and no tunable timeouts or concurrency limits — the only inputs are the ones listed
+  under [Configuration reference](#️-configuration-reference). If you need throttling, ordering, or
+  scheduling, build it into your task implementations (or reach for a package designed for it)
+  rather than expecting this one to grow the knob.
+- **The tasks do not block start-up.** `BackgroundJobHost` is a `BackgroundService`, so the host
+  reaches "application started" as soon as `ExecuteAsync` hits its first `await` — the first HTTP
+  request can be served while your seed task is still running. Do not treat a registered task as a
+  precondition for the first request.
 - **All tasks share one DI scope, running concurrently.** `BackgroundJobHost` resolves every
   `IBackgroundTask` from a single shared scope and runs them all at once with `Task.WhenAll` — it
   does **not** give each task its own scope. If two registered tasks depend on the same scoped
