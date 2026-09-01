@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using FluentResults;
 
@@ -24,6 +25,41 @@ public sealed record IdempotentKeyInfo
     ///     or <c>null</c> if the header was not present in the request.
     /// </value>
     public string? IdempotentKey { get; init; }
+
+    /// <summary>
+    ///     Gets a log/display-safe projection of <see cref="IdempotentKey" /> with all line-breaking and
+    ///     other control characters removed.
+    /// </summary>
+    /// <value>
+    ///     <see cref="IdempotentKey" /> with CR, LF, U+2028, U+2029, and every other C0/C1 control character
+    ///     stripped, or <see cref="string.Empty" /> when <see cref="IdempotentKey" /> is <c>null</c>.
+    /// </value>
+    /// <remarks>
+    ///     This projection is for logging and client-facing display only — it must never be used to compute
+    ///     <see cref="CompositeKey" /> or for storage/lookup, both of which continue to use the raw
+    ///     <see cref="IdempotentKey" />.
+    /// </remarks>
+    public string SafeKey
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(IdempotentKey)) return string.Empty;
+
+            var noNewLines = IdempotentKey
+                .Replace("\r\n", " ", StringComparison.Ordinal)
+                .Replace("\r", " ", StringComparison.Ordinal)
+                .Replace("\n", " ", StringComparison.Ordinal);
+
+            var builder = new StringBuilder(noNewLines.Length);
+            foreach (var c in noNewLines)
+            {
+                if (char.IsControl(c) || c == '\u2028' || c == '\u2029') continue;
+                builder.Append(c);
+            }
+
+            return builder.ToString();
+        }
+    }
 
     /// <summary>
     ///     Gets or initializes the endpoint route template or path from the HTTP request.
@@ -131,4 +167,13 @@ public sealed record IdempotentKeyInfo
     ///     </list>
     /// </remarks>
     public string CompositeKey => $"{Scope}:{Method}:{Endpoint}:{IdempotentKey ?? string.Empty}";
+
+    /// <summary>
+    ///     Returns a log/display-safe representation of this instance.
+    /// </summary>
+    /// <returns>
+    ///     A string containing <see cref="SafeKey" />, <see cref="Method" />, and <see cref="Endpoint" />.
+    ///     Never includes <see cref="Scope" /> or the raw <see cref="IdempotentKey" />.
+    /// </returns>
+    public override string ToString() => $"Key={SafeKey}, Method={Method}, Endpoint={Endpoint}";
 }

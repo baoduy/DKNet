@@ -77,7 +77,7 @@ internal sealed class IdempotencyEndpointFilter(
             logger.LogInformation(
                 "RequestId={RequestId}: Response cached. Key={Key}, StatusCode={StatusCode}, SerializedSize={Size}",
                 requestId,
-                keyInfo.IdempotentKey,
+                keyInfo.SafeKey,
                 statusCode,
                 serializedResult.Length);
         }
@@ -88,7 +88,7 @@ internal sealed class IdempotencyEndpointFilter(
                 "RequestId={RequestId}: Failed to serialize response for caching. Key={Key}, Type={ResponseType}. " +
                 "Marking as processed without caching result.",
                 requestId,
-                keyInfo.IdempotentKey,
+                keyInfo.SafeKey,
                 resultValue?.GetType().Name ?? "unknown");
         }
         catch (Exception ex)
@@ -98,7 +98,7 @@ internal sealed class IdempotencyEndpointFilter(
                 "RequestId={RequestId}: Unexpected error while caching response for idempotency key={Key}. " +
                 "Continuing without cache.",
                 requestId,
-                keyInfo.IdempotentKey);
+                keyInfo.SafeKey);
         }
     }
 
@@ -126,7 +126,7 @@ internal sealed class IdempotencyEndpointFilter(
                 "RequestId={RequestId}: Not caching response. StatusCode={StatusCode} is not configured for caching. Key={Key}",
                 requestId,
                 statusCode,
-                keyInfo.IdempotentKey);
+                keyInfo.SafeKey);
             return;
         }
 
@@ -171,7 +171,7 @@ internal sealed class IdempotencyEndpointFilter(
         logger.LogInformation(
             "RequestId={RequestId}: Duplicate request detected. Key={Key}, Strategy={Strategy}",
             requestId,
-            keyInfo.IdempotentKey,
+            keyInfo.SafeKey,
             _options.ConflictHandling);
 
         if (_options.ConflictHandling == IdempotentConflictHandling.ConflictResponse)
@@ -179,9 +179,9 @@ internal sealed class IdempotencyEndpointFilter(
             logger.LogWarning(
                 "RequestId={RequestId}: Returning 409 Conflict for duplicate request. Key={Key}",
                 requestId,
-                keyInfo);
+                keyInfo.SafeKey);
             return TypedResults.Problem(
-                $"The request with the same idempotent key `{keyInfo}` has already been processed.",
+                $"The request with the same idempotent key `{keyInfo.SafeKey}` has already been processed.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
@@ -190,16 +190,16 @@ internal sealed class IdempotencyEndpointFilter(
             logger.LogWarning(
                 "RequestId={RequestId}: Cached response metadata missing for idempotency key: {Key}",
                 requestId,
-                keyInfo.IdempotentKey);
+                keyInfo.SafeKey);
             return TypedResults.Problem(
-                $"The request with the same idempotent key `{keyInfo}` has already been processed.",
+                $"The request with the same idempotent key `{keyInfo.SafeKey}` has already been processed.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
         logger.LogInformation(
             "RequestId={RequestId}: Returning cached response for duplicate request. Key={Key}, StatusCode={StatusCode}",
             requestId,
-            keyInfo.IdempotentKey,
+            keyInfo.SafeKey,
             existingResult.response.StatusCode);
 
         return TypedResults.Text(
@@ -242,7 +242,7 @@ internal sealed class IdempotencyEndpointFilter(
         logger.LogDebug(
             "RequestId={RequestId}: New request detected, proceeding with processing. Key={Key}",
             requestId,
-            idempotencyKeyInfo.IdempotentKey);
+            idempotencyKeyInfo.SafeKey);
 
         // Process the request
         var result = await next(context).ConfigureAwait(false);
