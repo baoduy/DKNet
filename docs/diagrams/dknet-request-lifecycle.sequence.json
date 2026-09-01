@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One HTTP write request across the DKNet packages it touches",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      620
+    ],
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "Supporting call"
+        },
+        "emphasis": {
+          "label": "Main request path"
+        },
+        "dashed": {
+          "label": "Runs only when there are changes"
+        },
+        "return": {
+          "label": "Value handed back"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "client",
+      "type": "external",
+      "label": "HTTP client",
+      "sublabel": "retries with the same key"
+    },
+    {
+      "id": "endpoint",
+      "type": "frontend",
+      "label": "Endpoint",
+      "sublabel": "DKNet.AspCore.Extensions"
+    },
+    {
+      "id": "idem",
+      "type": "security",
+      "label": "Idempotency",
+      "sublabel": "DKNet.AspCore.Idempotency"
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "Key store",
+      "sublabel": "MsSql / Npgsql / Redis"
+    },
+    {
+      "id": "bus",
+      "type": "messagebus",
+      "label": "Bus + auto-save",
+      "sublabel": "DKNet.SlimBus.Extensions"
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Handler",
+      "sublabel": "Fluents.Requests.IHandler"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "DbContext",
+      "sublabel": "Hooks + Events"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 290,
+      "label": "Is this key already done?"
+    },
+    {
+      "from": 300,
+      "to": 430,
+      "label": "Handle, then save once"
+    },
+    {
+      "from": 440,
+      "to": 540,
+      "label": "Cache the response, reply"
+    }
+  ],
+  "messages": [
+    {
+      "id": "post",
+      "from": "client",
+      "to": "endpoint",
+      "y": 170,
+      "label": "POST with X-Idempotency-Key",
+      "variant": "emphasis"
+    },
+    {
+      "id": "filter",
+      "from": "endpoint",
+      "to": "idem",
+      "y": 206,
+      "label": "endpoint filter, before the route handler",
+      "note": "Added per route by .RequiredIdempotentKey(); the header name comes from IdempotencyOptions.IdempotencyHeaderKey."
+    },
+    {
+      "id": "check",
+      "from": "idem",
+      "to": "store",
+      "y": 242,
+      "label": "IsKeyProcessedAsync(keyInfo)"
+    },
+    {
+      "id": "unseen",
+      "from": "store",
+      "to": "idem",
+      "y": 278,
+      "label": "not processed",
+      "variant": "return",
+      "note": "A processed key short-circuits here and replays the cached response instead of reaching the handler."
+    },
+    {
+      "id": "send",
+      "from": "endpoint",
+      "to": "bus",
+      "y": 314,
+      "label": "Send(request)",
+      "variant": "emphasis",
+      "note": "The filter calls next(), which runs the route handler; a key that was already processed short-circuits here and replays the cached response."
+    },
+    {
+      "id": "handle",
+      "from": "bus",
+      "to": "handler",
+      "y": 350,
+      "label": "OnHandle(request, ct)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "work",
+      "from": "handler",
+      "to": "db",
+      "y": 386,
+      "label": "query and mutate entities",
+      "note": "The handler never calls SaveChangesAsync itself."
+    },
+    {
+      "id": "result",
+      "from": "handler",
+      "to": "bus",
+      "y": 422,
+      "label": "IResult<T>",
+      "variant": "return"
+    },
+    {
+      "id": "save",
+      "from": "bus",
+      "to": "db",
+      "y": 458,
+      "label": "auto-save runs SaveChangesAsync, hooks publish events",
+      "variant": "dashed",
+      "note": "Skipped when the result is a failure, so a failed command leaves nothing behind."
+    },
+    {
+      "id": "mark",
+      "from": "idem",
+      "to": "store",
+      "y": 494,
+      "label": "MarkKeyAsProcessedAsync for a cacheable status"
+    },
+    {
+      "id": "reply",
+      "from": "idem",
+      "to": "client",
+      "y": 530,
+      "label": "Response(): 201 Created or ProblemDetails",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "endpoint",
+      "from": 165,
+      "to": 494,
+      "type": "frontend"
+    },
+    {
+      "participant": "idem",
+      "from": 201,
+      "to": 530,
+      "type": "security"
+    },
+    {
+      "participant": "store",
+      "from": 237,
+      "to": 494,
+      "type": "database"
+    },
+    {
+      "participant": "bus",
+      "from": 309,
+      "to": 460,
+      "type": "messagebus"
+    },
+    {
+      "participant": "handler",
+      "from": 345,
+      "to": 384,
+      "type": "backend"
+    },
+    {
+      "participant": "db",
+      "from": 381,
+      "to": 460,
+      "type": "database"
+    }
+  ]
+}

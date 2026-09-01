@@ -3,6 +3,25 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "S3BlobService: how the AmazonS3Client is built on the first operation",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration"
+        },
+        "backend": {
+          "label": "Bootstrap step"
+        },
+        "security": {
+          "label": "Credential resolution"
+        },
+        "database": {
+          "label": "Cached AmazonS3Client"
+        },
+        "cloud": {
+          "label": "AWS S3 call"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "lanes": [

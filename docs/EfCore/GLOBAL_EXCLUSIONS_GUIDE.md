@@ -8,7 +8,9 @@ Global exclusions allow you to configure a centralized list of property names th
 
 ### Add the MSBuild property
 
-In your `.csproj` file, add the `DtoGeneratorExclusions` property with a comma or semicolon-separated list of property names:
+In your `.csproj` file, add the `DtoGeneratorExclusions` property with a comma- or semicolon-separated list of
+property names. Names are trimmed, so whitespace around a separator is fine, and matching is **case-sensitive**
+(the generator collects them into a `HashSet<string>` with the default ordinal comparer):
 
 ```xml
 <PropertyGroup>
@@ -32,7 +34,7 @@ That's it — no `CompilerVisibleProperty` item is needed in the consuming proje
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="1.0.0" />
+    <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="*" /> <!-- use the current version -->
   </ItemGroup>
 </Project>
 ```
@@ -113,6 +115,8 @@ generated payload narrowed by `DtoGeneratorExclusions` exactly like the table ab
 
 ```csharp
 // <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
+
+using DKNet.EfCore.Abstractions.Events;
 
 [RaisesEvent(EventOperations.Created)]
 public class Customer { /* ... */ }
@@ -240,6 +244,7 @@ Global exclusions are processed at **compile-time**, not runtime:
 
 ## Related Documentation
 
-- [DKNet.EfCore.DtoGenerator Main Documentation](./DKNet.EfCore.DtoGenerator.md)
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) — the package's full reference
+- [EF Core packages index](./README.md) — where this page sits in the family
 - [Source Generator Documentation](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
 - [MSBuild Properties](https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild-properties)

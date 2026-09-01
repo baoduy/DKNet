@@ -14,7 +14,8 @@ For comprehensive security information, please see our [Security Documentation](
 
 If you discover a security vulnerability, please:
 1. **Do NOT** open a public issue
-2. Email security details to the maintainers
+2. Report it privately through GitHub's private vulnerability reporting:
+   <https://github.com/baoduy/DKNet/security/advisories/new>
 3. Refer to our [complete security documentation](docs/Security.md) for detailed reporting instructions
 
 ---

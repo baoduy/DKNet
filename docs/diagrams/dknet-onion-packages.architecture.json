@@ -3,6 +3,28 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "DKNet package dependencies across the onion rings",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Presentation package"
+        },
+        "backend": {
+          "label": "Application and pipeline packages"
+        },
+        "database": {
+          "label": "Persistence package"
+        },
+        "messagebus": {
+          "label": "Domain-event dispatch"
+        },
+        "security": {
+          "label": "Opt-in cross-cutting concern"
+        },
+        "external": {
+          "label": "EF Core itself"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1500,

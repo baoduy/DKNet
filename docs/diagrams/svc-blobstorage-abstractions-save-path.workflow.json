@@ -3,6 +3,22 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "IBlobService.SaveAsync: shared validation, then provider-specific write",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Call and return value"
+        },
+        "backend": {
+          "label": "Shared base-class step"
+        },
+        "security": {
+          "label": "Validation and rejection"
+        },
+        "cloud": {
+          "label": "Provider backing store"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "lanes": [

@@ -1,150 +1,148 @@
 # DKNet Framework Documentation
 
-Welcome to the comprehensive documentation for the DKNet Framework - a powerful collection of .NET libraries designed to enhance and simplify enterprise application development using Domain-Driven Design (DDD) principles and Onion Architecture patterns.
+DKNet is a suite of independent .NET 10 NuGet packages for building enterprise applications around
+**Domain-Driven Design** and **Onion Architecture**. There is no framework to adopt wholesale and no single
+`AddDKNet()` call: each package registers itself and can be used on its own, so you pull in only what a given
+`DbContext`, API, or worker actually needs.
 
-## 📚 Quick Navigation
+28 packages are published to NuGet. Three more are source-only in this repository
+(`<IsPackable>false</IsPackable>`) and are documented anyway: `DKNet.EfCore.Repos` and
+`DKNet.EfCore.Repos.Abstractions` are retired, and `Aspire.Hosting.ServiceBus` is an Aspire shared project you
+reference from an AppHost directly.
 
-### 🚀 Getting Started
-- **[Getting Started Guide](Getting-Started.md)** - Installation, setup, and first steps
-- **[Configuration & Setup](Configuration.md)** - Detailed configuration options
-- **[Architecture Guide](Architecture.md)** - Understanding DDD and Onion Architecture
+## Quick Navigation
 
-### 📖 Core Documentation
-- **[API Reference](API-Reference.md)** - Index into the per-package API documentation
-- **[Examples & Recipes](Examples/README.md)** - Practical implementation examples
-- **[FAQ](FAQ.md)** - Frequently asked questions and troubleshooting
+### Getting Started
+- **[Getting Started Guide](Getting-Started.md)** — prerequisites, installation, and a first working setup
+- **[Configuration & Setup](Configuration.md)** — how configuration composes across packages
+- **[Architecture Guide](Architecture.md)** — the rings, what depends on what, and the two end-to-end paths
 
-### 📋 Project Information
-- **[Changelog](CHANGELOG.md)** - Version history and release notes
-- **[Migration Guide](Migration-Guide.md)** - Upgrading between versions
-- **[Contributing Guide](Contributing.md)** - How to contribute to the project
-- **[Testing Strategy](Testing-Strategy.md)** - Testing approach and coverage goals
-- **[Security Policy](Security.md)** - Security practices and reporting
+### Core Documentation
+- **[API Reference](API-Reference.md)** — index into the per-package API documentation
+- **[Examples & Recipes](Examples/README.md)** — runnable implementation examples
+- **[FAQ](FAQ.md)** — common questions and troubleshooting
 
-## 🏗️ Component Documentation
+### Project Information
+- **[Changelog](CHANGELOG.md)** — version history and release notes
+- **[Migration Guide](Migration-Guide.md)** — upgrading between versions and off retired packages
+- **[Contributing Guide](Contributing.md)** — how to contribute to the project
+- **[Testing Strategy](Testing-Strategy.md)** — test stack and coverage targets
+- **[Security Policy](Security.md)** — supported versions and vulnerability reporting
 
-This documentation is organized by functional areas to help you understand how each component contributes to the overall architecture:
+## Which package do I need?
 
-### 🔧 [Core Framework](./Core/README.md)
-Foundation, dependency-light utilities that sit at the bottom of the dependency graph.
+Sorted by the problem you have, not by namespace. Follow the link for the full API and gotchas.
 
-- [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) - Extension methods and reflection helpers — string/type/enum/DateTime/async-enumerable/property/attribute extensions, DI registration guards, and fluent assembly/type scanning
-- [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) - Cryptographically secure random string/char generation with digit and symbol quotas, for passwords, tokens, and other secrets
+| I need to… | Package |
+|---|---|
+| Give entities identity, audit fields, and a domain-event queue | [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) |
+| Have EF Core discover my `IEntityTypeConfiguration<T>` classes, apply global filters, seed data, use GUID v7 keys or SQL sequences | [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) |
+| Query and persist without hand-rolling a repository per entity | [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) |
+| Build a search/filter predicate whose criteria are only known at runtime | [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) — Dynamic Predicate Builder |
+| Run my own code before and after every `SaveChanges` | [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) |
+| Let a domain method raise an event that other code reacts to after the write commits | [DKNet.EfCore.Events](./EfCore/DKNet.EfCore.Events.md) |
+| Record who changed which field, with sensitive values redacted | [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) |
+| Stop one tenant or owner from reading another's rows | [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) |
+| Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) |
+| Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) |
+| Check for or create a table at runtime, whatever the relational provider | [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) |
+| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
+| Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) |
+| Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) |
+| Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) plus one store package |
+| Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) |
+| Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) plus one adapter |
+| Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) |
+| Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) |
+| Fill bracketed tokens in a template string from an object or a dictionary | [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) |
+| Generate a password, token, or other secret | [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) |
+| Scan assemblies for types, or reach for a string/enum/`DateTime`/reflection helper | [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) |
+| Give a local Aspire AppHost its own Azure Service Bus emulator | [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) (source-only) |
 
-### 🗄️ [Entity Framework Core Extensions](./EfCore/README.md)
-Comprehensive EF Core enhancements that implement the specification pattern, domain events, and data access abstractions.
+## Component Documentation
 
-- [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) - Entity base classes, domain-event contracts, and shared attributes
-- [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) - DI/wiring layer: entity configuration discovery, global query filters, data seeding, GUIDv7 keys, sequences
-- [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) - The specification pattern and `IRepositorySpec`, including the Dynamic Predicate Builder — the current, supported way to query and persist
-- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) - **Retired**, source-only generic repository, superseded by Specifications
-- [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) - **Retired**, source-only repository interfaces implemented by `DKNet.EfCore.Repos`
-- [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) - Before/after-SaveChanges interceptor pipeline
-- [DKNet.EfCore.Events](./EfCore/DKNet.EfCore.Events.md) - Domain event handling and dispatching
-- [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) - Audit trail of entity changes, with sensitive-data-aware redaction
-- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) - Row-level, ownership-based data authorization via global query filters
-- [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) - Transparent column-level encryption via an EF Core value converter
-- [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) - Compile-time DTO generation from entities via a Roslyn source generator
-- [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) - Small provider-aware `DbContext` helpers
+### [Core Framework](./Core/README.md)
+Foundation utilities that sit at the bottom of the dependency graph and pull in nothing else from DKNet.
 
-### 📨 [Messaging & CQRS](./Messaging/README.md)
-SlimMessageBus integration for implementing CQRS patterns and event-driven architecture.
+- [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) — framework-agnostic reflection, type, string, enum and DI-inspection helpers, plus fluent assembly/type scanning (`TypeExtractors`)
+- [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
 
-- [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) - SlimMessageBus extensions for EF Core
-- [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) - Roslyn incremental generator emitting CRUD vertical slices (requests, handlers, endpoints) from attributed entity members
+### [Entity Framework Core Extensions](./EfCore/README.md)
+Entity base classes, the specification pattern, and the `SaveChanges` interceptor pipeline everything else hangs off.
 
-### 🔧 [Service Layer](./Services/README.md)
-Application services including blob storage abstractions and data transformation utilities.
+- [DKNet.EfCore.Abstractions](./EfCore/DKNet.EfCore.Abstractions.md) — the persistence-agnostic vocabulary every other `DKNet.EfCore.*` package builds on: entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
+- [DKNet.EfCore.Extensions](./EfCore/DKNet.EfCore.Extensions.md) — the wiring layer: convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, and the `SnapshotContext` the save hooks are built on
+- [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) — filter, includes, and order-by as one reusable object, executed through a single non-generic `IRepositorySpec`, plus a runtime dynamic predicate builder. The current, supported way to query and persist
+- [DKNet.EfCore.Hooks](./EfCore/DKNet.EfCore.Hooks.md) — a pluggable before/after-`SaveChanges` interceptor pipeline: one shared interceptor per `DbContext` type plus a pair of interfaces you implement
+- [DKNet.EfCore.Events](./EfCore/DKNet.EfCore.Events.md) — dispatches domain events raised by entities during `SaveChanges`, so a domain method never references a publisher or a bus
+- [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) — captures a structured, field-level change record for every created, updated, or deleted entity and hands the batch to publishers you register
+- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) — row-level, ownership-based authorization: an automatic global query filter on reads plus `SaveChanges`-time owner stamping on writes
+- [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) — transparent, column-level encryption for `string` properties, applied at the database boundary via a standard `ValueConverter`
+- [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) — a Roslyn incremental source generator that emits DTO properties from an entity type at compile time
+- [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) — four `DbContext` extension methods for relational bookkeeping EF Core does not expose: table creation, connection access, table-name resolution, and table-existence checks
+- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) — **retired**, source-only generic repository, superseded by Specifications
+- [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) — **retired**, source-only repository interfaces implemented by `DKNet.EfCore.Repos`
 
-- [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) - File storage service abstractions
-- [DKNet.Svc.BlobStorage.AwsS3](./Services/DKNet.Svc.BlobStorage.AwsS3.md) - AWS S3 storage adapter
-- [DKNet.Svc.BlobStorage.AzureStorage](./Services/DKNet.Svc.BlobStorage.AzureStorage.md) - Azure Blob storage adapter
-- [DKNet.Svc.BlobStorage.Local](./Services/DKNet.Svc.BlobStorage.Local.md) - Local file system storage
-- [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) - Data transformation services
-- [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) - Documentation-grade PDF generation toolkit
-- [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) - Cryptographic helpers (AES, RSA, HMAC, hashing)
+### [Messaging & CQRS](./Messaging/README.md)
+SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source generator.
 
-### ☁️ [Aspire Integrations](./Aspire/README.md)
+- [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) — fluent command/query/event interfaces, automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
+- [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) — emits a whole CRUD vertical slice (request records, handlers, endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
+
+### [Service Layer](./Services/README.md)
+Application-level services with no dependency on the EF Core packages.
+
+- [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) — provider-agnostic `IBlobService` contract and shared model types
+- [DKNet.Svc.BlobStorage.AwsS3](./Services/DKNet.Svc.BlobStorage.AwsS3.md) — AWS S3 adapter that also works against S3-compatible services such as MinIO and Cloudflare R2
+- [DKNet.Svc.BlobStorage.AzureStorage](./Services/DKNet.Svc.BlobStorage.AzureStorage.md) — Azure Blob Storage adapter backed by `Azure.Storage.Blobs`
+- [DKNet.Svc.BlobStorage.Local](./Services/DKNet.Svc.BlobStorage.Local.md) — local-filesystem adapter that stores blobs under a configured root folder with path-traversal protection
+- [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) — explicitly-invoked cryptography: AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, and Base64/Base64URL helpers
+- [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) — converts HTML or Markdown into a PDF using headless Chromium (PuppeteerSharp) and Markdig, with page layout, header/footer, and margin control
+- [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) — fills bracketed tokens in a template string from plain objects or string dictionaries by reflection
+
+### [ASP.NET Core Utilities](./AspNetCore/README.md)
+Start-up orchestration, minimal-API glue, and idempotency for web and API workloads.
+
+- [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) — host-populated request members, discovered and versioned endpoint groups, verb-to-command mappers, generic list/read/delete endpoints, and `FluentResults`-to-`IResult` conversion
+- [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) — implement `IBackgroundTask`, register it, and one `BackgroundService` runs every registered task once when the host starts
+- [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) — an `IEndpointFilter` that recognises a client-supplied idempotency key, blocks the same operation from running twice, and replays or rejects the retry
+- [DKNet.AspCore.Idempotency.MsSqlStore](./AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) — SQL Server-backed key store
+- [DKNet.AspCore.Idempotency.NpgsqlStore](./AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) — PostgreSQL-backed key store
+- [DKNet.AspCore.Idempotency.RedisStore](./AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) — Redis-backed key store using `SET NX` reservation and native key expiry, with no schema or migrations
+- [DKNet.AspCore.Idempotency.Relational](./AspNetCore/DKNet.AspCore.Idempotency.Relational.md) — the shared EF Core building blocks the two relational stores derive from. Not referenced directly by application code
+
+### [Aspire Integrations](./Aspire/README.md)
 Infrastructure orchestration helpers for .NET Aspire AppHost projects.
 
-- [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) - Azure Service Bus resource builder extensions
+- [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) — adds the Azure Service Bus emulator as a resource inside an Aspire AppHost, so local work needs no shared cloud namespace. **Source-only**: it sets `<IsPackable>false</IsPackable>`, so reference the project from your AppHost rather than a NuGet package
 
-### ⚙️ [ASP.NET Core Utilities](./AspNetCore/README.md)
-Startup orchestration, minimal-API, and idempotency utilities for web/API workloads.
+## Architecture Overview
 
-- [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) - Application start-up background job orchestration
-- [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) - Minimal-API glue: claim-based request population, endpoint discovery/mapping, paged responses, Result/ProblemDetails conversion
-- [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) - Endpoint filter that makes minimal-API operations safe to retry, backed by a pluggable key store
-- [DKNet.AspCore.Idempotency.Relational](./AspNetCore/DKNet.AspCore.Idempotency.Relational.md) - Shared EF Core building blocks for a relational idempotency store
-- [DKNet.AspCore.Idempotency.MsSqlStore](./AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) - SQL Server-backed idempotency key store
-- [DKNet.AspCore.Idempotency.NpgsqlStore](./AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) - PostgreSQL-backed idempotency key store
-- [DKNet.AspCore.Idempotency.RedisStore](./AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) - Redis-backed idempotency key store, no schema/migrations required
+Every ring of the onion is a separate package, and every dependency points inward. The
+[Architecture Guide](Architecture.md) walks the same picture in detail, adds the package dependency graph,
+and traces a request and a domain event end to end.
 
-## 🏗️ Architecture Overview
+![The DKNet onion: presentation packages at the top, the application ring below them, the EF Core infrastructure ring in the middle, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages at the bottom. Every arrow is a project reference pointing inward.](./diagrams/dknet-layers.svg)
 
-The DKNet Framework is built around **Domain-Driven Design (DDD)** principles and implements the **Onion Architecture** pattern. Each component is designed to support specific layers of this architecture:
+### Key architectural principles
 
-![Diagram](https://raw.githubusercontent.com/baoduy/DKNet/main/Diagram.png)
+1. **Dependency inversion** — inner rings never reference outer ones; the arrows above are real `ProjectReference` entries in `src/`.
+2. **Separation of concerns** — one package, one responsibility, and no package that only exists to aggregate others.
+3. **Domain-centricity** — business rules live in entity methods; `DKNet.EfCore.Abstractions` is the only package a domain model has to see.
+4. **Event-driven where it helps** — domain events are queued on the entity and dispatched after the write commits, so a domain method never talks to a bus.
+5. **Specifications, not a repository per entity** — one injected `IRepositorySpec` serves every entity type; the entity comes from the specification passed to each call.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      🌐 Presentation Layer                       │
-│                     (API Controllers, UI)                       │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                 🎯 Application Layer                            │
-│              (Application Services, CQRS Handlers)              │
-│                                                                 │
-│  📨 DKNet.SlimBus.Extensions                                    │
-│  🔧 DKNet.Svc.* (Services)                                      │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                    💼 Domain Layer                              │
-│                (Entities, Aggregates, Domain Events)            │
-│                                                                 │
-│  🏗️ Core business logic and rules                               │
-│  📋 Domain Events via DKNet.EfCore.Events                       │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────┐
-│                   🗄️ Infrastructure Layer                       │
-│           (Data Access, External Services, Persistence)         │
-│                                                                 │
-│  🗃️ DKNet.EfCore.* (Repository patterns, Data access)           │
-│  🔒 DKNet.EfCore.DataAuthorization                               │
-│  ⚙️ DKNet.Fw.Extensions (Cross-cutting concerns)                │
-└─────────────────────────────────────────────────────────────────┘
-```
+## Getting started
 
-### Key Architectural Principles
+1. **Pick the packages you need** — start from the *Which package do I need?* table above.
+2. **Read the ring it lives in** — the [Architecture Guide](Architecture.md) explains what a package can and cannot depend on.
+3. **Wire it up** — [Configuration & Setup](Configuration.md) covers the four registration conventions the packages share.
+4. **Copy a working example** — [Examples & Recipes](Examples/README.md), or the SlimBus.ApiEndpoints template in the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository.
 
-1. **Dependency Inversion**: Inner layers don't depend on outer layers
-2. **Separation of Concerns**: Each component has a single, well-defined responsibility
-3. **Domain-Centricity**: Business logic is isolated in the domain layer
-4. **Event-Driven Architecture**: Domain events enable loose coupling between bounded contexts
-5. **Repository Pattern**: Abstracts data access and enables testability
+## Contributing to documentation
 
-## 🚀 Getting Started
+Corrections and additions are welcome. Open an issue describing the problem, or send a pull request that
+follows the structure and voice of the surrounding pages — see the [Contributing Guide](Contributing.md).
 
-To get started with the DKNet Framework:
-
-1. **Choose Your Components**: Review the documentation for each component to understand which ones fit your needs
-2. **Review Architecture Patterns**: Understand how each component fits into the DDD/Onion architecture
-3. **Follow Implementation Guides**: Each component includes detailed usage examples and best practices
-4. **Explore Templates**: Check out the [SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet/tree/dev/z_Templates/SlimBus.ApiEndpoints) for a complete reference implementation
-
-## 🤝 Contributing to Documentation
-
-We welcome contributions to improve this documentation! If you find areas that need clarification or have suggestions for additional content, please:
-
-1. Open an issue describing the documentation improvement needed
-2. Submit a pull request with your proposed changes
-3. Follow the existing documentation structure and style
-
----
-
-> 💡 **Tip**: This documentation is designed to be published as GitHub Pages were generated by the 'copilot' 100%. 
-> If any feedback please raise an issue in the [DKNet repository](https://github.com/baoduy/DKNet).
-> Each section provides comprehensive guidance on implementing DDD and Onion Architecture patterns using the DKNet Framework components.
+Every claim on these pages should be traceable to `src/`, a test, or a config file. If you find one that
+is not, that is a bug worth reporting in the [DKNet repository](https://github.com/baoduy/DKNet).

@@ -3,6 +3,22 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "How RandomCreators fills a string and where each character comes from",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Quota fill order"
+        },
+        "security": {
+          "label": "Rejected argument, then shuffle"
+        },
+        "database": {
+          "label": "Returned value"
+        },
+        "default": {
+          "label": "Second quota, then letters"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1080,

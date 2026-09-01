@@ -3,6 +3,22 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "LocalBlobService: turning a blob name into a path inside RootFolder",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Incoming blob name"
+        },
+        "backend": {
+          "label": "Path normalisation step"
+        },
+        "security": {
+          "label": "Escape check and rejection"
+        },
+        "database": {
+          "label": "File system result"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "lanes": [

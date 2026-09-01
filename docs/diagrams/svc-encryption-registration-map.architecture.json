@@ -3,6 +3,25 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "DKNet.Svc.Encryption: which registration gives you which service",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration call"
+        },
+        "backend": {
+          "label": "Hashing service"
+        },
+        "security": {
+          "label": "Key-bearing cipher"
+        },
+        "external": {
+          "label": "Obsolete AES-CBC pair"
+        },
+        "database": {
+          "label": "Static helper, no registration"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "layout": {

@@ -3,6 +3,22 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "AzureStorageBlobService: client resolution and SAS signing",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration"
+        },
+        "backend": {
+          "label": "Bootstrap step"
+        },
+        "security": {
+          "label": "Client source and SAS signing"
+        },
+        "cloud": {
+          "label": "Azure Blob Storage call"
+        }
+      }
+    },
     "quality_profile": "showcase"
   },
   "lanes": [

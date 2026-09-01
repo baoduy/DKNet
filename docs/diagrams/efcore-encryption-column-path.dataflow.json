@@ -3,6 +3,22 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "The path an [Encrypted] property takes to the column and back",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Encrypted round trip"
+        },
+        "security": {
+          "label": "Key material and failures"
+        },
+        "database": {
+          "label": "Stored ciphertext"
+        },
+        "default": {
+          "label": "Key supplied at model build"
+        }
+      }
+    },
     "quality_profile": "showcase",
     "viewBox": [
       1080,

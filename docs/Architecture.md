@@ -3,19 +3,22 @@
 This guide explains the architectural principles behind the DKNet Framework, and how they map onto its actual
 packages and types — every type and API name below is real and grep-verified against `src/`, not illustrative.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Architectural Overview](#architectural-overview)
+- [Which package owns which concern](#which-package-owns-which-concern)
+- [Package dependencies](#package-dependencies)
 - [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
 - [Onion Architecture](#onion-architecture)
 - [CQRS via DKNet.SlimBus.Extensions](#cqrs-via-dknetslimbusextensions)
-- [Event-Driven Architecture](#event-driven-architecture)
+- [A request end to end](#a-request-end-to-end)
+- [A domain event end to end](#a-domain-event-end-to-end)
 - [Specification Pattern](#specification-pattern)
 - [Cross-Cutting Concerns](#cross-cutting-concerns)
 
 ---
 
-## 🏗️ Architectural Overview
+## Architectural Overview
 
 DKNet Framework is a suite of independent .NET NuGet packages built around **Domain-Driven Design (DDD)** and the
 **Onion Architecture** pattern. Rather than a single application skeleton, DKNet expresses these patterns at
@@ -23,17 +26,59 @@ DKNet Framework is a suite of independent .NET NuGet packages built around **Dom
 only what it needs and can swap an implementation (a blob provider, an idempotency store) without touching domain
 code.
 
-![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks.](./diagrams/dknet-onion-packages.svg)
+![The DKNet onion: the presentation ring holds the DKNet.AspCore packages, the application ring holds SlimBus.Extensions and the Svc adapters, the infrastructure ring holds the EF Core packages, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages sit at the centre. Every arrow is a project reference pointing inward.](./diagrams/dknet-layers.svg)
 
-The rings above are packages, and every arrow is a real project reference in `src/`: dependencies only ever point
-inward, toward `DKNet.EfCore.Abstractions`. `DKNet.Svc.*` (blob storage, encryption, PDF, transformation) sits in the
-application ring alongside `DKNet.SlimBus.Extensions` but has no dependency on the EF Core rings at all, which is why
-it carries no arrow here. `DKNet.EfCore.Encryption` is likewise absent: it attaches to the `DbContext` as a value
-converter rather than through the hook pipeline.
+Three packages sit deliberately outside those rings:
+
+- `DKNet.EfCore.Encryption` attaches to the model as an EF Core `ValueConverter`, not through the hook pipeline.
+- `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` are Roslyn generators: they run at compile time and
+  ship no runtime service.
+- `Aspire.Hosting.ServiceBus` configures an Aspire AppHost, not the application under it.
 
 ---
 
-## 🎯 Domain-Driven Design (DDD)
+## Which package owns which concern
+
+Each row is one concern and the single package responsible for it. Nothing here is shared between two packages,
+and no package exists only to aggregate others.
+
+| Concern | Owner | Attaches via |
+|---|---|---|
+| Entity identity, audit fields, domain-event queue | [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) | base classes you derive from |
+| Model build: configuration discovery, global filters, seeding, GUID v7 keys, sequences | [`DKNet.EfCore.Extensions`](./EfCore/DKNet.EfCore.Extensions.md) | `UseAutoConfigModel<TContext>()` on `DbContextOptionsBuilder` |
+| Querying and persistence | [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo<TDbContext>()` |
+| Running code around `SaveChanges` | [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) | `AddDbContextWithHook<TDbContext>()` |
+| Dispatching domain events | [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md) | a hook, registered by `AddEventPublisher<TDbContext, TImpl>()` |
+| Field-level change history | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) | a hook, registered by `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
+| Row-level ownership | [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) | a global query filter plus a hook, registered by `AddDataOwnerProvider<TDbContext, TProvider>()` |
+| Column encryption | [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) | a `ValueConverter` on the model |
+| DTO shapes | [`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) | compile time only |
+| Command/query dispatch and automatic save | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor<TDbContext>()` |
+| Forwarding domain events onto the bus | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEventPublisher<TDbContext>()` |
+| HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](./AspNetCore/DKNet.AspCore.Extensions.md) | `UseEndpointConfigs()` and `.Response()` |
+| Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md) plus one store | `.RequiredIdempotentKey()` on the route |
+| Start-up work | [`DKNet.AspCore.Tasks`](./AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob<TJob>()` |
+| Files, PDFs, template tokens, standalone cryptography | [`DKNet.Svc.*`](./Services/README.md) | its own `Add*` method; none of them touch EF Core |
+| Type scanning and framework-agnostic helpers | [`DKNet.Fw.Extensions`](./Core/DKNet.Fw.Extensions.md) | plain static methods, no registration |
+
+There is no `DKNetOptions` and no single aggregator — see [Configuration & Setup](Configuration.md) for the four
+registration conventions these methods fall into.
+
+---
+
+## Package dependencies
+
+![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks.](./diagrams/dknet-onion-packages.svg)
+
+Every arrow is a real project reference in `src/`: dependencies only ever point inward, toward
+`DKNet.EfCore.Abstractions`. `DKNet.Svc.*` (blob storage, encryption, PDF, transformation) sits in the
+application ring alongside `DKNet.SlimBus.Extensions` but has no dependency on the EF Core rings at all, which is
+why it carries no arrow here. `DKNet.EfCore.Encryption` is likewise absent: it attaches to the `DbContext` as a
+value converter rather than through the hook pipeline.
+
+---
+
+## Domain-Driven Design (DDD)
 
 DDD focuses modeling on the core business domain. DKNet supports this with rich, event-raising entities rather than
 anemic data bags — see [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) for the full contract
@@ -91,7 +136,7 @@ behavior, and let the auto-save interceptor persist the result.
 
 ---
 
-## 🧅 Onion Architecture
+## Onion Architecture
 
 Dependencies always flow inward toward the domain. DKNet expresses this at the package level, not via a single
 application project:
@@ -115,7 +160,7 @@ application code.
 
 ---
 
-## ⚡ CQRS via DKNet.SlimBus.Extensions
+## CQRS via DKNet.SlimBus.Extensions
 
 [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) is DKNet's CQRS pipeline, built on
 [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) rather than MediatR — it is lighter (no reflection-heavy
@@ -149,21 +194,57 @@ surface (`INoResponse`, `IHandler<TRequest>`, request/response variants) and que
 
 ---
 
-## 🔄 Event-Driven Architecture
+## A request end to end
 
-Domain events (raised via `AddEvent(...)` on `Entity`/`AuditedEntity`) enable loose coupling between bounded
-contexts. [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md) dispatches them automatically as part of the
-[`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) before/after-SaveChanges pipeline — application code never
-calls a dispatcher directly. `[RaisesEvent]` attributes on an entity can additionally declare events raised
-automatically on Created/Updated/Deleted, with optional property narrowing (see
-[`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) for the source-generator side of that).
+Nothing in DKNet chains the packages together for you — each one attaches at a different extension point. This is
+what a retry-safe write request touches, in order, when all of them are wired up:
 
-If you want domain events forwarded onto the message bus (rather than only handled in-process), add
-`AddSlimBusEventPublisher<TDbContext>()` from `DKNet.SlimBus.Extensions`.
+![Sequence diagram of one HTTP write request: the client posts with an idempotency key, the endpoint filter checks the key store, the route handler sends the request onto the bus, the handler mutates entities, the auto-save interceptor saves and the hooks publish events, and the filter caches the response before replying.](./diagrams/dknet-request-lifecycle.svg)
+
+Three properties follow from that ordering, and they are the reason the packages compose rather than collide:
+
+- **The idempotency filter runs outside everything else.** It is an `IEndpointFilter`, so a key that has already
+  been processed replays the cached response without the bus, the handler, or the `DbContext` ever being reached.
+- **The handler owns no persistence decision.** It mutates tracked entities and returns an `IResult<T>`; the
+  auto-save interceptor calls `SaveChangesAsync` only for a successful `Fluents.Requests` write, so a failed
+  command leaves nothing behind and needs no rollback code.
+- **Hooks and events run inside that save.** By the time the handler's result reaches the endpoint, the audit rows
+  are written and the domain events are published — there is no second phase to coordinate.
+
+For the SlimBus interceptor chain in isolation (including where your own `IRequestHandlerInterceptor`
+implementations sit relative to auto-save), see the sequence diagram on the
+[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) page.
 
 ---
 
-## 📊 Specification Pattern
+## A domain event end to end
+
+Domain events are the one DKNet feature that spans four packages, so it is worth following a single event all the
+way from the domain method that raises it to the consumer that handles it:
+
+![Data-flow diagram of the domain-event path: an entity method queues an event and a [RaisesEvent] declaration is matched before the save, SaveChangesAsync commits, the after-save hook drains the queue and maps declared rules through IMapper, then every IEventPublisher receives the list and the bus publisher forwards each event to its consumer.](./diagrams/dknet-domain-event-path.svg)
+
+The parts worth knowing before you rely on it:
+
+- **Two ways in.** `AddEvent(instance)` queues a pre-built event object. `AddEvent<TEvent>()` and the
+  `[RaisesEvent]` attribute instead map the entity onto the event type, so both require an `IMapper` registration —
+  without one, the save throws `EventException` rather than silently dropping the event.
+- **`[RaisesEvent]` is evaluated before the save, published after it.** Property narrowing
+  (`[RaisesEvent(EventOperations.Updated, Properties = [...])]`) reads `EntityEntry.Property(...).IsModified`,
+  which is only meaningful before `SaveChanges` completes. Two rules naming the same payload for the same
+  operation raise it once.
+- **Nothing is published until the write succeeds.** Collection happens in the before-save hook, publishing in the
+  after-save hook, so a failed save publishes nothing.
+- **Publisher failures are logged, not rethrown.** A publisher that throws does not fail the save — the row is
+  committed and that event is lost. Treat in-process publishing as best-effort, and use a durable transport if a
+  consumer must not miss an event.
+- **In-process by default, on the bus by opt-in.** `AddEventPublisher<TDbContext, TImpl>()` registers your own
+  publisher; `AddSlimBusEventPublisher<TDbContext>()` adds one that forwards each event onto SlimMessageBus, copying
+  an `IEventItem`'s `AdditionalData` onto the message as case-insensitive headers.
+
+---
+
+## Specification Pattern
 
 [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) — not a hand-rolled `IRepository<T>` — is
 the current, supported way to query and persist through a `DbContext`. `IRepositorySpec` is not generic over the
@@ -181,14 +262,34 @@ Its signature feature is the **Dynamic Predicate Builder**, for building type-sa
 at compile time:
 
 ```csharp
-var predicate = PredicateBuilder.New<Product>()
-    .And(p => p.IsActive)
-    .DynamicAnd(b => b.With("Price", FilterOperations.GreaterThan, 100m));
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Dynamics;
+using DKNet.EfCore.Specifications.Extensions;
+using LinqKit;
 
-var results = await db.Products.AsExpandable().Where(predicate).ToListAsync();
+public sealed class ProductSearchSpec : Specification<Product>
+{
+    public ProductSearchSpec(decimal? minPrice)
+    {
+        var predicate = CreatePredicate(p => p.IsActive);   // ExpressionStarter<Product>
+
+        if (minPrice is not null)
+            predicate = predicate.DynamicAnd(nameof(Product.Price), Ops.GreaterThanOrEqual, minPrice);
+
+        WithFilter(predicate);
+    }
+}
+
+// One injected IRepositorySpec, any entity type:
+var results = await repo.ToListAsync(new ProductSearchSpec(100m), cancellationToken);
 ```
 
-`.AsExpandable()` is mandatory — LinqKit cannot translate the predicate without it.
+The operations enum is `Ops` (in `DKNet.EfCore.Specifications.Dynamics`), and `DynamicAnd`/`DynamicOr` take the
+property name, the operation, and the value directly — there is no fluent sub-builder. `.AsExpandable()` is **not**
+something you add when querying through `IRepositorySpec`: `RepositorySpec<TDbContext>.Query<TEntity>` already calls
+it before applying the specification. You only need it by hand when you build such a predicate and run it against a
+raw `DbSet`/`IQueryable` yourself, bypassing the repository — LinqKit cannot expand the predicate into SQL without
+it.
 
 `DKNet.EfCore.Repos` / `DKNet.EfCore.Repos.Abstractions` (the older generic-repository packages) are retired and
 superseded by Specifications; see
@@ -196,10 +297,10 @@ superseded by Specifications; see
 
 ---
 
-## 🔧 Cross-Cutting Concerns
+## Cross-Cutting Concerns
 
-Audit, encryption, and authorization attach as opt-in SaveChanges interceptors on the same `DbContext`, rather than
-leaking into domain or application code:
+Audit, encryption, and authorization attach as opt-in interceptors on the same `DbContext`, rather than leaking
+into domain or application code:
 
 - [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity changes, with
   `[SensitiveData]`-aware redaction.
@@ -208,16 +309,16 @@ leaking into domain or application code:
 - [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF
   Core value converter (independent of the hook pipeline).
 
-Each registers against the same [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) pipeline
-(`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that `DKNet.EfCore.Events` uses, and each is wired in independently via
-its own DI extension — there is no single "cross-cutting concerns" package to opt into.
+The first two register against the same [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) pipeline
+(`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that `DKNet.EfCore.Events` uses, and each is wired in independently
+via its own DI extension — there is no single "cross-cutting concerns" package to opt into.
 
 ---
 
-## 📖 Related Documentation
+## Related Documentation
 
-- **[Getting Started](Getting-Started.md)** - Quick start guide
-- **[Configuration](Configuration.md)** - Setup and configuration
-- **[Examples](Examples/README.md)** - Practical implementations
-- **[API Reference](API-Reference.md)** - Detailed API documentation
-- **[Testing Strategy](Testing-Strategy.md)** - Test stack and coverage targets
+- **[Getting Started](Getting-Started.md)** — prerequisites and a first working setup
+- **[Configuration](Configuration.md)** — the registration conventions these packages share
+- **[Examples](Examples/README.md)** — runnable implementations
+- **[API Reference](API-Reference.md)** — index into the per-package API documentation
+- **[Testing Strategy](Testing-Strategy.md)** — test stack and coverage targets

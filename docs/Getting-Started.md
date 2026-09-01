@@ -1,140 +1,167 @@
-# Getting Started with DKNet Framework
+# Getting Started with DKNet
 
-Welcome to DKNet Framework! This guide will help you get started with the comprehensive .NET framework designed to enhance enterprise application development using Domain-Driven Design (DDD) principles.
+DKNet is not a framework you adopt wholesale — it is 28 independent NuGet packages. Getting started means
+picking the two or three you need and wiring them up. This page covers the prerequisites, the smallest setup
+that actually runs, and where to go next.
 
-## 📋 Prerequisites
+## Prerequisites
 
-- **.NET 10.0 SDK** or later
-- **Visual Studio 2022** (17.13+), **Visual Studio Code**, or **JetBrains Rider**
-- **SQL Server** or **SQL Server LocalDB** (for EF Core features)
-- Basic understanding of **Domain-Driven Design** concepts
+- **.NET 10.0 SDK** — every package you reference targets `net10.0` (the two Roslyn source generators,
+  `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators`, target `netstandard2.0` so the compiler can load
+  them — that does not change what your app targets), and `src/global.json` pins SDK `10.0.0` with
+  `rollForward: latestMajor`.
+- **Visual Studio 2022** (17.13+), **Visual Studio Code**, or **JetBrains Rider**.
+- A **relational database** if you use the EF Core packages. The samples below use SQL Server; the packages
+  themselves are provider-agnostic apart from `DKNet.EfCore.Relational.Helpers` and the two relational
+  idempotency stores.
+- Working knowledge of EF Core. Familiarity with DDD helps, but no package requires it.
 
-## 🚀 Quick Start
+## Quick start
 
-### 1. Installation
+### 1. Install what you need
 
-Choose the packages you need based on your requirements:
+The [Which package do I need?](README.md#which-package-do-i-need) table maps problems to packages. A typical
+DDD-style API starts with four:
 
 ```bash
-# Core Framework Extensions
-dotnet add package DKNet.Fw.Extensions
+# Entity base classes and the domain-event contracts
+dotnet add package DKNet.EfCore.Abstractions
 
-# Entity Framework Core Extensions (full suite)
+# Entity configuration discovery, global query filters, seeding, GUID v7 keys
 dotnet add package DKNet.EfCore.Extensions
-dotnet add package DKNet.EfCore.Repos
-dotnet add package DKNet.EfCore.Hooks
 
-# Messaging & CQRS
+# Querying and persistence through IRepositorySpec
+dotnet add package DKNet.EfCore.Specifications
+
+# CQRS handlers with automatic SaveChanges
 dotnet add package DKNet.SlimBus.Extensions
-
-# Blob Storage Services
-dotnet add package DKNet.Svc.BlobStorage.Abstractions
-# Choose your storage provider:
-dotnet add package DKNet.Svc.BlobStorage.AzureStorage
-# OR
-dotnet add package DKNet.Svc.BlobStorage.AwsS3
-# OR
-dotnet add package DKNet.Svc.BlobStorage.Local
 ```
 
-### 2. Project Template (Recommended)
+Add more as the need appears — nothing above depends on the others being present, and no package needs a
+companion "core" package.
 
-For a complete reference implementation, use the SlimBus.ApiEndpoints template from the [DKNet.Templates](https://github.com/baoduy/DKNet.Templates) repository:
+> `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are **retired and never published to NuGet**
+> (`<IsPackable>false</IsPackable>`). `dotnet add package` will not find them. Use `DKNet.EfCore.Specifications`.
 
-```bash
-# Clone the templates repository
-git clone https://github.com/baoduy/DKNet.Templates.git
-cd DKNet.Templates
+### 2. Define an entity
 
-# Restore and run
-dotnet restore
-dotnet run --project SlimBus.Api
-```
-
-### 3. Basic Setup
-
-Here's a minimal setup for a new project using DKNet:
+Derive from `AuditedEntity` (Guid-keyed, with created/updated tracking and a domain-event queue) or from plain
+`Entity` if you do not want the audit fields. Change state through methods, not public setters:
 
 ```csharp
-using DKNet.Fw.Extensions;
-using DKNet.EfCore.Extensions;
+using DKNet.EfCore.Abstractions.Entities;
+
+public class Product : AuditedEntity
+{
+    private Product() { } // EF Core
+
+    public static Product Create(string name, decimal price, string createdBy)
+    {
+        var product = new Product { Name = name, Price = price, IsActive = true };
+        product.SetCreatedBy(createdBy);
+        return product;
+    }
+
+    public string Name { get; private set; } = string.Empty;
+    public decimal Price { get; private set; }
+    public bool IsActive { get; private set; }
+
+    public void Deactivate(string updatedBy)
+    {
+        IsActive = false;
+        SetUpdatedBy(updatedBy);
+    }
+}
+```
+
+### 3. Wire it up
+
+`AddDbContextWithHook<TDbContext>` registers the `DbContext` and the shared hook interceptor in one call;
+`UseAutoConfigModel<TContext>()` is a `DbContextOptionsBuilder<TContext>` extension, so it goes here rather than
+in `OnModelCreating`:
+
+```csharp
+using DKNet.EfCore.Hooks;          // AddDbContextWithHook
+using DKNet.EfCore.Specifications; // AddSpecRepo
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add DKNet services
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContextWithHook<AppDbContext>(options => options
+    .UseSqlServer(builder.Configuration.GetConnectionString("Default")!)
+    // Discovers every IEntityTypeConfiguration<T> in AppDbContext's assembly
+    .UseAutoConfigModel<AppDbContext>());
 
+// One IRepositorySpec serves every entity type in the context
 builder.Services.AddSpecRepo<AppDbContext>();
 
 var app = builder.Build();
-
-// Configure pipeline
-app.UseRouting();
-app.MapControllers();
-
 app.Run();
 ```
 
-## 🏗️ Architecture Overview
+`AddDbContextWithHook` is only needed when something hooks into `SaveChanges` — domain events, audit logs, or
+ownership stamping. If none of those are in play, a plain `AddDbContext<AppDbContext>` works and
+`UseAutoConfigModel<AppDbContext>()` still applies.
 
-DKNet follows the **Onion Architecture** pattern with clear separation of concerns:
+### 4. Query through a specification
 
+A `Specification<TEntity>` is configured from its constructor and carries the filter, includes, and ordering as
+one reusable object:
+
+```csharp
+using DKNet.EfCore.Specifications.Definitions;
+using DKNet.EfCore.Specifications.Extensions;
+using DKNet.EfCore.Specifications.Repositories;
+
+public sealed class ActiveProductsSpec : Specification<Product>
+{
+    public ActiveProductsSpec()
+    {
+        WithFilter(p => p.IsActive);
+        AddOrderBy(p => p.Name);
+    }
+}
+
+public sealed class Catalogue(IRepositorySpec repo)
+{
+    public Task<IList<Product>> ActiveAsync(CancellationToken cancellationToken = default) =>
+        repo.ToListAsync(new ActiveProductsSpec(), cancellationToken);
+}
 ```
-🌐 Presentation Layer (API Controllers, UI)
-    ↓
-🎯 Application Layer (Services, CQRS Handlers)
-    ↓
-💼 Domain Layer (Entities, Business Logic)
-    ↓
-🗄️ Infrastructure Layer (Data Access, External Services)
-```
 
-### Modern Language Features
+## How the packages fit together
 
-DKNet leverages the latest **C# 14** features for improved performance and developer experience:
-- **Params collections** for flexible method parameters
-- **Enhanced pattern matching** for cleaner business logic
-- **Primary constructors** in domain entities for concise code
-- **Lock object improvements** for better concurrency
+Every ring of the onion is a separate package and every dependency points inward. The
+[Architecture Guide](Architecture.md) has the full picture, including the package dependency graph and two
+end-to-end walkthroughs (an HTTP request and a domain event):
 
-## 📚 Next Steps
+![The DKNet onion: presentation packages on top, the application ring below, the EF Core infrastructure ring in the middle, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages at the centre.](./diagrams/dknet-layers.svg)
 
-1. **[Choose Your Components](README.md)** - Review available packages
-2. **[Architecture Guide](Architecture.md)** - Understand DDD/Onion patterns
-3. **[Configuration](Configuration.md)** - Setup and configuration options
-4. **[Examples](Examples/README.md)** - Practical implementation examples
-5. **[API Reference](API-Reference.md)** - Detailed API documentation
+## Next steps
 
-## 🎯 Common Use Cases
+1. **[Which package do I need?](README.md#which-package-do-i-need)** — pick the rest by problem.
+2. **[Architecture Guide](Architecture.md)** — what a package may depend on, and how a request and an event
+   travel through the suite.
+3. **[Configuration & Setup](Configuration.md)** — the four registration conventions the packages share, and
+   which page owns each package's own option table.
+4. **[Examples & Recipes](Examples/README.md)** — a CRUD slice, domain events, specifications, multi-tenancy,
+   blob storage.
+5. **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** — a complete reference
+   implementation in the DKNet.Templates repository.
 
-### Building a CRUD API with CQRS
-Perfect for implementing clean architecture with command/query separation.
+## Common starting points
 
-### Domain Event Handling
-Implement event-driven architecture with built-in domain events.
+| Goal | Read next |
+|---|---|
+| A CRUD API with commands and queries separated | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md), then [Examples](Examples/README.md#complete-crud-api-with-cqrs) |
+| Side effects that run after a write commits | [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md), then [A domain event end to end](Architecture.md#a-domain-event-end-to-end) |
+| Row-level isolation between tenants or owners | [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md), then [Examples](Examples/README.md#multi-tenant-application) |
+| A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) plus one store package |
+| Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) |
 
-### Data Authorization
-Row-level security and data filtering based on user context.
+## Getting help
 
-### Multi-tenancy Support
-Built-in support for tenant-aware applications.
-
-## 💡 Tips for Success
-
-1. **Start Small**: Begin with core extensions and add components as needed
-2. **Follow Patterns**: Use the SlimBus template as a reference
-3. **Test-Driven**: Leverage TestContainers for integration tests
-4. **Stay Current**: Follow semantic versioning for updates
-
-## 🤝 Getting Help
-
-- **Documentation**: [Complete Documentation](README.md)
+- **Documentation**: [Documentation hub](README.md)
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
 - **Contributing**: [Contributing Guide](Contributing.md)
-
----
-
-> 💡 **Pro Tip**: The SlimBus template provides a complete working example of all DKNet components working together. Use it as your starting point!

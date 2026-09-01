@@ -11,6 +11,9 @@
     ],
     "legend": {
       "entries": {
+        "default": {
+          "label": "Plain in-process call"
+        },
         "emphasis": {
           "label": "Write path"
         },
