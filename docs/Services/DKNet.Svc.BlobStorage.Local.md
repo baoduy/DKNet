@@ -122,6 +122,11 @@ The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` chec
 
 ## 🧱 Where it fits
 
+Every operation resolves the requested name to an absolute path and re-checks it against the root
+before touching the file system:
+
+![Workflow diagram: GetFinalPath drops a leading slash from the blob name, combines it with RootFolder and resolves it with Path.GetFullPath, then compares the result against the root prefix — ordinal on Linux, case-insensitive on Windows — throwing UnauthorizedAccessException when it escapes and otherwise reading or writing the file and returning the root-relative name.](../diagrams/svc-blobstorage-local-path-resolution.svg)
+
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `LocalBlobService` derives from
   its `BlobService` base class, so validation and path normalization behave the same as on the cloud providers.
 - **Application code** depends on `IBlobService` only; swap this registration for
@@ -131,6 +136,13 @@ The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` chec
   storage emulator.
 
 ## ⚠️ Gotchas & limits
+
+- **`ListItemsAsync` throws `FileNotFoundException` for a path that does not exist**, rather than yielding an
+  empty sequence the way S3 and Azure Storage do. It routes through the package's public
+  `LocalDirectorySetup.IsDirectory(this string path)` helper, which catches `DirectoryNotFoundException` and
+  `ArgumentException` but not the `FileNotFoundException` that `File.GetAttributes` raises when the parent
+  directory exists and the leaf does not — so the exception escapes both `IsDirectory` (contrary to its own
+  summary, which promises `false`) and the listing built on it. Call `CheckExistsAsync` first, or catch it.
 
 - **`GetAsync`'s `FileNotFoundException` is the biggest provider-agnostic trap.** S3 returns `null` and Azure throws
   `RequestFailedException` for the same miss — see the [Abstractions gotchas](./DKNet.Svc.BlobStorage.Abstractions.md).

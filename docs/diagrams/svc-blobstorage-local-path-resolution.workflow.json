@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "LocalBlobService: turning a blob name into a path inside RootFolder",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "in", "label": "Request" },
+    { "id": "resolve", "label": "GetFinalPath" },
+    { "id": "deny", "label": "Refused", "variant": "exception" },
+    { "id": "fs", "label": "File system" }
+  ],
+  "mainPath": ["name", "trim", "combine", "guard", "io"],
+  "nodes": [
+    { "id": "name", "lane": "in", "col": 0, "type": "frontend", "label": "BlobRequest.Name", "sublabel": "reports/may.pdf", "width": 148 },
+    { "id": "trim", "lane": "resolve", "col": 1, "type": "backend", "label": "Drop leading /", "sublabel": "if present", "width": 138 },
+    { "id": "combine", "lane": "resolve", "col": 2, "type": "backend", "label": "Combine + GetFullPath", "sublabel": "against RootFolder", "width": 178 },
+    { "id": "guard", "lane": "resolve", "col": 3, "type": "security", "label": "Root prefix check", "sublabel": "case rules per OS", "width": 152 },
+    { "id": "escape", "lane": "deny", "col": 4, "type": "security", "label": "UnauthorizedAccess", "sublabel": "resolved outside root", "width": 172 },
+    { "id": "io", "lane": "fs", "col": 4, "type": "database", "label": "Read or write", "sublabel": "creates directories", "width": 148 },
+    { "id": "rel", "lane": "fs", "col": 5, "type": "database", "label": "Root-relative name", "sublabel": "returned on read", "width": 158 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "name", "to": "trim" },
+    { "id": "e2", "from": "trim", "to": "combine" },
+    { "id": "e3", "from": "combine", "to": "guard", "label": "absolute path", "variant": "emphasis" },
+    { "id": "e4", "from": "guard", "to": "escape", "label": "../ escape", "variant": "security", "role": "error" },
+    { "id": "e5", "from": "guard", "to": "io", "label": "inside root", "variant": "emphasis" },
+    { "id": "e6", "from": "io", "to": "rel", "label": "strip root prefix", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "RootFolder",
+      "items": [
+        "Unset falls back to {CurrentDirectory}/LocalStore",
+        "Every path is resolved and re-checked against it"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Not supported here",
+      "items": [
+        "GetPublicAccessUrl always throws NotSupportedException",
+        "GetAsync throws FileNotFoundException rather than returning null"
+      ]
+    }
+  ]
+}

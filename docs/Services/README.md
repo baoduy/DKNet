@@ -29,8 +29,9 @@ package matches your storage backend.
 
 ## Documents and data
 
-- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) — Markdown/HTML → PDF via headless Chromium, with table of
-  contents, syntax highlighting, and themes.
+- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) — Markdown/HTML → PDF via headless Chromium, with paper
+  format, orientation, scale, margins, and header/footer templates. Theme, table-of-contents, and module options
+  exist on the options type but are not wired into the current pipeline — the package page marks which apply.
 - [DKNet.Svc.Transformation](./DKNet.Svc.Transformation.md) — template-token substitution against a plain object or
   dictionary, independent of any templating engine.
 

@@ -1,0 +1,161 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "IBlobService.SaveAsync: shared validation, then provider-specific write",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "app",
+      "label": "Application code"
+    },
+    {
+      "id": "base",
+      "label": "BlobService base class (Abstractions)"
+    },
+    {
+      "id": "reject",
+      "label": "Rejected",
+      "variant": "exception"
+    },
+    {
+      "id": "provider",
+      "label": "Provider adapter"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "validate",
+    "location",
+    "write",
+    "store",
+    "stored"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "app",
+      "col": 0,
+      "type": "frontend",
+      "label": "SaveAsync(BlobData)",
+      "sublabel": "Name + BinaryData",
+      "width": 140
+    },
+    {
+      "id": "stored",
+      "lane": "app",
+      "col": 5,
+      "type": "frontend",
+      "label": "Returns blob.Name",
+      "sublabel": "string location",
+      "width": 132
+    },
+    {
+      "id": "validate",
+      "lane": "base",
+      "col": 1,
+      "type": "security",
+      "label": "ValidateFile",
+      "sublabel": "3 opt-in rules",
+      "width": 110
+    },
+    {
+      "id": "location",
+      "lane": "base",
+      "col": 2,
+      "type": "backend",
+      "label": "GetBlobLocation",
+      "sublabel": "prefix leading /",
+      "width": 120
+    },
+    {
+      "id": "denied",
+      "lane": "reject",
+      "col": 2,
+      "type": "security",
+      "label": "FileLoadException",
+      "sublabel": "name / extension / size",
+      "width": 132
+    },
+    {
+      "id": "write",
+      "lane": "provider",
+      "col": 3,
+      "type": "backend",
+      "label": "Override SaveAsync",
+      "sublabel": "S3 / Azure / Local",
+      "width": 140
+    },
+    {
+      "id": "store",
+      "lane": "provider",
+      "col": 4,
+      "type": "cloud",
+      "label": "Backing store",
+      "sublabel": "bucket, container, folder",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "call",
+      "to": "validate",
+      "label": "one call"
+    },
+    {
+      "id": "e2",
+      "from": "validate",
+      "to": "location",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "validate",
+      "to": "denied",
+      "label": "rule violated",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e4",
+      "from": "location",
+      "to": "write",
+      "label": "normalized name"
+    },
+    {
+      "id": "e5",
+      "from": "write",
+      "to": "store",
+      "label": "PUT / write file"
+    },
+    {
+      "id": "e6",
+      "from": "store",
+      "to": "stored",
+      "label": "location",
+      "role": "return",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Shared by every provider",
+      "items": [
+        "ValidateFile enforces BlobServiceOptions before any I/O",
+        "All three rules are off unless the option is set"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Provider-specific",
+      "items": [
+        "Overwrite check, credentials and container creation",
+        "Local also rejects paths escaping RootFolder"
+      ]
+    }
+  ]
+}

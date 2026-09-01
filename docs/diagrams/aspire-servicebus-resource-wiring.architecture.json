@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AddServiceBus: what one call adds to the Aspire AppHost",
+    "quality_profile": "showcase"
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 4,
+    "cellW": 170,
+    "cellH": 70,
+    "gapX": 118,
+    "gapY": 54
+  },
+  "components": [
+    {
+      "id": "apphost",
+      "type": "frontend",
+      "label": "AppHost",
+      "sublabel": "AddServiceBus(...)",
+      "row": 1,
+      "col": 0,
+      "size": [
+        158,
+        62
+      ]
+    },
+    {
+      "id": "sql",
+      "type": "database",
+      "label": "SqlServer resource",
+      "sublabel": "you add it first",
+      "row": 0,
+      "col": 0,
+      "size": [
+        166,
+        62
+      ]
+    },
+    {
+      "id": "config",
+      "type": "external",
+      "label": "Config.json",
+      "sublabel": "queues and topics",
+      "row": 2,
+      "col": 0,
+      "size": [
+        158,
+        62
+      ]
+    },
+    {
+      "id": "resource",
+      "type": "messagebus",
+      "label": "ServiceBusResource",
+      "sublabel": "emulator container",
+      "row": 1,
+      "col": 1,
+      "size": [
+        170,
+        68
+      ],
+      "tag": "name: AzureBusSimulator"
+    },
+    {
+      "id": "image",
+      "type": "cloud",
+      "label": "Emulator image",
+      "sublabel": "mcr.microsoft.com, latest",
+      "row": 0,
+      "col": 2,
+      "size": [
+        186,
+        62
+      ]
+    },
+    {
+      "id": "endpoints",
+      "type": "cloud",
+      "label": "AMQP endpoints",
+      "sublabel": "tcp 5672, tcp2 5671",
+      "row": 1,
+      "col": 2,
+      "size": [
+        174,
+        62
+      ]
+    },
+    {
+      "id": "connstr",
+      "type": "security",
+      "label": "Connection string",
+      "sublabel": "UseDevelopmentEmulator",
+      "row": 2,
+      "col": 2,
+      "size": [
+        182,
+        62
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API or worker",
+      "sublabel": "WithReference",
+      "row": 1,
+      "col": 3,
+      "size": [
+        154,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Added by AddServiceBus",
+      "wraps": [
+        "resource",
+        "image",
+        "endpoints",
+        "connstr"
+      ],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    {
+      "from": "apphost",
+      "to": "resource",
+      "label": "registers",
+      "variant": "emphasis",
+      "labelDy": -16,
+      "labelDx": -40
+    },
+    {
+      "from": "sql",
+      "to": "resource",
+      "label": "backing store, WaitFor",
+      "variant": "emphasis"
+    },
+    {
+      "from": "config",
+      "to": "resource",
+      "label": "read-only bind mount"
+    },
+    {
+      "from": "resource",
+      "to": "image",
+      "label": "runs"
+    },
+    {
+      "from": "resource",
+      "to": "endpoints",
+      "label": "exposes",
+      "labelDy": -16,
+      "labelDx": -31
+    },
+    {
+      "from": "resource",
+      "to": "connstr",
+      "label": "builds"
+    },
+    {
+      "from": "connstr",
+      "to": "api",
+      "label": "injected config",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Three parameters, nothing else",
+      "items": [
+        "sqlServer: required backing store, always waited on",
+        "configFilePath: the whole queue and topic topology",
+        "name: the Aspire resource name, AzureBusSimulator by default"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Fixed by the extension",
+      "items": [
+        "Image registry, name and latest tag are not parameters",
+        "Host ports 5672 and 5671 cannot be remapped",
+        "No queue or topic builder methods exist on the resource",
+        "Downstream projects reach it through WithReference"
+      ]
+    }
+  ]
+}

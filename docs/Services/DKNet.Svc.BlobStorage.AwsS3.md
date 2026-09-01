@@ -149,6 +149,11 @@ The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` chec
 
 ## 🧱 Where it fits
 
+The client is not built at registration — it is built lazily on the first operation, and that first
+operation is also what creates the bucket:
+
+![Workflow diagram: AddS3BlobService binds S3Options, the first operation builds an AmazonS3Config from ConnectionString, ForcePathStyle and DisablePayloadSigning, picks BasicAWSCredentials or the ambient AWS credential chain, lists buckets and creates the configured one when it is missing, then caches the client for the rest of the scope.](../diagrams/svc-blobstorage-awss3-client-bootstrap.svg)
+
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `S3BlobService` derives from its
   `BlobService` base class; application code depends on `IBlobService`, and only the composition root knows this package
   exists.

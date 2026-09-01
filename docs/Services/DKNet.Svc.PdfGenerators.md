@@ -6,8 +6,8 @@ header/footer, and margin control.
 > [!NOTE]
 > This package is a fork of Markdown2Pdf 2.x — see `src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md` for the
 > upstream attribution. Several option types carried over from upstream are **not wired into the current
-> `PdfGenerator`** pipeline; the [Configuration reference](./DKNet.Svc.PdfGenerators.md) marks exactly which options affect
-> the output today.
+> `PdfGenerator`** pipeline; the **Applied** column in the configuration reference below marks exactly which
+> options affect the output today.
 
 ## ✨ Why use it?
 
@@ -104,7 +104,9 @@ Layout comes from `PdfGeneratorOptions` and is passed to Chromium's print option
 are only displayed when at least one of them is set:
 
 ```csharp
-using PuppeteerSharp.Media; // PaperFormat
+// Alias rather than `using PuppeteerSharp.Media;` — that namespace also declares a MarginOptions,
+// so importing both it and DKNet.Svc.PdfGenerators.Options makes the name ambiguous (CS0104).
+using PaperFormat = PuppeteerSharp.Media.PaperFormat;
 
 new PdfGeneratorOptions
 {
@@ -156,7 +158,7 @@ builder.Services.AddPdfGenerator(options);
 | `FooterHtml` | `string?` | `null` | Chromium footer template. | ✅ |
 | `ChromePath` | `string?` | `null` | Path to an existing Chromium/Chrome; when `null`, a build is downloaded on demand. | ✅ |
 | `Theme` | `Theme` | `Theme.Github` | `Theme.Github` / `.Latex` / `.None` / `.Custom(cssPath)`. | ❌ |
-| `CodeHighlightTheme` | `CodeHighlightTheme` | `.Github` | One of ~60 highlight.js themes exposed as static members. | ❌ |
+| `CodeHighlightTheme` | `CodeHighlightTheme` | `CodeHighlightTheme.Github` (`github.css`) | One of the 75 highlight.js stylesheets exposed as static properties. | ❌ |
 | `ModuleOptions` | `ModuleOptions` | `ModuleOptions.Remote` | `Remote` / `None` / `FromLocalPath(path)` for MathJax, Mermaid, highlight.js assets. | ❌ |
 | `TableOfContents` | `TableOfContentsOptions?` | `null` | `MinDepthLevel`/`MaxDepthLevel` (1–6, else `ArgumentOutOfRangeException`), `ListStyle`, `HasColoredLinks`, `PageNumberOptions`. | ❌ |
 | `DocumentTitle` | `string?` | `null` | Document title. | ❌ |
@@ -169,7 +171,118 @@ The ❌ rows are settable, serializable, and unit-tested as standalone types, bu
 and hands it straight to Chromium — it never builds the theme, module, table-of-contents, or metadata pipeline that would
 consume them. Treat them as inert until they are wired up; do not design a document around them.
 
+### How the option types relate
+
+`PdfGeneratorOptions` is the root; four of its properties are objects with their own options, and one type
+mirrors the whole thing for serialization:
+
+```text
+PdfGeneratorOptions
+├── MarginOptions?            applied — becomes Chromium's page margins
+├── ModuleOptions             inert   — None | Remote | FromLocalPath(path) -> NodeModuleOptions
+├── Theme                     inert   — Github | Latex | None | Custom(cssPath) -> CustomTheme
+├── CodeHighlightTheme        inert   — 75 static stylesheet values
+└── TableOfContentsOptions?   inert
+    ├── ListStyle             (enum)
+    ├── MinDepthLevel / MaxDepthLevel
+    └── PageNumberOptions?
+        └── Leader            (enum)
+
+SerializableOptions --ToPdfGeneratorOptions()--> PdfGeneratorOptions
+```
+
+Read the tree as ownership, not as a pipeline: only `MarginOptions` reaches the output today. The rest are
+reachable, settable, and round-trip through `SerializableOptions`, but no code reads them — see the
+**Applied** column above.
+
+#### `MarginOptions` (this package's own type, not PuppeteerSharp's)
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `Top` | `string?` | `null` | CSS length for the top margin, e.g. `"2cm"`; `null` leaves Chromium's default. |
+| `Bottom` | `string?` | `null` | As above, bottom edge. |
+| `Left` | `string?` | `null` | As above, left edge. |
+| `Right` | `string?` | `null` | As above, right edge. |
+
+Each value is copied onto `PuppeteerSharp.Media.MarginOptions`; when `PdfGeneratorOptions.MarginOptions` is
+`null`, an empty `MarginOptions` is passed instead, so Chromium's own defaults apply.
+
+#### `TableOfContentsOptions`
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `MinDepthLevel` | `int` | `1` | Shallowest heading level included. Assigning outside `1..6` throws `ArgumentOutOfRangeException`. |
+| `MaxDepthLevel` | `int` | `6` | Deepest heading level included. Same `1..6` guard. |
+| `ListStyle` | `ListStyle` | `ListStyle.OrderedDefault` | Marker style for TOC entries. |
+| `HasColoredLinks` | `bool` | `false` | `true` leaves TOC links in the theme's link colour instead of styling them as plain text. |
+| `PageNumberOptions` | `PageNumberOptions?` | `null` | Non-`null` asks for page numbers, which the type documents as a second render pass. |
+
+`ListStyle` values are `None`, `OrderedDefault`, `Unordered`, and `Decimals` — note the plural on
+`Decimals`, which the type's own XML example spells `Decimal`.
+
+#### `PageNumberOptions`
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `TabLeader` | `Leader` | `Leader.Dots` | Fill character between the entry and its page number. |
+
+`Leader` values are `None`, `Dots`, `Underline`, and `Dashes`.
+
+#### `ModuleOptions` — a closed set, not a constructor
+
+`ModuleOptions`' constructor is `protected internal`, so a consumer cannot subclass it. The three ways to get
+an instance are all on the type itself:
+
+| Factory | `ModuleLocation` | Meaning |
+|---|---|---|
+| `ModuleOptions.None` | `None` | Load no extra modules — basic Markdown only. |
+| `ModuleOptions.Remote` *(default)* | `Remote` | Load MathJax, Mermaid, highlight.js and the CSS themes from a CDN. |
+| `ModuleOptions.FromLocalPath(path)` | `Custom` | Returns `NodeModuleOptions(path)`; the type documents `mathjax@3`, `mermaid@10`, `font-awesome`, `@highlightjs/cdn-assets@11`, `github-markdown-css` and `latex.css` as the packages that must be installed under `path`. |
+
+`NodeModuleOptions` is public and exposes `ModulePath`; `ModuleLocation` is a public enum.
+
+#### `Theme` — also a closed set
+
+`Theme` is a `public abstract record` with no public constructor:
+
+| Factory | Returns | Meaning |
+|---|---|---|
+| `Theme.Github` *(default)* | internal `PredefinedTheme(ThemeType.Github)` | GitHub Markdown styling. |
+| `Theme.Latex` | internal `PredefinedTheme(ThemeType.Latex)` | LaTeX-like document styling. |
+| `Theme.None` | internal `PredefinedTheme(ThemeType.None)` | No document theme. |
+| `Theme.Custom(cssPath)` | public `CustomTheme(CssPath)` | Your own stylesheet. |
+
+`PredefinedTheme` is `internal` — you can select a predefined theme but you cannot construct, pattern-match,
+or extend one. `CustomTheme` and the `ThemeType` enum are public.
+
+#### `SerializableOptions` — the string-typed mirror
+
+Every property is nullable, and `ToPdfGeneratorOptions()` only overwrites a target property when its source is
+non-`null`, so a partial document leaves the rest at their defaults:
+
+| Option | Type | Resolved by |
+|---|---|---|
+| `ChromePath`, `CustomHeadContent`, `DocumentTitle`, `FooterHtml`, `HeaderHtml`, `MetadataTitle` | `string?` | Copied verbatim. |
+| `EnableAutoLanguageDetection`, `IsLandscape`, `KeepHtml` | `bool?` | Copied when set. |
+| `Scale` | `decimal?` | Copied when set. |
+| `MarginOptions` | `MarginOptions?` | Copied by reference. |
+| `TableOfContents` | `TableOfContentsOptions?` | Copied by reference. |
+| `Format` | `string?` | Named static property on `PaperFormat`; an unknown name is **ignored**. |
+| `Theme` | `string?` | Named static property on `Theme`, else `Theme.Custom(value)`. |
+| `ModuleOptions` | `string?` | Named static property on `ModuleOptions`, else `ModuleOptions.FromLocalPath(value)`. |
+| `CodeHighlightTheme` | `string?` | Named static property on `CodeHighlightTheme`; an unknown name is **ignored**. |
+
+`InlineOptionsParser.ParseYamlFrontMatter(markdownFilePath)` reads the same shape out of a leading `---` or
+`<!--` front-matter block using hyphenated YAML keys (`chrome-path`, `document-title`, …), and throws
+`InvalidDataException` when the file has no closing delimiter. `PdfGenerator` never calls it — it is a helper
+you invoke yourself before constructing options.
+
 ## 🧱 Where it fits
+
+The conversion is short, and the diagram is mostly useful for what it does *not* contain — there is no theme,
+module, table-of-contents, or metadata stage between Markdig and Chromium:
+
+![Data-flow diagram: a Markdown file goes through Markdig's fixed pipeline into HTML text, or an HTML string enters at the same point; the HTML is set on a headless Chromium page with the screen media type, PdfOptions supplies format, margins and scale, and PdfAsync writes the PDF whose path is returned. Theme, table-of-contents and module options sit beside the HTML stage with no code path into it.](../diagrams/svc-pdfgenerators-conversion-pipeline.svg)
 
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — conversion returns a path or a
   `FileInfo`, so the natural next step is `IBlobService.SaveAsync` with `BinaryData.FromStream(File.OpenRead(path))`.
@@ -184,6 +297,11 @@ consume them. Treat them as inert until they are wired up; do not design a docum
   `KeepHtml`, and `EnableAutoLanguageDetection` are not read by `PdfGenerator` — see the Applied column above. Earlier
   revisions of this page documented `[TOC]` markers and theme switching as working features; they are not wired in
   source.
+- **Two types are named `MarginOptions`.** `PdfGeneratorOptions.MarginOptions` is this package's
+  `DKNet.Svc.PdfGenerators.Options.MarginOptions`; PuppeteerSharp declares its own in
+  `PuppeteerSharp.Media`. Importing both namespaces makes the bare name ambiguous (`CS0104`) — alias the
+  PuppeteerSharp types you need (`using PaperFormat = PuppeteerSharp.Media.PaperFormat;`) instead of importing
+  the whole namespace.
 - **No Razor/template-model API.** There is no `GenerateFromTemplateAsync` or model binding — render the string
   yourself, then convert.
 - **`IConversionEvents` (`HtmlConverting`, `TemplateModelCreating`, `TempPdfCreated`) never fires from

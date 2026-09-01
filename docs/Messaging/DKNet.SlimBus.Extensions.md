@@ -288,6 +288,54 @@ this package** and is retained only for existing consumers. The supported way to
 `IContextualSource` attribute (e.g. `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions`) on the request's own
 property, populated by `AddContextualRequestPopulation()`.
 
+## ⚙️ Configuration reference
+
+There is no options type, no `IConfiguration` section, and no builder in this package. What you can vary is
+which of the two registrations you call, the `DbContext` you call them with, and which contracts your own types
+implement — so that is what this section documents.
+
+### Registration surface (`SlimBusEfCoreSetup`)
+
+| Method | Constraint | Registers | Lifetime | Repeat call |
+|---|---|---|---|---|
+| `AddSlimBusEfCoreInterceptor<TDbContext>()` | `TDbContext : DbContext` | `IRequestHandlerInterceptor<,>` → the internal auto-save interceptor | Scoped | Adds `TDbContext` to the save registry; the interceptor itself is registered only once |
+| `AddSlimBusEventPublisher<TDbContext>()` | `TDbContext : DbContext` | `SlimBusEventPublisher` as `IEventPublisher` for `TDbContext`, via `DKNet.EfCore.Events` | Delegated to `AddEventPublisher` | Delegated to `AddEventPublisher` |
+
+Both are declared inside a C# 14 `extension(IServiceCollection)` block, so they are called as ordinary
+extension methods on `IServiceCollection`. Calling them does not require C# 14 in your own project — a
+consumer at `LangVersion` 13 compiles against them fine.
+
+### Auto-save behaviour — the fixed rules
+
+None of these are switchable; they are the contract the interceptor implements.
+
+| Concern | Value |
+|---|---|
+| Interceptor order | `int.MaxValue` (`IInterceptorWithOrder`) — runs outermost, after your own interceptors |
+| Saved for | `Fluents.Requests.INoResponse` and `Fluents.Requests.IWitResponse<T>` only |
+| Skipped when | The response is `null`, or is an `IResultBase` with `IsSuccess == false` |
+| Saved contexts | Every type registered through `AddSlimBusEfCoreInterceptor<T>()` whose `ChangeTracker.HasChanges()` |
+| Save call | `AddNewEntitiesFromNavigations`, then `SaveChangesWithConcurrencyHandlingAsync` |
+| Exception handler | `IEfCoreExceptionHandler` keyed by the `DbContext`'s `FullName`, falling back to the unkeyed registration |
+
+### Public extension points
+
+| Type | Accessibility | What you do with it |
+|---|---|---|
+| `Fluents.Requests.INoResponse` / `IWitResponse<T>` | `public interface` | Mark a message as a write — this is what auto-save keys off. |
+| `Fluents.Requests.IHandler<TRequest>` / `IHandler<TRequest, TResponse>` | `public interface` | Implement the handler for a write. |
+| `Fluents.Requests.IWithKey<TKey>` | `public interface` | Carry a route-bound `Id`; the generated update and action requests implement it. |
+| `Fluents.Queries.IWitResponse<T>` / `IWitPageResponse<T>` and their handlers | `public interface` | Mark and handle a read. Never auto-saved. |
+| `Fluents.EventsConsumers.IHandler<TEvent>` | `public interface` | Consume a published event. |
+| `SlimBusEventPublisher` | `public class`, both `PublishAsync` overloads `virtual` | Subclass to add headers or logging, then register the subclass. |
+| `NotFoundError` | `public sealed class : FluentResults.Error` | Return it from `Result.Fail` so the API layer can map one type to `404`. |
+| `ILazyMap<T>`, `LazyMapExtensions.LazyMap<T>` / `ResultOf<T>` | `public interface` / `public static class` | Defer a Mapster mapping until the value is read. |
+| `RequestBase` | `public record`, `[Obsolete]` | Nothing — retained for existing consumers and never populated by this package. |
+
+The auto-save interceptor (`EfAutoSavePostInterceptor<,>`), its `DbContext` registry, and the `LazyMap`/`LazyResult`
+implementations are all `internal` — you opt in through the two registration methods, not by implementing or
+replacing those types.
+
 ## 🧱 Where it fits
 
 - **[DKNet.EfCore.Events](../EfCore/DKNet.EfCore.Events.md)** — the source of the domain events this package forwards;

@@ -1,5 +1,10 @@
 # DKNet.SlimBus.Generators
 
+[![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Generators)](https://www.nuget.org/packages/DKNet.SlimBus.Generators/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.SlimBus.Generators)](https://www.nuget.org/packages/DKNet.SlimBus.Generators/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+
 A Roslyn incremental source generator that emits a full CRUD vertical slice — request records, SlimBus
 handlers, and (optionally) minimal-API endpoint registration — from
 `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. No hand-written command/handler/endpoint
@@ -23,9 +28,9 @@ The compiling project also needs, for the generated code to compile and run:
   [Endpoint emission is opt-in](#endpoint-emission-is-opt-in) below.
 - `Mapster` — the `IMapper` implementation (namespace `MapsterMapper`) generated handlers inject.
 
-Generated files call the C# 14 `extension(RouteGroupBuilder)` members declared by `DKNet.AspCore.Extensions`/
-`DKNet.EfCore.Specifications`, so the project's `LangVersion` must be `14` or later — this repo's
-`Directory.Build.props` already sets `LangVersion=latest`.
+Generated files call extension members that `DKNet.AspCore.Extensions` and `DKNet.EfCore.Specifications`
+declare with C# 14 `extension(...)` blocks. *Calling* them does not require C# 14 — a consumer at
+`LangVersion` 13 compiles the generated files fine; only declaring such a block does.
 
 ## Quick start
 
@@ -62,7 +67,9 @@ This emits, into the compiling (API) project:
 ### Minimum consumer wiring
 
 ```csharp
-using MapsterMapper;
+using DKNet.EfCore.Specifications;   // AddSpecRepo
+using Mapster;                       // TypeAdapterConfig
+using MapsterMapper;                 // IMapper, Mapper
 
 builder.Services.AddSingleton<IMapper>(new Mapper(new TypeAdapterConfig()));
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
@@ -76,6 +83,17 @@ builder.Services
         .AddServicesFromAssembly(typeof(Program).Assembly)     // discovers generated + hand-written handlers
         .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
 ```
+
+## Attributes
+
+| Attribute | Valid on | Members | Effect |
+|---|---|---|---|
+| `[CrudCreate]` | a public constructor or method, at most one per entity | `Name` (`string?`, default `null`) | Emits `Create{Entity}Request` (constructor) or `{Method}{Entity}Request` (method) plus a handler that calls the entity's **constructor** with the marked member's parameter list — a marked factory method's body is never executed, so prefer marking the constructor. `Name` overrides the request type name. |
+| `[CrudUpdate]` | any public instance method | `Name` (`string?`, default `null`) | Emits `{Method}{Entity}Request` implementing `IWithKey<TKey>` plus a fetch-by-id handler. |
+| `[CrudAction]` | any public instance method | `Route` (positional `string?`), `Verb` (`CrudActionVerb`, default `Post`), `Name` (`string?`) | Same shape as `[CrudUpdate]`, but always at its own `{id}/{segment}` route. |
+
+Delete needs no attribute — `MapDeleteById` covers it generically. All three attributes live in
+`DKNet.EfCore.Abstractions`, so the domain layer takes on no messaging dependency.
 
 ## Routes
 
@@ -92,6 +110,25 @@ builder.Services
 
 Additional `[CrudUpdate]` methods are routed in declaration order; the first one keeps the plain `{id}` PUT,
 every one after gets its method name kebab-cased onto the route (e.g. `UpdatePrice` → `{id}/update-price`).
+Kebab-casing inserts a `-` before every upper-case character after the first, so `ExportXML` becomes
+`export-x-m-l`. Registration order inside `Map{Entity}Crud` is fixed: `GetById`, `GetList`, `Delete`, `Create`,
+each `[CrudUpdate]` in declaration order, then each `[CrudAction]` in declaration order.
+
+### Generated names
+
+| Thing | Rule |
+|---|---|
+| Namespace | `{AssemblyName}.Crud`, or `Generated.Crud` when the compilation has no assembly name |
+| Requests file | `{Entity}CrudRequests.g.cs` |
+| Handlers file | `{Entity}CrudHandlers.g.cs`, omitted when every member has a hand-written handler |
+| Endpoints file | `{Entity}CrudEndpoints.g.cs`, emitted only when the project references `DKNet.AspCore.Extensions` |
+| Create request | `Create{Entity}Request` for a constructor, `{Method}{Entity}Request` for a method |
+| Update / action request | `{Method}{Entity}Request` |
+| Handler | the request name with a trailing `Request` replaced by `Handler` |
+| By-id specification | `{Entity}ByIdCrudSpec`, `file`-scoped, one per handlers file |
+| Endpoint extension | `{Entity}CrudEndpointExtensions.Map{Entity}Crud` |
+
+`Name` on any of the three attributes overrides the request type name (and therefore the handler name).
 
 ### Domain actions — `[CrudAction]`
 
@@ -189,6 +226,12 @@ same shape, so mixing them is seamless.
 Entities may live in a referenced assembly (e.g. a `Domain` project) — the generator walks both the current
 compilation and its referenced assembly symbols for `[CrudCreate]`/`[CrudUpdate]` members, so the API project
 never needs to redeclare or re-annotate anything.
+
+## Documentation
+
+Full feature reference, the declaration-versus-emitted-code walkthrough, the compile-time flow diagram, and the
+naming and routing conventions in full:
+https://github.com/baoduy/DKNet/blob/main/docs/Messaging/DKNet.SlimBus.Generators.md
 
 ## Out of scope (by design)
 

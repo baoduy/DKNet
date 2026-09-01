@@ -1,0 +1,204 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "CrudGenerator: one pass over the compilation, three generated files",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "scan",
+      "label": "Scan the compilation"
+    },
+    {
+      "id": "model",
+      "label": "Resolve each entity"
+    },
+    {
+      "id": "diag",
+      "label": "Reported instead",
+      "variant": "exception"
+    },
+    {
+      "id": "emit",
+      "label": "Emit"
+    },
+    {
+      "id": "opt",
+      "label": "Emitted only with DKNet.AspCore.Extensions"
+    }
+  ],
+  "mainPath": [
+    "assemblies",
+    "members",
+    "entity",
+    "requests",
+    "handlers"
+  ],
+  "nodes": [
+    {
+      "id": "assemblies",
+      "lane": "scan",
+      "col": 0,
+      "type": "backend",
+      "label": "Assemblies",
+      "sublabel": "own plus references",
+      "width": 152
+    },
+    {
+      "id": "dtos",
+      "lane": "scan",
+      "col": 1,
+      "type": "database",
+      "label": "GenerateDto DTOs",
+      "sublabel": "this project only",
+      "width": 148
+    },
+    {
+      "id": "overrides",
+      "lane": "scan",
+      "col": 3,
+      "type": "database",
+      "label": "IHandler base lists",
+      "sublabel": "matched by name",
+      "width": 148
+    },
+    {
+      "id": "members",
+      "lane": "model",
+      "col": 1,
+      "type": "backend",
+      "label": "CRUD members",
+      "sublabel": "3 attribute forms",
+      "width": 146
+    },
+    {
+      "id": "entity",
+      "lane": "model",
+      "col": 3,
+      "type": "backend",
+      "label": "Entity model",
+      "sublabel": "key, DTO, routes",
+      "width": 148
+    },
+    {
+      "id": "errors",
+      "lane": "diag",
+      "col": 4,
+      "type": "security",
+      "label": "DKCRUDGEN001-008",
+      "sublabel": "entity is skipped",
+      "width": 168
+    },
+    {
+      "id": "requests",
+      "lane": "emit",
+      "col": 4,
+      "type": "frontend",
+      "label": "CrudRequests.g.cs",
+      "sublabel": "public records",
+      "width": 166
+    },
+    {
+      "id": "handlers",
+      "lane": "emit",
+      "col": 5,
+      "type": "backend",
+      "label": "CrudHandlers.g.cs",
+      "sublabel": "skipped if overridden",
+      "width": 178
+    },
+    {
+      "id": "endpoints",
+      "lane": "opt",
+      "col": 5,
+      "type": "cloud",
+      "label": "CrudEndpoints.g.cs",
+      "sublabel": "Map{Entity}Crud",
+      "width": 176
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "assemblies",
+      "to": "members",
+      "label": "attributed methods"
+    },
+    {
+      "id": "e2",
+      "from": "assemblies",
+      "to": "dtos",
+      "label": "current assembly",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "dtos",
+      "to": "entity",
+      "label": "exactly one DTO"
+    },
+    {
+      "id": "e4",
+      "from": "overrides",
+      "to": "entity",
+      "label": "hand-written wins",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "members",
+      "to": "entity",
+      "label": "key from IEntity",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "entity",
+      "to": "errors",
+      "label": "unresolved",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e7",
+      "from": "entity",
+      "to": "requests",
+      "label": "one file per entity",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e8",
+      "from": "requests",
+      "to": "handlers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e9",
+      "from": "requests",
+      "to": "endpoints",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Naming the generator uses",
+      "items": [
+        "Namespace is {AssemblyName}.Crud, or Generated.Crud without one",
+        "Request is Create{Entity}Request or {Method}{Entity}Request",
+        "Handler drops the Request suffix and appends Handler"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Routing the generator uses",
+      "items": [
+        "The first [CrudUpdate] takes the plain {id} PUT",
+        "Every later update and every action takes {id}/{segment}",
+        "Default segment is the method name kebab-cased"
+      ]
+    }
+  ]
+}
