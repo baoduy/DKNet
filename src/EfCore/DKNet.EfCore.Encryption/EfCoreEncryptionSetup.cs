@@ -21,7 +21,7 @@ public static class EfCoreEncryptionSetup
     /// <typeparam name="TKeyServiceImplementation">The type implementing <see cref="IEncryptionKeyProvider" />.</typeparam>
     /// <param name="services">The service collection to add encryption services to.</param>
     /// <returns>The service collection for method chaining.</returns>
-    public static ServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this ServiceCollection services)
+    public static IServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this IServiceCollection services)
         where TKeyServiceImplementation : class, IEncryptionKeyProvider
     {
         if (!services.Any(s => s.ServiceType == typeof(IEncryptionKeyProvider)))
