@@ -154,6 +154,8 @@ public class Product
 **Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent("Touched", EventOperations.Created)]
 public class Customer
 {
@@ -172,6 +174,8 @@ public partial record CustomerTouchedCreatedEvent
 The convention forms accept the same `Exclude`/`Include` named arguments as `[GenerateDto]` to shape the composed payload — mutually exclusive, `Include` overriding the project-wide `DtoGeneratorExclusions` list, and never affecting the composed name:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent(EventOperations.Created, Exclude = new[] { "InternalNote" })]
 public class Customer
 {

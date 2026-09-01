@@ -31,6 +31,10 @@ transactions, external calls, branching) hand-written as ordinary SlimBus featur
 Mark the entity members — this is the only hand-written feature code:
 
 ```csharp
+using System.ComponentModel.DataAnnotations;
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+
 // Domain project
 public class Product : Entity
 {
