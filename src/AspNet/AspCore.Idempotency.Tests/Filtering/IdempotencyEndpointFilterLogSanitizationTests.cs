@@ -75,6 +75,52 @@ public class IdempotencyEndpointFilterLogSanitizationTests
         problem.ProblemDetails.Detail.ShouldNotContain("user-42");
     }
 
+    [Fact]
+    public async Task
+        InvokeAsync_WhenResponseSerializationThrows_LogsSingleLineWarningAndReturnsResultUncached()
+    {
+        // Arrange - a self-referencing object graph fails System.Text.Json's default cycle
+        // detection, driving the JsonException catch branch of CacheResponseAsync.
+        const string key = "order-42\n";
+        var store = new FakeIdempotencyKeyStore();
+        var logger = new CapturingLogger();
+        var filter = new IdempotencyEndpointFilter(store, Options.Create(new IdempotencyOptions()), logger);
+        var context = CreateContext(key);
+        var cyclic = new CyclicNode();
+        cyclic.Self = cyclic;
+        EndpointFilterDelegate next = _ => ValueTask.FromResult<object?>(TypedResults.Ok(cyclic));
+
+        // Act
+        var result = await filter.InvokeAsync(context, next);
+
+        // Assert
+        result.ShouldNotBeNull();
+        logger.Messages.ShouldNotBeEmpty();
+        logger.Messages.ShouldAllBe(m => !m.Message.Contains('\n') && !m.Message.Contains('\r'));
+    }
+
+    [Fact]
+    public async Task
+        InvokeAsync_WhenMarkKeyAsProcessedThrows_LogsSingleLineErrorAndReturnsResult()
+    {
+        // Arrange - drives the catch (Exception ex) branch of CacheResponseAsync, covering the
+        // "unexpected error while caching" log site.
+        const string key = "order-42\n";
+        var store = new FakeIdempotencyKeyStore { ThrowOnMarkProcessed = true };
+        var logger = new CapturingLogger();
+        var filter = new IdempotencyEndpointFilter(store, Options.Create(new IdempotencyOptions()), logger);
+        var context = CreateContext(key);
+        EndpointFilterDelegate next = _ => ValueTask.FromResult<object?>(TypedResults.Ok(new { ok = true }));
+
+        // Act
+        var result = await filter.InvokeAsync(context, next);
+
+        // Assert
+        result.ShouldNotBeNull();
+        logger.Messages.ShouldNotBeEmpty();
+        logger.Messages.ShouldAllBe(m => !m.Message.Contains('\n') && !m.Message.Contains('\r'));
+    }
+
     private static ClaimsPrincipal AuthenticatedUser(string userId)
     {
         var identity = new ClaimsIdentity(
@@ -103,11 +149,21 @@ public class IdempotencyEndpointFilterLogSanitizationTests
     {
         public (bool processed, CachedResponse? response) ProcessedResult { get; set; } = (false, null);
 
+        public bool ThrowOnMarkProcessed { get; set; }
+
         public ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo) =>
             ValueTask.FromResult(ProcessedResult);
 
-        public ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse) =>
-            ValueTask.CompletedTask;
+        public ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse)
+        {
+            if (ThrowOnMarkProcessed) throw new InvalidOperationException("store unavailable");
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class CyclicNode
+    {
+        public CyclicNode? Self { get; set; }
     }
 
     private sealed class CapturingLogger : ILogger<IdempotencyEndpointFilter>
