@@ -66,7 +66,7 @@
       "sublabel": "no IAuditedProperties, or opted out",
       "stage": 1,
       "row": 3,
-      "width": 150
+      "width": 156
     },
     {
       "id": "policy",
@@ -103,7 +103,7 @@
       "sublabel": "every publisher keyed to the DbContext",
       "stage": 4,
       "row": 1,
-      "width": 158
+      "width": 168
     }
   ],
   "flows": [

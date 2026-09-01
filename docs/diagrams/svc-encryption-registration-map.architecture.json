@@ -22,7 +22,11 @@
         }
       }
     },
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "viewBox": [
+      1000,
+      586
+    ]
   },
   "layout": {
     "mode": "grid",
@@ -211,7 +215,7 @@
       "title": "There is no options type",
       "items": [
         "The customisation surface is the four registration methods",
-        "Every one is idempotent \u2014 a second call adds nothing",
+        "Every one is idempotent — a second call adds nothing",
         "Each cipher method throws for a blank key"
       ]
     },

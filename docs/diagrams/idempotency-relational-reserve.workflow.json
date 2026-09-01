@@ -84,7 +84,7 @@
       "type": "external",
       "label": "IsKeyProcessedAsync",
       "sublabel": "SHA-256 of the composite key",
-      "width": 196
+      "width": 143
     },
     {
       "id": "lookup",
@@ -93,7 +93,7 @@
       "type": "database",
       "label": "SELECT unexpired row",
       "sublabel": "CompositeKey match, ExpiresAt in the future",
-      "width": 214
+      "width": 215
     },
     {
       "id": "hit",
@@ -102,7 +102,7 @@
       "type": "backend",
       "label": "Duplicate",
       "sublabel": "(true, response), or (true, null) at 102",
-      "width": 210
+      "width": 200
     },
     {
       "id": "insert",
@@ -111,7 +111,7 @@
       "type": "database",
       "label": "INSERT reservation row",
       "sublabel": "StatusCode 102 placeholder",
-      "width": 204
+      "width": 144
     },
     {
       "id": "won",
@@ -120,7 +120,7 @@
       "type": "backend",
       "label": "Proceed",
       "sublabel": "(false, null) — this caller runs the handler",
-      "width": 224
+      "width": 220
     },
     {
       "id": "violation",
@@ -130,7 +130,7 @@
       "label": "IsProviderUniqueViolation",
       "sublabel": "SQL Server 2601/2627, Postgres 23505",
       "tag": "never matched on message text",
-      "width": 214
+      "width": 181
     },
     {
       "id": "reclaim",
@@ -139,7 +139,7 @@
       "type": "database",
       "label": "Conditional UPDATE",
       "sublabel": "only while the row is still expired",
-      "width": 204
+      "width": 176
     },
     {
       "id": "blocked",
@@ -148,7 +148,7 @@
       "type": "backend",
       "label": "Another caller holds it",
       "sublabel": "winner's state re-read and returned",
-      "width": 214
+      "width": 176
     },
     {
       "id": "reclaimed",
@@ -157,7 +157,7 @@
       "type": "backend",
       "label": "Proceed",
       "sublabel": "(false, null) — expired row reclaimed",
-      "width": 214
+      "width": 186
     }
   ],
   "edges": [

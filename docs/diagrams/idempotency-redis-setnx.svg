@@ -1,4 +1,4 @@
-<svg viewBox="0 0 1085 820" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1085" height="820" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
+<svg viewBox="0 0 1085 655" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1085" height="655" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
@@ -310,131 +310,131 @@ rect.c-bg-rect { fill: var(--bg); }
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Time Segments -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="170" width="989" height="262" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="154" width="989" height="209" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="452" width="989" height="86" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="378" width="989" height="69" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="558" width="989" height="128" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="463" width="989" height="102" rx="10" class="c-lane" stroke-width="1"/>
 
         <!-- Lifelines -->
-        <path d="M 157 142 L 157 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 421.3333333333333 142 L 421.3333333333333 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 685.6666666666666 142 L 685.6666666666666 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 950 142 L 950 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 157 142 L 157 590" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 421.3333333333333 142 L 421.3333333333333 590" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 685.6666666666666 142 L 685.6666666666666 590" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 950 142 L 950 590" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
 
         <!-- Activations -->
-        <rect x="416.3333333333333" y="185" width="10" height="489" rx="3" class="c-mask"/>
-        <rect x="416.3333333333333" y="185" width="10" height="489" rx="3" class="c-backend" stroke-width="1"/>
-        <rect x="680.6666666666666" y="229" width="10" height="401" rx="3" class="c-mask"/>
-        <rect x="680.6666666666666" y="229" width="10" height="401" rx="3" class="c-database" stroke-width="1"/>
-        <rect x="945" y="469" width="10" height="55" rx="3" class="c-mask"/>
-        <rect x="945" y="469" width="10" height="55" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="416.3333333333333" y="166" width="10" height="390" rx="3" class="c-mask"/>
+        <rect x="416.3333333333333" y="166" width="10" height="390" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="680.6666666666666" y="201" width="10" height="320" rx="3" class="c-mask"/>
+        <rect x="680.6666666666666" y="201" width="10" height="320" rx="3" class="c-database" stroke-width="1"/>
+        <rect x="945" y="392" width="10" height="44" rx="3" class="c-mask"/>
+        <rect x="945" y="392" width="10" height="44" rx="3" class="c-backend" stroke-width="1"/>
 
         <!-- Messages -->
         <g data-edge-from="filter" data-edge-to="store" data-edge-label="IsKeyProcessedAsync(keyInfo)" data-edge-key="0" data-edge-id="check">
-          <path data-composition-edge-from="filter" data-composition-edge-to="store" data-composition-edge-id="check" data-composition-points="164,190;414.3333333333333,190" d="M 164 190 L 414.3333333333333 190" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-composition-edge-from="filter" data-composition-edge-to="store" data-composition-edge-id="check" data-composition-points="164,170;414.3333333333333,170" d="M 164 170 L 414.3333333333333 170" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="210.36666666666662" y="170" width="157.6" height="16" rx="3" class="c-mask"/>
-          <text x="289.16666666666663" y="180" class="t-backend" font-size="9" text-anchor="middle">IsKeyProcessedAsync(keyInfo)</text>
+          <rect x="210.36666666666662" y="150" width="157.6" height="16" rx="3" class="c-mask"/>
+          <text x="289.16666666666663" y="160" class="t-backend" font-size="9" text-anchor="middle">IsKeyProcessedAsync(keyInfo)</text>
         </g>
         </g>
 
         <g data-edge-from="store" data-edge-to="redis" data-edge-label="GET prefix + sha256(compositeKey)" data-edge-key="1" data-edge-id="get">
-          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="get" data-composition-points="428.3333333333333,234;678.6666666666666,234" d="M 428.3333333333333 234 L 678.6666666666666 234" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="get" data-composition-points="428.3333333333333,205;678.6666666666666,205" d="M 428.3333333333333 205 L 678.6666666666666 205" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="461.7" y="214" width="183.6" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="224" class="t-backend" font-size="9" text-anchor="middle">GET prefix + sha256(compositeKey)</text>
+          <rect x="461.7" y="185" width="183.6" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="195" class="t-backend" font-size="9" text-anchor="middle">GET prefix + sha256(compositeKey)</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="252" class="t-dim" font-size="7">Only the lowercase hex SHA-256 digest of Scope:Method:Endpoint:Key reaches Redis, behind CachePrefix.</text>
+        <text data-detail="fine" x="440.3333333333333" y="223" class="t-dim" font-size="7">Only the lowercase hex SHA-256 digest of Scope:Method:Endpoint:Key reaches Redis, behind CachePrefix.</text>
         </g>
 
         <g data-edge-from="redis" data-edge-to="store" data-edge-label="nil" data-edge-key="2" data-edge-id="miss">
-          <path data-composition-edge-from="redis" data-composition-edge-to="store" data-composition-edge-id="miss" data-composition-points="678.6666666666666,278;428.3333333333333,278" d="M 678.6666666666666 278 L 428.3333333333333 278" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="redis" data-composition-edge-to="store" data-composition-edge-id="miss" data-composition-points="678.6666666666666,240;428.3333333333333,240" d="M 678.6666666666666 240 L 428.3333333333333 240" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="536.5" y="258" width="34" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="268" class="t-muted" font-size="9" text-anchor="middle">nil</text>
+          <rect x="536.5" y="220" width="34" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="230" class="t-muted" font-size="9" text-anchor="middle">nil</text>
         </g>
         </g>
 
         <g data-edge-from="store" data-edge-to="redis" data-edge-label="SET key &lt;102 reservation&gt; NX, TTL InFlightReservationTimeout" data-edge-key="3" data-edge-id="setnx">
-          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="setnx" data-composition-points="428.3333333333333,322;678.6666666666666,322" d="M 428.3333333333333 322 L 678.6666666666666 322" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="setnx" data-composition-points="428.3333333333333,275;678.6666666666666,275" d="M 428.3333333333333 275 L 678.6666666666666 275" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="391.5" y="302" width="324" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="312" class="t-backend" font-size="9" text-anchor="middle">SET key &lt;102 reservation&gt; NX, TTL InFlightReservationTimeout</text>
+          <rect x="391.5" y="255" width="324" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="265" class="t-backend" font-size="9" text-anchor="middle">SET key &lt;102 reservation&gt; NX, TTL InFlightReservationTimeout</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="340" class="t-dim" font-size="7">Atomicity primitive. A losing caller re-reads the key: (true, null) while the 102 sentinel holds, (true, response) once the winner completed.</text>
+        <text data-detail="fine" x="440.3333333333333" y="293" class="t-dim" font-size="7">Atomicity primitive. A losing caller re-reads the key: (true, null) while the 102 sentinel holds, (true, response) once the winner completed.</text>
         </g>
 
         <g data-edge-from="redis" data-edge-to="store" data-edge-label="OK, reservation held" data-edge-key="4" data-edge-id="reserved">
-          <path data-composition-edge-from="redis" data-composition-edge-to="store" data-composition-edge-id="reserved" data-composition-points="678.6666666666666,366;428.3333333333333,366" d="M 678.6666666666666 366 L 428.3333333333333 366" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="redis" data-composition-edge-to="store" data-composition-edge-id="reserved" data-composition-points="678.6666666666666,310;428.3333333333333,310" d="M 678.6666666666666 310 L 428.3333333333333 310" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="495.5" y="346" width="116" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="356" class="t-muted" font-size="9" text-anchor="middle">OK, reservation held</text>
+          <rect x="495.5" y="290" width="116" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="300" class="t-muted" font-size="9" text-anchor="middle">OK, reservation held</text>
         </g>
         </g>
 
         <g data-edge-from="store" data-edge-to="filter" data-edge-label="(false, null)" data-edge-key="5" data-edge-id="proceed">
-          <path data-composition-edge-from="store" data-composition-edge-to="filter" data-composition-edge-id="proceed" data-composition-points="414.3333333333333,410;164,410" d="M 414.3333333333333 410 L 164 410" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="store" data-composition-edge-to="filter" data-composition-edge-id="proceed" data-composition-points="414.3333333333333,345;164,345" d="M 414.3333333333333 345 L 164 345" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="249.36666666666662" y="390" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
-          <text x="289.16666666666663" y="400" class="t-muted" font-size="9" text-anchor="middle">(false, null)</text>
+          <rect x="249.36666666666662" y="325" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
+          <text x="289.16666666666663" y="335" class="t-muted" font-size="9" text-anchor="middle">(false, null)</text>
         </g>
         </g>
 
         <g data-edge-from="filter" data-edge-to="handler" data-edge-label="next(context)" data-edge-key="6" data-edge-id="invoke">
-          <path data-composition-edge-from="filter" data-composition-edge-to="handler" data-composition-edge-id="invoke" data-composition-points="164,474;943,474" d="M 164 474 L 943 474" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-composition-edge-from="filter" data-composition-edge-to="handler" data-composition-edge-id="invoke" data-composition-points="164,396;943,396" d="M 164 396 L 943 396" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="513.7" y="454" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="464" class="t-backend" font-size="9" text-anchor="middle">next(context)</text>
+          <rect x="513.7" y="376" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="386" class="t-backend" font-size="9" text-anchor="middle">next(context)</text>
         </g>
         </g>
 
         <g data-edge-from="handler" data-edge-to="filter" data-edge-label="result" data-edge-key="7" data-edge-id="result">
-          <path data-composition-edge-from="handler" data-composition-edge-to="filter" data-composition-edge-id="result" data-composition-points="943,518;164,518" d="M 943 518 L 164 518" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="handler" data-composition-edge-to="filter" data-composition-edge-id="result" data-composition-points="943,431;164,431" d="M 943 431 L 164 431" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="531.9" y="498" width="43.2" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="508" class="t-muted" font-size="9" text-anchor="middle">result</text>
+          <rect x="531.9" y="411" width="43.2" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="421" class="t-muted" font-size="9" text-anchor="middle">result</text>
         </g>
         </g>
 
         <g data-edge-from="filter" data-edge-to="store" data-edge-label="MarkKeyAsProcessedAsync(keyInfo, response)" data-edge-key="8" data-edge-id="mark">
-          <path data-composition-edge-from="filter" data-composition-edge-to="store" data-composition-edge-id="mark" data-composition-points="164,580;414.3333333333333,580" d="M 164 580 L 414.3333333333333 580" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="filter" data-composition-edge-to="store" data-composition-edge-id="mark" data-composition-points="164,481;414.3333333333333,481" d="M 164 481 L 414.3333333333333 481" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="173.96666666666664" y="560" width="230.4" height="16" rx="3" class="c-mask"/>
-          <text x="289.16666666666663" y="570" class="t-backend" font-size="9" text-anchor="middle">MarkKeyAsProcessedAsync(keyInfo, response)</text>
+          <rect x="173.96666666666664" y="461" width="230.4" height="16" rx="3" class="c-mask"/>
+          <text x="289.16666666666663" y="471" class="t-backend" font-size="9" text-anchor="middle">MarkKeyAsProcessedAsync(keyInfo, response)</text>
         </g>
-        <text data-detail="fine" x="176" y="598" class="t-dim" font-size="7">Only reached when the status code is cacheable; otherwise the reservation is left to expire on its own.</text>
+        <text data-detail="fine" x="176" y="499" class="t-dim" font-size="7">Only reached when the status code is cacheable; otherwise the reservation is left to expire on its own.</text>
         </g>
 
         <g data-edge-from="store" data-edge-to="redis" data-edge-label="SET key &lt;response&gt;, TTL Expiration" data-edge-key="9" data-edge-id="set">
-          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="set" data-composition-points="428.3333333333333,624;678.6666666666666,624" d="M 428.3333333333333 624 L 678.6666666666666 624" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-composition-edge-from="store" data-composition-edge-to="redis" data-composition-edge-id="set" data-composition-points="428.3333333333333,516;678.6666666666666,516" d="M 428.3333333333333 516 L 678.6666666666666 516" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="459.1" y="604" width="188.8" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="614" class="t-backend" font-size="9" text-anchor="middle">SET key &lt;response&gt;, TTL Expiration</text>
+          <rect x="459.1" y="496" width="188.8" height="16" rx="3" class="c-mask"/>
+          <text x="553.5" y="506" class="t-backend" font-size="9" text-anchor="middle">SET key &lt;response&gt;, TTL Expiration</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="642" class="t-dim" font-size="7">Unconditional SET: the reservation is overwritten and the TTL becomes Expiration, four hours by default.</text>
+        <text data-detail="fine" x="440.3333333333333" y="534" class="t-dim" font-size="7">Unconditional SET: the reservation is overwritten and the TTL becomes Expiration, four hours by default.</text>
         </g>
 
         <g data-edge-from="store" data-edge-to="filter" data-edge-label="cached" data-edge-key="10" data-edge-id="done">
-          <path data-composition-edge-from="store" data-composition-edge-to="filter" data-composition-edge-id="done" data-composition-points="414.3333333333333,668;164,668" d="M 414.3333333333333 668 L 164 668" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+          <path data-composition-edge-from="store" data-composition-edge-to="filter" data-composition-edge-id="done" data-composition-points="414.3333333333333,551;164,551" d="M 414.3333333333333 551 L 164 551" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="267.5666666666666" y="648" width="43.2" height="16" rx="3" class="c-mask"/>
-          <text x="289.16666666666663" y="658" class="t-muted" font-size="9" text-anchor="middle">cached</text>
+          <rect x="267.5666666666666" y="531" width="43.2" height="16" rx="3" class="c-mask"/>
+          <text x="289.16666666666663" y="541" class="t-muted" font-size="9" text-anchor="middle">cached</text>
         </g>
         </g>
 
         <!-- Segment Labels -->
         <g data-graph-role="segment-label" data-segment-id="0">
-          <rect x="56" y="148" width="102.4" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="161" class="t-dim" font-size="9" font-weight="600">Check and reserve</text>
+          <rect x="56" y="132" width="102.4" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="145" class="t-dim" font-size="9" font-weight="600">Check and reserve</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="1">
-          <rect x="56" y="430" width="55.6" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="443" class="t-dim" font-size="9" font-weight="600">Run once</text>
+          <rect x="56" y="356" width="55.6" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="369" class="t-dim" font-size="9" font-weight="600">Run once</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="2">
-          <rect x="56" y="536" width="107.60000000000001" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="549" class="t-dim" font-size="9" font-weight="600">Cache the response</text>
+          <rect x="56" y="441" width="107.60000000000001" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="454" class="t-dim" font-size="9" font-weight="600">Cache the response</text>
         </g>
 
         <!-- Participants -->
@@ -486,18 +486,18 @@ rect.c-bg-rect { fill: var(--bg); }
 
         <!-- Legend -->
         <g data-legend="">
-          <text x="40" y="746" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="emphasis" data-legend-x="40" data-legend-baseline="766" data-legend-width="98">
-            <path d="M 40 763 L 74 763" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-            <text x="83" y="766" class="t-muted" font-size="10" font-weight="500">Atomic step</text>
+          <text x="40" y="581" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="emphasis" data-legend-x="40" data-legend-baseline="601" data-legend-width="98">
+            <path d="M 40 598 L 74 598" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+            <text x="83" y="601" class="t-muted" font-size="10" font-weight="500">Atomic step</text>
           </g>
-          <g data-legend-semantic-kind="return" data-legend-x="160" data-legend-baseline="766" data-legend-width="138">
-            <path d="M 160 763 L 194 763" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
-            <text x="203" y="766" class="t-muted" font-size="10" font-weight="500">Reply to the caller</text>
+          <g data-legend-semantic-kind="return" data-legend-x="160" data-legend-baseline="601" data-legend-width="138">
+            <path d="M 160 598 L 194 598" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+            <text x="203" y="601" class="t-muted" font-size="10" font-weight="500">Reply to the caller</text>
           </g>
-          <g data-legend-semantic-kind="default" data-legend-x="320" data-legend-baseline="766" data-legend-width="148">
-            <path d="M 320 763 L 354 763" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-            <text x="363" y="766" class="t-muted" font-size="10" font-weight="500">Non-atomic Redis call</text>
+          <g data-legend-semantic-kind="default" data-legend-x="320" data-legend-baseline="601" data-legend-width="148">
+            <path d="M 320 598 L 354 598" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+            <text x="363" y="601" class="t-muted" font-size="10" font-weight="500">Non-atomic Redis call</text>
           </g>
         </g>
       </svg>

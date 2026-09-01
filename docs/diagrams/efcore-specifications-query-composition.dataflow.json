@@ -53,7 +53,7 @@
       "sublabel": "ignorable filters, then FilterQuery",
       "stage": 1,
       "row": 0,
-      "width": 150
+      "width": 156
     },
     {
       "id": "include",

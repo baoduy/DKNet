@@ -1,4 +1,4 @@
-<svg viewBox="0 0 1375 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1375" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
+<svg viewBox="0 0 1237 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1237" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
@@ -310,171 +310,171 @@ rect.c-bg-rect { fill: var(--bg); }
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Swimlanes -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1319" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1181" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / Host start-up</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1319" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1181" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="200" class="t-dim" font-size="10" font-weight="600">02 / Per-config route group</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1319" height="106" rx="10" class="c-lane" stroke-width="1"/>
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="exception-lane" data-composition-frame-id="lane-2-exception" x="46" y="310" width="1307" height="94" rx="8" class="c-security-group" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1181" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="exception-lane" data-composition-frame-id="lane-2-exception" x="46" y="310" width="1169" height="94" rx="8" class="c-security-group" stroke-width="1"/>
         <text x="54" y="326" class="t-security" font-size="10" font-weight="600">EX / Early exits</text>
 
         <!-- Phase headers -->
-        <line x1="109" y1="35" x2="472.6" y2="35" class="a-default" stroke-width="1.1"/>
-        <rect x="109" y="27" width="363.6" height="16" rx="4" class="c-mask"/>
-        <text x="290.8" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Guard, then discover</text>
-        <line x1="500.6" y1="35" x2="592.6" y2="35" class="a-emphasis" stroke-width="1.1"/>
-        <rect x="500.6" y="27" width="92" height="16" rx="4" class="c-mask"/>
-        <text x="546.6" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Build the group</text>
-        <line x1="732.5999999999999" y1="35" x2="1291.6" y2="35" class="a-dashed" stroke-width="1.1"/>
-        <rect x="732.5999999999999" y="27" width="558.9999999999999" height="16" rx="4" class="c-mask"/>
-        <text x="1012.0999999999999" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Filters, authorization, Map</text>
+        <line x1="102" y1="35" x2="432.1" y2="35" class="a-default" stroke-width="1.1"/>
+        <rect x="102" y="27" width="330.1" height="16" rx="4" class="c-mask"/>
+        <text x="267.05" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Guard, then discover</text>
+        <line x1="460.1" y1="35" x2="552.1" y2="35" class="a-emphasis" stroke-width="1.1"/>
+        <rect x="460.1" y="27" width="92" height="16" rx="4" class="c-mask"/>
+        <text x="506.1" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Build the group</text>
+        <line x1="661.5999999999999" y1="35" x2="1176.1" y2="35" class="a-dashed" stroke-width="1.1"/>
+        <rect x="661.5999999999999" y="27" width="514.4999999999999" height="16" rx="4" class="c-mask"/>
+        <text x="918.8499999999999" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Filters, authorization, Map</text>
 
         <!-- Workflow groups -->
 
 
         <!-- Edge paths -->
-        <path data-edge-from="versioned" data-edge-to="population" data-edge-key="0" data-edge-id="add-filter" data-composition-points="648.6,246;676.6,246" d="M 648.6 246 L 676.6 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="discovery" data-edge-to="versioned" data-edge-label="one group per config" data-edge-key="1" data-edge-id="found-configs" data-composition-points="426.6,154;426.6,300;546.6,300;546.6,280" d="M 426.6 154 L 426.6 300 L 546.6 300 L 546.6 280" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="discovery" data-edge-to="nogroups" data-edge-label="zero configs" data-edge-key="2" data-edge-id="found-none" data-composition-points="426.6,154;426.6,231;321.6,231;321.6,372;337.6,372" d="M 426.6 154 L 426.6 231 L 321.6 231 L 321.6 372 L 337.6 372" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="entry" data-edge-to="noversioning" data-edge-label="no versioning services" data-edge-key="3" data-edge-id="guard-fails" data-composition-points="253,120;269,120;269,231;155,231;155,338" d="M 253 120 L 269 120 L 269 231 L 155 231 L 155 338" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="entry" data-edge-to="discovery" data-edge-label="guard passes" data-edge-key="4" data-edge-id="guard-passes" data-composition-points="253,120;269,120;269,174;426.6,174;426.6,154" d="M 253 120 L 269 120 L 269 174 L 426.6 174 L 426.6 154" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="hostsetup" data-edge-to="authmap" data-edge-key="5" data-edge-id="then-auth" data-composition-points="1112.6,246;1140.6,246" d="M 1112.6 246 L 1140.6 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="population" data-edge-to="hostsetup" data-edge-key="6" data-edge-id="then-host" data-composition-points="880.6,246;908.6,246" d="M 880.6 246 L 908.6 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="population" data-edge-to="nopopulation" data-edge-label="at endpoint build" data-edge-key="7" data-edge-id="unregistered" data-composition-points="778.6,272;778.6,294;901.6,294;901.6,372;885.6,372" d="M 778.6 272 L 778.6 294 L 901.6 294 L 901.6 372 L 885.6 372" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="versioned" data-edge-to="population" data-edge-key="0" data-edge-id="add-filter" data-composition-points="587.1,246;615.1,246" d="M 587.1 246 L 615.1 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="discovery" data-edge-to="versioned" data-edge-label="one group per config" data-edge-key="1" data-edge-id="found-configs" data-composition-points="386.1,154;386.1,300;506.1,300;506.1,280" d="M 386.1 154 L 386.1 300 L 506.1 300 L 506.1 280" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="discovery" data-edge-to="nogroups" data-edge-label="zero configs" data-edge-key="2" data-edge-id="found-none" data-composition-points="302.6,120;286.6,120;286.6,426;386.1,426;386.1,398" d="M 302.6 120 L 286.6 120 L 286.6 426 L 386.1 426 L 386.1 398" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="entry" data-edge-to="noversioning" data-edge-label="no versioning services" data-edge-key="3" data-edge-id="guard-fails" data-composition-points="69,120;53,120;53,231;264,231;264,372;248,372" d="M 69 120 L 53 120 L 53 231 L 264 231 L 264 372 L 248 372" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="entry" data-edge-to="discovery" data-edge-label="guard passes" data-edge-key="4" data-edge-id="guard-passes" data-composition-points="148,146;148,174;286.6,174;286.6,120;302.6,120" d="M 148 146 L 148 174 L 286.6 174 L 286.6 120 L 302.6 120" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="hostsetup" data-edge-to="authmap" data-edge-key="5" data-edge-id="then-auth" data-composition-points="924.1,272;924.1,288;1130.1,288;1130.1,272" d="M 924.1 272 L 924.1 288 L 1130.1 288 L 1130.1 272" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="population" data-edge-to="hostsetup" data-edge-key="6" data-edge-id="then-host" data-composition-points="800.1,246;828.1,246" d="M 800.1 246 L 828.1 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="population" data-edge-to="nopopulation" data-edge-label="at endpoint build" data-edge-key="7" data-edge-id="unregistered" data-composition-points="707.6,272;707.6,294;831.1,294;831.1,372;815.1,372" d="M 707.6 272 L 707.6 294 L 831.1 294 L 831.1 372 L 815.1 372" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
 
         <!-- Nodes -->
         <g id="node-entry" data-node-id="entry" data-node-label="app.UseEndpointConfigs()" tabindex="0" role="button" aria-label="Focus app.UseEndpointConfigs(), options plus assemblies to scan, Host start-up › Guard, then discover" aria-pressed="false" data-node-kind="external" data-node-sublabel="options plus assemblies to scan" data-node-context="Host start-up › Guard, then discover">
           <title>app.UseEndpointConfigs() · options plus assemblies to scan · Host start-up › Guard, then discover</title>
-          <rect x="57" y="94" width="196" height="52" rx="6" class="c-mask"/>
-          <rect x="57" y="94" width="196" height="52" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(63 100) scale(0.6875)">
+          <rect x="69" y="94" width="158" height="52" rx="6" class="c-mask"/>
+          <rect x="69" y="94" width="158" height="52" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(75 100) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="155" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">app.UseEndpointConfigs()</text>
-          <text data-detail="context" x="155" y="132" class="t-muted" font-size="8" text-anchor="middle">options plus assemblies to scan</text>
+          <text data-node-label="" data-detail-anchor="" x="148" y="115" class="t-primary" font-size="10.4" font-weight="600" text-anchor="middle">app.UseEndpointConfigs()</text>
+          <text data-detail="context" x="148" y="132" class="t-muted" font-size="8" text-anchor="middle">options plus assemblies to scan</text>
         </g>
 
         <g id="node-discovery" data-node-id="discovery" data-node-label="Discover IEndpointConfig" tabindex="0" role="button" aria-label="Focus Discover IEndpointConfig, non-abstract, non-generic classes, Host start-up › Guard, then discover" aria-pressed="false" data-node-kind="backend" data-node-sublabel="non-abstract, non-generic classes" data-node-tag="every loaded assembly by default" data-node-context="Host start-up › Guard, then discover">
           <title>Discover IEndpointConfig · non-abstract, non-generic classes · Host start-up › Guard, then discover · every loaded assembly by default</title>
-          <rect x="328.6" y="86" width="196" height="68" rx="6" class="c-mask"/>
-          <rect x="328.6" y="86" width="196" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(334.6 92) scale(0.6875)">
+          <rect x="302.6" y="86" width="167" height="68" rx="6" class="c-mask"/>
+          <rect x="302.6" y="86" width="167" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(308.6 92) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="426.6" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Discover IEndpointConfig</text>
-          <text data-detail="context" x="426.6" y="124" class="t-muted" font-size="8" text-anchor="middle">non-abstract, non-generic classes</text>
-        <text data-detail="fine" x="426.6" y="142" class="t-backend" font-size="7" text-anchor="middle">every loaded assembly by default</text>
+          <text data-node-label="" data-detail-anchor="" x="386.1" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Discover IEndpointConfig</text>
+          <text data-detail="context" x="386.1" y="124" class="t-muted" font-size="8" text-anchor="middle">non-abstract, non-generic classes</text>
+        <text data-detail="fine" x="386.1" y="142" class="t-backend" font-size="7" text-anchor="middle">every loaded assembly by default</text>
         </g>
 
         <g id="node-versioned" data-node-id="versioned" data-node-label="Versioned route group" tabindex="0" role="button" aria-label="Focus Versioned route group, MapGroup, version metadata, tags, Per-config route group › Build the group" aria-pressed="false" data-node-kind="backend" data-node-sublabel="MapGroup, version metadata, tags" data-node-tag="one ApiVersionSet for every config" data-node-context="Per-config route group › Build the group">
           <title>Versioned route group · MapGroup, version metadata, tags · Per-config route group › Build the group · one ApiVersionSet for every config</title>
-          <rect x="444.6" y="212" width="204" height="68" rx="6" class="c-mask"/>
-          <rect x="444.6" y="212" width="204" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(450.6 218) scale(0.6875)">
+          <rect x="425.1" y="212" width="162" height="68" rx="6" class="c-mask"/>
+          <rect x="425.1" y="212" width="162" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(431.1 218) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="546.6" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Versioned route group</text>
-          <text data-detail="context" x="546.6" y="250" class="t-muted" font-size="8" text-anchor="middle">MapGroup, version metadata, tags</text>
-        <text data-detail="fine" x="546.6" y="268" class="t-backend" font-size="7" text-anchor="middle">one ApiVersionSet for every config</text>
+          <text data-node-label="" data-detail-anchor="" x="506.1" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Versioned route group</text>
+          <text data-detail="context" x="506.1" y="250" class="t-muted" font-size="8" text-anchor="middle">MapGroup, version metadata, tags</text>
+        <text data-detail="fine" x="506.1" y="268" class="t-backend" font-size="7" text-anchor="middle">one ApiVersionSet for every config</text>
         </g>
 
         <g id="node-population" data-node-id="population" data-node-label="Contextual population filter" tabindex="0" role="button" aria-label="Focus Contextual population filter, added first, ahead of host filters, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="security" data-node-sublabel="added first, ahead of host filters" data-node-context="Per-config route group › Filters, authorization, Map">
           <title>Contextual population filter · added first, ahead of host filters · Per-config route group › Filters, authorization, Map</title>
-          <rect x="676.6" y="220" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="676.6" y="220" width="204" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(682.6 226) scale(0.6875)">
+          <rect x="615.1" y="220" width="185" height="52" rx="6" class="c-mask"/>
+          <rect x="615.1" y="220" width="185" height="52" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(621.1 226) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="778.6" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Contextual population filter</text>
-          <text data-detail="context" x="778.6" y="258" class="t-muted" font-size="8" text-anchor="middle">added first, ahead of host filters</text>
+          <text data-node-label="" data-detail-anchor="" x="707.6" y="241" class="t-primary" font-size="10.5" font-weight="600" text-anchor="middle">Contextual population filter</text>
+          <text data-detail="context" x="707.6" y="258" class="t-muted" font-size="8" text-anchor="middle">added first, ahead of host filters</text>
         </g>
 
         <g id="node-hostsetup" data-node-id="hostsetup" data-node-label="ConfigureGroup(group, config)" tabindex="0" role="button" aria-label="Focus ConfigureGroup(group, config), host filters, e.g. validation, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="backend" data-node-sublabel="host filters, e.g. validation" data-node-context="Per-config route group › Filters, authorization, Map">
           <title>ConfigureGroup(group, config) · host filters, e.g. validation · Per-config route group › Filters, authorization, Map</title>
-          <rect x="908.6" y="220" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="908.6" y="220" width="204" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(914.6 226) scale(0.6875)">
+          <rect x="828.1" y="220" width="192" height="52" rx="6" class="c-mask"/>
+          <rect x="828.1" y="220" width="192" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(834.1 226) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1010.6" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ConfigureGroup(group, config)</text>
-          <text data-detail="context" x="1010.6" y="258" class="t-muted" font-size="8" text-anchor="middle">host filters, e.g. validation</text>
+          <text data-node-label="" data-detail-anchor="" x="924.1" y="241" class="t-primary" font-size="10.5" font-weight="600" text-anchor="middle">ConfigureGroup(group, config)</text>
+          <text data-detail="context" x="924.1" y="258" class="t-muted" font-size="8" text-anchor="middle">host filters, e.g. validation</text>
         </g>
 
-        <g id="node-authmap" data-node-id="authmap" data-node-label="RequireAuthorization, then Map" tabindex="0" role="button" aria-label="Focus RequireAuthorization, then Map, AuthPolicy, or plain authentication, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="backend" data-node-sublabel="AuthPolicy, or plain authentication" data-node-context="Per-config route group › Filters, authorization, Map">
-          <title>RequireAuthorization, then Map · AuthPolicy, or plain authentication · Per-config route group › Filters, authorization, Map</title>
-          <rect x="1140.6" y="220" width="210" height="52" rx="6" class="c-mask"/>
-          <rect x="1140.6" y="220" width="210" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1146.6 226) scale(0.6875)">
+        <g id="node-authmap" data-node-id="authmap" data-node-label="RequireAuthorization, Map" tabindex="0" role="button" aria-label="Focus RequireAuthorization, Map, AuthPolicy, or no policy, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="backend" data-node-sublabel="AuthPolicy, or no policy" data-node-context="Per-config route group › Filters, authorization, Map">
+          <title>RequireAuthorization, Map · AuthPolicy, or no policy · Per-config route group › Filters, authorization, Map</title>
+          <rect x="1048.1" y="220" width="164" height="52" rx="6" class="c-mask"/>
+          <rect x="1048.1" y="220" width="164" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1054.1 226) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1245.6" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">RequireAuthorization, then Map</text>
-          <text data-detail="context" x="1245.6" y="258" class="t-muted" font-size="8" text-anchor="middle">AuthPolicy, or plain authentication</text>
+          <text data-node-label="" data-detail-anchor="" x="1130.1" y="241" class="t-primary" font-size="10.4" font-weight="600" text-anchor="middle">RequireAuthorization, Map</text>
+          <text data-detail="context" x="1130.1" y="258" class="t-muted" font-size="8" text-anchor="middle">AuthPolicy, or no policy</text>
         </g>
 
-        <g id="node-noversioning" data-node-id="noversioning" data-node-label="InvalidOperationException" tabindex="0" role="button" aria-label="Focus InvalidOperationException, EnableVersioning on, AddApiVersioning missing, Early exits › Guard, then discover" aria-pressed="false" data-node-kind="security" data-node-sublabel="EnableVersioning on, AddApiVersioning missing" data-node-tag="thrown before discovery" data-node-context="Early exits › Guard, then discover">
-          <title>InvalidOperationException · EnableVersioning on, AddApiVersioning missing · Early exits › Guard, then discover · thrown before discovery</title>
-          <rect x="48" y="338" width="214" height="68" rx="6" class="c-mask"/>
-          <rect x="48" y="338" width="214" height="68" rx="6" class="c-security" stroke-width="1.5"/>
+        <g id="node-noversioning" data-node-id="noversioning" data-node-label="InvalidOperationException" tabindex="0" role="button" aria-label="Focus InvalidOperationException, EnableVersioning on, no AddApiVersioning, Early exits › Guard, then discover" aria-pressed="false" data-node-kind="security" data-node-sublabel="EnableVersioning on, no AddApiVersioning" data-node-tag="thrown before discovery" data-node-context="Early exits › Guard, then discover">
+          <title>InvalidOperationException · EnableVersioning on, no AddApiVersioning · Early exits › Guard, then discover · thrown before discovery</title>
+          <rect x="48" y="338" width="200" height="68" rx="6" class="c-mask"/>
+          <rect x="48" y="338" width="200" height="68" rx="6" class="c-security" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(54 344) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="155" y="359" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">InvalidOperationException</text>
-          <text data-detail="context" x="155" y="376" class="t-muted" font-size="7.6" text-anchor="middle">EnableVersioning on, AddApiVersioning missing</text>
-        <text data-detail="fine" x="155" y="394" class="t-security" font-size="7" text-anchor="middle">thrown before discovery</text>
+          <text data-node-label="" data-detail-anchor="" x="148" y="359" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">InvalidOperationException</text>
+          <text data-detail="context" x="148" y="376" class="t-muted" font-size="8" text-anchor="middle">EnableVersioning on, no AddApiVersioning</text>
+        <text data-detail="fine" x="148" y="394" class="t-security" font-size="7" text-anchor="middle">thrown before discovery</text>
         </g>
 
         <g id="node-nogroups" data-node-id="nogroups" data-node-label="Empty list returned" tabindex="0" role="button" aria-label="Focus Empty list returned, nothing is mapped, Early exits › Guard, then discover" aria-pressed="false" data-node-kind="external" data-node-sublabel="nothing is mapped" data-node-context="Early exits › Guard, then discover">
           <title>Empty list returned · nothing is mapped · Early exits › Guard, then discover</title>
-          <rect x="337.6" y="346" width="178" height="52" rx="6" class="c-mask"/>
-          <rect x="337.6" y="346" width="178" height="52" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(343.6 352) scale(0.6875)">
+          <rect x="324.1" y="346" width="124" height="52" rx="6" class="c-mask"/>
+          <rect x="324.1" y="346" width="124" height="52" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(330.1 352) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="426.6" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Empty list returned</text>
-          <text data-detail="context" x="426.6" y="384" class="t-muted" font-size="8" text-anchor="middle">nothing is mapped</text>
+          <text data-node-label="" data-detail-anchor="" x="386.1" y="367" class="t-primary" font-size="10.1" font-weight="600" text-anchor="middle">Empty list returned</text>
+          <text data-detail="context" x="386.1" y="384" class="t-muted" font-size="8" text-anchor="middle">nothing is mapped</text>
         </g>
 
         <g id="node-nopopulation" data-node-id="nopopulation" data-node-label="InvalidOperationException" tabindex="0" role="button" aria-label="Focus InvalidOperationException, declared source, mechanism never registered, Early exits › Filters, authorization, Map" aria-pressed="false" data-node-kind="security" data-node-sublabel="declared source, mechanism never registered" data-node-context="Early exits › Filters, authorization, Map">
           <title>InvalidOperationException · declared source, mechanism never registered · Early exits › Filters, authorization, Map</title>
-          <rect x="671.6" y="346" width="214" height="52" rx="6" class="c-mask"/>
-          <rect x="671.6" y="346" width="214" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(677.6 352) scale(0.6875)">
+          <rect x="600.1" y="346" width="215" height="52" rx="6" class="c-mask"/>
+          <rect x="600.1" y="346" width="215" height="52" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(606.1 352) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="778.6" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">InvalidOperationException</text>
-          <text data-detail="context" x="778.6" y="384" class="t-muted" font-size="7.9" text-anchor="middle">declared source, mechanism never registered</text>
+          <text data-node-label="" data-detail-anchor="" x="707.6" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">InvalidOperationException</text>
+          <text data-detail="context" x="707.6" y="384" class="t-muted" font-size="8" text-anchor="middle">declared source, mechanism never registered</text>
         </g>
 
         <!-- Edge labels -->
 
         <g data-detail="context" data-edge-from="discovery" data-edge-to="versioned" data-edge-label="one group per config" data-edge-key="1" data-edge-id="found-configs">
-          <rect x="433.6" y="280" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="486.6" y="290" class="t-backend" font-size="8" text-anchor="middle">one group per config</text>
+          <rect x="393.1" y="280" width="106" height="14" rx="3" class="c-mask"/>
+          <text x="446.1" y="290" class="t-backend" font-size="8" text-anchor="middle">one group per config</text>
         </g>
         <g data-detail="context" data-edge-from="discovery" data-edge-to="nogroups" data-edge-label="zero configs" data-edge-key="2" data-edge-id="found-none">
-          <rect x="340.3" y="211" width="67.6" height="14" rx="3" class="c-mask"/>
-          <text x="374.1" y="221" class="t-database" font-size="8" text-anchor="middle">zero configs</text>
+          <rect x="302.55" y="406" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="336.35" y="416" class="t-database" font-size="8" text-anchor="middle">zero configs</text>
         </g>
         <g data-detail="context" data-edge-from="entry" data-edge-to="noversioning" data-edge-label="no versioning services" data-edge-key="3" data-edge-id="guard-fails">
-          <rect x="154.2" y="211" width="115.6" height="14" rx="3" class="c-mask"/>
-          <text x="212" y="221" class="t-security" font-size="8" text-anchor="middle">no versioning services</text>
+          <rect x="100.7" y="211" width="115.6" height="14" rx="3" class="c-mask"/>
+          <text x="158.5" y="221" class="t-security" font-size="8" text-anchor="middle">no versioning services</text>
         </g>
         <g data-detail="context" data-edge-from="entry" data-edge-to="discovery" data-edge-label="guard passes" data-edge-key="4" data-edge-id="guard-passes">
-          <rect x="314" y="154" width="67.6" height="14" rx="3" class="c-mask"/>
-          <text x="347.8" y="164" class="t-backend" font-size="8" text-anchor="middle">guard passes</text>
+          <rect x="183.5" y="154" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="217.3" y="164" class="t-backend" font-size="8" text-anchor="middle">guard passes</text>
         </g>
 
 
         <g data-detail="context" data-edge-from="population" data-edge-to="nopopulation" data-edge-label="at endpoint build" data-edge-key="7" data-edge-id="unregistered">
-          <rect x="794.3000000000001" y="274" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="840.1" y="284" class="t-security" font-size="8" text-anchor="middle">at endpoint build</text>
+          <rect x="723.5500000000001" y="274" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="769.35" y="284" class="t-security" font-size="8" text-anchor="middle">at endpoint build</text>
         </g>
 
         <!-- Legend -->

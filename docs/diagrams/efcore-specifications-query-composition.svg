@@ -326,8 +326,8 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="960" y="68" class="t-dim" font-size="9" font-weight="600" text-anchor="middle">05 / Window</text>
 
         <!-- Flow paths -->
-        <path data-edge-from="spec" data-edge-to="filter" data-edge-label="queryable" data-edge-key="0" data-composition-points="175,157;240,157" d="M 175 157 L 240 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="filter" data-edge-to="include" data-edge-label="filtered" data-edge-key="1" data-composition-points="390,157;455,157" d="M 390 157 L 455 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="spec" data-edge-to="filter" data-edge-label="queryable" data-edge-key="0" data-composition-points="175,157;237,157" d="M 175 157 L 237 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="filter" data-edge-to="include" data-edge-label="filtered" data-edge-key="1" data-composition-points="393,157;455,157" d="M 393 157 L 455 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="include" data-edge-to="order" data-edge-label="shaped" data-edge-key="2" data-composition-points="605,157;670,157" d="M 605 157 L 670 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="order" data-edge-to="window" data-edge-label="ordered" data-edge-key="3" data-composition-points="820,157;885,157" d="M 820 157 L 885 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
@@ -346,13 +346,13 @@ rect.c-bg-rect { fill: var(--bg); }
 
         <g id="node-filter" data-node-id="filter" data-node-label="Ignore + Where" tabindex="0" role="button" aria-label="Focus Ignore + Where, ignorable filters, then FilterQuery, 02 / Filter" aria-pressed="false" data-node-kind="backend" data-node-sublabel="ignorable filters, then FilterQuery" data-node-context="02 / Filter">
           <title>Ignore + Where · ignorable filters, then FilterQuery · 02 / Filter</title>
-          <rect x="240" y="128" width="150" height="58" rx="6" class="c-mask"/>
-          <rect x="240" y="128" width="150" height="58" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(246 134) scale(0.6875)">
+          <rect x="237" y="128" width="156" height="58" rx="6" class="c-mask"/>
+          <rect x="237" y="128" width="156" height="58" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(243 134) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="315" y="149" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Ignore + Where</text>
-          <text data-detail="context" x="315" y="165" class="t-muted" font-size="6.7" text-anchor="middle">ignorable filters, then FilterQuery</text>
+          <text data-detail="context" x="315" y="165" class="t-muted" font-size="7" text-anchor="middle">ignorable filters, then FilterQuery</text>
         </g>
 
         <g id="node-include" data-node-id="include" data-node-label="Include chain" tabindex="0" role="button" aria-label="Focus Include chain, IncludeQueries, then builders, 03 / Shape" aria-pressed="false" data-node-kind="backend" data-node-sublabel="IncludeQueries, then builders" data-node-context="03 / Shape">
@@ -391,12 +391,12 @@ rect.c-bg-rect { fill: var(--bg); }
 
         <!-- Flow labels -->
         <g data-detail="context" data-edge-from="spec" data-edge-to="filter" data-edge-label="queryable" data-edge-key="0">
-          <rect x="179.45" y="98" width="56.1" height="16" rx="4" class="c-mask"/>
-          <text x="207.5" y="109" class="t-backend" font-size="8" text-anchor="middle">queryable</text>
+          <rect x="177.95" y="98" width="56.1" height="16" rx="4" class="c-mask"/>
+          <text x="206" y="109" class="t-backend" font-size="8" text-anchor="middle">queryable</text>
         </g>
         <g data-detail="context" data-edge-from="filter" data-edge-to="include" data-edge-label="filtered" data-edge-key="1">
-          <rect x="396.9" y="98" width="51.2" height="16" rx="4" class="c-mask"/>
-          <text x="422.5" y="109" class="t-backend" font-size="8" text-anchor="middle">filtered</text>
+          <rect x="398.4" y="98" width="51.2" height="16" rx="4" class="c-mask"/>
+          <text x="424" y="109" class="t-backend" font-size="8" text-anchor="middle">filtered</text>
         </g>
         <g data-detail="context" data-edge-from="include" data-edge-to="order" data-edge-label="shaped" data-edge-key="2">
           <rect x="616.8" y="98" width="41.4" height="16" rx="4" class="c-mask"/>

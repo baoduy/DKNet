@@ -1,4 +1,4 @@
-<svg viewBox="0 0 1514 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1514" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
+<svg viewBox="0 0 1227 534" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="1227" height="534" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
@@ -310,140 +310,137 @@ rect.c-bg-rect { fill: var(--bg); }
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Swimlanes -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1458" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="1171" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / Service registration</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1458" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="178" width="1171" height="106" rx="10" class="c-lane" stroke-width="1"/>
         <text x="54" y="200" class="t-dim" font-size="10" font-weight="600">02 / BackgroundJobHost</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1458" height="106" rx="10" class="c-lane" stroke-width="1"/>
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="exception-lane" data-composition-frame-id="lane-2-exception" x="46" y="310" width="1446" height="94" rx="8" class="c-security-group" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="304" width="1171" height="106" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="exception-lane" data-composition-frame-id="lane-2-exception" x="46" y="310" width="1159" height="94" rx="8" class="c-security-group" stroke-width="1"/>
         <text x="54" y="326" class="t-security" font-size="10" font-weight="600">EX / Failed task</text>
 
         <!-- Phase headers -->
-        <line x1="110" y1="35" x2="436" y2="35" class="a-default" stroke-width="1.1"/>
-        <rect x="110" y="27" width="326" height="16" rx="4" class="c-mask"/>
-        <text x="273" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Registration</text>
-        <line x1="464" y1="35" x2="788" y2="35" class="a-emphasis" stroke-width="1.1"/>
-        <rect x="464" y="27" width="324" height="16" rx="4" class="c-mask"/>
-        <text x="626" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Host start-up</text>
-        <line x1="1018.7999999999998" y1="35" x2="1433.6" y2="35" class="a-dashed" stroke-width="1.1"/>
-        <rect x="1018.7999999999998" y="27" width="414.79999999999995" height="16" rx="4" class="c-mask"/>
-        <text x="1226.1999999999998" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Run, then finish</text>
+        <line x1="102" y1="35" x2="396" y2="35" class="a-default" stroke-width="1.1"/>
+        <rect x="102" y="27" width="294" height="16" rx="4" class="c-mask"/>
+        <text x="249" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Registration</text>
+        <line x1="424" y1="35" x2="706" y2="35" class="a-emphasis" stroke-width="1.1"/>
+        <rect x="424" y="27" width="282" height="16" rx="4" class="c-mask"/>
+        <text x="565" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Host start-up</text>
+        <line x1="790" y1="35" x2="1160.8" y2="35" class="a-dashed" stroke-width="1.1"/>
+        <rect x="790" y="27" width="370.79999999999995" height="16" rx="4" class="c-mask"/>
+        <text x="975.4" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Run, then finish</text>
 
         <!-- Workflow groups -->
 
 
         <!-- Edge paths -->
-        <path data-edge-from="runall" data-edge-to="finish" data-edge-label="all RunAsync returned" data-edge-key="0" data-edge-id="all-returned" data-composition-points="1166.8,246;1285.6,246" d="M 1166.8 246 L 1285.6 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="failed" data-edge-to="finish" data-edge-label="siblings still complete" data-edge-key="1" data-edge-id="isolated" data-composition-points="1172.8,372;1387.6,372;1387.6,272" d="M 1172.8 372 L 1387.6 372 L 1387.6 272" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="runall" data-edge-to="failed" data-edge-label="task throws" data-edge-key="2" data-edge-id="task-throws" data-composition-points="962.8,246;946.8,246;946.8,426;1064.8,426;1064.8,398" d="M 962.8 246 L 946.8 246 L 946.8 426 L 1064.8 426 L 1064.8 398" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="register" data-edge-to="addhost" data-edge-key="3" data-edge-id="to-host" data-composition-points="264,120;292,120" d="M 264 120 L 292 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="scope" data-edge-to="runall" data-edge-label="one scope, every task" data-edge-key="4" data-edge-id="to-runall" data-composition-points="742,212;742,196;1064.8,196;1064.8,212" d="M 742 212 L 742 196 L 1064.8 196 L 1064.8 212" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="start" data-edge-to="scope" data-edge-key="5" data-edge-id="to-scope" data-composition-points="612,246;640,246" d="M 612 246 L 640 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="addhost" data-edge-to="start" data-edge-key="6" data-edge-id="to-start" data-composition-points="390,146;390,246;408,246" d="M 390 146 L 390 246 L 408 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="runall" data-edge-to="finish" data-edge-label="all RunAsync returned" data-edge-key="0" data-edge-id="all-returned" data-composition-points="908,246;1026.8,246" d="M 908 246 L 1026.8 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="failed" data-edge-to="finish" data-edge-label="siblings still complete" data-edge-key="1" data-edge-id="isolated" data-composition-points="931.5,372;1114.8,372;1114.8,272" d="M 931.5 372 L 1114.8 372 L 1114.8 272" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="runall" data-edge-to="failed" data-edge-label="task throws" data-edge-key="2" data-edge-id="task-throws" data-composition-points="836,280;836,296;20,296;20,372;740.5,372" d="M 836 280 L 836 296 L 20 296 L 20 372 L 740.5 372" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="register" data-edge-to="addhost" data-edge-key="3" data-edge-id="to-host" data-composition-points="248,120;276,120" d="M 248 120 L 276 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="scope" data-edge-to="runall" data-edge-key="4" data-edge-id="to-runall" data-composition-points="736,246;764,246" d="M 736 246 L 764 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="start" data-edge-to="scope" data-edge-key="5" data-edge-id="to-scope" data-composition-points="556,246;584,246" d="M 556 246 L 584 246" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="addhost" data-edge-to="start" data-edge-key="6" data-edge-id="to-start" data-composition-points="350,146;350,246;384,246" d="M 350 146 L 350 246 L 384 246" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
         <!-- Nodes -->
         <g id="node-register" data-node-id="register" data-node-label="Register the tasks" tabindex="0" role="button" aria-label="Focus Register the tasks, AddBackgroundJob or AddBackgroundJobFrom, Service registration › Registration" aria-pressed="false" data-node-kind="external" data-node-sublabel="AddBackgroundJob or AddBackgroundJobFrom" data-node-tag="scoped, de-duplicated by implementation type" data-node-context="Service registration › Registration">
           <title>Register the tasks · AddBackgroundJob or AddBackgroundJobFrom · Service registration › Registration · scoped, de-duplicated by implementation type</title>
-          <rect x="48" y="86" width="216" height="68" rx="6" class="c-mask"/>
-          <rect x="48" y="86" width="216" height="68" rx="6" class="c-external" stroke-width="1.5"/>
+          <rect x="48" y="86" width="200" height="68" rx="6" class="c-mask"/>
+          <rect x="48" y="86" width="200" height="68" rx="6" class="c-external" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(54 92) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="156" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Register the tasks</text>
-          <text data-detail="context" x="156" y="124" class="t-muted" font-size="8" text-anchor="middle">AddBackgroundJob or AddBackgroundJobFrom</text>
-        <text data-detail="fine" x="156" y="142" class="t-external" font-size="7" text-anchor="middle">scoped, de-duplicated by implementation type</text>
+          <text data-node-label="" data-detail-anchor="" x="148" y="107" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Register the tasks</text>
+          <text data-detail="context" x="148" y="124" class="t-muted" font-size="8" text-anchor="middle">AddBackgroundJob or AddBackgroundJobFrom</text>
+        <text data-detail="fine" x="148" y="142" class="t-external" font-size="7" text-anchor="middle">scoped, de-duplicated by implementation type</text>
         </g>
 
         <g id="node-addhost" data-node-id="addhost" data-node-label="AddHostedService" tabindex="0" role="button" aria-label="Focus AddHostedService, BackgroundJobHost, added once, Service registration › Registration" aria-pressed="false" data-node-kind="backend" data-node-sublabel="BackgroundJobHost, added once" data-node-context="Service registration › Registration">
           <title>AddHostedService · BackgroundJobHost, added once · Service registration › Registration</title>
-          <rect x="292" y="94" width="196" height="52" rx="6" class="c-mask"/>
-          <rect x="292" y="94" width="196" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(298 100) scale(0.6875)">
+          <rect x="276" y="94" width="148" height="52" rx="6" class="c-mask"/>
+          <rect x="276" y="94" width="148" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(282 100) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="390" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">AddHostedService</text>
-          <text data-detail="context" x="390" y="132" class="t-muted" font-size="8" text-anchor="middle">BackgroundJobHost, added once</text>
+          <text data-node-label="" data-detail-anchor="" x="350" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">AddHostedService</text>
+          <text data-detail="context" x="350" y="132" class="t-muted" font-size="8" text-anchor="middle">BackgroundJobHost, added once</text>
         </g>
 
         <g id="node-start" data-node-id="start" data-node-label="Generic host starts" tabindex="0" role="button" aria-label="Focus Generic host starts, logs &quot;Background job host started&quot;, BackgroundJobHost › Host start-up" aria-pressed="false" data-node-kind="backend" data-node-sublabel="logs &quot;Background job host started&quot;" data-node-context="BackgroundJobHost › Host start-up">
           <title>Generic host starts · logs &quot;Background job host started&quot; · BackgroundJobHost › Host start-up</title>
-          <rect x="408" y="220" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="408" y="220" width="204" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(414 226) scale(0.6875)">
+          <rect x="384" y="220" width="172" height="52" rx="6" class="c-mask"/>
+          <rect x="384" y="220" width="172" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(390 226) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="510" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Generic host starts</text>
-          <text data-detail="context" x="510" y="258" class="t-muted" font-size="8" text-anchor="middle">logs &quot;Background job host started&quot;</text>
+          <text data-node-label="" data-detail-anchor="" x="470" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Generic host starts</text>
+          <text data-detail="context" x="470" y="258" class="t-muted" font-size="8" text-anchor="middle">logs &quot;Background job host started&quot;</text>
         </g>
 
         <g id="node-scope" data-node-id="scope" data-node-label="One shared async scope" tabindex="0" role="button" aria-label="Focus One shared async scope, resolves every IBackgroundTask, BackgroundJobHost › Host start-up" aria-pressed="false" data-node-kind="backend" data-node-sublabel="resolves every IBackgroundTask" data-node-tag="not one scope per task" data-node-context="BackgroundJobHost › Host start-up">
           <title>One shared async scope · resolves every IBackgroundTask · BackgroundJobHost › Host start-up · not one scope per task</title>
-          <rect x="640" y="212" width="204" height="68" rx="6" class="c-mask"/>
-          <rect x="640" y="212" width="204" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(646 218) scale(0.6875)">
+          <rect x="584" y="212" width="152" height="68" rx="6" class="c-mask"/>
+          <rect x="584" y="212" width="152" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(590 218) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="742" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">One shared async scope</text>
-          <text data-detail="context" x="742" y="250" class="t-muted" font-size="8" text-anchor="middle">resolves every IBackgroundTask</text>
-        <text data-detail="fine" x="742" y="268" class="t-backend" font-size="7" text-anchor="middle">not one scope per task</text>
+          <text data-node-label="" data-detail-anchor="" x="660" y="233" class="t-primary" font-size="10.9" font-weight="600" text-anchor="middle">One shared async scope</text>
+          <text data-detail="context" x="660" y="250" class="t-muted" font-size="8" text-anchor="middle">resolves every IBackgroundTask</text>
+        <text data-detail="fine" x="660" y="268" class="t-backend" font-size="7" text-anchor="middle">not one scope per task</text>
         </g>
 
         <g id="node-runall" data-node-id="runall" data-node-label="Task.WhenAll(RunAsync)" tabindex="0" role="button" aria-label="Focus Task.WhenAll(RunAsync), all tasks run concurrently, BackgroundJobHost › Run, then finish" aria-pressed="false" data-node-kind="backend" data-node-sublabel="all tasks run concurrently" data-node-tag="no ordering guarantee" data-node-context="BackgroundJobHost › Run, then finish">
           <title>Task.WhenAll(RunAsync) · all tasks run concurrently · BackgroundJobHost › Run, then finish · no ordering guarantee</title>
-          <rect x="962.8" y="212" width="204" height="68" rx="6" class="c-mask"/>
-          <rect x="962.8" y="212" width="204" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(968.8 218) scale(0.6875)">
+          <rect x="764" y="212" width="144" height="68" rx="6" class="c-mask"/>
+          <rect x="764" y="212" width="144" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(770 218) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1064.8" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Task.WhenAll(RunAsync)</text>
-          <text data-detail="context" x="1064.8" y="250" class="t-muted" font-size="8" text-anchor="middle">all tasks run concurrently</text>
-        <text data-detail="fine" x="1064.8" y="268" class="t-backend" font-size="7" text-anchor="middle">no ordering guarantee</text>
+          <text data-node-label="" data-detail-anchor="" x="836" y="233" class="t-primary" font-size="10.3" font-weight="600" text-anchor="middle">Task.WhenAll(RunAsync)</text>
+          <text data-detail="context" x="836" y="250" class="t-muted" font-size="8" text-anchor="middle">all tasks run concurrently</text>
+        <text data-detail="fine" x="836" y="268" class="t-backend" font-size="7" text-anchor="middle">no ordering guarantee</text>
         </g>
 
         <g id="node-finish" data-node-id="finish" data-node-label="Scope disposed" tabindex="0" role="button" aria-label="Focus Scope disposed, logs &quot;Background job host finished&quot;, BackgroundJobHost › Run, then finish" aria-pressed="false" data-node-kind="backend" data-node-sublabel="logs &quot;Background job host finished&quot;" data-node-context="BackgroundJobHost › Run, then finish">
           <title>Scope disposed · logs &quot;Background job host finished&quot; · BackgroundJobHost › Run, then finish</title>
-          <rect x="1285.6" y="220" width="204" height="52" rx="6" class="c-mask"/>
-          <rect x="1285.6" y="220" width="204" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1291.6 226) scale(0.6875)">
+          <rect x="1026.8" y="220" width="176" height="52" rx="6" class="c-mask"/>
+          <rect x="1026.8" y="220" width="176" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1032.8 226) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1387.6" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Scope disposed</text>
-          <text data-detail="context" x="1387.6" y="258" class="t-muted" font-size="8" text-anchor="middle">logs &quot;Background job host finished&quot;</text>
+          <text data-node-label="" data-detail-anchor="" x="1114.8" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Scope disposed</text>
+          <text data-detail="context" x="1114.8" y="258" class="t-muted" font-size="8" text-anchor="middle">logs &quot;Background job host finished&quot;</text>
         </g>
 
         <g id="node-failed" data-node-id="failed" data-node-label="Exception logged, swallowed" tabindex="0" role="button" aria-label="Focus Exception logged, swallowed, &quot;{TaskType} job failed&quot; at Error level, Failed task › Run, then finish" aria-pressed="false" data-node-kind="security" data-node-sublabel="&quot;{TaskType} job failed&quot; at Error level" data-node-context="Failed task › Run, then finish">
           <title>Exception logged, swallowed · &quot;{TaskType} job failed&quot; at Error level · Failed task › Run, then finish</title>
-          <rect x="956.8" y="346" width="216" height="52" rx="6" class="c-mask"/>
-          <rect x="956.8" y="346" width="216" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(962.8 352) scale(0.6875)">
+          <rect x="740.5" y="346" width="191" height="52" rx="6" class="c-mask"/>
+          <rect x="740.5" y="346" width="191" height="52" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(746.5 352) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1064.8" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Exception logged, swallowed</text>
-          <text data-detail="context" x="1064.8" y="384" class="t-muted" font-size="8" text-anchor="middle">&quot;{TaskType} job failed&quot; at Error level</text>
+          <text data-node-label="" data-detail-anchor="" x="836" y="367" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Exception logged, swallowed</text>
+          <text data-detail="context" x="836" y="384" class="t-muted" font-size="8" text-anchor="middle">&quot;{TaskType} job failed&quot; at Error level</text>
         </g>
 
         <!-- Edge labels -->
         <g data-detail="context" data-edge-from="runall" data-edge-to="finish" data-edge-label="all RunAsync returned" data-edge-key="0" data-edge-id="all-returned">
-          <rect x="1170.7999999999997" y="226" width="110.8" height="14" rx="3" class="c-mask"/>
-          <text x="1226.1999999999998" y="236" class="t-backend" font-size="8" text-anchor="middle">all RunAsync returned</text>
+          <rect x="912" y="226" width="110.8" height="14" rx="3" class="c-mask"/>
+          <text x="967.4" y="236" class="t-backend" font-size="8" text-anchor="middle">all RunAsync returned</text>
         </g>
         <g data-detail="context" data-edge-from="failed" data-edge-to="finish" data-edge-label="siblings still complete" data-edge-key="1" data-edge-id="isolated">
-          <rect x="1219.9999999999998" y="352" width="120.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="1280.1999999999998" y="362" class="t-database" font-size="8" text-anchor="middle">siblings still complete</text>
+          <rect x="962.9499999999999" y="352" width="120.39999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="1023.15" y="362" class="t-database" font-size="8" text-anchor="middle">siblings still complete</text>
         </g>
         <g data-detail="context" data-edge-from="runall" data-edge-to="failed" data-edge-label="task throws" data-edge-key="2" data-edge-id="task-throws">
-          <rect x="974.4" y="406" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="1005.8" y="416" class="t-security" font-size="8" text-anchor="middle">task throws</text>
+          <rect x="396.6" y="276" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="428" y="286" class="t-security" font-size="8" text-anchor="middle">task throws</text>
         </g>
 
-        <g data-detail="context" data-edge-from="scope" data-edge-to="runall" data-edge-label="one scope, every task" data-edge-key="4" data-edge-id="to-runall">
-          <rect x="848" y="176" width="110.8" height="14" rx="3" class="c-mask"/>
-          <text x="903.4" y="186" class="t-backend" font-size="8" text-anchor="middle">one scope, every task</text>
-        </g>
+
 
 
 
