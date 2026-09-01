@@ -93,12 +93,11 @@ public class EdgeCaseTests
         var services = new ServiceCollection();
         services.AddEncryptionServices();
         var provider = services.BuildServiceProvider();
-        provider.GetRequiredService<IAesEncryption>().ShouldNotBeNull();
-        provider.GetRequiredService<IAesGcmEncryption>().ShouldNotBeNull();
         provider.GetRequiredService<IShaHashing>().ShouldNotBeNull();
         provider.GetRequiredService<IHmacHashing>().ShouldNotBeNull();
 
-        //provider.GetRequiredService<IPasswordAesEncryption>().ShouldNotBeNull();
+        provider.GetService<IAesEncryption>().ShouldBeNull();
+        provider.GetService<IAesGcmEncryption>().ShouldBeNull();
         provider.GetService<IRsaEncryption>().ShouldBeNull();
     }
 
@@ -110,8 +109,6 @@ public class EdgeCaseTests
         services.AddEncryptionServices();
         services.AddEncryptionServices();
 
-        services.Count(s => s.ServiceType == typeof(IAesEncryption)).ShouldBe(1);
-        services.Count(s => s.ServiceType == typeof(IAesGcmEncryption)).ShouldBe(1);
         services.Count(s => s.ServiceType == typeof(IShaHashing)).ShouldBe(1);
         services.Count(s => s.ServiceType == typeof(IHmacHashing)).ShouldBe(1);
     }
