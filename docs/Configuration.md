@@ -172,7 +172,8 @@ public void ConfigureServices(IServiceCollection services)
 public void ConfigureServices(IServiceCollection services)
 {
     // DKNet.EfCore.DataAuthorization — registers the data-ownership query filter and hook for AppDbContext,
-    // backed by your own IDataOwnerProvider implementation (e.g. reading the tenant id from the current user claims)
+    // backed by your own IDataOwnerProvider implementation (e.g. reading the tenant id from the current user claims).
+    // AppDbContext must implement IDataOwnerDbContext — the generic constraint enforces it at compile time.
     services.AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>();
 }
 ```
