@@ -148,6 +148,30 @@ public sealed class ProductService(IRepositorySpec repo)
 
 See [`Migrating-Repos-To-Specifications.md`](./EfCore/Migrating-Repos-To-Specifications.md) for the full call-site mapping.
 
+### DKNet.Svc.Encryption — AES ciphers are now opt-in
+
+**Symptom**
+
+The DI container throws `InvalidOperationException` ("Unable to resolve service for type
+`DKNet.Svc.Encryption.Ciphers.IAesGcmEncryption`") where injecting the cipher used to work. `AddEncryptionServices()`
+registered `IAesGcmEncryption` and the obsolete `IAesEncryption` as transients over a randomly generated key that was
+never persisted, so the resolution that used to succeed was already producing ciphertext nothing could decrypt.
+
+**Before**
+```csharp
+builder.Services.AddEncryptionServices(); // also registered IAesGcmEncryption and IAesEncryption
+```
+
+**After** — supply the key from configuration or a key vault:
+```csharp
+builder.Services.AddEncryptionServices();                                       // IShaHashing, IHmacHashing
+builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
+```
+
+`AddAesGcmEncryption` takes a plain Base64 AES key (128/192/256-bit); a `key:iv` string is rejected. Consumers still on
+the obsolete AES-CBC type call `AddAesEncryption(keyString)` with the combined `key:iv` value that `AesEncryption.Key`
+returns. Ciphertext produced under the old registration cannot be recovered — its key was discarded with the instance.
+
 ### Upgrading DKNet.EfCore.DataAuthorization: IDataOwnerDbContext is now required
 
 **Symptom** — after upgrading, a registration that used to build now fails to compile with a generic-constraint
