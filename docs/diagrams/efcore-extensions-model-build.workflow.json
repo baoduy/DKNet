@@ -1,0 +1,189 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "What UseAutoConfigModel does while EF Core builds the model",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "What you call"
+        },
+        "backend": {
+          "label": "Model-build step"
+        },
+        "database": {
+          "label": "Provider-specific"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "you",
+      "label": "Your registration code"
+    },
+    {
+      "id": "build",
+      "label": "EF Core model build"
+    },
+    {
+      "id": "model",
+      "label": "Applied to the model"
+    }
+  ],
+  "phases": [
+    {
+      "id": "wire",
+      "label": "Wire it up",
+      "fromCol": 0,
+      "toCol": 2
+    },
+    {
+      "id": "apply",
+      "label": "Apply, once per model",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "register",
+    "extension",
+    "customizer",
+    "configs",
+    "globals",
+    "sequences"
+  ],
+  "nodes": [
+    {
+      "id": "register",
+      "lane": "you",
+      "col": 0,
+      "type": "external",
+      "label": "UseAutoConfigModel",
+      "sublabel": "assemblies to scan",
+      "width": 150,
+      "tag": "defaults to TContext's assembly"
+    },
+    {
+      "id": "builders",
+      "lane": "you",
+      "col": 3,
+      "type": "external",
+      "label": "AddGlobalModelBuilder",
+      "sublabel": "extra builders from DI",
+      "width": 158
+    },
+    {
+      "id": "extension",
+      "lane": "build",
+      "col": 1,
+      "type": "backend",
+      "label": "EntityAutoConfigRegister",
+      "sublabel": "DbContextOptions extension",
+      "width": 168
+    },
+    {
+      "id": "customizer",
+      "lane": "build",
+      "col": 2,
+      "type": "backend",
+      "label": "AutoConfigModelCustomizer",
+      "sublabel": "replaces IModelCustomizer",
+      "width": 172
+    },
+    {
+      "id": "configs",
+      "lane": "model",
+      "col": 3,
+      "type": "backend",
+      "label": "Entity configurations",
+      "sublabel": "every IEntityTypeConfiguration",
+      "width": 172
+    },
+    {
+      "id": "globals",
+      "lane": "model",
+      "col": 4,
+      "type": "backend",
+      "label": "Global model builders",
+      "sublabel": "query filters, extra entities",
+      "width": 168
+    },
+    {
+      "id": "sequences",
+      "lane": "model",
+      "col": 5,
+      "type": "database",
+      "label": "Sequences",
+      "sublabel": "[SqlSequence] enums",
+      "width": 150,
+      "tag": "SQL Server / Npgsql only"
+    }
+  ],
+  "edges": [
+    {
+      "id": "register-extension",
+      "from": "register",
+      "to": "extension",
+      "label": "records the assemblies",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "extension-customizer",
+      "from": "extension",
+      "to": "customizer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "customizer-configs",
+      "from": "customizer",
+      "to": "configs",
+      "label": "apply from assembly",
+      "variant": "emphasis"
+    },
+    {
+      "id": "configs-globals",
+      "from": "configs",
+      "to": "globals",
+      "variant": "emphasis"
+    },
+    {
+      "id": "globals-sequences",
+      "from": "globals",
+      "to": "sequences",
+      "label": "provider check",
+      "variant": "emphasis"
+    },
+    {
+      "id": "builders-globals",
+      "from": "builders",
+      "to": "globals",
+      "label": "merged, de-duplicated",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What each configuration gets for free",
+      "items": [
+        "Id becomes the key; Guid keys get the GUID v7 generator",
+        "IAuditedProperties columns are sized and made insert-only",
+        "IConcurrencyEntity RowVersion becomes a row-version token"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Registered separately",
+      "items": [
+        "UseAutoDataSeeding attaches EF Core's UseSeeding / UseAsyncSeeding",
+        "AddEfCoreExceptionHandler registers a keyed concurrency handler"
+      ]
+    }
+  ]
+}

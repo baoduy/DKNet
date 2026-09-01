@@ -197,6 +197,11 @@ Behaviour worth knowing beyond the table:
 
 ## 🧱 Where it fits
 
+The whole package is one value converter wired up at model-build time — which is exactly why a key change needs a
+model rebuild and why the database never sees plaintext:
+
+![Data-flow diagram of column encryption: at model build, UseColumnEncryption attaches a ColumnEncryptionConverter to each [Encrypted] string property, rejecting key and foreign-key columns outright. The converter calls the AES-GCM provider, keyed by IEncryptionKeyProvider.GetKey for that entity type, and the database column stores Base64 of the IV, tag and ciphertext.](../diagrams/efcore-encryption-column-path.svg)
+
 - Built directly on EF Core's own `Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<TModel,TProvider>` — the package's `.csproj` has exactly one `PackageReference`, `Microsoft.EntityFrameworkCore`. It does **not** depend on `DKNet.EfCore.Abstractions`, `DKNet.EfCore.Extensions`, or `DKNet.EfCore.Hooks`.
 - It is a **model-build-time** mechanism (a `ValueConverter` applied in `OnModelCreating`), not a `SaveChanges` interceptor/hook — it does not participate in the `DKNet.EfCore.Hooks` pipeline and has no interaction with `IHook`/`SaveChangesAsync` interception.
 - `[Encrypted]` and every other type documented above live entirely inside `DKNet.EfCore.Encryption` — there's no dependency on (or hook into) `DKNet.EfCore.Abstractions` for model-building.

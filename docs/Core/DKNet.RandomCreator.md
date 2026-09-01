@@ -108,6 +108,11 @@ There is no property to customize the character pools, no case-only toggle, and 
 
 ## 🧱 Where it fits
 
+Every generated string is assembled the same way — quotas first, letters to fill, then one cryptographic shuffle so
+the quota characters are not clustered at the front:
+
+![Data-flow diagram of RandomCreators: the call draws exactly MinNumbers digits and MinSpecials symbols from their fixed pools, fills the remaining length from the 52-character letter pool, then shuffles the whole buffer with RandomNumberGenerator before returning a char array or string. Quotas that leave no room for filler reject with ArgumentException.](../diagrams/randomcreator-string-composition.svg)
+
 `DKNet.RandomCreator` is a standalone utility: its `.csproj` declares no `PackageReference` and no `ProjectReference` to any other DKNet package (or any third-party library) — it depends only on the .NET base class library (`System.Security.Cryptography`). Use it anywhere in a solution, including from other DKNet packages, without pulling in additional dependencies. For application-grade cryptography (AES/RSA encryption, hashing, HMAC) rather than random value generation, use a dedicated encryption package (e.g. `DKNet.Svc.Encryption`) instead — this package does not attempt that.
 
 ## ⚠️ Gotchas & limits

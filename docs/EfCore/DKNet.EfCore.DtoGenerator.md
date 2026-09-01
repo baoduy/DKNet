@@ -220,6 +220,11 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 
 ## 🧱 Where it fits
 
+The one rule worth memorising is the filter precedence — `Include` short-circuits everything, and only then do
+`Exclude`, the project-wide list, and `IgnoreComplexType` get a say:
+
+![Workflow diagram of DTO property selection: candidate properties are the public instance properties with public getters, walked up the base chain and de-duplicated. A non-empty Include bypasses every other filter and goes straight to the generated DTO; otherwise Exclude plus the project-wide DtoGeneratorExclusions drop properties by name, and IgnoreComplexType drops navigation properties, before the rest are emitted.](../diagrams/efcore-dtogenerator-property-filters.svg)
+
 - **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs.
 - **Generated DTOs are plain data types.** No base class, no interface, no attribute left on the output — a generated DTO has zero coupling to DKNet or to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`.
 - **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). The one exception is the naming algorithm itself: `EventNameComposer.cs` lives in `DKNet.EfCore.Abstractions` and is `<Compile Include>`-linked (not project-referenced) into this generator, so the build-time composed name and the `DKNet.EfCore.Events` runtime-composed name are produced by the exact same source and can never disagree. A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.

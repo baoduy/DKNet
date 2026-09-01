@@ -29,10 +29,25 @@ var options = new StringCreatorOptions { MinNumbers = 4, MinSpecials = 2 };
 string strongPassword = RandomCreators.NewString(32, options);
 ```
 
+## Customisation reference
+
+Both entry points take the same two arguments; every option lives on `StringCreatorOptions`.
+
+| Knob | Type | Default | Effect |
+|---|---|---|---|
+| `length` (first argument) | `int` | `25` | Total characters produced. Must be greater than zero, or `ArgumentException` is thrown. |
+| `options` (second argument) | `StringCreatorOptions?` | `null` → a fresh `StringCreatorOptions` | Quota configuration. |
+| `StringCreatorOptions.MinNumbers` | `int` | `0` | Exact number of digits included, drawn from `1234567890`. |
+| `StringCreatorOptions.MinSpecials` | `int` | `0` | Exact number of symbols included, drawn from the 30-character pool ``!@#$%^&*()-_=+[]{}\|;:',.<>/?`~``. |
+
+`MinNumbers + MinSpecials` must be strictly less than `length`; the remainder is filled from the 52-character
+`a-z`/`A-Z` pool and the whole buffer is then shuffled with `RandomNumberGenerator.Shuffle`. There is no way to
+supply your own character pools and no seed, so output is never reproducible.
+
 ## Documentation
 
 Full feature guide, configuration reference, and gotchas:
-https://github.com/baoduy/DKNet/blob/dev/docs/Core/DKNet.RandomCreator.md
+https://github.com/baoduy/DKNet/blob/main/docs/Core/DKNet.RandomCreator.md
 
 ## License
 

@@ -105,6 +105,25 @@ public partial record ProductSummaryDto;
 | 3 | None | Specified | **Ignored** | Only Include list properties |
 | 4 | Specified | Specified | **Error** | Cannot use both Include and Exclude |
 
+### `[RaisesEvent]` convention-form payloads
+
+The list is not limited to hand-written `[GenerateDto]` records. A `[RaisesEvent]` **convention form** — the label
+and label-less constructors, which compose their payload record's name instead of naming an existing one — has its
+generated payload narrowed by `DtoGeneratorExclusions` exactly like the table above:
+
+```csharp
+// <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
+
+[RaisesEvent(EventOperations.Created)]
+public class Customer { /* ... */ }
+// CustomerCreatedEvent is generated without CreatedBy, UpdatedBy, CreatedAt, UpdatedAt
+```
+
+The same precedence applies: the declaration's own `Exclude` combines with the global list, and a non-empty
+`Include` on the declaration replaces both. `Exclude`/`Include` on the **type-naming** form is a build error
+(`DKRAISEVT011`) — that form's payload record owns its own shape through its own `[GenerateDto]` filters, which
+are then subject to the matrix above.
+
 ## Diagnostics
 
 The generator provides helpful diagnostics:

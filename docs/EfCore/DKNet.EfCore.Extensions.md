@@ -201,6 +201,10 @@ options.UseSqlServer(connectionString)
 attaches them to EF Core's native `UseSeeding`/`UseAsyncSeeding` hooks (run by `EnsureCreated`/migration
 flows), so seeding runs through the same mechanism as any other EF Core seed data, not a bespoke one.
 
+`Order` is part of the interface but **nothing reads it today** — `UseAutoDataSeeding` runs the discovered
+seeders in the order the assembly scan produced them. Treat seeding order as undefined and make each seeder
+self-sufficient.
+
 ### Generate time-ordered GUID keys
 
 `GuidV7ValueGenerator` (`Convertors/GuidV7ValueGenerator.cs`) is a `ValueGenerator<Guid>` whose `Next`
@@ -303,13 +307,18 @@ You will rarely construct this yourself in application code — see the next sec
 | Assemblies scanned by `UseAutoConfigModel<TContext>()` (no args) | `[typeof(TContext).Assembly]` | `EfCoreSetup.UseAutoConfigModel` |
 | `IEfCoreExceptionHandler.MaxRetryCount` | `3` | `EfCoreExceptionHandler`/interface default |
 | `GlobalQueryFilter.IsIgnorable` | `true` (filter may be bypassed by spec code) | `GlobalQueryFilter` |
-| `DataSeedingConfiguration<T>.Order` | `0` | `IDataSeedingConfiguration` |
+| `DataSeedingConfiguration<T>.Order` | `0` — declared but **never read**; `UseAutoDataSeeding` runs seeders in assembly-scan order | `IDataSeedingConfiguration` |
 | `SequenceAttribute.IncrementsBy` / `Min` / `Max` / `StartAt` | `-1` = "leave to the database default"; only values `> 0` are applied | `RegisterSequencesFromEnumType` |
 | `SequenceAttribute.Cyclic` | `true` | `SequenceAttribute` |
 | `SqlSequenceAttribute.Schema` | `"seq"` | `SqlSequenceAttribute` |
 | Sequence registration | Only runs when `context.IsSqlServer()` or `context.IsNpgsql()` | `AutoConfigModelCustomizer` |
 
 ## 🧱 Where it fits
+
+Everything `UseAutoConfigModel` does happens once, inside EF Core's own model build, through a replaced
+`IModelCustomizer` — which is why it applies to every entity in the scanned assemblies without a per-entity call:
+
+![Workflow diagram of the model build: UseAutoConfigModel records the assemblies in an EntityAutoConfigRegister options extension, AutoConfigModelCustomizer replaces IModelCustomizer, and it then applies every IEntityTypeConfiguration from those assemblies, runs the global model builders (including any registered with AddGlobalModelBuilder), and finally registers [SqlSequence] enums only when the provider is SQL Server or Npgsql.](../diagrams/efcore-extensions-model-build.svg)
 
 - **`DKNet.EfCore.Hooks`** is the primary consumer of `SnapshotContext`. `HookContext` (its internal
   save-pipeline coordinator) constructs `new SnapshotContext(db)` once per `SaveChanges` call and passes it
@@ -352,6 +361,13 @@ You will rarely construct this yourself in application code — see the next sec
 - **Data seeding is a separate opt-in.** `UseAutoConfigModel` does not wire up seeding (the customizer's
   seeding line is intentionally left commented out in source) — call `UseAutoDataSeeding(assemblies)`
   explicitly.
+- **Audit columns are 255 characters, not the 500 the interface annotates.** `IAuditedProperties.CreatedBy` and
+  `UpdatedBy` carry `[MaxLength(500)]` in `DKNet.EfCore.Abstractions`, but `DefaultEntityTypeConfiguration<T>`
+  calls `HasMaxLength(255)` on both — and the fluent configuration wins. Size the column for 255, or override the
+  two properties after calling `base.Configure(builder)`.
+- **`IDataSeedingConfiguration.Order` is declared but not honoured.** `UseAutoDataSeeding` instantiates the
+  discovered seeders and invokes them in assembly-scan order; nothing sorts by `Order`. If one seed depends on
+  another, do not express that with `Order` — put both in one seeder, or call them yourself in sequence.
 - **`DataSeedingConfiguration<T>` dedupes with `EqualityComparer<TEntity>.Default`.** Unless `TEntity`
   overrides `Equals`/`GetHashCode` for value equality, this falls back to reference equality, so every
   freshly constructed seed instance will look "new" against the entities already loaded from the database —

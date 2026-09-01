@@ -1,0 +1,201 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Which entity properties reach a generated DTO, and in what order they are filtered",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entity surface"
+        },
+        "backend": {
+          "label": "Compile-time filter"
+        },
+        "security": {
+          "label": "Dropped"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "entity",
+      "label": "Entity in, DTO out"
+    },
+    {
+      "id": "filters",
+      "label": "Filters, in precedence order"
+    },
+    {
+      "id": "dropped",
+      "label": "Dropped",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "collect",
+      "label": "Collect candidates",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "filter",
+      "label": "Filter",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "emit",
+      "label": "Emit",
+      "fromCol": 4,
+      "toCol": 4
+    }
+  ],
+  "mainPath": [
+    "props",
+    "include",
+    "exclude",
+    "complex",
+    "dto"
+  ],
+  "nodes": [
+    {
+      "id": "props",
+      "lane": "entity",
+      "col": 0,
+      "type": "external",
+      "label": "Entity properties",
+      "sublabel": "public instance, public getter",
+      "width": 168,
+      "tag": "base chain, de-duplicated"
+    },
+    {
+      "id": "include",
+      "lane": "filters",
+      "col": 1,
+      "type": "backend",
+      "label": "Include",
+      "sublabel": "non-empty wins outright",
+      "width": 152
+    },
+    {
+      "id": "exclude",
+      "lane": "filters",
+      "col": 2,
+      "type": "backend",
+      "label": "Exclude + global list",
+      "sublabel": "attribute list plus DtoGeneratorExclusions",
+      "width": 176
+    },
+    {
+      "id": "complex",
+      "lane": "filters",
+      "col": 3,
+      "type": "backend",
+      "label": "IgnoreComplexType",
+      "sublabel": "per-DTO, then MSBuild, then true",
+      "width": 176
+    },
+    {
+      "id": "dto",
+      "lane": "entity",
+      "col": 4,
+      "type": "backend",
+      "label": "DTO property",
+      "sublabel": "member of your partial record",
+      "width": 168
+    },
+    {
+      "id": "byname",
+      "lane": "dropped",
+      "col": 2,
+      "type": "security",
+      "label": "Dropped by name",
+      "sublabel": "listed in Exclude or the global list",
+      "width": 176
+    },
+    {
+      "id": "bynav",
+      "lane": "dropped",
+      "col": 3,
+      "type": "security",
+      "label": "Dropped as navigation",
+      "sublabel": "class, not string, not [Owned]",
+      "width": 176
+    }
+  ],
+  "edges": [
+    {
+      "id": "props-include",
+      "from": "props",
+      "to": "include",
+      "label": "candidates",
+      "variant": "emphasis"
+    },
+    {
+      "id": "include-exclude",
+      "from": "include",
+      "to": "exclude",
+      "label": "Include empty",
+      "variant": "emphasis"
+    },
+    {
+      "id": "include-dto",
+      "from": "include",
+      "to": "dto",
+      "label": "Include set, every other filter bypassed",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "exclude-complex",
+      "from": "exclude",
+      "to": "complex",
+      "variant": "emphasis"
+    },
+    {
+      "id": "exclude-byname",
+      "from": "exclude",
+      "to": "byname",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "complex-dto",
+      "from": "complex",
+      "to": "dto",
+      "label": "scalar",
+      "variant": "emphasis"
+    },
+    {
+      "id": "complex-bynav",
+      "from": "complex",
+      "to": "bynav",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two generators, one package",
+      "items": [
+        "DtoGenerator emits the DTO members for [GenerateDto]",
+        "RaisesEventValidator validates [RaisesEvent] and emits convention-form payloads",
+        "Convention-form payloads always omit navigation properties"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "When nothing is emitted",
+      "items": [
+        "Include and Exclude together: DKDTOGEN004, the whole DTO is skipped",
+        "Generation threw: DKDTOGEN001, only that target is skipped",
+        "No eligible properties: DKDTOGEN002, usually an unresolved entity type"
+      ]
+    }
+  ]
+}

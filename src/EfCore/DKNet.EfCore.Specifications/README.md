@@ -63,6 +63,27 @@ public sealed class ProductService(IRepositorySpec repo)
 `.AsExpandable()` is applied automatically when querying through `IRepositorySpec` — no extra wiring needed for the
 dynamic predicate above to translate to SQL.
 
+## Customisation reference
+
+There is no options class and no configuration section — behaviour is set per specification and per registration.
+
+| Knob | Where | Default | Effect |
+|---|---|---|---|
+| `AddSpecRepo<TDbContext>()` | DI registration | not registered | Registers `IRepositorySpec` for that `DbContext`. Idempotent — calling it twice is a no-op. |
+| `WithFilter(expression)` | specification constructor | no filter | The `Where` clause applied by `ApplySpecs`. |
+| `AddInclude(expression)` / `AddInclude(builder)` | specification constructor | no includes | Single-level includes, or an `Include`/`ThenInclude` chain that may filter at any level. |
+| `AddOrderBy` / `AddOrderByDescending` | specification constructor | unordered | Applied in the sequence declared, so mixed directions survive. |
+| `AddOrderBy(string, ListSortDirection)` | specification constructor | — | Property-name overload; the name is normalised to PascalCase first. |
+| `AsNoTracking()` | specification constructor | tracking on, matching EF Core | Runs that specification's entity query without change tracking. Projected `TModel` queries are always no-tracking. |
+| `IgnoreQueryFilters()` | specification constructor | `false` | Bypasses only filters whose `GlobalQueryFilter.IsIgnorable` is `true`; ownership isolation is never bypassed. |
+| `Skip(count)` / `Take(count)` | specification constructor | unset | Must be greater than zero. Applied only when the specification runs through `Query<TEntity>` / `Query<TEntity, TModel>`. |
+| `CreatePredicate(expression?)` | specification constructor | empty predicate | Starts a LinqKit `ExpressionStarter<TEntity>` for `DynamicAnd`/`DynamicOr` composition. |
+| `ToPageEnumerable` page size | internal constant | `100` rows per round trip | Not exposed as a parameter. |
+| Keyset ordering | `configureKeyset` delegate | none — required | A keyset page with no ordering throws `NotSupportedException`. |
+
+`ApplySpecs` composes in a fixed order: ignore-filters, `Where`, includes, include builders, ordering, then
+`AsNoTracking`, `Skip` and `Take`. Reading `FilterQuery`/`IncludeQueries` yourself skips all of it.
+
 ## Migration — namespace changes in this release
 
 Root types were grouped into concern folders; the namespace of each moved type now ends
@@ -82,7 +103,7 @@ are unchanged.
 ## Learn more
 
 Full feature guide, configuration, composition with other DKNet packages, and gotchas:
-https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Specifications.md
+https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Specifications.md
 
 Migrating from `DKNet.EfCore.Repos`? See
-https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/Migrating-Repos-To-Specifications.md
+https://github.com/baoduy/DKNet/blob/main/docs/EfCore/Migrating-Repos-To-Specifications.md

@@ -320,6 +320,11 @@ parameter:
 
 ## 🧱 Where it fits
 
+`TypeExtractors` is the piece other DKNet packages lean on hardest — it is how they discover your entity
+configurations, seeders, and global model builders without you registering each one by hand:
+
+![Data-flow diagram of TypeExtractor: assemblies enter through Extract(), chain through shape filters (Classes, Interfaces, Enums, Abstract) and relationship filters (IsInstanceOf, HasAttribute, Where), and stay lazy until enumerated into the type list that DKNet's entity configuration, seeding, and model-builder discovery consume.](../diagrams/fw-extensions-type-extractor.svg)
+
 `DKNet.Fw.Extensions` sits at the bottom of the dependency graph and is referenced directly by:
 
 - `DKNet.EfCore.Extensions` — uses `Type.IsImplementOf<T>()` in entity-type configuration (e.g.

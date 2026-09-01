@@ -105,7 +105,27 @@ if (!await dbContext.TableExistsAsync<Product>())
 
 Note this issues a real query against the table (`SELECT ... WHERE EXISTS/LIMIT 1`-style), not a metadata-only check — on a large or locked table that carries the same cost as any other query.
 
+## ⚙️ Configuration reference
+
+There is no options class, no `IServiceCollection` extension, and no MSBuild switch — the entire customisation
+surface is the four methods' own parameters and the provider-dependent behaviour they inherit.
+
+| Method | Knob | Type | Default | Effect |
+|---|---|---|---|---|
+| `CreateTableAsync<TEntity>` | `TEntity` | `class` | required | Chooses the table whose existence is probed. The creation step itself is **not** scoped to it — `CreateTablesAsync` creates every table missing from the model. |
+| `CreateTableAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Passed to `ExistsAsync`, `EnsureCreatedAsync`, `TableExistsAsync` and `CreateTablesAsync`. |
+| `GetDbConnection` | `cancellationToken` | `CancellationToken` | `default` | Passed to `OpenAsync`, and only used when the connection was closed. |
+| `GetTableName<TEntity>` | default schema | — | `"dbo"` on SQL Server, otherwise `null` | Substituted only when the provider name is exactly `Microsoft.EntityFrameworkCore.SqlServer` (case-insensitive) and the model supplies no schema. |
+| `GetTableName<TEntity>` | resolution order | — | `GetSchema()` → `GetDefaultSchema()` → default schema; `GetTableName()` → `GetDefaultTableName()` | Fixed; returns `(null, null)` when `TEntity` is not in the model. |
+| `TableExistsAsync<TEntity>` | swallowed exception | — | `DbException` only | Any `DbException` reads as "table absent". Everything else propagates. |
+| `TableExistsAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Passed to the `AnyAsync` probe. |
+
 ## 🧱 Where it fits
+
+`CreateTableAsync<TEntity>` is the only method here with branching worth a picture — and the branch that surprises
+people is the last one, where a single missing table triggers creation of every missing table:
+
+![Workflow diagram of CreateTableAsync: it first asks the relational database creator whether the database exists and calls EnsureCreatedAsync when it does not, then probes TableExistsAsync for the entity. If the table is already there it returns without touching the database; if it is missing, CreateTablesAsync runs and creates every missing table in the model, not only the requested one.](../diagrams/efcore-relational-helpers-create-table.svg)
 
 Standalone. This package has no dependency beyond `Microsoft.EntityFrameworkCore` and `Microsoft.EntityFrameworkCore.Relational`, doesn't reference `DKNet.EfCore.Abstractions` or any other DKNet package, and none of the other EfCore packages (`Repos`, `Events`, `Hooks`, `Specifications`) call into it. It's a small relational-provider utility you can add to any EF Core project independent of the rest of the DKNet stack.
 
@@ -113,6 +133,8 @@ Standalone. This package has no dependency beyond `Microsoft.EntityFrameworkCore
 
 - **There is nothing to configure and nothing to register.** No options class, no `IServiceCollection`
   extension — these are plain static extension methods called directly on a `DbContext` instance.
+- **`CreateTableAsync<TEntity>` is not scoped to `TEntity`.** The type argument only picks which table is probed;
+  once that probe comes back negative, `CreateTablesAsync` creates *every* table the model is missing.
 - **Not a migration tool.** `CreateTableAsync` uses `EnsureCreatedAsync`/`CreateTablesAsync`, which is incompatible with EF Core Migrations on the same database — mixing the two leads to a database with tables but no (or an inconsistent) `__EFMigrationsHistory`. Use it for first-run/dev/test provisioning, not as a substitute for `dbContext.Database.Migrate()` in production.
 - **Requires a relational provider.** All four methods depend on `Microsoft.EntityFrameworkCore.Relational` types (`RelationalDatabaseCreator`, `DbConnection`, schema/table metadata) — they will not work with non-relational providers (e.g. Cosmos).
 - **`dbo` default schema is SQL Server–only.** `GetTableName<TEntity>` only substitutes `"dbo"` when the provider name is exactly `Microsoft.EntityFrameworkCore.SqlServer` (case-insensitive). On PostgreSQL, SQLite, or any other provider, an entity with no explicit schema returns `Schema = null` — callers must not assume `dbo` cross-provider.

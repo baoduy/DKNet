@@ -189,6 +189,11 @@ Defaults (`AuditLogBehaviour.IncludeAllAuditedEntities` + `AuditPropertyPolicy.R
 
 ## 🧱 Where it fits
 
+Two gates decide what ends up in the trail: an entity-level gate driven by `AuditLogBehaviour`, and a property-level
+gate driven by `AuditPropertyPolicy` and the redactor:
+
+![Data-flow diagram of audit capture: snapshot entries pass an entity gate that requires IAuditedProperties and honours the configured behaviour, then a property gate that applies AuditPropertyPolicy and routes sensitive values through the redactor, producing an AuditLogEntry that is published after the write to every IAuditLogPublisher keyed to the DbContext.](../diagrams/efcore-auditlogs-capture.svg)
+
 - **[DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md)** supplies the contract: entities must implement `IAuditedProperties` (directly, or via the `AuditedEntity`/`AuditedEntity<TKey>` base classes) to be eligible for auditing at all, and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes that steer what gets captured live there, not in this package.
 - **[DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md)** provides the `SaveChanges` pipeline. `EfCoreAuditHook` is a normal `IHookAsync` hook, registered with the same `AddHook<TDbContext, THook>()` call any other hook uses, and only runs if the `DbContext` was registered via `AddDbContextWithHook<TDbContext>` (or `options.UseHooks<TDbContext>(provider)` manually) — auditing shares the exact same wiring requirement as domain events or data authorization hooks on the same `DbContext`.
 - Because multiple hooks can be registered for one `DbContext`, the audit hook runs alongside e.g. a domain-events hook or a data-authorization hook in the same before/after-save pass; `HookRunnerInterceptor` runs all `BeforeSaveAsync` hooks in DI registration order, then (after the underlying `SaveChangesAsync` succeeds) all `AfterSaveAsync` hooks in DI registration order — there is no explicit priority system, so if audit ordering relative to another hook matters, control it via registration order.

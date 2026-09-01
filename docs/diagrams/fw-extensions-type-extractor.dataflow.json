@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How TypeExtractor turns assemblies into the type list DKNet scans for",
+    "quality_profile": "showcase",
+    "viewBox": [1080, 620]
+  },
+  "stages": [
+    { "label": "Input" },
+    { "label": "Extract" },
+    { "label": "Chainable filters" },
+    { "label": "Materialised" },
+    { "label": "Who consumes it" }
+  ],
+  "nodes": [
+    { "id": "assemblies", "type": "external", "label": "Assembly input", "sublabel": "one, an array, or a collection", "stage": 0, "row": 1, "width": 150 },
+    { "id": "empty", "type": "security", "label": "ArgumentException", "sublabel": "null or empty assembly array", "stage": 0, "row": 3, "width": 150 },
+    { "id": "extractor", "type": "backend", "label": "ITypeExtractor", "sublabel": "lazy IEnumerable<Type>", "stage": 1, "row": 1, "width": 150, "tag": "duplicates removed" },
+    { "id": "shape", "type": "backend", "label": "Shape filters", "sublabel": "Classes, Interfaces, Enums, Abstract", "stage": 2, "row": 0, "width": 150 },
+    { "id": "relation", "type": "backend", "label": "Relationship filters", "sublabel": "IsInstanceOf, HasAttribute, Where", "stage": 2, "row": 2, "width": 150 },
+    { "id": "types", "type": "database", "label": "Type list", "sublabel": "nothing runs until you enumerate", "stage": 3, "row": 1, "width": 150 },
+    { "id": "consumers", "type": "cloud", "label": "DKNet discovery", "sublabel": "entity config, seeding, model builders", "stage": 4, "row": 1, "width": 158 }
+  ],
+  "flows": [
+    { "from": "assemblies", "to": "extractor", "label": "Extract()", "variant": "emphasis" },
+    { "from": "assemblies", "to": "empty", "label": "reject", "variant": "security", "labelDy": 90 },
+    { "from": "extractor", "to": "shape", "label": "narrow", "variant": "emphasis" },
+    { "from": "extractor", "to": "relation", "label": "narrow", "variant": "default" },
+    { "from": "shape", "to": "types", "label": "still lazy", "variant": "emphasis" },
+    { "from": "relation", "to": "types", "label": "still lazy", "variant": "default" },
+    { "from": "types", "to": "consumers", "label": "ToList or foreach", "variant": "emphasis", "route": "straight", "labelDy": -38 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Why it is lazy",
+      "items": [
+        "Every filter call returns another ITypeExtractor, additive with the ones before it",
+        "Reflection only runs when you enumerate, so an unused chain costs nothing",
+        "ITypeExtractor is IEnumerable<Type>, so LINQ composes on top of it"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "The rest of the package",
+      "items": [
+        "Primitives: string, DateTime and enum helpers with Display metadata",
+        "Reflection: property get/set by name, attribute lookups, type tests",
+        "Registration guards: IsRegistered and IsRegisteredWithImplementation"
+      ]
+    }
+  ]
+}

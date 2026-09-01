@@ -1,0 +1,219 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Where DKNet.EfCore.Hooks runs inside one SaveChangesAsync",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Runtime step"
+        },
+        "database": {
+          "label": "Database write"
+        },
+        "security": {
+          "label": "Skipped or failed"
+        },
+        "external": {
+          "label": "Your code"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "app",
+      "label": "Application"
+    },
+    {
+      "id": "efcore",
+      "label": "EF Core + HookRunnerInterceptor"
+    },
+    {
+      "id": "hooks",
+      "label": "Your hooks"
+    },
+    {
+      "id": "skipped",
+      "label": "Skipped / failed",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "prepare",
+      "label": "Prepare",
+      "fromCol": 0,
+      "toCol": 2
+    },
+    {
+      "id": "before",
+      "label": "Before the write",
+      "fromCol": 3,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "settle",
+      "label": "Write, then after",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "save",
+    "saving",
+    "context",
+    "before",
+    "write",
+    "after"
+  ],
+  "nodes": [
+    {
+      "id": "save",
+      "lane": "app",
+      "col": 0,
+      "type": "external",
+      "label": "SaveChangesAsync()",
+      "sublabel": "on your DbContext",
+      "width": 148
+    },
+    {
+      "id": "saving",
+      "lane": "efcore",
+      "col": 1,
+      "type": "backend",
+      "label": "SavingChangesAsync",
+      "sublabel": "interceptor entry point",
+      "width": 148
+    },
+    {
+      "id": "context",
+      "lane": "efcore",
+      "col": 2,
+      "type": "backend",
+      "label": "HookContext",
+      "sublabel": "resolve hooks + snapshot",
+      "tag": "cached per DbContext instance",
+      "width": 158
+    },
+    {
+      "id": "before",
+      "lane": "hooks",
+      "col": 3,
+      "type": "backend",
+      "label": "IBeforeSaveHookAsync",
+      "sublabel": "BeforeSaveAsync(snapshot)",
+      "width": 158
+    },
+    {
+      "id": "write",
+      "lane": "efcore",
+      "col": 4,
+      "type": "database",
+      "label": "Database write",
+      "sublabel": "EF Core persists the change set",
+      "width": 158
+    },
+    {
+      "id": "after",
+      "lane": "hooks",
+      "col": 5,
+      "type": "backend",
+      "label": "IAfterSaveHookAsync",
+      "sublabel": "AfterSaveAsync(snapshot)",
+      "width": 158
+    },
+    {
+      "id": "disabled",
+      "lane": "skipped",
+      "col": 2,
+      "type": "security",
+      "label": "Hooks disabled",
+      "sublabel": "inside a DisableHooks() scope",
+      "width": 148
+    },
+    {
+      "id": "empty",
+      "lane": "skipped",
+      "col": 3,
+      "type": "security",
+      "label": "Nothing tracked",
+      "sublabel": "snapshot has no entries",
+      "width": 148
+    },
+    {
+      "id": "failed",
+      "lane": "skipped",
+      "col": 5,
+      "type": "security",
+      "label": "SaveChangesFailedAsync",
+      "sublabel": "context disposed, no after-hooks",
+      "width": 168
+    }
+  ],
+  "edges": [
+    {
+      "id": "save-saving",
+      "from": "save",
+      "to": "saving",
+      "variant": "emphasis",
+      "toSide": "top",
+      "fromSide": "right"
+    },
+    {
+      "id": "saving-context",
+      "from": "saving",
+      "to": "context",
+      "label": "build context",
+      "variant": "emphasis"
+    },
+    {
+      "id": "context-before",
+      "from": "context",
+      "to": "before",
+      "label": "run in DI order",
+      "variant": "emphasis"
+    },
+    {
+      "id": "before-write",
+      "from": "before",
+      "to": "write",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "write-after",
+      "from": "write",
+      "to": "after",
+      "label": "SavedChangesAsync",
+      "variant": "emphasis"
+    },
+    {
+      "id": "context-disabled",
+      "from": "context",
+      "to": "disabled",
+      "label": "skip both phases",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "before-empty",
+      "from": "before",
+      "to": "empty",
+      "label": "skip both phases",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "write-failed",
+      "from": "write",
+      "to": "failed",
+      "label": "save threw",
+      "variant": "security",
+      "role": "error"
+    }
+  ]
+}
