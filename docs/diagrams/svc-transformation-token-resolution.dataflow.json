@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "TransformerService: from template text to a filled string",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1068,
+      700
+    ]
+  },
+  "stages": [
+    {
+      "label": "Template"
+    },
+    {
+      "label": "Extract"
+    },
+    {
+      "label": "Resolve"
+    },
+    {
+      "label": "Format"
+    },
+    {
+      "label": "Result"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "template",
+      "type": "external",
+      "label": "Template string",
+      "sublabel": "Hello [Name]",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "extractors",
+      "type": "backend",
+      "label": "Extractors",
+      "sublabel": "one per definition",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "tokens",
+      "type": "messagebus",
+      "label": "Tokens",
+      "sublabel": "Key plus index",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "resolver",
+      "type": "backend",
+      "label": "TokenResolver",
+      "sublabel": "reflection lookup",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "params",
+      "type": "external",
+      "label": "Parameters",
+      "sublabel": "then globals",
+      "stage": 2,
+      "row": 3
+    },
+    {
+      "id": "formatter",
+      "type": "backend",
+      "label": "IValueFormatter",
+      "sublabel": "bool, number, date",
+      "stage": 3,
+      "row": 1,
+      "width": 132
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "Not-found policy",
+      "sublabel": "throw, keep, drop",
+      "stage": 3,
+      "row": 3,
+      "width": 132
+    },
+    {
+      "id": "output",
+      "type": "frontend",
+      "label": "Filled string",
+      "sublabel": "rebuilt in one pass",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "template",
+      "to": "extractors",
+      "label": "raw text",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f2",
+      "from": "extractors",
+      "to": "tokens",
+      "label": "matched spans",
+      "labelDy": 24
+    },
+    {
+      "id": "f3",
+      "from": "tokens",
+      "to": "resolver",
+      "label": "token key",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f4",
+      "from": "params",
+      "to": "resolver",
+      "label": "first non-null wins"
+    },
+    {
+      "id": "f5",
+      "from": "resolver",
+      "to": "formatter",
+      "label": "resolved value",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "id": "f6",
+      "from": "resolver",
+      "to": "policy",
+      "label": "nothing resolved",
+      "variant": "security"
+    },
+    {
+      "id": "f7",
+      "from": "formatter",
+      "to": "output",
+      "label": "display text",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f8",
+      "from": "policy",
+      "to": "output",
+      "label": "kept or removed",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What you can replace",
+      "items": [
+        "DefaultDefinitions: add a bracket pair, square brackets stay",
+        "Formatter: subclass ValueFormatter or implement IValueFormatter",
+        "GlobalParameters: sources tried after the call's own arguments"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "The resolved-value cache",
+      "items": [
+        "Every resolved value is cached on the service instance",
+        "The key is the token text, not the data you passed",
+        "Reusing one instance for a second record replays the first value"
+      ]
+    }
+  ]
+}

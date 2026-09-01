@@ -171,11 +171,70 @@ methods, and forwards to the same logic — migrate off it.
 
 `[Obsolete]` on both the interface and the implementation: "Uses AES-CBC which is vulnerable to padding oracle attacks.
 Use `IAesGcmEncryption` instead." It is not registered by `AddEncryptionServices`; a consumer still migrating off it opts
-in with `services.AddAesEncryption(keyString)` — itself `[Obsolete]` — passing the combined Base64 `key:iv` value that
-`AesEncryption.Key` returns. Its IV is fixed per instance, so identical plaintext always produces identical ciphertext, and that `key:iv`
-shape is one `AesGcmEncryption` explicitly rejects. New code uses `IAesGcmEncryption`.
+in with `services.AddAesEncryption(keyString)` — itself `[Obsolete]` — passing back the exact value
+`AesEncryption.Key` returned. That value is Base64 of the string `base64(key):base64(iv)`, so it is one opaque
+token with no visible `:`; it is not interchangeable with an `AesGcmEncryption` key, which decodes to a bare
+16/24/32-byte key and is rejected outright if it contains a `:`. Its IV is fixed per instance, so identical
+plaintext always produces identical ciphertext. New code uses `IAesGcmEncryption`.
+
+## ⚙️ Configuration reference
+
+There is no options type and no `IConfiguration` binding path in this package. The entire customisation
+surface is the four registration methods and the constructors behind them — everything a caller can vary
+is an argument, so this table is the equivalent of a configuration reference.
+
+### Registration surface (`EncryptionSetup`)
+
+| Method | Argument | Registers | Lifetime | Throws |
+|---|---|---|---|---|
+| `AddEncryptionServices()` | — | `IShaHashing`, `IHmacHashing` | Transient | — |
+| `AddAesGcmEncryption(base64Key)` | Base64 128/192/256-bit key | `IAesGcmEncryption` | Singleton | `ArgumentException` on a blank key |
+| `AddRsaEncryption(privateKeyBase64)` | Base64 PKCS#1 private key | `IRsaEncryption` | Singleton | `ArgumentException` on a blank key |
+| `AddAesEncryption(keyString)` `[Obsolete]` | The value of `AesEncryption.Key` | `IAesEncryption` | Singleton | `ArgumentException` on a blank key |
+
+All four skip registration when the service type is already registered, so a second call is a no-op
+rather than a second instance — the **first** call's key is the one the application uses.
+
+### Constructor surface (when you build an instance yourself)
+
+| Constructor / factory | Parameter | Default | Effect |
+|---|---|---|---|
+| `new AesGcmEncryption(string? key = null)` | Base64 key, no `:` | `null` | `null` generates a random 256-bit key; a supplied key must decode to 16, 24, or 32 bytes. |
+| `new RsaEncryption(int keySize = 2048)` | Key size in bits | `2048` | Generates a fresh key pair at that size. |
+| `new RsaEncryption(string privateKeyBase64)` | PKCS#1 private key | *(required)* | Loads an existing pair; the public key is derived. |
+| `RsaEncryption.FromPublicKey(string publicKeyBase64)` | PKCS#1 public key | *(required)* | Public-only instance: `Encrypt`/`Verify` work, `Decrypt`/`Sign` throw. |
+| `new AesEncryption(string? keyString = null)` `[Obsolete]` | The value of `AesEncryption.Key` | `null` | `null` generates a key and IV. `Key` is Base64 of the string `base64(key):base64(iv)` — one opaque token, with no visible `:` in it. |
+
+### Per-call switches
+
+| Member | Parameter | Default | Effect |
+|---|---|---|---|
+| `IAesGcmEncryption.EncryptString` / `DecryptString` | `associatedData` | `null` | Extra bytes bound into the authentication tag; a mismatch on decrypt throws `CryptographicException`. |
+| `IHmacHashing.ComputeSha256` / `ComputeSha512` | `asBase64` | `true` | `false` returns upper-case hex instead of Base64. |
+| `IHmacHashing.VerifySha256` / `VerifySha512` | `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
+| `IHmacHashing.VerifySha*` / `IShaHashing.VerifySha*` | `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. |
+| `IShaHashing.ComputeSha256` / `ComputeSha512` | `upperCase` | `false` | `true` returns upper-case hex. |
+
+### Fixed algorithm choices
+
+These are not configurable and are worth knowing before you design around them:
+
+| Concern | Value |
+|---|---|
+| AES-GCM nonce / tag | 12 bytes / 16 bytes, fresh nonce per call |
+| AES-GCM generated key size | 256-bit |
+| AES-GCM package layout | Base64 of `base64(nonce):base64(tag):base64(cipher)` |
+| RSA encryption padding | OAEP-SHA256 |
+| RSA signature | SHA-256 with PKCS#1 v1.5 |
+| Key export format | Raw PKCS#1 DER, Base64 — not PEM |
+| Verification comparison | `CryptographicOperations.FixedTimeEquals` |
 
 ## 🧱 Where it fits
+
+Which registration you call decides which service you can resolve — and only the cipher registrations
+take a key:
+
+![Architecture diagram: AddEncryptionServices registers the transient IShaHashing and IHmacHashing services with no key; AddAesGcmEncryption, AddRsaEncryption and the obsolete AddAesEncryption each register one key-bearing singleton cipher inside a boundary labelled "you supply and persist the key"; Base64StringExtensions is static and never registered.](../diagrams/svc-encryption-registration-map.svg)
 
 - **[DKNet.EfCore.Encryption](../EfCore/DKNet.EfCore.Encryption.md)** — the transparent counterpart: encrypt a column
   without the calling code knowing. Use this package when the call site should decide; use that one when the storage

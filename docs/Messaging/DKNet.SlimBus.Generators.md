@@ -62,13 +62,16 @@ The generator only emits source; the consuming project still needs these at runt
   file; see [Endpoint emission is opt-in](#endpoint-emission-is-opt-in).
 - **Mapster** (namespace `MapsterMapper`) — the `IMapper` the generated handlers inject.
 
-Generated code calls C# 14 `extension(...)` members declared by `DKNet.AspCore.Extensions` and
-`DKNet.EfCore.Specifications`, so the consuming project's `LangVersion` must be `14` or later.
+Generated code calls extension members that `DKNet.AspCore.Extensions` and `DKNet.EfCore.Specifications`
+declare with C# 14 `extension(...)` blocks. *Calling* them does not require C# 14 — a consumer at
+`LangVersion` 13 compiles the generated files fine; only declaring such a block does.
 
 Minimum registration for a generated slice to dispatch and auto-save:
 
 ```csharp
-using MapsterMapper;
+using DKNet.EfCore.Specifications;   // AddSpecRepo
+using Mapster;                       // TypeAdapterConfig
+using MapsterMapper;                 // IMapper, Mapper
 using SlimMessageBus.Host;
 using SlimMessageBus.Host.Memory;
 using SlimMessageBus.Host.Serialization.SystemTextJson;
@@ -92,13 +95,17 @@ builder.Services
 
 All three attributes live in `DKNet.EfCore.Abstractions`, so the domain layer takes on no messaging dependency:
 
-- `[CrudCreate]` — on a public constructor or method. At most one per entity (`DKCRUDGEN003` otherwise).
+- `[CrudCreate]` — on a public constructor or method. At most one per entity (`DKCRUDGEN003` otherwise). The
+  method form has a sharp edge — see [the emitted handler](#crudcreate-on-a-constructor) below.
 - `[CrudUpdate]` — on any public instance method; one generated request per marked method.
 - `[CrudAction]` — a named operation at its own route segment (see below).
 - Delete needs no attribute — `MapDeleteById` covers it generically.
 
 The generator scans **both the compiling project and its referenced assemblies**, so an entity in a separate `Domain`
-project is discovered from the API project with nothing redeclared. The entity must implement
+project is discovered from the API project with nothing redeclared. Referenced assemblies whose name is, or starts
+with a dotted prefix of, `System`, `Microsoft`, `netstandard`, `mscorlib`, `FluentResults`, `Mapster`,
+`SlimMessageBus`, `Shouldly`, or `xunit` are skipped — the match is exact-or-dot-prefixed, so a project named
+`Systemic.Domain` is still scanned. The entity must implement
 `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>` (`DKCRUDGEN006`), and every marked member must be public
 (`DKCRUDGEN004`).
 
@@ -131,6 +138,297 @@ Each request gets an `internal sealed IHandler<TRequest, TDto>` in `{Entity}Crud
   invoked.
 - Both return `mapper.ResultOf<TDto>(entity)`, so the DTO materializes lazily — after the auto-save interceptor has
   persisted the change, which is why database-generated values (identity keys, timestamps) are present in the response.
+
+### Declaration and emitted code, side by side
+
+Every snippet in this section is **copied verbatim** from `obj/…/generated/` after compiling a consumer
+project against the packaged generator. The entity below is the whole hand-written input:
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+
+namespace Catalog;
+
+public class Product : Entity
+{
+    private Product() { }                                     // EF
+
+    [CrudCreate]
+    public Product([Required, MaxLength(100)] string name, decimal price)
+    {
+        Name = name;
+        Price = price;
+    }
+
+    public string Name { get; private set; } = null!;
+    public decimal Price { get; private set; }
+    public bool IsApproved { get; private set; }
+    public bool IsArchived { get; private set; }
+
+    [CrudUpdate]
+    public void UpdatePrice([Range(0, 1_000_000)] decimal price) => Price = price;
+
+    [CrudUpdate]
+    public void Rename([Required, MaxLength(100)] string name) => Name = name;
+
+    [CrudAction("approval")]
+    public void Approve([Required] string approver) => IsApproved = true;
+
+    [CrudAction(Verb = CrudActionVerb.Patch)]
+    public void Archive() => IsArchived = true;
+}
+```
+
+plus the DTO, in the API project:
+
+```csharp
+using Catalog;
+using DKNet.EfCore.DtoGenerator;
+
+namespace Api;
+
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
+
+#### `[CrudCreate]` on a constructor
+
+The request record takes one property per constructor parameter, `required` unless the parameter type is
+nullable, with the parameter's `System.ComponentModel.DataAnnotations` attributes reconstructed onto it:
+
+```csharp
+/// <summary>Create request generated from Product's [CrudCreate] constructor.</summary>
+public sealed partial record CreateProductRequest : global::DKNet.SlimBus.Extensions.Fluents.Requests.IWitResponse<global::Api.ProductDto>
+{
+    /// <summary>Maps to constructor parameter 'name'.</summary>
+    [global::System.ComponentModel.DataAnnotations.Required]
+    [global::System.ComponentModel.DataAnnotations.MaxLength(100)]
+    public required string Name { get; init; }
+
+    /// <summary>Maps to constructor parameter 'price'.</summary>
+    public required decimal Price { get; init; }
+}
+```
+
+Its handler calls the constructor and adds the entity — no `Id` property, because there is nothing to look up:
+
+```csharp
+/// <summary>Generated create handler for Product. Write a class implementing the same IHandler to replace it.</summary>
+internal sealed class CreateProductHandler(
+    global::DKNet.EfCore.Specifications.Repositories.IRepositorySpec repository,
+    global::MapsterMapper.IMapper mapper)
+    : global::DKNet.SlimBus.Extensions.Fluents.Requests.IHandler<CreateProductRequest, global::Api.ProductDto>
+{
+    /// <inheritdoc />
+    public async global::System.Threading.Tasks.Task<global::FluentResults.IResult<global::Api.ProductDto>> OnHandle(
+        CreateProductRequest request, global::System.Threading.CancellationToken cancellationToken)
+    {
+        var entity = new global::Catalog.Product(request.Name, request.Price);
+        await repository.AddAsync(entity, cancellationToken);
+        return global::DKNet.SlimBus.Extensions.LazyMapper.LazyMapExtensions.ResultOf<global::Api.ProductDto>(mapper, entity);
+    }
+}
+```
+
+`[CrudCreate]` is also valid on a public method, but read the emitted handler before reaching for it. Marking
+`public static Widget Draft([Required] string label) => new(label);` produces `DraftWidgetRequest` and:
+
+```csharp
+/// <summary>Generated create handler for Widget. Write a class implementing the same IHandler to replace it.</summary>
+internal sealed class DraftWidgetHandler(
+    global::DKNet.EfCore.Specifications.Repositories.IRepositorySpec repository,
+    global::MapsterMapper.IMapper mapper)
+    : global::DKNet.SlimBus.Extensions.Fluents.Requests.IHandler<DraftWidgetRequest, global::Api.WidgetDto>
+{
+    /// <inheritdoc />
+    public async global::System.Threading.Tasks.Task<global::FluentResults.IResult<global::Api.WidgetDto>> OnHandle(
+        DraftWidgetRequest request, global::System.Threading.CancellationToken cancellationToken)
+    {
+        var entity = new global::Catalog.Widget(request.Label);
+        await repository.AddAsync(entity, cancellationToken);
+        return global::DKNet.SlimBus.Extensions.LazyMapper.LazyMapExtensions.ResultOf<global::Api.WidgetDto>(mapper, entity);
+    }
+}
+```
+
+The handler calls the **constructor**, not `Draft` — the marked method's parameter list is used as the
+constructor's argument list. So the method form only works when a constructor with exactly that signature
+exists, and any logic inside the factory method is skipped. Prefer marking the constructor.
+
+#### `[CrudUpdate]` on a method
+
+An update request adds a route-bound `Id` and implements `IWithKey<TKey>` alongside `IWitResponse<TDto>`:
+
+```csharp
+/// <summary>Update request generated from Product.UpdatePrice.</summary>
+public sealed partial record UpdatePriceProductRequest :
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWitResponse<global::Api.ProductDto>,
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWithKey<global::System.Guid>
+{
+    /// <summary>The target Product identifier (bound from route).</summary>
+    public global::System.Guid Id { get; set; }
+
+    /// <summary>Maps to method parameter 'price'.</summary>
+    [global::System.ComponentModel.DataAnnotations.Range(0, 1000000)]
+    public required decimal Price { get; init; }
+}
+```
+
+Its handler fetches by id through a file-local specification and returns `NotFoundError` on a miss:
+
+```csharp
+/// <summary>Matches a single Product by id; used by this file's generated update handlers to fetch the entity.</summary>
+file sealed class ProductByIdCrudSpec : global::DKNet.EfCore.Specifications.Definitions.Specification<global::Catalog.Product>
+{
+    /// <summary>Initializes the specification with a filter matching the given id.</summary>
+    public ProductByIdCrudSpec(global::System.Guid id) => WithFilter(x => x.Id.Equals(id));
+}
+
+/// <summary>Generated update handler for Product.UpdatePrice. Write a class implementing the same IHandler to replace it.</summary>
+internal sealed class UpdatePriceProductHandler(
+    global::DKNet.EfCore.Specifications.Repositories.IRepositorySpec repository,
+    global::MapsterMapper.IMapper mapper)
+    : global::DKNet.SlimBus.Extensions.Fluents.Requests.IHandler<UpdatePriceProductRequest, global::Api.ProductDto>
+{
+    /// <inheritdoc />
+    public async global::System.Threading.Tasks.Task<global::FluentResults.IResult<global::Api.ProductDto>> OnHandle(
+        UpdatePriceProductRequest request, global::System.Threading.CancellationToken cancellationToken)
+    {
+        var entity = await repository.FirstOrDefaultAsync(new ProductByIdCrudSpec(request.Id), cancellationToken);
+        if (entity is null)
+            return global::FluentResults.Result.Fail<global::Api.ProductDto>(
+                new global::DKNet.SlimBus.Extensions.NotFoundError($"Product '{request.Id}' was not found."));
+        entity.UpdatePrice(request.Price);
+        return global::DKNet.SlimBus.Extensions.LazyMapper.LazyMapExtensions.ResultOf<global::Api.ProductDto>(mapper, entity);
+    }
+}
+```
+
+The `ProductByIdCrudSpec` above is emitted **once per entity**, `file`-scoped, and only when the entity has at
+least one update or action to emit.
+
+#### `[CrudAction]`, with and without arguments
+
+An action request is structurally identical to an update request — the difference is entirely in routing.
+`Approve` takes a parameter, `Archive` takes none, which is why one record has a property and the other has
+only `Id`:
+
+```csharp
+/// <summary>Action request generated from Product.Approve.</summary>
+public sealed partial record ApproveProductRequest :
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWitResponse<global::Api.ProductDto>,
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWithKey<global::System.Guid>
+{
+    /// <summary>The target Product identifier (bound from route).</summary>
+    public global::System.Guid Id { get; set; }
+
+    /// <summary>Maps to method parameter 'approver'.</summary>
+    [global::System.ComponentModel.DataAnnotations.Required]
+    public required string Approver { get; init; }
+}
+
+/// <summary>Action request generated from Product.Archive.</summary>
+public sealed partial record ArchiveProductRequest :
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWitResponse<global::Api.ProductDto>,
+    global::DKNet.SlimBus.Extensions.Fluents.Requests.IWithKey<global::System.Guid>
+{
+    /// <summary>The target Product identifier (bound from route).</summary>
+    public global::System.Guid Id { get; set; }
+
+}
+```
+
+#### The endpoint file, for all four members at once
+
+One extension method per entity; every registration is guarded by its `CrudOp` so `Exclude` can drop it:
+
+```csharp
+/// <summary>Registers the generated CRUD endpoints for Product.</summary>
+public static class ProductCrudEndpointExtensions
+{
+    /// <summary>Maps GET {id}, GET /, POST /, PUT {id} (per update request), DELETE {id} and each generated domain-action endpoint for Product.</summary>
+    public static global::Microsoft.AspNetCore.Routing.RouteGroupBuilder MapProductCrud(
+        this global::Microsoft.AspNetCore.Routing.RouteGroupBuilder group,
+        global::System.Action<global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions>? configure = null)
+    {
+        var options = new global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions();
+        configure?.Invoke(options);
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById))
+            group.MapGetById<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
+            group.MapGetList<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
+            group.MapDeleteById<global::Catalog.Product, global::System.Guid>();
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
+            group.MapPost<CreateProductRequest, global::Api.ProductDto>("/");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
+            group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::Api.ProductDto>("{id}");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
+            group.MapPutById<RenameProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/rename");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
+            group.MapActionById<ApproveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/approval", "POST");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
+            group.MapActionById<ArchiveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/archive", "PATCH");
+        return group;
+    }
+}
+```
+
+Read the last five lines as the routing rules in action: `UpdatePrice` was declared first so it keeps the plain
+`{id}` PUT; `Rename` came second so it landed on `{id}/rename`; `Approve` used the attribute's explicit
+`"approval"` segment; `Archive` fell back to its kebab-cased method name and to `PATCH` because of `Verb`.
+
+### Naming and routing conventions
+
+Everything the generator names is derived, never configurable beyond the attribute's `Name`:
+
+| Thing | Rule | From the example |
+|---|---|---|
+| Namespace | `{AssemblyName}.Crud`, or `Generated.Crud` when the compilation has no assembly name | `CrudConsumer.Crud` |
+| Requests file | `{Entity}CrudRequests.g.cs`, one per entity | `ProductCrudRequests.g.cs` |
+| Handlers file | `{Entity}CrudHandlers.g.cs`; omitted entirely when every member has a hand-written handler | `ProductCrudHandlers.g.cs` |
+| Endpoints file | `{Entity}CrudEndpoints.g.cs`; emitted only when the project references `DKNet.AspCore.Extensions` | `ProductCrudEndpoints.g.cs` |
+| Create request | `Create{Entity}Request` for a constructor, `{Method}{Entity}Request` for a method; `Name` on the attribute overrides both | `CreateProductRequest` |
+| Update / action request | `{Method}{Entity}Request`; `Name` overrides | `RenameProductRequest` |
+| Handler | the request name with a trailing `Request` replaced by `Handler` (appended when the name does not end in `Request`) | `RenameProductHandler` |
+| By-id specification | `{Entity}ByIdCrudSpec`, `file`-scoped, one per handlers file | `ProductByIdCrudSpec` |
+| Endpoint extension class | `{Entity}CrudEndpointExtensions` | `ProductCrudEndpointExtensions` |
+| Endpoint method | `Map{Entity}Crud` | `MapProductCrud` |
+
+Route segments:
+
+| Member | Segment |
+|---|---|
+| First `[CrudUpdate]` in declaration order | `{id}` — the plain by-id PUT |
+| Every later `[CrudUpdate]` | `{id}/{kebab-cased method name}` |
+| `[CrudAction("segment")]` | `{id}/segment`, exactly as written |
+| `[CrudAction]` with no segment | `{id}/{kebab-cased method name}` |
+
+Kebab-casing inserts a `-` before **every** upper-case character after the first and lower-cases it, so
+`UpdatePrice` becomes `update-price` and an acronym like `ExportXml` becomes `export-xml` — but `ExportXML`
+becomes `export-x-m-l`. Two members resolving to the same segment is `DKCRUDGEN008`.
+
+Registration order inside `Map{Entity}Crud` is fixed: `GetById`, `GetList`, `Delete`, `Create`, each
+`[CrudUpdate]` in declaration order, then each `[CrudAction]` in declaration order.
+
+### The DTO and domain-event paths
+
+Two things this generator is often assumed to do, and what it actually does:
+
+- **DTOs — resolved, not generated.** The DTO type comes from `DKNet.EfCore.DtoGenerator`: you declare
+  `[GenerateDto(typeof(Entity))] public partial record EntityDto;` and *that* generator emits its properties.
+  This generator only looks the type up, by scanning the compiling assembly for exactly one `[GenerateDto]`
+  type whose constructor argument is the entity, and uses it as the `TDto` in `IWitResponse<TDto>`. Zero is
+  `DKCRUDGEN001`, more than one is `DKCRUDGEN002`. `GenerateDtoAttribute` is `internal`, which is fine for a
+  package consumer: the attribute is shipped as a source file that compiles into your own assembly.
+- **Domain events — not generated at all.** Nothing in the emitted code raises, declares, or subscribes to an
+  event. The `AddEvent(...)` calls in an entity are your own domain code; they reach the bus after the save,
+  through `DKNet.EfCore.Events` plus
+  [`AddSlimBusEventPublisher<TDbContext>()`](./DKNet.SlimBus.Extensions.md). The generated handlers do not call
+  `SaveChanges` either — the auto-save interceptor does, which is why the save (and therefore the publish)
+  happens after the handler returns.
 
 ### Endpoint registration — `Map{Entity}Crud`
 
@@ -228,6 +526,11 @@ There is no options object — configuration is the attributes on the entity plu
 
 ## 🧱 Where it fits
 
+The generator runs once per compilation, resolves each entity against its key, its DTO and any hand-written
+handler, and writes at most three files per entity:
+
+![Workflow diagram: the generator scans the compiling assembly and its non-framework references for CRUD-attributed members, looks up GenerateDto DTOs in the compiling assembly only, and scans that assembly's syntax for IHandler base lists matched by request name; it resolves each entity's IEntity key and single DTO into an entity model, reporting DKCRUDGEN001-008 and skipping the entity when resolution fails, then emits the requests file, the handlers file, and the endpoints file when DKNet.AspCore.Extensions is referenced.](../diagrams/slimbus-generators-compile-flow.svg)
+
 - **[DKNet.EfCore.Abstractions](../EfCore/DKNet.EfCore.Abstractions.md)** — home of the CRUD attributes and
   `IEntity<TKey>`, which every attributed entity must implement.
 - **[DKNet.EfCore.DtoGenerator](../EfCore/DKNet.EfCore.DtoGenerator.md)** — supplies the `[GenerateDto]` DTOs this
@@ -254,7 +557,10 @@ There is no options object — configuration is the attributes on the entity plu
 - **Handler-override matching ignores types.** Only the request type's *name* is compared, so a hand-written handler
   with the wrong DTO type argument silently replaces the generated one and fails at dispatch instead of at build.
 - **One `[CrudCreate]` per entity.** A second constructor you would like exposed needs a hand-written slice.
-- **`LangVersion` must be 14 or later** in the consuming project — generated code uses C# 14 extension members.
+- **`[CrudCreate]` on a method never calls that method.** The generated handler always does
+  `new {Entity}(request.…)` with the marked member's parameter list, so a factory method's body is skipped and
+  the code only compiles when a matching constructor exists. It also loses the `201 Created` response, because
+  the request is named after the method and `MapPost` keys `201` off the name containing "Create".
 - **No FluentValidation integration, generated events, event handlers, or Mapster configs**, and no PATCH/partial-update
   semantics — all deliberately out of scope. Nothing editable is emitted, so there is no scaffolding to drift.
 

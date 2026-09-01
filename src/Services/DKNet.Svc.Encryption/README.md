@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
 
 Standalone, explicitly-invoked cryptography toolkit: AES-GCM encryption, RSA encrypt/sign, HMAC and SHA hashing, and
 Base64/Base64URL helpers, all operating on UTF-8 strings. For transparent EF Core column encryption instead, see
@@ -53,7 +53,42 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 `EncryptionSetup` (registration point) and `Base64StringExtensions`/`Base65StringExtensions`
 (the Base64/Base64URL encoding helpers) stay at `DKNet.Svc.Encryption`.
 
+## Configuration — registration and constructor surface
+
+There is no options type and no `IConfiguration` binding path. Everything a caller can vary is an argument.
+
+| Registration | Argument | Registers | Lifetime |
+|---|---|---|---|
+| `AddEncryptionServices()` | — | `IShaHashing`, `IHmacHashing` | Transient |
+| `AddAesGcmEncryption(base64Key)` | Base64 128/192/256-bit key | `IAesGcmEncryption` | Singleton |
+| `AddRsaEncryption(privateKeyBase64)` | Base64 PKCS#1 private key | `IRsaEncryption` | Singleton |
+| `AddAesEncryption(keyString)` `[Obsolete]` | The value `AesEncryption.Key` returned | `IAesEncryption` | Singleton |
+
+All four are idempotent — a second call registers nothing, so the **first** call's key is the one the
+application uses. The three cipher methods throw `ArgumentException` for a null, empty, or whitespace key.
+
+| Constructor / factory | Parameter | Default | Effect |
+|---|---|---|---|
+| `new AesGcmEncryption(string? key = null)` | Base64 key, must not contain `:` | `null` | `null` generates a random 256-bit key; a supplied key must decode to 16, 24, or 32 bytes. |
+| `new RsaEncryption(int keySize = 2048)` | Key size in bits | `2048` | Generates a fresh key pair. |
+| `new RsaEncryption(string privateKeyBase64)` | PKCS#1 private key | *(required)* | Loads an existing pair; the public key is derived. |
+| `RsaEncryption.FromPublicKey(string publicKeyBase64)` | PKCS#1 public key | *(required)* | Public-only: `Encrypt`/`Verify` work, `Decrypt`/`Sign` throw `InvalidOperationException`. |
+| `new AesEncryption(string? keyString = null)` `[Obsolete]` | The value `AesEncryption.Key` returned | `null` | `null` generates a key and IV. `Key` is Base64 of `base64(key):base64(iv)` — one opaque token. |
+
+| Per-call switch | Default | Effect |
+|---|---|---|
+| `IAesGcmEncryption.EncryptString`/`DecryptString` — `associatedData` | `null` | Extra bytes bound into the tag; a mismatch on decrypt throws `CryptographicException`. |
+| `IHmacHashing.ComputeSha*` — `asBase64` | `true` | `false` returns upper-case hex. |
+| `IHmacHashing.VerifySha*` — `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
+| `IShaHashing.ComputeSha*` — `upperCase` | `false` | `true` returns upper-case hex. |
+| `IHmacHashing.VerifySha*` / `IShaHashing.VerifySha*` — `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. |
+
+Fixed, non-configurable choices: AES-GCM uses a fresh 12-byte nonce and a 16-byte tag per call and packages
+the result as Base64 of `base64(nonce):base64(tag):base64(cipher)`; RSA uses OAEP-SHA256 for encryption and
+SHA-256 with PKCS#1 v1.5 for signatures; keys are exported as raw PKCS#1 DER in Base64, not PEM; every
+`Verify*` compares with `CryptographicOperations.FixedTimeEquals`.
+
 ## Documentation
 
 Full feature reference, configuration, and gotchas:
-https://github.com/baoduy/DKNet/blob/dev/docs/Services/DKNet.Svc.Encryption.md
+https://github.com/baoduy/DKNet/blob/main/docs/Services/DKNet.Svc.Encryption.md
