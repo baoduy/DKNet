@@ -4,8 +4,6 @@
 // File: IBlobService.cs
 // Description: Abstractions for blob storage services and a small base class with common helpers.
 
-using System.Text;
-
 namespace DKNet.Svc.BlobStorage.Abstractions;
 
 /// <summary>
@@ -133,15 +131,8 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
     /// </summary>
     /// <param name="item">The blob request containing the name to be normalized.</param>
     /// <returns>A normalized blob path (leading slash included).</returns>
-    protected virtual string GetBlobLocation(BlobRequest item)
-    {
-        var builder = new StringBuilder();
-
-        if (!item.Name.StartsWith('/')) builder.Append('/');
-
-        builder.Append(item.Name);
-        return builder.ToString();
-    }
+    protected virtual string GetBlobLocation(BlobRequest item) =>
+        item.Name.StartsWith('/') ? item.Name : "/" + item.Name;
 
     /// <summary>
     ///     Returns the first matching item from a listing operation, or <c>null</c> if none is found.
@@ -213,8 +204,8 @@ public abstract class BlobService(BlobServiceOptions options) : IBlobService
 
         if (_options.MaxFileSizeInMb > 0)
         {
-            var fileLength = item.Data.ToMemory().Length; // Length without copying the whole payload
-            var limitLength = _options.MaxFileSizeInMb * 1000000; //Convert Mb to Byte
+            long fileLength = item.Data.ToMemory().Length; // Length without copying the whole payload
+            var limitLength = _options.MaxFileSizeInMb * 1_000_000L; //Convert Mb to Byte
             if (fileLength > limitLength) throw new FileLoadException("File size is invalid.");
         }
     }

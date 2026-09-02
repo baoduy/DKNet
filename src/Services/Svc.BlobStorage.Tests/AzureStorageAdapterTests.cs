@@ -85,6 +85,24 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
         .ShouldBeGreaterThanOrEqualTo(1);
 
     [Fact]
+    public async Task ListItemsAsync_MultipleFilesInFolder_ReturnsDistinctPerItemNames()
+    {
+        // Regression for C7: every result used to carry the searched-for prefix instead of its own name.
+        var folder = $"list-distinct-{Guid.NewGuid()}";
+        var file = BinaryData.FromString("test");
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}/a.txt", file) { ContentType = "text/plain" });
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}/b.txt", file) { ContentType = "text/plain" });
+
+        var items = await _adapter.ListItemsAsync(new BlobRequest(folder) { Type = BlobTypes.Directory })
+            .ToListAsync();
+
+        items.Count.ShouldBe(2);
+        items.Select(i => i.Name).Distinct().Count().ShouldBe(2);
+        items.ShouldContain(i => i.Name == $"{folder}/a.txt");
+        items.ShouldContain(i => i.Name == $"{folder}/b.txt");
+    }
+
+    [Fact]
     public async Task ListItemsAsyncShouldReturnEmptyWhenNoItems()
     {
         var items = await _adapter.ListItemsAsync(new BlobRequest("empty-folder") { Type = BlobTypes.Directory })

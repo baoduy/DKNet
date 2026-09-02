@@ -209,9 +209,8 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
 
         await foreach (var b in resultSegment)
-            yield return new BlobDetails.BlobResult(blob.Name)
+            yield return new BlobDetails.BlobResult(b.Name)
             {
-                Name = blob.Name,
                 Details = b.IsDirectory()
                     ? null
                     : new BlobDetails

@@ -278,33 +278,44 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
 
-        var info = await client.ListObjectsV2Async(
-            new ListObjectsV2Request
-            {
-                BucketName = _options.BucketName,
-                Prefix = location
-            },
-            cancellationToken);
-
-        if (info?.S3Objects is null) yield break;
-
-        foreach (var obj in info.S3Objects)
+        string? continuationToken = null;
+        do
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            yield return new BlobDetails.BlobResult(obj.Key)
+            var info = await client.ListObjectsV2Async(
+                new ListObjectsV2Request
+                {
+                    BucketName = _options.BucketName,
+                    Prefix = location,
+                    ContinuationToken = continuationToken
+                },
+                cancellationToken);
+
+            if (info?.S3Objects is null) yield break;
+
+            foreach (var obj in info.S3Objects)
             {
-                Type = obj.Size > 1 ? BlobTypes.File : BlobTypes.Directory,
-                Details = obj.Size > 1
-                    ? new BlobDetails
-                    {
-                        ContentType = string.Empty,
-                        ContentLength = obj.Size.Value,
-                        CreatedOn = obj.LastModified!.Value,
-                        LastModified = obj.LastModified!.Value
-                    }
-                    : null
-            };
-        }
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // The '/' suffix is S3's own directory-marker convention; object size says nothing
+                // about whether a key is a directory.
+                var isDirectory = obj.Key.EndsWith('/');
+                yield return new BlobDetails.BlobResult(obj.Key)
+                {
+                    Type = isDirectory ? BlobTypes.Directory : BlobTypes.File,
+                    Details = isDirectory
+                        ? null
+                        : new BlobDetails
+                        {
+                            ContentType = string.Empty,
+                            ContentLength = obj.Size.GetValueOrDefault(),
+                            CreatedOn = obj.LastModified!.Value,
+                            LastModified = obj.LastModified!.Value
+                        }
+                };
+            }
+
+            continuationToken = info.IsTruncated == true ? info.NextContinuationToken : null;
+        } while (continuationToken is not null);
     }
 
     /// <summary>

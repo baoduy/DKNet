@@ -204,6 +204,25 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     }
 
     [Fact]
+    public async Task ListItemsAsync_ZeroByteAndOneByteFiles_AreClassifiedAsFileNotDirectory()
+    {
+        // Regression for C8: `obj.Size > 1` used to classify a 0- or 1-byte file as a directory.
+        // Only a trailing '/' in the key is S3's actual directory-marker convention.
+        var dir = $"tiny-files-{Guid.NewGuid()}";
+        await _service.SaveAsync(new BlobDetails.BlobData($"{dir}/empty.txt", new BinaryData([]))
+            { Overwrite = true, Type = BlobTypes.File });
+        await _service.SaveAsync(new BlobDetails.BlobData($"{dir}/one-byte.txt", new BinaryData("a"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File });
+
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.Count.ShouldBe(2);
+        items.ShouldAllBe(i => i.Type == BlobTypes.File);
+    }
+
+    [Fact]
     public async Task DisposeReleasesUnderlyingClientAndIsIdempotent()
     {
         var service = new S3BlobService(Options.Create(fixture.Options), NullLogger<S3BlobService>.Instance);
