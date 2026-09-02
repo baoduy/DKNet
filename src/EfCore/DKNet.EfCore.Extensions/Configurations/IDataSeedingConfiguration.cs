@@ -4,6 +4,9 @@
 // File: IDataSeedingConfiguration.cs
 // Description: Abstractions and base implementation for EF Core data seeding configurations.
 
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Metadata;
+
 namespace DKNet.EfCore.Extensions.Configurations;
 
 /// <summary>
@@ -61,12 +64,7 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
                 return;
 
             var dbSet = context.Set<TEntity>();
-
-            // Load all existing entities once to avoid N+1 queries
-            var existing = await dbSet.AsNoTracking().ToListAsync(cancellation).ConfigureAwait(false);
-            var existingSet = new HashSet<TEntity>(existing, EqualityComparer<TEntity>.Default);
-
-            var toAdd = data.Where(item => !existingSet.Contains(item)).ToList();
+            var toAdd = await GetMissingAsync(context, dbSet, data, cancellation).ConfigureAwait(false);
             if (toAdd.Count == 0)
                 return;
 
@@ -83,6 +81,87 @@ public abstract class DataSeedingConfiguration<TEntity> : IDataSeedingConfigurat
     /// </summary>
     /// <returns></returns>
     protected abstract ValueTask<ICollection<TEntity>> GetDataAsync(CancellationToken cancellation = default);
+
+    /// <summary>
+    ///     Filters <paramref name="candidates" /> down to the ones not already present in <paramref name="dbSet" />,
+    ///     comparing by primary key rather than by <typeparamref name="TEntity" /> equality (which, for a plain
+    ///     reference type without an <c>Equals</c> override, would never match the freshly materialised database rows and
+    ///     would re-insert every candidate on every run). Only the primary key columns are read from the database.
+    /// </summary>
+    private static async Task<List<TEntity>> GetMissingAsync(
+        DbContext context,
+        DbSet<TEntity> dbSet,
+        ICollection<TEntity> candidates,
+        CancellationToken cancellation)
+    {
+        var primaryKey = context.Model.FindEntityType(typeof(TEntity))?.FindPrimaryKey();
+        if (primaryKey is null || primaryKey.Properties.Count == 0)
+            // No primary key metadata to compare by; treat every candidate as new.
+            return candidates.ToList();
+
+        var keyProperties = primaryKey.Properties;
+        var keyDefaults = keyProperties
+            .Select(p => p.ClrType.IsValueType ? Activator.CreateInstance(p.ClrType) : null)
+            .ToArray();
+
+        var existingKeys = await dbSet.AsNoTracking()
+            .Select(BuildKeySelector(keyProperties))
+            .ToListAsync(cancellation)
+            .ConfigureAwait(false);
+        var existingSet = new HashSet<object?[]>(existingKeys, KeyArrayComparer.Instance);
+
+        var toAdd = new List<TEntity>();
+        foreach (var item in candidates)
+        {
+            var entry = context.Entry(item);
+            var keyValues = keyProperties.Select(p => entry.Property(p.Name).CurrentValue).ToArray();
+
+            // An entity whose key still has its CLR default value has never been assigned one, so it is new.
+            var isUnset = keyValues.SequenceEqual(keyDefaults);
+            if (isUnset || !existingSet.Contains(keyValues))
+                toAdd.Add(item);
+        }
+
+        return toAdd;
+    }
+
+    /// <summary>
+    ///     Builds a projection expression that reads only the given primary key properties from an entity,
+    ///     via <see cref="EF.Property{TProperty}" /> so shadow key properties are supported too.
+    /// </summary>
+    private static Expression<Func<TEntity, object?[]>> BuildKeySelector(IReadOnlyList<IProperty> keyProperties)
+    {
+        var parameter = Expression.Parameter(typeof(TEntity), "e");
+        var propertyMethod = typeof(EF).GetMethod(nameof(EF.Property))!.MakeGenericMethod(typeof(object));
+
+        var accessors = keyProperties
+            .Select(p => (Expression)Expression.Call(propertyMethod, parameter, Expression.Constant(p.Name)));
+
+        return Expression.Lambda<Func<TEntity, object?[]>>(Expression.NewArrayInit(typeof(object), accessors), parameter);
+    }
+
+    #endregion
+
+    #region KeyArrayComparer
+
+    /// <summary>
+    ///     Compares primary key value arrays element-by-element, so composite keys are supported.
+    /// </summary>
+    private sealed class KeyArrayComparer : IEqualityComparer<object?[]>
+    {
+        public static readonly KeyArrayComparer Instance = new();
+
+        public bool Equals(object?[]? x, object?[]? y) =>
+            x is not null && y is not null && x.SequenceEqual(y);
+
+        public int GetHashCode(object?[] obj)
+        {
+            var hash = default(HashCode);
+            foreach (var value in obj)
+                hash.Add(value);
+            return hash.ToHashCode();
+        }
+    }
 
     #endregion
 }
