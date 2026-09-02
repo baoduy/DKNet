@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
+﻿using System.Text;
 using DKNet.Svc.Transformation.Exceptions;
 using DKNet.Svc.Transformation.TokenExtractors;
 using Microsoft.Extensions.Options;
@@ -44,7 +43,6 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 {
     #region Fields
 
-    private readonly ConcurrentDictionary<string, object> _cacheService = new(StringComparer.Ordinal);
     private readonly TokenResolver _tokenResolver = new();
 
     #endregion
@@ -66,13 +64,18 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
         var orderedTokens = tokens.OrderBy(t => t.Index).ToArray();
         if (orderedTokens.Length == 0) return template;
 
+        // Scoped to this single Transform/TransformAsync call, so a token resolved from one
+        // caller's additionalData can never leak into another call's result. Deduplicates a
+        // token that repeats within the same template, which is the only case caching pays for.
+        var cache = new Dictionary<string, object>(StringComparer.Ordinal);
+
         var templateSpan = template.AsSpan();
         var builder = new StringBuilder(template.Length);
         var lastIndex = 0;
 
         foreach (var token in orderedTokens)
         {
-            var val = TryGetAndCacheValue(token, additionalData) ?? Options.TokenNotFoundBehavior switch
+            var val = TryGetAndCacheValue(token, additionalData, cache) ?? Options.TokenNotFoundBehavior switch
             {
                 TokenNotFoundBehavior.LeaveAsIs => token.Token,
                 TokenNotFoundBehavior.Remove => string.Empty,
@@ -120,17 +123,19 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     }
 
     /// <summary>
-    ///     Try to Get data for <see cref="IToken" /> from additionalData and then TransformData and Cache for later use.
+    ///     Try to Get data for <see cref="IToken" /> from additionalData and then TransformData, caching the
+    ///     resolved value in <paramref name="cache" /> so a token repeated within the same template resolves once.
     /// </summary>
     /// <param name="token"></param>
     /// <param name="additionalData"></param>
+    /// <param name="cache">A cache scoped to a single Transform/TransformAsync call.</param>
     /// <returns></returns>
-    private object? TryGetAndCacheValue(IToken token, object[] additionalData)
+    private object? TryGetAndCacheValue(IToken token, object[] additionalData, Dictionary<string, object> cache)
     {
-        if (_cacheService.TryGetValue(token.Token, out var value)) return value;
+        if (cache.TryGetValue(token.Token, out var value)) return value;
 
         var val = TryGetValue(token, additionalData);
-        if (val is not null) _cacheService.TryAdd(token.Token, val);
+        if (val is not null) cache[token.Token] = val;
 
         return val;
     }

@@ -144,6 +144,67 @@ public class TransformTests
     }
 
     [Fact]
+    public void Transform_CalledTwiceOnSameInstance_WithDifferentAdditionalData_DoesNotReuseStaleCache()
+    {
+        // Arrange - a single TransformerService instance is reused across two calls, as would happen
+        // if a consumer captured it in a scoped/singleton class instead of taking a fresh transient.
+        var options = Options.Create(new TransformOptions());
+        var service = new TransformerService(options);
+
+        // Act
+        var first = service.Transform("Hello [Name]", new { Name = "Alice" });
+        var second = service.Transform("Hello [Name]", new { Name = "Bob" });
+
+        // Assert
+        first.ShouldBe("Hello Alice");
+        second.ShouldBe("Hello Bob");
+    }
+
+    [Fact]
+    public async Task TransformAsync_CalledTwiceOnSameInstance_WithDifferentAdditionalData_DoesNotReuseStaleCache()
+    {
+        var options = Options.Create(new TransformOptions());
+        var service = new TransformerService(options);
+
+        var first = await service.TransformAsync("Hello [Name]", new { Name = "Alice" });
+        var second = await service.TransformAsync("Hello [Name]", new { Name = "Bob" });
+
+        first.ShouldBe("Hello Alice");
+        second.ShouldBe("Hello Bob");
+    }
+
+    [Fact]
+    public void Transform_TokenRepeatedInTemplate_ResolvesValueOnlyOnce()
+    {
+        // Arrange - a spy that counts how many times its property is read via reflection proves
+        // the per-call cache still deduplicates repeated tokens within one template.
+        var spy = new CountingNameProvider();
+        var options = Options.Create(new TransformOptions());
+        var service = new TransformerService(options);
+
+        // Act
+        var result = service.Transform("[Name] and [Name] and [Name]", spy);
+
+        // Assert
+        result.ShouldBe("Duy and Duy and Duy");
+        spy.ReadCount.ShouldBe(1);
+    }
+
+    private sealed class CountingNameProvider
+    {
+        public int ReadCount { get; private set; }
+
+        public string Name
+        {
+            get
+            {
+                ReadCount++;
+                return "Duy";
+            }
+        }
+    }
+
+    [Fact]
     public async Task TransformAsyncCustomTest()
     {
         var options = Options.Create(new TransformOptions());
