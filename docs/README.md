@@ -5,10 +5,11 @@ DKNet is a suite of independent .NET 10 NuGet packages for building enterprise a
 `AddDKNet()` call: each package registers itself and can be used on its own, so you pull in only what a given
 `DbContext`, API, or worker actually needs.
 
-28 packages are published to NuGet. Three more are source-only in this repository
-(`<IsPackable>false</IsPackable>`) and are documented anyway: `DKNet.EfCore.Repos` and
-`DKNet.EfCore.Repos.Abstractions` are retired, and `Aspire.Hosting.ServiceBus` is an Aspire shared project you
-reference from an AppHost directly.
+28 packages are published to NuGet. One more, `Aspire.Hosting.ServiceBus`, is source-only in this repository
+(`<IsPackable>false</IsPackable>`) and documented anyway — it is an Aspire shared project you reference from an
+AppHost directly. `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions`, the older generic-repository
+packages, were removed outright; see [Migrating-Repos-To-Specifications](./EfCore/Migrating-Repos-To-Specifications.md)
+if you are upgrading off them.
 
 ## Quick Navigation
 
@@ -80,8 +81,6 @@ Entity base classes, the specification pattern, and the `SaveChanges` intercepto
 - [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) — transparent, column-level encryption for `string` properties, applied at the database boundary via a standard `ValueConverter`
 - [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) — a Roslyn incremental source generator that emits DTO properties from an entity type at compile time
 - [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) — four `DbContext` extension methods for relational bookkeeping EF Core does not expose: table creation, connection access, table-name resolution, and table-existence checks
-- [DKNet.EfCore.Repos](./EfCore/DKNet.EfCore.Repos.md) — **retired**, source-only generic repository, superseded by Specifications
-- [DKNet.EfCore.Repos.Abstractions](./EfCore/DKNet.EfCore.Repos.Abstractions.md) — **retired**, source-only repository interfaces implemented by `DKNet.EfCore.Repos`
 
 ### [Messaging & CQRS](./Messaging/README.md)
 SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source generator.

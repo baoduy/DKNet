@@ -2,7 +2,7 @@
 
 Index into the per-package API documentation. Each package below has its own canonical reference page —
 `docs/<Area>/<Package>.md` — kept in sync with `src/` on every change. This page does not restate their contents;
-it points to them, sorted by area, and lists all 28 published packages plus the three source-only ones.
+it points to them, sorted by area, and lists all 28 published packages plus the one source-only one.
 
 Looking for a package by the problem you have rather than by name? Use the
 [**Which package do I need?**](README.md#which-package-do-i-need) table on the documentation hub.
@@ -24,8 +24,6 @@ Looking for a package by the problem you have rather than by name? Use the
 - [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF Core `ValueConverter`
 - [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) — Roslyn incremental source generator that emits DTO properties from an entity type. See also the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md)
 - [DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers.md) — table creation, connection access, table-name resolution, and table-existence checks
-- [DKNet.EfCore.Repos](EfCore/DKNet.EfCore.Repos.md) — **retired**, source-only, superseded by Specifications
-- [DKNet.EfCore.Repos.Abstractions](EfCore/DKNet.EfCore.Repos.Abstractions.md) — **retired**, source-only, superseded by Specifications
 
 ## 📨 Messaging & CQRS
 

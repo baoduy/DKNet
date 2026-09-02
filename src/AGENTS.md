@@ -54,7 +54,7 @@ var results = await _db.Products.AsNoTracking().AsExpandable()
     .Where(predicate).ToListAsync();
 ```
 
-**Specifications** inherit `Specification<TEntity>` and expose `Criteria`, `Includes`, `OrderBy`; the spec repository (`AddSpecRepo<TDbContext>()`) consumes them rather than raw LINQ. `DKNet.EfCore.Repos` / `Repos.Abstractions` are **retired** — do not build new code on them (`docs/EfCore/Migrating-Repos-To-Specifications.md`).
+**Specifications** inherit `Specification<TEntity>` and expose `Criteria`, `Includes`, `OrderBy`; the spec repository (`AddSpecRepo<TDbContext>()`) consumes them rather than raw LINQ. `DKNet.EfCore.Repos` / `Repos.Abstractions` have been **removed** — the packages no longer exist (`docs/EfCore/Migrating-Repos-To-Specifications.md`).
 
 **Aggregates** derive from `AggregateRoot` (`DKNet.EfCore.Abstractions`), mutate through methods that call `AddEvent(...)`, and let `DKNet.EfCore.Events` dispatch during `SaveChanges`.
 

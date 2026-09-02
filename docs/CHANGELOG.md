@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API reference documentation
 - Migration guide for breaking changes
 - FAQ and best practices section
+- `Base64StringExtensions`' five methods (`DKNet.Svc.Encryption`) are now `this string` extension methods;
+  existing static-style call sites still compile.
 
 ### Changed
 - Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
@@ -57,6 +59,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   isolation at runtime in Release builds. Migration: implement `IDataOwnerDbContext` (supply `AccessibleKeys`;
   override `IsUnrestrictedAccess` only for admin/system contexts) on the `DbContext` type you register — see the
   [Migration Guide](Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
+- **Breaking (binary only, source-compatible):** `SpecRepoExtensions.ToListAsync`, `ModelSpecRepoExtensions.ToListAsync`
+  and both `SpecRepoExtensions.ToKeysetPageAsync` overloads (`DKNet.EfCore.Specifications`) now return
+  `Task<List<T>>` instead of `Task<IList<T>>`. Existing call sites compile unchanged; a precompiled assembly
+  referencing the old return type must be recompiled.
+- **Breaking (source):** `BlobServiceOptions.IncludedExtensions` (`DKNet.Svc.BlobStorage.Abstractions`) is now
+  `IReadOnlyList<string>` instead of `IEnumerable<string>`. A caller assigning a lazy query to it no longer compiles.
+- `EfCoreExceptionHandler` (`DKNet.EfCore.Extensions`) gained an optional `ILogger<EfCoreExceptionHandler>?`
+  constructor parameter; parameterless construction still works.
+- `NextSeqValue`/`NextSeqValueWithFormat` (`DKNet.EfCore.Extensions`) gained an optional `CancellationToken`.
+
+### Removed
+- **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`
+  central package entry they alone used. Use `DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()` instead —
+  see the [Migration Guide](Migration-Guide.md#entity-framework-core-migration) and
+  [`Migrating-Repos-To-Specifications.md`](EfCore/Migrating-Repos-To-Specifications.md).
+- **Breaking:** `AsyncEnumerableExtensions.ToListAsync(this IAsyncEnumerable<T>)` (`DKNet.Fw.Extensions`). Use .NET
+  10's `System.Linq.AsyncEnumerable.ToListAsync`, which also accepts a `CancellationToken`.
+- **Breaking:** `Base65StringExtensions` (`DKNet.Svc.Encryption`), the misspelled duplicate of
+  `Base64StringExtensions`. Use `Base64StringExtensions`.
+- **Breaking, security-motivated:** `IAesEncryption`, `AesEncryption`, and `AddAesEncryption` (`DKNet.Svc.Encryption`).
+  The cipher was AES-CBC with a fixed IV embedded in the key, so identical plaintexts always produced identical
+  ciphertext. Migrate to `IAesGcmEncryption` / `AddAesGcmEncryption`; there is no automated conversion of existing
+  ciphertext.
+- **Breaking:** `EncryptionKeyProvider` abstract class (`DKNet.EfCore.Encryption`). Implement
+  `IEncryptionKeyProvider` directly — the abstract class re-declared the interface's only member with no shared
+  implementation.
+- **Breaking:** `IShaHashing` and `IHmacHashing` (`DKNet.Svc.Encryption`) no longer extend `IDisposable` — both were
+  stateless wrappers over static hashing calls, and `Dispose()` did nothing.
+- **Breaking:** `HmacHashing.VerifySha256`/`VerifySha512` (`DKNet.Svc.Encryption`) lost their `ignoreCase`
+  parameter — it was read but could not change the result, since hex decoding is already case-insensitive.
+- **Breaking:** `IRepositorySpec.DeleteRange<TEntity>` (`DKNet.EfCore.Specifications`). Use `BulkDeleteAsync`.
+- **Breaking:** `ISpecification<TEntity>.OrderByQueries`/`.OrderByDescendingQueries`, and the equivalent properties
+  on `Specification<TEntity>` (`DKNet.EfCore.Specifications`). Ordering is now a single declared-sequence model.
+  **An `ISpecification<TEntity>` implementation that does not derive from `Specification<TEntity>` is no longer
+  supported**, and the legacy "all ascending clauses applied first, then all descending" fallback ordering is gone —
+  that path produced different SQL than the declared-sequence path for the same specification.
+- **Breaking:** the obsolete parameterless `AddIdempotentKey(...)` overload (`DKNet.AspCore.Idempotency`), which
+  defaulted to `IdempotencyDistributedCacheStore`. Call `AddIdempotentKey<TStoreImplement>()` and pick a store
+  explicitly.
+- **Breaking:** `EnumExtensions.GetEumInfos<T>()`/`GetEumInfo()` (`DKNet.Fw.Extensions`) renamed to
+  `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 
 ### Fixed
 - `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
@@ -69,6 +112,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it. This is now resolved like every other form: an affected `[GenerateDto]` DTO narrows as declared, and an
   affected `[RaisesEvent]` narrowing list both narrows the raise condition and changes the composed event name
   (e.g. `OrderUpdatedEvent` → `OrderStatusUpdatedEvent`) — re-check any declaration using this exact array syntax.
+- Data seeding (`IDataSeedingConfiguration`, `DKNet.EfCore.Extensions`) compared entities by reference equality, so
+  every seed row was re-inserted on every application start. Comparison is now by primary key; existing databases
+  that accumulated duplicate seed rows are not cleaned up automatically.
+- `DisableHooks()` (`DKNet.EfCore.Hooks`) suppressed hooks process-wide via a static dictionary keyed by `DbContext`
+  type name, so one request's `using (db.DisableHooks())` silently disabled audit logging, event dispatch, and
+  owner stamping for every concurrent request against that `DbContext` type. Suppression is now scoped to the
+  logical call context via `AsyncLocal`.
+- `TransformerService` (`DKNet.Svc.Transformation`) cached token values on the instance keyed only by token text, so
+  a second `Transform`/`TransformAsync` call on the same instance with different parameters returned the first
+  call's values. The cache is now local to each call.
+- Azure `ListItemsAsync` (`DKNet.Svc.BlobStorage.AzureStorage`) returned the searched-for prefix as every item's
+  name instead of the item's own name, so a folder listing came back with every result sharing one name —
+  including through `BlobService.GetItemAsync`.
+- S3 `ListItemsAsync` (`DKNet.Svc.BlobStorage.AwsS3`) never read `IsTruncated`/`NextContinuationToken`, so any
+  prefix with more than 1,000 objects silently dropped the rest; it also classified a 0-byte or 1-byte file as a
+  directory. Listing now paginates fully and classifies by key shape, not size.
+- `LocalBlobService`'s relative-path computation (`DKNet.Svc.BlobStorage.Local`) used `string.Replace` against the
+  root folder name, which strips every occurrence — a file under a subfolder that happens to repeat the root
+  folder's name resolved to the wrong relative path. Now uses `Path.GetRelativePath`.
+- `TableExistsAsync` (`DKNet.EfCore.Relational.Helpers`) treated any `DbException` from a probe query as "table
+  does not exist", so a permissions failure or timeout silently reported `false`. It now queries
+  `INFORMATION_SCHEMA.TABLES` directly and lets infrastructure errors propagate.
+- `EfCoreExceptionHandler` (`DKNet.EfCore.Extensions`) decided retryability by matching EF Core's English exception
+  text; it now inspects `exception.Entries`, which retries a slightly broader set of concurrency conflicts.
+- `TypeExtractor`'s fluent API (`DKNet.Fw.Extensions`) mutated shared predicate state, so branching one extractor
+  (e.g. `var abstracts = e.Abstract(); var concretes = e.NotAbstract();` off the same instance) made both branches
+  empty. Each fluent call now returns an independent extractor.
+- `DateTimeExtensions.LastDayOfMonth` (`DKNet.Fw.Extensions`) reconstructed the `DateTime` and hardcoded
+  `DateTimeKind.Local`, silently converting a UTC input to Local and dropping sub-millisecond precision. It now
+  shifts the date with `AddDays`, preserving `Kind` and full precision.
+- `EnumExtensions.GetEnumInfos`/`GetEnumInfo` (`DKNet.Fw.Extensions`) filtered the enum backing field by assuming an
+  `int` backing type, so a `byte`- or `long`-backed enum leaked a spurious `value__` entry into the results.
+- `GetEntityKeyValues` (`DKNet.EfCore.Extensions`) read primary-key values via `PropertyInfo!.GetValue(...)`, which
+  threw for shadow properties and backing-field-only keys — reached from audit logging. It now reads through EF's
+  `CurrentValues`, with no reflection and no crash case.
+- Idempotency schema migration (`DKNet.AspCore.Idempotency.Relational`) now runs once at application startup via a
+  hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution

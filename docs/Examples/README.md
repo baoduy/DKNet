@@ -417,8 +417,8 @@ var status = OrderStatus.Pending;
 // Read the attribute off the value
 var description = status.GetAttribute<DisplayAttribute>()?.Name;   // "Order is pending"
 
-// Or enumerate every named value at once (method name is spelled GetEumInfos)
-var allInfos = EnumExtensions.GetEumInfos<OrderStatus>();
+// Or enumerate every named value at once
+var allInfos = EnumExtensions.GetEnumInfos<OrderStatus>();
 ```
 
 ---

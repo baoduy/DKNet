@@ -9,6 +9,12 @@ This guide helps you migrate between different versions of DKNet Framework and p
   - [Off `DKNet.EfCore.Repos` onto Specifications](#entity-framework-core-migration)
   - [`DKNet.Svc.Encryption` — AES ciphers are now opt-in](#dknetsvcencryption--aes-ciphers-are-now-opt-in)
   - [`DKNet.EfCore.DataAuthorization` — `IDataOwnerDbContext` is now required](#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required)
+  - [Behaviour changes that fail silently](#behaviour-changes-that-fail-silently)
+  - [`DKNet.Svc.Encryption` / `DKNet.EfCore.Encryption` — removed types and hashing signatures](#dknetsvcencryption--dknetefcoreencryption--removed-types-and-hashing-signatures)
+  - [`DKNet.EfCore.Specifications` — ordering model, `DeleteRange`, and return types](#dknetefcorespecifications--ordering-model-deleterange-and-return-types)
+  - [`DKNet.Fw.Extensions` — removed and renamed members](#dknetfwextensions--removed-and-renamed-members)
+  - [`DKNet.AspCore.Idempotency` — explicit store required](#dknetaspcoreidempotency--explicit-store-required)
+  - [`DKNet.Svc.BlobStorage.Abstractions` — `IncludedExtensions` is now `IReadOnlyList<string>`](#dknetsvcblobstorageabstractions--includedextensions-is-now-ireadonlyliststring)
 - [Architecture migration](#architecture-migration)
 - [CQRS migration](#cqrs-migration)
 - [Database migration](#database-migration)
@@ -118,9 +124,10 @@ public class ProductRepository
 
 **After — `DKNet.EfCore.Specifications`**
 
-`DKNet.EfCore.Repos` is retired; `IRepositorySpec` (registered via `services.AddSpecRepo<AppDbContext>()`) is the
-current repository surface. It is not generic over the entity — the entity type comes from the `Specification<T>`
-passed to each call:
+`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` have been **removed** — the packages no longer exist, so
+a project reference to either will not restore. `IRepositorySpec` (registered via
+`services.AddSpecRepo<AppDbContext>()`) is the current repository surface. It is not generic over the entity — the
+entity type comes from the `Specification<T>` passed to each call:
 
 ```csharp
 using DKNet.EfCore.Specifications.Definitions;
@@ -161,9 +168,13 @@ builder.Services.AddEncryptionServices();                                       
 builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
 ```
 
-`AddAesGcmEncryption` takes a plain Base64 AES key (128/192/256-bit); a `key:iv` string is rejected. Consumers still on
-the obsolete AES-CBC type call `AddAesEncryption(keyString)` with the combined `key:iv` value that `AesEncryption.Key`
-returns. Ciphertext produced under the old registration cannot be recovered — its key was discarded with the instance.
+`AddAesGcmEncryption` takes a plain Base64 AES key (128/192/256-bit); a `key:iv` string is rejected.
+
+**`IAesEncryption`, `AesEncryption`, and `AddAesEncryption` are now deleted, not just obsolete.** They implemented
+AES-CBC with the IV fixed and embedded in the key, so identical plaintexts always produced identical ciphertext — a
+security defect, not just a design smell. There is no compatibility overload left to call: migrate to
+`AddAesGcmEncryption` above. Ciphertext produced under the old cipher cannot be decrypted by AES-GCM; re-encrypt it
+during migration if it must be kept.
 
 ### Upgrading DKNet.EfCore.DataAuthorization: IDataOwnerDbContext is now required
 
@@ -220,6 +231,241 @@ reporting `DbContext`, say — whose model contains `IOwnedBy` entities and that
 `IDataOwnerDbContext` therefore starts throwing at model-build time after this upgrade, with no compile error
 pointing at it. Implement `IDataOwnerDbContext` on that context too, or keep `IOwnedBy` entities out of its model.
 Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
+
+### Behaviour changes that fail silently
+
+These ship with no compile error and no exception — the code keeps running, just with different (correct) results.
+Check whether you depended on the old behaviour before you move on to the API removals below.
+
+**Data seeding now compares by primary key, not reference.** `IDataSeedingConfiguration` (`DKNet.EfCore.Extensions`)
+compared seed entities by reference equality, which a freshly materialized row can never satisfy — so every
+seeded row was re-inserted on every application start. It now compares by primary key. Nothing in your code
+changes, but if seed data has been accumulating duplicates, clean up the extra rows once after upgrading:
+
+```sql
+-- Example: keep the lowest Id per duplicate key, delete the rest
+;WITH ranked AS (
+    SELECT Id, ROW_NUMBER() OVER (PARTITION BY /* your seed key columns */ ORDER BY Id) AS rn
+    FROM YourSeededTable
+)
+DELETE FROM ranked WHERE rn > 1;
+```
+
+**`DisableHooks()` is now scoped to the call, not the process.** `DKNet.EfCore.Hooks`' `context.DisableHooks()`
+used a static dictionary keyed by `DbContext` type name, so one request's `using (db.DisableHooks())` silently
+disabled audit logging, event dispatch, and owner stamping for **every concurrent request** against that
+`DbContext` type. It is now scoped via `AsyncLocal` to the logical call context that opened it:
+
+```csharp
+// Same call shape — but a concurrent request on another AsyncLocal context is no longer affected.
+using (db.DisableHooks())
+{
+    await db.SaveChangesAsync(); // hooks suppressed only here
+}
+```
+
+If a background job relied on the old process-wide suppression to also silence hooks for concurrent HTTP requests,
+that side effect is gone — disable hooks explicitly wherever you need it now.
+
+**`TransformerService` no longer caches across calls.** `DKNet.Svc.Transformation`'s token cache was keyed by
+token text alone, so a second `Transform`/`TransformAsync` call on the same instance with different parameters
+silently returned the first call's values:
+
+```csharp
+// Before the fix, both lines returned "Hello Alice":
+svc.Transform("Hello [Name]", new { Name = "Alice" });
+svc.Transform("Hello [Name]", new { Name = "Bob" });   // now correctly returns "Hello Bob"
+```
+
+The service is registered `AddTransient`, so most callers were unaffected — this only bit an instance held across
+multiple `Transform` calls (a scoped/singleton wrapper, or a loop reusing one injected instance).
+
+**Blob storage listing results were wrong, not just slow.** Three separate defects, all fixed with no API change:
+
+- `DKNet.Svc.BlobStorage.AzureStorage`'s `ListItemsAsync` returned the searched-for **prefix** as every item's
+  name instead of the blob's own name — a folder listing came back with every result sharing one name, and
+  `BlobService.GetItemAsync` (which takes the first listed item) inherited the bug.
+- `DKNet.Svc.BlobStorage.AwsS3`'s `ListItemsAsync` never read `IsTruncated`/`NextContinuationToken`, so any prefix
+  with more than 1,000 objects silently dropped the rest with no error; it also classified 0-byte and 1-byte files
+  as directories.
+- `DKNet.Svc.BlobStorage.Local`'s relative-path computation used `string.Replace` against the root folder name,
+  which strips **every** occurrence — a file under a subfolder that happens to repeat the root folder's name
+  (e.g. root `/var/store`, file `/var/store/tenants/store/a.txt`) resolved to the wrong relative path.
+
+If you list more than 1,000 S3 objects under one prefix, list Azure blobs and rely on the returned `Name`, or run
+`LocalBlobService` with a root folder name that recurs as a subfolder elsewhere in the tree, re-verify those paths
+after upgrading — the old results were silently incomplete or wrong, not erroring.
+
+### DKNet.Svc.Encryption / DKNet.EfCore.Encryption — removed types and hashing signatures
+
+**Before**
+```csharp
+using DKNet.Svc.Encryption;
+
+// Base65StringExtensions — misspelled duplicate class, correctly-spelled methods
+"dGVzdA==".FromBase64String(); // resolved to Base65StringExtensions.FromBase64String
+
+// HmacHashing.VerifySha256/VerifySha512 took an ignoreCase flag that could not change the result
+bool ok = hmac.VerifySha256(message, secretKey, expectedSignature, ignoreCase: true);
+```
+
+```csharp
+using DKNet.EfCore.Encryption.Encryption;
+
+// EncryptionKeyProvider — abstract class re-declaring the interface's only member
+public class MyKeyProvider : EncryptionKeyProvider
+{
+    public override byte[] GetKey(Type entityType) => ...;
+}
+```
+
+**After**
+```csharp
+using DKNet.Svc.Encryption;
+
+// Use the correctly-spelled type
+"dGVzdA==".FromBase64String();
+
+// ignoreCase is gone — drop the argument
+bool ok = hmac.VerifySha256(message, secretKey, expectedSignature);
+```
+
+```csharp
+using DKNet.EfCore.Encryption.Encryption;
+
+// Implement the interface directly — no base class to derive from
+public class MyKeyProvider : IEncryptionKeyProvider
+{
+    public byte[] GetKey(Type entityType) => ...;
+}
+```
+
+Also: `IShaHashing` and `IHmacHashing` no longer extend `IDisposable`. If you wrapped an injected instance in a
+`using` block or called `.Dispose()` explicitly, remove that — both interfaces were always stateless wrappers over
+static hashing calls, and `Dispose()` did nothing.
+
+### DKNet.EfCore.Specifications — ordering model, DeleteRange, and return types
+
+**`OrderByQueries`/`OrderByDescendingQueries` are removed.** `ISpecification<TEntity>` and `Specification<TEntity>`
+now carry a single declared-sequence ordering model. If your specifications derive from `Specification<TEntity>`
+and call `AddOrderBy`/`AddOrderByDescending`, nothing changes at the call site. **If you wrote a custom
+`ISpecification<TEntity>` implementation that does not derive from `Specification<TEntity>`, it is no longer
+supported** — the legacy fallback that applied all ascending clauses first and all descending clauses second is
+gone, and that path produced different SQL than the declared-sequence path for the same specification. Derive from
+`Specification<TEntity>` instead.
+
+**Before**
+```csharp
+using DKNet.EfCore.Specifications.Repositories;
+
+await repo.DeleteRange<Product>(p => p.IsDiscontinued, cancellationToken);
+```
+
+**After**
+```csharp
+using DKNet.EfCore.Specifications.Repositories;
+
+await repo.BulkDeleteAsync<Product>(p => p.IsDiscontinued, cancellationToken);
+```
+
+**Return-type change (binary-breaking, source-compatible).** `SpecRepoExtensions.ToListAsync`,
+`ModelSpecRepoExtensions.ToListAsync`, and both `SpecRepoExtensions.ToKeysetPageAsync` overloads now return
+`Task<List<T>>` instead of `Task<IList<T>>`. Source code compiles unchanged (`List<T>` implements `IList<T>`); a
+precompiled assembly built against the old signature must be recompiled.
+
+### DKNet.Fw.Extensions — removed and renamed members
+
+**Before**
+```csharp
+using System.Collections.Generic; // DKNet's ToListAsync lived here
+using System.Linq;
+
+IAsyncEnumerable<Product> products = GetProductsAsync();
+List<Product> list = await products.ToListAsync(); // ambiguous even before removal — see below
+
+var infos = EnumExtensions.GetEumInfos<Status>();   // typo'd name
+```
+
+**After**
+```csharp
+using System.Linq; // .NET 10's System.Linq.AsyncEnumerable.ToListAsync
+
+IAsyncEnumerable<Product> products = GetProductsAsync();
+List<Product> list = await products.ToListAsync(cancellationToken); // now takes a CancellationToken
+
+var infos = EnumExtensions.GetEnumInfos<Status>();  // corrected name
+```
+
+`AsyncEnumerableExtensions.ToListAsync` deliberately lived in the ambient `System.Collections.Generic` namespace so
+it resolved without an import — which meant any file with implicit usings had **two** applicable `ToListAsync()`
+overloads in scope (DKNet's and .NET 10's own `System.Linq.AsyncEnumerable.ToListAsync`), an ambiguity error
+waiting to happen. It is removed; call the BCL version.
+
+Two more fixes in this package need no code change, only awareness if you compensated for the old behaviour:
+`DateTimeExtensions.LastDayOfMonth` now preserves the input's `DateTimeKind` and sub-millisecond precision (it
+previously forced `DateTimeKind.Local`), and `TypeExtractor`'s fluent filters (`Abstract()`, `NotAbstract()`, etc.)
+no longer mutate shared state, so branching one extractor into two filtered results now works instead of both
+branches coming back empty.
+
+### DKNet.AspCore.Idempotency — explicit store required
+
+**Before**
+```csharp
+using DKNet.AspCore.Idempotency;
+
+services.AddIdempotentKey(); // defaulted to the internal, non-atomic IdempotencyDistributedCacheStore
+```
+
+**After** — pick a store package and call its own registration method (each internally wires up
+`AddIdempotentKey<TSoreImplement>()` with its own store type, which is `internal` and cannot be named directly):
+```csharp
+using DKNet.AspCore.Idempotency.MsSqlStore;   // or .NpgsqlStore / .RedisStore
+
+services.AddIdempotencyWithMsSqlStore(builder.Configuration.GetConnectionString("IdempotencyDb")!);
+// services.AddIdempotencyWithNpgsqlStore(connectionString);
+// services.AddIdempotencyWithRedisStore(connectionString);
+```
+
+If you specifically want to keep the old in-memory/`IDistributedCache`-backed behaviour without adding a store
+package, implement `IIdempotencyKeyStore` yourself and register it with the still-public generic method:
+```csharp
+using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Store;
+
+services.AddIdempotentKey<MyDistributedCacheIdempotencyStore>(); // your own IIdempotencyKeyStore implementation
+```
+
+`AddIdempotentKey<TSoreImplement>()` itself is unchanged — only the parameterless overload that silently defaulted
+to an internal store type is gone.
+
+Separately, informational only — no code change needed: idempotency schema migration
+(`DKNet.AspCore.Idempotency.Relational`) now runs once at application startup via a hosted service instead of on
+the first incoming request, so the first request after a deploy no longer pays the migration cost.
+
+### DKNet.Svc.BlobStorage.Abstractions — IncludedExtensions is now IReadOnlyList<string>
+
+**Before**
+```csharp
+using DKNet.Svc.BlobStorage.Abstractions;
+
+var options = new BlobServiceOptions
+{
+    IncludedExtensions = someQuery.Where(x => x.Enabled).Select(x => x.Extension) // IEnumerable<string>, lazy
+};
+```
+
+**After**
+```csharp
+using DKNet.Svc.BlobStorage.Abstractions;
+
+var options = new BlobServiceOptions
+{
+    IncludedExtensions = someQuery.Where(x => x.Enabled).Select(x => x.Extension).ToList() // materialize first
+};
+```
+
+`IncludedExtensions` is now `IReadOnlyList<string>`; assigning an array or a `List<string>` still compiles. A
+lazy `IEnumerable<string>` query no longer compiles — materialize it first.
 
 ---
 

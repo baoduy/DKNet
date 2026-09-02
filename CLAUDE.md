@@ -20,8 +20,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 │   ├── Core/          Fw.Extensions, RandomCreator
 │   ├── EfCore/        Largest area: Abstractions, Extensions, Specifications,
 │   │                  Events, Hooks, AuditLogs, Encryption, DataAuthorization,
-│   │                  Relational.Helpers, DtoGenerator (Roslyn generator),
-│   │                  Repos + Repos.Abstractions (RETIRED — see docs)
+│   │                  Relational.Helpers, DtoGenerator (Roslyn generator)
 │   ├── AspNet/        AspCore.Extensions, AspCore.Tasks, AspCore.Idempotency
 │   │                  + Relational, MsSqlStore, NpgsqlStore, RedisStore
 │   ├── Services/      Svc.BlobStorage.{Abstractions,AzureStorage,AwsS3,Local},
@@ -108,7 +107,7 @@ gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGener
 DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 - **Aggregate roots** (`AggregateRoot` in `DKNet.EfCore.Abstractions`) carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
-- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired** — do not build new code on them; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
+- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` have been removed** — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, Ops, value)` triples with type/enum-safe conversion. Required call shape:
   ```csharp
   var predicate = PredicateBuilder.New<Product>()
@@ -129,7 +128,7 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 - **File header**: every `.cs` file opens with the copyright block — the canonical `copyrightText` is in `src/stylecop.json`, followed by `// Author:`, `// File:`, `// Description:` lines. Copy the header from a neighbouring file in the same project rather than inventing one.
 - **XML docs** are mandatory on all public APIs (`<summary>`, `<param>`, `<returns>`, relevant `<exception>`); `GenerateDocumentationFile=true` makes warnings fatal.
 - **Naming**: private fields `_camelCase`; async methods end in `Async`; extensions live in static classes under `/Extensions`.
-- **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` and `DKNet.EfCore.Repos.SetupRepository` (both `Microsoft.Extensions.DependencyInjection`), `DKNet.Fw.Extensions.AsyncEnumerableExtensions` (`System.Collections.Generic`, filed under `Collections/` on disk), and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
+- **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` (`Microsoft.Extensions.DependencyInjection`) and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
 - **EF Core**: always `await`, default to `AsNoTracking()` for reads, push filtering to the DB, prefer `Include`/projections over per-row fetches. For dynamic predicates remember `.AsExpandable()`.
 - **Verifying SQL** in tests: use `query.ToQueryString()` and assert against the generated SQL alongside the materialized rows — recurring pattern in `EfCore.Specifications.Tests`.
 - **Central package management**: add/upgrade NuGet versions in `src/Directory.Packages.props`, not in individual `.csproj` files.

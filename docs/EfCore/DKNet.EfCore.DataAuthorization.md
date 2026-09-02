@@ -132,6 +132,16 @@ Key behaviors, verified from `DataOwnerAuthQuery`:
 - **Per-query evaluation.** The filter closes over the `DbContext` instance (`capturedContext`), so
   `AccessibleKeys`/`IsUnrestrictedAccess` are read fresh on every query, not fixed once at model-build time — a
   scoped `IDataOwnerDbContext` implementation naturally gets per-request/per-scope values.
+- **Not sargable — a reviewed, deliberate trade-off, documented on `DataOwnerAuthQuery` itself.** The
+  `IsUnrestrictedAccess || AccessibleKeys.Contains(...)` shape has two consequences for the generated SQL, not for
+  security: the `OR` disjunction means the query optimizer generally cannot use an index on `OwnedBy` (the
+  unrestricted branch means any row might qualify regardless of that column), and because `AccessibleKeys` is an
+  `IEnumerable<string>`, EF Core expands `Contains` inline as literal SQL — so callers with different accessible-key
+  counts produce different SQL text and different cached query plans, which is plan-cache churn on a multi-tenant
+  system with widely varying key counts (plus a `Contains`-expansion warning in the EF Core logs). The obvious fix —
+  drop the `OR` and handle unrestricted access by not applying the filter at all — was considered and deliberately
+  deferred: that moves the unrestricted-access decision into a different, security-relevant mechanism that needs
+  its own review, not a query-shape change. `IsIgnorable` stays `false` regardless.
 
 ### Ownership stamping and reassignment guard (`DataOwnerHook`)
 

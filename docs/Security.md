@@ -60,7 +60,10 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 - **`DKNet.EfCore.Encryption` fails closed.** It needs an `IEncryptionKeyProvider` registered through
   `AddEfCoreEncryption<TKeyProvider>()`; without usable key material the model build fails rather than storing
   plaintext. See [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md).
-- **`IAesEncryption` (AES-CBC) is obsolete.** Prefer `IAesGcmEncryption`, which is authenticated.
+- **`IAesEncryption` (AES-CBC) has been removed, not just deprecated.** It used a fixed IV embedded in the key, so
+  identical plaintexts always produced identical ciphertext — a real information leak, not a theoretical one. Use
+  `IAesGcmEncryption`, which authenticates the ciphertext and uses a fresh random nonce per call. See
+  [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md).
 
 ### Row-level isolation
 
