@@ -3,6 +3,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using DKNet.AspCore.Idempotency;
 using DKNet.AspCore.Idempotency.Filtering;
@@ -231,6 +233,29 @@ public sealed class IdempotencyRedisStoreDecisionTests
         result.response!.StatusCode.ShouldBe(200);
         _database.Verify(d => d.StringSetAsync(
             It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<When>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IsKeyProcessedAsync_SanitizesCompositeKeyToPreviousHexFormat()
+    {
+        // Arrange - pins Convert.ToHexStringLower's output against the pre-refactor
+        // Convert.ToHexString(...).ToLowerInvariant() formula for the same input. SanitizeKey's output is the
+        // literal Redis key, so any drift here would orphan every key already stored under the old format.
+        var keyInfo = MakeKey();
+        var expectedHash =
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(keyInfo.CompositeKey))).ToLowerInvariant();
+        RedisKey? capturedKey = null;
+        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+            .Callback<RedisKey, CommandFlags>((key, _) => capturedKey = key)
+            .ReturnsAsync(RedisValue.Null);
+        SetupReservationAttempt(true);
+
+        // Act
+        await CreateStore().IsKeyProcessedAsync(keyInfo);
+
+        // Assert
+        capturedKey.ShouldNotBeNull();
+        ((string?)capturedKey).ShouldBe($"{_options.CachePrefix}{expectedHash}");
     }
 
     [Fact]

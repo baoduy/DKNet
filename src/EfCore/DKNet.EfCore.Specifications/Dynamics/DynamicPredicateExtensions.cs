@@ -134,6 +134,19 @@ public static class DynamicPredicateExtensions
         return predicate is not null;
     }
 
+    /// <summary>
+    ///     Validates and parses a raw dynamic LINQ expression string into a typed lambda.
+    /// </summary>
+    /// <typeparam name="T">Entity type.</typeparam>
+    /// <param name="expression">Dynamic LINQ expression.</param>
+    /// <param name="values">Expression parameter values.</param>
+    /// <returns>The parsed predicate expression.</returns>
+    private static Expression<Func<T, bool>> ParseDynamicExpression<T>(string expression, object?[] values)
+    {
+        DynamicPredicateBuilderExtensions.ValidateExpression(expression);
+        return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
+    }
+
     #endregion
 
     extension<T>(ExpressionStarter<T> predicate)
@@ -179,13 +192,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicAnd(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.And(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.And(ParseDynamicExpression<T>(expression, values));
 
         /// <summary>
         ///     Parses a dynamic LINQ expression and combines it using OR.
@@ -194,13 +202,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicOr(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.Or(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.Or(ParseDynamicExpression<T>(expression, values));
     }
 
     extension<T>(Expression<Func<T, bool>> predicate)
@@ -246,13 +249,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicAnd(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.And(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.And(ParseDynamicExpression<T>(expression, values));
 
         /// <summary>
         ///     Parses a dynamic LINQ expression and combines it using OR.
@@ -261,12 +259,7 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicOr(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.Or(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.Or(ParseDynamicExpression<T>(expression, values));
     }
 }

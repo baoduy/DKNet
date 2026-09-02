@@ -180,7 +180,7 @@ internal sealed class IdempotencyRedisStore : IIdempotencyKeyStore
     /// </returns>
     private string SanitizeKey(string key)
     {
-        return $"{_options.CachePrefix}{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()}";
+        return $"{_options.CachePrefix}{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)))}";
     }
 
     #endregion

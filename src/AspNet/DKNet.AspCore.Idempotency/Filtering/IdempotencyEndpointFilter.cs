@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using DKNet.AspCore.Idempotency.Store;
 using DKNet.Fw.Extensions;
-using DKNet.Fw.Extensions.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
@@ -116,7 +115,7 @@ internal sealed class IdempotencyEndpointFilter(
         IdempotentKeyInfo keyInfo,
         string requestId)
     {
-        var resultValue = result is null ? null : result.GetPropertyValue("Value") ?? result;
+        var resultValue = result is IValueHttpResult v ? v.Value ?? result : result;
         var statusCode = result is IStatusCodeHttpResult r ? r.StatusCode : context.HttpContext.Response.StatusCode;
 
         // Check if status code should be cached

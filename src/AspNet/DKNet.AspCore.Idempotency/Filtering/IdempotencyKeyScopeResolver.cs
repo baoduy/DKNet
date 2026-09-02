@@ -61,7 +61,7 @@ public static class IdempotencyKeyScopeResolver
                 Encoding.UTF8.GetBytes(options.ScopeHmacSecret),
                 Encoding.UTF8.GetBytes(authorizationHeader));
 
-            return $"auth:{Convert.ToHexString(hash).ToLowerInvariant()}";
+            return $"auth:{Convert.ToHexStringLower(hash)}";
         }
 
         // 3. Client IP address when opted in.

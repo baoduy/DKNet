@@ -8,6 +8,7 @@
 using DKNet.EfCore.Specifications.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.EfCore.Specifications;
 
@@ -29,11 +30,12 @@ public static class SpecSetup
     public static IServiceCollection AddSpecRepo<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext
     {
-        if (services.IsRegistered<IRepositorySpec>())
-            return services;
+        // TryAdd keys off IRepositorySpec alone, so a second call with a different TDbContext is a no-op,
+        // same as before - multi-context support is a separate decision, not something to change here.
+        services.TryAddScoped<IRepositorySpec, RepositorySpec<TDbContext>>();
+        services.TryAddSingleton<IRepositorySpecFactory, RepositorySpecFactory>();
 
-        return services.AddScoped<IRepositorySpec, RepositorySpec<TDbContext>>()
-            .AddSingleton<IRepositorySpecFactory, RepositorySpecFactory>();
+        return services;
     }
 
     #endregion
