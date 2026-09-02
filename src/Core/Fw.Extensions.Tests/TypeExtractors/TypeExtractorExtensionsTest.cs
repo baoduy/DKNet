@@ -33,6 +33,25 @@ public class TestTypeExtractorExtensions
     }
 
     [Fact]
+    public void FilterBy_TwoBranchesFromSameExtractor_AreIndependent()
+    {
+        // Arrange
+        var baseExtractor = typeof(TestEnumObject).Assembly.Extract().Classes();
+
+        // Act — branch into two mutually exclusive filters from the same starting point
+        var abstractTypes = baseExtractor.Abstract().ToList();
+        var notAbstractTypes = baseExtractor.NotAbstract().ToList();
+        var baseTypes = baseExtractor.ToList();
+
+        // Assert — neither branch mutated the shared base, and each branch reflects only its own filter
+        abstractTypes.ShouldNotBeEmpty();
+        notAbstractTypes.ShouldNotBeEmpty();
+        abstractTypes.TrueForAll(t => t.IsAbstract).ShouldBeTrue();
+        notAbstractTypes.TrueForAll(t => !t.IsAbstract).ShouldBeTrue();
+        baseTypes.Count.ShouldBe(abstractTypes.Count + notAbstractTypes.Count);
+    }
+
+    [Fact]
     public void TestDuplicateAssemblies()
     {
         // Arrange

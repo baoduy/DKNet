@@ -33,7 +33,7 @@ internal class TypeExtractor : ITypeExtractor
     #region Fields
 
     private readonly Assembly[] _assemblies;
-    private readonly List<Expression<Func<Type, bool>>> _predicates = [];
+    private readonly List<Expression<Func<Type, bool>>> _predicates;
 
     #endregion
 
@@ -50,6 +50,19 @@ internal class TypeExtractor : ITypeExtractor
             throw new ArgumentException("Assemblies collection cannot be null or empty.", nameof(assemblies));
 
         _assemblies = [.. assemblies.Distinct()];
+        _predicates = [];
+    }
+
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="TypeExtractor" /> class carrying a copy of an existing
+    ///     predicate chain plus one more predicate, so filtering never mutates the extractor it was called on.
+    /// </summary>
+    /// <param name="assemblies">The assemblies to extract types from, reused as-is from the source extractor.</param>
+    /// <param name="predicates">The predicates already accumulated by the source extractor.</param>
+    private TypeExtractor(Assembly[] assemblies, List<Expression<Func<Type, bool>>> predicates)
+    {
+        _assemblies = assemblies;
+        _predicates = predicates;
     }
 
     #endregion
@@ -74,11 +87,16 @@ internal class TypeExtractor : ITypeExtractor
         return FilterBy(t => t.IsEnum);
     }
 
+    /// <summary>
+    ///     Returns a new <see cref="TypeExtractor" /> whose predicate chain is this extractor's predicates plus
+    ///     <paramref name="predicate" />, leaving this instance untouched. Every filter method funnels through
+    ///     here so the fluent API is non-mutating: branching off one extractor never affects its other branches.
+    /// </summary>
+    /// <param name="predicate">The predicate to add; <see langword="null" /> is a no-op.</param>
+    /// <returns>A new extractor with the added predicate, or this instance if <paramref name="predicate" /> is null.</returns>
     private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
     {
-        if (predicate != null) _predicates.Add(predicate);
-
-        return this;
+        return predicate is null ? this : new TypeExtractor(_assemblies, [.. _predicates, predicate]);
     }
 
     /// <inheritdoc />

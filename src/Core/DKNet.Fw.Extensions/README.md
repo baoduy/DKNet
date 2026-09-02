@@ -20,10 +20,9 @@ dotnet add package DKNet.Fw.Extensions
 - **String** — `ExtractDigits()`, `IsNumber()`, `IsStringOrValueType()`
 - **Type** — `IsImplementOf`, `IsAssignableFrom<T>`/`IsAssignableTo<T>`, `IsNumericType`,
   `IsEnumType`, `GetNonNullableType`, `TryConvertToEnum`
-- **Enum** — `GetAttribute<T>()`, `GetEumInfo()` / `GetEumInfos<T>()` for `[Display]`-attribute
+- **Enum** — `GetAttribute<T>()`, `GetEnumInfo()` / `GetEnumInfos<T>()` for `[Display]`-attribute
   metadata (name, description, group)
 - **DateTime** — `InQuarter()`, `LastDayOfMonth()`
-- **Async enumerable** — `IAsyncEnumerable<T>.ToListAsync()`
 - **Property** — `GetProperty`, `GetPropertyValue` (dotted/nested paths), `SetPropertyValue`,
   `TrySetPropertyValue`
 - **Attribute** — `HasAttribute<T>()`, `HasAttributeOnProperty<T>()`
@@ -71,12 +70,11 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 | `AttributeExtensions`, `PropertyExtensions`, `TypeExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Reflection` |
 | `EnumExtensions`, `EnumInfo` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Enums` |
 
-Two files kept their namespace on purpose — each declares an **ambient namespace** (a
+One file kept its namespace on purpose — it declares an **ambient namespace** (a
 namespace owned by the framework it extends, so its extension methods resolve without an
 extra import):
 
 - `ServiceCollectionExtensions` — stays at root, namespace `Microsoft.Extensions.DependencyInjection`.
-- `AsyncEnumerableExtensions` — moved into `Collections/` on disk, namespace stays `System.Collections.Generic`.
 
 `TypeExtractors` (fluent assembly scanner) was already grouped before this release and is unchanged.
 

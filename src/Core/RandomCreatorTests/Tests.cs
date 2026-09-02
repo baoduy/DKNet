@@ -10,12 +10,11 @@ public class Tests(ITestOutputHelper output)
     #region Methods
 
     [Fact]
-    public void CanDisposeStringCreatorSafely()
+    public void CanGenerateCharsWithMinNumbersAndSpecials()
     {
-        // Disposal of internal class cannot be tested directly; test via public API
         var options = new StringCreatorOptions { MinNumbers = 2, MinSpecials = 2 };
         var chars = RandomCreators.NewChars(10, options);
-        Assert.Equal(10, chars.Length); // If no exception, disposal is safe
+        Assert.Equal(10, chars.Length);
     }
 
     [Fact]

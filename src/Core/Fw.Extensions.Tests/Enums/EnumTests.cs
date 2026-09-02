@@ -40,13 +40,13 @@ public class EnumExtensionsTests
     }
 
     [Fact]
-    public void GetEumInfoReturnsCorrectInfoForEnumWithoutDisplay()
+    public void GetEnumInfoReturnsCorrectInfoForEnumWithoutDisplay()
     {
         // Arrange
         var enumValue = HbdTypes.Enum;
 
         // Act
-        var result = enumValue.GetEumInfo();
+        var result = enumValue.GetEnumInfo();
 
         // Assert
         result.ShouldNotBeNull();
@@ -57,23 +57,23 @@ public class EnumExtensionsTests
     }
 
     [Fact]
-    public void GetEumInfoReturnsNullForNullEnum()
+    public void GetEnumInfoReturnsNullForNullEnum()
     {
         // Arrange
         HbdTypes? nullEnum = null;
 
         // Act
-        var result = nullEnum.GetEumInfo();
+        var result = nullEnum.GetEnumInfo();
 
         // Assert
         result.ShouldBeNull();
     }
 
     [Fact]
-    public void GetEumInfosIncludesEnumWithoutDisplayAttribute()
+    public void GetEnumInfosIncludesEnumWithoutDisplayAttribute()
     {
         // Arrange & Act
-        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
+        var list = EnumExtensions.GetEnumInfos<HbdTypes>().ToList();
 
         // Assert
         var enumInfo = list.FirstOrDefault(x => string.Equals(x.Key, "Enum", StringComparison.OrdinalIgnoreCase));
@@ -86,21 +86,21 @@ public class EnumExtensionsTests
     [Fact]
     public void TestGetEnumInfo()
     {
-        HbdTypes.DescriptionEnum.GetEumInfo()?.Name.ShouldBe("HBD");
+        HbdTypes.DescriptionEnum.GetEnumInfo()?.Name.ShouldBe("HBD");
     }
 
     [Fact]
     public void TestGetEnumInfos()
     {
-        var list = EnumExtensions.GetEumInfos<HbdTypes>().ToList();
+        var list = EnumExtensions.GetEnumInfos<HbdTypes>().ToList();
         list.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
     [Fact]
-    public void GetEumInfosExcludesBackingFieldForNonIntBackedEnum()
+    public void GetEnumInfosExcludesBackingFieldForNonIntBackedEnum()
     {
         // Arrange & Act
-        var list = EnumExtensions.GetEumInfos<ByteBackedTypes>().ToList();
+        var list = EnumExtensions.GetEnumInfos<ByteBackedTypes>().ToList();
 
         // Assert
         list.Count.ShouldBe(2);
