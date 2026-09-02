@@ -15,7 +15,6 @@ Base64/Base64URL helpers, all operating on UTF-8 strings. For transparent EF Cor
 - `IRsaEncryption` — RSA encrypt/decrypt (OAEP-SHA256) and sign/verify (PKCS1-SHA256), including public-key-only instances
 - `IHmacHashing` / `IShaHashing` — HMAC-SHA256/512 and SHA-256/512 compute + constant-time verify
 - `Base64StringExtensions` — Base64 and Base64URL encode/decode helpers
-- `IAesEncryption` (AES-CBC) kept for migration only — `[Obsolete]`, prefer AES-GCM
 
 ## Installation
 
@@ -47,10 +46,10 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 
 | Type | Old namespace | New namespace |
 |---|---|---|
-| `IAesEncryption`/`AesEncryption`, `IAesGcmEncryption`/`AesGcmEncryption`, `IRsaEncryption`/`RsaEncryption` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Ciphers` |
+| `IAesGcmEncryption`/`AesGcmEncryption`, `IRsaEncryption`/`RsaEncryption` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Ciphers` |
 | `IHmacHashing`/`HmacHashing`, `IShaHashing`/`ShaHashing` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Hashing` |
 
-`EncryptionSetup` (registration point) and `Base64StringExtensions`/`Base65StringExtensions`
+`EncryptionSetup` (registration point) and `Base64StringExtensions`
 (the Base64/Base64URL encoding helpers) stay at `DKNet.Svc.Encryption`.
 
 ## Configuration — registration and constructor surface
@@ -62,10 +61,9 @@ There is no options type and no `IConfiguration` binding path. Everything a call
 | `AddEncryptionServices()` | — | `IShaHashing`, `IHmacHashing` | Transient |
 | `AddAesGcmEncryption(base64Key)` | Base64 128/192/256-bit key | `IAesGcmEncryption` | Singleton |
 | `AddRsaEncryption(privateKeyBase64)` | Base64 PKCS#1 private key | `IRsaEncryption` | Singleton |
-| `AddAesEncryption(keyString)` `[Obsolete]` | The value `AesEncryption.Key` returned | `IAesEncryption` | Singleton |
 
-All four are idempotent — a second call registers nothing, so the **first** call's key is the one the
-application uses. The three cipher methods throw `ArgumentException` for a null, empty, or whitespace key.
+All three are idempotent — a second call registers nothing, so the **first** call's key is the one the
+application uses. The two cipher methods throw `ArgumentException` for a null, empty, or whitespace key.
 
 | Constructor / factory | Parameter | Default | Effect |
 |---|---|---|---|
@@ -73,7 +71,6 @@ application uses. The three cipher methods throw `ArgumentException` for a null,
 | `new RsaEncryption(int keySize = 2048)` | Key size in bits | `2048` | Generates a fresh key pair. |
 | `new RsaEncryption(string privateKeyBase64)` | PKCS#1 private key | *(required)* | Loads an existing pair; the public key is derived. |
 | `RsaEncryption.FromPublicKey(string publicKeyBase64)` | PKCS#1 public key | *(required)* | Public-only: `Encrypt`/`Verify` work, `Decrypt`/`Sign` throw `InvalidOperationException`. |
-| `new AesEncryption(string? keyString = null)` `[Obsolete]` | The value `AesEncryption.Key` returned | `null` | `null` generates a key and IV. `Key` is Base64 of `base64(key):base64(iv)` — one opaque token. |
 
 | Per-call switch | Default | Effect |
 |---|---|---|
@@ -81,7 +78,7 @@ application uses. The three cipher methods throw `ArgumentException` for a null,
 | `IHmacHashing.ComputeSha*` — `asBase64` | `true` | `false` returns upper-case hex. |
 | `IHmacHashing.VerifySha*` — `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
 | `IShaHashing.ComputeSha*` — `upperCase` | `false` | `true` returns upper-case hex. |
-| `IHmacHashing.VerifySha*` / `IShaHashing.VerifySha*` — `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. |
+| `IShaHashing.VerifySha*` — `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. |
 
 Fixed, non-configurable choices: AES-GCM uses a fresh 12-byte nonce and a 16-byte tag per call and packages
 the result as Base64 of `base64(nonce):base64(tag):base64(cipher)`; RSA uses OAEP-SHA256 for encryption and

@@ -112,7 +112,7 @@ public class TestDbContext(DbContextOptions<TestDbContext> options, IEncryptionK
 }
 
 // Test key provider
-internal class TestKeyProvider : EncryptionKeyProvider
+internal class TestKeyProvider : IEncryptionKeyProvider
 {
     #region Fields
 
@@ -133,7 +133,7 @@ internal class TestKeyProvider : EncryptionKeyProvider
 
     #region Methods
 
-    public override byte[] GetKey(Type entityType) =>
+    public byte[] GetKey(Type entityType) =>
         _typeKeys.TryGetValue(entityType, out var key) ? key : _defaultKey;
 
     public void SetKeyForType(Type type, byte[] key)

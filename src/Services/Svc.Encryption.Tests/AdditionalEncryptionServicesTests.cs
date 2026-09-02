@@ -96,7 +96,7 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     [Fact]
     public void Hmac256Hashing_Computes_And_Verifies()
     {
-        using IHmacHashing hmac = new HmacHashing();
+        IHmacHashing hmac = new HmacHashing();
         var sig = hmac.ComputeSha256("message", "secret");
         output.WriteLine($"HMAC-SHA256 signature: {sig}");
         sig.ShouldNotBeNullOrWhiteSpace();
@@ -105,36 +105,14 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Hmac256Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
-    {
-        var hmac = new HmacHashing();
-        var sig = hmac.ComputeSha256("m", "k");
-        sig.ShouldNotBeNullOrWhiteSpace();
-        Should.NotThrow(hmac.Dispose);
-        hmac.ComputeSha256("m2", "k").ShouldNotBeNullOrWhiteSpace();
-        hmac.VerifySha256("m", "k", sig).ShouldBeTrue();
-    }
-
-    [Fact]
     public void Hmac512Hashing_Computes_And_Verifies()
     {
-        using IHmacHashing hmac = new HmacHashing();
+        IHmacHashing hmac = new HmacHashing();
         var sig = hmac.ComputeSha512("message", "secret");
         output.WriteLine($"HMAC-SHA512 signature: {sig}");
         sig.ShouldNotBeNullOrWhiteSpace();
         hmac.VerifySha512("message", "secret", sig).ShouldBeTrue();
         hmac.VerifySha512("message2", "secret", sig).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void Hmac512Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
-    {
-        var hmac = new HmacHashing();
-        var sig = hmac.ComputeSha512("m", "k");
-        sig.ShouldNotBeNullOrWhiteSpace();
-        Should.NotThrow(hmac.Dispose);
-        hmac.ComputeSha512("m2", "k").ShouldNotBeNullOrWhiteSpace();
-        hmac.VerifySha512("m", "k", sig).ShouldBeTrue();
     }
 
     [Fact]
@@ -157,20 +135,9 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Sha256Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
-    {
-        var hash = new ShaHashing();
-        var sig = hash.ComputeSha256("a");
-        sig.ShouldNotBeNullOrWhiteSpace();
-        Should.NotThrow(hash.Dispose);
-        hash.ComputeSha256("b").ShouldNotBeNullOrWhiteSpace();
-        hash.VerifySha256("a", sig).ShouldBeTrue();
-    }
-
-    [Fact]
     public void Sha265Hashing_Computes_And_Verifies()
     {
-        using IShaHashing hash = new ShaHashing();
+        IShaHashing hash = new ShaHashing();
         var text = "sample";
         var h1 = hash.ComputeSha256(text);
         output.WriteLine($"SHA256 hash: {h1}");
@@ -182,24 +149,13 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     [Fact]
     public void Sha512Hashing_Computes_And_Verifies()
     {
-        using IShaHashing hash = new ShaHashing();
+        IShaHashing hash = new ShaHashing();
         var text = "sample";
         var h1 = hash.ComputeSha512(text);
         output.WriteLine($"SHA512 hash: {h1}");
         h1.ShouldNotBeNullOrWhiteSpace();
         hash.VerifySha512(text, h1).ShouldBeTrue();
         hash.VerifySha512(text + "x", h1).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void Sha512Hashing_Dispose_IsNoOp_AndInstanceStillHashesAfterward()
-    {
-        var hash = new ShaHashing();
-        var sig = hash.ComputeSha512("a");
-        sig.ShouldNotBeNullOrWhiteSpace();
-        Should.NotThrow(hash.Dispose);
-        hash.ComputeSha512("b").ShouldNotBeNullOrWhiteSpace();
-        hash.VerifySha512("a", sig).ShouldBeTrue();
     }
 
     #endregion

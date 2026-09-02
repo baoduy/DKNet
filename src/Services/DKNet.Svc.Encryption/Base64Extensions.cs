@@ -25,7 +25,7 @@ public static class Base64StringExtensions
     /// </summary>
     /// <param name="encryptedText">The Base64-encoded string.</param>
     /// <returns>The decrypted plain text string.</returns>
-    public static string FromBase64String(string encryptedText)
+    public static string FromBase64String(this string encryptedText)
     {
         if (string.IsNullOrWhiteSpace(encryptedText))
         {
@@ -49,7 +49,7 @@ public static class Base64StringExtensions
     ///     This method tolerates missing padding (standard for Base64URL). It does <b>not</b> accept the standard Base64
     ///     alphabet characters '+' or '/' unless they are properly transformed into '-' and '_' respectively.
     /// </remarks>
-    public static string FromBase64UrlString(string encryptedText)
+    public static string FromBase64UrlString(this string encryptedText)
     {
         if (string.IsNullOrWhiteSpace(encryptedText))
         {
@@ -65,7 +65,7 @@ public static class Base64StringExtensions
     /// </summary>
     /// <param name="base64String">The string to check.</param>
     /// <returns>True if the string is a valid Base64 encoded string; otherwise, false.</returns>
-    public static bool IsBase64String(string base64String) =>
+    public static bool IsBase64String(this string base64String) =>
         !string.IsNullOrWhiteSpace(base64String) && Base64.IsValid(base64String);
 
     /// <summary>
@@ -74,7 +74,7 @@ public static class Base64StringExtensions
     /// <param name="plainText">The plain text to encode.</param>
     /// <returns>The Base64-encoded string.</returns>
     /// <exception cref="ArgumentNullException">Thrown when plainText is null.</exception>
-    public static string ToBase64String(string plainText) =>
+    public static string ToBase64String(this string plainText) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 
     /// <summary>
@@ -93,53 +93,8 @@ public static class Base64StringExtensions
     /// var roundtrip = Base64StringExtensions.FromBase64UrlString(token);    // "test"
     /// </code>
     /// </example>
-    public static string ToBase64UrlString(string plainText) =>
-        Base64Url.EncodeToString(Encoding.UTF8.GetBytes(plainText));
-
-    #endregion
-}
-
-/// <summary>
-///     Provides extension methods for working with Base64 and Base64URL encoded strings.
-/// </summary>
-/// <remarks>
-///     Obsolete: this type is misspelled. Use <see cref="Base64StringExtensions" /> instead.
-/// </remarks>
-[Obsolete("Use Base64StringExtensions instead (this type name is misspelled).")]
-[SuppressMessage("Design", "CA1055:URI-like return values should not be strings")]
-public static class Base65StringExtensions
-{
-    #region Methods
-
-    /// <summary>
-    ///     FromBase64String operation.
-    /// </summary>
-    public static string FromBase64String(this string encryptedText) =>
-        Base64StringExtensions.FromBase64String(encryptedText);
-
-    /// <summary>
-    ///     FromBase64UrlString operation.
-    /// </summary>
-    public static string FromBase64UrlString(this string encryptedText) =>
-        Base64StringExtensions.FromBase64UrlString(encryptedText);
-
-    /// <summary>
-    ///     IsBase64String operation.
-    /// </summary>
-    public static bool IsBase64String(this string base64String) =>
-        Base64StringExtensions.IsBase64String(base64String);
-
-    /// <summary>
-    ///     ToBase64String operation.
-    /// </summary>
-    public static string ToBase64String(this string plainText) =>
-        Base64StringExtensions.ToBase64String(plainText);
-
-    /// <summary>
-    ///     ToBase64UrlString operation.
-    /// </summary>
     public static string ToBase64UrlString(this string plainText) =>
-        Base64StringExtensions.ToBase64UrlString(plainText);
+        Base64Url.EncodeToString(Encoding.UTF8.GetBytes(plainText));
 
     #endregion
 }

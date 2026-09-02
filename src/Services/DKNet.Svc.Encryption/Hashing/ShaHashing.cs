@@ -17,10 +17,10 @@ internal enum HashAlgorithmKind
 
 /// <summary>
 ///     Defines SHA hashing operations (SHA-256 and SHA-512) with convenience verification helpers.
-///     Implementations are stateless, static-internally wrappers (no cached algorithm instances to
-///     release); <see cref="IDisposable" /> is retained on the interface for backward compatibility.
+///     Implementations are stateless, static-internally wrappers — no cached algorithm instances to
+///     release.
 /// </summary>
-public interface IShaHashing : IDisposable
+public interface IShaHashing
 {
     #region Methods
 
@@ -100,13 +100,6 @@ public sealed class ShaHashing : IShaHashing
     /// <inheritdoc cref="IShaHashing.ComputeSha512" />
     public string ComputeSha512(string input, bool upperCase = false)
         => ComputeHash(input, HashAlgorithmKind.Sha512, upperCase);
-
-    /// <summary>
-    ///     Releases resources held by this instance. No cached algorithms are held, so this is a no-op.
-    /// </summary>
-    public void Dispose()
-    {
-    }
 
     /// <summary>
     ///     Verifies a hash for the given input using the requested algorithm.

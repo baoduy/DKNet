@@ -11,19 +11,19 @@ dotnet add package DKNet.EfCore.Encryption
 - `[Encrypted]` attribute — opt-in marker for any `string` property.
 - `AesGcmColumnEncryptionProvider` — default AES-128/192/256-GCM implementation (random IV per value, authenticated encryption).
 - `IColumnEncryptionProvider` — swappable encryption algorithm abstraction.
-- `IEncryptionKeyProvider` / `EncryptionKeyProvider` — bring your own key source (config, env var, Key Vault, etc.), one key per entity type.
+- `IEncryptionKeyProvider` — bring your own key source (config, env var, Key Vault, etc.), one key per entity type.
 - `ModelBuilder.UseColumnEncryption(...)` — one call in `OnModelCreating` wires up every `[Encrypted]` property automatically; rejects primary/foreign key columns.
 - `services.AddEfCoreEncryption<TKeyProvider>()` — registers your key provider in DI.
 
 ## Quick start
 
 ```csharp
-public sealed class AppEncryptionKeyProvider : EncryptionKeyProvider
+public sealed class AppEncryptionKeyProvider : IEncryptionKeyProvider
 {
     private readonly byte[] _key = Convert.FromBase64String(
         Environment.GetEnvironmentVariable("APP_ENCRYPTION_KEY")!); // 16, 24, or 32 bytes
 
-    public override byte[] GetKey(Type entityType) => _key;
+    public byte[] GetKey(Type entityType) => _key;
 }
 
 var builder = WebApplication.CreateBuilder(args);
