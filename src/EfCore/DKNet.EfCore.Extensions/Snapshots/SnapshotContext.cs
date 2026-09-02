@@ -2,16 +2,17 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // Author: DRUNK Coding Team
 // File: SnapshotContext.cs
-// Description: Captures a snapshot of tracked entity entries (Added/Modified) and temporarily disables
-//              automatic change detection on the provided DbContext until the snapshot is disposed.
+// Description: Captures a snapshot of tracked entity entries (Added/Modified/Deleted) from a DbContext's
+//              change tracker, to be read later after the change tracker's own state has moved on.
 
 namespace DKNet.EfCore.Extensions.Snapshots;
 
 /// <summary>
-///     Captures a snapshot of the current tracked entities (Added and Modified) from a <see cref="DbContext" />
-///     and temporarily disables automatic change detection on the context to improve performance while the
-///     snapshot is held. Call <see /> or dispose the instance to restore the previous
-///     AutoDetectChangesEnabled setting.
+///     Captures a snapshot of the current tracked entities (Added, Modified and Deleted) from a
+///     <see cref="DbContext" />'s change tracker via <see cref="Initialize" />, so they can still be read
+///     via <see cref="Entities" /> after the change tracker's own state has moved on. This type does not
+///     itself change <c>ChangeTracker.AutoDetectChangesEnabled</c> or any other tracker setting -
+///     callers that need that (e.g. to suppress detection while the snapshot is held) must manage it themselves.
 /// </summary>
 public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisposable
 {
@@ -59,8 +60,8 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
     #region Methods
 
     /// <summary>
-    ///     Disposes the snapshot context, clears the in-memory snapshot and restores the DbContext's automatic
-    ///     change-detection behavior. The underlying DbContext is NOT disposed.
+    ///     Disposes the snapshot context and clears the in-memory snapshot. The underlying DbContext,
+    ///     including its <c>ChangeTracker</c> settings, is left untouched and is NOT disposed.
     /// </summary>
     public void Dispose()
     {

@@ -44,7 +44,7 @@ public static class EfCoreExtensions
 
         return primaryKey.Properties.ToDictionary(
             p => p.Name,
-            p => p.PropertyInfo!.GetValue(entityEntry.Entity),
+            p => entityEntry.CurrentValues[p],
             StringComparer.OrdinalIgnoreCase);
     }
 
@@ -88,13 +88,13 @@ public static class EfCoreExtensions
             ArgumentNullException.ThrowIfNull(entity);
 
             var rs = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            var type = entity.GetType();
-            var keys = context.GetPrimaryKeyProperties(type);
-            foreach (var key in keys)
-            {
-                var value = type.GetProperty(key)?.GetValue(entity);
-                rs.Add(key, value);
-            }
+            var primaryKey = context.Model.FindEntityType(entity.GetType())?.FindPrimaryKey();
+            if (primaryKey is null)
+                return rs;
+
+            var entry = context.Entry(entity);
+            foreach (var key in primaryKey.Properties)
+                rs.Add(key.Name, entry.CurrentValues[key]);
 
             return rs;
         }
