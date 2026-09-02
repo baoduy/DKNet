@@ -25,12 +25,10 @@ public static class EnumExtensions
         where T : Enum
     {
         var type = typeof(T);
-        var members = type.GetFields();
+        var members = type.GetFields(BindingFlags.Public | BindingFlags.Static);
 
         foreach (var info in members)
         {
-            if (info.FieldType == typeof(int)) continue;
-
             var att = info.GetCustomAttribute<DisplayAttribute>();
 
             yield return new EnumInfo

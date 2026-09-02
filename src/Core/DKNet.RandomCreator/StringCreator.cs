@@ -12,7 +12,7 @@ namespace DKNet.RandomCreator;
 /// </summary>
 /// <param name="bufferLength">The length of the string.</param>
 /// <param name="options">the option of the generation.</param>
-internal sealed class StringCreator(int bufferLength, StringCreatorOptions options) : IDisposable
+internal sealed class StringCreator(int bufferLength, StringCreatorOptions options)
 {
     #region Fields
 
@@ -23,11 +23,6 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     #endregion
 
     #region Methods
-
-    /// <inheritdoc />
-    public void Dispose()
-    {
-    }
 
     private static char[] Generate(string validChars, int length) =>
         RandomNumberGenerator.GetItems<char>(validChars, length);

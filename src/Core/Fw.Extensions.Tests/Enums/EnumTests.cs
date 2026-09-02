@@ -96,5 +96,16 @@ public class EnumExtensionsTests
         list.Count.ShouldBeGreaterThanOrEqualTo(3);
     }
 
+    [Fact]
+    public void GetEumInfosExcludesBackingFieldForNonIntBackedEnum()
+    {
+        // Arrange & Act
+        var list = EnumExtensions.GetEumInfos<ByteBackedTypes>().ToList();
+
+        // Assert
+        list.Count.ShouldBe(2);
+        list.ShouldNotContain(x => x.Key == "value__");
+    }
+
     #endregion
 }
