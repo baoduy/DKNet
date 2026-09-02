@@ -60,17 +60,17 @@ public static class ModelSpecRepoExtensions
         /// <typeparam name="TModel">The destination model / DTO type produced by the mapping layer.</typeparam>
         /// <param name="specification">The model specification defining filter and ordering logic.</param>
         /// <param name="cancellationToken">A token allowing the operation to be cancelled.</param>
-        /// <returns>An <see cref="IList{T}" /> containing zero or more projected models.</returns>
+        /// <returns>A <see cref="List{T}" /> containing zero or more projected models.</returns>
         /// <remarks>
         ///     Use <see cref="ToPagedListAsync{TEntity,TModel}(IRepositorySpec,IModelSpecification{TEntity,TModel},int,int,CancellationToken)" />
         ///     for large result sets to avoid retrieving the full collection in a single query.
         /// </remarks>
-        public async Task<IList<TModel>> ToListAsync<TEntity, TModel>(
+        public Task<List<TModel>> ToListAsync<TEntity, TModel>(
             IModelSpecification<TEntity, TModel> specification,
             CancellationToken cancellationToken = default)
             where TEntity : class
             where TModel : class =>
-            await repo.Query<TEntity, TModel>(specification).ToListAsync(cancellationToken);
+            repo.Query<TEntity, TModel>(specification).ToListAsync(cancellationToken);
 
         /// <summary>
         ///     Asynchronously materializes a single page of projected models for entities matching the specification.

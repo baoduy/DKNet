@@ -44,7 +44,7 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
 
         // Assert
         copy.FilterQuery.ShouldNotBeNull();
-        copy.OrderByQueries.Count.ShouldBe(original.OrderByQueries.Count);
+        copy.OrderByClauses.Count.ShouldBe(original.OrderByClauses.Count);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
 
         // Assert
         spec.FilterQuery.ShouldBeNull();
-        spec.OrderByQueries.ShouldBeEmpty();
+        spec.OrderByClauses.ShouldBeEmpty();
         spec.IncludeQueries.ShouldBeEmpty();
     }
 
@@ -82,7 +82,8 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
         spec.AddOrderByPublic("is-active", ListSortDirection.Descending);
 
         // Assert
-        spec.OrderByDescendingQueries.Count.ShouldBe(1);
+        spec.OrderByClauses.Count.ShouldBe(1);
+        spec.OrderByClauses[0].Direction.ShouldBe(ListSortDirection.Descending);
     }
 
     [Fact]
@@ -97,8 +98,7 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
         spec.AddOrderByPublic("  ", ListSortDirection.Ascending);
 
         // Assert
-        spec.OrderByQueries.Count.ShouldBe(0);
-        spec.OrderByDescendingQueries.Count.ShouldBe(0);
+        spec.OrderByClauses.Count.ShouldBe(0);
     }
 
     [Fact]
@@ -111,7 +111,8 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
         spec.AddOrderByPublic("created_date", ListSortDirection.Ascending);
 
         // Assert
-        spec.OrderByQueries.Count.ShouldBe(1);
+        spec.OrderByClauses.Count.ShouldBe(1);
+        spec.OrderByClauses[0].Direction.ShouldBe(ListSortDirection.Ascending);
     }
 
     [Fact]
@@ -127,8 +128,7 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
         // Assert
         copy.FilterQuery.ShouldNotBeNull();
         copy.IsIgnoreQueryFilters.ShouldBe(original.IsIgnoreQueryFilters);
-        copy.OrderByQueries.Count.ShouldBe(original.OrderByQueries.Count);
-        copy.OrderByDescendingQueries.Count.ShouldBe(original.OrderByDescendingQueries.Count);
+        copy.OrderByClauses.Count.ShouldBe(original.OrderByClauses.Count);
         copy.IncludeQueries.Count.ShouldBe(original.IncludeQueries.Count);
     }
 
@@ -199,8 +199,9 @@ public class SpecificationEdgeCasesTests : IClassFixture<TestDbFixture>
         spec.AddOrderByPublic("CreatedDate", ListSortDirection.Ascending);
 
         // Assert
-        spec.OrderByQueries.Count.ShouldBe(2);
-        spec.OrderByDescendingQueries.Count.ShouldBe(1);
+        spec.OrderByClauses.Count.ShouldBe(3);
+        spec.OrderByClauses.Count(c => c.Direction == ListSortDirection.Ascending).ShouldBe(2);
+        spec.OrderByClauses.Count(c => c.Direction == ListSortDirection.Descending).ShouldBe(1);
     }
 
     [Fact]

@@ -40,16 +40,6 @@ public interface ISpecification<TEntity>
     /// <summary>Include chains supporting ThenInclude and per-navigation filtering.</summary>
     IReadOnlyCollection<Func<IQueryable<TEntity>, IQueryable<TEntity>>> IncludeBuilders { get; }
 
-    /// <summary>
-    ///     A function that describes how to order entities by descending
-    /// </summary>
-    IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries { get; }
-
-    /// <summary>
-    ///     A function that describes how to order entities by ascending
-    /// </summary>
-    IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries { get; }
-
     #endregion
 }
 
@@ -64,8 +54,6 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
 
     private readonly List<Expression<Func<TEntity, object?>>> _includeQueries = [];
     private readonly List<Func<IQueryable<TEntity>, IQueryable<TEntity>>> _includeBuilders = [];
-    private readonly List<Expression<Func<TEntity, object>>> _orderByDescendingQueries = [];
-    private readonly List<Expression<Func<TEntity, object>>> _orderByQueries = [];
     private readonly List<OrderClause<TEntity>> _orderByClauses = [];
     private int? _skip;
     private int? _take;
@@ -101,27 +89,14 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
         // Copy collections into the mutable backing lists (interface properties are non-null by contract)
         _includeQueries.AddRange(specification.IncludeQueries);
         _includeBuilders.AddRange(specification.IncludeBuilders);
-        _orderByQueries.AddRange(specification.OrderByQueries);
-        _orderByDescendingQueries.AddRange(specification.OrderByDescendingQueries);
 
         if (specification is Specification<TEntity> source)
         {
-            // Same-kind copy: declared ordering sequence and window/tracking state carry over as-is.
+            // Declared ordering sequence and window/tracking state carry over as-is.
             _orderByClauses.AddRange(source._orderByClauses);
             _skip = source._skip;
             _take = source._take;
             _isReadOnly = source._isReadOnly;
-        }
-        else
-        {
-            // Foreign ISpecification: no declared sequence to copy, so synthesize one from its legacy
-            // segregated lists — ascending clauses first, then descending — preserving today's semantics.
-            _orderByClauses.AddRange(
-                specification.OrderByQueries.Select(
-                    q => new OrderClause<TEntity>(q, ListSortDirection.Ascending)));
-            _orderByClauses.AddRange(
-                specification.OrderByDescendingQueries.Select(
-                    q => new OrderClause<TEntity>(q, ListSortDirection.Descending)));
         }
     }
 
@@ -148,17 +123,6 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     ///     this flag. Call <see cref="IgnoreQueryFilters" /> to enable this behavior.
     /// </summary>
     public bool IsIgnoreQueryFilters { get; private set; }
-
-    /// <summary>
-    ///     Gets the collection of expressions that describe descending ordering for query results.
-    /// </summary>
-    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByDescendingQueries =>
-        _orderByDescendingQueries;
-
-    /// <summary>
-    ///     Gets the collection of expressions that describe ascending ordering for query results.
-    /// </summary>
-    public IReadOnlyCollection<Expression<Func<TEntity, object>>> OrderByQueries => _orderByQueries;
 
     /// <summary>
     ///     Gets the ordering clauses in the sequence they were declared, so mixed-direction ordering can be
@@ -234,7 +198,6 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">A function that describes how to order entities by ascending</param>
     protected void AddOrderBy(Expression<Func<TEntity, object>> query)
     {
-        _orderByQueries.Add(query);
         _orderByClauses.Add(new OrderClause<TEntity>(query, ListSortDirection.Ascending));
     }
 
@@ -244,7 +207,6 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     /// <param name="query">A function that describes how to order entities by descending</param>
     protected void AddOrderByDescending(Expression<Func<TEntity, object>> query)
     {
-        _orderByDescendingQueries.Add(query);
         _orderByClauses.Add(new OrderClause<TEntity>(query, ListSortDirection.Descending));
     }
 

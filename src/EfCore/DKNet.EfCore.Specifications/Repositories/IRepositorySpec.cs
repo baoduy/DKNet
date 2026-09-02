@@ -53,15 +53,6 @@ public interface IRepositorySpec
     void Delete<TEntity>(TEntity entity) where TEntity : class;
 
     /// <summary>
-    ///     Marks a collection of entities for deletion.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entities">The entities to delete.</param>
-    [Obsolete(
-        "Using the BulkDeleteRangeAsync <see cref=\"BulkDeleteRangeAsync{TEntity}(IEnumerable{TEntity}, CancellationToken)\" />")]
-    void DeleteRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class;
-
-    /// <summary>
     ///     The bulk deletes a collection of entities asynchronously.
     /// </summary>
     /// <param name="predicate"></param>
@@ -198,12 +189,6 @@ public sealed class RepositorySpec<TDbContext> : IRepositorySpec where TDbContex
     public void Delete<TEntity>(TEntity entity)
         where TEntity : class
         => _dbContext.Set<TEntity>().Remove(entity);
-
-    /// <inheritdoc />
-    public void DeleteRange<TEntity>(IEnumerable<TEntity> entities)
-        where TEntity : class
-        => _dbContext.Set<TEntity>().RemoveRange(entities);
-
 
     /// <inheritdoc />
     public EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
