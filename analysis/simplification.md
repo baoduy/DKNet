@@ -4,15 +4,17 @@ Each item names what to delete and what replaces it. Line counts are approximate
 
 Effort key: **S** = under an hour, **M** = half a day to a day, **L** = multi-day / breaking.
 
-**Status key:** ✅ = applied in the working tree; read its **Applied** note, since three items were only partially applied and the reasons matter. Unmarked = still open.
+**Status key:** ✅ fixed and verified in the working tree · ✖ cancelled (recommendation withdrawn — the reason is recorded in the item) · ❓ awaiting your decision.
 
 ---
 
 ## Replaceable by the BCL
 
-### S2 — `AsyncEnumerableExtensions.ToListAsync` is now in the .NET 10 BCL {#s2}
+### ✅ S2 — `AsyncEnumerableExtensions.ToListAsync` is now in the .NET 10 BCL {#s2}
 
 `Core/DKNet.Fw.Extensions/Collections/AsyncEnumerableExtensions.cs:25` — 15 lines
+
+**Applied.** File deleted. Grep classified all ~300 `ToListAsync` hits: nearly all are EF Core's `IQueryable` extension. The only real callers of DKNet's were its own tests (deleted) and `EfCore.Repos.Tests`, which was removed with the retired Repos packages. `Core/DKNet.Fw.Extensions/README.md` updated.
 
 .NET 10 ships `System.Linq.AsyncEnumerable`, which includes `ToListAsync<T>(this IAsyncEnumerable<T>, CancellationToken)` returning `ValueTask<List<T>>`.
 
@@ -131,21 +133,25 @@ public static DateTime LastDayOfMonth(this DateTime date) =>
 
 ---
 
-### S14 — `IsNumber` reimplements number parsing {#s14}
+### ✖ ~~S14~~ — `IsNumber` reimplements number parsing — **RECOMMENDATION WITHDRAWN, LEAVE AS-IS** {#s14}
 
-`Core/DKNet.Fw.Extensions/Primitives/StringExtensions.cs:56-61` — 6 lines → 1
+`Core/DKNet.Fw.Extensions/Primitives/StringExtensions.cs:56-61`
 
-Four passes plus a LINQ chain approximating "is this a number", with hand-rolled rules about `.`, `,`, and `-` placement. `decimal.TryParse(input, NumberStyles.Number, CultureInfo.InvariantCulture, out _)` is one call and handles grouping, sign placement, and whitespace correctly.
+**Investigated and rejected.** I proposed replacing the four-pass hand-rolled check with `decimal.TryParse(input, NumberStyles.Number, CultureInfo.InvariantCulture, out _)`. The existing tests are the specification here, and they rule it out.
 
-The current rules also accept strings the parser rejects (`"1,,2"` is guarded but `"1.2.3"` passes the `<= 1` dot count only by accident of ordering, and `"1,2,3"` passes entirely). Verify against the existing tests before switching — the semantics genuinely differ.
+`IsNumberTests` asserts **both** `"123,456.789"` (US: `,` groups, `.` decimal) **and** `"123.456,789"` (European: `.` groups, `,` decimal) are numbers. `TryParse` under `InvariantCulture` accepts the first and **rejects the second** — it permits only one canonical separator ordering. The current implementation deliberately accepts both by checking "at most one `.`" and "no `,,`" rather than validating separator order, so the dual-locale tolerance is intentional behaviour, not an accident of the checks.
 
-**Effort:** S. **Risk:** medium (behaviour change); needs a test review.
+Every other case matched `TryParse` exactly (single and multi-comma grouping, leading-only `-`, letters, multi-dot rejection, empty/whitespace/null) — verified empirically against each test string, not reasoned about.
+
+So the four passes buy something real. If the allocation ever matters, the fix is a single-pass span scan preserving the dual-locale rule, not `TryParse`.
 
 ---
 
 ## Replaceable by EF Core
 
-### S1 — the legacy two-phase ordering path is dead weight {#s1}
+### ✅ S1 — the legacy two-phase ordering path is dead weight {#s1}
+
+**Applied.** Foreign `ISpecification<TEntity>` implementations are not supported. `OrderByQueries`/`OrderByDescendingQueries` removed from the interface *and* from `Specification<TEntity>` (the `_orderByQueries`/`_orderByDescendingQueries` backing lists too); `_orderByClauses` is now the single model. The legacy two-phase branch in `ApplySpecs` and the foreign-spec synthesis branch in the copy constructor are deleted; `EnsureSpecHasOrdering` tests one collection. `OrderByClauses`/`SkipCount`/`TakeCount`/`IsReadOnly` stay `internal` — no production consumer outside the package reads them, so widening the public surface to save one `is Specification<TEntity>` cast in `ApplySpecs` wasn't warranted; that single cast remains. Four tests in `OrderingWindowTrackingTests.cs` encoded the removed legacy two-phase SQL directly (`ApplySpecs_ForeignSpecification_With*Ordering_*`) and were deleted; the copy-constructor foreign-spec test was rewritten to assert the (now-empty) result instead of synthesis. One cross-project fallout: `AspCore.Extensions.Tests/Endpoints/EntityListSpecificationTests.cs` asserted directly on the removed properties — rewritten to assert on generated SQL (`ToQueryString()`) and materialized row order instead, per the repo's established SQL-verification pattern.
 
 `EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs:63-108` and `Definitions/Specification.cs:68-90,147-160` — ~110 lines
 
@@ -167,9 +173,11 @@ This is the largest single deletion available in the repo and it collapses two o
 
 ---
 
-### S3 — EF Core provides the provider checks {#s3}
+### ✅ S3 — EF Core provides the provider checks {#s3}
 
 `EfCore/DKNet.EfCore.Extensions/Extensions/EfCoreExtensions.cs:118,126` and `EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs:88`
+
+**Applied.** Consolidated to the single implementation in `EfCoreExtensions`; the private copy in `DbContextHelpers` deleted. Both packages stay provider-reference-free as decided — no SqlServer/Npgsql package added. `Relational.Helpers` gained a `ProjectReference` to `Extensions` (it was already calling `context.IsSqlServer()` and coincidentally resolving its own private copy). Public `IsSqlServer()`/`IsNpgsql()` signatures unchanged.
 
 ```csharp
 public bool IsSqlServer() =>
@@ -205,7 +213,7 @@ EF Core exposes the same values through its compiled accessors: `entityEntry.Cur
 
 ---
 
-### S16 — sequence value retrieval hand-rolls connection management {#s16}
+### ✅ S16 — sequence value retrieval hand-rolls connection management {#s16}
 
 `EfCore/DKNet.EfCore.Extensions/Extensions/EfCoreExtensions.cs:160-186`
 
@@ -220,16 +228,20 @@ await context.Database.CloseConnectionAsync();
 Three issues, all solved by existing APIs:
 
 - `ExecuteReaderAsync` + `ReadAsync` + `GetFieldValueAsync` to read one scalar — `ExecuteScalarAsync()` is the single call for this.
-- Explicit `Open`/`CloseConnection` around it will **close a connection the caller still needs** if this runs inside an ambient transaction or an already-open connection scope. EF Core's connection lifetime management (or `Database.SqlQuery<T>($"...")`, which composes with the context's connection and transaction) handles this correctly.
+- ~~Explicit `Open`/`CloseConnection` will **close a connection the caller still needs** inside an ambient transaction.~~ **This diagnosis was wrong.** EF Core's `RelationalConnection` reference-counts open/close via `_openedCount`, so a nested Open/Close pair does not physically close a connection an outer scope still holds. The real defect, found while fixing it, is that there is **no `try`/`finally`** around the pair: any exception in between (a bad sequence name, say) leaks the open reference count permanently, so that `DbContext`'s connection may never truly close again.
 - No `CancellationToken` is accepted or forwarded on any of the four `await`s.
+
+**Applied.** `ExecuteScalarAsync` replaces the reader triple; Open/Close is now wrapped in `try`/`finally`; a `CancellationToken` is accepted and forwarded on all three methods; `NextSeqValueWithFormat` switched to `InvariantCulture` to match its own determinism claim. The `CA2100` suppression stays, now justified in place — the method returns a boxed `object?`, so `SqlQuery<T>` would need a compile-time scalar `T` it cannot have, and T-SQL cannot parameterise a sequence identifier in `NEXT VALUE FOR`. Covered by `NextSeqValue_WithinExplicitTransaction_DoesNotCloseAmbientConnection`.
 
 **Effort:** M. **Risk:** medium — it is a behaviour change around transactions, which is exactly why it is worth fixing.
 
 ---
 
-### S17 — `TableExistsAsync` uses an exception as a boolean {#s17}
+### ✅ S17 — `TableExistsAsync` uses an exception as a boolean {#s17}
 
 `EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs:100-110`
+
+**Applied.** Replaced with a real `INFORMATION_SCHEMA.TABLES` count via `Database.SqlQuery<int>`, schema and table name passed as parameters. ANSI-standard, so no provider branching. The pre-existing "entity not in model throws" behaviour is preserved explicitly (a live test asserts it). `CreateTableAsync` behaviour deliberately unchanged — its doc now states plainly that it creates every table in the model and will not backfill tables added later; building per-table DDL generation was judged out of proportion for a bootstrap helper whose only callers are tests.
 
 ```csharp
 try { await dbContext.Set<TEntity>().AnyAsync(ct); return true; }
@@ -269,9 +281,11 @@ Two of these guards have a behavioural wrinkle worth deciding on rather than pre
 
 ---
 
-### S19 — `AddSingleton(Options.Create(...))` instead of the options pattern {#s19}
+### ✅ S19 — `AddSingleton(Options.Create(...))` instead of the options pattern {#s19}
 
 `EfCore/DKNet.EfCore.AuditLogs/EfCoreAuditLogSetup.cs:64`, `AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs:31`, `Services/DKNet.Svc.Transformation/TransformSetup.cs`
+
+**Applied.** `IdempotencySetup`'s 45-line hand-rolled validator replaced by ten declarative `.Validate()` calls plus `ValidateOnStart()`, so misconfiguration still fails fast at startup. The first-wins registration guard was **deliberately kept** — `Configure<T>` accumulates delegates, which would have silently changed documented behaviour — and that is now stated in `<remarks>`.
 
 Registering a pre-built `IOptions<T>` instance means repeated registrations stack (last one wins on resolve), configuration reloading cannot work, and `IOptionsMonitor`/`IValidateOptions` are unavailable. `services.Configure<T>(...)` plus `AddOptions<T>().Validate(...)` is the framework's mechanism, and it would replace `IdempotencySetup.ValidateOptions` (a 45-line hand-rolled validator, `:60-105`) with declarative `Validate` calls or `[Required]`/`[Range]` annotations plus `ValidateDataAnnotations()`.
 
@@ -281,7 +295,7 @@ Registering a pre-built `IOptions<T>` instance means repeated registrations stac
 
 ## Replaceable by an already-referenced package
 
-### S10 — the blob abstraction is buffer-only; keyset helpers duplicate their own dependency {#s10}
+### ❓ S10 — the blob abstraction is buffer-only; keyset helpers duplicate their own dependency {#s10}
 
 **Blob (L, breaking).** `IBlobService` exchanges `BinaryData` for both upload and download (`Services/DKNet.Svc.BlobStorage.Abstractions/BlobData.cs`), so every implementation buffers the entire object in memory: `BinaryData.FromStreamAsync` on S3 and local reads, `DownloadContentAsync` on Azure, and `blob.Data.ToStream()` on S3 upload. All three SDKs underneath expose streaming APIs. Adding `Task<Stream> OpenReadAsync(BlobRequest, ...)` and `Task<string> SaveAsync(string name, Stream content, ...)` alongside the existing methods would let large-object callers avoid the buffer without breaking anyone; the `BinaryData` methods become thin wrappers.
 
@@ -296,7 +310,7 @@ Two concrete gaps in the hand-rolled version:
 
 ---
 
-### S11 — `System.Linq.Dynamic.Core` is only needed for the raw-string overloads {#s11}
+### ❓ S11 — `System.Linq.Dynamic.Core` is only needed for the raw-string overloads {#s11}
 
 Covered as [P4](performance.md#p4). Worth restating as a simplification: replacing the typed `(property, Ops, value)` path with hand-built expression trees deletes `BuildClause` (35 lines of string templating), `DangerousExpressionPatterns` + `ValidateExpression` (30 lines of substring blacklist), and the `ParseException` handling in three places — and the package already contains the expression-building idiom it needs, in `Specification.AddOrderBy` and `KeysetQueryExtensions`.
 
@@ -308,7 +322,7 @@ Covered as [P4](performance.md#p4). Worth restating as a simplification: replaci
 
 - `Core/DKNet.RandomCreator/StringCreator.cs:15` — empty `Dispose()`; `RandomCreators.NewString`/`NewChars` wrap it in `using` for no effect. The whole `StringCreator` class is a stateful wrapper around what is naturally a static method (see [P34](performance.md#p34)) — the two public methods plus one private generator would fit in `RandomCreators` directly, removing a class and a `using`.
 
-**Applied.** **Docs only.** `StringCreator`'s empty `Dispose` and the pointless `using` in `RandomCreators` are gone (internal, so non-breaking), and the false "release cached algorithms" comment on `IShaHashing` is deleted. The public `IDisposable` on `IShaHashing`/`IHmacHashing` and the `EncryptionKeyProvider` abstract class remain — breaking, deferred to the next major.
+**Applied.** **Docs only.** `StringCreator`'s empty `Dispose` and the pointless `using` in `RandomCreators` are gone (internal, so non-breaking), and the false "release cached algorithms" comment on `IShaHashing` is deleted. The public `IDisposable` on `IShaHashing`/`IHmacHashing` and the `EncryptionKeyProvider` abstract class remain — breaking, deferred to the next major. ❓ **Also deferred (breaking), needs your call:** `ShaHashing.VerifySha256`/`VerifySha512` keep an `ignoreCase` parameter that cannot change the result — it is read and passed to `ComputeHash` as `!ignoreCase`, but only selects upper- vs lower-case hex for an intermediate string that `Convert.FromHexString` decodes case-insensitively before the `FixedTimeEquals` comparison. Same defect as the `HmacHashing` parameter already removed, harder to spot because the value is passed somewhere rather than literally unused.
 - `Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs` and `HmacHashing.cs` — both declare `IShaHashing : IDisposable` / `IHmacHashing : IDisposable` with empty `Dispose()`. The interface even carries the comment "now disposable so we can release cached algorithms" — there are no cached algorithms; every method is `static` internally, calling `SHA256.HashData`/`HMACSHA256.HashData`. These are **stateless static helpers wrapped in DI interfaces**. Making them static classes removes two interfaces, two implementations, two DI registrations, and the misleading `IDisposable`. If DI injectability must be preserved for testability, keep the interfaces but drop `IDisposable`.
 - `EfCore/DKNet.EfCore.Encryption/Encryption/EncryptionKeyProvider.cs` — an abstract class whose only member re-declares the interface's only member, with no shared implementation. Consumers can implement `IEncryptionKeyProvider` directly.
 
@@ -316,9 +330,11 @@ Covered as [P4](performance.md#p4). Worth restating as a simplification: replaci
 
 ---
 
-### S13 — `TypeExtractor`'s fluent API mutates shared state {#s13}
+### ✅ S13 — `TypeExtractor`'s fluent API mutates shared state {#s13}
 
 `Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs:81-85`
+
+**Applied.** `FilterBy` now returns a new `TypeExtractor` with a copied predicate list instead of mutating and returning `this`. Predicate type kept as `Expression<Func<Type,bool>>` (P17 is separate). Test `FilterBy_TwoBranchesFromSameExtractor_AreIndependent` reproduces the `Abstract()`/`NotAbstract()` trap and asserts the branches are disjoint and sum to the base count.
 
 ```csharp
 private TypeExtractor FilterBy(Expression<Func<Type, bool>>? predicate)
@@ -344,19 +360,19 @@ The 27-member `ITypeExtractor` interface is also worth a look: `Abstract`/`NotAb
 
 ---
 
-### S20 — obsolete duplicates awaiting removal {#s20}
+### ✅ S20 — obsolete duplicates awaiting removal {#s20}
 
 Already correctly marked `[Obsolete]`; listing them so the next major version has the set in one place:
 
 | Type / member | Location | Note |
 |---|---|---|
-| `Base65StringExtensions` | `Services/DKNet.Svc.Encryption/Base65Extensions.cs:88` | Misspelled duplicate of `Base64StringExtensions`; pure forwarding |
-| `IAesEncryption` / `AesEncryption` | `Services/DKNet.Svc.Encryption/Ciphers/AesEncryption.cs` | AES-CBC with a **fixed IV embedded in the key**, so identical plaintexts produce identical ciphertext. Security footgun; deleting is better than deprecating |
-| `AddAesEncryption` | `Services/DKNet.Svc.Encryption/EncryptionSetup.cs:33` | Registers the above |
-| `RequestBase` | `SlimBus/DKNet.SlimBus.Extensions/RequestBase.cs` | Superseded by `[FromClaim]` + `AddContextualRequestPopulation` |
-| `IRepositorySpec.DeleteRange` | `EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs:60` | Superseded by `BulkDeleteAsync` |
-| `AddIdempotentKey()` (no type arg) | `AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs:41` | Defaults to the non-atomic `IdempotencyDistributedCacheStore` |
-| `DKNet.EfCore.Repos`, `DKNet.EfCore.Repos.Abstractions` | `EfCore/` | Documented as retired in `CLAUDE.md`; the projects are still in the solution |
+| ✅ `Base65StringExtensions` | `Services/DKNet.Svc.Encryption/Base65Extensions.cs:88` | Misspelled duplicate of `Base64StringExtensions`; pure forwarding |
+| ✅ `IAesEncryption` / `AesEncryption` | `Services/DKNet.Svc.Encryption/Ciphers/AesEncryption.cs` | AES-CBC with a **fixed IV embedded in the key**, so identical plaintexts produce identical ciphertext. Security footgun; deleting is better than deprecating |
+| ✅ `AddAesEncryption` | `Services/DKNet.Svc.Encryption/EncryptionSetup.cs:33` | Registers the above |
+| ✖ ~~`RequestBase`~~ | `SlimBus/DKNet.SlimBus.Extensions/RequestBase.cs` | **Recommendation withdrawn — keep it.** Not a duplicate awaiting removal: its `[Obsolete]` message says it is deliberately "retained for existing consumers", and `AspCore.Extensions.Tests` has a test (`ConfigureGroup_ManualByUserStamping_RequestBaseBasedCommand_StampedByUserReachesHandler`) that exists specifically to guarantee the pre-DRK-565 manual-stamping pattern still works, with a `#pragma warning disable CS0618` to use it. Deleting ~15 lines is not worth breaking a tested migration path |
+| ✅ `IRepositorySpec.DeleteRange` | `EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs:60` | **Applied.** Superseded by `BulkDeleteAsync`; interface member and `RepositorySpec` implementation removed. No test called it directly (the misleadingly-named `DeleteRange_WithMultipleEntities_ShouldDeleteAll` test actually exercised `BulkDeleteAsync`, left as-is). |
+| ✅ `AddIdempotentKey()` (no type arg) | `AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs:41` | Defaults to the non-atomic `IdempotencyDistributedCacheStore` |
+| ✅ `DKNet.EfCore.Repos`, `DKNet.EfCore.Repos.Abstractions` | `EfCore/` | Documented as retired in `CLAUDE.md`; the projects are still in the solution |
 
 **Effort:** S. **Risk:** breaking by definition — this is a major-version list.
 
@@ -364,7 +380,9 @@ Already correctly marked `[Obsolete]`; listing them so the next major version ha
 
 ## Smaller consolidations
 
-### S21 — three async wrappers that only exist to widen a return type {#s21}
+### ✅ S21 — three async wrappers that only exist to widen a return type {#s21}
+
+**Applied.** Both `ToListAsync` overloads in `SpecRepoExtensions.cs`, the one in `ModelSpecRepoExtensions.cs`, and — same pattern, same fix — both `ToKeysetPageAsync` overloads in `SpecRepoExtensions.cs` now return `Task<List<T>>` directly with no `async`/`await`; the `pageSize` guard on the keyset overloads throws synchronously before the `Task` is returned. `KeysetQueryExtensions.ToKeysetPageAsync` (a different return shape, `Task<KeysetPage<TEntity>>`) was left untouched.
 
 `EfCore/DKNet.EfCore.Specifications/Extensions/SpecRepoExtensions.cs:95,108` and `ModelSpecRepoExtensions.cs:68`
 

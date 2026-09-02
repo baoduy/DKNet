@@ -12,7 +12,39 @@ Read-only analysis. **No code was changed.** Every finding below is a proposal f
 
 ## Status
 
-Findings marked ✅ in the two actioned reports are fixed and verified in the working tree. **13 of 18** correctness items and **11 of 23** simplification items are applied (three of those partially — their **Applied** notes say why). `performance.md` is deliberately untouched pending separate review.
+Every finding in all three reports now carries a state marker:
+
+| Marker | Meaning |
+|---|---|
+| ✅ | Fixed and verified in the working tree — each carries an **Applied** note saying what changed and how it was checked |
+| ✖ | Cancelled — recommendation withdrawn, with the evidence that killed it recorded in the item |
+| ❓ | Awaiting your decision |
+
+| Report | ✅ Fixed | ✖ Cancelled | ❓ Your call | Total |
+|---|---|---|---|---|
+| [correctness-notes.md](correctness-notes.md) | 16 | 2 | 0 | 18 |
+| [simplification.md](simplification.md) | 20 | 1 | 2 | 23 |
+| [performance.md](performance.md) | 2 | 0 | 31 | 33 |
+| **Total** | **38** | **3** | **33** | **74** |
+
+Read the **Applied** notes rather than trusting the checkmarks alone — S8, S12, S18 and S20 were only partially applied, and in each case the sub-item that was *declined* matters more than the ones that landed.
+
+### The three cancelled findings
+
+| Finding | Why it was withdrawn |
+|---|---|
+| **C3** hook DI lifetime | Already fixed on `dev` before this review (`61ef4d4`, `5696361`); `HookScopeResolutionTests` already covered it |
+| **C11** `EventHook` shared state | Its premise was C3; with hooks genuinely request-scoped it reduces to a case EF Core does not support anyway |
+| **S14** `IsNumber` → `TryParse` | The tests deliberately accept both US (`123,456.789`) and European (`123.456,789`) conventions; `InvariantCulture` rejects the second |
+
+One further correction, inside an otherwise-applied item: **S16**'s original diagnosis (that `Open`/`CloseConnection` would close a connection an ambient transaction needed) was wrong — EF Core reference-counts open/close. The real defect, found while fixing it, was a missing `try`/`finally` leaking the open count permanently. And **S20**'s `RequestBase` row is cancelled: it is a deliberately retained compat shim with a guard test, not a stale duplicate.
+
+### Still your call
+
+- **S10** — streaming blob API and the hand-rolled keyset predicates (breaking interface change)
+- **S11** — folded into `P4`, so it moves with the performance review
+- Deferred breaking removals listed inside **S12** and **S20**, including `ShaHashing`'s dead `ignoreCase` parameter
+- All 31 open items in `performance.md`
 
 ## Scope
 

@@ -4,7 +4,7 @@ Not part of the requested scope — these surfaced while reading for performance
 
 Severity is my read, not a triage decision.
 
-**Status key:** ✅ = fixed and verified in the working tree. Unmarked = still open. C3 is marked RESOLVED because it was already fixed on `dev` before this review; C11 needed no action once C3 fell.
+**Status key:** ✅ fixed and verified in the working tree · ✖ cancelled (recommendation withdrawn — the reason is recorded in the item) · ❓ awaiting your decision.
 
 ---
 
@@ -48,7 +48,7 @@ For a background job that disables hooks for a bulk import, every concurrent HTT
 
 ---
 
-## C3 — ~~hooks are resolved from the root provider~~ — RESOLVED BEFORE HEAD, NOT A LIVE DEFECT {#c3}
+## ✖ C3 — ~~hooks are resolved from the root provider~~ — RESOLVED BEFORE HEAD, NOT A LIVE DEFECT {#c3}
 
 **This finding was wrong. It describes a real bug that was already fixed on `dev` before the current HEAD.** Left in place rather than deleted so the reasoning is on record.
 
@@ -165,7 +165,7 @@ This also breaks `BlobService.GetItemAsync`, which is implemented as "take the f
 
 `Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs:281-303`  **Medium**
 
-**Applied.** Paginates on `ContinuationToken`; directory heuristic is now `Key.EndsWith('/')` with `Size.GetValueOrDefault()`. **Caveat: no >1000-object test exists — the pagination fix is reasoned, not demonstrated.**
+**Applied.** Paginates on `ContinuationToken`; directory heuristic is now `Key.EndsWith('/')` with `Size.GetValueOrDefault()`. Multi-page coverage added: `ListItemsAsync_MoreThanOnePage_ReturnsAllObjectsAcrossPages` uploads 1001 objects to force a genuine `NextContinuationToken`, since `S3BlobService` sets no `MaxKeys` and the page size cannot be shrunk from the test side.
 
 `ListObjectsV2Async` is called once and its `IsTruncated`/`NextContinuationToken` are never read. Any prefix holding more than 1,000 objects returns the first 1,000 with no error and no indication that results were dropped — the failure mode is a quiet wrong answer.
 
@@ -205,7 +205,7 @@ p => p.PropertyInfo!.GetValue(entityEntry.Entity),
 
 ---
 
-## C11 — `EventHook` holds per-save state on a shared instance {#c11}
+## ✖ C11 — `EventHook` holds per-save state on a shared instance {#c11}
 
 `EfCore/DKNet.EfCore.Events/Internals/EventHook.cs:32`  **Low** (downgraded — its premise was [C3](#c3), which does not hold)
 
@@ -221,9 +221,11 @@ The original concern rested on [C3](#c3) — that hooks were effectively root-pr
 
 ---
 
-## C12 — publisher failures are logged and swallowed {#c12}
+## ✅ C12 — publisher failures are logged and swallowed {#c12}
 
 `EfCore/DKNet.EfCore.Events/Internals/EventHook.cs:96-103` and `AuditLogs/Internals/EfCoreAuditHook.cs:63-88`  **Medium — by design, but worth confirming**
+
+**Applied.** **Documented as accepted, no logic change.** `<remarks>` added to `EventHook.AfterSaveAsync` and `EfCoreAuditHook.PublishLogsAsync` stating that publishing happens after commit so a failure cannot roll the write back, that the failure is therefore logged and swallowed and the event or entry is lost, and that consumers needing at-least-once delivery must use a transactional outbox rather than these hooks.
 
 Both hooks catch every exception from a publisher, log it, and continue. So a broker outage means domain events are **silently dropped after the transaction has already committed** — the write succeeds, the event never lands, and nothing downstream knows.
 
@@ -233,9 +235,11 @@ Flagging it as a design decision to make explicitly and document, rather than a 
 
 ---
 
-## C13 — `IdempotencyDbContext` migrations run on the request path {#c13}
+## ✅ C13 — `IdempotencyDbContext` migrations run on the request path {#c13}
 
 `AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs:76-95`  **Low–Medium**
+
+**Applied.** New `IdempotencyMigrationHostedService` registered by both the MsSql and Npgsql setup extensions migrates once at startup. The per-request guard is kept as an explicitly-documented defensive fallback so a host that skips or reorders hosted services still self-heals rather than failing outright, and the connection string is now cached per store instance instead of re-read per call.
 
 `EnsureDatabaseCreatedAsync` is called from both store methods on **every request**. The `ConcurrentDictionary` guard makes the steady state cheap, but the first request after startup runs `GetPendingMigrationsAsync` and possibly `MigrateAsync` **while holding a process-wide `SemaphoreSlim`** — so every concurrent request blocks behind a schema migration, on the request path, with whatever timeout the caller has.
 
@@ -265,9 +269,11 @@ EF Core's contract is that this hash must vary with anything that affects the bu
 
 ---
 
-## C15 — `DataOwnerAuthQuery`'s filter shape defeats index use and plan reuse {#c15}
+## ✅ C15 — `DataOwnerAuthQuery`'s filter shape defeats index use and plan reuse {#c15}
 
 `EfCore/DKNet.EfCore.DataAuthorization/Internals/DataOwnerAuthQuery.cs:60-63`  **Low–Medium**
+
+**Applied.** **Documented as a reviewed trade-off, expression unchanged.** `<remarks>` records the non-sargable `OR`, the variable-length `Contains` plan-cache churn, and that the sargable alternative was considered and deferred because it relocates the unrestricted-access decision into a different mechanism — a security-relevant change needing its own review. It also warns against weakening `IsIgnorable => false` as a side effect.
 
 ```csharp
 return x =>
