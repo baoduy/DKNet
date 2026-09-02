@@ -11,14 +11,15 @@
 ### 1. ALWAYS Load Context First
 Before generating ANY code, you MUST:
 ```
-1. Read /memory-bank/README.md (navigation)
-2. Read /memory-bank/activeContext.md (current focus)
-3. Read /memory-bank/copilot-quick-reference.md (patterns)
-4. Read /memory-bank/systemPatterns.md (detailed patterns)
-5. Read /memory-bank/copilot-rules.md (complete standards)
+1. Read /CLAUDE.md (repo map, architecture, conventions, pitfalls)
+2. Read /src/AGENTS.md (coding, testing and PR conventions)
+3. Read /docs/<Area>/README.md (index of the area you are touching)
+4. Read /docs/<Area>/<Package>.md (API, DI setup and options per package)
 ```
 
-**Priority**: README → activeContext → quick-reference → systemPatterns → copilot-rules
+**Priority**: CLAUDE.md → AGENTS.md → area README → package page
+
+> `/memory-bank/` was removed; `docs/` replaced it.
 
 ### 2. Project-Specific Knowledge
 
@@ -149,9 +150,9 @@ public void MethodName_WhenScenarioOccurs_ThenExpectedOutcome()
 ### 6. Decision Making Guidelines
 
 #### When Asked to Implement a Feature
-1. **Check** `activeContext.md` - Is this aligned with current focus?
-2. **Review** `systemPatterns.md` - What pattern should be used?
-3. **Reference** `copilot-quick-reference.md` - Are there templates?
+1. **Check** `docs/<Area>/<Package>.md` - Does a package already do this?
+2. **Review** `CLAUDE.md` - What pattern should be used?
+3. **Reference** `.claude/skills/dknet-packages` - Which package fits the scenario?
 4. **Generate** code following established patterns
 5. **Include** comprehensive tests (arrange-act-assert)
 6. **Document** with XML comments
@@ -255,8 +256,8 @@ When the user asks about:
 → Explain reasoning
 
 **"What should I do next..."**
-→ Check `activeContext.md` for current priorities
-→ Reference `progress-detailed.md` for roadmap
+→ Check `git log --oneline -20` and open PRs for current priorities
+→ Reference `docs/CHANGELOG.md` for what has shipped
 → Suggest aligned with project goals
 
 ---
@@ -264,11 +265,11 @@ When the user asks about:
 ## Quick Reference for Agent
 
 ### File Priority (Load Order)
-1. `/memory-bank/README.md` - Navigation
-2. `/memory-bank/activeContext.md` - Current work
-3. `/memory-bank/copilot-quick-reference.md` - Quick patterns
-4. `/memory-bank/systemPatterns.md` - Detailed patterns
-5. `/memory-bank/copilot-rules.md` - Complete standards
+1. `/CLAUDE.md` - Repo map, architecture, conventions, pitfalls
+2. `/src/AGENTS.md` - Coding, testing and PR conventions
+3. `/docs/<Area>/README.md` - Area index
+4. `/docs/<Area>/<Package>.md` - Per-package API reference
+5. `/.claude/skills/` - `dknet-packages`, `dknet-codegen`, `dknet-testing`
 
 ### Critical Patterns
 - **Specification Pattern**: Reusable query specifications

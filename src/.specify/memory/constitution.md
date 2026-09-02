@@ -160,7 +160,7 @@ All work MUST pass explicit gates before merge.
 
 **Documentation Gate**:
 - XML docs and file headers present for new public surface
-- Relevant memory-bank and agent guidance updated when standards or focus shift
+- Relevant `docs/` pages and agent guidance (`CLAUDE.md`, `src/AGENTS.md`, `.claude/skills/`) updated when standards or focus shift
 
 **Review Gate**:
 - At least one maintainer/module-owner approval for affected area
@@ -189,11 +189,11 @@ Where guidance conflicts, this document takes precedence.
 - Exceptions MUST be explicit, time-bound, and approved by maintainers.
 
 **Guidance References**:
-- `memory-bank/README.md`
-- `memory-bank/activeContext.md`
-- `memory-bank/copilot-quick-reference.md`
-- `memory-bank/systemPatterns.md`
-- `memory-bank/copilot-rules.md`
-- `AGENTS.md`
+- `CLAUDE.md` (repo root) — architecture, conventions, pitfalls
+- `src/AGENTS.md` — coding, testing and PR conventions
+- `docs/<Area>/README.md` and `docs/<Area>/<Package>.md` — per-package reference
+- `.claude/skills/` — `dknet-packages`, `dknet-codegen`, `dknet-testing`
+
+*(`memory-bank/` was removed; `docs/` replaced it.)*
 
 **Version**: 1.2.0 | **Ratified**: 2026-01-29 | **Last Amended**: 2026-03-16

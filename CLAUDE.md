@@ -9,53 +9,58 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 - **Solution file**: `src/DKNet.FW.sln`
 - **SDK**: pinned by `src/global.json` to `10.0.100` (`rollForward: latestMinor`).
 - **Default branch**: `dev` (integration). `main` is release. Push feature work to a topic branch.
-- **CI**: `.github/workflows/build-test-coverage.yml` runs build → test → coverage → SonarCloud on every PR to `main`/`dev`. Coverage gate: 80% (project-level targets in `TESTING_STRATEGY.md` are stricter).
+- **CI**: `.github/workflows/build-test-coverage.yml` runs build → test → coverage → SonarCloud on every PR to `main`/`dev`. Coverage gate: 80% (per-area targets below are stricter).
 
 ## Top-Level Layout
 
 ```
 /                      Repo root — docs, license, pipelines
 ├── src/               All code. Run dotnet commands from here.
-│   ├── DKNet.FW.sln   Solution aggregating ~40 projects
-│   ├── Core/          DKNet.Fw.Extensions, RandomCreator
-│   ├── EfCore/        Largest area: Abstractions, Specifications, Repos,
-│   │                  Events, Hooks, AuditLogs, Encryption,
-│   │                  DataAuthorization, DtoGenerator (+ Roslyn analyzer)
-│   ├── AspNet/        AspCore.Extensions, AspCore.Idempotency
-│   │                  (+ MsSqlStore), AspCore.Tasks
-│   ├── Services/      BlobStorage.{AzureStorage,AwsS3,Local},
-│   │                  Encryption, PdfGenerators, Transformation
-│   ├── SlimBus/       SlimBus.Extensions (CQRS/messaging glue)
+│   ├── DKNet.FW.sln   Solution aggregating ~55 projects
+│   ├── Core/          Fw.Extensions, RandomCreator
+│   ├── EfCore/        Largest area: Abstractions, Extensions, Specifications,
+│   │                  Events, Hooks, AuditLogs, Encryption, DataAuthorization,
+│   │                  Relational.Helpers, DtoGenerator (Roslyn generator),
+│   │                  Repos + Repos.Abstractions (RETIRED — see docs)
+│   ├── AspNet/        AspCore.Extensions, AspCore.Tasks, AspCore.Idempotency
+│   │                  + Relational, MsSqlStore, NpgsqlStore, RedisStore
+│   ├── Services/      Svc.BlobStorage.{Abstractions,AzureStorage,AwsS3,Local},
+│   │                  Svc.Encryption, Svc.PdfGenerators, Svc.Transformation
+│   ├── SlimBus/       SlimBus.Extensions (CQRS/messaging glue),
+│   │                  SlimBus.Generators (Roslyn generator for [CrudAction])
 │   ├── Aspire/        Aspire.Hosting.ServiceBus
-│   ├── memory-bank/   AI-agent knowledge base (READ FIRST for non-trivial work)
 │   ├── Directory.Build.props      Solution-wide MSBuild settings
 │   ├── Directory.Packages.props   Central package version management
+│   ├── stylecop.json              StyleCop rules + file-header copyright text
 │   └── coverage.runsettings       Coverage collection settings
-├── docs/              User-facing documentation (GitHub Pages)
-├── specs/             Spec-Kit feature specifications
-├── issues/            Pending issue notes (e.g. `1.md` for DtoGenerator work)
+├── docs/              GitHub Pages site AND the reference knowledge base:
+│                      one page per package under Core/, EfCore/, AspNetCore/,
+│                      Services/, Messaging/, Aspire/
+├── .claude/           settings.json + skills/ (DKNet agent skills)
+├── specs/             Spec-Kit feature specifications (historical)
+├── issues/            Pending issue notes
 ├── .github/           CI workflows + `copilot-instructions.md`
 ├── azure-pipelines.yml, ai-pr-review.azure-pipelines.yml
-└── README.md, CONTRIBUTING.md, SECURITY.md, TESTING_STRATEGY.md
+└── README.md, CONTRIBUTING.md, SECURITY.md
 ```
 
 Each package project sits next to a sibling `*.Tests` project (e.g. `DKNet.EfCore.Specifications` ↔ `EfCore.Specifications.Tests`).
 
 ## Authoritative Context (Load Before Editing)
 
-Treat these as primary sources — Claude should read the relevant ones before generating non-trivial code:
+`src/memory-bank/` was **removed** — `docs/` is now the reference knowledge base. Ignore any lingering `memory-bank` pointer in older files.
+
+Treat these as primary sources — read the relevant ones before generating non-trivial code:
 
 | File | Why it matters |
 |---|---|
-| `src/AGENTS.md` | Full coding/testing/PR conventions for this repo (commit format, test patterns, anti-patterns). |
-| `src/memory-bank/README.md` | Index of project context (architecture, current focus, standards). |
-| `src/memory-bank/activeContext.md` | What's actively being worked on right now. |
-| `src/memory-bank/copilot-rules.md`, `src/memory-bank/copilot-quick-reference.md` | Detailed standards and code templates. |
-| `src/memory-bank/libraries/README.md` | Scenario → DKNet package routing for API implementation work. |
-| `.github/copilot-instructions.md` | Mostly overlaps with AGENTS.md. |
-| `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | User-facing reference. |
+| `src/AGENTS.md` | DKNet-only coding/testing/PR conventions (commit format, test patterns). |
+| `docs/<Area>/<Package>.md` | **Per-package reference — the single best source for any package's API, DI setup and options.** e.g. `docs/EfCore/DKNet.EfCore.Specifications.md`, `docs/Messaging/DKNet.SlimBus.Generators.md`. |
+| `docs/<Area>/README.md` | Index of the packages in that area. |
+| `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | Cross-cutting reference. |
+| `.github/copilot-instructions.md` | Condensed Copilot-facing version of AGENTS.md; kept in sync with it. |
 
-When the user asks for a feature in a specific area, load the relevant `memory-bank` doc(s) before generating code rather than guessing patterns.
+When the user asks for a feature in a specific area, read that package's `docs/` page before generating code rather than guessing the API.
 
 ## Common Commands
 
@@ -103,7 +108,7 @@ gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGener
 DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 - **Aggregate roots** (`AggregateRoot` in `DKNet.EfCore.Abstractions`) carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
-- **Repositories** (`DKNet.EfCore.Repos`) abstract persistence and consume **Specifications** (`DKNet.EfCore.Specifications`) — composable query objects whose `Criteria`, `Includes`, and `OrderBy` compose with LinqKit (`.And()`, `.Or()`).
+- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired** — do not build new code on them; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, FilterOperation, value)` triples with type/enum-safe conversion. Required call shape:
   ```csharp
   var predicate = PredicateBuilder.New<Product>()
@@ -113,14 +118,15 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
   ```
   `.AsExpandable()` is mandatory — LinqKit cannot translate the predicate without it. `DynamicAnd`/`DynamicOr` already null-handle internally; do not reintroduce manual null checks.
 - **CQRS via SlimBus** — handlers (`IRequestHandler<TCommand, TResult>`) receive commands, fetch via repos, mutate aggregates, and persist; domain events emit automatically from the aggregate.
-- **Hooks + AuditLogs + Encryption + DataAuthorization** are EF Core SaveChanges interceptors layered on the same `DbContext`. Independent and opt-in via DI extensions on the consuming app.
-- **Idempotency** (`DKNet.AspCore.Idempotency`) is endpoint middleware backed by a pluggable store (`MsSqlStore`); HTTP response-code caching, composite key validation, and exception handling around the cache are part of the *current active development* (see `activeContext.md`).
+- **Source generators** are a first-class surface. `DKNet.SlimBus.Generators` reads `[CrudAction]` on aggregate methods and emits the request + handler + minimal-API endpoint vertical slice; `DKNet.EfCore.DtoGenerator` reads `[GenerateDto]` and emits DTOs. CRUD attributes live in `DKNet.EfCore.Abstractions.Attributes`; `[GenerateDto]` lives in `DKNet.EfCore.DtoGenerator`. **Never hand-write what a generator emits** — see the `dknet-codegen` skill and `docs/Messaging/DKNet.SlimBus.Generators.md`.
+- **Hooks + AuditLogs + Encryption + DataAuthorization** are EF Core SaveChanges interceptors layered on the same `DbContext`. Independent and opt-in via DI extensions on the consuming app. `DataAuthorization` **fails closed**: a `DbContext` that does not implement `IDataOwnerDbContext` throws rather than silently skipping the filter.
+- **Idempotency** (`DKNet.AspCore.Idempotency`) is endpoint middleware over a pluggable store. Four store packages ship: `Relational` (shared base), `MsSqlStore`, `NpgsqlStore`, `RedisStore`. Idempotency keys are attacker-controlled — they are sanitized before logging and before appearing in 409 bodies; keep that sanitization when touching the cache path.
 
 ## Conventions That Trip Up Generated Code
 
 - **Test naming**: `MethodName_Scenario_ExpectedBehavior` (e.g. `DynamicAnd_WithMultipleConditions_CombinesCorrectly`).
 - **Test stack**: xUnit + Shouldly + TestContainers.MsSql; avoid mocking the DB. Use `IAsyncLifetime` fixtures, not shared `IClassFixture` state, when isolation matters.
-- **File header**: every `.cs` file gets the copyright block (template lives in the memory-bank). Don't omit when creating new files.
+- **File header**: every `.cs` file opens with the copyright block — the canonical `copyrightText` is in `src/stylecop.json`, followed by `// Author:`, `// File:`, `// Description:` lines. Copy the header from a neighbouring file in the same project rather than inventing one.
 - **XML docs** are mandatory on all public APIs (`<summary>`, `<param>`, `<returns>`, relevant `<exception>`); `GenerateDocumentationFile=true` makes warnings fatal.
 - **Naming**: private fields `_camelCase`; async methods end in `Async`; extensions live in static classes under `/Extensions`.
 - **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` and `DKNet.EfCore.Repos.SetupRepository` (both `Microsoft.Extensions.DependencyInjection`), `DKNet.Fw.Extensions.AsyncEnumerableExtensions` (`System.Collections.Generic`, filed under `Collections/` on disk), and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
@@ -152,3 +158,15 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 - ❌ `.Result` / `.Wait()` on async calls → deadlock risk.
 - ❌ Adding NuGet package versions in individual csproj files → use `Directory.Packages.props`.
 - ❌ Missing XML docs on a new public API → CI fails (warnings-as-errors).
+- ❌ Hand-writing a request/handler/endpoint that `DKNet.SlimBus.Generators` already emits for `[CrudAction]` → duplicate-type build errors.
+- ❌ Following a `src/memory-bank/...` pointer in an older file → that directory is gone; use `docs/`.
+
+## Repo Skills
+
+`.claude/skills/` holds DKNet-specific skills that load on demand — use them instead of re-deriving:
+
+| Skill | Use when |
+|---|---|
+| `dknet-packages` | Choosing which DKNet package solves a scenario, and which `docs/` page to read. |
+| `dknet-codegen` | Working with `[CrudAction]`, `[GenerateDto]`, or `[FromClaim]` and the generators behind them. |
+| `dknet-testing` | Writing or debugging tests — TestContainers fixtures, ARM64 image fallback, SQL assertions. |
