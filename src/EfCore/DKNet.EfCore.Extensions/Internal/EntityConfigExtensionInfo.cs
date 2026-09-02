@@ -1,7 +1,7 @@
 ﻿namespace DKNet.EfCore.Extensions.Internal;
 
-internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extension)
-    : DbContextOptionsExtensionInfo(extension)
+internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister configRegister)
+    : DbContextOptionsExtensionInfo(configRegister)
 {
     #region Properties
 
@@ -22,7 +22,7 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extensi
         // must hash the same. The assembly list drives the built model, so it must vary the hash -
         // otherwise EF Core can cache/reuse a model built from a different assembly set.
         var assembliesHash = 0;
-        foreach (var assembly in extension.Assemblies)
+        foreach (var assembly in configRegister.Assemblies)
             assembliesHash ^= (assembly.FullName ?? assembly.GetName().Name ?? string.Empty)
                 .GetHashCode(StringComparison.Ordinal);
         hash.Add(assembliesHash);
@@ -39,7 +39,7 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister extensi
 
     public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other) =>
         other is EntityConfigExtensionInfo { Extension: EntityAutoConfigRegister otherExtension } &&
-        extension.Assemblies.ToHashSet().SetEquals(otherExtension.Assemblies);
+        configRegister.Assemblies.ToHashSet().SetEquals(otherExtension.Assemblies);
 
     #endregion
 }

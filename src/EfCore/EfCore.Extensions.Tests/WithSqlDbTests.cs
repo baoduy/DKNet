@@ -56,6 +56,38 @@ public class WithSqlDbTests(PostgresFixture fixture) : IClassFixture<PostgresFix
         val2!.Value.ShouldBeGreaterThan(0L);
     }
 
+    /// <summary>
+    ///     Regression for S16: <c>NextSeqValue</c> used to open the context's connection via
+    ///     <c>Database.OpenConnectionAsync()</c>/<c>CloseConnectionAsync()</c> with no <c>try/finally</c>, so any
+    ///     exception between the two leaked the reference-counted open forever. It now releases the open in a
+    ///     <c>finally</c>. This proves an ambient explicit transaction survives a nested sequence call: the
+    ///     connection stays open, further work on the same transaction succeeds, and the transaction still commits.
+    /// </summary>
+    [Fact]
+    public async Task NextSeqValue_WithinExplicitTransaction_DoesNotCloseAmbientConnection()
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        var user = new User("SeqTxTest") { FirstName = "Seq", LastName = "Tx" };
+        _db.Set<User>().Add(user);
+        await _db.SaveChangesAsync();
+
+        var val = await _db.NextSeqValue<SequencesTest, long>(SequencesTest.Invoice);
+        val!.Value.ShouldBeGreaterThan(0L);
+
+        // The ambient transaction's connection must still be open and usable after the sequence call.
+        _db.Database.GetDbConnection().State.ShouldBe(ConnectionState.Open);
+
+        // Further work on the same transaction must still succeed and be committable.
+        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
+        count.ShouldBe(1);
+
+        await tx.CommitAsync();
+
+        var persisted = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
+        persisted.ShouldBe(1);
+    }
+
     [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {

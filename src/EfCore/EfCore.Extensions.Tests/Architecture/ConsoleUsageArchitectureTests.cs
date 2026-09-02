@@ -44,5 +44,23 @@ public sealed class ConsoleUsageArchitectureTests
             ". Fix by injecting ILogger<T> instead of calling Console.*; do not add the type to the KnownViolations allow-list.");
     }
 
+    [Fact]
+    public void Rule_CanDetectConsoleUsage_OnADeliberateFixture()
+    {
+        // Self-check: ConsoleUsageCanaryFixture (test-only, see its own doc comment) deliberately depends on
+        // System.Console. If this ever passes, NetArchTest can no longer see the dependency, and the rule above
+        // would silently stop enforcing anything.
+        var result = Types.InAssembly(typeof(ConsoleUsageCanaryFixture).Assembly)
+            .That()
+            .HaveName(nameof(ConsoleUsageCanaryFixture))
+            .Should()
+            .NotHaveDependencyOn("System.Console")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeFalse(
+            "The deliberately-offending ConsoleUsageCanaryFixture must still be detected as depending on " +
+            "System.Console; if this assertion fails the enforcement rule can no longer see Console usage and is worthless.");
+    }
+
     #endregion
 }
