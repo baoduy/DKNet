@@ -38,15 +38,23 @@ internal abstract class IdempotencyRelationalStore<TContext>(
     /// </summary>
     private const int ReservationStatusCode = 102;
 
-    // Keyed by connection string rather than a single process-wide flag: a process that targets more
-    // than one database over its lifetime (e.g. per-tenant databases, or multiple test fixtures sharing
-    // one test host) must ensure migrations separately for each one, not skip every database after the
-    // first is ensured. Declared per closed TContext, so each provider gets its own guard.
+    // Migration now runs once at startup via IdempotencyMigrationHostedService, registered by the
+    // MsSql/Npgsql setup extensions. This guard is a cheap defensive fallback only - for a host that
+    // for some reason skips/reorders hosted services, the first request still self-heals the schema
+    // instead of failing outright. Keyed by connection string rather than a single process-wide flag:
+    // a process that targets more than one database over its lifetime (e.g. per-tenant databases, or
+    // multiple test fixtures sharing one test host) must ensure migrations separately for each one, not
+    // skip every database after the first is ensured. Declared per closed TContext, so each provider
+    // gets its own guard.
     private static readonly ConcurrentDictionary<string, bool> DbMigrationsEnsured = new(StringComparer.Ordinal);
     private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
     private readonly IdempotencyOptions _options = options.Value;
     private readonly AsyncServiceScope _scope = serviceProvider.CreateAsyncScope();
+
+    // Cached lazily on first use rather than read from DbContext.Database.GetConnectionString() (which
+    // allocates) on every request; a given store instance always targets the same connection string.
+    private string? _cachedConnectionString;
 
     #endregion
 
@@ -65,10 +73,10 @@ internal abstract class IdempotencyRelationalStore<TContext>(
     /// </summary>
     protected abstract bool IsProviderUniqueViolation(DbUpdateException ex);
 
-    private static async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
+    private async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
         CancellationToken cancellationToken = default)
     {
-        var connectionString = dbContext.Database.GetConnectionString() ?? string.Empty;
+        var connectionString = _cachedConnectionString ??= dbContext.Database.GetConnectionString() ?? string.Empty;
         if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
         await MigrationLock.WaitAsync(cancellationToken).ConfigureAwait(false);

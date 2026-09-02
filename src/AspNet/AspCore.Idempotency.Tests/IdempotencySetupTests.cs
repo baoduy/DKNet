@@ -145,31 +145,36 @@ public class IdempotencySetupTests
     }
 
     [Fact]
-    public void AddIdempotentKey_WithEmptyScopeHmacSecret_ThrowsArgumentException()
+    public void AddIdempotentKey_WithEmptyScopeHmacSecret_ThrowsOptionsValidationExceptionOnResolve()
     {
-        // Arrange
+        // Arrange - the options pattern defers validation to first resolve (or host startup via
+        // ValidateOnStart), not to the AddIdempotentKey call itself.
         var services = new ServiceCollection();
+        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = string.Empty);
+        using var serviceProvider = services.BuildServiceProvider();
+        var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
 
         // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-            services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = string.Empty));
+        var exception = Should.Throw<OptionsValidationException>(() => options.Value);
 
         // Assert
-        exception.ParamName.ShouldBe("ScopeHmacSecret");
+        exception.Failures.ShouldContain(f => f.Contains("ScopeHmacSecret"));
     }
 
     [Fact]
-    public void AddIdempotentKey_WithWhitespaceScopeHmacSecret_ThrowsArgumentException()
+    public void AddIdempotentKey_WithWhitespaceScopeHmacSecret_ThrowsOptionsValidationExceptionOnResolve()
     {
         // Arrange
         var services = new ServiceCollection();
+        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = "   ");
+        using var serviceProvider = services.BuildServiceProvider();
+        var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
 
         // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-            services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = "   "));
+        var exception = Should.Throw<OptionsValidationException>(() => options.Value);
 
         // Assert
-        exception.ParamName.ShouldBe("ScopeHmacSecret");
+        exception.Failures.ShouldContain(f => f.Contains("ScopeHmacSecret"));
     }
 
     #endregion
