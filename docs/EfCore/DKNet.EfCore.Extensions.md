@@ -266,7 +266,7 @@ await db.SaveChangesAsync();
 ### Retry a save on a concurrency conflict
 
 `IEfCoreExceptionHandler` / `EfCoreExceptionHandler` (`Extensions/EfCoreExceptionHandler.cs`) classify a
-`DbUpdateConcurrencyException` into `RetrySaveChanges`, `IgnoreChanges` or `RethrowException`. The default
+`DbUpdateConcurrencyException` into an `EfConcurrencyResolution` value — `RetrySaveChanges`, `IgnoreChanges` or `RethrowException`. The default
 implementation retries (after reloading the DB's current values into `OriginalValues`) only when the
 exception message contains `"but actually affected 0 row(s)"`; anything else is rethrown.
 `EfSaveChangesExtension.SaveChangesWithConcurrencyHandlingAsync` drives the retry loop, bounded by

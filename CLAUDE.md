@@ -109,11 +109,11 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 - **Aggregate roots** (`AggregateRoot` in `DKNet.EfCore.Abstractions`) carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
 - **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired** — do not build new code on them; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
-- **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, FilterOperation, value)` triples with type/enum-safe conversion. Required call shape:
+- **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, Ops, value)` triples with type/enum-safe conversion. Required call shape:
   ```csharp
   var predicate = PredicateBuilder.New<Product>()
       .And(p => p.IsActive)
-      .DynamicAnd(b => b.With("Price", FilterOperations.GreaterThan, 100m));
+      .DynamicAnd("Price", Ops.GreaterThan, 100m);
   var results = await _db.Products.AsExpandable().Where(predicate).ToListAsync();
   ```
   `.AsExpandable()` is mandatory — LinqKit cannot translate the predicate without it. `DynamicAnd`/`DynamicOr` already null-handle internally; do not reintroduce manual null checks.

@@ -142,7 +142,8 @@ and traces a request and a domain event end to end.
 ## Contributing to documentation
 
 Corrections and additions are welcome. Open an issue describing the problem, or send a pull request that
-follows the structure and voice of the surrounding pages — see the [Contributing Guide](Contributing.md).
+follows the structure and voice of the surrounding pages — the canonical page structure is the
+[Package Documentation Template](Package-Doc-Template.md); see also the [Contributing Guide](Contributing.md).
 
 Every claim on these pages should be traceable to `src/`, a test, or a config file. If you find one that
 is not, that is a bug worth reporting in the [DKNet repository](https://github.com/baoduy/DKNet).

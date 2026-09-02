@@ -112,7 +112,7 @@ public enum TokenNotFoundBehavior { LeaveAsIs, Remove, ThrowError } // default: 
 services.AddTransformerService(options => options.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs);
 ```
 
-`ThrowError` (the default) throws `UnResolvedTokenException` on the first token nothing can resolve; `LeaveAsIs` keeps
+`ThrowError` (the default) throws `UnResolvedTokenException` on the first token nothing can resolve; (`InvalidTokenException` is the other exception type in the package — thrown when a `TokenResult` is constructed from text its `ITokenDefinition` rejects, which only surfaces if you build custom extractors); `LeaveAsIs` keeps
 the token text verbatim; `Remove` replaces it with an empty string. A property that exists but holds `null` counts as
 unresolved — there is no way to distinguish "missing" from "null" here.
 

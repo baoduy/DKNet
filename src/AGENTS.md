@@ -47,9 +47,8 @@ dotnet format                             # before opening a PR
 ```csharp
 var predicate = PredicateBuilder.New<Product>()
     .And(p => p.IsActive)
-    .DynamicAnd(b => b
-        .With("Price", FilterOperations.GreaterThan, 100m)
-        .With("CategoryId", FilterOperations.Equal, categoryId));
+    .DynamicAnd("Price", Ops.GreaterThan, 100m)
+    .DynamicAnd("CategoryId", Ops.Equal, categoryId);
 
 var results = await _db.Products.AsNoTracking().AsExpandable()
     .Where(predicate).ToListAsync();

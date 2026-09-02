@@ -161,11 +161,24 @@ wasn't referenced, or the project didn't rebuild) — also thrown at dispatch ti
 ### Declared events (`[RaisesEvent]`)
 
 Besides hand-raising events from code, an entity can *declare* them instead — no `IEventEntity`, no `Entity<TKey>`
-base class required. Declaring is two steps: shape the payload as a
-[DtoGenerator](./DKNet.EfCore.DtoGenerator.md)-generated record via
-`[GenerateDto]`, then apply the repeatable
-`DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` naming that payload, the persistence operation(s)
-(`EventOperations.Created | Updated | Deleted`), and — for `Updated` — an optional narrowing property list:
+base class required. `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` is repeatable: apply it once per event
+the entity raises, naming the persistence operation(s) (`EventOperations.Created | Updated | Deleted`) that raise it.
+
+There are three declaration forms — pick by who owns the payload record:
+
+| Form | Looks like | Payload record | Use when |
+|---|---|---|---|
+| Type-naming | `[RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]` | you write it, `[GenerateDto]` fills it | the payload has a name/shape you care about, or is shared by several rules |
+| Convention, labelled | `[RaisesEvent("Verified", EventOperations.Created)]` | generated for you, name composed | two events on one entity for the same operation need distinct names |
+| Convention, label-less | `[RaisesEvent(EventOperations.Created)]` | generated for you, name composed | the default entity-name-based name is fine |
+
+All three accept the same trailing `params string[] properties` narrowing list (see *Narrowing* below), and the two
+convention forms accept `Include`/`Exclude` to shape the payload they generate.
+
+#### 1. Type-naming form — you name the payload
+
+Shape the payload as a [DtoGenerator](./DKNet.EfCore.DtoGenerator.md)-generated record via `[GenerateDto]`, then
+name that record in the rule:
 
 ```csharp
 using DKNet.EfCore.Abstractions.Events;
@@ -174,7 +187,7 @@ using DKNet.EfCore.DtoGenerator;
 [GenerateDto(typeof(Order))]
 public partial record OrderPlacedEvent;
 
-[GenerateDto(typeof(Order))]
+[GenerateDto(typeof(Order), Exclude = new[] { "InternalNote" })]
 public partial record OrderStatusChangedEvent;
 
 [RaisesEvent(typeof(OrderPlacedEvent), EventOperations.Created)]
@@ -184,25 +197,136 @@ public class Order
 {
     public Guid Id { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string InternalNote { get; set; } = string.Empty;
 }
 ```
 
-`DKNet.EfCore.DtoGenerator` validates these rules at build time (payload/entity match, narrowing property names)
-but emits no runtime code for them — **this package** is what reads `[RaisesEvent]` via reflection (cached per
-entity type, and per entity-type+composed-name for the convention forms) and raises them at save time, exactly per
-the lifecycle described above. A rule naming the same payload for the same operation twice on one entity raises it once.
+The named type must be a `[GenerateDto]` payload generated from the **same** entity carrying the rule
+(`DKRAISEVT002` otherwise). The payload owns its own shape via its own `[GenerateDto]` `Include`/`Exclude` — putting
+`Include`/`Exclude` on a type-naming `[RaisesEvent]` is a build error (`DKRAISEVT011`).
 
-An entity may combine `[RaisesEvent]` declarations with hand-raised `AddEvent(...)` calls in the same class —
-both are published from the same save.
+One payload may serve several rules, as `OrderPlacedEvent` does above for both `Created` and `Deleted`.
 
-**Convention forms**: `[RaisesEvent("Touched", EventOperations.Created)]` (or, label-less,
-`[RaisesEvent(EventOperations.Created)]`) skips the hand-written `[GenerateDto]` payload —
-`DKNet.EfCore.DtoGenerator` generates a default-shape `public partial record` for it in the entity's own namespace,
-named by fixed convention: entity name + label (if any) + sorted narrowing properties + operations (canonical
-order Created, Updated, Deleted) + `Event` — e.g. `CustomerTouchedCreatedEvent`. At runtime, this package composes
-the identical name via the same `EventNameComposer` the build uses, then resolves that generated type by
-reflection from the entity's own assembly and namespace; if it isn't found, the first save that would raise it
-throws `EventException` naming the composed event it looked for.
+#### 2. Convention forms — the name is composed for you
+
+Drop the `typeof(...)` and no hand-written `[GenerateDto]` record is needed: the build generates a default-shape
+`public partial record` in the entity's **own namespace**, named by fixed convention —
+
+> entity name **+** label (if any) **+** narrowing properties (de-duplicated, `Ordinal`-sorted) **+** operations
+> (canonical order `Created`, `Updated`, `Deleted`) **+** the literal `Event`
+
+```csharp
+[RaisesEvent(EventOperations.Created)]                                  // CustomerCreatedEvent
+[RaisesEvent(EventOperations.Updated)]                                  // CustomerUpdatedEvent
+[RaisesEvent(EventOperations.Deleted)]                                  // CustomerDeletedEvent
+public class Customer { /* ... */ }
+```
+
+More declarations and the names they compose:
+
+| Declaration on `Customer` | Generated record |
+|---|---|
+| `[RaisesEvent(EventOperations.Created)]` | `CustomerCreatedEvent` |
+| `[RaisesEvent(EventOperations.Updated)]` | `CustomerUpdatedEvent` |
+| `[RaisesEvent(EventOperations.Deleted)]` | `CustomerDeletedEvent` |
+| `[RaisesEvent(EventOperations.Created \| EventOperations.Updated)]` | `CustomerCreatedUpdatedEvent` |
+| `[RaisesEvent("Touched", EventOperations.Created)]` | `CustomerTouchedCreatedEvent` |
+| `[RaisesEvent(EventOperations.Updated, nameof(Customer.Email))]` | `CustomerEmailUpdatedEvent` |
+| `[RaisesEvent(EventOperations.Updated, nameof(Customer.Name), nameof(Customer.Email))]` | `CustomerEmailNameUpdatedEvent` |
+
+Because the property segment is sorted, reordering the `nameof(...)` arguments never renames the event. The label
+segment is what makes two rules on one entity for the same operation distinct — two declarations composing the same
+name is a build error (`DKRAISEVT008`), never a silent merge.
+
+The generated record is `partial`, so a hand-authored `partial record` of the same name in the same namespace is an
+extension point, not a collision — add computed members to it freely:
+
+```csharp
+[RaisesEvent(EventOperations.Updated, nameof(LoyaltyMembership.Tier))]
+public class LoyaltyMembership
+{
+    public string Tier { get; private set; } = string.Empty;
+}
+
+// Optional — merges into the generated LoyaltyMembershipTierUpdatedEvent partial.
+public partial record LoyaltyMembershipTierUpdatedEvent
+{
+    public string Note => "hand-authored extension";
+}
+```
+
+#### 3. Narrowing an `Updated` rule to specific properties
+
+The trailing `params string[] properties` list narrows an `Updated` rule: the event raises only when **at least one**
+listed property is modified in that save. An empty list means any change qualifies. Use `nameof(...)` — entries must
+be a direct property of the entity, and nested paths fail the build (`DKRAISEVT001`).
+
+```csharp
+[RaisesEvent(typeof(LoyaltyMembershipEvents), EventOperations.Created | EventOperations.Updated, nameof(Points))]
+[RaisesEvent(EventOperations.Updated, nameof(Tier))]   // LoyaltyMembershipTierUpdatedEvent
+public class LoyaltyMembership
+{
+    public int Points { get; private set; }
+    public string Tier { get; private set; } = string.Empty;
+
+    public void AddPoints(int points) => Points += points;
+    public void ChangeTier(string tier) => Tier = tier;
+}
+```
+
+A `Points`-only save raises only `LoyaltyMembershipEvents`; a `Tier` change raises only
+`LoyaltyMembershipTierUpdatedEvent`. Narrowing is evaluated in `BeforeSaveAsync` (via
+`EntityEntry.Property(name).IsModified`) — it cannot be evaluated after the save, which is why the hook captures
+qualifying declarations before the write and publishes them after.
+
+Narrowing on a rule whose operations carry no `Updated` flag has no runtime effect and is reported as a build
+warning (`DKRAISEVT003`).
+
+#### 4. Shaping the composed payload: `Include` / `Exclude`
+
+The convention forms generate the payload, so the shape knob lives on the attribute (the type-naming form has no
+use for these — its record's own `[GenerateDto]` owns the shape, `DKRAISEVT011`):
+
+```csharp
+[RaisesEvent("Registered", EventOperations.Created, Exclude = new[] { nameof(TaxIdentifier) })]
+[RaisesEvent("Summary", EventOperations.Updated, Include = new[] { nameof(Id), nameof(Email) })]
+[RaisesEvent("Contact", EventOperations.Updated, nameof(Email), nameof(Phone), Include = new[] { nameof(Id), nameof(Email), nameof(Phone) })]
+public class Customer
+{
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
+    public string Phone { get; private set; } = string.Empty;
+    public string TaxIdentifier { get; private set; } = string.Empty;
+}
+```
+
+- `Exclude` drops the listed properties from the composed payload; `Include` is the whole truth — only the listed
+  properties survive, and it overrides the project-wide `DtoGeneratorExclusions` list (see
+  [Global exclusions](./GLOBAL_EXCLUSIONS_GUIDE.md)).
+- The two are mutually exclusive on one declaration (`DKRAISEVT009`), and every listed name must be a direct
+  property of the entity (`DKRAISEVT010`).
+- Neither takes part in name composition. Two rules that differ *only* in `Include`/`Exclude` compose the same name
+  and fail the build — give them different labels, as `Registered`/`Summary`/`Contact` do above.
+- `Include`/`Exclude` and narrowing are independent axes: narrowing decides *whether* the event raises,
+  `Include`/`Exclude` decides *what it carries*. The `Contact` rule above uses both.
+
+#### What happens at runtime
+
+`DKNet.EfCore.DtoGenerator` validates these rules at build time and generates the convention-form records, but emits
+no runtime code — **this package** is what reads `[RaisesEvent]` via reflection (cached per entity type, and per
+entity-type + composed-name for the convention forms) and raises them at save time, exactly per the lifecycle
+described above.
+
+- Two rules naming the same payload for the same operation raise it once.
+- An entity may combine `[RaisesEvent]` declarations with hand-raised `AddEvent(...)` calls in the same class — both
+  publish from the same save.
+- Declared events map the entity onto the payload type, so an `IMapper` registration is required; without one, the
+  first save that would raise a declared event throws `EventException`.
+- For the convention forms the runtime composes the identical name via the same `EventNameComposer` the build uses,
+  then resolves that generated type by reflection from the entity's own assembly and namespace. If it isn't found
+  (`DKNet.EfCore.DtoGenerator` not referenced, or a stale build), the first save that would raise it throws
+  `EventException` naming the composed event it looked for — never silently dropped.
 
 ## ⚙️ Configuration reference
 
