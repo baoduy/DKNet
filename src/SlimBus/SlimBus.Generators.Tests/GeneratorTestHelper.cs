@@ -35,8 +35,8 @@ internal static class GeneratorTestHelper
     // AppDomain.CurrentDomain.GetAssemblies() only returns assemblies already loaded into the process.
     // A ProjectReference alone does not force that — .NET loads assemblies lazily on first use — so touch
     // one public type from each reference the test sources need before collecting metadata references.
-    // (DKNet.EfCore.Repos.Abstractions is retired/obsolete and unused by any test source here, so it isn't
-    // force-loaded; its ProjectReference stays for parity with the brief's reference list.)
+    // (DKNet.EfCore.Repos.Abstractions is retired/obsolete and unused by any test source here, so neither it
+    // nor a ProjectReference to it belongs in this project — see RetiredLibraryDependencyBoundaryTests.)
     private static readonly Type[] ForceLoadedAssemblies =
     [
         typeof(DKNet.EfCore.Abstractions.Entities.IEntity<object>),

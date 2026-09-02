@@ -24,13 +24,10 @@ public sealed class DiExtensionSurfaceArchitectureTests
 
     /// <summary>
     ///     Registration extensions that take the concrete <see cref="ServiceCollection" /> today (DRK-906).
-    ///     This allow-list may only shrink: delete an entry when its signature is widened to
-    ///     <see cref="IServiceCollection" />. Do not add to it.
+    ///     Now empty — <c>AddEfCoreEncryption</c>, the last entry, was widened to <see cref="IServiceCollection" />,
+    ///     so the rule is enforced with no exceptions. Do not add to it.
     /// </summary>
-    private static readonly HashSet<string> KnownViolations =
-    [
-        $"{nameof(EfCoreEncryptionSetup)}.{nameof(EfCoreEncryptionSetup.AddEfCoreEncryption)}"
-    ];
+    private static readonly HashSet<string> KnownViolations = [];
 
     #endregion
 

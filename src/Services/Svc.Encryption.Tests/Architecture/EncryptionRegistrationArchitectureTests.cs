@@ -11,94 +11,43 @@ using Shouldly;
 namespace Svc.Encryption.Tests.Architecture;
 
 /// <summary>
-///     Guards the key lifetime of every cipher <c>AddEncryptionServices()</c> registers.
+///     Guards the key lifetime of every cipher reachable through DI.
 ///     A cipher resolved from DI must return the same key on every resolution: a consumer encrypts through
 ///     one injected instance and decrypts through another on a later request, so a key that is regenerated
 ///     per resolution makes the ciphertext permanently unreadable — the key that produced it was never
 ///     persisted and dies with the instance. That is silent data loss, not a failed call.
+///     <para>
+///         DRK-900 closed that hole structurally rather than per-cipher: <c>AddEncryptionServices()</c> now
+///         registers only the keyless hashing services, and every key-bearing cipher is reachable solely through
+///         an <c>Add…Encryption(key)</c> overload that forces the caller to supply a durable key. This class
+///         guards that structure. The key stability of the explicit registrations themselves is covered by
+///         <c>EncryptionSetupAesTests</c> and <c>EdgeCaseTests</c>.
+///     </para>
 /// </summary>
 public sealed class EncryptionRegistrationArchitectureTests
 {
-    #region Fields
-
-    /// <summary>
-    ///     Cipher services registered today with a per-resolution random key (DRK-900). This allow-list may only
-    ///     shrink: delete an entry when its registration is fixed to take an explicit key. Do not add to it —
-    ///     a new entry means a new cipher shipped with the same data-loss defect.
-    /// </summary>
-    private static readonly HashSet<Type> KnownViolations =
-    [
-#pragma warning disable CS0618 // AES-CBC cipher is obsolete but still registered for backward compatibility.
-        typeof(IAesEncryption),
-#pragma warning restore CS0618
-        typeof(IAesGcmEncryption)
-    ];
-
-    #endregion
-
     #region Methods
 
     /// <summary>
-    ///     Every key-bearing cipher registered by <see cref="EncryptionSetup.AddEncryptionServices" /> must hand out
-    ///     the same key on two resolutions, unless it is a known violation being worked off the backlog.
+    ///     <c>AddEncryptionServices()</c> must not register any key-bearing cipher. It once registered them with
+    ///     throwaway per-resolution keys (DRK-79, DRK-900); each now requires the caller to supply the key through
+    ///     <c>AddRsaEncryption</c> / <c>AddAesGcmEncryption</c> / <c>AddAesEncryption</c>. Re-adding a keyless
+    ///     registration here would reintroduce the same unrecoverable-ciphertext defect.
     /// </summary>
     [Theory]
-#pragma warning disable CS0618 // AES-CBC cipher is obsolete but still registered for backward compatibility.
+    [InlineData(typeof(IRsaEncryption))]
+    [InlineData(typeof(IAesGcmEncryption))]
+#pragma warning disable CS0618 // AES-CBC cipher is obsolete but still offered for backward compatibility.
     [InlineData(typeof(IAesEncryption))]
 #pragma warning restore CS0618
-    [InlineData(typeof(IAesGcmEncryption))]
-    public void RegisteredCipher_ShouldResolveWithAStableKey(Type serviceType)
-    {
-        using var provider = new ServiceCollection()
-            .AddEncryptionServices()
-            .BuildServiceProvider();
-
-        var first = ReadKey(provider.GetRequiredService(serviceType));
-        var second = ReadKey(provider.GetRequiredService(serviceType));
-
-        var stable = string.Equals(first, second, StringComparison.Ordinal);
-
-        if (KnownViolations.Contains(serviceType))
-        {
-            stable.ShouldBeFalse(
-                $"{serviceType.Name} is on the KnownViolations allow-list but now resolves with a stable key. " +
-                "That is the fix landing — delete its entry from KnownViolations so the rule is enforced for it.");
-            return;
-        }
-
-        stable.ShouldBeTrue(
-            $"{serviceType.Name} resolves with a different key each time, so data encrypted through one injected " +
-            "instance can never be decrypted through another — the ciphertext is unrecoverable. Register the " +
-            "cipher with an explicit key from configuration or a key vault (see AddRsaEncryption for the shape) " +
-            "instead of letting the container activate a key-generating constructor.");
-    }
-
-    /// <summary>
-    ///     <c>AddEncryptionServices()</c> must not register <see cref="IRsaEncryption" />. It once did, with a
-    ///     throwaway per-resolution key (DRK-79); RSA now requires the caller to supply the key through
-    ///     <c>AddRsaEncryption(privateKeyBase64)</c>. Re-adding a keyless RSA registration would reintroduce
-    ///     the same unrecoverable-ciphertext defect.
-    /// </summary>
-    [Fact]
-    public void AddEncryptionServices_ShouldNotRegisterRsaEncryption()
+    public void AddEncryptionServices_ShouldNotRegisterKeyBearingCipher(Type cipherServiceType)
     {
         var services = new ServiceCollection().AddEncryptionServices();
 
-        services.Any(s => s.ServiceType == typeof(IRsaEncryption)).ShouldBeFalse(
-            "IRsaEncryption must be registered only through AddRsaEncryption(privateKeyBase64), which forces the " +
-            "caller to supply a durable key. A keyless registration here hands every resolution a fresh random " +
-            "key, so anything it encrypts or signs can never be decrypted or verified again.");
-    }
-
-    private static string ReadKey(object cipher)
-    {
-        var key = cipher.GetType().GetProperty("Key")?.GetValue(cipher) as string;
-
-        key.ShouldNotBeNullOrWhiteSpace(
-            $"{cipher.GetType().Name} exposes no readable Key, so this rule cannot check its key lifetime. " +
-            "Either expose the key or drop the type from this test's Theory data.");
-
-        return key!;
+        services.Any(s => s.ServiceType == cipherServiceType).ShouldBeFalse(
+            $"{cipherServiceType.Name} must be registered only through its Add…Encryption(key) overload, which " +
+            "forces the caller to supply a durable key. A keyless registration here hands every resolution a fresh " +
+            "random key, so anything it encrypts or signs can never be decrypted or verified again.");
     }
 
     #endregion
