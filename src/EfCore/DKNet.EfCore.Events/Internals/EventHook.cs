@@ -110,6 +110,17 @@ internal sealed class EventHook(
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>
+    /// <remarks>
+    ///     This runs after the save has already committed, so a publisher failure cannot roll the write
+    ///     back — the transaction is done. By design, each <see cref="IEventPublisher" /> is invoked inside
+    ///     its own try/catch: a failure is logged and swallowed, and that publisher's events are lost — the
+    ///     write succeeds, the event never lands, and nothing downstream is notified. This is an accepted
+    ///     trade-off, not a bug: an event publish failure must not undo a committed write, and once the
+    ///     transaction is closed it cannot. Consumers that need at-least-once delivery cannot rely on this
+    ///     hook; use a transactional outbox instead — write the events to an outbox table from
+    ///     <see cref="BeforeSaveAsync" /> inside the same save transaction, and drain that table with a
+    ///     separate dispatcher.
+    /// </remarks>
     public override async Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
         if (logger is not null && logger.IsEnabled(LogLevel.Information))

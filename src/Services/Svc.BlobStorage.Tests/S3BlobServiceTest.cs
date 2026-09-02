@@ -223,6 +223,35 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     }
 
     [Fact]
+    public async Task ListItemsAsync_MoreThanOnePage_ReturnsAllObjectsAcrossPages()
+    {
+        // Regression for C8: ListItemsAsync used to read only the first ListObjectsV2 page and
+        // silently drop the rest. S3BlobService does not set MaxKeys, so it always requests the
+        // provider's default page size (1000 for both S3 and this Minio image) — there is no
+        // smaller way to make the server truncate the first page, so this genuinely uploads more
+        // than 1000 objects to force a real ContinuationToken round trip rather than merely
+        // asserting happy-path behaviour on a single page.
+        const int objectCount = 1001;
+        var dir = $"paged-{Guid.NewGuid()}";
+
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, objectCount),
+            new ParallelOptions { MaxDegreeOfParallelism = 32 },
+            async (i, ct) =>
+            {
+                var blob = new BlobDetails.BlobData($"{dir}/file{i:D4}.txt", new BinaryData("x"u8.ToArray()))
+                    { Overwrite = true, Type = BlobTypes.File };
+                await _service.SaveAsync(blob, ct);
+            });
+
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.Count.ShouldBe(objectCount);
+    }
+
+    [Fact]
     public async Task DisposeReleasesUnderlyingClientAndIsIdempotent()
     {
         var service = new S3BlobService(Options.Create(fixture.Options), NullLogger<S3BlobService>.Instance);
