@@ -1,6 +1,7 @@
 ﻿using DKNet.Svc.Encryption.Ciphers;
 using DKNet.Svc.Encryption.Hashing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.Svc.Encryption;
 
@@ -18,11 +19,8 @@ public static class EncryptionSetup
     /// </summary>
     public static IServiceCollection AddEncryptionServices(this IServiceCollection services)
     {
-        if (!services.Any(s => s.ServiceType == typeof(IShaHashing)))
-            services.AddTransient<IShaHashing, ShaHashing>();
-
-        if (!services.Any(s => s.ServiceType == typeof(IHmacHashing)))
-            services.AddTransient<IHmacHashing, HmacHashing>();
+        services.TryAddTransient<IShaHashing, ShaHashing>();
+        services.TryAddTransient<IHmacHashing, HmacHashing>();
 
         return services;
     }

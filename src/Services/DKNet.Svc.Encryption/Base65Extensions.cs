@@ -65,16 +65,8 @@ public static class Base64StringExtensions
     /// </summary>
     /// <param name="base64String">The string to check.</param>
     /// <returns>True if the string is a valid Base64 encoded string; otherwise, false.</returns>
-    public static bool IsBase64String(string base64String)
-    {
-        if (string.IsNullOrWhiteSpace(base64String))
-        {
-            return false;
-        }
-
-        Span<byte> buffer = new byte[base64String.Length];
-        return Convert.TryFromBase64String(base64String, buffer, out _);
-    }
+    public static bool IsBase64String(string base64String) =>
+        !string.IsNullOrWhiteSpace(base64String) && Base64.IsValid(base64String);
 
     /// <summary>
     ///     Encodes a given string to its Base64-encoded form.

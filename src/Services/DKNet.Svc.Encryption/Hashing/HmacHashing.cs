@@ -76,11 +76,10 @@ public sealed class HmacHashing : IHmacHashing
 {
     #region Methods
 
-    private static string Compute(
+    private static byte[] ComputeBytes(
         string message,
         string secretKey,
-        HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
-        bool asBase64 = true)
+        HmacAlgorithm algorithm = HmacAlgorithm.Sha256)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         ArgumentException.ThrowIfNullOrWhiteSpace(secretKey);
@@ -89,16 +88,24 @@ public sealed class HmacHashing : IHmacHashing
         var msgBytes = Encoding.UTF8.GetBytes(message);
         try
         {
-            var hash = algorithm == HmacAlgorithm.Sha512
+            return algorithm == HmacAlgorithm.Sha512
                 ? HMACSHA512.HashData(keyBytes, msgBytes)
                 : HMACSHA256.HashData(keyBytes, msgBytes);
-
-            return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash).ToUpperInvariant();
         }
         finally
         {
             CryptographicOperations.ZeroMemory(keyBytes);
         }
+    }
+
+    private static string Compute(
+        string message,
+        string secretKey,
+        HmacAlgorithm algorithm = HmacAlgorithm.Sha256,
+        bool asBase64 = true)
+    {
+        var hash = ComputeBytes(message, secretKey, algorithm);
+        return asBase64 ? Convert.ToBase64String(hash) : Convert.ToHexString(hash);
     }
 
     /// <summary>
@@ -132,10 +139,9 @@ public sealed class HmacHashing : IHmacHashing
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedSignature);
 
-        var actual = Compute(message, secretKey, algorithm, signatureIsBase64);
+        var actualBytes = ComputeBytes(message, secretKey, algorithm);
         try
         {
-            var actualBytes = signatureIsBase64 ? Convert.FromBase64String(actual) : Convert.FromHexString(actual);
             var expectedBytes = signatureIsBase64
                 ? Convert.FromBase64String(expectedSignature)
                 : Convert.FromHexString(expectedSignature);

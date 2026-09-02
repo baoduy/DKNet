@@ -17,9 +17,10 @@ internal enum HashAlgorithmKind
 
 /// <summary>
 ///     Defines SHA hashing operations (SHA-256 and SHA-512) with convenience verification helpers.
-///     Implementations may cache algorithm instances for performance and are disposable.
+///     Implementations are stateless, static-internally wrappers (no cached algorithm instances to
+///     release); <see cref="IDisposable" /> is retained on the interface for backward compatibility.
 /// </summary>
-public interface IShaHashing : IDisposable // now disposable so we can release cached algorithms
+public interface IShaHashing : IDisposable
 {
     #region Methods
 
@@ -83,8 +84,7 @@ public sealed class ShaHashing : IShaHashing
         var bytes = Encoding.UTF8.GetBytes(input);
         var hash = algorithm == HashAlgorithmKind.Sha512 ? SHA512.HashData(bytes) : SHA256.HashData(bytes);
 
-        var hexUpper = Convert.ToHexString(hash);
-        return upperCase ? hexUpper : hexUpper.ToLowerInvariant();
+        return upperCase ? Convert.ToHexString(hash) : Convert.ToHexStringLower(hash);
     }
 
     /// <summary>
