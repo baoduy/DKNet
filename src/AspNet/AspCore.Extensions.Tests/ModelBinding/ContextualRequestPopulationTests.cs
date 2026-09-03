@@ -172,6 +172,24 @@ public class ContextualRequestPopulationTests
         request.TenantId.ShouldBe("acme");
     }
 
+    [Fact]
+    public void Populate_ValueTypeConversionRepeatedAcrossCalls_EachRequestGetsItsOwnCorrectValue()
+    {
+        // Guards the per-type TypeConverter/default-value caches added for P20: a failed conversion on one
+        // call must not leak its cached default into a later call that converts successfully, and vice versa.
+        var service = CreateService();
+        var failed = new GuidClaimCommand();
+        var succeeded = new GuidClaimCommand();
+        var tenantId = Guid.NewGuid();
+
+        service.Populate(failed, CreateHttpContext(new Claim("tenant-id", "not-a-guid")), requireAuthorization: true);
+        service.Populate(
+            succeeded, CreateHttpContext(new Claim("tenant-id", tenantId.ToString())), requireAuthorization: true);
+
+        failed.TenantId.ShouldBe(Guid.Empty);
+        succeeded.TenantId.ShouldBe(tenantId);
+    }
+
     // --- ContextualPopulationOptions ---------------------------------------------------------------------------
 
     [Fact]
