@@ -379,17 +379,33 @@ Two separate causes:
 
 ### An idempotent endpoint is not deduplicating
 
-Two causes:
+Three causes:
 
 - **No store registered.** `.RequiredIdempotentKey()` always adds the filter, but the filter needs an
   `IIdempotencyKeyStore` from `AddIdempotentKey`/`AddIdempotencyWith*Store`; without it the route fails on its
   first request rather than running unprotected.
-- **A second `AddIdempotentKey` call was ignored.** It returns early when a store is already registered, so a
-  later call with different `IdempotencyOptions` has no effect. Register the store once, with the options you
-  want.
+- **A second `AddIdempotentKey` call was ignored.** It returns early when a *named* store is already registered,
+  so a later call with different `IdempotencyOptions` has no effect. Register the store once, with the options you
+  want. (The one exception: a named store does replace the in-process default store that the parameterless
+  `AddIdempotentKey()` registers, in either order — and it is that named call's options that apply.)
+- **It deduplicates on one instance but not across them.** That is the in-process default store: its keys live in
+  one process's memory. Check the startup logs for the warning saying keys are process-local, lost on restart, and
+  not shared between instances, then move to a SQL Server, PostgreSQL, or Redis store for deployed traffic.
 
 If deduplication works but two callers collide or fail to, check the caller scope — see
 [Security](Security.md#idempotency-keys).
+
+### I want to try idempotency locally without a database, cache, or Redis
+
+Call `builder.Services.AddIdempotentKey()` — no type argument, no connection string, no extra package. It
+registers an in-process store that reserves each key atomically within the process, so the filter behaves as it
+will in production for a single instance, and it holds no key past `IdempotencyOptions.Expiration`.
+
+Keys are process-local, lost on restart, and not shared between instances, so it is for local development and unit
+tests only; the app logs one startup warning to that effect while it is the store serving requests. When you
+deploy, add a store package and call its `AddIdempotencyWith*Store(...)` — that named store takes over whichever
+order the two registrations run in, so the `AddIdempotentKey()` call in shared composition code does not have to
+be removed first. See [Choosing a store](AspNetCore/DKNet.AspCore.Idempotency.md#-choosing-a-store).
 
 ---
 

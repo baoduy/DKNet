@@ -136,10 +136,14 @@ Most DKNet registrations are order-independent. These are the exceptions, and ea
   `IdempotencyOptions` the filter depends on. Miss the service call and the endpoint fails at request time when
   the filter cannot be constructed — a loud failure, but only on the first request to that route, so cover it with
   a start-up test rather than relying on the DI container to catch it.
-- **`AddIdempotentKey` is first-registration-wins.** It returns early if an `IIdempotencyKeyStore` is already
-  registered, so a second call with different options is ignored rather than overriding the first. Register the
-  store you want exactly once. The parameterless `AddIdempotentKey()` overload is `[Obsolete]`: its default
-  distributed-cache store is not atomic under concurrency.
+- **`AddIdempotentKey` is first-registration-wins between two named stores.** It returns early if an
+  `IIdempotencyKeyStore` is already registered, so a second call naming a different store, with different options,
+  is ignored rather than overriding the first. Register the store you want exactly once. The one exception is the
+  parameterless `AddIdempotentKey()` overload: it registers an in-process store (no database, cache, or Redis) that
+  any explicitly named store replaces, whichever order the two calls run in — so shared composition code can
+  register it without blocking a real store later. Keys in that store are process-local, lost on restart, and not
+  shared between instances, which makes it a local-development and unit-test default only; the app logs a startup
+  warning while it is the store serving requests.
 - **`AddDbContextWithHook` instead of `AddDbContext`, whenever anything hooks `SaveChanges`.** Domain events,
   audit logs, and ownership stamping all run as hooks; a plain `AddDbContext` registers no hook interceptor, so
   they never fire.

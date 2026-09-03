@@ -56,7 +56,7 @@ and no package exists only to aggregate others.
 | Command/query dispatch and automatic save | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor<TDbContext>()` |
 | Forwarding domain events onto the bus | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEventPublisher<TDbContext>()` |
 | HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](./AspNetCore/DKNet.AspCore.Extensions.md) | `UseEndpointConfigs()` and `.Response()` |
-| Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md) plus one store | `.RequiredIdempotentKey()` on the route |
+| Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
 | Start-up work | [`DKNet.AspCore.Tasks`](./AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob<TJob>()` |
 | Files, PDFs, template tokens, standalone cryptography | [`DKNet.Svc.*`](./Services/README.md) | its own `Add*` method; none of them touch EF Core |
 | Type scanning and framework-agnostic helpers | [`DKNet.Fw.Extensions`](./Core/DKNet.Fw.Extensions.md) | plain static methods, no registration |
