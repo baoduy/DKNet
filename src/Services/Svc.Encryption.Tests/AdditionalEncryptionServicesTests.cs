@@ -116,6 +116,27 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void RsaEncryption_PublicKey_And_PrivateKey_AreStableAcrossRepeatedReads()
+    {
+        // Arrange: PublicKey/PrivateKey now cache their exported, base64-encoded value instead of
+        // re-running ExportRSAPublicKey/ExportRSAPrivateKey on every read. Pin that repeated reads
+        // still return the exact same (byte-identical) value, and that the cached value is correct by
+        // cross-checking it against key material reconstructed independently from it.
+        using var rsa = new RsaEncryption();
+
+        var publicKey1 = rsa.PublicKey;
+        var publicKey2 = rsa.PublicKey;
+        var privateKey1 = rsa.PrivateKey;
+        var privateKey2 = rsa.PrivateKey;
+
+        publicKey1.ShouldBe(publicKey2);
+        privateKey1.ShouldBe(privateKey2);
+
+        using var reconstructed = new RsaEncryption(privateKey1!);
+        reconstructed.PublicKey.ShouldBe(publicKey1);
+    }
+
+    [Fact]
     public void RsaEncryption_EndToEnd_And_PublicKey_Verification()
     {
         using var rsa = new RsaEncryption();

@@ -72,6 +72,8 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
     private readonly RSA _rsa;
 
     private bool _disposed;
+    private string? _privateKeyCache;
+    private string? _publicKeyCache;
 
     #endregion
 
@@ -116,12 +118,13 @@ public sealed class RsaEncryption : IRsaEncryption, IDisposable
     ///     Gets the Base64 encoded private key (PKCS#1 DER) or <c>null</c> if this instance was created from only a public
     ///     key.
     /// </summary>
-    public string? PrivateKey => _hasPrivate ? Convert.ToBase64String(_rsa.ExportRSAPrivateKey()) : null;
+    public string? PrivateKey =>
+        _hasPrivate ? _privateKeyCache ??= Convert.ToBase64String(_rsa.ExportRSAPrivateKey()) : null;
 
     /// <summary>
     ///     Gets the Base64 encoded public key (PKCS#1 DER).
     /// </summary>
-    public string PublicKey => Convert.ToBase64String(_rsa.ExportRSAPublicKey());
+    public string PublicKey => _publicKeyCache ??= Convert.ToBase64String(_rsa.ExportRSAPublicKey());
 
     #endregion
 

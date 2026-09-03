@@ -58,16 +58,12 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
 
         if (cipherData.Length < IvSize + TagSize) throw new ArgumentException("Invalid ciphertext format");
 
-        var iv = new byte[IvSize];
-        var tag = new byte[TagSize];
-        var ciphertextLength = cipherData.Length - IvSize - TagSize;
-        var actualCipherText = new byte[ciphertextLength];
+        // Slice directly into the decoded buffer instead of copying iv/tag/ciphertext into three new arrays.
+        var iv = cipherData.AsSpan(0, IvSize);
+        var tag = cipherData.AsSpan(IvSize, TagSize);
+        var actualCipherText = cipherData.AsSpan(IvSize + TagSize);
 
-        Buffer.BlockCopy(cipherData, 0, iv, 0, IvSize);
-        Buffer.BlockCopy(cipherData, IvSize, tag, 0, TagSize);
-        Buffer.BlockCopy(cipherData, IvSize + TagSize, actualCipherText, 0, ciphertextLength);
-
-        var plaintextBytes = new byte[ciphertextLength];
+        var plaintextBytes = new byte[actualCipherText.Length];
         try
         {
             using var aesGcm = new AesGcm(_key, TagSize);
@@ -91,23 +87,21 @@ public sealed class AesGcmColumnEncryptionProvider : IColumnEncryptionProvider
     {
         if (string.IsNullOrEmpty(plaintext)) return plaintext;
 
-        var iv = new byte[IvSize];
-        RandomNumberGenerator.Fill(iv);
-
         var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
 
-        var ciphertext = new byte[plaintextBytes.Length];
-        var tag = new byte[TagSize];
+        // Write iv/tag/ciphertext straight into their final positions in one buffer instead of
+        // allocating each separately and copying them together afterward.
+        var result = new byte[IvSize + TagSize + plaintextBytes.Length];
+        var iv = result.AsSpan(0, IvSize);
+        var tag = result.AsSpan(IvSize, TagSize);
+        var ciphertext = result.AsSpan(IvSize + TagSize);
+
+        RandomNumberGenerator.Fill(iv);
 
         using (var aesGcm = new AesGcm(_key, TagSize))
         {
             aesGcm.Encrypt(iv, plaintextBytes, ciphertext, tag);
         }
-
-        var result = new byte[iv.Length + ciphertext.Length + tag.Length];
-        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
-        Buffer.BlockCopy(tag, 0, result, iv.Length, tag.Length);
-        Buffer.BlockCopy(ciphertext, 0, result, iv.Length + tag.Length, ciphertext.Length);
 
         return Convert.ToBase64String(result);
     }
