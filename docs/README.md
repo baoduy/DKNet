@@ -50,7 +50,7 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
 | Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) |
 | Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) |
-| Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) plus one store package |
+| Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) on its own for local development, plus one store package for deployed traffic |
 | Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) |
 | Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) plus one adapter |
 | Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) |

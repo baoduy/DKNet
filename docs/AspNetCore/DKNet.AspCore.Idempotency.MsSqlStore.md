@@ -9,9 +9,9 @@ SQL Server-backed `IIdempotencyKeyStore` for
 - **Idempotency keys survive restarts and scale-out** without standing up Redis — they live in a
   SQL Server table alongside your business data, with the same backups and the same operational
   tooling.
-- **Atomic, not best-effort.** The unique index `UX_CompositeKey` makes duplicate-request
-  reservation race-free, closing the check-then-act window the core package's built-in
-  distributed-cache store can only narrow.
+- **Atomic across instances.** The unique index `UX_CompositeKey` makes duplicate-request
+  reservation race-free for every instance sharing the database — the core package's built-in
+  in-process store guarantees that within one process only.
 - **Auditable.** Unlike a Redis store, the processed-key ledger is an ordinary table you can query:
   which key, which endpoint, which verb, what status code, when it expires.
 - **One registration call.** `AddIdempotencyWithMsSqlStore(connectionString)` registers the

@@ -16,7 +16,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
 
-builder.Services.AddDistributedMemoryCache();
+builder.Services.AddIdempotentKey();
 builder.Services
     .AddAuthentication(TestAuthHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, null);

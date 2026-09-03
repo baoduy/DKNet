@@ -71,13 +71,15 @@ Removed along with its `RepositorySpec` implementation. It was already `[Obsolet
 
 **What to do.** Use `BulkDeleteAsync`.
 
-### 🔴 `AddIdempotentKey()` — the parameterless overload
+### 🟢 `AddIdempotentKey()` — the parameterless overload (removed, then re-introduced)
 
-Removed. It was the only public way to select the built-in `IdempotencyDistributedCacheStore`, **which is not atomic under concurrency** — two simultaneous requests with the same key could both proceed.
+Removed earlier in this cycle. It was the only public way to select the built-in `IdempotencyDistributedCacheStore`, **which is not atomic under concurrency** — two simultaneous requests with the same key could both proceed.
 
-**What to do.** Use a store package's extension — `AddIdempotencyWithMsSqlStore`, `AddIdempotencyWithNpgsqlStore`, `AddIdempotencyWithRedisStore` — or implement `IIdempotencyKeyStore` and pass it to `AddIdempotentKey<TStore>()`.
+**Re-introduced in this version, and no longer a breaking change.** `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` is back, and it is not `[Obsolete]`. It now registers a new in-process store that reserves each key atomically, so the concurrency defect that motivated the removal is gone. The store keeps keys in the process's own memory: they are lost on restart and are not shared between instances, so it is a local-development and unit-test default only, never production — the app logs one startup warning to that effect while it is the store actually serving requests. An explicitly named store replaces it whichever order the two registrations run in; between two named stores, first-registration-wins is unchanged.
 
-Since the store types are internal, `IdempotencyDistributedCacheStore` now has no public entry point at all. That is intentional: it was never safe for the job.
+`IdempotencyDistributedCacheStore` itself is now **deleted outright**, superseded by that in-process store. Because every store type is `internal` and the overload had already stopped selecting it, its deletion breaks no consumer.
+
+**What to do.** Nothing, if you already name a store. For local development or unit tests, call `AddIdempotentKey()`. For deployed traffic, use a store package's extension — `AddIdempotencyWithMsSqlStore`, `AddIdempotencyWithNpgsqlStore`, `AddIdempotencyWithRedisStore` — or implement `IIdempotencyKeyStore` and pass it to `AddIdempotentKey<TStore>()`.
 
 ### 🔴 `GetEumInfo()` → `GetEnumInfo()`, `GetEumInfos<T>()` → `GetEnumInfos<T>()`
 
@@ -143,7 +145,7 @@ Collapsing three round trips into one `DownloadContentAsync` wrapped in `catch (
 
 Additionally, `IdempotencyKeyPattern` compiles its `Regex` in the setter, so an **invalid pattern throws when the option is set** rather than on first request.
 
-**What to do.** If you have a test asserting `ArgumentException` from `AddIdempotentKey(...)`, it needs updating. The first-call-wins registration guard is deliberately kept.
+**What to do.** If you have a test asserting `ArgumentException` from `AddIdempotentKey(...)`, it needs updating. The first-call-wins registration guard is deliberately kept between two explicitly named stores; its one exception is the in-process default store, which an explicitly named store replaces whichever order the two registrations run in.
 
 ### 🟠 Idempotency relational store: completion uses `ExecuteUpdateAsync`
 

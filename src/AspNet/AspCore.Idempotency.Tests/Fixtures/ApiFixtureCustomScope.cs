@@ -31,8 +31,11 @@ public sealed class ApiFixtureCustomScope : WebApplicationFactory<ApiTests.Progr
     {
         // Set test environment
         builder.UseEnvironment(Environments.Development);
+        // Program.cs already calls the parameterless AddIdempotentKey() first; naming the store
+        // explicitly here takes the replacement path so this fixture's config (in particular
+        // KeyScopeResolver) actually lands instead of being a no-op second call.
         builder.ConfigureServices(s =>
-            s.AddIdempotentKey<IdempotencyDistributedCacheStore>(c =>
+            s.AddIdempotentKey<IdempotencyInMemoryStore>(c =>
             {
                 c.ConflictHandling = IdempotentConflictHandling.ConflictResponse;
                 c.KeyScopeResolver = _ => "tenant:acme";

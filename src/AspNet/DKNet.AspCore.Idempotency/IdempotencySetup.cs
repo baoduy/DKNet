@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Idempotency;
@@ -38,24 +39,77 @@ public static class IdempotencySetup
     ///     - <see cref="IdempotencyOptions" /> via the options pattern, validated with <c>ValidateOnStart()</c>
     ///     so a misconfiguration still fails fast at application startup rather than on first resolve.
     ///     <para>
-    ///         For concurrency-safe storage prefer an atomic store implementation such as
-    ///         <c>IdempotencySqlServerStore</c>, <c>IdempotencyPostgresStore</c>, or <c>IdempotencyRedisStore</c>.
-    ///         The distributed-cache store is convenient for single-instance or development scenarios but does not
-    ///         eliminate the check-then-act race window.
-    ///     </para>
-    ///     <para>
-    ///         A second call is a complete no-op (including its <paramref name="config" />) once an
-    ///         <see cref="IIdempotencyKeyStore" /> is already registered - the first caller always wins.
+    ///         A named store registered through this overload always wins: if no store is registered yet it is
+    ///         registered as usual; if the parameterless <see cref="AddIdempotentKey(IServiceCollection,Action{IdempotencyOptions}?)" />
+    ///         default (<see cref="IdempotencyInMemoryStore" />) is already registered, it is replaced by
+    ///         <typeparamref name="TSoreImplement" />; if a different named store is already registered, that
+    ///         earlier registration wins and this call is a no-op - first-registration-wins between two named
+    ///         stores is unchanged. Where a default registration is replaced this way, the <paramref name="config" />
+    ///         passed here is applied after the default's own configuration, so it decides any option both set.
     ///     </para>
     /// </remarks>
     public static IServiceCollection AddIdempotentKey<TSoreImplement>(this IServiceCollection services,
         Action<IdempotencyOptions>? config = null) where TSoreImplement : class, IIdempotencyKeyStore
     {
+        var existing = services.FirstOrDefault(s => s.ServiceType == typeof(IIdempotencyKeyStore));
+        if (existing is not null)
+        {
+            if (existing.ImplementationType != typeof(IdempotencyInMemoryStore))
+                return services;
+
+            services.Remove(existing);
+        }
+
+        services.AddSingleton<IIdempotencyKeyStore, TSoreImplement>();
+        ConfigureIdempotencyOptions(services, config);
+
+        return services;
+    }
+
+    /// <summary>
+    ///     Registers idempotency services using the process-local, in-memory default store - no external
+    ///     service, connection string, or type argument required.
+    /// </summary>
+    /// <param name="services">The service collection to register idempotency services into.</param>
+    /// <param name="config">
+    ///     An optional action to configure <see cref="IdempotencyOptions" />.
+    ///     If null, default options are used.
+    /// </param>
+    /// <returns>The service collection for method chaining.</returns>
+    /// <remarks>
+    ///     Registers <see cref="IdempotencyInMemoryStore" /> as the <see cref="IIdempotencyKeyStore" /> and a
+    ///     hosted service that logs a startup warning while it remains the resolved store. That store is
+    ///     process-local and non-durable: idempotency keys are lost on restart and are not shared between
+    ///     instances, so it is intended for local development and unit tests, never production.
+    ///     <para>
+    ///         A second call is a complete no-op (including its <paramref name="config" />) once an
+    ///         <see cref="IIdempotencyKeyStore" /> is already registered - the first caller always wins. A named
+    ///         store registered afterwards via
+    ///         <see cref="AddIdempotentKey{TSoreImplement}(IServiceCollection,Action{IdempotencyOptions}?)" />
+    ///         still replaces this default, whatever registration order.
+    ///     </para>
+    /// </remarks>
+    public static IServiceCollection AddIdempotentKey(this IServiceCollection services,
+        Action<IdempotencyOptions>? config = null)
+    {
         if (services.IsRegistered<IIdempotencyKeyStore>())
             return services;
 
-        services.AddSingleton<IIdempotencyKeyStore, TSoreImplement>();
+        services.AddSingleton<IIdempotencyKeyStore, IdempotencyInMemoryStore>();
+        services.AddSingleton<IHostedService, IdempotencyInMemoryStoreWarning>();
+        ConfigureIdempotencyOptions(services, config);
 
+        return services;
+    }
+
+    /// <summary>
+    ///     Registers <see cref="IdempotencyOptions" /> via the options pattern, applying <paramref name="config" />
+    ///     (when supplied) and the shared validators, with <c>ValidateOnStart()</c> so a misconfiguration fails
+    ///     fast at application startup rather than on first resolve. Shared by both <c>AddIdempotentKey</c>
+    ///     overloads so the validator set is defined once.
+    /// </summary>
+    private static void ConfigureIdempotencyOptions(IServiceCollection services, Action<IdempotencyOptions>? config)
+    {
         var optionsBuilder = services.AddOptions<IdempotencyOptions>();
         if (config is not null)
             optionsBuilder.Configure(config);
@@ -75,8 +129,6 @@ public static class IdempotencySetup
             .Validate(o => o.MinStatusCodeForCaching <= o.MaxStatusCodeForCaching,
                 "MinStatusCodeForCaching cannot be greater than MaxStatusCodeForCaching.")
             .ValidateOnStart();
-
-        return services;
     }
 
     /// <summary>

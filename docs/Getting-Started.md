@@ -157,7 +157,7 @@ end-to-end walkthroughs (an HTTP request and a domain event):
 | A CRUD API with commands and queries separated | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md), then [Examples](Examples/README.md#complete-crud-api-with-cqrs) |
 | Side effects that run after a write commits | [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md), then [A domain event end to end](Architecture.md#a-domain-event-end-to-end) |
 | Row-level isolation between tenants or owners | [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md), then [Examples](Examples/README.md#multi-tenant-application) |
-| A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) plus one store package |
+| A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) on its own for local development, plus one store package for deployed traffic |
 | Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) |
 
 ## Getting help
