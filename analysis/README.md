@@ -12,6 +12,8 @@ Read-only analysis. **No code was changed.** Every finding below is a proposal f
 
 ## Status
 
+**Upgrading a downstream app?** Start with [breaking-changes.md](breaking-changes.md) — the consumer-facing view, derived from the actual public API diff rather than from these findings. It is a major-version set; the retired `DKNet.EfCore.Repos` packages are the largest item.
+
 Every finding in all three reports now carries a state marker:
 
 | Marker | Meaning |
