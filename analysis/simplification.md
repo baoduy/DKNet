@@ -295,22 +295,32 @@ Registering a pre-built `IOptions<T>` instance means repeated registrations stac
 
 ## Replaceable by an already-referenced package
 
-### ❓ S10 — the blob abstraction is buffer-only; keyset helpers duplicate their own dependency {#s10}
+### ✅ S10 — the blob abstraction is buffer-only; ~~keyset helpers duplicate their own dependency~~ {#s10}
+
+**Applied 2026-09-03 (additively — nothing breaks).** `IBlobService` gained `OpenReadAsync(BlobRequest)` and `SaveAsync(BlobStreamData)` as default interface methods with virtual base implementations, so existing implementors keep compiling; all three providers override them with their SDK's streaming API instead of buffering through `BinaryData`. `SizeLimitedStream` enforces the configured size ceiling on non-seekable streams, which buffering previously gave for free. The `BinaryData` overloads are deliberately **not** deprecated — retiring them is the breaking half and belongs in the major-version list ([S20](#s20)).
 
 **Blob (L, breaking).** `IBlobService` exchanges `BinaryData` for both upload and download (`Services/DKNet.Svc.BlobStorage.Abstractions/BlobData.cs`), so every implementation buffers the entire object in memory: `BinaryData.FromStreamAsync` on S3 and local reads, `DownloadContentAsync` on Azure, and `blob.Data.ToStream()` on S3 upload. All three SDKs underneath expose streaming APIs. Adding `Task<Stream> OpenReadAsync(BlobRequest, ...)` and `Task<string> SaveAsync(string name, Stream content, ...)` alongside the existing methods would let large-object callers avoid the buffer without breaking anyone; the `BinaryData` methods become thin wrappers.
 
-**Keyset pagination (M).** `EfCore/DKNet.EfCore.Specifications/Extensions/KeysetQueryExtensions.cs` contains ~130 lines of hand-built `AfterKeyset`/`BeforeKeyset` expression trees for one- and two-key cursors — in a file that *also* references `MR.EntityFrameworkCore.KeysetPagination` (used by `ToKeysetPageAsync` in the same class). The library handles arbitrary key counts, mixed sort directions, and `HasPrevious`/`HasNext`, none of which the hand-rolled pair does.
+**Keyset pagination — ✅ defects fixed, but the "duplicates its own dependency" framing is WITHDRAWN.** I claimed the ~130 hand-built lines in `KeysetQueryExtensions.cs` could be deleted in favour of `MR.EntityFrameworkCore.KeysetPagination`, already referenced in the same file. Decompiling the library (1.6.0) shows it cannot serve these signatures:
 
-Two concrete gaps in the hand-rolled version:
+- `KeysetPaginate(..., object? reference)` resolves cursor values by reflecting over `reference`'s properties and matching by **name**. It needs a real CLR property called e.g. `Id`; there is no bare-`TKey` overload anywhere in its public surface. Bridging `(keySelector, cursor)` to it would mean emitting a type per `(entity, property, key type)` combination — more code than the 40 lines it would replace.
+- An existing test, `AfterKeyset_SingleKey_ComputedKeySelector_TranslatesToPredicateInsteadOfThrowing`, requires these methods to work with computed selectors such as `p => p.Name.Length`. Name-based reference matching cannot express that at all, so the library could not replace the tested contract even ignoring the cursor problem.
+- **My claim that the library "emits row-value comparison where the provider supports it" was false.** Its `KeysetFilterPredicateStrategy.Default` is hardcoded to `KeysetFilterPredicateStrategyMethod1` — OR-of-ANDs, the same shape as the hand-rolled composite predicate, with no provider detection and no `ROW(...)` SQL.
 
-- `Expression.Constant(cursor, typeof(TKey))` (`:249`, `:283`) embeds the cursor as a **literal** in the query, so EF Core emits `WHERE Id > 42` rather than a parameter. Every distinct cursor value produces a distinct SQL string and a distinct server-side plan — plan-cache pollution on a pagination endpoint, which is precisely the high-cardinality case.
-- The composite predicate uses the `k1 > c1 OR (k1 = c1 AND k2 > c2)` form (`:296-303`). Row-value comparison (`(k1, k2) > (c1, c2)`), which the library emits where the provider supports it, is materially more index-friendly.
+What was genuinely wrong, and is now fixed:
+
+- **✅ The cursor was inlined as a literal.** `Expression.Constant(cursor, typeof(TKey))` produced `WHERE Id > 42`, so every distinct cursor yielded distinct SQL and a distinct server-side plan — plan-cache pollution on precisely the high-cardinality pagination path. Now routed through a `CursorBox<TValue>` holder read via `Expression.Property`, the closure shape EF Core's parameter extraction recognises. Verified with `ToQueryString()`: `WHERE "p"."Id" > @Value`, and two different cursor values now produce byte-identical command text.
+- **✅ The composite predicate lacked an index-seek aid.** Not the row-value rewrite I proposed (nothing emits that), but the one real advantage the library does have: a redundant leading bound, `key1 >= cursor1 AND (key1 > cursor1 OR (key1 = cursor1 AND key2 > cursor2))`. Ported, mirrored for the backward direction, and the XML docs that claimed row-value comparison were corrected.
+
+Six tests added (parameter-not-literal both directions, identical command text across two cursors for single and composite keys, leading-bound presence both directions). Suite 412 → 418.
 
 **Effort:** L for blob, M for keyset. **Risk:** blob is a public interface addition (safe) with an eventual deprecation (breaking); keyset is a public API removal.
 
 ---
 
 ### ❓ S11 — `System.Linq.Dynamic.Core` is only needed for the raw-string overloads {#s11}
+
+**Deferred by decision (2026-09-02).** This item is not independent work — it *is* [P4](performance.md#p4). Implementing it means replacing the typed `(property, Ops, value)` path with hand-built expression trees, which touches the dynamic-filter hot path every list endpoint runs. The maintainer chose to keep it in the performance review batch rather than pull it forward, so it stays open here and moves with P4. Revisit after the performance pass.
 
 Covered as [P4](performance.md#p4). Worth restating as a simplification: replacing the typed `(property, Ops, value)` path with hand-built expression trees deletes `BuildClause` (35 lines of string templating), `DangerousExpressionPatterns` + `ValidateExpression` (30 lines of substring blacklist), and the `ParseException` handling in three places — and the package already contains the expression-building idiom it needs, in `Specification.AddOrderBy` and `KeysetQueryExtensions`.
 
