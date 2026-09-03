@@ -15,12 +15,10 @@ using Microsoft.Extensions.Options;
 namespace AspCore.Idempotency.MsSqlStore.Tests.Unit;
 
 /// <summary>
-///     Covers the reserve/complete lifecycle of <see cref="IdempotencySqlServerStore" /> reachable without a
-///     real SQL Server — unique-violation collision handling is not exercised here (SQLite's
-///     <c>SqliteException</c> can no longer satisfy the locale-independent <c>SqlException.Number</c> check;
-///     see the removal note below); that branch is covered by the Testcontainer-backed
-///     <c>IdempotencyIntegrationTests</c> instead. Uses the same file-based SQLite setup so this class runs
-///     without Docker/SQL Server.
+///     Covers the part of <see cref="IdempotencySqlServerStore" />'s lifecycle still reachable without a real
+///     SQL Server — see the removal note below for why that is now only the defensive
+///     <c>MarkKeyAsProcessedAsync</c> branch. Uses a file-based SQLite setup so this class runs without
+///     Docker/SQL Server.
 /// </summary>
 public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
 {
@@ -73,64 +71,22 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
             ExpiresAt = expiresAt
         };
 
-    [Fact]
-    public async Task IsKeyProcessedAsync_FullLifecycle_ReserveThenCompleteReturnsCachedResponse()
-    {
-        // Arrange
-        var keyInfo = new IdempotentKeyInfo
-        {
-            Endpoint = "/api/orders",
-            Method = "POST",
-            IdempotentKey = Guid.NewGuid().ToString()
-        };
-
-        // Act - first call finds nothing and reserves the key
-        var reserved = await _store.IsKeyProcessedAsync(keyInfo);
-
-        var response = CreateResponse(201, "{\"id\":1}", DateTimeOffset.UtcNow.AddHours(1));
-        await _store.MarkKeyAsProcessedAsync(keyInfo, response);
-
-        var completed = await _store.IsKeyProcessedAsync(keyInfo);
-
-        // Assert - reservation reports not-yet-processed, then the completed row replays the cached response
-        reserved.processed.ShouldBeFalse();
-        reserved.response.ShouldBeNull();
-
-        completed.processed.ShouldBeTrue();
-        completed.response.ShouldNotBeNull();
-        completed.response!.StatusCode.ShouldBe(201);
-        completed.response.Body.ShouldBe("{\"id\":1}");
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_WhileReservationInFlight_ReturnsTrueWithNullResponse()
-    {
-        // Arrange
-        var keyInfo = new IdempotentKeyInfo
-        {
-            Endpoint = "/api/orders",
-            Method = "POST",
-            IdempotentKey = Guid.NewGuid().ToString()
-        };
-
-        // Act - reserve, then re-check before anyone completes it
-        await _store.IsKeyProcessedAsync(keyInfo);
-        var inFlight = await _store.IsKeyProcessedAsync(keyInfo);
-
-        // Assert - the caller is told the key is already being processed (409 path), with no cached body yet
-        inFlight.processed.ShouldBeTrue();
-        inFlight.response.ShouldBeNull();
-    }
-
     // IsKeyProcessedAsync_CollisionOnInsert_ReQueryReturnsCompletedResponse and
     // IsKeyProcessedAsync_ExpiredReservationCollision_ReturnsFalseForFreshReservation used to live here,
     // simulating a unique-constraint collision by relying on SQLite's incidental "UNIQUE" message text.
     // Now that IsUniqueViolation (DRK-324/DRK-355) checks SqlException.Number instead, SQLite can no
-    // longer trigger that catch — it was always an implementation detail of the old check, not a
-    // contract. Removed to match IdempotencyPostgresStore's own suite (no SQLite collision-simulation
-    // test there either); the collision branch is exercised for real against SQL Server by the
-    // Testcontainer-backed AspCore.Idempotency.MsSqlStore.Tests.Integration.IdempotencyIntegrationTests.
-    // CreateItem_ConcurrentRequestsWithSameKey_OnlyOneProcessed test (DRK-118, un-skipped by DRK-362).
+    // longer trigger that catch - it was always an implementation detail of the old check, not a contract.
+    //
+    // IsKeyProcessedAsync_FullLifecycle_ReserveThenCompleteReturnsCachedResponse and
+    // IsKeyProcessedAsync_WhileReservationInFlight_ReturnsTrueWithNullResponse followed them for the same
+    // reason once ReserveKeyAsync started reserving by INSERT-first instead of SELECT-then-INSERT: every
+    // repeat call on a key now routes through that same unique-violation catch, so on SQLite the
+    // DbUpdateException escapes instead of being classified. Both are covered end to end against real SQL
+    // Server by the Testcontainer-backed AspCore.Idempotency.MsSqlStore.Tests.Integration
+    // .IdempotencyIntegrationTests - CreateItem_WithSameIdempotencyKey_SecondRequest_ReturnsCachedResponse
+    // (cached replay) and CreateItem_ConcurrentRequestsWithSameKey_OnlyOneProcessed (in-flight conflict,
+    // DRK-118, un-skipped by DRK-362). This matches IdempotencyPostgresStore's own suite, which likewise
+    // keeps no SQLite stand-in for the collision path.
 
     [Fact]
     public async Task MarkKeyAsProcessedAsync_WithoutPriorReservation_CreatesEntityDefensively()
@@ -147,12 +103,16 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
 
         // Act
         await _store.MarkKeyAsProcessedAsync(keyInfo, response);
-        var result = await _store.IsKeyProcessedAsync(keyInfo);
 
-        // Assert
-        result.processed.ShouldBeTrue();
-        result.response.ShouldNotBeNull();
-        result.response!.StatusCode.ShouldBe(204);
+        // Assert - read the row back directly. Re-checking via IsKeyProcessedAsync would reserve by
+        // INSERT and land in the SqlException-only unique-violation catch SQLite cannot satisfy.
+        var factory = _serviceProvider.GetRequiredService<IDbContextFactory<IdempotencyDbContext>>();
+        await using var assertContext = await factory.CreateDbContextAsync();
+        var stored = await assertContext.IdempotencyKeys.AsNoTracking()
+            .SingleAsync(k => k.IdempotentKey == keyInfo.IdempotentKey);
+
+        stored.StatusCode.ShouldBe(204);
+        stored.Body.ShouldBeNull();
     }
 
     #endregion
