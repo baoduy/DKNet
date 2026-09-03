@@ -275,7 +275,7 @@ if (!services.Any(s => s.ServiceType == typeof(IFoo))) services.AddScoped<IFoo, 
 Two of these guards have a behavioural wrinkle worth deciding on rather than preserving by accident:
 
 - `SpecSetup.AddSpecRepo<TDbContext>` guards on `IRepositorySpec` being registered at all, so a **second** call with a *different* `TDbContext` silently does nothing. If multi-context support is intended, the guard needs to be per-context (keyed, as the hook and audit registrations already do).
-- `IdempotencySetup.AddIdempotentKey<TStore>` guards on `IIdempotencyKeyStore` and therefore also discards the second call's `IdempotencyOptions` — `AspCore.Idempotency.Tests/IdempotencySetupTests.cs:23-24` documents this as intended ("first wins"), so it is deliberate; a comment saying so at the call site would help.
+- `IdempotencySetup.AddIdempotentKey<TStore>` guards on `IIdempotencyKeyStore` and therefore also discards the second call's `IdempotencyOptions` — `AspCore.Idempotency.Tests/IdempotencySetupTests.cs:23-24` documents this as intended ("first wins"), so it is deliberate; a comment saying so at the call site would help. The guard now carries one deliberate exception that `TryAdd*` could not express: a named store replaces the in-process default store registered by the parameterless `AddIdempotentKey()`, whichever order the two calls run in.
 
 **Effort:** S. **Risk:** low, provided the two guards above are treated as decisions rather than mechanical replacements.
 
@@ -381,7 +381,7 @@ Already correctly marked `[Obsolete]`; listing them so the next major version ha
 | ✅ `AddAesEncryption` | `Services/DKNet.Svc.Encryption/EncryptionSetup.cs:33` | Registers the above |
 | ✖ ~~`RequestBase`~~ | `SlimBus/DKNet.SlimBus.Extensions/RequestBase.cs` | **Recommendation withdrawn — keep it.** Not a duplicate awaiting removal: its `[Obsolete]` message says it is deliberately "retained for existing consumers", and `AspCore.Extensions.Tests` has a test (`ConfigureGroup_ManualByUserStamping_RequestBaseBasedCommand_StampedByUserReachesHandler`) that exists specifically to guarantee the pre-DRK-565 manual-stamping pattern still works, with a `#pragma warning disable CS0618` to use it. Deleting ~15 lines is not worth breaking a tested migration path |
 | ✅ `IRepositorySpec.DeleteRange` | `EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs:60` | **Applied.** Superseded by `BulkDeleteAsync`; interface member and `RepositorySpec` implementation removed. No test called it directly (the misleadingly-named `DeleteRange_WithMultipleEntities_ShouldDeleteAll` test actually exercised `BulkDeleteAsync`, left as-is). |
-| ✅ `AddIdempotentKey()` (no type arg) | `AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs:41` | Defaults to the non-atomic `IdempotencyDistributedCacheStore` |
+| ✖ ~~`AddIdempotentKey()` (no type arg)~~ | `AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs` | **Recommendation withdrawn — keep it.** The overload was removed, then re-introduced: it is no longer `[Obsolete]` and no longer defaults to `IdempotencyDistributedCacheStore`, which is now deleted. It registers an in-process store that reserves each key atomically — process-local and non-durable, so a local-development and unit-test default, never production |
 | ✅ `DKNet.EfCore.Repos`, `DKNet.EfCore.Repos.Abstractions` | `EfCore/` | Documented as retired in `CLAUDE.md`; the projects are still in the solution |
 
 **Effort:** S. **Risk:** breaking by definition — this is a major-version list.

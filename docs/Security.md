@@ -110,11 +110,18 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md).
 - **Register the store, and register it once.** `.RequiredIdempotentKey()` always adds the filter, but the filter
   cannot be constructed unless `AddIdempotentKey`/`AddIdempotencyWith*Store` registered an
-  `IIdempotencyKeyStore` — the route then fails on its first request. `AddIdempotentKey` is also
-  first-registration-wins: a second call with different options is silently ignored, so a stricter `Expiration`
-  or a `ScopeHmacSecret` added later may never take effect. Cover the registration with a start-up test.
-- **The default distributed-cache store is not atomic.** The parameterless `AddIdempotentKey()` is `[Obsolete]`
-  for that reason; use the SQL Server, PostgreSQL, or Redis store, which reserve the key atomically.
+  `IIdempotencyKeyStore` — the route then fails on its first request. Between two named stores
+  `AddIdempotentKey` is first-registration-wins: a second call with different options is silently ignored, so a
+  stricter `Expiration` or a `ScopeHmacSecret` added later may never take effect. Cover the registration with a
+  start-up test.
+- **The parameterless `AddIdempotentKey()` is a local-development default, not a deployment one.** Its in-process
+  store reserves each key atomically, so it is not a concurrency hazard — but the keys live in one process's
+  memory: they are lost on restart and not shared between instances. A multi-instance deployment left on it keeps
+  one ledger per instance and therefore loses cross-instance idempotency, letting the same key be processed once
+  per instance. That is an operational failure rather than an attack surface — the store holds only process-own
+  memory, opens no listener, takes no credential, and adds no configuration input. The mitigation is the startup
+  warning the app logs while that store is the one serving requests: treat it as a deployment defect and switch to
+  the SQL Server, PostgreSQL, or Redis store, which reserve the key atomically across instances.
 
 ## Your responsibilities
 

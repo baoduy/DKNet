@@ -8,9 +8,9 @@ PostgreSQL-backed `IIdempotencyKeyStore` for
 
 - **Idempotency keys survive restarts and are shared safely across instances**, without adding
   Redis to a stack that already runs PostgreSQL.
-- **Atomic, not best-effort.** The unique index `UX_CompositeKey` makes duplicate-request
-  reservation race-free, closing the check-then-act window the core package's built-in
-  distributed-cache store can only narrow.
+- **Atomic across instances.** The unique index `UX_CompositeKey` makes duplicate-request
+  reservation race-free for every instance sharing the database — the core package's built-in
+  in-process store guarantees that within one process only.
 - **Auditable.** The processed-key ledger is an ordinary table you can query by endpoint, verb,
   status code, or expiry — something a Redis keyspace cannot give you.
 - **Multi-tenant friendly.** Migrations and the "database is ready" guard are tracked per

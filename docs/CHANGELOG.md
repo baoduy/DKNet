@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FAQ and best practices section
 - `Base64StringExtensions`' five methods (`DKNet.Svc.Encryption`) are now `this string` extension methods;
   existing static-style call sites still compile.
+- Non-generic `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` (`DKNet.AspCore.Idempotency`) enables
+  idempotency with no store named and no infrastructure at all — no database, cache, Redis, or connection string.
+  It registers a new in-process store that reserves each key atomically within the process, adds no options
+  (it reuses `Expiration` and `InFlightReservationTimeout`) and no package reference, and holds no key past its
+  `Expiration`. Keys are process-local, lost on restart, and not shared between instances, so it is for local
+  development and unit tests only; the app logs one startup warning saying so while it is the store serving
+  requests. An explicitly named store replaces it whichever order the two registrations run in, so existing
+  registrations keep behaving exactly as before.
 
 ### Changed
 - Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
@@ -95,9 +103,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **An `ISpecification<TEntity>` implementation that does not derive from `Specification<TEntity>` is no longer
   supported**, and the legacy "all ascending clauses applied first, then all descending" fallback ordering is gone —
   that path produced different SQL than the declared-sequence path for the same specification.
-- **Breaking:** the obsolete parameterless `AddIdempotentKey(...)` overload (`DKNet.AspCore.Idempotency`), which
-  defaulted to `IdempotencyDistributedCacheStore`. Call `AddIdempotentKey<TStoreImplement>()` and pick a store
-  explicitly.
+- `IdempotencyDistributedCacheStore` (`DKNet.AspCore.Idempotency`), the `IDistributedCache`-backed store whose
+  check-then-act reservation was never atomic. Not a breaking change: the type was `internal` and no public
+  registration selected it. The parameterless `AddIdempotentKey()` overload that used to default to it is **not**
+  removed — it now registers the atomic in-process store described under [Added](#added).
 - **Breaking:** `EnumExtensions.GetEumInfos<T>()`/`GetEumInfo()` (`DKNet.Fw.Extensions`) renamed to
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 

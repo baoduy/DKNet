@@ -13,8 +13,8 @@ Redis-backed `IIdempotencyKeyStore` for
   path of every idempotency-protected request.
 - **Expiry is free.** Both the in-flight reservation window and the completed-response lifetime are
   Redis TTLs, so there is no cleanup job to host — unlike the relational stores, which need one.
-- **Built for horizontal scale.** Unlike the core package's built-in distributed-cache store, this
-  one is safe for multi-instance production traffic.
+- **Built for horizontal scale.** Unlike the core package's built-in in-process store, whose keys
+  never leave one process, this one is safe for multi-instance production traffic.
 
 Reach for Redis over a relational store when you already run Redis and want the lowest-latency
 option with no schema to manage. See
@@ -204,7 +204,8 @@ using `SET NX` for reservation and Redis TTLs instead of SQL rows and scheduled 
   `AddIdempotentKey<IdempotencyRedisStore>(...)` is not something app code can write —
   `AddIdempotencyWithRedisStore(...)` is the only way to wire this store in. The public
   `AddIdempotencyRedisStore(...)` overloads register the Redis infrastructure *only*; on their own
-  they leave the core package's default store in place.
+  they leave whatever `IIdempotencyKeyStore` is already registered in place — the core package's
+  in-process default store, if that is all the app registered.
 - **`AddIdempotencyRedisStore(connectionString)` also registers `IDistributedCache`** (via
   `AddStackExchangeRedisCache`) even though this store does not use it — it talks to
   `IConnectionMultiplexer` directly. Harmless, but it is a service registration you did not ask

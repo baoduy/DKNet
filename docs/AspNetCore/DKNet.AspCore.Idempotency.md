@@ -12,8 +12,8 @@ protecting `POST`/`PUT`/`PATCH` handlers from network retries, double-clicks, an
   key value can be reused safely across different endpoints, verbs, or principals without colliding.
 - **Two conflict strategies** – Choose whether a duplicate request gets the original response replayed back
   (`CachedResult`) or an explicit `409 Conflict` (`ConflictResponse`, the default).
-- **Pluggable storage** – The filter talks to an `IIdempotencyKeyStore` abstraction. Ship with the built-in
-  distributed-cache store, or swap in an atomic store from the ecosystem (see
+- **Pluggable storage** – The filter talks to an `IIdempotencyKeyStore` abstraction. Start on the built-in
+  in-process store with no infrastructure at all, or name an atomic store from the ecosystem (see
   [Choosing a store](#-choosing-a-store)).
 - **Minimal API-native** – A single `.RequiredIdempotentKey()` call on a `RouteHandlerBuilder` is all that's needed
   to protect an endpoint.
@@ -32,11 +32,11 @@ using DKNet.AspCore.Idempotency;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// AddIdempotentKey<TStore>() only accepts a store you can name. For a ready-made, atomic store, register one of
-// the provider packages below instead (AddIdempotencyWithMsSqlStore/NpgsqlStore/RedisStore) — each one calls
-// AddIdempotentKey<TStore> for you with its own internal store type. MyIdempotencyKeyStore here is a public
-// IIdempotencyKeyStore you write yourself (see "Pluggable store abstraction" below for the full contract).
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>();
+// No store named: idempotency runs on the package's in-process store — no database, no cache, no Redis, no
+// connection string. Keys are process-local, lost on restart, and not shared between instances, so this is for
+// local development and unit tests only. For deployed traffic, call a provider package's own
+// AddIdempotencyWithMsSqlStore/NpgsqlStore/RedisStore instead (see "Choosing a store" below).
+builder.Services.AddIdempotentKey();
 
 var app = builder.Build();
 
@@ -49,19 +49,26 @@ await app.RunAsync();
 Callers now must send an `X-Idempotency-Key` header on `POST /orders`. A retry with the same header value gets a
 `409 Conflict` (default) instead of creating a second order.
 
-> **Every shipped store type is `internal`.** `IdempotencyDistributedCacheStore` here, and
+> **Every shipped store type is `internal`.** The in-process default store used by `AddIdempotentKey()` above, and
 > `IdempotencySqlServerStore`/`IdempotencyPostgresStore`/`IdempotencyRedisStore` in the sibling packages, are all
-> internal implementation details — this package exposes no public way to select any of them directly.
-> `AddIdempotentKey<TStore>()` can only name a store *you* declare (`TStore` must be accessible at your call site);
-> to use a shipped one, call its package's own `AddIdempotencyWithXxxStore(...)` extension instead, which registers
-> the internal store type for you. There used to be a non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)`
-> overload that defaulted to the built-in `IdempotencyDistributedCacheStore` — **it has been removed.**
-> `IdempotencyDistributedCacheStore` itself still exists and still works exactly as before, but with the overload
-> gone there is no public entry point left to select it: implement your own `IIdempotencyKeyStore` wrapping
-> `IDistributedCache` if you want that same trade-off (single-instance/dev, not atomic under concurrency), or prefer
-> one of the atomic store packages below. Every `AddIdempotentKey<TStore>()` sample on this page therefore uses
-> `MyIdempotencyKeyStore`, a public `IIdempotencyKeyStore` of your own (see
-> [Pluggable store abstraction](#pluggable-store-abstraction)).
+> internal implementation details — you never name one. `AddIdempotentKey()` (no type argument) selects the
+> in-process default; `AddIdempotencyWithXxxStore(...)` on a provider package selects that package's store; and
+> `AddIdempotentKey<TStore>()` can only name a store *you* declare (`TStore` must be accessible at your call site —
+> see [Pluggable store abstraction](#pluggable-store-abstraction)).
+>
+> **The in-process default is process-local by design.** Its reservations are genuinely atomic *within one process*,
+> so two concurrent requests carrying the same key can never both reach the handler. But its keys live in that
+> process's own memory: they are lost on restart and are not shared between instances, and the memory it holds is
+> bounded by the keys still inside the configured `Expiration` window. That makes it right for local development and
+> unit tests — **never for production**, where two instances would each keep their own idempotency ledger. While it
+> is the store actually serving requests, the app logs one startup warning saying exactly that; naming any other
+> store silences it.
+>
+> **An explicitly named store always wins over the default, in either registration order.** Calling
+> `AddIdempotentKey()` and then `AddIdempotencyWithMsSqlStore(...)` (or the reverse) leaves the SQL Server store
+> serving requests — so shared composition code can register the default without blocking a test fixture or a
+> deployed environment from layering a real store on top. Between two explicitly *named* stores, first registration
+> still wins.
 
 ## 🧩 Features
 
@@ -105,7 +112,7 @@ app.MapPost("/orders", CreateOrder)
 `IdempotencyOptions.ConflictHandling` controls what a client sees when the same composite key is reused:
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     // Default: tell the client explicitly that this was already processed.
     options.ConflictHandling = IdempotentConflictHandling.ConflictResponse; // 409 Conflict
@@ -125,7 +132,7 @@ or in `AdditionalCacheableStatusCodes` are cached; everything else (validation e
 unrecorded so a genuinely failed attempt can be retried as a new request:
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     // Also remember 201-with-redirect-style responses outside the 2xx window, e.g. 226.
     options.AdditionalCacheableStatusCodes.Add(226);
@@ -143,7 +150,7 @@ Two different callers sending the identical idempotency key to the identical end
 4. Otherwise, an empty scope (all anonymous callers share one scope for that key/endpoint/method).
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     options.ScopeHmacSecret = builder.Configuration["Idempotency:HmacSecret"];
     options.IncludeClientIpInScope = true; // last-resort fallback for fully anonymous callers
@@ -158,7 +165,7 @@ Supply your own resolver to bypass the default chain entirely — useful for mul
 key, or any other principal your app already tracks:
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     options.KeyScopeResolver = ctx => ctx.Request.Headers["X-Tenant-Id"].FirstOrDefault();
 });
@@ -222,7 +229,7 @@ public sealed class MyIdempotencyKeyStore : IIdempotencyKeyStore
     }
 }
 
-// Register it in place of the built-in store:
+// Register it in place of the in-process default store:
 builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>();
 ```
 
@@ -252,13 +259,13 @@ upper-invariant when the filter builds one:
 
 ### In-flight reservation window
 
-While a handler is still running for a brand-new key, the built-in store writes a short-lived reservation record
-(HTTP `102 Processing` sentinel) so a concurrent duplicate sees "already in flight" instead of also slipping through
-as new. `InFlightReservationTimeout` (default 30 seconds) bounds how long that reservation is honored before a crashed
-or hung handler stops blocking retries of the same key:
+While a handler is still running for a brand-new key, every shipped store — the in-process default included —
+writes a short-lived reservation record (HTTP `102 Processing` sentinel) so a concurrent duplicate sees "already in
+flight" instead of also slipping through as new. `InFlightReservationTimeout` (default 30 seconds) bounds how long
+that reservation is honored before a crashed or hung handler stops blocking retries of the same key:
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     options.InFlightReservationTimeout = TimeSpan.FromSeconds(10); // fail fast for quick handlers
 });
@@ -271,7 +278,7 @@ builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 as brand-new again:
 
 ```csharp
-builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
+builder.Services.AddIdempotentKey(options =>
 {
     options.CachePrefix = "checkout-idem";
     options.Expiration = TimeSpan.FromHours(24);
@@ -281,7 +288,9 @@ builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 ## ⚙️ Configuration reference
 
 All options live on `IdempotencyOptions`, configured via the `Action<IdempotencyOptions>` passed to
-`AddIdempotentKey<TStore>()`.
+`AddIdempotentKey()`, `AddIdempotentKey<TStore>()`, or a provider package's `AddIdempotencyWithXxxStore(...)`. The
+in-process default store adds no options of its own — it reuses `Expiration` and `InFlightReservationTimeout`, and
+holds no key past its `Expiration`.
 
 | Option | Default | Purpose |
 |---|---|---|
@@ -299,7 +308,7 @@ All options live on `IdempotencyOptions`, configured via the `Action<Idempotency
 | `ScopeHmacSecret` | `null` | Enables the `Authorization`-header HMAC fallback in the default scope chain. |
 | `IncludeClientIpInScope` | `false` | Enables the client-IP fallback in the default scope chain. |
 
-`AddIdempotentKey<TStore>()` registers `IdempotencyOptions` through the options pattern with ten `.Validate(...)`
+Both `AddIdempotentKey()` overloads register `IdempotencyOptions` through the options pattern with ten `.Validate(...)`
 rules (empty header key, empty cache prefix, non-positive expiration, an out-of-range status window, a null
 `JsonSerializerOptions`, etc.) plus `.ValidateOnStart()`. That means misconfiguration no longer throws at
 registration time — it throws `OptionsValidationException` when the host **starts** (before it begins serving
@@ -317,12 +326,12 @@ before.
 ## 🗄️ Choosing a store
 
 This package owns the endpoint filter, options, and the store *contract* (`IIdempotencyKeyStore`). It ships exactly
-one store implementation — `IdempotencyDistributedCacheStore`, built on `IDistributedCache` — and four sibling
-packages provide alternatives with stronger concurrency guarantees:
+one store implementation — an in-process store for local development and unit tests — and four sibling packages
+provide alternatives that hold keys outside the process:
 
 | Store | Package | How you select it | Atomicity | Infra cost | Best for |
 |---|---|---|---|---|---|
-| Distributed cache (built-in) | `DKNet.AspCore.Idempotency` | Not selectable — `IdempotencyDistributedCacheStore` is `internal` and this package no longer exposes any public registration for it | Narrows, does not eliminate, the check-then-act race | None beyond an `IDistributedCache` you may already have | Single-instance apps, local dev, low-traffic endpoints — implement your own thin `IIdempotencyKeyStore` over `IDistributedCache` to get this trade-off |
+| In-process (built-in default) | `DKNet.AspCore.Idempotency` | `AddIdempotentKey()` — no type argument | Atomic, but only within one process | None at all — no database, cache, Redis, or connection string | Local development and unit tests. Keys are process-local, lost on restart, and not shared between instances, so never production |
 | Relational (base) | [`DKNet.AspCore.Idempotency.Relational`](DKNet.AspCore.Idempotency.Relational.md) | Not selectable — every type in it is `internal` and its `InternalsVisibleTo` list is closed | Atomic via a unique index / insert-or-query pattern | Shared EF Core building blocks for the two SQL stores below | Nothing to register; read it only to add a *new* relational provider inside this repo |
 | SQL Server | [`DKNet.AspCore.Idempotency.MsSqlStore`](DKNet.AspCore.Idempotency.MsSqlStore.md) | `AddIdempotencyWithMsSqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing SQL Server database | Apps already running SQL Server that want an auditable, queryable idempotency table |
 | PostgreSQL | [`DKNet.AspCore.Idempotency.NpgsqlStore`](DKNet.AspCore.Idempotency.NpgsqlStore.md) | `AddIdempotencyWithNpgsqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing PostgreSQL database | Apps already running PostgreSQL, same trade-offs as the SQL Server store |
@@ -331,13 +340,11 @@ packages provide alternatives with stronger concurrency guarantees:
 
 Guidance:
 
-- **The built-in distributed-cache store is a single-instance/development trade-off, not something you can select
-  directly anymore.** It logs a startup warning to that effect
-  (`IdempotencyDistributedCacheStore is not atomic under concurrent load.`), and `IDistributedCache` has no atomic
-  compare-and-set primitive — it narrows the check-then-act race window with a short-lived in-flight reservation but
-  cannot close it the way a database unique index can. The type is `internal` and this package no longer exposes
-  any public entry point for it (the non-generic `AddIdempotentKey(...)` overload that used to default to it was
-  removed); reach for it only by writing your own equivalent `IIdempotencyKeyStore` over `IDistributedCache`.
+- **Start on the in-process default store** (`AddIdempotentKey()`) while you are developing or unit-testing: it
+  needs no infrastructure and reserves each key atomically, so the filter behaves exactly as it will in production
+  for a single process. What it does not do is survive a restart or reach a second instance — the keys live in that
+  process's own memory. It logs one startup warning saying so while it is the store serving requests, which is what
+  makes an accidental multi-instance deployment on it visible; naming any other store silences the warning.
 - **Do not plan on subclassing `DKNet.AspCore.Idempotency.Relational`.** Every type in it is `internal`, and its
   `InternalsVisibleTo` list names only the two in-repo provider packages and their test projects. A store of your own
   implements `IIdempotencyKeyStore` directly, the way the Redis store does.
@@ -348,15 +355,15 @@ Guidance:
 - **Pick Redis** when you need the lowest latency and highest throughput (no database round-trip / query planner),
   you're scaling horizontally across many instances, or you'd rather avoid owning a migrated table at all. Redis's
   native atomic commands give the same all-or-nothing guarantee as a unique index without a schema.
-- **TTL/expiry**: the built-in store relies on the backing `IDistributedCache`'s own absolute-expiration support
-  (`Expiration` is passed straight through) — if that cache backend evicts entries early under memory pressure, the
-  eviction is silent and the key is simply treated as new again. Redis TTLs expire keys natively with the same
-  "silently becomes new" behavior once the TTL elapses. Relational stores need an explicit expiry column and a
-  cleanup strategy (a scheduled sweep or query filter) because SQL Server/PostgreSQL rows don't expire themselves —
-  see each store's page for its approach.
-- **Concurrency**: only the relational and Redis stores give a true atomic guarantee against two simultaneous
-  requests for the same key both slipping through as "new". The distributed-cache store's reservation placeholder
-  narrows but does not close that window.
+- **TTL/expiry**: the in-process store drops each key once `Expiration` has elapsed and releases the memory with it,
+  so the same key is treated as brand-new again — and the memory it holds is bounded by the keys still inside that
+  window. Redis TTLs expire keys natively with the same "silently becomes new" behavior once the TTL elapses.
+  Relational stores need an explicit expiry column and a cleanup strategy (a scheduled sweep or query filter)
+  because SQL Server/PostgreSQL rows don't expire themselves — see each store's page for its approach.
+- **Concurrency**: every shipped store reserves a key atomically, so two simultaneous requests for the same key can
+  never both slip through as "new". The difference is scope, not correctness: the in-process store guarantees that
+  within one process only, while the relational and Redis stores guarantee it across every instance sharing the
+  database or Redis.
 
 The four store pages link back to this section instead of repeating the comparison — update it here first.
 
@@ -365,9 +372,10 @@ The four store pages link back to this section instead of repeating the comparis
 - **Default conflict handling is `409`, not replay.** If you expect a duplicate request to transparently get the
   original response back, you must opt into `ConflictHandling = IdempotentConflictHandling.CachedResult` — the
   default explicitly tells the caller the request was already processed.
-- **The built-in store is not safe for multi-instance production traffic.** It only narrows, not eliminates, the
-  race between checking and reserving a key. Use a relational or Redis store (above) once you run more than one
-  instance or expect real concurrent duplicate traffic.
+- **The in-process default store is not safe for multi-instance production traffic.** Its atomicity stops at the
+  process boundary: two instances each keep their own key ledger, so the same key can be processed once per
+  instance, and a restart forgets every key it held. Use a relational or Redis store (above) as soon as you run
+  more than one instance. The startup warning it logs is there to catch exactly that deployment mistake.
 - **A store failure during the duplicate check is not caught.** `IsKeyProcessedAsync` runs with no surrounding
   try/catch in the filter, so a store outage (e.g. cache/DB unavailable) propagates as an unhandled exception and
   the request fails — there is currently no configurable fail-open/fail-closed toggle for this path. By contrast,
@@ -376,19 +384,17 @@ The four store pages link back to this section instead of repeating the comparis
   replay.
 - **Minimal APIs only.** `RequiredIdempotentKey()` extends `RouteHandlerBuilder`, so it wires up through
   `app.MapPost(...)`/`MapPut(...)` etc. It is not something you attach to an MVC controller action via attributes.
-- **`AddIdempotentKey<TStore>()` is call-once-wins, config delegate included.** If it's called more than once (e.g.
-  by two library extension methods, or by an app calling it after a store package's own
-  `AddIdempotencyWithXxxStore(...)`), the first call's store registration sticks *and* only the first call's `config`
-  delegate ever runs — a second call's `config` is silently never invoked, not merged, not overridden. Validation
-  failures now surface via `OptionsValidationException` when the host starts (`ValidateOnStart()`), not at the
-  moment `AddIdempotentKey<TStore>()` runs.
-- **The non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)` overload has been removed.** It used to default
-  to the built-in `IdempotencyDistributedCacheStore` when no store was named. There is no replacement overload —
-  every caller must now name a store type explicitly, either your own `IIdempotencyKeyStore` (`AddIdempotentKey<TStore>()`)
-  or a shipped provider package's own `AddIdempotencyWithXxxStore(...)` (which internally calls
-  `AddIdempotentKey<TStore>()` with its own internal store type). If you were relying on the old default, the closest
-  equivalent is now writing your own thin `IIdempotencyKeyStore` over `IDistributedCache`.
-- **Cache keys are hashed, not human-readable.** The built-in store's cache key is `CachePrefix` + a SHA-256 hex
+- **Registration between two *named* stores is call-once-wins, config delegate included.** If a named store is
+  registered more than once (e.g. by two library extension methods, or by an app calling
+  `AddIdempotentKey<TStore>()` after a store package's own `AddIdempotencyWithXxxStore(...)`), the first call's
+  store registration sticks *and* only the first call's `config` delegate ever runs — a second call's `config` is
+  silently never invoked, not merged, not overridden. Validation failures surface via `OptionsValidationException`
+  when the host starts (`ValidateOnStart()`), not at the moment the registration call runs.
+- **The in-process default is the one exception to call-once-wins.** A named store registered *after*
+  `AddIdempotentKey()` replaces the default rather than being ignored, and it is that named registration's `config`
+  delegate that decides any option both calls set. In the other direction, `AddIdempotentKey()` called when any
+  store is already registered is a complete no-op — including its `config`.
+- **Cache keys are hashed, not human-readable.** The in-process store's key is `CachePrefix` + a SHA-256 hex
   digest of the composite key — you cannot reconstruct the original key/scope/endpoint from the cache key alone;
   rely on structured logs (which log the raw composite key) if you need to trace a specific request.
 

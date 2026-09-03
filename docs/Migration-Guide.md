@@ -13,7 +13,7 @@ This guide helps you migrate between different versions of DKNet Framework and p
   - [`DKNet.Svc.Encryption` / `DKNet.EfCore.Encryption` — removed types and hashing signatures](#dknetsvcencryption--dknetefcoreencryption--removed-types-and-hashing-signatures)
   - [`DKNet.EfCore.Specifications` — ordering model, `DeleteRange`, and return types](#dknetefcorespecifications--ordering-model-deleterange-and-return-types)
   - [`DKNet.Fw.Extensions` — removed and renamed members](#dknetfwextensions--removed-and-renamed-members)
-  - [`DKNet.AspCore.Idempotency` — explicit store required](#dknetaspcoreidempotency--explicit-store-required)
+  - [`DKNet.AspCore.Idempotency` — no store needed for local development](#dknetaspcoreidempotency--no-store-needed-for-local-development)
   - [`DKNet.Svc.BlobStorage.Abstractions` — `IncludedExtensions` is now `IReadOnlyList<string>`](#dknetsvcblobstorageabstractions--includedextensions-is-now-ireadonlyliststring)
 - [Architecture migration](#architecture-migration)
 - [CQRS migration](#cqrs-migration)
@@ -407,16 +407,25 @@ previously forced `DateTimeKind.Local`), and `TypeExtractor`'s fluent filters (`
 no longer mutate shared state, so branching one extractor into two filtered results now works instead of both
 branches coming back empty.
 
-### DKNet.AspCore.Idempotency — explicit store required
+### DKNet.AspCore.Idempotency — no store needed for local development
 
-**Before**
+No code change is required: every existing registration keeps working exactly as it did.
+
+`services.AddIdempotentKey()` — no type argument, no connection string — is supported and enables idempotency end
+to end on a new in-process store:
+
 ```csharp
 using DKNet.AspCore.Idempotency;
 
-services.AddIdempotentKey(); // defaulted to the internal, non-atomic IdempotencyDistributedCacheStore
+services.AddIdempotentKey();                                  // optional: AddIdempotentKey(o => ...)
 ```
 
-**After** — pick a store package and call its own registration method (each internally wires up
+That store reserves each key atomically within the process, so two concurrent requests with the same key can never
+both reach the handler. It keeps those keys in the process's own memory, which means they are lost on restart and
+are not shared between instances — it is for local development and unit tests, never for production. While it is
+the store serving requests, the app logs one startup warning saying exactly that.
+
+For deployed traffic, pick a store package and call its own registration method (each internally wires up
 `AddIdempotentKey<TSoreImplement>()` with its own store type, which is `internal` and cannot be named directly):
 ```csharp
 using DKNet.AspCore.Idempotency.MsSqlStore;   // or .NpgsqlStore / .RedisStore
@@ -426,17 +435,24 @@ services.AddIdempotencyWithMsSqlStore(builder.Configuration.GetConnectionString(
 // services.AddIdempotencyWithRedisStore(connectionString);
 ```
 
-If you specifically want to keep the old in-memory/`IDistributedCache`-backed behaviour without adding a store
-package, implement `IIdempotencyKeyStore` yourself and register it with the still-public generic method:
+A named store like that one wins over the no-store default whichever order the two calls run in, and it is the
+named registration's `config` delegate that decides any option both set. So shared composition code can call
+`AddIdempotentKey()` unconditionally and a test fixture or deployed environment can still layer a real store on
+top. Between two explicitly *named* stores, first registration wins, as before.
+
+**If you hand-wrote an `IIdempotencyKeyStore` purely to get a no-infrastructure store for local development or
+tests, you can delete it** and call `AddIdempotentKey()` instead. Keep a store of your own only when it backs onto
+something the shipped stores do not cover; `AddIdempotentKey<TSoreImplement>()` is unchanged and still registers it:
+
 ```csharp
 using DKNet.AspCore.Idempotency;
 using DKNet.AspCore.Idempotency.Store;
 
-services.AddIdempotentKey<MyDistributedCacheIdempotencyStore>(); // your own IIdempotencyKeyStore implementation
+services.AddIdempotentKey<MyIdempotencyKeyStore>();           // your own IIdempotencyKeyStore implementation
 ```
 
-`AddIdempotentKey<TSoreImplement>()` itself is unchanged — only the parameterless overload that silently defaulted
-to an internal store type is gone.
+`IdempotencyDistributedCacheStore`, the old `IDistributedCache`-backed store, is deleted. It was `internal` with no
+public registration left, so nothing that compiled before stops compiling.
 
 Separately, informational only — no code change needed: idempotency schema migration
 (`DKNet.AspCore.Idempotency.Relational`) now runs once at application startup via a hosted service instead of on
