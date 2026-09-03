@@ -1,4 +1,6 @@
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 
 namespace DKNet.AspCore.Idempotency;
@@ -27,6 +29,15 @@ public enum IdempotentConflictHandling
 /// </summary>
 public sealed class IdempotencyOptions
 {
+    #region Fields
+
+    private string _idempotencyKeyPattern = @"^[a-zA-Z0-9\-_]+$";
+    private Regex _idempotencyKeyRegex = new(@"^[a-zA-Z0-9\-_]+$");
+    private string? _scopeHmacSecret;
+    private byte[]? _scopeHmacSecretBytes;
+
+    #endregion
+
     #region Properties
 
     /// <summary>
@@ -69,7 +80,26 @@ public sealed class IdempotencyOptions
     ///     Keys that don't match this pattern will be rejected with a 400 Bad Request.
     ///     Default pattern allows alphanumeric characters, hyphens, and underscores (UUID v4 compatible).
     /// </summary>
-    public string IdempotencyKeyPattern { get; set; } = @"^[a-zA-Z0-9\-_]+$";
+    /// <remarks>
+    ///     Setting this property compiles the pattern into a <see cref="Regex" /> instance once, held on
+    ///     <see cref="IdempotencyKeyPatternRegex" />, instead of every request paying for the static
+    ///     <see cref="Regex.IsMatch(string, string)" /> overload's per-call pattern hash and cache lookup.
+    /// </remarks>
+    public string IdempotencyKeyPattern
+    {
+        get => _idempotencyKeyPattern;
+        set
+        {
+            _idempotencyKeyRegex = new Regex(value);
+            _idempotencyKeyPattern = value;
+        }
+    }
+
+    /// <summary>
+    ///     Gets the compiled <see cref="Regex" /> for <see cref="IdempotencyKeyPattern" />, recomputed once
+    ///     whenever the pattern is set rather than on every request.
+    /// </summary>
+    internal Regex IdempotencyKeyPatternRegex => _idempotencyKeyRegex;
 
     /// <summary>
     ///     Gets or sets how long an in-flight reservation placeholder is honoured before being treated as
@@ -124,9 +154,24 @@ public sealed class IdempotencyOptions
     /// </summary>
     /// <remarks>
     ///     The raw secret and the raw header value are never logged or emitted; only the resulting digest
-    ///     is used as part of the scope.
+    ///     is used as part of the scope. Setting this property UTF8-encodes the secret once, held on
+    ///     <see cref="ScopeHmacSecretBytes" />, instead of every request re-encoding the same string.
     /// </remarks>
-    public string? ScopeHmacSecret { get; set; }
+    public string? ScopeHmacSecret
+    {
+        get => _scopeHmacSecret;
+        set
+        {
+            _scopeHmacSecretBytes = string.IsNullOrWhiteSpace(value) ? null : Encoding.UTF8.GetBytes(value);
+            _scopeHmacSecret = value;
+        }
+    }
+
+    /// <summary>
+    ///     Gets the UTF8-encoded bytes of <see cref="ScopeHmacSecret" />, computed once when the secret is
+    ///     set rather than on every request. <c>null</c> when no secret is configured.
+    /// </summary>
+    internal byte[]? ScopeHmacSecretBytes => _scopeHmacSecretBytes;
 
     /// <summary>
     ///     Gets or sets a value indicating whether the client's remote IP address is used as a scope fallback

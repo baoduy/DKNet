@@ -104,20 +104,6 @@ internal sealed class IdempotencyKeyEntity
     #region Methods
 
     /// <summary>
-    ///     Overwrites this reservation placeholder with the final, completed response.
-    ///     Used to turn an in-flight reservation row into the durable cached result once the
-    ///     protected handler has finished, mirroring the constructor's field assignments.
-    /// </summary>
-    /// <param name="response">The completed response to store.</param>
-    internal void Complete(CachedResponse response)
-    {
-        StatusCode = response.StatusCode;
-        Body = response.Body;
-        ContentType = response.ContentType;
-        ExpiresAt = response.ExpiresAt;
-    }
-
-    /// <summary>
     ///     Sanitizes an idempotency key for use as a database key by hashing it.
     ///     Hashing (rather than stripping characters) guarantees structurally distinct
     ///     composite keys never collapse onto the same database key.

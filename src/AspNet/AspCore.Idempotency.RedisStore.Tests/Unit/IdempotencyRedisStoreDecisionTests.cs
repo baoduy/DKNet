@@ -18,16 +18,14 @@ namespace AspCore.Idempotency.RedisStore.Tests.Unit;
 
 /// <summary>
 ///     Proves <see cref="IdempotencyRedisStore" />'s reservation/collision decision logic deterministically by
-///     stubbing <see cref="IConnectionMultiplexer" />/<see cref="IDatabase" /> - no live Redis involved. Mirrors the
-///     branch table from the ticket: reservation acquired, in-flight collision, completed collision, gone/expired
-///     collision, and the expired-entry delete path.
+///     stubbing <see cref="IConnectionMultiplexer" />/<see cref="IDatabase" /> - no live Redis involved. Covers the
+///     branch table for the single-round-trip <c>SET NX GET</c> reservation (<c>StringSetAndGetAsync</c>):
+///     reservation acquired, in-flight collision, completed collision, and the expired-entry delete-then-retry path.
 /// </summary>
 /// <remarks>
-///     Setup/Verify calls below intentionally use the same argument arity as <see cref="IdempotencyRedisStore" />
-///     itself (e.g. the 4-arg reservation <c>StringSetAsync(key, value, expiry, when)</c> vs. the 3-arg
-///     unconditional <c>StringSetAsync(key, value, expiry)</c>): <see cref="IDatabase" /> overloads
-///     <c>StringSetAsync</c> on argument count, so matching arity is what pins Moq to the exact overload the
-///     store actually calls.
+///     Setup/Verify calls below target the exact overload <see cref="IdempotencyRedisStore" /> calls -
+///     <c>StringSetAndGetAsync(key, value, expiry, keepTtl, when, flags)</c> - so matching arity is what pins Moq
+///     to the right overload the store actually calls.
 /// </remarks>
 public sealed class IdempotencyRedisStoreDecisionTests
 {
@@ -76,19 +74,20 @@ public sealed class IdempotencyRedisStoreDecisionTests
             ExpiresAt = expiresAt
         };
 
-    /// <summary>Setup for the reservation attempt: <c>StringSetAsync(key, value, expiry, when)</c>.</summary>
-    private void SetupReservationAttempt(bool reserved) =>
-        _database.Setup(d => d.StringSetAsync(
-                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), When.NotExists))
-            .ReturnsAsync(reserved);
+    /// <summary>Sets up the atomic <c>SET NX GET</c> call to return <paramref name="previous" /> in sequence.</summary>
+    private void SetupReservationAttempt(params RedisValue[] previous)
+    {
+        var sequence = _database.SetupSequence(d => d.StringSetAndGetAsync(
+            It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(),
+            When.NotExists, It.IsAny<CommandFlags>()));
+        foreach (var value in previous) sequence = sequence.ReturnsAsync(value);
+    }
 
     [Fact]
     public async Task IsKeyProcessedAsync_NoExistingEntry_ReservesAtomicallyAndReturnsFalse()
     {
-        // Arrange - no cached entry, and the SET NX succeeds (this caller wins the reservation)
-        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null);
-        SetupReservationAttempt(true);
+        // Arrange - SET NX GET reports no previous value: this call reserved the key.
+        SetupReservationAttempt(RedisValue.Null);
 
         // Act
         var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
@@ -96,21 +95,19 @@ public sealed class IdempotencyRedisStoreDecisionTests
         // Assert
         result.processed.ShouldBeFalse();
         result.response.ShouldBeNull();
-        _database.Verify(d => d.StringSetAsync(
-            It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), _options.InFlightReservationTimeout, When.NotExists),
+        _database.Verify(d => d.StringSetAndGetAsync(
+                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), _options.InFlightReservationTimeout,
+                It.IsAny<bool>(), When.NotExists, It.IsAny<CommandFlags>()),
             Times.Once);
     }
 
     [Fact]
     public async Task IsKeyProcessedAsync_ReservationCollidesWithInFlightEntry_ReturnsTrueWithNullResponse()
     {
-        // Arrange - initial read finds nothing, SET NX fails (another caller reserved first), re-read finds
-        // that caller's still-active reservation (HTTP 102 sentinel).
+        // Arrange - SET NX GET reports another caller's still-active reservation (HTTP 102 sentinel) as the
+        // pre-existing value, in the same round trip that attempted our own reservation.
         var reservation = CreateResponse(102, DateTimeOffset.UtcNow.AddSeconds(30));
-        _database.SetupSequence(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null)
-            .ReturnsAsync((RedisValue)Serialize(reservation));
-        SetupReservationAttempt(false);
+        SetupReservationAttempt((RedisValue)Serialize(reservation));
 
         // Act
         var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
@@ -123,12 +120,9 @@ public sealed class IdempotencyRedisStoreDecisionTests
     [Fact]
     public async Task IsKeyProcessedAsync_ReservationCollidesWithCompletedEntry_ReturnsCachedResponse()
     {
-        // Arrange - the competing caller already finished and stored its response.
+        // Arrange - SET NX GET reports the competing caller's already-completed response.
         var completed = CreateResponse(201, DateTimeOffset.UtcNow.AddHours(1));
-        _database.SetupSequence(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null)
-            .ReturnsAsync((RedisValue)Serialize(completed));
-        SetupReservationAttempt(false);
+        SetupReservationAttempt((RedisValue)Serialize(completed));
 
         // Act
         var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
@@ -140,33 +134,13 @@ public sealed class IdempotencyRedisStoreDecisionTests
     }
 
     [Fact]
-    public async Task IsKeyProcessedAsync_ReservationCollisionButEntryGoneOnReread_ReturnsFalseWithNullResponse()
+    public async Task IsKeyProcessedAsync_CollidesWithExpiredEntry_DeletesEntryAndRetriesReservation()
     {
-        // Arrange - SET NX fails, but the competing entry has already been evicted/expired-out of Redis by the
-        // time we re-read it. The caller is allowed to proceed as if it were new.
-        _database.SetupSequence(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null)
-            .ReturnsAsync(RedisValue.Null);
-        SetupReservationAttempt(false);
-
-        // Act
-        var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
-
-        // Assert
-        result.processed.ShouldBeFalse();
-        result.response.ShouldBeNull();
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_ReservationCollisionWithExpiredEntry_DeletesEntryAndReturnsFalse()
-    {
-        // Arrange - the competing entry is logically expired (IsExpired) though still physically present;
-        // the store must delete it before reporting the caller can proceed.
+        // Arrange - the pre-existing value is logically expired (IsExpired) though still physically present in
+        // Redis (TTL hasn't fired yet). The store must delete it, then retry the atomic SET NX GET, which this
+        // time reserves cleanly.
         var expired = CreateResponse(200, DateTimeOffset.UtcNow.AddHours(-1));
-        _database.SetupSequence(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null)
-            .ReturnsAsync((RedisValue)Serialize(expired));
-        SetupReservationAttempt(false);
+        SetupReservationAttempt((RedisValue)Serialize(expired), RedisValue.Null);
         _database.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).ReturnsAsync(true);
 
         // Act
@@ -176,63 +150,10 @@ public sealed class IdempotencyRedisStoreDecisionTests
         result.processed.ShouldBeFalse();
         result.response.ShouldBeNull();
         _database.Verify(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_ExistingExpiredEntryOnInitialRead_DeletesThenReserves()
-    {
-        // Arrange - the first read (before any SET NX attempt) already finds an expired entry.
-        var expired = CreateResponse(200, DateTimeOffset.UtcNow.AddHours(-1));
-        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync((RedisValue)Serialize(expired));
-        _database.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).ReturnsAsync(true);
-        SetupReservationAttempt(true);
-
-        // Act
-        var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
-
-        // Assert
-        result.processed.ShouldBeFalse();
-        result.response.ShouldBeNull();
-        _database.Verify(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_ExistingInFlightReservation_ReturnsTrueWithNullResponseWithoutReserving()
-    {
-        // Arrange - the very first read already finds a live in-flight reservation - no SET NX should be
-        // attempted at all.
-        var reservation = CreateResponse(102, DateTimeOffset.UtcNow.AddSeconds(30));
-        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync((RedisValue)Serialize(reservation));
-
-        // Act
-        var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
-
-        // Assert
-        result.processed.ShouldBeTrue();
-        result.response.ShouldBeNull();
-        _database.Verify(d => d.StringSetAsync(
-            It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<When>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task IsKeyProcessedAsync_ExistingCompletedEntry_ReturnsCachedResponseWithoutReserving()
-    {
-        // Arrange
-        var completed = CreateResponse(200, DateTimeOffset.UtcNow.AddHours(1));
-        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync((RedisValue)Serialize(completed));
-
-        // Act
-        var result = await CreateStore().IsKeyProcessedAsync(MakeKey());
-
-        // Assert
-        result.processed.ShouldBeTrue();
-        result.response.ShouldNotBeNull();
-        result.response!.StatusCode.ShouldBe(200);
-        _database.Verify(d => d.StringSetAsync(
-            It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<When>()), Times.Never);
+        _database.Verify(d => d.StringSetAndGetAsync(
+                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(),
+                When.NotExists, It.IsAny<CommandFlags>()),
+            Times.Exactly(2));
     }
 
     [Fact]
@@ -245,10 +166,12 @@ public sealed class IdempotencyRedisStoreDecisionTests
         var expectedHash =
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(keyInfo.CompositeKey))).ToLowerInvariant();
         RedisKey? capturedKey = null;
-        _database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .Callback<RedisKey, CommandFlags>((key, _) => capturedKey = key)
+        _database.Setup(d => d.StringSetAndGetAsync(
+                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(),
+                When.NotExists, It.IsAny<CommandFlags>()))
+            .Callback<RedisKey, RedisValue, TimeSpan?, bool, When, CommandFlags>((key, _, _, _, _, _) =>
+                capturedKey = key)
             .ReturnsAsync(RedisValue.Null);
-        SetupReservationAttempt(true);
 
         // Act
         await CreateStore().IsKeyProcessedAsync(keyInfo);
