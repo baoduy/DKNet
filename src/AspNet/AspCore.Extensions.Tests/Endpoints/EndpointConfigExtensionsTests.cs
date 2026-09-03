@@ -648,6 +648,39 @@ public class EndpointConfigExtensionsTests
         await strictApp.StopAsync();
     }
 
+    // --- Contextual population filter is skipped when no parameter declares a source (P16) --------------------
+
+    [Fact]
+    public async Task Endpoint_NoParameterDeclaresAContextualSource_PopulationServiceIsNeverInvoked()
+    {
+        // ValidatedCommand declares no [FromClaim] (or other IContextualSource) member. Before the fix, the
+        // population filter was installed on every endpoint regardless, and unconditionally resolved
+        // IContextualRequestPopulationService and called Populate(...) for every non-null argument. The spy
+        // below proves that no longer happens: the factory now returns 'next' unchanged for this endpoint, so
+        // the filter is never installed and Populate is never reached.
+        var builder = CreateBuilder();
+        AddTestAuth(builder, o => o.Authenticated = true);
+        var spy = new CountingPopulationService();
+        builder.Services.AddScoped<IContextualRequestPopulationService>(_ => spy);
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync("/v1/probe/validated", new ValidatedCommand { Name = "x" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        spy.CallCount.ShouldBe(0);
+        await app.StopAsync();
+    }
+
+    private sealed class CountingPopulationService : IContextualRequestPopulationService
+    {
+        public int CallCount { get; private set; }
+
+        public void Populate(object request, HttpContext httpContext, bool requireAuthorization) => CallCount++;
+    }
+
     // --- Startup diagnostics reach the host log, not the console ------------------------------------------------
 
     [Fact]

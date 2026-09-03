@@ -20,7 +20,7 @@ public static class RandomCreators
     /// <returns>A character array containing randomly generated characters.</returns>
     public static char[] NewChars(int length = 25, StringCreatorOptions? options = null)
     {
-        using var gen = new StringCreator(
+        var gen = new StringCreator(
             length,
             options ?? new StringCreatorOptions());
 
@@ -35,7 +35,7 @@ public static class RandomCreators
     /// <returns>A string containing randomly generated characters.</returns>
     public static string NewString(int length = 25, StringCreatorOptions? options = null)
     {
-        using var gen = new StringCreator(
+        var gen = new StringCreator(
             length,
             options ?? new StringCreatorOptions());
         return gen.ToString();

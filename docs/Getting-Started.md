@@ -40,8 +40,9 @@ dotnet add package DKNet.SlimBus.Extensions
 Add more as the need appears — nothing above depends on the others being present, and no package needs a
 companion "core" package.
 
-> `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are **retired and never published to NuGet**
-> (`<IsPackable>false</IsPackable>`). `dotnet add package` will not find them. Use `DKNet.EfCore.Specifications`.
+> `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` were **removed** and were never published to NuGet.
+> `dotnet add package` will not find them. Use `DKNet.EfCore.Specifications` — see
+> [Migrating-Repos-To-Specifications](EfCore/Migrating-Repos-To-Specifications.md) if you are upgrading off them.
 
 ### 2. Define an entity
 

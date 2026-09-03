@@ -92,10 +92,10 @@ public static class SpecRepoExtensions
         /// <param name="specification">The specification to apply</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A task representing the asynchronous operation that returns a list of entities</returns>
-        public async Task<IList<TEntity>> ToListAsync<TEntity>(ISpecification<TEntity> specification,
+        public Task<List<TEntity>> ToListAsync<TEntity>(ISpecification<TEntity> specification,
             CancellationToken cancellationToken = default)
             where TEntity : class =>
-            await repo.Query(specification).ToListAsync(cancellationToken);
+            repo.Query(specification).ToListAsync(cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns a list of projected models matching the specification.
@@ -105,11 +105,11 @@ public static class SpecRepoExtensions
         /// <param name="specification">The specification to apply</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A task representing the asynchronous operation that returns a list of projected models</returns>
-        public async Task<IList<TModel>> ToListAsync<TEntity, TModel>(ISpecification<TEntity> specification,
+        public Task<List<TModel>> ToListAsync<TEntity, TModel>(ISpecification<TEntity> specification,
             CancellationToken cancellationToken = default)
             where TEntity : class
             where TModel : class
-            => await repo.Query<TEntity, TModel>(specification).ToListAsync(cancellationToken);
+            => repo.Query<TEntity, TModel>(specification).ToListAsync(cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns a paged list of entities matching the specification.
@@ -190,11 +190,11 @@ public static class SpecRepoExtensions
         /// <param name="pageSize">The maximum number of rows to return.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>
-        ///     A task that returns an <see cref="IList{TEntity}" /> containing up to <paramref name="pageSize" /> rows
+        ///     A task that returns a <see cref="List{TEntity}" /> containing up to <paramref name="pageSize" /> rows
         ///     that come after <paramref name="cursor" /> in sort order.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
-        public async Task<IList<TEntity>> ToKeysetPageAsync<TEntity, TKey>(
+        public Task<List<TEntity>> ToKeysetPageAsync<TEntity, TKey>(
             ISpecification<TEntity> specification,
             Expression<Func<TEntity, TKey>> keySelector,
             TKey cursor,
@@ -205,7 +205,7 @@ public static class SpecRepoExtensions
             if (pageSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
 
-            return await repo.Query(specification)
+            return repo.Query(specification)
                 .AfterKeyset(keySelector, cursor)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
@@ -215,9 +215,9 @@ public static class SpecRepoExtensions
         ///     Asynchronously returns a keyset-paginated list of entities matching the specification,
         ///     starting after the provided composite two-key cursor value.
         ///     Keyset pagination is significantly more efficient than offset pagination for large datasets
-        ///     because it uses an index seek instead of a full table scan.
-        ///     The generated SQL is equivalent to the row-value comparison
-        ///     <c>(key1, key2) &gt; (cursor1, cursor2)</c>.
+        ///     because it uses an index seek instead of a full table scan. Cursor values are bound as query
+        ///     parameters, not inlined as SQL literals, so repeated calls with different cursors reuse the
+        ///     same query plan.
         /// </summary>
         /// <typeparam name="TEntity">Type of the entity.</typeparam>
         /// <typeparam name="TKey1">Type of the primary key column.</typeparam>
@@ -230,11 +230,11 @@ public static class SpecRepoExtensions
         /// <param name="pageSize">The maximum number of rows to return.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>
-        ///     A task that returns an <see cref="IList{TEntity}" /> containing up to <paramref name="pageSize" /> rows
+        ///     A task that returns a <see cref="List{TEntity}" /> containing up to <paramref name="pageSize" /> rows
         ///     that come after the composite cursor in sort order.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="pageSize" /> is less than or equal to zero.</exception>
-        public async Task<IList<TEntity>> ToKeysetPageAsync<TEntity, TKey1, TKey2>(
+        public Task<List<TEntity>> ToKeysetPageAsync<TEntity, TKey1, TKey2>(
             ISpecification<TEntity> specification,
             Expression<Func<TEntity, TKey1>> key1Selector,
             Expression<Func<TEntity, TKey2>> key2Selector,
@@ -247,7 +247,7 @@ public static class SpecRepoExtensions
             if (pageSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(pageSize), "pageSize must be greater than zero.");
 
-            return await repo.Query(specification)
+            return repo.Query(specification)
                 .AfterKeyset(key1Selector, key2Selector, cursor1, cursor2)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);

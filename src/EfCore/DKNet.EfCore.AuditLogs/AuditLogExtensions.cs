@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using DKNet.EfCore.Abstractions.Attributes;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.AuditLogs.Internals;
@@ -10,6 +11,14 @@ namespace DKNet.EfCore.AuditLogs;
 
 internal static class AuditLogExtensions
 {
+    #region Fields
+
+    // Per-entity-type audit metadata, resolved once via reflection and reused for every save.
+    // None of the underlying attributes can change at runtime, so caching by CLR type is safe.
+    private static readonly ConcurrentDictionary<Type, EntityAuditPlan> _plans = new();
+
+    #endregion
+
     #region Methods
 
     public static AuditLogEntry? BuildAuditLog(
@@ -25,16 +34,16 @@ internal static class AuditLogExtensions
         }
 
         var entityType = entry.Entity.GetType();
+        var plan = _plans.GetOrAdd(entityType, static (t, e) => BuildPlan(t, e), entry);
 
         // if explicitly ignored with IgnoreAuditLogAttribute, skip
-        if (entityType.HasAttribute<IgnoreAuditLogAttribute>())
+        if (plan.Ignore)
         {
             return null;
         }
 
         // if OnlyAttributedAuditedEntities, skip if not marked with AuditLogAttribute
-        if (behaviour == AuditLogBehaviour.OnlyAttributedAuditedEntities &&
-            !entityType.HasAttribute<AuditLogAttribute>())
+        if (behaviour == AuditLogBehaviour.OnlyAttributedAuditedEntities && !plan.HasAuditLogAttribute)
         {
             return null;
         }
@@ -44,23 +53,23 @@ internal static class AuditLogExtensions
 
         if (originalState != EntityState.Added)
         {
-            foreach (var prop in entry.Properties)
+            // For OnlyAttributedProperties, drive the loop from the precomputed attributed-property
+            // list instead of scanning every property on the entity.
+            var propertiesToScan = propertyPolicy == AuditPropertyPolicy.OnlyAttributedProperties
+                ? plan.AttributedPropertyNames.Select(entry.Property)
+                : entry.Properties;
+
+            foreach (var prop in propertiesToScan)
             {
+                var propPlan = plan.Properties[prop.Metadata.Name];
+
                 // NEW: skip property-level IgnoreAuditLogAttribute
-                var clrProp = prop.Metadata.PropertyInfo;
-                if (clrProp.HasAttribute<IgnoreAuditLogAttribute>())
+                if (propPlan.Ignore)
                 {
                     continue;
                 }
 
-                var isAttributed = clrProp.HasAttribute<AuditLogAttribute>();
-                if (propertyPolicy == AuditPropertyPolicy.OnlyAttributedProperties && !isAttributed)
-                {
-                    continue;
-                }
-
-                var declaredSensitive = clrProp.HasAttribute<SensitiveDataAttribute>();
-                var isSensitive = declaredSensitive || (!isAttributed && SensitiveDataPatterns.IsSensitive(clrProp));
+                var isSensitive = propPlan.Sensitive;
 
                 var name = prop.Metadata.Name;
                 var oldVal = prop.OriginalValue;
@@ -112,6 +121,50 @@ internal static class AuditLogExtensions
             Changes = changes
         };
     }
+
+    /// <summary>
+    ///     Resolves the attribute-driven audit metadata for an entity type once, by inspecting the given
+    ///     <paramref name="entry" />; the result is cached in <see cref="_plans" /> and reused for every
+    ///     subsequent save of that type.
+    /// </summary>
+    private static EntityAuditPlan BuildPlan(Type entityType, EntityEntry entry)
+    {
+        var ignore = entityType.HasAttribute<IgnoreAuditLogAttribute>();
+        var hasAuditLogAttribute = entityType.HasAttribute<AuditLogAttribute>();
+
+        var properties = new Dictionary<string, PropertyAuditPlan>();
+        var attributedNames = new List<string>();
+
+        foreach (var prop in entry.Properties)
+        {
+            var clrProp = prop.Metadata.PropertyInfo;
+            var propIgnore = clrProp.HasAttribute<IgnoreAuditLogAttribute>();
+            var attributed = clrProp.HasAttribute<AuditLogAttribute>();
+            var declaredSensitive = clrProp.HasAttribute<SensitiveDataAttribute>();
+            var sensitive = declaredSensitive || (!attributed && SensitiveDataPatterns.IsSensitive(clrProp));
+
+            properties[prop.Metadata.Name] = new PropertyAuditPlan(propIgnore, sensitive);
+
+            if (attributed && !propIgnore)
+            {
+                attributedNames.Add(prop.Metadata.Name);
+            }
+        }
+
+        return new EntityAuditPlan(ignore, hasAuditLogAttribute, properties, attributedNames);
+    }
+
+    #endregion
+
+    #region Nested Types
+
+    private sealed record PropertyAuditPlan(bool Ignore, bool Sensitive);
+
+    private sealed record EntityAuditPlan(
+        bool Ignore,
+        bool HasAuditLogAttribute,
+        IReadOnlyDictionary<string, PropertyAuditPlan> Properties,
+        IReadOnlyList<string> AttributedPropertyNames);
 
     #endregion
 }

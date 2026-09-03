@@ -159,8 +159,8 @@ operation is also what creates the bucket:
   exists.
 - **[DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md)** — the usual stand-in for tests and local runs when
   you don't want a MinIO container.
-- **`DKNet.EfCore.Events` / `DKNet.EfCore.Repos`** — pair with them exactly as any provider does; see the Abstractions
-  page.
+- **`DKNet.EfCore.Events` / `DKNet.EfCore.Specifications`** — pair with them exactly as any provider does; see the
+  Abstractions page.
 
 ## ⚠️ Gotchas & limits
 

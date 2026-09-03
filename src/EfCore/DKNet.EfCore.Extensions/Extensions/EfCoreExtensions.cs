@@ -44,7 +44,7 @@ public static class EfCoreExtensions
 
         return primaryKey.Properties.ToDictionary(
             p => p.Name,
-            p => p.PropertyInfo!.GetValue(entityEntry.Entity),
+            p => entityEntry.CurrentValues[p],
             StringComparer.OrdinalIgnoreCase);
     }
 
@@ -88,13 +88,13 @@ public static class EfCoreExtensions
             ArgumentNullException.ThrowIfNull(entity);
 
             var rs = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            var type = entity.GetType();
-            var keys = context.GetPrimaryKeyProperties(type);
-            foreach (var key in keys)
-            {
-                var value = type.GetProperty(key)?.GetValue(entity);
-                rs.Add(key, value);
-            }
+            var primaryKey = context.Model.FindEntityType(entity.GetType())?.FindPrimaryKey();
+            if (primaryKey is null)
+                return rs;
+
+            var entry = context.Entry(entity);
+            foreach (var key in primaryKey.Properties)
+                rs.Add(key.Name, entry.CurrentValues[key]);
 
             return rs;
         }
@@ -136,24 +136,28 @@ public static class EfCoreExtensions
         /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
         /// <typeparam name="TValue">The type of the value returned by the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>The next value of the sequence.</returns>
-        public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name)
+        public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
             where TValue : struct =>
-            (TValue?)await context.NextSeqValue(name);
+            (TValue?)await context.NextSeqValue(name, cancellationToken);
 
         /// <summary>
         ///     Gets the Next Sequence value
         /// </summary>
         /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>The next value of the sequence.</returns>
         /// <exception cref="NotSupportedException">Thrown when the database provider is neither SQL Server nor Npgsql.</exception>
         [SuppressMessage(
             "Security",
             "CA2100:Review SQL queries for security vulnerabilities",
-            Justification = "SQL is constructed from internal metadata, not user input")]
-        public async ValueTask<object?> NextSeqValue<TEnum>(TEnum name)
+            Justification = "The sequence schema/name come from internal [Sequence] metadata, not user input. " +
+                             "Neither T-SQL's NEXT VALUE FOR nor this shared code path can parameterize a sequence " +
+                             "identifier, so it must be interpolated into the command text.")]
+        public async ValueTask<object?> NextSeqValue<TEnum>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
         {
             ArgumentNullException.ThrowIfNull(context);
@@ -172,14 +176,19 @@ public static class EfCoreExtensions
                     : throw new NotSupportedException(
                         $"Provider '{context.Database.ProviderName}' is not supported for sequence value generation.");
 
-            await context.Database.OpenConnectionAsync();
-            await using var result = await command.ExecuteReaderAsync();
-
-            object? rs = null;
-            if (await result.ReadAsync()) rs = await result.GetFieldValueAsync<object>(0);
-
-            await context.Database.CloseConnectionAsync();
-            return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
+            // Use EF Core's own (reference-counted, transaction-aware) connection management, and always release it
+            // via `finally` - an unhandled exception between Open and Close must not leak the open reference and
+            // leave the caller's ambient connection/transaction stuck.
+            await context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                var rs = await command.ExecuteScalarAsync(cancellationToken);
+                return rs ?? throw new InvalidOperationException($"Failed to retrieve sequence value for type: {type}");
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
         }
 
         /// <summary>
@@ -187,18 +196,20 @@ public static class EfCoreExtensions
         /// </summary>
         /// <typeparam name="TEnum">The type of the enum representing the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>The next value of the sequence formatted as a string.</returns>
-        public async ValueTask<string> NextSeqValueWithFormat<TEnum>(TEnum name)
+        public async ValueTask<string> NextSeqValueWithFormat<TEnum>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
         {
             var att = SequenceExtensions.GetFieldAttributeOrDefault(typeof(TEnum), name);
-            var value = await context.NextSeqValue(name);
+            var value = await context.NextSeqValue(name, cancellationToken);
 
             if (string.IsNullOrEmpty(att.FormatString)) return $"{value}";
 
             var f = att.FormatString.Replace(nameof(DateTime), "0", StringComparison.OrdinalIgnoreCase);
-            // Use UTC so generated sequence codes are deterministic regardless of server time zone.
-            return string.Format(CultureInfo.CurrentCulture, f, DateTime.UtcNow, value);
+            // Use UTC and invariant culture so generated sequence codes are deterministic regardless of server
+            // time zone or the running culture.
+            return string.Format(CultureInfo.InvariantCulture, f, DateTime.UtcNow, value);
         }
     }
 }

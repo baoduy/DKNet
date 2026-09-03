@@ -72,23 +72,6 @@ public class Base64Tests
         Should.NotThrow(() => value.FromBase64String());
     }
 
-    [Fact]
-    public void OldBase65StringExtensionsNameProducesSameResultsAsBase64StringExtensions()
-    {
-        // Arrange
-        const string plain = "Acme Pte Ltd";
-        var encoded = Base64StringExtensions.ToBase64String(plain);
-
-#pragma warning disable CS0618 // intentionally exercising the obsolete forwarder for parity
-        // Act & Assert
-        Base65StringExtensions.ToBase64String(plain).ShouldBe(encoded);
-        Base65StringExtensions.FromBase64String(encoded).ShouldBe(plain);
-        Base65StringExtensions.IsBase64String(encoded).ShouldBe(Base64StringExtensions.IsBase64String(encoded));
-        Base65StringExtensions.ToBase64UrlString(plain).ShouldBe(Base64StringExtensions.ToBase64UrlString(plain));
-        Base65StringExtensions.FromBase64UrlString(Base64StringExtensions.ToBase64UrlString(plain)).ShouldBe(plain);
-#pragma warning restore CS0618
-    }
-
     [Theory]
     [InlineData("Hello World", "SGVsbG8gV29ybGQ=")]
     [InlineData("Test123!@#", "VGVzdDEyMyFAIw==")]

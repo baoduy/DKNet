@@ -20,8 +20,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 │   ├── Core/          Fw.Extensions, RandomCreator
 │   ├── EfCore/        Largest area: Abstractions, Extensions, Specifications,
 │   │                  Events, Hooks, AuditLogs, Encryption, DataAuthorization,
-│   │                  Relational.Helpers, DtoGenerator (Roslyn generator),
-│   │                  Repos + Repos.Abstractions (RETIRED — see docs)
+│   │                  Relational.Helpers, DtoGenerator (Roslyn generator)
 │   ├── AspNet/        AspCore.Extensions, AspCore.Tasks, AspCore.Idempotency
 │   │                  + Relational, MsSqlStore, NpgsqlStore, RedisStore
 │   ├── Services/      Svc.BlobStorage.{Abstractions,AzureStorage,AwsS3,Local},
@@ -80,11 +79,21 @@ dotnet format                                    # before committing
 
 Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. `mssql/server` ships x64-only images with no ARM64 build.
 
-**Every test project runs locally, including the TestContainers.MsSql-backed ones.** `mssql/server` has no ARM image, so `AspCore.Idempotency.MsSqlStore.Tests`' fixture (`Fixtures/ApiFixture.cs`) picks its image off `RuntimeInformation.ProcessArchitecture` and falls back to `azure-sql-edge` on ARM64. That fallback works on Apple Silicon — just run `dotnet test` normally. Keep the arch switch in place when touching that fixture. The remote x64 runner below is a fallback for when Docker or an image is unavailable locally, not a required gate.
+**SQL Server only runs on x64 and Apple Silicon. On every other ARM device, skip the MsSql-backed tests locally.** `mssql/server` ships x64-only images, so `AspCore.Idempotency.MsSqlStore.Tests`' fixture (`Fixtures/ApiFixture.cs`) picks its image off `RuntimeInformation.ProcessArchitecture` and falls back to `azure-sql-edge` on ARM64. That fallback works on Apple Silicon (Rosetta) but **not** on other ARM64 hosts — Linux/ARM boxes included, where the container fails to launch outright. Keep the arch switch in place when touching that fixture.
+
+On a non-Apple ARM machine, exclude the MsSql tests from local runs and validate them through GitHub Actions instead:
+
+```bash
+dotnet test DKNet.FW.sln --filter "FullyQualifiedName!~MsSqlStore"     # whole solution, minus MsSql
+dotnet test AspNet/AspCore.Idempotency.NpgsqlStore.Tests               # Postgres and Redis
+dotnet test AspNet/AspCore.Idempotency.RedisStore.Tests                # both run fine on ARM64
+```
+
+Postgres and Redis containers run natively on ARM64, and `NpgsqlStore` exercises the shared `DKNet.AspCore.Idempotency.Relational` base — so a change to the shared reservation path is still covered locally. Only MsSql-specific SQL goes unverified. **Never delete, `[Skip]`, or otherwise disable the MsSql test project to make a local run go green** — it is the store's only coverage and it passes on CI. Exclude it at the command line, say so in the PR, and re-validate on the x64 runner below.
 
 ### Remote test verification (fallback)
 
-Run tests locally first — that covers the whole solution. When something genuinely can't run on this machine (Docker down, an image that won't pull, a restricted sandbox), or you want a true x64 second opinion, dispatch the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml` on a GitHub-hosted x64 runner. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging. Note it runs against the *pushed* branch, so commit first.
+Run tests locally first. On x64 and Apple Silicon that covers the whole solution; on other ARM hosts it covers everything except the MsSql-backed tests excluded above, which **must** be re-validated here before merging a change to the idempotency stores. When something genuinely can't run on this machine (Docker down, an image that won't pull, a restricted sandbox), or you want a true x64 second opinion, dispatch the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml` on a GitHub-hosted x64 runner. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging. Note it runs against the *pushed* branch, so commit first.
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch>                              # whole solution
@@ -97,18 +106,27 @@ gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
 
 The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
 
-`Svc.PdfGenerators.Tests` is the other case worth naming: if its Chromium download ever fails on a restricted ARM sandbox, the remote runner is the fallback:
+`Svc.PdfGenerators.Tests` is the other case worth naming, and it has the same x64 story as SQL Server. PuppeteerSharp fetches an **x64 Chromium**, so on a non-Apple ARM64 host the download succeeds and the *launch* fails:
+
+```
+PuppeteerSharp.ProcessException: Failed to launch browser!
+x86_64-binfmt-P: Could not open '/lib64/ld-linux-x86-64.so.2'
+```
+
+That takes out roughly 14 of the 185 tests — every one that renders a real PDF. The rest of the project still runs, so this is not a reason to skip the whole thing. Exclude nothing in code; run it locally, expect those launch failures on ARM64, and re-validate on the remote runner:
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGenerators.Tests
 ```
+
+On Apple Silicon the x64 Chromium runs under Rosetta, so the suite passes locally.
 
 ## Architectural Big Picture
 
 DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 - **Aggregate roots** (`AggregateRoot` in `DKNet.EfCore.Abstractions`) carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
-- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired** — do not build new code on them; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
+- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` have been removed** — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, Ops, value)` triples with type/enum-safe conversion. Required call shape:
   ```csharp
   var predicate = PredicateBuilder.New<Product>()
@@ -129,7 +147,7 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 - **File header**: every `.cs` file opens with the copyright block — the canonical `copyrightText` is in `src/stylecop.json`, followed by `// Author:`, `// File:`, `// Description:` lines. Copy the header from a neighbouring file in the same project rather than inventing one.
 - **XML docs** are mandatory on all public APIs (`<summary>`, `<param>`, `<returns>`, relevant `<exception>`); `GenerateDocumentationFile=true` makes warnings fatal.
 - **Naming**: private fields `_camelCase`; async methods end in `Async`; extensions live in static classes under `/Extensions`.
-- **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` and `DKNet.EfCore.Repos.SetupRepository` (both `Microsoft.Extensions.DependencyInjection`), `DKNet.Fw.Extensions.AsyncEnumerableExtensions` (`System.Collections.Generic`, filed under `Collections/` on disk), and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
+- **Folder-per-concern**: a type sits in a folder named for the single concern it serves, and **the folder name is the last segment of the type's namespace** (e.g. `DKNet.EfCore.Specifications.Repositories` lives in `Repositories/`). A package's project root holds only its entry surface — the contract and/or DI registration point a consumer touches directly. Exception: a type that deliberately declares an **ambient namespace** (a namespace owned by the framework or library it extends, so its extension methods resolve without an extra import) is exempt and keeps that namespace whether or not it is grouped into a folder — e.g. `DKNet.Fw.Extensions.ServiceCollectionExtensions` (`Microsoft.Extensions.DependencyInjection`) and `DKNet.EfCore.Specifications.Dynamics.DynamicPredicateExtensions` (`LinqKit`).
 - **EF Core**: always `await`, default to `AsNoTracking()` for reads, push filtering to the DB, prefer `Include`/projections over per-row fetches. For dynamic predicates remember `.AsExpandable()`.
 - **Verifying SQL** in tests: use `query.ToQueryString()` and assert against the generated SQL alongside the materialized rows — recurring pattern in `EfCore.Specifications.Tests`.
 - **Central package management**: add/upgrade NuGet versions in `src/Directory.Packages.props`, not in individual `.csproj` files.

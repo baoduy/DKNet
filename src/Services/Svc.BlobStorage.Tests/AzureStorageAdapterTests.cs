@@ -1,3 +1,6 @@
+using Azure.Storage.Blobs;
+using Microsoft.Extensions.Options;
+using DKNet.Svc.BlobStorage.AzureStorage;
 using Svc.BlobStorage.Tests.Fixtures;
 
 namespace Svc.BlobStorage.Tests;
@@ -85,6 +88,24 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
         .ShouldBeGreaterThanOrEqualTo(1);
 
     [Fact]
+    public async Task ListItemsAsync_MultipleFilesInFolder_ReturnsDistinctPerItemNames()
+    {
+        // Regression for C7: every result used to carry the searched-for prefix instead of its own name.
+        var folder = $"list-distinct-{Guid.NewGuid()}";
+        var file = BinaryData.FromString("test");
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}/a.txt", file) { ContentType = "text/plain" });
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}/b.txt", file) { ContentType = "text/plain" });
+
+        var items = await _adapter.ListItemsAsync(new BlobRequest(folder) { Type = BlobTypes.Directory })
+            .ToListAsync();
+
+        items.Count.ShouldBe(2);
+        items.Select(i => i.Name).Distinct().Count().ShouldBe(2);
+        items.ShouldContain(i => i.Name == $"{folder}/a.txt");
+        items.ShouldContain(i => i.Name == $"{folder}/b.txt");
+    }
+
+    [Fact]
     public async Task ListItemsAsyncShouldReturnEmptyWhenNoItems()
     {
         var items = await _adapter.ListItemsAsync(new BlobRequest("empty-folder") { Type = BlobTypes.Directory })
@@ -151,6 +172,45 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
             });
 
         (await _adapter.CheckExistsAsync(new BlobRequest(fileName) { Type = BlobTypes.File })).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task GetAsync_MissingBlob_ReturnsNullInsteadOfThrowing()
+    {
+        // Regression for P11: GetAsync used to call GetPropertiesAsync first, which throws
+        // RequestFailedException(404) for a missing blob before the ExistsAsync check below it could
+        // ever run. Collapsing to one DownloadContentAsync call inside a 404 catch fixes both the extra
+        // round trips and this uncaught-exception gap.
+        var result = await _adapter.GetAsync(new BlobRequest($"missing-{Guid.NewGuid()}.txt")
+            { Type = BlobTypes.File });
+
+        result.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GetClient_ConcurrentFirstCallers_BuildsContainerClientExactlyOnce()
+    {
+        // Regression for P11: the BlobContainerClient used to be built (and CreateIfNotExistsAsync run)
+        // on every scoped instance, and even within one instance the null-check guard was not thread-safe.
+        // BlobServiceClientFactory is an existing extensibility point on AzureStorageOptions, so it doubles
+        // here as the observation seam: counting its invocations across many concurrent first callers on a
+        // single instance proves the client build (and container-ensure) runs exactly once.
+        var buildCount = 0;
+        var options = new AzureStorageOptions
+        {
+            ContainerName = fixture.Options.ContainerName,
+            BlobServiceClientFactory = _ =>
+            {
+                Interlocked.Increment(ref buildCount);
+                return Task.FromResult(new BlobServiceClient(fixture.Options.ConnectionString));
+            }
+        };
+        var service = new AzureStorageBlobService(Options.Create(options));
+
+        await Task.WhenAll(Enumerable.Range(0, 20)
+            .Select(i => service.CheckExistsAsync(new BlobRequest($"concurrent-probe-{i}-{Guid.NewGuid()}.txt"))));
+
+        buildCount.ShouldBe(1);
     }
 
     #endregion

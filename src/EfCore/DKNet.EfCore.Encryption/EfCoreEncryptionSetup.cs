@@ -5,6 +5,7 @@
 
 using DKNet.EfCore.Encryption.Encryption;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.EfCore.Encryption;
 
@@ -24,8 +25,7 @@ public static class EfCoreEncryptionSetup
     public static IServiceCollection AddEfCoreEncryption<TKeyServiceImplementation>(this IServiceCollection services)
         where TKeyServiceImplementation : class, IEncryptionKeyProvider
     {
-        if (!services.Any(s => s.ServiceType == typeof(IEncryptionKeyProvider)))
-            services.AddSingleton<IEncryptionKeyProvider, TKeyServiceImplementation>();
+        services.TryAddSingleton<IEncryptionKeyProvider, TKeyServiceImplementation>();
 
         return services;
     }

@@ -71,22 +71,38 @@ internal sealed class ContextualRequestPopulationService(
         }
     }
 
+    /// <summary>Per-type <see cref="TypeConverter" />, so the reflection-and-locking lookup in
+    /// <see cref="TypeDescriptor.GetConverter(Type)" /> runs once per type instead of once per request.</summary>
+    private static readonly ConcurrentDictionary<Type, TypeConverter> Converters = new();
+
+    /// <summary>Per-value-type boxed default, so a failed or absent conversion does not call
+    /// <see cref="Activator.CreateInstance(Type)" /> on every request.</summary>
+    private static readonly ConcurrentDictionary<Type, object?> DefaultValues = new();
+
     private static object? ConvertOrDefault(string? raw, Type targetType)
     {
-        if (raw is null) return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+        if (raw is null) return DefaultValueOf(targetType);
+
+        // The overwhelmingly common case — a string property populated from a claim — needs no conversion at
+        // all; skip TypeDescriptor entirely rather than round-tripping through StringConverter.
+        if (targetType == typeof(string)) return raw;
 
         try
         {
             var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-            return TypeDescriptor.GetConverter(underlyingType).ConvertFromInvariantString(raw);
+            var converter = Converters.GetOrAdd(underlyingType, TypeDescriptor.GetConverter);
+            return converter.ConvertFromInvariantString(raw);
         }
         catch (Exception ex) when (ex is FormatException or NotSupportedException or ArgumentException)
         {
             // Not convertible to the member's type: hold its default, never reject the request — population is
             // not validation.
-            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+            return DefaultValueOf(targetType);
         }
     }
+
+    private static object? DefaultValueOf(Type targetType) =>
+        targetType.IsValueType ? DefaultValues.GetOrAdd(targetType, Activator.CreateInstance) : null;
 }
 
 /// <summary>Declared member discovered on a request type: the property plus its <see cref="IContextualSource" /> declaration.</summary>

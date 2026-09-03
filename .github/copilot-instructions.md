@@ -11,7 +11,7 @@ Before making code changes, load project context in this order:
 ## Architecture
 - DKNet is a `.NET 10` library suite for enterprise API development using **DDD** and **Onion Architecture**.
 - Keep domain behavior in domain types (aggregate roots, entities, value objects); keep infrastructure concerns in EF Core, messaging, and service packages.
-- Prefer Specifications (`DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()`) for query composition and reuse. `DKNet.EfCore.Repos`/`Repos.Abstractions` are retired — see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
+- Prefer Specifications (`DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()`) for query composition and reuse. `DKNet.EfCore.Repos`/`Repos.Abstractions` have been removed — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - For dynamic predicates, compose with LinqKit and use `.AsExpandable()` before `.Where()`.
 - Keep boundaries clear across `Core`, `EfCore`, `Services`, `SlimBus`, and `AspNet` modules.
 

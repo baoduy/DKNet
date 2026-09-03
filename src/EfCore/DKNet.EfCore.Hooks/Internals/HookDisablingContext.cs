@@ -2,9 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // Author: DRUNK Coding Team
 // File: HookDisablingContext.cs
-// Description: Internal helper to temporarily disable hooks for a specific DbContext type using a ref-counted dictionary.
+// Description: Internal helper to temporarily disable hooks for a specific DbContext type, scoped to the current async flow.
 
-using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 
 namespace DKNet.EfCore.Hooks.Internals;
@@ -19,17 +19,23 @@ public interface IHookDisablingContext : IDisposable, IAsyncDisposable;
 ///     Implementation of <see cref="IHookDisablingContext" /> which increments a ref-count for the
 ///     current DbContext type on construction and decrements it on disposal. When the count is > 0,
 ///     hooks are considered disabled for that DbContext type.
+///     The ref-counts are held in an <see cref="AsyncLocal{T}" /> so disabling is scoped to the current
+///     logical call flow (and its async continuations) instead of the whole process - concurrent,
+///     unrelated flows are unaffected.
 /// </summary>
 internal sealed class HookDisablingContext : IHookDisablingContext
 {
     #region Fields
 
     /// <summary>
-    ///     Ref-count dictionary storing how many active disable contexts exist per DbContext CLR type.
+    ///     Ref-count map storing how many active disable scopes exist per DbContext CLR type, scoped to the
+    ///     current logical call context. <see cref="AsyncLocal{T}.Value" /> is always replaced with a new
+    ///     immutable map rather than mutated in place, which is what keeps concurrent flows isolated.
     /// </summary>
-    private static readonly ConcurrentDictionary<string, int> DisabledHooks = new();
+    private static readonly AsyncLocal<ImmutableDictionary<string, int>> DisabledHooks = new();
 
-    private readonly DbContext _context;
+    private readonly string _typeName;
+    private bool _disposed;
 
     #endregion
 
@@ -41,9 +47,11 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     /// <param name="context">The DbContext instance whose type will have hooks disabled while this scope is active.</param>
     public HookDisablingContext(DbContext context)
     {
-        _ = context ?? throw new ArgumentNullException(nameof(context));
-        _context = context;
-        DisabledHooks.AddOrUpdate(context.GetType().FullName!, 1, (_, oldValue) => oldValue + 1);
+        ArgumentNullException.ThrowIfNull(context);
+        _typeName = context.GetType().FullName!;
+
+        var current = DisabledHooks.Value ?? ImmutableDictionary<string, int>.Empty;
+        DisabledHooks.Value = current.SetItem(_typeName, current.GetValueOrDefault(_typeName) + 1);
     }
 
     #endregion
@@ -52,11 +60,16 @@ internal sealed class HookDisablingContext : IHookDisablingContext
 
     /// <summary>
     ///     Synchronously dispose the disabling context and decrement the reference count. The underlying
-    ///     DbContext is not disposed by this operation.
+    ///     DbContext is not disposed by this operation. Idempotent - a second call is a no-op.
     /// </summary>
     public void Dispose()
     {
-        DisabledHooks.AddOrUpdate(_context.GetType().FullName!, 0, (_, oldValue) => Math.Max(0, oldValue - 1));
+        if (_disposed) return;
+        _disposed = true;
+
+        var current = DisabledHooks.Value ?? ImmutableDictionary<string, int>.Empty;
+        var newCount = Math.Max(0, current.GetValueOrDefault(_typeName) - 1);
+        DisabledHooks.Value = newCount == 0 ? current.Remove(_typeName) : current.SetItem(_typeName, newCount);
     }
 
     /// <summary>
@@ -70,14 +83,16 @@ internal sealed class HookDisablingContext : IHookDisablingContext
     }
 
     /// <summary>
-    ///     Checks whether hooks are currently disabled for the provided DbContext instance's CLR type.
+    ///     Checks whether hooks are currently disabled for the provided DbContext instance's CLR type within
+    ///     the current logical call flow.
     /// </summary>
     /// <param name="context">The DbContext to check.</param>
     /// <returns>True when the ref-count for the context's type is greater than zero; otherwise false.</returns>
     public static bool IsHookDisabled(DbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return DisabledHooks.TryGetValue(context.GetType().FullName!, out var count) && count > 0;
+        var current = DisabledHooks.Value;
+        return current is not null && current.TryGetValue(context.GetType().FullName!, out var count) && count > 0;
     }
 
     #endregion

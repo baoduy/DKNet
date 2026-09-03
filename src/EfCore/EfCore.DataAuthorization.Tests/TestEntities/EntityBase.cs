@@ -212,3 +212,37 @@ internal sealed class AuditedNoUpdatedOnColumnEntityEfConfig
 
     #endregion
 }
+
+/// <summary>
+///     An <see cref="IOwnedBy" /> implementer whose <see cref="OwnedBy" /> is a computed, getter-only property
+///     with no backing field — EF Core's discovery convention excludes it from the model entirely, and
+///     reflection cannot find a setter for it anywhere in the type hierarchy either. Used to prove that
+///     <c>DataOwnerHook</c>'s stamping surfaces a failure instead of silently doing nothing when a property
+///     is genuinely unwritable both via EF's compiled accessor and via the reflection fallback.
+/// </summary>
+public sealed class NoSetterOwnedEntity(string name) : IOwnedBy
+{
+    #region Properties
+
+    public Guid Id { get; private set; }
+
+    public string Name { get; private set; } = name;
+
+    public string OwnedBy => string.Empty;
+
+    #endregion
+}
+
+internal sealed class NoSetterOwnedEntityEfConfig : DefaultEntityTypeConfiguration<NoSetterOwnedEntity>
+{
+    #region Methods
+
+    public override void Configure(EntityTypeBuilder<NoSetterOwnedEntity> builder)
+    {
+        base.Configure(builder);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100);
+    }
+
+    #endregion
+}

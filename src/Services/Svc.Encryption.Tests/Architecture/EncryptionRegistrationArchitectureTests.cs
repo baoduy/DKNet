@@ -31,15 +31,12 @@ public sealed class EncryptionRegistrationArchitectureTests
     /// <summary>
     ///     <c>AddEncryptionServices()</c> must not register any key-bearing cipher. It once registered them with
     ///     throwaway per-resolution keys (DRK-79, DRK-900); each now requires the caller to supply the key through
-    ///     <c>AddRsaEncryption</c> / <c>AddAesGcmEncryption</c> / <c>AddAesEncryption</c>. Re-adding a keyless
-    ///     registration here would reintroduce the same unrecoverable-ciphertext defect.
+    ///     <c>AddRsaEncryption</c> / <c>AddAesGcmEncryption</c>. Re-adding a keyless registration here would
+    ///     reintroduce the same unrecoverable-ciphertext defect.
     /// </summary>
     [Theory]
     [InlineData(typeof(IRsaEncryption))]
     [InlineData(typeof(IAesGcmEncryption))]
-#pragma warning disable CS0618 // AES-CBC cipher is obsolete but still offered for backward compatibility.
-    [InlineData(typeof(IAesEncryption))]
-#pragma warning restore CS0618
     public void AddEncryptionServices_ShouldNotRegisterKeyBearingCipher(Type cipherServiceType)
     {
         var services = new ServiceCollection().AddEncryptionServices();

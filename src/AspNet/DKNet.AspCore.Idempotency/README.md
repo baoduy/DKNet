@@ -29,13 +29,15 @@ using DKNet.AspCore.Idempotency;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDistributedMemoryCache();
-
-// IdempotencyDistributedCacheStore is internal, so app code cannot name it: the obsolete non-generic
-// overload is the only public way to select the built-in store. It is not atomic under concurrency.
-#pragma warning disable CS0618
-builder.Services.AddIdempotentKey();
-#pragma warning restore CS0618
+// This package supplies the endpoint filter and options; it does not ship a usable store.
+// Reference one of the store packages and call its registration extension:
+//   DKNet.AspCore.Idempotency.MsSqlStore   -> AddIdempotencyWithMsSqlStore(connectionString)
+//   DKNet.AspCore.Idempotency.NpgsqlStore  -> AddIdempotencyWithNpgsqlStore(connectionString)
+//   DKNet.AspCore.Idempotency.RedisStore   -> AddIdempotencyWithRedisStore(connectionString)
+// All three reserve the key atomically. To use a store of your own, implement
+// IIdempotencyKeyStore and register it with AddIdempotentKey<TStore>().
+builder.Services.AddIdempotencyWithMsSqlStore(
+    builder.Configuration.GetConnectionString("Idempotency")!);
 
 var app = builder.Build();
 

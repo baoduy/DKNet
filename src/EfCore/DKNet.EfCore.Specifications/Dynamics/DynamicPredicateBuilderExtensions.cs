@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -52,6 +53,14 @@ internal static class DynamicPredicateBuilderExtensions
         typeof(bool), typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly), typeof(TimeOnly), typeof(Guid)
     ];
 
+    /// <summary>
+    ///     Memoizes <see cref="ResolvePropertyType" /> lookups. The (entity type, property path) pairs a
+    ///     dynamic filter resolves against are drawn from a bounded, request-independent set, so caching
+    ///     avoids repeating the per-segment reflection walk on every condition of every request.
+    /// </summary>
+    private static readonly ConcurrentDictionary<(Type EntityType, string PropertyPath), Type?> PropertyTypeCache =
+        new();
+
     #endregion
 
     #region Methods
@@ -63,8 +72,20 @@ internal static class DynamicPredicateBuilderExtensions
     /// </summary>
     /// <param name="propertyName">The raw property name or path to validate.</param>
     /// <returns>True if the property name is safe to use in a dynamic expression; otherwise, false.</returns>
-    internal static bool IsValidPropertyName(string? propertyName)
+    internal static bool IsValidPropertyName(string? propertyName) => TryNormalizePropertyName(propertyName, out _);
+
+    /// <summary>
+    ///     Validates a property name/path the same way as <see cref="IsValidPropertyName" /> and, on success,
+    ///     returns its PascalCase-normalized form. Combining the two avoids normalizing the same path twice
+    ///     (once to validate, once to build the expression) for every dynamic filter condition.
+    /// </summary>
+    /// <param name="propertyName">The raw property name or path to validate.</param>
+    /// <param name="normalizedPath">The PascalCase-normalized path on success; otherwise an empty string.</param>
+    /// <returns>True if the property name is safe to use in a dynamic expression; otherwise, false.</returns>
+    internal static bool TryNormalizePropertyName(string? propertyName, out string normalizedPath)
     {
+        normalizedPath = string.Empty;
+
         if (string.IsNullOrWhiteSpace(propertyName))
             return false;
 
@@ -72,9 +93,12 @@ internal static class DynamicPredicateBuilderExtensions
             propertyName.Any(c => !char.IsLetterOrDigit(c) && c is not '.' and not '_' and not '-'))
             return false;
 
-        var normalizedPath = propertyName.ToPascalCase();
-        return !string.IsNullOrWhiteSpace(normalizedPath) &&
-               ValidPropertyPathPattern.IsMatch(normalizedPath);
+        var candidate = propertyName.ToPascalCase();
+        if (string.IsNullOrWhiteSpace(candidate) || !ValidPropertyPathPattern.IsMatch(candidate))
+            return false;
+
+        normalizedPath = candidate;
+        return true;
     }
 
     /// <summary>
@@ -170,20 +194,20 @@ internal static class DynamicPredicateBuilderExtensions
     /// <param name="entityType">The root entity type.</param>
     /// <param name="propertyPath">The property path (can include dots for nested properties).</param>
     /// <returns>The resolved property type, or null if the property path is invalid.</returns>
-    internal static Type? ResolvePropertyType(this Type entityType, string propertyPath)
-    {
-        var segments = propertyPath.Split('.');
-        var currentType = entityType;
-        foreach (var segment in segments)
+    internal static Type? ResolvePropertyType(this Type entityType, string propertyPath) =>
+        PropertyTypeCache.GetOrAdd((entityType, propertyPath), static key =>
         {
-            var pi = currentType.GetProperty(segment,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (pi == null) return null;
-            currentType = pi.PropertyType;
-        }
+            var currentType = key.EntityType;
+            foreach (var segment in key.PropertyPath.Split('.'))
+            {
+                var pi = currentType.GetProperty(segment,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (pi == null) return null;
+                currentType = pi.PropertyType;
+            }
 
-        return currentType;
-    }
+            return currentType;
+        });
 
     /// <summary>
     ///     Validates if a value is a valid array/collection for In/NotIn operations.

@@ -350,8 +350,9 @@ Everything `UseAutoConfigModel` does happens once, inside EF Core's own model bu
   `DefaultEntityTypeConfiguration<T>` (or attaches the generator itself) — it is not automatic for every
   `Guid` property in the model. `DefaultEntityTypeConfiguration<T>` in turn depends on Abstractions'
   `IAuditedProperties` and `IConcurrencyEntity<T>` marker interfaces to decide what to configure.
-- **`DKNet.EfCore.Repos`**: consumes whatever model this package builds (entity configurations, global
-  filters, sequences already applied) — it doesn't call into this package's APIs directly.
+- **`DKNet.EfCore.Specifications`**: consumes whatever model this package builds (entity configurations, global
+  filters, sequences already applied) — it doesn't call into this package's APIs directly, beyond the
+  concurrency-handling save extension `RepositorySpec` calls.
 
 ## ⚠️ Gotchas & limits
 

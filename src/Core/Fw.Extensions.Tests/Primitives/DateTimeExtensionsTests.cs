@@ -44,6 +44,16 @@ public static class DateTimeExtensionsTests
             result.ShouldBeNull();
         }
 
+        [Fact]
+        public void PreservesKindAndTimeOfDayFromInput()
+        {
+            var date = new DateTime(2024, 2, 15, 10, 30, 45, 123, DateTimeKind.Utc);
+            var result = date.LastDayOfMonth();
+            result.Kind.ShouldBe(DateTimeKind.Utc);
+            result.Day.ShouldBe(29);
+            result.TimeOfDay.ShouldBe(date.TimeOfDay);
+        }
+
         #endregion
     }
 

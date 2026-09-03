@@ -163,8 +163,8 @@ last step differs per backend:
   `BlobService` base class in this package and are the only components that reference a storage SDK.
 - **`DKNet.EfCore.Events`** — raise a domain event after `SaveAsync` returns the stored location so a handler can
   attach it to an aggregate.
-- **`DKNet.EfCore.Repos`** — store the returned location string as a value on your entity; the repository layer never
-  needs to know which blob provider is in use.
+- **`DKNet.EfCore.Specifications`** — store the returned location string as a value on your entity; `IRepositorySpec`
+  never needs to know which blob provider is in use.
 - **`DKNet.Fw.Extensions`** — general-purpose extensions used incidentally by the storage adapters; no hard dependency
   from your own code.
 

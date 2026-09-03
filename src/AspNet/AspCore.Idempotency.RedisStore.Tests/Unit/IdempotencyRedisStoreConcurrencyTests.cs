@@ -15,10 +15,11 @@ namespace AspCore.Idempotency.RedisStore.Tests.Unit;
 
 /// <summary>
 ///     Proves the atomicity contract that is the point of DRK-329: N truly concurrent callers for the same key
-///     must yield exactly one reservation winner. Backs the mocked <see cref="IDatabase" />'s NX-set behaviour
-///     with a real <see cref="ConcurrentDictionary{TKey,TValue}" />, whose <c>TryAdd</c> gives the same
-///     "only one caller wins" guarantee as Redis's <c>SET NX</c> - so the reservation race is genuinely exercised
-///     rather than asserted from a canned mock sequence. No live Redis is involved.
+///     must yield exactly one reservation winner. Backs the mocked <see cref="IDatabase" />'s <c>SET NX GET</c>
+///     behaviour (<c>StringSetAndGetAsync</c>) with a real
+///     <see cref="ConcurrentDictionary{TKey,TValue}" />, whose <c>TryAdd</c> gives the same "only one caller wins"
+///     guarantee as Redis's atomic <c>SET NX GET</c> - so the reservation race is genuinely exercised rather than
+///     asserted from a canned mock sequence. No live Redis is involved.
 /// </summary>
 public sealed class IdempotencyRedisStoreConcurrencyTests
 {
@@ -29,17 +30,18 @@ public sealed class IdempotencyRedisStoreConcurrencyTests
         var backingStore = new ConcurrentDictionary<string, string>();
         var database = new Mock<IDatabase>();
 
-        database.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync((RedisKey key, CommandFlags _) =>
-                backingStore.TryGetValue(key!, out var value) ? (RedisValue)value : RedisValue.Null);
-
-        database.Setup(d => d.StringSetAsync(
-                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), When.NotExists))
-            .ReturnsAsync((RedisKey key, RedisValue value, TimeSpan? _, When _) =>
-                backingStore.TryAdd(key!, value!));
+        // Mirrors "SET key value NX GET": TryAdd is the atomic single-winner op; a caller that loses reads
+        // back whatever the winner stored, in one round trip - exactly what StringSetAndGetAsync gives.
+        database.Setup(d => d.StringSetAndGetAsync(
+                It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(),
+                When.NotExists, It.IsAny<CommandFlags>()))
+            .ReturnsAsync((RedisKey key, RedisValue value, TimeSpan? _, bool _, When _, CommandFlags _) =>
+                backingStore.TryAdd(key!, value!)
+                    ? RedisValue.Null
+                    : backingStore.TryGetValue(key!, out var existing) ? (RedisValue)existing : RedisValue.Null);
 
         database.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync((RedisKey key, CommandFlags flags) => backingStore.TryRemove(key!, out var _));
+            .ReturnsAsync((RedisKey key, CommandFlags flags) => backingStore.TryRemove(key!, out var removed));
 
         var multiplexer = new Mock<IConnectionMultiplexer>();
         multiplexer.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);

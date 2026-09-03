@@ -291,9 +291,9 @@ it before applying the specification. You only need it by hand when you build su
 raw `DbSet`/`IQueryable` yourself, bypassing the repository — LinqKit cannot expand the predicate into SQL without
 it.
 
-`DKNet.EfCore.Repos` / `DKNet.EfCore.Repos.Abstractions` (the older generic-repository packages) are retired and
-superseded by Specifications; see
-[`Migrating-Repos-To-Specifications.md`](./EfCore/Migrating-Repos-To-Specifications.md) for the call-site mapping.
+`DKNet.EfCore.Repos` / `DKNet.EfCore.Repos.Abstractions` (the older generic-repository packages) were removed; see
+[`Migrating-Repos-To-Specifications.md`](./EfCore/Migrating-Repos-To-Specifications.md) for the call-site mapping
+onto Specifications.
 
 ---
 

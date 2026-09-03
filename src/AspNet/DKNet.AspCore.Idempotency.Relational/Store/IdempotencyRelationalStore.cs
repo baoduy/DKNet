@@ -38,15 +38,23 @@ internal abstract class IdempotencyRelationalStore<TContext>(
     /// </summary>
     private const int ReservationStatusCode = 102;
 
-    // Keyed by connection string rather than a single process-wide flag: a process that targets more
-    // than one database over its lifetime (e.g. per-tenant databases, or multiple test fixtures sharing
-    // one test host) must ensure migrations separately for each one, not skip every database after the
-    // first is ensured. Declared per closed TContext, so each provider gets its own guard.
+    // Migration now runs once at startup via IdempotencyMigrationHostedService, registered by the
+    // MsSql/Npgsql setup extensions. This guard is a cheap defensive fallback only - for a host that
+    // for some reason skips/reorders hosted services, the first request still self-heals the schema
+    // instead of failing outright. Keyed by connection string rather than a single process-wide flag:
+    // a process that targets more than one database over its lifetime (e.g. per-tenant databases, or
+    // multiple test fixtures sharing one test host) must ensure migrations separately for each one, not
+    // skip every database after the first is ensured. Declared per closed TContext, so each provider
+    // gets its own guard.
     private static readonly ConcurrentDictionary<string, bool> DbMigrationsEnsured = new(StringComparer.Ordinal);
     private static readonly SemaphoreSlim MigrationLock = new(1, 1);
 
     private readonly IdempotencyOptions _options = options.Value;
     private readonly AsyncServiceScope _scope = serviceProvider.CreateAsyncScope();
+
+    // Cached lazily on first use rather than read from DbContext.Database.GetConnectionString() (which
+    // allocates) on every request; a given store instance always targets the same connection string.
+    private string? _cachedConnectionString;
 
     #endregion
 
@@ -65,10 +73,10 @@ internal abstract class IdempotencyRelationalStore<TContext>(
     /// </summary>
     protected abstract bool IsProviderUniqueViolation(DbUpdateException ex);
 
-    private static async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
+    private async ValueTask EnsureDatabaseCreatedAsync(DbContext dbContext,
         CancellationToken cancellationToken = default)
     {
-        var connectionString = dbContext.Database.GetConnectionString() ?? string.Empty;
+        var connectionString = _cachedConnectionString ??= dbContext.Database.GetConnectionString() ?? string.Empty;
         if (DbMigrationsEnsured.ContainsKey(connectionString)) return;
 
         await MigrationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -98,6 +106,15 @@ internal abstract class IdempotencyRelationalStore<TContext>(
         };
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     Reserves by inserting first rather than checking with a preliminary <c>SELECT</c>: the
+    ///     unique index on <c>CompositeKey</c> already gives <see cref="ReserveKeyAsync" /> its
+    ///     single-winner guarantee regardless of whether a row exists beforehand, so a prior read adds a
+    ///     round trip without adding any atomicity a fresh caller does not already have. A brand-new key
+    ///     now costs one round trip (the insert) instead of two (select, then insert); a key that already
+    ///     has a result costs the same insert-then-collision-read the unique-violation path always used
+    ///     for the racing case.
+    /// </remarks>
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
         var sanitizedKey = IdempotencyKeyEntity.SanitizeKey(keyInfo.CompositeKey);
@@ -108,35 +125,7 @@ internal abstract class IdempotencyRelationalStore<TContext>(
         await using var dbContext = await factory.CreateDbContextAsync();
         await EnsureDatabaseCreatedAsync(dbContext);
 
-        var existing = await dbContext.IdempotencyKeys
-            .AsNoTracking()
-            .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey && k.ExpiresAt > DateTime.UtcNow)
-            .ConfigureAwait(false);
-
-        if (existing == null)
-        {
-            logger.LogDebug("Idempotency key not found or expired: {Key}", sanitizedKey);
-            return await ReserveKeyAsync(dbContext, keyInfo, sanitizedKey).ConfigureAwait(false);
-        }
-
-        if (existing.IsExpired)
-        {
-            logger.LogDebug("Idempotency key has expired: {Key}", sanitizedKey);
-            return await ReserveKeyAsync(dbContext, keyInfo, sanitizedKey).ConfigureAwait(false);
-        }
-
-        if (existing.StatusCode == ReservationStatusCode)
-        {
-            logger.LogDebug("Idempotency key reservation still in-flight: {Key}", sanitizedKey);
-            return (true, null);
-        }
-
-        logger.LogInformation(
-            "Idempotency key found with status code {StatusCode}: {Key}",
-            existing.StatusCode,
-            sanitizedKey);
-
-        return (true, ToCachedResponse(existing));
+        return await ReserveKeyAsync(dbContext, keyInfo, sanitizedKey).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -228,6 +217,12 @@ internal abstract class IdempotencyRelationalStore<TContext>(
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     Completes the reservation with a single <c>ExecuteUpdateAsync</c> statement instead of a
+    ///     tracked <c>SELECT</c> followed by <c>SaveChanges</c> — the caller reaching this method already
+    ///     holds the reservation (see <see cref="IsKeyProcessedAsync" />), so there is no concurrent
+    ///     competitor to read-before-write against; only round trips are being removed, not a race window.
+    /// </remarks>
     public async ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse)
     {
         var sanitizedKey = IdempotencyKeyEntity.SanitizeKey(keyInfo.CompositeKey);
@@ -243,17 +238,21 @@ internal abstract class IdempotencyRelationalStore<TContext>(
             await using var dbContext = await factory.CreateDbContextAsync();
             await EnsureDatabaseCreatedAsync(dbContext);
 
-            var entity = await dbContext.IdempotencyKeys
-                .FirstOrDefaultAsync(k => k.CompositeKey == sanitizedKey)
+            var updated = await dbContext.IdempotencyKeys
+                .Where(k => k.CompositeKey == sanitizedKey)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(k => k.StatusCode, cachedResponse.StatusCode)
+                    .SetProperty(k => k.Body, cachedResponse.Body)
+                    .SetProperty(k => k.ContentType, cachedResponse.ContentType)
+                    .SetProperty(k => k.ExpiresAt, cachedResponse.ExpiresAt))
                 .ConfigureAwait(false);
 
-            if (entity is null)
+            if (updated == 0)
+            {
                 // Defensive only: should not happen once IsKeyProcessedAsync always reserves first.
                 dbContext.IdempotencyKeys.Add(new IdempotencyKeyEntity(keyInfo, cachedResponse));
-            else
-                entity.Complete(cachedResponse);
-
-            await dbContext.SaveChangesAsync().ConfigureAwait(false);
+                await dbContext.SaveChangesAsync().ConfigureAwait(false);
+            }
 
             logger.LogInformation(
                 "Successfully stored idempotency key with status code {StatusCode}: {Key}",

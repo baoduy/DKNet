@@ -300,7 +300,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             }
         }
 
-        GenerateStringFormRecords(context, compilation, validConventionFormDeclarations, globalExclusions);
+        GenerateStringFormRecords(context, validConventionFormDeclarations, globalExclusions);
     }
 
     /// <summary>
@@ -558,7 +558,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// merged into one record.
     /// </summary>
     private static void GenerateStringFormRecords(
-        SourceProductionContext context, Compilation compilation, List<RaisesEventDeclaration> declarations,
+        SourceProductionContext context, List<RaisesEventDeclaration> declarations,
         HashSet<string> globalExclusions)
     {
         var groups = declarations.GroupBy(d => (Namespace: GetEntityNamespace(d.EntitySymbol), d.ComposedName));
@@ -603,7 +603,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
 
             var declaration = groupList[0];
             var source = DtoGenerator.BuildRaisesEventRecordSource(
-                declaration.EntitySymbol, declaration.ComposedName!, group.Key.Namespace, compilation,
+                declaration.EntitySymbol, declaration.ComposedName!, group.Key.Namespace,
                 declaration.ExcludeFilter, declaration.IncludeFilter, globalExclusions);
 
             var hintName = $"{(group.Key.Namespace ?? "global")}.{declaration.ComposedName}.RaisesEvent.g.cs";

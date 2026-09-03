@@ -54,14 +54,12 @@ public static class IdempotencyKeyScopeResolver
 
         // 2. HMAC of the Authorization header, but only when a secret is configured.
         var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(authorizationHeader) &&
-            !string.IsNullOrWhiteSpace(options.ScopeHmacSecret))
+        var secretBytes = options.ScopeHmacSecretBytes;
+        if (!string.IsNullOrWhiteSpace(authorizationHeader) && secretBytes is not null)
         {
-            var hash = HMACSHA256.HashData(
-                Encoding.UTF8.GetBytes(options.ScopeHmacSecret),
-                Encoding.UTF8.GetBytes(authorizationHeader));
+            var hash = HMACSHA256.HashData(secretBytes, Encoding.UTF8.GetBytes(authorizationHeader));
 
-            return $"auth:{Convert.ToHexString(hash).ToLowerInvariant()}";
+            return $"auth:{Convert.ToHexStringLower(hash)}";
         }
 
         // 3. Client IP address when opted in.

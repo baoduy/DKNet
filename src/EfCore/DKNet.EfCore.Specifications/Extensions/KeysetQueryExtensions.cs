@@ -26,9 +26,17 @@ namespace DKNet.EfCore.Specifications.Extensions;
 ///         has-previous/has-next existence checks.
 ///     </para>
 ///     <para>
+///         Cursor values are never inlined as SQL literals — they are boxed behind a captured-field
+///         access so EF Core's parameter extraction turns them into query parameters. Two calls with
+///         different cursor values therefore produce identical SQL text, which keeps the server-side
+///         plan cache from growing one entry per cursor.
+///     </para>
+///     <para>
 ///         For a composite keyset with two columns ordered ascending the generated SQL is:
-///         <c>WHERE key1 &gt; cursor1 OR (key1 = cursor1 AND key2 &gt; cursor2)</c>
-///         which is equivalent to the row-value comparison <c>(key1, key2) &gt; (cursor1, cursor2)</c>.
+///         <c>WHERE key1 &gt;= cursor1 AND (key1 &gt; cursor1 OR (key1 = cursor1 AND key2 &gt; cursor2))</c>.
+///         The redundant leading <c>key1 &gt;= cursor1</c> conjunct is the same index-seek aid
+///         <c>MR.EntityFrameworkCore.KeysetPagination</c> adds ahead of its own OR-decomposition
+///         (its default strategy does not emit row-value/<c>ROW(...)</c> SQL either).
 ///     </para>
 ///     <para>
 ///         <b>Usage example (single key):</b>
@@ -118,9 +126,7 @@ public static class KeysetQueryExtensions
 
     /// <summary>
     ///     Applies a forward keyset cursor filter on two key columns (composite key, both ascending).
-    ///     Generates: <c>WHERE key1 &gt; cursor1 OR (key1 = cursor1 AND key2 &gt; cursor2)</c>
-    ///     which is semantically equivalent to the tuple comparison
-    ///     <c>(key1, key2) &gt; (cursor1, cursor2)</c>.
+    ///     Generates: <c>WHERE key1 &gt;= cursor1 AND (key1 &gt; cursor1 OR (key1 = cursor1 AND key2 &gt; cursor2))</c>.
     /// </summary>
     /// <typeparam name="TEntity">The entity type being queried.</typeparam>
     /// <typeparam name="TKey1">The type of the primary (first) key column.</typeparam>
@@ -150,9 +156,7 @@ public static class KeysetQueryExtensions
 
     /// <summary>
     ///     Applies a backward keyset cursor filter on two key columns (composite key, both ascending).
-    ///     Generates: <c>WHERE key1 &lt; cursor1 OR (key1 = cursor1 AND key2 &lt; cursor2)</c>
-    ///     which is semantically equivalent to the tuple comparison
-    ///     <c>(key1, key2) &lt; (cursor1, cursor2)</c>.
+    ///     Generates: <c>WHERE key1 &lt;= cursor1 AND (key1 &lt; cursor1 OR (key1 = cursor1 AND key2 &lt; cursor2))</c>.
     /// </summary>
     /// <typeparam name="TEntity">The entity type being queried.</typeparam>
     /// <typeparam name="TKey1">The type of the primary (first) key column.</typeparam>
@@ -247,19 +251,22 @@ public static class KeysetQueryExtensions
     {
         var parameter = Expression.Parameter(typeof(TEntity), "x");
         var keyBody = new ParameterReplacer(keySelector.Parameters[0], parameter).Visit(keySelector.Body);
-        var cursorConst = Expression.Constant(cursor, typeof(TKey));
+        var cursorAccess = MakeParameterizedValueExpression(cursor);
 
         var comparison = greaterThan
-            ? Expression.GreaterThan(keyBody, cursorConst)
-            : Expression.LessThan(keyBody, cursorConst);
+            ? Expression.GreaterThan(keyBody, cursorAccess)
+            : Expression.LessThan(keyBody, cursorAccess);
 
         return Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
     }
 
     /// <summary>
     ///     Builds a composite two-key comparison predicate.
-    ///     For <c>greaterThan = true</c>: <c>key1 &gt; c1 OR (key1 = c1 AND key2 &gt; c2)</c>
-    ///     For <c>greaterThan = false</c>: <c>key1 &lt; c1 OR (key1 = c1 AND key2 &lt; c2)</c>
+    ///     For <c>greaterThan = true</c>: <c>key1 &gt;= c1 AND (key1 &gt; c1 OR (key1 = c1 AND key2 &gt; c2))</c>
+    ///     For <c>greaterThan = false</c>: <c>key1 &lt;= c1 AND (key1 &lt; c1 OR (key1 = c1 AND key2 &lt; c2))</c>
+    ///     The redundant leading <c>key1 &gt;= c1</c>/<c>key1 &lt;= c1</c> conjunct does not change which rows
+    ///     match (it is implied by the OR-decomposition already), but it gives the query planner an extra,
+    ///     single-column bound it can use for an index seek on <c>key1</c> alone.
     /// </summary>
     private static Expression<Func<TEntity, bool>> BuildCompositeKeyPredicate<TEntity, TKey1, TKey2>(
         Expression<Func<TEntity, TKey1>> key1Selector,
@@ -273,21 +280,21 @@ public static class KeysetQueryExtensions
         var key1Body = new ParameterReplacer(key1Selector.Parameters[0], parameter).Visit(key1Selector.Body);
         var key2Body = new ParameterReplacer(key2Selector.Parameters[0], parameter).Visit(key2Selector.Body);
 
-        var cursor1Const = Expression.Constant(cursor1, typeof(TKey1));
-        var cursor2Const = Expression.Constant(cursor2, typeof(TKey2));
+        var cursor1Access = MakeParameterizedValueExpression(cursor1);
+        var cursor2Access = MakeParameterizedValueExpression(cursor2);
 
         // key1 > cursor1 (or key1 < cursor1 for backward)
         var key1Comparison = greaterThan
-            ? Expression.GreaterThan(key1Body, cursor1Const)
-            : Expression.LessThan(key1Body, cursor1Const);
+            ? Expression.GreaterThan(key1Body, cursor1Access)
+            : Expression.LessThan(key1Body, cursor1Access);
 
         // key1 = cursor1
-        var key1Equal = Expression.Equal(key1Body, cursor1Const);
+        var key1Equal = Expression.Equal(key1Body, cursor1Access);
 
         // key2 > cursor2 (or key2 < cursor2 for backward)
         var key2Comparison = greaterThan
-            ? Expression.GreaterThan(key2Body, cursor2Const)
-            : Expression.LessThan(key2Body, cursor2Const);
+            ? Expression.GreaterThan(key2Body, cursor2Access)
+            : Expression.LessThan(key2Body, cursor2Access);
 
         // (key1 = cursor1 AND key2 > cursor2)
         var tieBreak = Expression.AndAlso(key1Equal, key2Comparison);
@@ -295,8 +302,24 @@ public static class KeysetQueryExtensions
         // key1 > cursor1 OR (key1 = cursor1 AND key2 > cursor2)
         var combined = Expression.OrElse(key1Comparison, tieBreak);
 
-        return Expression.Lambda<Func<TEntity, bool>>(combined, parameter);
+        // key1 >= cursor1 (or key1 <= cursor1 for backward) — redundant index-seek aid, see summary above.
+        var key1ComparisonOrEqual = greaterThan
+            ? Expression.GreaterThanOrEqual(key1Body, cursor1Access)
+            : Expression.LessThanOrEqual(key1Body, cursor1Access);
+
+        var withSeekHint = Expression.AndAlso(key1ComparisonOrEqual, combined);
+
+        return Expression.Lambda<Func<TEntity, bool>>(withSeekHint, parameter);
     }
+
+    /// <summary>
+    ///     Wraps <paramref name="value" /> behind a captured-field access instead of an inline
+    ///     <see cref="ConstantExpression" />, so EF Core's parameter extraction turns it into a SQL query
+    ///     parameter rather than a literal. Without this, <c>Expression.Constant(value)</c> is embedded
+    ///     verbatim in the generated SQL, producing a distinct query plan per distinct cursor value.
+    /// </summary>
+    private static Expression MakeParameterizedValueExpression<TValue>(TValue value)
+        => Expression.Property(Expression.Constant(new CursorBox<TValue>(value)), nameof(CursorBox<TValue>.Value));
 
     #endregion
 
@@ -311,6 +334,16 @@ public static class KeysetQueryExtensions
         /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
             => node == from ? to : base.VisitParameter(node);
+    }
+
+    /// <summary>
+    ///     Boxes a cursor value behind a property so it can be reached via a
+    ///     <see cref="MemberExpression" /> over a <see cref="ConstantExpression" /> — the shape EF Core's
+    ///     parameter extraction recognizes as a query parameter rather than an inlined literal.
+    /// </summary>
+    private sealed class CursorBox<TValue>(TValue value)
+    {
+        public TValue Value { get; } = value;
     }
 
     #endregion

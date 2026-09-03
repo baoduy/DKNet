@@ -157,17 +157,24 @@ public static class EndpointConfigExtensions
                 // service directly from it throws under ValidateScopes=true. Asking "is it registered" answers
                 // the fail-fast question without instantiating anything from the wrong scope.
                 var isServiceRegistered = factoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
+                var hasDeclaredMembers = false;
                 foreach (var parameter in factoryContext.MethodInfo.GetParameters())
                 {
                     var members = ContextualMemberScanner.GetDeclaredMembers(parameter.ParameterType);
-                    if (members.Length > 0 &&
-                        isServiceRegistered?.IsService(typeof(IContextualRequestPopulationService)) != true)
+                    if (members.Length == 0) continue;
+
+                    hasDeclaredMembers = true;
+                    if (isServiceRegistered?.IsService(typeof(IContextualRequestPopulationService)) != true)
                         throw new InvalidOperationException(
                             $"'{parameter.ParameterType.FullName}' declares a contextual source (e.g. " +
                             $"{nameof(FromClaimAttribute)}) but " +
                             $"{nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation)}() " +
                             "was never called. Call it on the service collection, or remove the declaration.");
                 }
+
+                // No parameter type declares a contextual source: install nothing, so every request on this
+                // endpoint skips the scoped service resolution and argument loop below entirely (P16).
+                if (!hasDeclaredMembers) return next;
 
                 return async invocationContext =>
                 {

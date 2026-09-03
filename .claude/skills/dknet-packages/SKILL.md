@@ -9,15 +9,15 @@ description: Use when picking which DKNet package solves a scenario, when asked 
 
 Paths are repo-relative. Solution lives in `src/DKNet.FW.sln`.
 
-## Retired — do not build on these
+## Removed — do not build on these
 
 | Package | Use instead |
 |---|---|
-| `DKNet.EfCore.Repos` | `DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()` |
-| `DKNet.EfCore.Repos.Abstractions` | `DKNet.EfCore.Specifications` |
+| `DKNet.EfCore.Repos` | **deleted entirely** — `DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()` |
+| `DKNet.EfCore.Repos.Abstractions` | **deleted entirely** — `DKNet.EfCore.Specifications` |
 | `DKNet.EfCore.DtoEntities` | **deleted entirely** — `DKNet.EfCore.DtoGenerator` |
 
-Retired in commit `e52c018`. Migration guide: `docs/EfCore/Migrating-Repos-To-Specifications.md`. `Repos` and `Repos.Abstractions` still build (they remain in the solution); `DtoEntities` is gone — its project file no longer exists, so a reference to it will not restore.
+Migration guide: `docs/EfCore/Migrating-Repos-To-Specifications.md`. None of the three packages' project files exist any more — a reference to any of them will not restore.
 
 ## EF Core — `docs/EfCore/`
 
@@ -83,7 +83,7 @@ Encrypting an **EF Core column** is `DKNet.EfCore.Encryption`, not `Svc.Encrypti
 
 | Need | Package |
 |---|---|
-| String/type/enum/DateTime/async-enumerable extensions, DI guards, assembly & type scanning (`TypeExtractors`) | `DKNet.Fw.Extensions` |
+| String/type/enum/DateTime extensions, DI guards, assembly & type scanning (`TypeExtractors`) | `DKNet.Fw.Extensions` |
 | Cryptographically secure random strings with digit/symbol quotas (passwords, tokens) | `DKNet.RandomCreator` |
 
 ## Aspire — `docs/Aspire/`

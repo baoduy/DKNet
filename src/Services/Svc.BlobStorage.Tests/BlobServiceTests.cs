@@ -169,6 +169,114 @@ public class BlobServiceTests
         Should.NotThrow(() => service.TestValidateFile(blobData));
     }
 
+    [Fact]
+    public void ValidateFile_Stream_WithInvalidExtension_ShouldThrowFileLoadException()
+    {
+        // Arrange — the stream overload shares name/extension validation with the BinaryData overload.
+        var options = new BlobServiceOptions { IncludedExtensions = [".txt"] };
+        var service = new TestBlobService(options);
+        var blobData = new BlobDetails.BlobStreamData("test.pdf", new MemoryStream("test"u8.ToArray()));
+
+        // Act & Assert
+        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
+        exception.Message.ShouldBe("File extension is invalid.");
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_SeekableWithinLimit_ShouldReturnSameStreamInstance()
+    {
+        // Arrange — a seekable stream's size is known upfront, so no wrapping is needed.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var stream = new MemoryStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", stream);
+
+        // Act
+        var result = service.TestValidateFile(blobData);
+
+        // Assert
+        result.ShouldBeSameAs(stream);
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_SeekableOversized_ShouldThrowImmediatelyWithoutReading()
+    {
+        // Arrange — size is checked via Stream.Length before a single byte is read.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var stream = new MemoryStream(new byte[2 * 1_000_000]);
+        var blobData = new BlobDetails.BlobStreamData("test.txt", stream);
+
+        // Act & Assert
+        var exception = Should.Throw<FileLoadException>(() => service.TestValidateFile(blobData));
+        exception.Message.ShouldBe("File size is invalid.");
+        stream.Position.ShouldBe(0); // proves it never read the stream to measure it
+    }
+
+    [Fact]
+    public async Task ValidateFile_Stream_NonSeekableWithinLimit_ShouldReadFullyWithoutThrowing()
+    {
+        // Arrange — a non-seekable source can't report Length, so the limit is enforced while copying.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var payload = "test content"u8.ToArray();
+        var blobData = new BlobDetails.BlobStreamData("test.txt", new NonSeekableStream(payload));
+
+        // Act
+        var wrapped = service.TestValidateFile(blobData);
+        using var destination = new MemoryStream();
+        await wrapped.CopyToAsync(destination);
+
+        // Assert
+        destination.ToArray().ShouldBe(payload);
+    }
+
+    [Fact]
+    public async Task ValidateFile_Stream_NonSeekableOversized_ShouldThrowWhileCopyingRatherThanSkipTheCheck()
+    {
+        // Arrange — length is unknowable upfront for a non-seekable stream; the limit must not be silently
+        // skipped, so the wrapper aborts once the running byte count exceeds the ceiling.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var payload = new byte[2 * 1_000_000];
+        var blobData = new BlobDetails.BlobStreamData("test.txt", new NonSeekableStream(payload));
+
+        // Act
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Assert
+        using var destination = new MemoryStream();
+        var exception = await Should.ThrowAsync<FileLoadException>(() => wrapped.CopyToAsync(destination));
+        exception.Message.ShouldBe("File size is invalid.");
+    }
+
+    /// <summary>
+    ///     A stream that reports <see cref="CanSeek" /> as <c>false</c> and throws on <see cref="Length" />, to
+    ///     exercise the non-seekable branch of <c>BlobService.ValidateFile(BlobDetails.BlobStreamData)</c> the way
+    ///     a live network response stream (S3/Azure) would behave.
+    /// </summary>
+    private sealed class NonSeekableStream(byte[] data) : Stream
+    {
+        private readonly MemoryStream _inner = new(data);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => _inner.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     #endregion
 
     private class TestBlobService(BlobServiceOptions options) : BlobService(options)
@@ -207,6 +315,8 @@ public class BlobServiceTests
         public string TestGetBlobLocation(BlobRequest item) => GetBlobLocation(item);
 
         public void TestValidateFile(BlobDetails.BlobData item) => ValidateFile(item);
+
+        public Stream TestValidateFile(BlobDetails.BlobStreamData item) => ValidateFile(item);
 
         #endregion
     }

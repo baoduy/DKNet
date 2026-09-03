@@ -109,6 +109,34 @@ public class LocalBlobStorageTest(LocalBlobServiceFixture fixture) : IClassFixtu
     }
 
     [Fact]
+    public async Task ListItemsAsync_SingleTreeWalk_StillReturnsBothFilesAndDirectories()
+    {
+        // Regression for P27: EnumerateFiles then EnumerateDirectories (two full recursive walks) was
+        // collapsed into one EnumerateFileSystemInfos pass. This proves the merge still surfaces every
+        // file and every directory (files and directories may now interleave rather than
+        // files-then-directories, since no consumer depends on that order).
+        var dir = Path.Combine(_testRoot, $"single-walk-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(Path.Combine(dir, "a.txt"), "1");
+        var subDir = Path.Combine(dir, "sub");
+        Directory.CreateDirectory(subDir);
+        await File.WriteAllTextAsync(Path.Combine(subDir, "b.txt"), "2");
+
+        var relativeDir = Path.GetRelativePath(_testRoot, dir);
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(relativeDir)
+                           { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.Count.ShouldBe(3);
+        items.Count(i => i.Type == BlobTypes.File).ShouldBe(2);
+        items.Count(i => i.Type != BlobTypes.File).ShouldBe(1);
+        items.ShouldContain(i => i.Name == Path.Combine(relativeDir, "a.txt") && i.Type == BlobTypes.File);
+        items.ShouldContain(i => i.Name == Path.Combine(relativeDir, "sub", "b.txt") && i.Type == BlobTypes.File);
+        items.ShouldContain(i => i.Name == Path.Combine(relativeDir, "sub") && i.Type != BlobTypes.File);
+    }
+
+    [Fact]
     public async Task ListItemsAsyncListsSingleFile()
     {
         var file = Path.Combine(_testRoot, "single.txt");

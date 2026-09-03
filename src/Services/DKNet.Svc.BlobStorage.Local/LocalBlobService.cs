@@ -127,7 +127,9 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         if (!File.Exists(finalFile)) throw new FileNotFoundException("File not found", blob.Name);
 
         var file = new FileInfo(finalFile);
-        var data = await BinaryData.FromStreamAsync(file.OpenRead(), cancellationToken);
+        BinaryData data;
+        await using (var stream = file.OpenRead())
+            data = await BinaryData.FromStreamAsync(stream, cancellationToken);
         var relativePath = GetRelativePath(file.FullName);
 
         return new BlobDetails.BlobDataResult(relativePath, data)
@@ -167,6 +169,20 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     }
 
     /// <summary>
+    ///     Opens a read stream directly from the local file system for the blob at <paramref name="blob" />, without
+    ///     buffering its content. The caller owns the returned stream and must dispose it.
+    /// </summary>
+    /// <param name="blob">The blob request describing the file to open.</param>
+    /// <param name="cancellationToken">Cancellation token for the operation (unused; local file open is synchronous).</param>
+    /// <returns>A caller-owned, readable file stream when the file exists; otherwise <c>null</c>.</returns>
+    public override Task<Stream?> OpenReadAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    {
+        var finalFile = GetFinalPath(blob);
+        Stream? stream = File.Exists(finalFile) ? File.OpenRead(finalFile) : null;
+        return Task.FromResult(stream);
+    }
+
+    /// <summary>
     ///     Public access URLs are not supported by the local file system provider and will throw.
     /// </summary>
     /// <param name="blob">The blob request to build a URL for (ignored).</param>
@@ -188,10 +204,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     /// <param name="fullPath">The full file system path.</param>
     /// <returns>The path relative to the configured root folder.</returns>
     private string GetRelativePath(string fullPath) =>
-        fullPath.Replace(
-            _rootFolder,
-            string.Empty,
-            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        Path.GetRelativePath(_rootFolder, fullPath);
 
     /// <summary>
     ///     Lists items beneath the requested path. Yields files first and then folders encountered when listing a directory.
@@ -209,21 +222,21 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         {
             var directory = new DirectoryInfo(internalLocation);
 
-            foreach (var file in directory.EnumerateFiles("*", SearchOption.AllDirectories))
+            // Single recursive walk instead of a separate EnumerateFiles then EnumerateDirectories pass:
+            // both used to walk the whole tree independently, doubling the syscalls for the same result.
+            // Files and directories now interleave in whatever order the file system yields them rather
+            // than files-then-directories; no consumer or test depends on that ordering.
+            foreach (var entry in directory.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                yield return new BlobDetails.BlobResult(GetRelativePath(file.FullName))
-                {
-                    Type = BlobTypes.File,
-                    Details = CreateBlobDetails(file)
-                };
-            }
-
-            foreach (var folder in directory.EnumerateDirectories("*", SearchOption.AllDirectories))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return new BlobDetails.BlobResult(GetRelativePath(folder.FullName));
+                yield return entry is FileInfo file
+                    ? new BlobDetails.BlobResult(GetRelativePath(file.FullName))
+                    {
+                        Type = BlobTypes.File,
+                        Details = CreateBlobDetails(file)
+                    }
+                    : new BlobDetails.BlobResult(GetRelativePath(entry.FullName));
             }
         }
         else
@@ -244,10 +257,27 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
     /// <param name="blob">The blob payload and metadata to store.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The original blob name when the save completes.</returns>
-    public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
+    public override Task<string> SaveAsync(BlobDetails.BlobData blob,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(
+            new BlobDetails.BlobStreamData(blob.Name, blob.Data.ToStream())
+            {
+                Overwrite = blob.Overwrite,
+                ContentType = blob.ContentType
+            },
+            cancellationToken);
+
+    /// <summary>
+    ///     Saves the provided blob stream to the local file system, creating directories as necessary, without
+    ///     buffering the whole payload into memory.
+    /// </summary>
+    /// <param name="blob">The blob name, stream content and metadata to store.</param>
+    /// <param name="cancellationToken">Cancellation token for the operation.</param>
+    /// <returns>The original blob name when the save completes.</returns>
+    public override async Task<string> SaveAsync(BlobDetails.BlobStreamData blob,
         CancellationToken cancellationToken = default)
     {
-        ValidateFile(blob);
+        var content = ValidateFile(blob);
 
         if (await CheckExistsAsync(blob, cancellationToken) && !blob.Overwrite)
             throw new InvalidOperationException("File already existed");
@@ -257,7 +287,9 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
         if (!Directory.Exists(directory)) Directory.CreateDirectory(directory!);
 
-        await File.WriteAllBytesAsync(finalFile, blob.Data.ToArray(), cancellationToken);
+        await using var fileStream =
+            new FileStream(finalFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+        await content.CopyToAsync(fileStream, cancellationToken);
         return blob.Name;
     }
 

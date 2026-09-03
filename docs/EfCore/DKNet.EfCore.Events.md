@@ -406,8 +406,13 @@ or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` 
 
 - **Events are cleared unconditionally after `AfterSaveAsync`**, whether every publisher succeeded or not. A
   publisher exception is logged, not rethrown — it neither undoes the already-committed save nor requeues the
-  event for a retry. If you need at-least-once delivery guarantees (outbox pattern, dead-lettering), build that
-  into your `IEventPublisher` implementation; this package doesn't provide it.
+  event for a retry. This is a deliberate, accepted trade-off, not a bug: publishing runs after the transaction has
+  already committed, so a publish failure *must not* be allowed to undo a write that already happened, and once
+  the transaction is closed it no longer can be. That also means the failure cannot be made recoverable from inside
+  `IEventPublisher` itself — by the time `PublishAsync` runs, the one chance to fail the write atomically with the
+  event is already gone. If you need at-least-once delivery, this package cannot give it to you on its own: build a
+  transactional outbox instead — write the events to an outbox table from a `BeforeSaveHookAsync` inside the *same*
+  save transaction as the entity write, and drain that table with a separate dispatcher.
 - **No ordering guarantee.** Events across multiple entities in one save, and multiple registered publishers, run
   in whatever order the underlying collections/DI enumerate them — don't depend on sequence for correctness.
 - **`AddEvent(object)` never needs an `IMapper`; `AddEvent<TEvent>()` and `[RaisesEvent]` always do.** Forgetting

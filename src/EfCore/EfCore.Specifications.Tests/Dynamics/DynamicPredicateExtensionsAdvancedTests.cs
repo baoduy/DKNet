@@ -207,7 +207,11 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         // Assert
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("\"Name\" = ''");
+        // The filter value is bound as a query parameter, not inlined as a SQL literal, so the clause
+        // carries a placeholder and the value appears only in ToQueryString()'s .param set preamble.
+        sql.ShouldContain("\"Name\" = @");
+        sql.ShouldContain(".param set");
+        sql.ShouldContain("''");
     }
 
     [Fact]
@@ -493,7 +497,8 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
         sql.ShouldContain("JOIN \"Categories\"");
-        sql.ShouldContain("\"c\".\"Name\" = 'Electronics'");
+        sql.ShouldContain("\"c\".\"Name\" = @");
+        sql.ShouldContain("'Electronics'");
     }
 
     [Fact]
@@ -627,7 +632,8 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
         sql.ShouldContain("WHERE");
-        sql.ShouldContain("instr(\"p\".\"Name\", '   ')");
+        sql.ShouldContain("instr(\"p\".\"Name\", @");
+        sql.ShouldContain("'   '");
     }
 
     [Fact]
@@ -757,7 +763,8 @@ public class DynamicPredicateExtensionsAdvancedTests(TestDbFixture fixture, ITes
         result.ShouldNotBeNull();
         var query = _context.Products.AsExpandable().Where(result);
         var sql = query.ToQueryString();
-        sql.ShouldContain("instr(\"p\".\"Name\", 'test')");
+        sql.ShouldContain("instr(\"p\".\"Name\", @");
+        sql.ShouldContain("'test'");
     }
 
     /// <summary>Normalizes SQL by removing database-specific identifier quoting ([ ] for SQL Server, " " for SQLite).</summary>

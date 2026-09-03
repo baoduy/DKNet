@@ -569,10 +569,10 @@ types declared here. Concretely (all verified by reading the consuming source, n
   its value generator (including a `Guid` v7 generator), detects `IAuditedProperties` to configure the four audit
   columns, and detects `IConcurrencyEntity<>` to configure `RowVersion` as a row-version concurrency token — all in
   `DefaultEntityTypeConfiguration<TEntity>`. It also reads `[Sequence]` to register database sequences.
-- **`DKNet.EfCore.Repos` / `DKNet.EfCore.Repos.Abstractions`** are generic over `TEntity : class` — they do **not**
-  require `IEntity<TKey>` or `Entity<TKey>` at the interface level, but the DKNet convention (and the worked
-  examples across the docs) is to back repositories with `Entity`/`Entity<TKey>`-derived aggregates so the rest of
-  the stack (events, audit, concurrency) applies uniformly.
+- **`DKNet.EfCore.Specifications`**'s `IRepositorySpec` is not generic over `TEntity` at the interface level and
+  does not require `IEntity<TKey>` or `Entity<TKey>`, but the DKNet convention (and the worked examples across the
+  docs) is to back specifications with `Entity`/`Entity<TKey>`-derived aggregates so the rest of the stack (events,
+  audit, concurrency) applies uniformly.
 
 ## ⚠️ Gotchas & limits
 

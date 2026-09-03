@@ -141,8 +141,8 @@ turn decides whether `GetPublicAccessUrl` can sign anything:
   references this package.
 - **[DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md)** — the usual stand-in for local runs and CI, where
   no storage account or emulator should be required.
-- **`DKNet.EfCore.Events` / `DKNet.EfCore.Repos`** — pair with them exactly as any provider does; see the Abstractions
-  page.
+- **`DKNet.EfCore.Events` / `DKNet.EfCore.Specifications`** — pair with them exactly as any provider does; see the
+  Abstractions page.
 
 ## ⚠️ Gotchas & limits
 

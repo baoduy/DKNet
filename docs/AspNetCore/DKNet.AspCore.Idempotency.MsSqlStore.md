@@ -49,10 +49,11 @@ app.MapPost("/orders", CreateOrder)
 await app.RunAsync();
 ```
 
-`AddIdempotencyWithMsSqlStore` (in `IdempotencyMsSqlSetup`) does two things: it calls
+`AddIdempotencyWithMsSqlStore` (in `IdempotencyMsSqlSetup`) does three things: it calls
 `AddIdempotencyMsSqlStore(connectionString)` to register `IdempotencyDbContext` — a scoped
 `AddDbContext` with a singleton `DbContextOptions`, plus an
-`IDbContextFactory<IdempotencyDbContext>` — and then
+`IDbContextFactory<IdempotencyDbContext>` — and a hosted service that migrates the schema once at
+application startup (`IdempotencyMigrationHostedService<IdempotencyDbContext>`); and then
 `AddIdempotentKey<IdempotencySqlServerStore>(config)` to wire the store in as the
 `IIdempotencyKeyStore`. Call it once at start-up, then use `.RequiredIdempotentKey()` on endpoints
 as described on the core page.
@@ -66,7 +67,7 @@ as described on the core page.
 
 | Method | Registers | Does **not** register |
 |---|---|---|
-| `AddIdempotencyMsSqlStore(string connectionString)` | `IdempotencyDbContext` via `AddDbContext` (scoped context, singleton `DbContextOptions`) plus `AddDbContextFactory<IdempotencyDbContext>` | The key store. Called on its own, no `IIdempotencyKeyStore` exists and `RequiredIdempotentKey()` cannot resolve the filter's dependency. |
+| `AddIdempotencyMsSqlStore(string connectionString)` | `IdempotencyDbContext` via `AddDbContext` (scoped context, singleton `DbContextOptions`), `AddDbContextFactory<IdempotencyDbContext>`, and `IdempotencyMigrationHostedService<IdempotencyDbContext>` (migrates at startup) | The key store. Called on its own, no `IIdempotencyKeyStore` exists and `RequiredIdempotentKey()` cannot resolve the filter's dependency. |
 | `AddIdempotencyWithMsSqlStore(string connectionString, Action<IdempotencyOptions>? config = null)` | Everything the first method does, then `AddIdempotentKey<IdempotencySqlServerStore>(config)` | Nothing — this is the call an application makes. |
 
 Both throw `ArgumentNullException` on a null `services` and `ArgumentException` on a null, empty or
@@ -84,7 +85,7 @@ replacing the key store — for example to run `Database.MigrateAsync()` from a 
 | Thing | Who provides it |
 |---|---|
 | The `IdempotencyKeys` table, `UX_CompositeKey`, `IX_IdempotencyKeys_ExpiresAt` and `CK_StatusCode_Valid` | The package — created by the shipped `Initial` migration |
-| Applying that migration | The package, automatically, on first use per connection string (or you, ahead of time — see [Gotchas & limits](#-gotchas--limits)) |
+| Applying that migration | The package, automatically, once at application startup via a hosted service (or you, ahead of time — see [Gotchas & limits](#-gotchas--limits)) |
 | The `migrate.IdempotencyDbContext` migrations-history table and the `migrate` schema | The package, through EF Core |
 | A reachable SQL Server database and a login that can create tables in it | **You** |
 | Row expiry / cleanup of keys nobody ever retries | **You** — `ExpiresAt` is indexed, but nothing sweeps it |
@@ -165,10 +166,14 @@ pieces (endpoint filter, key scope resolution, `IdempotencyOptions`) live in
 - **Migration ownership** — migrations ship inside this package's own assembly
   (`sqlOptions.MigrationsAssembly(typeof(IdempotencyMsSqlSetup).Assembly)`); don't add your own
   `IdempotencyDbContext` migrations to your application's assembly.
-- **Migrations run automatically, with no opt-out** — the relational base checks for and applies
-  pending migrations the first time the store is used against a given connection string, under a
-  lock. Most apps never run migrations by hand, but the first request against a fresh database pays
-  that cost. For a controlled production rollout instead, set `IDEMPOTENCY_MSSQL_CONNECTION` and
+- **Migrations run automatically, with no opt-out** — `AddIdempotencyMsSqlStore` registers
+  `IdempotencyMigrationHostedService<IdempotencyDbContext>`, which applies any pending migrations once, in
+  `StartAsync`, before the host begins serving requests. This requires the host to actually run hosted services
+  (a normal `WebApplication.RunAsync()`/`Run()` does); a host that skips or reorders hosted services instead falls
+  back to the relational base's per-request guard, which checks for and applies pending migrations under a lock the
+  first time the store is used against a given connection string — see
+  [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational.md#idempotencymigrationhostedservicetcontext--migrate-once-at-startup).
+  For a controlled production rollout instead of either automatic path, set `IDEMPOTENCY_MSSQL_CONNECTION` and
   run `dotnet ef database update --context IdempotencyDbContext` from a project that references
   this package before traffic arrives.
 - **Registration is first-wins** — `AddIdempotencyMsSqlStore` returns early once

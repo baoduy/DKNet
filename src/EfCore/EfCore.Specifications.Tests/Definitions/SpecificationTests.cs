@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace EfCore.Specifications.Tests.Definitions;
 
 /// <summary>
@@ -46,7 +48,8 @@ public class SpecificationTests
         spec.AddTestOrderBy(p => p.Price);
 
         // Assert
-        spec.OrderByQueries.Count.ShouldBe(2);
+        spec.OrderByClauses.Count.ShouldBe(2);
+        spec.OrderByClauses.ShouldAllBe(c => c.Direction == ListSortDirection.Ascending);
     }
 
     [Fact]
@@ -60,11 +63,12 @@ public class SpecificationTests
         spec.AddTestOrderByDescending(p => p.Name);
 
         // Assert
-        spec.OrderByDescendingQueries.Count.ShouldBe(2);
+        spec.OrderByClauses.Count.ShouldBe(2);
+        spec.OrderByClauses.ShouldAllBe(c => c.Direction == ListSortDirection.Descending);
     }
 
     [Fact]
-    public void AddOrderBy_ShouldAddToOrderByQueries()
+    public void AddOrderBy_ShouldAddAscendingClause()
     {
         // Arrange
         var spec = new TestProductSpecification();
@@ -73,12 +77,12 @@ public class SpecificationTests
         spec.AddTestOrderBy(p => p.Name);
 
         // Assert
-        spec.OrderByQueries.Count.ShouldBe(1);
-        spec.OrderByQueries.First().ShouldNotBeNull();
+        spec.OrderByClauses.Count.ShouldBe(1);
+        spec.OrderByClauses[0].Direction.ShouldBe(ListSortDirection.Ascending);
     }
 
     [Fact]
-    public void AddOrderByDescending_ShouldAddToOrderByDescendingQueries()
+    public void AddOrderByDescending_ShouldAddDescendingClause()
     {
         // Arrange
         var spec = new TestProductSpecification();
@@ -87,8 +91,8 @@ public class SpecificationTests
         spec.AddTestOrderByDescending(p => p.Price);
 
         // Assert
-        spec.OrderByDescendingQueries.Count.ShouldBe(1);
-        spec.OrderByDescendingQueries.First().ShouldNotBeNull();
+        spec.OrderByClauses.Count.ShouldBe(1);
+        spec.OrderByClauses[0].Direction.ShouldBe(ListSortDirection.Descending);
     }
 
     [Fact]
@@ -103,8 +107,7 @@ public class SpecificationTests
         // Assert
         spec.FilterQuery.ShouldBe(filter);
         spec.IncludeQueries.ShouldBeEmpty();
-        spec.OrderByQueries.ShouldBeEmpty();
-        spec.OrderByDescendingQueries.ShouldBeEmpty();
+        spec.OrderByClauses.ShouldBeEmpty();
         spec.IsIgnoreQueryFilters.ShouldBeFalse();
     }
 
@@ -125,8 +128,7 @@ public class SpecificationTests
         // Assert
         copiedSpec.FilterQuery.ShouldNotBeNull();
         copiedSpec.IncludeQueries.Count.ShouldBe(1);
-        copiedSpec.OrderByQueries.Count.ShouldBe(1);
-        copiedSpec.OrderByDescendingQueries.Count.ShouldBe(1);
+        copiedSpec.OrderByClauses.Count.ShouldBe(2);
         copiedSpec.IsIgnoreQueryFilters.ShouldBeTrue();
     }
 
@@ -139,8 +141,7 @@ public class SpecificationTests
         // Assert
         spec.FilterQuery.ShouldBeNull();
         spec.IncludeQueries.ShouldBeEmpty();
-        spec.OrderByQueries.ShouldBeEmpty();
-        spec.OrderByDescendingQueries.ShouldBeEmpty();
+        spec.OrderByClauses.ShouldBeEmpty();
         spec.IsIgnoreQueryFilters.ShouldBeFalse();
     }
 

@@ -20,12 +20,9 @@ Architecture. Each package below is independent and opt-in — pull in only what
 - [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) — the specification pattern
   and `IRepositorySpec`, including the Dynamic Predicate Builder. The current, supported way to
   query and persist through a `DbContext`.
-- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) — **retired**, source-only generic repository,
-  superseded by Specifications. Kept for existing consumers.
-- [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) — **retired**,
-  source-only repository interfaces implemented by `DKNet.EfCore.Repos`.
-- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — call-site
-  mapping for moving off `DKNet.EfCore.Repos`/`Repos.Abstractions` onto Specifications.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — `DKNet.EfCore.Repos`
+  and `DKNet.EfCore.Repos.Abstractions` were removed; this is the call-site mapping for consumers
+  still upgrading off them onto Specifications.
 
 ## SaveChanges pipeline
 
@@ -69,8 +66,6 @@ implicitly.
 | `DKNet.EfCore.Encryption` | *nothing* | a `ValueConverter`, via `AddEfCoreEncryption<TKeyProvider>()` |
 | `DKNet.EfCore.DtoGenerator` | *nothing* | compile time only — nothing is registered |
 | `DKNet.EfCore.Relational.Helpers` | *nothing* | plain `DbContext` extension methods |
-| `DKNet.EfCore.Repos` *(retired)* | `Extensions`, `Repos.Abstractions`, `Specifications` | — |
-| `DKNet.EfCore.Repos.Abstractions` *(retired)* | `Abstractions` | — |
 
 Two consequences worth remembering:
 

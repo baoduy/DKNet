@@ -21,16 +21,14 @@ public static class EnumExtensions
     /// </summary>
     /// <typeparam name="T">The enum type.</typeparam>
     /// <returns>An <see cref="IEnumerable{EnumInfo}" /> containing the enum's information.</returns>
-    public static IEnumerable<EnumInfo> GetEumInfos<T>()
+    public static IEnumerable<EnumInfo> GetEnumInfos<T>()
         where T : Enum
     {
         var type = typeof(T);
-        var members = type.GetFields();
+        var members = type.GetFields(BindingFlags.Public | BindingFlags.Static);
 
         foreach (var info in members)
         {
-            if (info.FieldType == typeof(int)) continue;
-
             var att = info.GetCustomAttribute<DisplayAttribute>();
 
             yield return new EnumInfo
@@ -68,7 +66,7 @@ public static class EnumExtensions
         ///     enum.
         /// </summary>
         /// <returns>The <see cref="EnumInfo" /> containing the enum's information, or null if the enum is null.</returns>
-        public EnumInfo? GetEumInfo()
+        public EnumInfo? GetEnumInfo()
         {
             if (@this == null) return null;
 

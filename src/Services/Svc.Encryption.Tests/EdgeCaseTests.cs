@@ -8,7 +8,6 @@ using Shouldly;
 
 namespace Svc.Encryption.Tests;
 
-#pragma warning disable CS0618
 public class EdgeCaseTests
 {
     #region Methods
@@ -35,23 +34,6 @@ public class EdgeCaseTests
     //     var bad = "only-two-parts".ToBase64String(); // decodes to string with no ':'
     //     Should.Throw<ArgumentException>(() => enc.Decrypt(bad, "pass"));
     // }
-
-    // AesEncryption edges
-    [Fact]
-    public void AesEncryption_Decrypt_Invalid_Base64_Should_Throw()
-    {
-        using var aes = new AesEncryption();
-        Should.Throw<FormatException>(() => aes.DecryptString("not-base64"));
-    }
-
-    [Fact]
-    public void AesEncryption_Invalid_Key_ExtraParts_Throws()
-    {
-        var composite =
-            $"{Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))}:{Convert.ToBase64String(RandomNumberGenerator.GetBytes(16))}:{Convert.ToBase64String(RandomNumberGenerator.GetBytes(16))}"
-                .ToBase64String();
-        Should.Throw<ArgumentException>(() => new AesEncryption(composite));
-    }
 
     [Fact]
     public void AesGcmEncryption_Decrypt_Invalid_Format_Throws()
@@ -96,7 +78,6 @@ public class EdgeCaseTests
         provider.GetRequiredService<IShaHashing>().ShouldNotBeNull();
         provider.GetRequiredService<IHmacHashing>().ShouldNotBeNull();
 
-        provider.GetService<IAesEncryption>().ShouldBeNull();
         provider.GetService<IAesGcmEncryption>().ShouldBeNull();
         provider.GetService<IRsaEncryption>().ShouldBeNull();
     }
@@ -180,27 +161,27 @@ public class EdgeCaseTests
     [Fact]
     public void Hmac256Hashing_Hex_Output_And_CaseSensitivity()
     {
-        using IHmacHashing hmac = new HmacHashing();
+        IHmacHashing hmac = new HmacHashing();
         var hex = hmac.ComputeSha256("msg", "secret", false);
         hex.ShouldMatch("^[0-9A-F]+$");
         hmac.VerifySha256("msg", "secret", hex, false).ShouldBeTrue();
 
         // Change one char
         var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
-        hmac.VerifySha256("msg", "secret", mutated, false, false).ShouldBeFalse();
+        hmac.VerifySha256("msg", "secret", mutated, false).ShouldBeFalse();
     }
 
     [Fact]
     public void Hmac512Hashing_Hex_Output_And_CaseSensitivity()
     {
-        using IHmacHashing hmac = new HmacHashing();
+        IHmacHashing hmac = new HmacHashing();
         var hex = hmac.ComputeSha512("msg", "secret", false);
         hex.ShouldMatch("^[0-9A-F]+$");
         hmac.VerifySha512("msg", "secret", hex, false).ShouldBeTrue();
 
         // Change one char
         var mutated = new string([.. hex.Select((c, i) => i == 0 ? c == 'a' ? 'b' : 'a' : c)]);
-        hmac.VerifySha512("msg", "secret", mutated, false, false).ShouldBeFalse();
+        hmac.VerifySha512("msg", "secret", mutated, false).ShouldBeFalse();
     }
 
     // Base64 extension edge cases.
@@ -267,14 +248,14 @@ public class EdgeCaseTests
     [InlineData("***not-hex***", false)]
     public void HmacHashing_Verify_InvalidSignature_ReturnsFalse(string badSig, bool isBase64)
     {
-        using IHmacHashing hmac = new HmacHashing();
+        IHmacHashing hmac = new HmacHashing();
         hmac.VerifySha256("msg", "key", badSig, isBase64).ShouldBeFalse();
     }
 
     [Fact]
     public void ShaHashing_Verify_InvalidHex_ReturnsFalse()
     {
-        using IShaHashing hash = new ShaHashing();
+        IShaHashing hash = new ShaHashing();
         hash.VerifySha256("msg", "***not-hex***").ShouldBeFalse();
     }
 
@@ -283,7 +264,7 @@ public class EdgeCaseTests
     [Fact]
     public void Sha256Hashing_UpperCaseAndVerifyCaseSensitive()
     {
-        using var hg = new ShaHashing();
+        var hg = new ShaHashing();
         var hashUpper = hg.ComputeSha256("abc", true);
         hashUpper.ShouldBe(hashUpper.ToUpperInvariant());
         hg.VerifySha256("abc", hashUpper, false).ShouldBeTrue();
@@ -293,14 +274,14 @@ public class EdgeCaseTests
     [Fact]
     public void Sha256Hashing_Verify_Throws_On_EmptyExpected()
     {
-        using var hg = new ShaHashing();
+        var hg = new ShaHashing();
         Should.Throw<ArgumentException>(() => hg.VerifySha256("abc", " "));
     }
 
     [Fact]
     public void Sha512Hashing_UpperCaseAndVerifyCaseSensitive()
     {
-        using var hg = new ShaHashing();
+        var hg = new ShaHashing();
         var hashUpper = hg.ComputeSha512("abc", true);
         hashUpper.ShouldBe(hashUpper.ToUpperInvariant());
         hg.VerifySha512("abc", hashUpper, false).ShouldBeTrue();
@@ -310,10 +291,9 @@ public class EdgeCaseTests
     [Fact]
     public void Sha512Hashing_Verify_Throws_On_EmptyExpected()
     {
-        using var hg = new ShaHashing();
+        var hg = new ShaHashing();
         Should.Throw<ArgumentException>(() => hg.VerifySha512("abc", " "));
     }
 
     #endregion
 }
-#pragma warning restore CS0618

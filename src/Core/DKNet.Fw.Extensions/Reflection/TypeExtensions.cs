@@ -61,6 +61,11 @@ public static class TypeExtensions
     /// <returns>
     ///     <c>true</c> if the specified type implements or inherits from the matching type; otherwise, <c>false</c>.
     /// </returns>
+    /// <remarks>
+    ///     Returns <c>false</c> when <paramref name="type" /> and <paramref name="matching" /> are the exact same type —
+    ///     this method checks whether one type implements or inherits from another, not identity, so a type never
+    ///     "implements" itself.
+    /// </remarks>
     public static bool IsImplementOf(this Type? type, Type? matching)
     {
         if (type == null || matching == null) return false;
@@ -92,6 +97,10 @@ public static class TypeExtensions
     ///     <c>true</c> if the specified type implements or inherits from the type <typeparamref name="T" />; otherwise,
     ///     <c>false</c>.
     /// </returns>
+    /// <remarks>
+    ///     Returns <c>false</c> when <paramref name="type" /> is exactly <typeparamref name="T" /> — this method checks
+    ///     whether one type implements or inherits from another, not identity, so a type never "implements" itself.
+    /// </remarks>
     public static bool IsImplementOf<T>(this Type type) => type.IsImplementOf(typeof(T));
 
     /// <summary>

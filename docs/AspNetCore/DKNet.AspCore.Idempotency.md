@@ -32,14 +32,11 @@ using DKNet.AspCore.Idempotency;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// The built-in store needs a distributed cache backend (in-memory here; swap for Redis/SQL Server in production).
-builder.Services.AddDistributedMemoryCache();
-
-// IdempotencyDistributedCacheStore is internal, so app code cannot name it: the obsolete non-generic
-// overload is the only way to select it. It is not atomic — see "Choosing a store" below.
-#pragma warning disable CS0618
-builder.Services.AddIdempotentKey();
-#pragma warning restore CS0618
+// AddIdempotentKey<TStore>() only accepts a store you can name. For a ready-made, atomic store, register one of
+// the provider packages below instead (AddIdempotencyWithMsSqlStore/NpgsqlStore/RedisStore) — each one calls
+// AddIdempotentKey<TStore> for you with its own internal store type. MyIdempotencyKeyStore here is a public
+// IIdempotencyKeyStore you write yourself (see "Pluggable store abstraction" below for the full contract).
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>();
 
 var app = builder.Build();
 
@@ -54,9 +51,15 @@ Callers now must send an `X-Idempotency-Key` header on `POST /orders`. A retry w
 
 > **Every shipped store type is `internal`.** `IdempotencyDistributedCacheStore` here, and
 > `IdempotencySqlServerStore`/`IdempotencyPostgresStore`/`IdempotencyRedisStore` in the sibling packages, are all
-> internal implementation details. `AddIdempotentKey<TStore>()` can only name a store *you* declare; to use a shipped
-> one, call its package's own `AddIdempotencyWithXxxStore(...)` extension, or — for the built-in cache store only —
-> the obsolete non-generic overload above. Every `AddIdempotentKey<TStore>()` sample on this page therefore uses
+> internal implementation details — this package exposes no public way to select any of them directly.
+> `AddIdempotentKey<TStore>()` can only name a store *you* declare (`TStore` must be accessible at your call site);
+> to use a shipped one, call its package's own `AddIdempotencyWithXxxStore(...)` extension instead, which registers
+> the internal store type for you. There used to be a non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)`
+> overload that defaulted to the built-in `IdempotencyDistributedCacheStore` — **it has been removed.**
+> `IdempotencyDistributedCacheStore` itself still exists and still works exactly as before, but with the overload
+> gone there is no public entry point left to select it: implement your own `IIdempotencyKeyStore` wrapping
+> `IDistributedCache` if you want that same trade-off (single-instance/dev, not atomic under concurrency), or prefer
+> one of the atomic store packages below. Every `AddIdempotentKey<TStore>()` sample on this page therefore uses
 > `MyIdempotencyKeyStore`, a public `IIdempotencyKeyStore` of your own (see
 > [Pluggable store abstraction](#pluggable-store-abstraction)).
 
@@ -296,14 +299,15 @@ All options live on `IdempotencyOptions`, configured via the `Action<Idempotency
 | `ScopeHmacSecret` | `null` | Enables the `Authorization`-header HMAC fallback in the default scope chain. |
 | `IncludeClientIpInScope` | `false` | Enables the client-IP fallback in the default scope chain. |
 
-`AddIdempotentKey<TStore>()` validates these eagerly at registration time (empty header key, empty cache prefix,
-non-positive expiration, an out-of-range status window, etc. all throw `ArgumentException` immediately rather than
-failing later at request time).
+`AddIdempotentKey<TStore>()` registers `IdempotencyOptions` through the options pattern with ten `.Validate(...)`
+rules (empty header key, empty cache prefix, non-positive expiration, an out-of-range status window, a null
+`JsonSerializerOptions`, etc.) plus `.ValidateOnStart()`. That means misconfiguration no longer throws at
+registration time — it throws `OptionsValidationException` when the host **starts** (before it begins serving
+requests), which is still well before any request can observe a bad value, just later in the startup sequence than
+before.
 
 ## 🧱 Where it fits
 
-- **`DKNet.Fw.Extensions`** – the endpoint filter uses its reflection helper to unwrap `TypedResults`-style results
-  before serializing them for caching.
 - **`FluentResults`** – `IdempotentKeyInfo.IsValid` returns an `IResultBase`, following the same result pattern used
   across DKNet.
 - Pairs naturally with **`DKNet.AspCore.Tasks`** (start-up jobs) and other ASP.NET Core hardening utilities in the
@@ -318,7 +322,7 @@ packages provide alternatives with stronger concurrency guarantees:
 
 | Store | Package | How you select it | Atomicity | Infra cost | Best for |
 |---|---|---|---|---|---|
-| Distributed cache (built-in) | `DKNet.AspCore.Idempotency` | `AddIdempotentKey()` — the obsolete non-generic overload | Narrows, does not eliminate, the check-then-act race | None beyond an `IDistributedCache` you may already have | Single-instance apps, local dev, low-traffic endpoints |
+| Distributed cache (built-in) | `DKNet.AspCore.Idempotency` | Not selectable — `IdempotencyDistributedCacheStore` is `internal` and this package no longer exposes any public registration for it | Narrows, does not eliminate, the check-then-act race | None beyond an `IDistributedCache` you may already have | Single-instance apps, local dev, low-traffic endpoints — implement your own thin `IIdempotencyKeyStore` over `IDistributedCache` to get this trade-off |
 | Relational (base) | [`DKNet.AspCore.Idempotency.Relational`](DKNet.AspCore.Idempotency.Relational.md) | Not selectable — every type in it is `internal` and its `InternalsVisibleTo` list is closed | Atomic via a unique index / insert-or-query pattern | Shared EF Core building blocks for the two SQL stores below | Nothing to register; read it only to add a *new* relational provider inside this repo |
 | SQL Server | [`DKNet.AspCore.Idempotency.MsSqlStore`](DKNet.AspCore.Idempotency.MsSqlStore.md) | `AddIdempotencyWithMsSqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing SQL Server database | Apps already running SQL Server that want an auditable, queryable idempotency table |
 | PostgreSQL | [`DKNet.AspCore.Idempotency.NpgsqlStore`](DKNet.AspCore.Idempotency.NpgsqlStore.md) | `AddIdempotencyWithNpgsqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing PostgreSQL database | Apps already running PostgreSQL, same trade-offs as the SQL Server store |
@@ -327,11 +331,13 @@ packages provide alternatives with stronger concurrency guarantees:
 
 Guidance:
 
-- **Prefer the built-in distributed-cache store only for single-instance or development scenarios.** It logs a
-  startup warning to that effect (`IdempotencyDistributedCacheStore is not atomic under concurrent load.`), and
-  `IDistributedCache` has no atomic compare-and-set primitive — this store narrows the check-then-act race window
-  with a short-lived in-flight reservation but cannot close it the way a database unique index can. It is also the
-  only store you select through the obsolete overload, which is a deliberate nudge away from it.
+- **The built-in distributed-cache store is a single-instance/development trade-off, not something you can select
+  directly anymore.** It logs a startup warning to that effect
+  (`IdempotencyDistributedCacheStore is not atomic under concurrent load.`), and `IDistributedCache` has no atomic
+  compare-and-set primitive — it narrows the check-then-act race window with a short-lived in-flight reservation but
+  cannot close it the way a database unique index can. The type is `internal` and this package no longer exposes
+  any public entry point for it (the non-generic `AddIdempotentKey(...)` overload that used to default to it was
+  removed); reach for it only by writing your own equivalent `IIdempotencyKeyStore` over `IDistributedCache`.
 - **Do not plan on subclassing `DKNet.AspCore.Idempotency.Relational`.** Every type in it is `internal`, and its
   `InternalsVisibleTo` list names only the two in-repo provider packages and their test projects. A store of your own
   implements `IIdempotencyKeyStore` directly, the way the Redis store does.
@@ -370,14 +376,18 @@ The four store pages link back to this section instead of repeating the comparis
   replay.
 - **Minimal APIs only.** `RequiredIdempotentKey()` extends `RouteHandlerBuilder`, so it wires up through
   `app.MapPost(...)`/`MapPut(...)` etc. It is not something you attach to an MVC controller action via attributes.
-- **`AddIdempotentKey<TStore>()` is call-once-wins.** If it's called more than once (e.g. by two library extension
-  methods), the first call's options and store registration stick; later calls are no-ops.
-- **The non-generic `AddIdempotentKey(...)` overload is obsolete — and is still the only public way to select the
-  built-in store.** `IdempotencyDistributedCacheStore` is `internal`, so `AddIdempotentKey<IdempotencyDistributedCacheStore>()`
-  does not compile outside this repo (`CS0122`). Suppress `CS0618` around the non-generic call for local development,
-  and move to an atomic store package before production. The obsolete message's suggested replacements
-  (`AddIdempotentKey<IdempotencySqlServerStore>()` and friends) name internal types too — use each package's own
-  `AddIdempotencyWithXxxStore(...)` instead.
+- **`AddIdempotentKey<TStore>()` is call-once-wins, config delegate included.** If it's called more than once (e.g.
+  by two library extension methods, or by an app calling it after a store package's own
+  `AddIdempotencyWithXxxStore(...)`), the first call's store registration sticks *and* only the first call's `config`
+  delegate ever runs — a second call's `config` is silently never invoked, not merged, not overridden. Validation
+  failures now surface via `OptionsValidationException` when the host starts (`ValidateOnStart()`), not at the
+  moment `AddIdempotentKey<TStore>()` runs.
+- **The non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)` overload has been removed.** It used to default
+  to the built-in `IdempotencyDistributedCacheStore` when no store was named. There is no replacement overload —
+  every caller must now name a store type explicitly, either your own `IIdempotencyKeyStore` (`AddIdempotentKey<TStore>()`)
+  or a shipped provider package's own `AddIdempotencyWithXxxStore(...)` (which internally calls
+  `AddIdempotentKey<TStore>()` with its own internal store type). If you were relying on the old default, the closest
+  equivalent is now writing your own thin `IIdempotencyKeyStore` over `IDistributedCache`.
 - **Cache keys are hashed, not human-readable.** The built-in store's cache key is `CachePrefix` + a SHA-256 hex
   digest of the composite key — you cannot reconstruct the original key/scope/endpoint from the cache key alone;
   rely on structured logs (which log the raw composite key) if you need to trace a specific request.

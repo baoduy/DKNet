@@ -17,6 +17,19 @@ namespace LinqKit;
 /// </summary>
 public static class DynamicPredicateExtensions
 {
+    #region Constants
+
+    /// <summary>
+    ///     Parsing configuration for the typed <c>(property, Ops, value)</c> path.
+    ///     <see cref="ParsingConfig.UseParameterizedNamesInDynamicQuery" /> is required: the default
+    ///     configuration renders each filter value as a <see cref="ConstantExpression" />, which EF Core
+    ///     inlines into the SQL as a literal. Every distinct filter value then yields distinct command
+    ///     text and a distinct server-side query plan — plan-cache pollution on the list-endpoint path.
+    /// </summary>
+    private static readonly ParsingConfig ParameterizedConfig = new() { UseParameterizedNamesInDynamicQuery = true };
+
+    #endregion
+
     #region Methods
 
     /// <summary>
@@ -30,12 +43,10 @@ public static class DynamicPredicateExtensions
     private static Expression<Func<T, bool>>? BuildDynamicExpression<T>(string propertyName,
         Ops operation, object? value)
     {
-        // Validate property name contains only safe characters before any processing
-        if (!DynamicPredicateBuilderExtensions.IsValidPropertyName(propertyName))
+        // Validate property name contains only safe characters and normalize it (PascalCase each segment)
+        // in one pass - avoids re-running ToPascalCase a second time just to get the value back.
+        if (!DynamicPredicateBuilderExtensions.TryNormalizePropertyName(propertyName, out var normalizedPath))
             return null;
-
-        // Normalize property path using PropertyNameExtensions (PascalCase each segment)
-        var normalizedPath = propertyName.ToPascalCase();
 
         var propType = typeof(T).ResolvePropertyType(normalizedPath);
         if (propType == null)
@@ -49,7 +60,7 @@ public static class DynamicPredicateExtensions
             var nullClause = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, operation, null, 0);
             try
             {
-                return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, nullClause);
+                return DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, nullClause);
             }
             catch (ParseException)
             {
@@ -92,8 +103,8 @@ public static class DynamicPredicateExtensions
             // Use System.Linq.Dynamic.Core to parse the predicate string
             // For In/NotIn, value is the array passed as @0 parameter
             return coercedValue == null
-                ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
-                : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString,
+                ? DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, predicateString)
+                : DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, predicateString,
                     coercedValue);
         }
         catch (ParseException)
@@ -132,6 +143,19 @@ public static class DynamicPredicateExtensions
     {
         predicate = BuildDynamicExpression<T>(propertyName, operation, value);
         return predicate is not null;
+    }
+
+    /// <summary>
+    ///     Validates and parses a raw dynamic LINQ expression string into a typed lambda.
+    /// </summary>
+    /// <typeparam name="T">Entity type.</typeparam>
+    /// <param name="expression">Dynamic LINQ expression.</param>
+    /// <param name="values">Expression parameter values.</param>
+    /// <returns>The parsed predicate expression.</returns>
+    private static Expression<Func<T, bool>> ParseDynamicExpression<T>(string expression, object?[] values)
+    {
+        DynamicPredicateBuilderExtensions.ValidateExpression(expression);
+        return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
     }
 
     #endregion
@@ -179,13 +203,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicAnd(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.And(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.And(ParseDynamicExpression<T>(expression, values));
 
         /// <summary>
         ///     Parses a dynamic LINQ expression and combines it using OR.
@@ -194,13 +213,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicOr(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.Or(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.Or(ParseDynamicExpression<T>(expression, values));
     }
 
     extension<T>(Expression<Func<T, bool>> predicate)
@@ -246,13 +260,8 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicAnd(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.And(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.And(ParseDynamicExpression<T>(expression, values));
 
         /// <summary>
         ///     Parses a dynamic LINQ expression and combines it using OR.
@@ -261,12 +270,7 @@ public static class DynamicPredicateExtensions
         /// <param name="values">Expression parameter values.</param>
         /// <returns>The combined predicate.</returns>
         public ExpressionStarter<T> DynamicOr(string expression,
-            params object?[] values)
-        {
-            DynamicPredicateBuilderExtensions.ValidateExpression(expression);
-            var dynamicExpr =
-                DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, expression, values);
-            return predicate.Or(dynamicExpr);
-        }
+            params object?[] values) =>
+            predicate.Or(ParseDynamicExpression<T>(expression, values));
     }
 }

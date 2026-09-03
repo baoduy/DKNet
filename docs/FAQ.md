@@ -66,7 +66,7 @@ appears:
 - **Change history** → `DKNet.EfCore.AuditLogs`
 - **Row-level isolation** → `DKNet.EfCore.DataAuthorization`
 
-`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` are retired and never published to NuGet. Use
+`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` were removed and were never published to NuGet. Use
 `DKNet.EfCore.Specifications`; the call-site mapping is in
 [Migrating-Repos-To-Specifications](EfCore/Migrating-Repos-To-Specifications.md).
 

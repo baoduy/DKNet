@@ -1,6 +1,7 @@
 ﻿using DKNet.Svc.Encryption.Ciphers;
 using DKNet.Svc.Encryption.Hashing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.Svc.Encryption;
 
@@ -13,16 +14,13 @@ public static class EncryptionSetup
 
     /// <summary>
     ///     Registers the keyless hashing services (<see cref="IShaHashing" />, <see cref="IHmacHashing" />). For the
-    ///     key-taking ciphers, call <see cref="AddAesGcmEncryption" />, <see cref="AddAesEncryption" />, or
-    ///     <see cref="AddRsaEncryption" /> with an explicit key so resolutions stay key-stable.
+    ///     key-taking ciphers, call <see cref="AddAesGcmEncryption" /> or <see cref="AddRsaEncryption" /> with an
+    ///     explicit key so resolutions stay key-stable.
     /// </summary>
     public static IServiceCollection AddEncryptionServices(this IServiceCollection services)
     {
-        if (!services.Any(s => s.ServiceType == typeof(IShaHashing)))
-            services.AddTransient<IShaHashing, ShaHashing>();
-
-        if (!services.Any(s => s.ServiceType == typeof(IHmacHashing)))
-            services.AddTransient<IHmacHashing, HmacHashing>();
+        services.TryAddTransient<IShaHashing, ShaHashing>();
+        services.TryAddTransient<IHmacHashing, HmacHashing>();
 
         return services;
     }
@@ -70,33 +68,6 @@ public static class EncryptionSetup
 
         if (!services.Any(s => s.ServiceType == typeof(IAesGcmEncryption)))
             services.AddSingleton<IAesGcmEncryption>(_ => new AesGcmEncryption(base64Key));
-
-        return services;
-    }
-
-    /// <summary>
-    ///     Registers <see cref="IAesEncryption" /> as a singleton constructed from the supplied key string. The same
-    ///     instance (and therefore the same key) is returned for every resolution, so data encrypted via one
-    ///     resolution can be decrypted via another.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="keyString">
-    ///     The combined Base64 <c>key:iv</c> string as returned by <see cref="AesEncryption.Key" /> — not a bare
-    ///     Base64 key. Source this from configuration or a key vault — never hardcode it.
-    /// </param>
-    /// <returns>The service collection for chaining.</returns>
-    /// <exception cref="ArgumentException">
-    ///     Thrown when <paramref name="keyString" /> is null, empty, or whitespace.
-    /// </exception>
-    [Obsolete("Uses AES-CBC which is vulnerable to padding oracle attacks. Use AddAesGcmEncryption instead.")]
-    public static IServiceCollection AddAesEncryption(this IServiceCollection services, string keyString)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(keyString);
-
-#pragma warning disable CS0618
-        if (!services.Any(s => s.ServiceType == typeof(IAesEncryption)))
-            services.AddSingleton<IAesEncryption>(_ => new AesEncryption(keyString));
-#pragma warning restore CS0618
 
         return services;
     }

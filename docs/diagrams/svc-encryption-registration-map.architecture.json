@@ -14,9 +14,6 @@
         "security": {
           "label": "Key-bearing cipher"
         },
-        "external": {
-          "label": "Obsolete AES-CBC pair"
-        },
         "database": {
           "label": "Static helper, no registration"
         }
@@ -126,31 +123,6 @@
       ]
     },
     {
-      "id": "cbc_reg",
-      "type": "external",
-      "label": "AddAesEncryption",
-      "sublabel": "obsolete",
-      "row": 3,
-      "col": 0,
-      "size": [
-        152,
-        62
-      ]
-    },
-    {
-      "id": "cbc",
-      "type": "external",
-      "label": "IAesEncryption",
-      "sublabel": "AES-CBC, fixed IV",
-      "row": 3,
-      "col": 1,
-      "tag": "migration only",
-      "size": [
-        148,
-        66
-      ]
-    },
-    {
       "id": "b64",
       "type": "database",
       "label": "Base64StringExtensions",
@@ -171,9 +143,7 @@
         "gcm_reg",
         "gcm",
         "rsa_reg",
-        "rsa",
-        "cbc_reg",
-        "cbc"
+        "rsa"
       ],
       "pad": 18
     }
@@ -201,12 +171,6 @@
       "to": "rsa",
       "label": "registers",
       "variant": "emphasis"
-    },
-    {
-      "from": "cbc_reg",
-      "to": "cbc",
-      "label": "registers",
-      "variant": "dashed"
     }
   ],
   "cards": [
@@ -214,7 +178,7 @@
       "dot": "cyan",
       "title": "There is no options type",
       "items": [
-        "The customisation surface is the four registration methods",
+        "The customisation surface is the three registration methods",
         "Every one is idempotent — a second call adds nothing",
         "Each cipher method throws for a blank key"
       ]

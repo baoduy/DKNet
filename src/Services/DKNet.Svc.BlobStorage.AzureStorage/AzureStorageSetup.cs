@@ -29,9 +29,13 @@ public static class AzureStorageSetup
             config.Invoke(option);
             services.AddSingleton(option);
 
+            // Singleton: BlobContainerClient is documented thread-safe and meant to be long-lived, and
+            // AzureStorageBlobService lazily builds/creates the container exactly once (see
+            // AzureStorageBlobService.GetClient) rather than paying a CreateIfNotExists round trip
+            // on every scoped instance.
             if (!services.Any(s =>
                     s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(AzureStorageBlobService)))
-                services.AddScoped<IBlobService, AzureStorageBlobService>();
+                services.AddSingleton<IBlobService, AzureStorageBlobService>();
 
             return services;
         }
@@ -45,9 +49,13 @@ public static class AzureStorageSetup
         {
             services.Configure<AzureStorageOptions>(o => configuration.GetSection(AzureStorageOptions.Name).Bind(o));
 
+            // Singleton: BlobContainerClient is documented thread-safe and meant to be long-lived, and
+            // AzureStorageBlobService lazily builds/creates the container exactly once (see
+            // AzureStorageBlobService.GetClient) rather than paying a CreateIfNotExists round trip
+            // on every scoped instance.
             if (!services.Any(s =>
                     s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(AzureStorageBlobService)))
-                services.AddScoped<IBlobService, AzureStorageBlobService>();
+                services.AddSingleton<IBlobService, AzureStorageBlobService>();
 
             return services;
         }

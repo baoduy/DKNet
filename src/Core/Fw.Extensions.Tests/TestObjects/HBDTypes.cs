@@ -9,3 +9,9 @@ public enum HbdTypes
 
     Enum = 3
 }
+
+public enum ByteBackedTypes : byte
+{
+    None,
+    [Display(Name = "First")] First = 1
+}

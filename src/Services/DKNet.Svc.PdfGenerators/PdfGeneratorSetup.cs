@@ -1,5 +1,6 @@
 using DKNet.Svc.PdfGenerators;
 using DKNet.Svc.PdfGenerators.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 // ReSharper disable CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -19,9 +20,9 @@ public static class PdfGeneratorSetup
         this IServiceCollection services,
         PdfGeneratorOptions? options = null)
     {
-        if (!services.Any(s => s.ServiceType == typeof(IPdfGenerator)))
-            services.AddSingleton<IPdfGenerator>(new PdfGenerator(options));
-
+        // Registered via factory (rather than a pre-built instance) so the container tracks and disposes
+        // the singleton - including the browser it holds - when the container shuts down.
+        services.TryAddSingleton<IPdfGenerator>(_ => new PdfGenerator(options));
         return services;
     }
 

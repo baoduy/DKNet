@@ -5,6 +5,7 @@ using DKNet.EfCore.Hooks;
 using DKNet.Fw.Extensions;
 using DKNet.Fw.Extensions.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
@@ -58,7 +59,7 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
                 switch (entry.OriginalState)
                 {
                     case EntityState.Added when !string.IsNullOrEmpty(ownerKey):
-                        StampAddedEntity(entry.Entity, ownerKey);
+                        StampAddedEntity(entry, ownerKey);
                         break;
 
                     case EntityState.Modified:
@@ -76,18 +77,20 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     /// <summary>
     ///     Stamps audit and ownership properties on a newly added entity.
     /// </summary>
-    /// <param name="entity">The newly added entity.</param>
+    /// <param name="entry">The snapshot entry for the newly added entity.</param>
     /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
-    private static void StampAddedEntity(object entity, string ownerKey)
+    private static void StampAddedEntity(SnapshotEntityEntry entry, string ownerKey)
     {
+        var entity = entry.Entity;
+
         if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
         {
-            SetOwnedProperty(au, nameof(au.CreatedBy), ownerKey);
-            SetOwnedProperty(au, nameof(au.CreatedOn), DateTimeOffset.UtcNow);
+            SetOwnedProperty(entry.Entry, au, nameof(au.CreatedBy), ownerKey);
+            SetOwnedProperty(entry.Entry, au, nameof(au.CreatedOn), DateTimeOffset.UtcNow);
         }
 
         if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-            SetOwnedProperty(own, nameof(IOwnedBy.OwnedBy), ownerKey);
+            SetOwnedProperty(entry.Entry, own, nameof(IOwnedBy.OwnedBy), ownerKey);
     }
 
     /// <summary>
@@ -110,8 +113,8 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
         if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedBy)) is null) return;
         if (HasExplicitModifier(entry, au)) return;
 
-        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
-        SetOwnedProperty(au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
+        SetOwnedProperty(entry.Entry, au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
+        SetOwnedProperty(entry.Entry, au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
     }
 
     /// <summary>
@@ -134,19 +137,28 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    ///     Sets a property's value on <paramref name="entity" />, resolving the writable accessor by walking up
-    ///     the type hierarchy (see <see cref="FindWritableProperty" />) instead of the single-type lookup that
-    ///     <see cref="PropertyExtensions.GetProperty{T}" /> performs.
+    ///     Sets a property's value on <paramref name="entity" />, preferring EF Core's own compiled property
+    ///     accessor (<paramref name="entry" />) — which needs no reflection and reaches private setters,
+    ///     init-only properties, and shadow properties that <see cref="FindWritableProperty" /> cannot. Falls
+    ///     back to the type-hierarchy reflection walk only when the property is not part of the EF model at
+    ///     all (for example an explicitly ignored column).
     /// </summary>
+    /// <param name="entry">The EF Core entry tracking <paramref name="entity" />.</param>
     /// <param name="entity">The object to set the property on.</param>
     /// <param name="propertyName">The name of the property to set.</param>
     /// <param name="value">The value to set.</param>
     /// <exception cref="ArgumentException">
     ///     No writable property named <paramref name="propertyName" /> exists anywhere in <paramref name="entity" />'s
-    ///     type hierarchy.
+    ///     type hierarchy, and it is not part of the EF model either.
     /// </exception>
-    private static void SetOwnedProperty(object entity, string propertyName, object value)
+    private static void SetOwnedProperty(EntityEntry entry, object entity, string propertyName, object value)
     {
+        if (entry.Metadata.FindProperty(propertyName) is not null)
+        {
+            entry.Property(propertyName).CurrentValue = value;
+            return;
+        }
+
         var property = FindWritableProperty(entity.GetType(), propertyName) ??
                        throw new ArgumentException(
                            $"Property '{propertyName}' not found on type '{entity.GetType().FullName}'.",
@@ -200,9 +212,9 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
         if (!string.IsNullOrEmpty(current) && accessibleKeys.Contains(current)) return;
 
         // Not accessible (or blank) — revert to the original owner so the row never moves to another
-        // tenant and never becomes orphaned.
-        var property = FindWritableProperty(own.GetType(), nameof(IOwnedBy.OwnedBy));
-        if (property is not null) own.TrySetPropertyValue(property, original ?? string.Empty);
+        // tenant and never becomes orphaned. The FindProperty guard above already confirmed OwnedBy is
+        // part of the EF model, so the compiled accessor always applies here.
+        entry.Entry.Property(nameof(IOwnedBy.OwnedBy)).CurrentValue = original ?? string.Empty;
     }
 
     #endregion

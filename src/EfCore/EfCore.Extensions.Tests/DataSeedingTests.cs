@@ -60,5 +60,29 @@ public class DataSeedingTests
             ((DbContextOptionsBuilder)null!).UseAutoDataSeeding([typeof(UserSeedingConfiguration).Assembly]));
     }
 
+    [Fact]
+    public async Task SeedAsync_RunTwice_DoesNotInsertDuplicatesForReferenceEqualityEntity()
+    {
+        // User has no Equals/GetHashCode override, so comparing seed candidates against existing rows by
+        // reference equality (the pre-fix behavior) would never match and would re-insert both rows on every
+        // run. This proves the fix - which compares by primary key instead - makes the second run a no-op.
+        var options = new DbContextOptionsBuilder<MyDbContext>()
+            .UseInMemoryDatabase("DataSeeding_TwiceRun_" + Guid.NewGuid())
+            .Options;
+
+        await using var context = new MyDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var config = new UserSeedingConfiguration();
+
+        // Act - invoke the seed callback twice against the same underlying store.
+        await config.SeedAsync!(context, false, CancellationToken.None);
+        await config.SeedAsync!(context, false, CancellationToken.None);
+
+        // Assert - still only the two seeded rows, not four.
+        var users = await context.Set<User>().Where(u => u.FirstName == "Seeded").ToListAsync();
+        users.Count.ShouldBe(2);
+    }
+
     #endregion
 }
