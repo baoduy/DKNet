@@ -23,12 +23,18 @@ public sealed class IdempotencyInMemoryStoreWarningTests
     {
         public List<LogLevel> Levels { get; } = new();
 
+        public List<string> Messages { get; } = new();
+
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-            Func<TState, Exception?, string> formatter) => Levels.Add(logLevel);
+            Func<TState, Exception?, string> formatter)
+        {
+            Levels.Add(logLevel);
+            Messages.Add(formatter(state, exception));
+        }
     }
 
     private sealed class NoopStore : IIdempotencyKeyStore
@@ -55,8 +61,14 @@ public sealed class IdempotencyInMemoryStoreWarningTests
         // Act
         await sut.StartAsync(CancellationToken.None);
 
-        // Assert
+        // Assert - not just that some warning fired, but that its message conveys all three properties
+        // DRK-1005 §5 requires: process-local, lost on restart, not shared between instances. A logger that
+        // discards state/formatter (as this one used to) would pass for any warning whatsoever.
         logger.Levels.ShouldContain(LogLevel.Warning);
+        var message = logger.Messages[logger.Levels.IndexOf(LogLevel.Warning)];
+        message.ShouldContain("process's memory");
+        message.ShouldContain("lost on restart");
+        message.ShouldContain("not shared between instances");
     }
 
     [Fact]

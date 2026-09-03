@@ -49,19 +49,77 @@ public sealed class IdempotencyInMemoryStoreTests
         // Arrange
         var store = CreateStore();
 
-        // Act & Assert - repeated rounds, each with a fresh key and many genuinely concurrent callers,
-        // rather than a single sequential Get-then-Set pair that could pass on a non-atomic implementation.
+        // Act & Assert - repeated rounds, each with a fresh key and 25 callers that genuinely overlap: each
+        // is dispatched to the thread pool via Task.Run (so it runs on its own thread, not synchronously on
+        // the calling thread the way a bare ValueTask call would) and held at a Barrier until all 25 have
+        // arrived, so they hit the store's reserve loop at effectively the same instant. A single sequential
+        // Get-then-Set pair - or the previous version of this test, which called IsKeyProcessedAsync directly
+        // inside Select with no thread hop - would pass even against a non-atomic implementation.
         for (var round = 0; round < 20; round++)
         {
             var keyInfo = NewKeyInfo();
+            using var barrier = new Barrier(25);
 
             var tasks = Enumerable.Range(0, 25)
-                .Select(_ => store.IsKeyProcessedAsync(keyInfo).AsTask())
+                .Select(_ => Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    return store.IsKeyProcessedAsync(keyInfo).AsTask();
+                }))
                 .ToArray();
             var results = await Task.WhenAll(tasks);
 
             results.Count(r => !r.processed).ShouldBe(1);
             results.Count(r => r.processed).ShouldBe(24);
+        }
+    }
+
+    /// <summary>
+    ///     Negative control demonstrating the harness above is actually capable of failing: a check-then-act
+    ///     store (look up "already reserved?", sleep, then write "reserved") reproduces the exact race
+    ///     DRK-1005 replaced the previous store for. Run against the same 25-caller/Barrier harness, it must
+    ///     let more than one caller believe it won the reservation - proving the harness contends the race
+    ///     rather than merely calling the store 25 times.
+    /// </summary>
+    [Fact]
+    public void NonAtomicCheckThenActStandIn_ManyConcurrentCallers_MoreThanOneWinnerPerRound()
+    {
+        // Arrange
+        var stub = new NonAtomicCheckThenActStore();
+        var key = Guid.NewGuid().ToString();
+        using var barrier = new Barrier(25);
+
+        // Act
+        var tasks = Enumerable.Range(0, 25)
+            .Select(_ => Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return stub.TryReserve(key);
+            }))
+            .ToArray();
+        Task.WaitAll(tasks);
+
+        // Assert - a check-then-act race lets more than one caller past the "not yet reserved" check
+        tasks.Count(t => t.Result).ShouldBeGreaterThan(1);
+    }
+
+    /// <summary>
+    ///     Deliberately non-atomic stand-in: separates the "is this key already reserved?" check from the
+    ///     "reserve it" write by a short sleep, instead of a single compare-and-swap. Used only to prove the
+    ///     concurrency harness above can fail - never a substitute for <see cref="IdempotencyInMemoryStore" />.
+    /// </summary>
+    private sealed class NonAtomicCheckThenActStore
+    {
+        private readonly ConcurrentDictionary<string, bool> _seen = new();
+
+        public bool TryReserve(string key)
+        {
+            if (_seen.ContainsKey(key))
+                return false; // someone else already reserved - this caller loses
+
+            Thread.Sleep(10); // window in which another caller can also observe "not yet reserved"
+            _seen[key] = true;
+            return true; // this caller believes it won the reservation
         }
     }
 
