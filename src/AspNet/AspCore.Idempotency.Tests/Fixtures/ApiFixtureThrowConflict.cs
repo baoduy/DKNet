@@ -4,6 +4,7 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -31,8 +32,11 @@ public sealed class ApiFixtureThrowConflict : WebApplicationFactory<ApiTests.Pro
     {
         // Set test environment
         builder.UseEnvironment(Environments.Development);
+        // Named explicitly for consistency with the other fixtures - this exercises the
+        // order-independence replacement path even though its config equals the default.
         builder.ConfigureServices(s =>
-            s.AddIdempotentKey(c => c.ConflictHandling = IdempotentConflictHandling.ConflictResponse));
+            s.AddIdempotentKey<IdempotencyInMemoryStore>(
+                c => c.ConflictHandling = IdempotentConflictHandling.ConflictResponse));
     }
 
     public new async Task DisposeAsync()

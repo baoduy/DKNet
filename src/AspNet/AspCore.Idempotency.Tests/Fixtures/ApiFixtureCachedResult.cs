@@ -4,6 +4,7 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -31,8 +32,13 @@ public sealed class ApiFixtureCachedResult : WebApplicationFactory<ApiTests.Prog
     {
         // Set test environment
         builder.UseEnvironment(Environments.Development);
+        // Program.cs already calls the parameterless AddIdempotentKey() first; WebApplicationFactory
+        // runs this ConfigureServices after it, so the parameterless overload here would be a no-op
+        // per its first-caller-wins rule. Naming the store explicitly takes the replacement path
+        // instead, which applies this fixture's config after the default's own.
         builder.ConfigureServices(s =>
-            s.AddIdempotentKey(c => c.ConflictHandling = IdempotentConflictHandling.CachedResult));
+            s.AddIdempotentKey<IdempotencyInMemoryStore>(
+                c => c.ConflictHandling = IdempotentConflictHandling.CachedResult));
     }
 
     public new async Task DisposeAsync()
