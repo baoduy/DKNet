@@ -221,9 +221,10 @@ public sealed class RepositorySpec<TDbContext> : IRepositorySpec where TDbContex
     public async Task<int> UpdateAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
     {
-        _dbContext.Entry(entity).State = EntityState.Modified;
+        var entry = _dbContext.Entry(entity);
+        entry.State = EntityState.Modified;
 
-        var newEntities = _dbContext.GetNewEntitiesFromNavigations(_dbContext.Entry(entity)).ToList();
+        var newEntities = _dbContext.GetNewEntitiesFromNavigations(entry).ToList();
         await _dbContext.AddRangeAsync(newEntities, cancellationToken);
         return newEntities.Count;
     }

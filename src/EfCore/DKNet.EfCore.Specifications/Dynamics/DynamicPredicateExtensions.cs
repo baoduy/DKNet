@@ -43,12 +43,10 @@ public static class DynamicPredicateExtensions
     private static Expression<Func<T, bool>>? BuildDynamicExpression<T>(string propertyName,
         Ops operation, object? value)
     {
-        // Validate property name contains only safe characters before any processing
-        if (!DynamicPredicateBuilderExtensions.IsValidPropertyName(propertyName))
+        // Validate property name contains only safe characters and normalize it (PascalCase each segment)
+        // in one pass - avoids re-running ToPascalCase a second time just to get the value back.
+        if (!DynamicPredicateBuilderExtensions.TryNormalizePropertyName(propertyName, out var normalizedPath))
             return null;
-
-        // Normalize property path using PropertyNameExtensions (PascalCase each segment)
-        var normalizedPath = propertyName.ToPascalCase();
 
         var propType = typeof(T).ResolvePropertyType(normalizedPath);
         if (propType == null)
