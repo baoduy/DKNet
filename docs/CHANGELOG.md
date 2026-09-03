@@ -23,8 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Non-generic `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` (`DKNet.AspCore.Idempotency`) enables
   idempotency with no store named and no infrastructure at all — no database, cache, Redis, or connection string.
   It registers a new in-process store that reserves each key atomically within the process, adds no options
-  (it reuses `Expiration` and `InFlightReservationTimeout`) and no package reference, and holds no key past its
-  `Expiration`. Keys are process-local, lost on restart, and not shared between instances, so it is for local
+  (it reuses `Expiration` and `InFlightReservationTimeout`) and no package reference, and never serves a key past
+  its `Expiration`. Expired entries are evicted by a sweep that runs every 256 writes, so an idle process can hold
+  up to 255 already-expired entries until the next sweep reclaims them. Keys are process-local, lost on restart,
+  and not shared between instances, so it is for local
   development and unit tests only; the app logs one startup warning saying so while it is the store serving
   requests. An explicitly named store replaces it whichever order the two registrations run in, so existing
   registrations keep behaving exactly as before.
