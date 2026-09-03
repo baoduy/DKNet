@@ -29,6 +29,17 @@ public class StringExtensionsTests
     }
 
     [Fact]
+    public void ExtractDigits_CalledRepeatedlyWithDecreasingLength_DoesNotLeakDataFromPooledBuffer()
+    {
+        // ExtractDigits rents its scratch buffer from ArrayPool<char>, which can hand back a buffer still
+        // holding data from a previous, longer call. Slicing strictly to the matched count must stop any
+        // of that stale data from leaking into a shorter result.
+        "abc123456789xyz".ExtractDigits().ShouldBe("123456789");
+        "abc22xyz".ExtractDigits().ShouldBe("22");
+        "xyz".ExtractDigits().ShouldBe("");
+    }
+
+    [Fact]
     public void IsNumberTests()
     {
         "123".IsNumber().ShouldBeTrue();

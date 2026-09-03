@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Buffers;
 using System.Reflection;
 
 namespace DKNet.Fw.Extensions.Primitives;
@@ -48,7 +49,22 @@ public static class StringExtensions
         /// <returns>A string containing the extracted numeric characters.</returns>
         public string ExtractDigits()
         {
-            return new string([.. input.Where(c => char.IsDigit(c) || c is '.' or ',' or '-')]);
+            ArgumentNullException.ThrowIfNull(input);
+
+            var buffer = ArrayPool<char>.Shared.Rent(input.Length);
+            try
+            {
+                var count = 0;
+                foreach (var c in input)
+                    if (char.IsDigit(c) || c is '.' or ',' or '-')
+                        buffer[count++] = c;
+
+                return new string(buffer, 0, count);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         /// <summary>
@@ -57,9 +73,31 @@ public static class StringExtensions
         /// <returns><c>true</c> if the string is a valid number; otherwise, <c>false</c>.</returns>
         public bool IsNumber()
         {
-            return !string.IsNullOrWhiteSpace(input)
-                   && input.Count(c => c == '.') <= 1 && !input.Contains(",,", StringComparison.OrdinalIgnoreCase) &&
-                   input.LastIndexOf('-') <= 0 && input.All(c => char.IsDigit(c) || c == '.' || c == ',' || c == '-');
+            if (string.IsNullOrWhiteSpace(input)) return false;
+
+            var dotCount = 0;
+            var lastDashIndex = -1;
+            for (var i = 0; i < input.Length; i++)
+            {
+                var c = input[i];
+                switch (c)
+                {
+                    case '.':
+                        dotCount++;
+                        break;
+                    case ',':
+                        if (i > 0 && input[i - 1] == ',') return false;
+                        break;
+                    case '-':
+                        lastDashIndex = i;
+                        break;
+                    default:
+                        if (!char.IsDigit(c)) return false;
+                        break;
+                }
+            }
+
+            return dotCount <= 1 && lastDashIndex <= 0;
         }
     }
 }

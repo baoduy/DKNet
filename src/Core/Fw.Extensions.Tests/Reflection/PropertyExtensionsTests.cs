@@ -27,6 +27,26 @@ public class PropertyExtensionsTests
     }
 
     [Fact]
+    public void GetProperty_CalledRepeatedlyForDifferentInstancesOfSameType_ResolvesCorrectMemberEachTime()
+    {
+        // Arrange — GetProperty caches by (type, name, flags), so repeated lookups for distinct property
+        // names on the same type must not collide with each other through the cache.
+        using var item = new TestItem3("Duy");
+
+        // Act
+        var namePropertyFirstCall = item.GetProperty("Name");
+        var privatePropertyFirstCall = item.GetProperty("PrivateObj");
+        var namePropertySecondCall = item.GetProperty("Name");
+
+        // Assert
+        namePropertyFirstCall.ShouldNotBeNull();
+        privatePropertyFirstCall.ShouldNotBeNull();
+        namePropertyFirstCall.Name.ShouldBe("Name");
+        privatePropertyFirstCall.Name.ShouldBe("PrivateObj");
+        namePropertySecondCall.ShouldBe(namePropertyFirstCall);
+    }
+
+    [Fact]
     public void GetPropertyShouldReturnNullForNullObject()
     {
         // Arrange

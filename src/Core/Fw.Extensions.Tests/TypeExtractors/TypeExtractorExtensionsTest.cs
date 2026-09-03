@@ -52,6 +52,25 @@ public class TestTypeExtractorExtensions
     }
 
     [Fact]
+    public void Where_WithClosureCapturingPredicate_EvaluatesAsCompiledDelegate()
+    {
+        // Arrange — predicates are compiled to Func<Type,bool> once and evaluated in-process rather than
+        // re-interpreted as an expression tree on every enumeration. A closure over local state exercises
+        // that the compiled delegate — not expression-tree machinery — is what actually runs.
+        var allowedNames = new HashSet<string> { nameof(TestItem), nameof(TestItem2) };
+
+        // Act
+        var types = typeof(TestEnumObject).Assembly.Extract()
+            .Classes()
+            .Where(t => allowedNames.Contains(t.Name))
+            .ToList();
+
+        // Assert
+        types.Count.ShouldBe(2);
+        types.TrueForAll(t => allowedNames.Contains(t.Name)).ShouldBeTrue();
+    }
+
+    [Fact]
     public void TestDuplicateAssemblies()
     {
         // Arrange

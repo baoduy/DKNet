@@ -24,9 +24,6 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
 
     #region Methods
 
-    private static char[] Generate(string validChars, int length) =>
-        RandomNumberGenerator.GetItems<char>(validChars, length);
-
     /// <summary>
     ///     To a character array.
     /// </summary>
@@ -34,7 +31,7 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
     /// <exception cref="ArgumentException">The exception if the options are invalid.</exception>
     public char[] ToChars()
     {
-        // Prepare result list
+        // Prepare result buffer
         if (bufferLength <= 0) throw new ArgumentException("Length must be greater than zero.", nameof(bufferLength));
 
         if (options.MinNumbers + options.MinSpecials >= bufferLength)
@@ -42,28 +39,27 @@ internal sealed class StringCreator(int bufferLength, StringCreatorOptions optio
                 "The sum of MinNumbers and MinSpecials must be less than the total length.",
                 nameof(options));
 
-        var result = new List<char>(bufferLength);
+        // One buffer for the whole result: each segment is drawn straight into its slice, and
+        // Shuffle mutates it in place, so there is only ever the one allocation returned to the caller.
+        var buffer = new char[bufferLength];
+        var offset = 0;
 
-        // Add minimum numbers
-        result.AddRange(
-            options.MinNumbers <= 0
-                ? []
-                : Generate(DefaultNumbers, options.MinNumbers));
+        if (options.MinNumbers > 0)
+        {
+            RandomNumberGenerator.GetItems<char>(DefaultNumbers, buffer.AsSpan(offset, options.MinNumbers));
+            offset += options.MinNumbers;
+        }
 
-        // Add minimum specials
-        result.AddRange(
-            options.MinSpecials <= 0
-                ? []
-                : Generate(DefaultSymbols, options.MinSpecials));
+        if (options.MinSpecials > 0)
+        {
+            RandomNumberGenerator.GetItems<char>(DefaultSymbols, buffer.AsSpan(offset, options.MinSpecials));
+            offset += options.MinSpecials;
+        }
 
-        // Fill the rest
-        var remaining = bufferLength - result.Count;
-        result.AddRange(Generate(DefaultChars, remaining));
+        RandomNumberGenerator.GetItems<char>(DefaultChars, buffer.AsSpan(offset, bufferLength - offset));
 
-        var array = result.ToArray();
-        var span = array.AsSpan();
-        RandomNumberGenerator.Shuffle(span);
-        return span.ToArray();
+        RandomNumberGenerator.Shuffle(buffer.AsSpan());
+        return buffer;
     }
 
     /// <summary>

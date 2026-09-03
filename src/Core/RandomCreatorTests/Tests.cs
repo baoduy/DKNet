@@ -129,6 +129,25 @@ public class Tests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void NewChars_WithMinNumbersAndSpecialsFillingWholeBuffer_ExactlyMeetsEachCategoryCount()
+    {
+        // ToChars now draws each segment directly into a slice of one shared buffer instead of building
+        // three separate arrays and copying them together. A boundary case — where the "remaining" fill
+        // segment is exactly one character — exercises the offset math for that slicing.
+        var options = new StringCreatorOptions { MinNumbers = 4, MinSpecials = 5 };
+        var chars = RandomCreators.NewChars(10, options);
+
+        var numCount = chars.Count(c => "1234567890".Contains(c, StringComparison.Ordinal));
+        var specCount = chars.Count(c => "!@#$%^&*()-_=+[]{}|;:',.<>/?`~".Contains(c, StringComparison.Ordinal));
+        var alphaCount = chars.Count(char.IsLetter);
+
+        Assert.Equal(10, chars.Length);
+        Assert.True(numCount >= 4);
+        Assert.True(specCount >= 5);
+        Assert.Equal(10, numCount + specCount + alphaCount);
+    }
+
+    [Fact]
     public void CanGenerateZeroLengthString()
     {
         Action a = () => RandomCreators.NewString(0);

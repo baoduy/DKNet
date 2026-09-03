@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -15,6 +16,13 @@ namespace DKNet.Fw.Extensions.Reflection;
 /// </summary>
 public static class PropertyExtensions
 {
+    #region Fields
+
+    private static readonly ConcurrentDictionary<(Type Type, string Name, BindingFlags Flags), PropertyInfo?>
+        PropertyCache = new();
+
+    #endregion
+
     #region Methods
 
     /// <summary>
@@ -54,7 +62,12 @@ public static class PropertyExtensions
             if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
 
             var type = obj as Type ?? obj.GetType();
-            return type.GetProperty(propertyName, flags);
+
+            // The (type, name, flags) triple always resolves to the same PropertyInfo (or lack thereof),
+            // so caching it turns repeated lookups — e.g. one per path segment in GetPropertyValue — from a
+            // reflection scan into a dictionary hit.
+            return PropertyCache.GetOrAdd((type, propertyName, flags),
+                static key => key.Type.GetProperty(key.Name, key.Flags));
         }
 
         /// <summary>
