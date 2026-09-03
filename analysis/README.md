@@ -23,19 +23,23 @@ Every finding in all three reports now carries a state marker:
 | Report | ✅ Fixed | ✖ Cancelled | ❓ Your call | Total |
 |---|---|---|---|---|
 | [correctness-notes.md](correctness-notes.md) | 16 | 2 | 0 | 18 |
-| [simplification.md](simplification.md) | 20 | 1 | 2 | 23 |
-| [performance.md](performance.md) | 2 | 0 | 31 | 33 |
-| **Total** | **38** | **3** | **33** | **74** |
+| [simplification.md](simplification.md) | 21 | 1 | 1 | 23 |
+| [performance.md](performance.md) | 31 | 2 | 0 | 33 |
+| **Total** | **68** | **5** | **1** | **74** |
 
-Read the **Applied** notes rather than trusting the checkmarks alone — S8, S12, S18 and S20 were only partially applied, and in each case the sub-item that was *declined* matters more than the ones that landed.
+Read the **Applied** notes rather than trusting the checkmarks alone — S8, S12, S18, S20 and, in the performance report, P3, P4, P7, P14, P19, P20, P22, P23, P28, P29 and P33 were only partially applied, and in each case the sub-item that was *declined* matters more than the ones that landed.
 
-### The three cancelled findings
+**P33 independently corroborates S14.** Working the performance report, the same `IsNumber` → `decimal.TryParse` swap was proposed again and rejected again for the same reason, reached from the tests rather than from this note. Two passes, same verdict.
+
+### The five cancelled findings
 
 | Finding | Why it was withdrawn |
 |---|---|
 | **C3** hook DI lifetime | Already fixed on `dev` before this review (`61ef4d4`, `5696361`); `HookScopeResolutionTests` already covered it |
 | **C11** `EventHook` shared state | Its premise was C3; with hooks genuinely request-scoped it reduces to a case EF Core does not support anyway |
 | **S14** `IsNumber` → `TryParse` | The tests deliberately accept both US (`123,456.789`) and European (`123.456,789`) conventions; `InvariantCulture` rejects the second |
+| **P1** `ToPageEnumerable` streaming | 11 tests in `PageAsyncEnumeratorTests` assert the chunked, page-size-driven contract itself — invalid-page-size throwing, multi-page ordering, per-page cancellation. "Internal, so free to change" was the wrong premise |
+| **P13** `CrudGenerator` off `CompilationProvider` | The prescribed `ForAttributeWithMetadataName` only sees attributes in the current compilation's syntax trees. Entities routinely live in a separately-compiled Domain assembly — the generator's primary tested shape — so adopting it would silently stop discovering them |
 
 One further correction, inside an otherwise-applied item: **S16**'s original diagnosis (that `Open`/`CloseConnection` would close a connection an ambient transaction needed) was wrong — EF Core reference-counts open/close. The real defect, found while fixing it, was a missing `try`/`finally` leaking the open count permanently. And **S20**'s `RequestBase` row is cancelled: it is a deliberately retained compat shim with a guard test, not a stale duplicate.
 
