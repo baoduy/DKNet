@@ -106,8 +106,10 @@ Two limits worth knowing:
 All configuration lives on `IdempotencyOptions`, passed as the `Action<IdempotencyOptions>` on
 `AddIdempotentKey()` and `AddIdempotentKey<TStore>()` (and on every store package's
 `AddIdempotencyWithXxxStore(...)`). The in-process default store adds no options of its own — it reuses
-`Expiration` and `InFlightReservationTimeout`, and the memory it holds is bounded by the keys still inside
-the `Expiration` retention window. Values are
+`Expiration` and `InFlightReservationTimeout`. An expired key is never served, but eviction is write-driven:
+the store sweeps expired entries out every 256 writes, so the memory it holds is one `Expiration` retention
+window's worth of keys plus up to 255 already-expired entries awaiting the next sweep (a process that goes idle
+right after a sweep keeps those until it writes again). Values are
 validated eagerly at registration — an empty header key or cache prefix, a non-positive expiration, a
 status-code window outside 100–599 or with min above max, a null `JsonSerializerOptions`, a
 `MaxIdempotencyKeyLength` below 1, an empty key pattern, or a whitespace `ScopeHmacSecret` each throw

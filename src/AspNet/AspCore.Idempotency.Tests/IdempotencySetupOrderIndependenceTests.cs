@@ -121,5 +121,26 @@ public sealed class IdempotencySetupOrderIndependenceTests
         options.Value.CachePrefix.ShouldBe("named");
     }
 
+    [Fact]
+    public void AddIdempotentKey_DefaultThenNamedStoreWithInvalidConfig_ReportsFailureExactlyOnce()
+    {
+        // Arrange - covers IdempotencySetup.ConfigureIdempotencyOptions: the ten .Validate(...) rules and
+        // ValidateOnStart() register exactly once per IServiceCollection, guarded by ValidatorsRegisteredMarker.
+        // On the replacement path (default store, then a named store replacing it), a single misconfiguration
+        // must still be reported once - not once per AddIdempotentKey call that ran ConfigureIdempotencyOptions.
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddIdempotentKey();
+        services.AddIdempotentKey<FakeStoreA>(o => o.Expiration = TimeSpan.Zero);
+
+        // Assert
+        using var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<IdempotencyOptions>>();
+        var exception = Should.Throw<OptionsValidationException>(() => options.Value);
+
+        exception.Failures.Count(f => f.Contains("Expiration")).ShouldBe(1);
+    }
+
     #endregion
 }

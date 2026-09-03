@@ -45,7 +45,9 @@ public static class IdempotencySetup
     ///         <typeparamref name="TSoreImplement" />; if a different named store is already registered, that
     ///         earlier registration wins and this call is a no-op - first-registration-wins between two named
     ///         stores is unchanged. Where a default registration is replaced this way, the <paramref name="config" />
-    ///         passed here is applied after the default's own configuration, so it decides any option both set.
+    ///         passed here is applied after the default's own configuration, so it decides any option both set -
+    ///         while the shared validators, registered once for the container by the default's own call, are not
+    ///         registered again.
     ///     </para>
     /// </remarks>
     public static IServiceCollection AddIdempotentKey<TSoreImplement>(this IServiceCollection services,
@@ -104,15 +106,22 @@ public static class IdempotencySetup
 
     /// <summary>
     ///     Registers <see cref="IdempotencyOptions" /> via the options pattern, applying <paramref name="config" />
-    ///     (when supplied) and the shared validators, with <c>ValidateOnStart()</c> so a misconfiguration fails
-    ///     fast at application startup rather than on first resolve. Shared by both <c>AddIdempotentKey</c>
-    ///     overloads so the validator set is defined once.
+    ///     (when supplied) on every call - so the latest caller's <paramref name="config" /> wins on any option
+    ///     both registrations set - while the shared validators and <c>ValidateOnStart()</c> are registered at
+    ///     most once per <paramref name="services" /> collection, so a misconfiguration fails fast at application
+    ///     startup and is reported exactly once rather than once per <c>AddIdempotentKey</c> call. Shared by both
+    ///     <c>AddIdempotentKey</c> overloads so the validator set is defined once.
     /// </summary>
     private static void ConfigureIdempotencyOptions(IServiceCollection services, Action<IdempotencyOptions>? config)
     {
         var optionsBuilder = services.AddOptions<IdempotencyOptions>();
         if (config is not null)
             optionsBuilder.Configure(config);
+
+        if (services.Any(s => s.ServiceType == typeof(ValidatorsRegisteredMarker)))
+            return;
+
+        services.AddSingleton<ValidatorsRegisteredMarker>();
 
         optionsBuilder
             .Validate(o => !string.IsNullOrWhiteSpace(o.IdempotencyHeaderKey),
@@ -130,6 +139,13 @@ public static class IdempotencySetup
                 "MinStatusCodeForCaching cannot be greater than MaxStatusCodeForCaching.")
             .ValidateOnStart();
     }
+
+    /// <summary>
+    ///     Marker type registered once per <see cref="IServiceCollection" /> to guard against registering the
+    ///     <see cref="IdempotencyOptions" /> validators more than once. Carries no behaviour - its presence in
+    ///     the collection is the only thing that matters.
+    /// </summary>
+    private sealed class ValidatorsRegisteredMarker;
 
     /// <summary>
     ///     Adds the idempotency endpoint filter to a route handler.
