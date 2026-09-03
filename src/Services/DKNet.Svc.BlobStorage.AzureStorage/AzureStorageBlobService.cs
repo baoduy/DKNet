@@ -140,6 +140,25 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     }
 
     /// <summary>
+    ///     Opens a read stream directly against the Azure Blob Storage service for the provided <paramref name="blob" />
+    ///     request, without buffering the whole blob into memory. The caller owns the returned stream and must
+    ///     dispose it.
+    /// </summary>
+    /// <param name="blob">The blob request describing the blob to read.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>A caller-owned, readable stream when the blob exists; otherwise <c>null</c>.</returns>
+    public override async Task<Stream?> OpenReadAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    {
+        var client = await GetClient();
+        var location = GetBlobLocation(blob);
+        var b = client.GetBlobClient(location);
+        var es = await b.ExistsAsync(cancellationToken);
+        if (!es.Value) return null;
+
+        return await b.OpenReadAsync(position: 0, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
     ///     Creates or returns a cached <see cref="BlobContainerClient" /> for the configured container.
     /// </summary>
     /// <returns>An initialized <see cref="BlobContainerClient" /> instance.</returns>
@@ -229,14 +248,31 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     /// <param name="blob">The blob payload and metadata to save.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>The name/path of the stored blob.</returns>
-    public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
+    public override Task<string> SaveAsync(BlobDetails.BlobData blob,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(
+            new BlobDetails.BlobStreamData(blob.Name, blob.Data.ToStream())
+            {
+                Overwrite = blob.Overwrite,
+                ContentType = blob.ContentType
+            },
+            cancellationToken);
+
+    /// <summary>
+    ///     Uploads the provided blob stream to the configured container and returns the saved blob name, without
+    ///     buffering the whole payload into memory first.
+    /// </summary>
+    /// <param name="blob">The blob name, stream content and metadata to save.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The name/path of the stored blob.</returns>
+    public override async Task<string> SaveAsync(BlobDetails.BlobStreamData blob,
         CancellationToken cancellationToken = default)
     {
-        ValidateFile(blob);
+        var content = ValidateFile(blob);
 
         var client = await GetClient();
         var location = GetBlobLocation(blob);
-        await client.GetBlobClient(location).UploadAsync(blob.Data, blob.Overwrite, cancellationToken);
+        await client.GetBlobClient(location).UploadAsync(content, blob.Overwrite, cancellationToken);
         return blob.Name;
     }
 

@@ -194,6 +194,31 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     }
 
     /// <summary>
+    ///     Opens a read stream directly against the S3 object's HTTP response for the provided <paramref name="blob" />
+    ///     request, without buffering the whole object into memory. The caller owns the returned stream and must
+    ///     dispose it.
+    /// </summary>
+    /// <param name="blob">Blob request describing which object to read.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>A caller-owned, readable stream when found; otherwise <c>null</c>.</returns>
+    public override async Task<Stream?> OpenReadAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    {
+        var location = GetBlobLocation(blob).TrimStart('/');
+        var client = await GetS3ClientAsync(cancellationToken);
+        try
+        {
+            var info = await client.GetObjectAsync(_options.BucketName, location, cancellationToken);
+            return info.ResponseStream;
+        }
+        catch (AmazonS3Exception e)
+        {
+            if (e.StatusCode == HttpStatusCode.NotFound) return null;
+
+            throw;
+        }
+    }
+
+    /// <summary>
     ///     Generates a pre-signed public access URL for the specified blob when supported by the S3 bucket.
     /// </summary>
     /// <param name="blob">Blob request describing the object to generate a URL for.</param>
@@ -324,10 +349,27 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     /// <param name="blob">The blob payload and metadata to upload.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>The original blob name when the upload completes.</returns>
-    public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
+    public override Task<string> SaveAsync(BlobDetails.BlobData blob,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(
+            new BlobDetails.BlobStreamData(blob.Name, blob.Data.ToStream())
+            {
+                Overwrite = blob.Overwrite,
+                ContentType = blob.ContentType
+            },
+            cancellationToken);
+
+    /// <summary>
+    ///     Uploads the provided blob stream to S3 and returns the saved blob name. The stream is handed directly
+    ///     to the S3 client's request rather than being copied through <see cref="BinaryData" /> first.
+    /// </summary>
+    /// <param name="blob">The blob name, stream content and metadata to upload.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The original blob name when the upload completes.</returns>
+    public override async Task<string> SaveAsync(BlobDetails.BlobStreamData blob,
         CancellationToken cancellationToken = default)
     {
-        ValidateFile(blob);
+        var content = ValidateFile(blob);
 
         var existed = await CheckExistsAsync(blob, cancellationToken);
         if (existed && !blob.Overwrite)
@@ -340,7 +382,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         {
             BucketName = _options.BucketName,
             Key = location,
-            InputStream = blob.Data.ToStream(),
+            InputStream = content,
             ContentType = blob.ContentType,
             DisablePayloadSigning = _options.DisablePayloadSigning
         };
