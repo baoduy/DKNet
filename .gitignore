@@ -28,3 +28,6 @@ src/Directory.Build.targets.bak.*
 *.suo
 packages/
 .gitnexus
+
+# Claude Code agent worktrees — transient, never committed
+.claude/worktrees/
