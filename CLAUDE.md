@@ -79,11 +79,21 @@ dotnet format                                    # before committing
 
 Integration tests use **TestContainers.MsSql** — Docker is required. Do not switch them to EF Core InMemory. `mssql/server` ships x64-only images with no ARM64 build.
 
-**Every test project runs locally, including the TestContainers.MsSql-backed ones.** `mssql/server` has no ARM image, so `AspCore.Idempotency.MsSqlStore.Tests`' fixture (`Fixtures/ApiFixture.cs`) picks its image off `RuntimeInformation.ProcessArchitecture` and falls back to `azure-sql-edge` on ARM64. That fallback works on Apple Silicon — just run `dotnet test` normally. Keep the arch switch in place when touching that fixture. The remote x64 runner below is a fallback for when Docker or an image is unavailable locally, not a required gate.
+**SQL Server only runs on x64 and Apple Silicon. On every other ARM device, skip the MsSql-backed tests locally.** `mssql/server` ships x64-only images, so `AspCore.Idempotency.MsSqlStore.Tests`' fixture (`Fixtures/ApiFixture.cs`) picks its image off `RuntimeInformation.ProcessArchitecture` and falls back to `azure-sql-edge` on ARM64. That fallback works on Apple Silicon (Rosetta) but **not** on other ARM64 hosts — Linux/ARM boxes included, where the container fails to launch outright. Keep the arch switch in place when touching that fixture.
+
+On a non-Apple ARM machine, exclude the MsSql tests from local runs and validate them through GitHub Actions instead:
+
+```bash
+dotnet test DKNet.FW.sln --filter "FullyQualifiedName!~MsSqlStore"     # whole solution, minus MsSql
+dotnet test AspNet/AspCore.Idempotency.NpgsqlStore.Tests               # Postgres and Redis
+dotnet test AspNet/AspCore.Idempotency.RedisStore.Tests                # both run fine on ARM64
+```
+
+Postgres and Redis containers run natively on ARM64, and `NpgsqlStore` exercises the shared `DKNet.AspCore.Idempotency.Relational` base — so a change to the shared reservation path is still covered locally. Only MsSql-specific SQL goes unverified. **Never delete, `[Skip]`, or otherwise disable the MsSql test project to make a local run go green** — it is the store's only coverage and it passes on CI. Exclude it at the command line, say so in the PR, and re-validate on the x64 runner below.
 
 ### Remote test verification (fallback)
 
-Run tests locally first — that covers the whole solution. When something genuinely can't run on this machine (Docker down, an image that won't pull, a restricted sandbox), or you want a true x64 second opinion, dispatch the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml` on a GitHub-hosted x64 runner. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging. Note it runs against the *pushed* branch, so commit first.
+Run tests locally first. On x64 and Apple Silicon that covers the whole solution; on other ARM hosts it covers everything except the MsSql-backed tests excluded above, which **must** be re-validated here before merging a change to the idempotency stores. When something genuinely can't run on this machine (Docker down, an image that won't pull, a restricted sandbox), or you want a true x64 second opinion, dispatch the `workflow_dispatch` workflow `.github/workflows/remote-tests.yml` on a GitHub-hosted x64 runner. It gives a clean pass/fail on tests only (no coverage/Sonar gate) and uploads a `test-results` artifact (`*.trx` + `build.log` + `test.log`) plus a failed-test step summary for AI debugging. Note it runs against the *pushed* branch, so commit first.
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch>                              # whole solution
