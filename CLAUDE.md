@@ -106,11 +106,20 @@ gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
 
 The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
 
-`Svc.PdfGenerators.Tests` is the other case worth naming: if its Chromium download ever fails on a restricted ARM sandbox, the remote runner is the fallback:
+`Svc.PdfGenerators.Tests` is the other case worth naming, and it has the same x64 story as SQL Server. PuppeteerSharp fetches an **x64 Chromium**, so on a non-Apple ARM64 host the download succeeds and the *launch* fails:
+
+```
+PuppeteerSharp.ProcessException: Failed to launch browser!
+x86_64-binfmt-P: Could not open '/lib64/ld-linux-x86-64.so.2'
+```
+
+That takes out roughly 14 of the 185 tests — every one that renders a real PDF. The rest of the project still runs, so this is not a reason to skip the whole thing. Exclude nothing in code; run it locally, expect those launch failures on ARM64, and re-validate on the remote runner:
 
 ```bash
 gh workflow run remote-tests.yml --ref <branch> -f project=Services/Svc.PdfGenerators.Tests
 ```
+
+On Apple Silicon the x64 Chromium runs under Rosetta, so the suite passes locally.
 
 ## Architectural Big Picture
 
