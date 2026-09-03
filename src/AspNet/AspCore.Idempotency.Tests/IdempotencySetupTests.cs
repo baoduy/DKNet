@@ -17,11 +17,10 @@ public class IdempotencySetupTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDistributedMemoryCache();
 
         // Act
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options => options.CachePrefix = "first");
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options => options.CachePrefix = "second");
+        services.AddIdempotentKey(options => options.CachePrefix = "first");
+        services.AddIdempotentKey(options => options.CachePrefix = "second");
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
@@ -39,7 +38,7 @@ public class IdempotencySetupTests
             .AddDistributedMemoryCache();
 
         // Act
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>();
+        services.AddIdempotentKey();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
@@ -55,7 +54,7 @@ public class IdempotencySetupTests
         var services = new ServiceCollection();
 
         // Act
-        var result = services.AddIdempotentKey<IdempotencyDistributedCacheStore>();
+        var result = services.AddIdempotentKey();
 
         // Assert
         result.ShouldBe(services);
@@ -66,10 +65,9 @@ public class IdempotencySetupTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDistributedMemoryCache();
 
         // Act
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+        services.AddIdempotentKey(options =>
         {
             options.IdempotencyHeaderKey = "X-Custom-Idempotency";
             options.Expiration = TimeSpan.FromMinutes(30);
@@ -96,7 +94,7 @@ public class IdempotencySetupTests
             .AddDistributedMemoryCache();
 
         // Act
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>();
+        services.AddIdempotentKey();
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
@@ -118,7 +116,7 @@ public class IdempotencySetupTests
         var customHeaderKey = "X-My-Custom-Header";
 
         // Act
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options => options.IdempotencyHeaderKey = customHeaderKey);
+        services.AddIdempotentKey(options => options.IdempotencyHeaderKey = customHeaderKey);
 
         // Assert
         var serviceProvider = services.BuildServiceProvider();
@@ -137,7 +135,7 @@ public class IdempotencySetupTests
         var exception = Record.Exception(() =>
         {
             // This verifies the method exists and can be called
-            services.AddIdempotentKey<IdempotencyDistributedCacheStore>();
+            services.AddIdempotentKey();
         });
 
         // Assert
@@ -150,7 +148,7 @@ public class IdempotencySetupTests
         // Arrange - the options pattern defers validation to first resolve (or host startup via
         // ValidateOnStart), not to the AddIdempotentKey call itself.
         var services = new ServiceCollection();
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = string.Empty);
+        services.AddIdempotentKey(c => c.ScopeHmacSecret = string.Empty);
         using var serviceProvider = services.BuildServiceProvider();
         var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
 
@@ -166,7 +164,7 @@ public class IdempotencySetupTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddIdempotentKey<IdempotencyDistributedCacheStore>(c => c.ScopeHmacSecret = "   ");
+        services.AddIdempotentKey(c => c.ScopeHmacSecret = "   ");
         using var serviceProvider = services.BuildServiceProvider();
         var options = serviceProvider.GetRequiredService<IOptions<IdempotencyOptions>>();
 

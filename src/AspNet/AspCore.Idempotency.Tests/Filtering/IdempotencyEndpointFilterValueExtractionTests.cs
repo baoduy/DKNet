@@ -5,7 +5,6 @@
 
 using System.Net;
 using DKNet.AspCore.Idempotency;
-using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -29,8 +28,7 @@ public sealed class IdempotencyEndpointFilterValueExtractionTests
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Services.AddDistributedMemoryCache();
-        builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(
+        builder.Services.AddIdempotentKey(
             o => o.ConflictHandling = IdempotentConflictHandling.CachedResult);
 
         var app = builder.Build();

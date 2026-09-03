@@ -4,7 +4,6 @@
 // </copyright>
 
 using DKNet.AspCore.Idempotency;
-using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -32,7 +31,7 @@ public sealed class ApiFixtureCustomScope : WebApplicationFactory<ApiTests.Progr
         // Set test environment
         builder.UseEnvironment(Environments.Development);
         builder.ConfigureServices(s =>
-            s.AddIdempotentKey<IdempotencyDistributedCacheStore>(c =>
+            s.AddIdempotentKey(c =>
             {
                 c.ConflictHandling = IdempotentConflictHandling.ConflictResponse;
                 c.KeyScopeResolver = _ => "tenant:acme";
