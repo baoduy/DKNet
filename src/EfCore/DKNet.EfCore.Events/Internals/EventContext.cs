@@ -9,7 +9,8 @@ internal sealed class EventContext(SnapshotContext snapshotContext, IMapper? map
 {
     #region Fields
 
-    private readonly ICollection<IEventEntity> _cachedEntities = (List<IEventEntity>)[];
+    private readonly List<IEventEntity> _cachedEntities = [];
+    private bool _entitiesLoaded;
 
     #endregion
 
@@ -19,23 +20,29 @@ internal sealed class EventContext(SnapshotContext snapshotContext, IMapper? map
     {
         foreach (var entity in _cachedEntities) entity.ClearEvents();
         _cachedEntities.Clear();
+        _entitiesLoaded = false;
     }
 
     private ICollection<IEventEntity> GetEventEntities()
     {
-        if (_cachedEntities.Count > 0) return _cachedEntities;
+        if (_entitiesLoaded) return _cachedEntities;
 
         _cachedEntities.AddRange(snapshotContext.Entities.Where(entry => entry.Entity is IEventEntity)
             .Select(entry => (IEventEntity)entry.Entity));
+        _entitiesLoaded = true;
 
         return _cachedEntities;
     }
 
     public IEnumerable<object> GetEvents()
     {
+        // Reused across entities instead of allocating a fresh HashSet per entity; Clear() between
+        // iterations keeps each entity's de-duplication independent of the others.
+        var finalEvents = new HashSet<object>();
+
         foreach (var entity in GetEventEntities())
         {
-            var finalEvents = new HashSet<object>();
+            finalEvents.Clear();
             var (events, eventTypes) = entity.GetEvents();
             finalEvents.AddRange(events);
 

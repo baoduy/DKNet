@@ -1,4 +1,3 @@
-using System.Reflection;
 using DKNet.EfCore.DataAuthorization.Internals;
 using DKNet.EfCore.Hooks;
 using Microsoft.Data.Sqlite;
@@ -127,21 +126,20 @@ public class DataOwnerHookTests : IAsyncLifetime
     }
 
     [Fact]
-    public void StampAddedEntity_OwnedByHasNoSetter_ThrowsInsteadOfSwallowingFailure()
+    public async Task StampAddedEntity_OwnedByHasNoSetter_ThrowsInsteadOfSwallowingFailure()
     {
-        // Arrange: OwnedBy has no setter reachable by reflection, so the throwing SetPropertyValue
-        // (used for Added entities) must surface the failure rather than silently ignore it like
-        // the guard's TrySetPropertyValue does on revert.
-        var entity = new NoSetterOwnedEntity();
-        var method = typeof(DataOwnerHook).GetMethod("StampAddedEntity",
-            BindingFlags.NonPublic | BindingFlags.Static)!;
+        // Arrange: OwnedBy is a computed, getter-only property with no backing field, so EF Core's own
+        // model excludes it and the reflection fallback finds no writable property either. The stamping
+        // must surface that failure rather than silently doing nothing.
+        var db = Provider.GetRequiredService<DddContext>();
+        var entity = new NoSetterOwnedEntity("Never Stamped");
+        await db.AddAsync(entity);
 
         // Act
-        var ex = Record.Exception(() => method.Invoke(null, [entity, "Steven"]));
+        var ex = await Record.ExceptionAsync(() => db.SaveChangesAsync());
 
         // Assert
-        ex.ShouldNotBeNull();
-        ex!.InnerException.ShouldBeOfType<ArgumentException>();
+        ex.ShouldBeOfType<ArgumentException>();
     }
 
     [Fact]
@@ -161,13 +159,4 @@ public class DataOwnerHookTests : IAsyncLifetime
     }
 
     #endregion
-}
-
-/// <summary>
-///     A plain <see cref="IOwnedBy" /> implementer whose <see cref="OwnedBy" /> has no setter at all,
-///     so reflection-based assignment fails — used to prove the Added path's throwing behavior.
-/// </summary>
-internal sealed class NoSetterOwnedEntity : IOwnedBy
-{
-    public string OwnedBy => string.Empty;
 }

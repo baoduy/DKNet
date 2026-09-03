@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -6,6 +6,14 @@ namespace DKNet.EfCore.Hooks.Internals;
 
 internal class HookFactory(IServiceProvider provider)
 {
+    #region Fields
+
+    // The DbContext type hierarchy driving the keyed-service lookup is fixed for the lifetime of the
+    // process, so it is computed once per DbContext type and reused for every SaveChanges afterwards.
+    private static readonly ConcurrentDictionary<Type, string[]> _providerKeyNamesCache = new();
+
+    #endregion
+
     #region Methods
 
     /// <summary>
@@ -13,20 +21,21 @@ internal class HookFactory(IServiceProvider provider)
     /// </summary>
     /// <param name="dbContext"></param>
     /// <returns></returns>
-    private static string[] GetProviderKeyNames(DbContext dbContext)
-    {
-        //using HashSet to prevent duplication
-        var name = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var type = dbContext.GetType();
-
-        do
+    private static string[] GetProviderKeyNames(DbContext dbContext) =>
+        _providerKeyNamesCache.GetOrAdd(dbContext.GetType(), static type =>
         {
-            name.Add(type.FullName!);
-            type = IsBaseTypeAvailable(type) ? type.BaseType : null;
-        } while (type is not null);
+            //using HashSet to prevent duplication
+            var name = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var current = type;
 
-        return [.. name];
-    }
+            do
+            {
+                name.Add(current.FullName!);
+                current = IsBaseTypeAvailable(current) ? current.BaseType : null;
+            } while (current is not null);
+
+            return [.. name];
+        });
 
     private static bool IsBaseTypeAvailable(Type type) =>
         type.BaseType is not null && type.BaseType.IsClass && type.BaseType != typeof(object);
@@ -35,15 +44,15 @@ internal class HookFactory(IServiceProvider provider)
     ///     Load all hooks for the nested DbContext.
     /// </summary>
     /// <param name="dbContext"></param>
-    public (IEnumerable<IBeforeSaveHookAsync> beforeSaveHooks, IEnumerable<IAfterSaveHookAsync> afterSaveHooks)
+    public (IReadOnlyList<IBeforeSaveHookAsync> beforeSaveHooks, IReadOnlyList<IAfterSaveHookAsync> afterSaveHooks)
         LoadHooks(DbContext dbContext)
     {
         //The Hooks of Parents also able to be used here
         var keys = GetProviderKeyNames(dbContext);
-        var hooks = keys.SelectMany(provider.GetKeyedServices<IHookBaseAsync>).ToImmutableList();
+        var hooks = keys.SelectMany(provider.GetKeyedServices<IHookBaseAsync>).ToArray();
 
-        var beforeSaveHooks = hooks.OfType<IBeforeSaveHookAsync>();
-        var afterSaveHooks = hooks.OfType<IAfterSaveHookAsync>();
+        var beforeSaveHooks = hooks.OfType<IBeforeSaveHookAsync>().ToArray();
+        var afterSaveHooks = hooks.OfType<IAfterSaveHookAsync>().ToArray();
 
         return (beforeSaveHooks, afterSaveHooks);
     }

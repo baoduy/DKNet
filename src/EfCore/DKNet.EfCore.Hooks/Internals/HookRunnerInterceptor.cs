@@ -26,7 +26,7 @@ public enum RunningTypes
 ///     Runs hooks before and after save operations.
 /// </summary>
 /// <param name="logger">the logger of HookRunner</param>
-internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logger)
+internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logger)
     : SaveChangesInterceptor, IAsyncDisposable, IDisposable
 {
     #region Fields
@@ -91,17 +91,11 @@ internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logge
     {
         if (HookDisablingContext.IsHookDisabled(context.Snapshot.DbContext))
         {
-            logger.LogInformation("The {Type} hooks is disabled for DbContext {ContextId}",
-                type, context.Snapshot.DbContext.ContextId);
+            LogHooksDisabled(type, context.Snapshot.DbContext.ContextId);
             return;
         }
 
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation(
-                "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}",
-                type,
-                context.BeforeSaveHooks.Count,
-                context.AfterSaveHooks.Count);
+        LogRunningHooks(type, context.BeforeSaveHooks.Count, context.AfterSaveHooks.Count);
 
         context.Snapshot.Initialize();
         if (context.Snapshot.Entities.Count == 0) return;
@@ -118,10 +112,7 @@ internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logge
         DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation(
-                "{Name}:SaveChangesFailedAsync {EventId}, {EventIdCode}",
-                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
+        LogSaveChangesFailed(eventData.EventId, eventData.EventIdCode);
 
         await RemoveContext(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
@@ -132,9 +123,7 @@ internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logge
         int result,
         CancellationToken cancellationToken = default)
     {
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{Name}:SavedChangesAsync called with result: {EventId}, {EventIdCode}",
-                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
+        LogSavedChangesCalled(eventData.EventId, eventData.EventIdCode);
 
         try
         {
@@ -144,10 +133,7 @@ internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logge
         finally
         {
             await RemoveContext(eventData);
-            if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation(
-                    "{Name}:SavedChangesAsync the event context was removed: {EventId}, {EventIdCode}",
-                    nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
+            LogSavedChangesContextRemoved(eventData.EventId, eventData.EventIdCode);
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -165,14 +151,43 @@ internal sealed class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logge
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{Name}:SavingChangesAsync called with result: {EventId}, {EventIdCode}",
-                nameof(HookRunnerInterceptor), eventData.EventId, eventData.EventIdCode);
+        LogSavingChangesCalled(eventData.EventId, eventData.EventIdCode);
 
         var context = GetContext(eventData);
         await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
+
+    #endregion
+
+    #region Logging
+
+    // Source-generated: the level check compiles in first and arguments are passed through a strongly
+    // typed struct, so a disabled level allocates nothing — unlike the hand-written LogInformation calls
+    // this replaces, some of which had no IsEnabled guard at all.
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The {Type} hooks is disabled for DbContext {ContextId}")]
+    private partial void LogHooksDisabled(RunningTypes type, DbContextId contextId);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Running {Type} hooks. BeforeSaveHooks: {BeforeCount}, AfterSaveHooks: {AfterCount}")]
+    private partial void LogRunningHooks(RunningTypes type, int beforeCount, int afterCount);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SaveChangesFailedAsync {EventId}, {EventIdCode}")]
+    private partial void LogSaveChangesFailed(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SavedChangesAsync called with result: {EventId}, {EventIdCode}")]
+    private partial void LogSavedChangesCalled(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SavedChangesAsync the event context was removed: {EventId}, {EventIdCode}")]
+    private partial void LogSavedChangesContextRemoved(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SavingChangesAsync called with result: {EventId}, {EventIdCode}")]
+    private partial void LogSavingChangesCalled(EventId eventId, string? eventIdCode);
 
     #endregion
 }
