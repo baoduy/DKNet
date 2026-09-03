@@ -9,6 +9,8 @@ idempotency key are processed once, with duplicates either rejected with `409 Co
 ## Features
 
 - Endpoint filter (`RequiredIdempotentKey()`) that enforces an idempotency key on any minimal API route
+- Group-level declaration — the same `RequiredIdempotentKey()` on a `RouteGroupBuilder` covers every `POST`
+  endpoint in the group (verb set overridable), nested groups and later-added endpoints included
 - Composite key validation (presence, length, format) with automatic `400 Bad Request` responses
 - Two duplicate-request strategies: `409 Conflict` (default) or transparent cached-response replay
 - Caller scope isolation (authenticated user, HMAC'd `Authorization` header, or client IP) so the same key from
@@ -65,6 +67,39 @@ shipped store type is `internal`.
 While the in-process default is the store actually serving requests, the app logs one startup warning that
 idempotency keys are process-local, lost on restart, and not shared between instances. A named store emits no
 such warning — that warning is how an accidental multi-instance deployment on the default store shows up.
+
+## Group-level declaration
+
+`RequiredIdempotentKey()` also extends `RouteGroupBuilder`, so a single declaration on a group protects every
+matching endpoint in it — including endpoints added to that group later, and endpoints of groups nested under it:
+
+```csharp
+var orders = app.MapGroup("/api/orders").RequiredIdempotentKey();                 // POST endpoints only
+var admin  = app.MapGroup("/api/admin").RequiredIdempotentKey("POST", "DELETE");  // explicit verb set
+
+orders.MapPost("/", CreateOrder);            // protected — no per-endpoint call needed
+orders.MapGet("/{id}", GetOrder);            // untouched: no header required, no duplicate lookup
+orders.MapGroup("/{id}/lines")               // nested group inherits the same verb selection
+      .MapPost("/", AddOrderLine);           // protected
+```
+
+The default covered set is `POST` only — `PUT` and `DELETE` are already idempotent by HTTP semantics, so they are
+opt-in through the verb arguments. Verbs are matched case-insensitively against each endpoint's routed verb, and
+coverage is decided once at application start: nothing the caller sends (an `X-HTTP-Method-Override` header
+included) can move an endpoint into or out of coverage.
+
+An endpoint whose verb falls outside the set is left completely alone — no header requirement, no rejection, no
+duplicate lookup, nothing retained — so reads keep working for clients that never send a key. A covered endpoint
+behaves exactly like an individually declared one: same header name, key validation, duplicate handling and
+retention, all still driven by `IdempotencyOptions`. The per-endpoint overload is unchanged, and an endpoint
+covered both ways is still protected exactly once.
+
+Two limits worth knowing:
+
+- An endpoint registered without a verb constraint (`app.Map(...)`, which also serves `GET`) has no routed verb to
+  match and is **not** covered. Declare explicit verbs (`MapPost`, `MapPut`, ...) on endpoints you want protected.
+- A verb set that omits a state-changing endpoint leaves that endpoint unprotected. That is an explicit choice —
+  a group protects only the verbs you name.
 
 ## Customisation reference
 

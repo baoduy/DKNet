@@ -3,6 +3,8 @@ using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Store;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -30,7 +32,8 @@ public static class IdempotencySetup
     /// </param>
     /// <returns>The service collection for method chaining.</returns>
     /// <remarks>
-    ///     This method must be called before adding endpoint filters that use <see cref="RequiredIdempotentKey" />.
+    ///     This method must be called before adding endpoint filters that use
+    ///     <see cref="RequiredIdempotentKey(RouteHandlerBuilder)" />.
     ///     It registers:
     ///     - <typeparamref name="TSoreImplement" /> as the <see cref="IIdempotencyKeyStore" /> implementation
     ///     - <see cref="IdempotencyOptions" /> via the options pattern, validated with <c>ValidateOnStart()</c>
@@ -148,6 +151,64 @@ public static class IdempotencySetup
     {
         builder.AddEndpointFilter<IdempotencyEndpointFilter>();
         return builder;
+    }
+
+    /// <summary>
+    ///     Adds the idempotency endpoint filter to every endpoint in a route group whose routed HTTP verb
+    ///     matches <paramref name="httpMethods" />, including endpoints in nested groups and endpoints
+    ///     mapped into the group after this call.
+    /// </summary>
+    /// <param name="group">The route group builder to protect.</param>
+    /// <param name="httpMethods">
+    ///     The HTTP verbs to cover, matched case-insensitively against each endpoint's routed verb(s).
+    ///     When omitted or empty, defaults to <c>POST</c> only.
+    /// </param>
+    /// <returns>The route group builder for method chaining.</returns>
+    /// <remarks>
+    ///     Coverage is decided once, at endpoint-build time, from the endpoint's <see cref="HttpMethodMetadata" />
+    ///     — never from the incoming request (e.g. an <c>X-HTTP-Method-Override</c> header has no effect on
+    ///     coverage). An endpoint with no <see cref="HttpMethodMetadata" /> at all (e.g. one mapped with
+    ///     <c>app.Map(...)</c> with no verb constraint, which also accepts GET) is never covered — declare
+    ///     explicit verbs on any endpoint you want protected.
+    ///     <para>
+    ///         An endpoint covered by both a group declaration and its own
+    ///         <see cref="RequiredIdempotentKey(RouteHandlerBuilder)" /> call still runs the idempotency logic
+    ///         exactly once; <see cref="IdempotencyEndpointFilter" /> guards against double invocation.
+    ///     </para>
+    ///     Typical usage:
+    ///     <code>
+    ///     var orders = app.MapGroup("/api/orders").RequiredIdempotentKey();                 // POST only
+    ///     var admin  = app.MapGroup("/api/admin").RequiredIdempotentKey("POST", "DELETE");
+    ///     </code>
+    /// </remarks>
+    public static RouteGroupBuilder RequiredIdempotentKey(this RouteGroupBuilder group, params string[] httpMethods)
+    {
+        var coveredMethods = httpMethods.Length > 0 ? httpMethods : ["POST"];
+
+        // Not AddEndpointFilterFactory: its EndpointFilterFactoryContext exposes only MethodInfo and
+        // ApplicationServices, with no way to read the endpoint's routed verbs. IEndpointConventionBuilder.Add
+        // runs the same convention pipeline (AddEndpointFilterFactory is implemented on top of it) but hands
+        // us the real EndpointBuilder, whose Metadata carries HttpMethodMetadata and whose FilterFactories is
+        // the same list AddEndpointFilterFactory would have appended to.
+        ((IEndpointConventionBuilder)group).Add(endpointBuilder =>
+        {
+            var routedMethods = endpointBuilder.Metadata
+                .OfType<HttpMethodMetadata>()
+                .SelectMany(m => m.HttpMethods);
+
+            if (!routedMethods.Any(m => coveredMethods.Contains(m, StringComparer.OrdinalIgnoreCase)))
+                return;
+
+            endpointBuilder.FilterFactories.Add((factoryContext, next) =>
+            {
+                var filter = ActivatorUtilities.CreateInstance<IdempotencyEndpointFilter>(
+                    factoryContext.ApplicationServices);
+
+                return invocationContext => filter.InvokeAsync(invocationContext, next);
+            });
+        });
+
+        return group;
     }
 
     #endregion
