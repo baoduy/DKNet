@@ -32,6 +32,14 @@ internal sealed class IdempotencyEndpointFilter(
     #region Fields
 
     /// <summary>
+    ///     Key used in <see cref="HttpContext.Items" /> to guard against running the idempotency logic twice
+    ///     for a single request when an endpoint is covered by both a group declaration and its own
+    ///     <see cref="IdempotencySetup.RequiredIdempotentKey(Microsoft.AspNetCore.Builder.RouteHandlerBuilder)" />
+    ///     call.
+    /// </summary>
+    private const string AppliedItemsKey = "__DKNet.Idempotency.Applied";
+
+    /// <summary>
     ///     Gets the configured idempotency options.
     /// </summary>
     private readonly IdempotencyOptions _options = options.Value;
@@ -227,6 +235,11 @@ internal sealed class IdempotencyEndpointFilter(
     /// </remarks>
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
+        if (context.HttpContext.Items.ContainsKey(AppliedItemsKey))
+            return await next(context).ConfigureAwait(false);
+
+        context.HttpContext.Items[AppliedItemsKey] = true;
+
         var requestId = context.HttpContext.TraceIdentifier;
         var idempotencyKeyInfo = GetIdempotentKeyInfo(context);
 
