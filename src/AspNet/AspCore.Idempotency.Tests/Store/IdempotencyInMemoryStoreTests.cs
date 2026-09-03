@@ -50,22 +50,25 @@ public sealed class IdempotencyInMemoryStoreTests
         var store = CreateStore();
 
         // Act & Assert - repeated rounds, each with a fresh key and 25 callers that genuinely overlap: each
-        // is dispatched to the thread pool via Task.Run (so it runs on its own thread, not synchronously on
-        // the calling thread the way a bare ValueTask call would) and held at a Barrier until all 25 have
-        // arrived, so they hit the store's reserve loop at effectively the same instant. A single sequential
-        // Get-then-Set pair - or the previous version of this test, which called IsKeyProcessedAsync directly
-        // inside Select with no thread hop - would pass even against a non-atomic implementation.
+        // gets its own dedicated thread (TaskCreationOptions.LongRunning, not a plain Task.Run) so all 25
+        // exist immediately regardless of the thread pool's min-thread count or injection rate - a bare
+        // Task.Run here would make the first round's overlap depend on how fast the pool grows past its
+        // starting size, which varies with core count and can starve on a small CI box. Each is held at a
+        // Barrier until all 25 have arrived, so they hit the store's reserve loop at effectively the same
+        // instant. A single sequential Get-then-Set pair - or the previous version of this test, which
+        // called IsKeyProcessedAsync directly inside Select with no thread hop at all - would pass even
+        // against a non-atomic implementation.
         for (var round = 0; round < 20; round++)
         {
             var keyInfo = NewKeyInfo();
             using var barrier = new Barrier(25);
 
             var tasks = Enumerable.Range(0, 25)
-                .Select(_ => Task.Run(() =>
+                .Select(_ => Task.Factory.StartNew(() =>
                 {
                     barrier.SignalAndWait();
                     return store.IsKeyProcessedAsync(keyInfo).AsTask();
-                }))
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap())
                 .ToArray();
             var results = await Task.WhenAll(tasks);
 
@@ -89,13 +92,14 @@ public sealed class IdempotencyInMemoryStoreTests
         var key = Guid.NewGuid().ToString();
         using var barrier = new Barrier(25);
 
-        // Act
+        // Act - same dedicated-thread dispatch as the harness above, for the same reason: independence from
+        // thread pool growth
         var tasks = Enumerable.Range(0, 25)
-            .Select(_ => Task.Run(() =>
+            .Select(_ => Task.Factory.StartNew(() =>
             {
                 barrier.SignalAndWait();
                 return stub.TryReserve(key);
-            }))
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default))
             .ToArray();
         Task.WaitAll(tasks);
 
