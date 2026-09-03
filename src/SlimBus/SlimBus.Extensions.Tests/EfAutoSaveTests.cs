@@ -1,3 +1,6 @@
+using System.Reflection;
+using DKNet.SlimBus.Extensions.Interceptors;
+using FluentResults;
 using IMessageBus = SlimMessageBus.IMessageBus;
 
 namespace SlimBus.Extensions.Tests;
@@ -89,6 +92,31 @@ public class EfAutoSaveTests(Fixture fixture) : IClassFixture<Fixture>
 
         rs.IsFailed.ShouldBeTrue();
         TestDbContext.Called.ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData(typeof(TestRequest), typeof(Guid), true)]
+    [InlineData(typeof(TestNoResponseRequest), typeof(IResultBase), true)]
+    [InlineData(typeof(TestQuery), typeof(TestQueryResult), false)]
+    [InlineData(typeof(TestRawRequest), typeof(Guid), false)]
+    public void IsWrite_ReadRepeatedlyForClosedGenericType_StaysCachedAndCorrect(
+        Type requestType, Type responseType, bool expected)
+    {
+        // IsWrite is a `static readonly` field: the CLR's type initializer computes it exactly once
+        // per closed EfAutoSavePostInterceptor<TRequest, TResponse>, no matter how many requests of
+        // that type flow through OnHandle. Reading it repeatedly must keep returning that one cached
+        // value instead of re-running the GetInterfaces()/Any() reflection walk.
+        var interceptorType = typeof(EfAutoSavePostInterceptor<,>).MakeGenericType(requestType, responseType);
+        var field = interceptorType.GetField("IsWrite", BindingFlags.NonPublic | BindingFlags.Static);
+
+        field.ShouldNotBeNull();
+        field.IsInitOnly.ShouldBeTrue("IsWrite must stay `readonly` so the CLR computes it once per type");
+
+        var first = (bool)field.GetValue(null)!;
+        var second = (bool)field.GetValue(null)!;
+
+        first.ShouldBe(expected);
+        second.ShouldBe(first);
     }
 
     #endregion
