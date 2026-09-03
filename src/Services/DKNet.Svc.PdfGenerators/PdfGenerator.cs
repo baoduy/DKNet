@@ -76,7 +76,7 @@ public interface IPdfGenerator
 /// </summary>
 /// <param>The null parameter.</param>
 /// <returns>The result of the operation.</returns>
-public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
+public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator, IAsyncDisposable
 {
     #region Properties
 
@@ -86,17 +86,31 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     private static readonly SemaphoreSlim ChromeDownloadLock = new(1, 1);
 
     /// <summary>
+    ///     Serializes access to <see cref="_browser" /> so concurrent conversions never launch more than one
+    ///     browser process for the same <see cref="PdfGenerator" /> instance.
+    /// </summary>
+    private readonly SemaphoreSlim _browserLock = new(1, 1);
+
+    /// <summary>
+    ///     The browser shared by every conversion performed by this instance. Re-created automatically if it
+    ///     is <see langword="null" />, closed, or disconnected (e.g. it crashed or was disposed).
+    /// </summary>
+    private IBrowser? _browser;
+
+    /// <summary>
     ///     Options for PDF generation.
     /// </summary>
     private PdfGeneratorOptions Options { get; } = options ?? new PdfGeneratorOptions();
 
     /// <summary>
-    ///     The Marking pipeline used for markdown to HTML conversion.
+    ///     The Marking pipeline used for markdown to HTML conversion, built once and reused for every
+    ///     conversion performed by this instance.
     /// </summary>
-    private MarkdownPipelineBuilder PipelineBuilder { get; } = new MarkdownPipelineBuilder()
+    private MarkdownPipeline Pipeline { get; } = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
-        .UseEmojiAndSmiley();
+        .UseEmojiAndSmiley()
+        .Build();
 
     #endregion
 
@@ -161,7 +175,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
 
         var markdownContent = await File.ReadAllTextAsync(markdownFilePath);
-        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
+        var html = Markdown.ToHtml(markdownContent, Pipeline);
         await GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
@@ -176,7 +190,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     {
         var markdownContents = await Task.WhenAll(markdownFilePaths.Select(path => File.ReadAllTextAsync(path)));
         var markdownContent = string.Join(Environment.NewLine, markdownContents);
-        var html = Markdown.ToHtml(markdownContent, PipelineBuilder.Build());
+        var html = Markdown.ToHtml(markdownContent, Pipeline);
         await GeneratePdfFromHtmlAsync(html, outputFilePath);
         return outputFilePath;
     }
@@ -188,19 +202,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
     /// <param name="outputFilePath">Output PDF file path.</param>
     private async Task GeneratePdfFromHtmlAsync(string htmlContent, string outputFilePath)
     {
-        await EnsureChromeAsync();
-        var launchOptions = new LaunchOptions
-        {
-            Headless = true,
-            ExecutablePath = Options.ChromePath
-        };
-
-        // Add no-sandbox args for CI/container environments
-        if (Environment.GetEnvironmentVariable("CI") == "true" ||
-            Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
-            launchOptions.Args = ["--no-sandbox", "--disable-setuid-sandbox"];
-
-        await using var browser = await Puppeteer.LaunchAsync(launchOptions);
+        var browser = await GetBrowserAsync();
         await using var page = await browser.NewPageAsync();
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
@@ -243,6 +245,67 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator
         {
             ChromeDownloadLock.Release();
         }
+    }
+
+    /// <summary>
+    ///     Returns the browser shared by every conversion performed by this instance, launching it on first
+    ///     use and relaunching it if the previous instance is closed or disconnected (e.g. it crashed).
+    ///     Concurrent callers are serialized so at most one browser process is ever launched at a time.
+    /// </summary>
+    /// <returns>A connected <see cref="IBrowser" /> ready to open new pages.</returns>
+    private async Task<IBrowser> GetBrowserAsync()
+    {
+        if (_browser is { IsConnected: true }) return _browser;
+
+        await _browserLock.WaitAsync();
+        try
+        {
+            if (_browser is { IsConnected: true }) return _browser;
+
+            if (_browser is not null) await _browser.DisposeAsync();
+
+            await EnsureChromeAsync();
+            var launchOptions = new LaunchOptions
+            {
+                Headless = true,
+                ExecutablePath = Options.ChromePath
+            };
+
+            // Add no-sandbox args for CI/container environments
+            if (Environment.GetEnvironmentVariable("CI") == "true" ||
+                Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                launchOptions.Args = ["--no-sandbox", "--disable-setuid-sandbox"];
+
+            _browser = await Puppeteer.LaunchAsync(launchOptions);
+            return _browser;
+        }
+        finally
+        {
+            _browserLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Closes and disposes the shared browser, if one was launched.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        await _browserLock.WaitAsync();
+        try
+        {
+            if (_browser is not null)
+            {
+                await _browser.DisposeAsync();
+                _browser = null;
+            }
+        }
+        finally
+        {
+            _browserLock.Release();
+        }
+
+        _browserLock.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     #endregion

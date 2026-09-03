@@ -205,6 +205,26 @@ public class TransformTests
     }
 
     [Fact]
+    public void Transform_OptionsDefinitionsMutatedAfterConstruction_UsesExtractorsCapturedAtConstruction()
+    {
+        // Arrange: the service only knows about square brackets at construction time.
+        var options = CreateOptionsWithDefinitions(TransformOptions.SquareBrackets);
+        var service = new TransformerService(options);
+
+        // Mutate the options after construction - if extractors were rebuilt on every call
+        // (the bug P30 describes), this curly-bracket definition would now be picked up too.
+        options.Value.DefaultDefinitions.Add(TransformOptions.CurlyBrackets);
+
+        // Act: a template containing only a curly-bracket token, which is not a token
+        // under the extractors captured at construction, so it should pass through untouched
+        // instead of being extracted and failing to resolve (TokenNotFoundBehavior.ThrowError).
+        var rs = service.Transform("Hello {Name}");
+
+        // Assert
+        rs.ShouldBe("Hello {Name}");
+    }
+
+    [Fact]
     public async Task TransformAsyncCustomTest()
     {
         var options = Options.Create(new TransformOptions());

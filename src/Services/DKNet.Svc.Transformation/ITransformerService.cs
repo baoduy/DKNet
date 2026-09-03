@@ -45,6 +45,17 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
 
     private readonly TokenResolver _tokenResolver = new();
 
+    /// <summary>
+    ///     The token extractors built once from <see cref="TransformOptions.DefaultDefinitions" />. The
+    ///     definitions never change after options binding, so there is no need to rebuild this array on every
+    ///     <see cref="Transform" />/<see cref="TransformAsync" /> call.
+    /// </summary>
+    private readonly ITokenExtractor[] _extractors =
+        [
+            .. (options.Value ?? throw new ArgumentNullException(nameof(options))).DefaultDefinitions
+                .Select(ITokenExtractor (d) => new TokenExtractor(d))
+        ];
+
     #endregion
 
     #region Properties
@@ -54,9 +65,6 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     #endregion
 
     #region Methods
-
-    private ITokenExtractor[] GetExtractors() =>
-        [.. Options.DefaultDefinitions.Select(ITokenExtractor (d) => new TokenExtractor(d))];
 
     private string InternalTransform(string template, IEnumerable<IToken> tokens, object[] additionalData)
     {
@@ -107,7 +115,7 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     /// <returns>The result of the operation.</returns>
     public string Transform(string templateString, params object[] parameters)
     {
-        var tokens = GetExtractors().Select(t => t.Extract(templateString));
+        var tokens = _extractors.Select(t => t.Extract(templateString));
         return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 
@@ -118,7 +126,7 @@ public sealed class TransformerService(IOptions<TransformOptions> options) : ITr
     /// <returns></returns>
     public async Task<string> TransformAsync(string templateString, params object[] parameters)
     {
-        var tokens = await Task.WhenAll(GetExtractors().Select(t => t.ExtractAsync(templateString)));
+        var tokens = await Task.WhenAll(_extractors.Select(t => t.ExtractAsync(templateString)));
         return InternalTransform(templateString, tokens.SelectMany(i => i), parameters);
     }
 

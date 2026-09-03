@@ -20,9 +20,9 @@ public static class PdfGeneratorSetup
         this IServiceCollection services,
         PdfGeneratorOptions? options = null)
     {
-        // PdfGenerator's constructor is cheap (stores options, builds a MarkdownPipelineBuilder) - no I/O -
-        // so constructing it unconditionally here is fine even when TryAddSingleton discards it as a duplicate.
-        services.TryAddSingleton<IPdfGenerator>(new PdfGenerator(options));
+        // Registered via factory (rather than a pre-built instance) so the container tracks and disposes
+        // the singleton - including the browser it holds - when the container shuts down.
+        services.TryAddSingleton<IPdfGenerator>(_ => new PdfGenerator(options));
         return services;
     }
 
