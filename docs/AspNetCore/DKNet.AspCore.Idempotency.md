@@ -15,8 +15,9 @@ protecting `POST`/`PUT`/`PATCH` handlers from network retries, double-clicks, an
 - **Pluggable storage** – The filter talks to an `IIdempotencyKeyStore` abstraction. Ship with the built-in
   distributed-cache store, or swap in an atomic store from the ecosystem (see
   [Choosing a store](#-choosing-a-store)).
-- **Minimal API-native** – A single `.RequiredIdempotentKey()` call on a `RouteHandlerBuilder` is all that's needed
-  to protect an endpoint.
+- **Minimal API-native** – A single `.RequiredIdempotentKey()` call is all that's needed: on a
+  `RouteHandlerBuilder` it protects that one endpoint, on a `RouteGroupBuilder` it protects every matching
+  endpoint in the group.
 
 Reach for this package whenever a mutating endpoint must be safe to retry — order/payment creation, resource
 provisioning, or any handler triggered by a message consumer that might redeliver.
@@ -84,6 +85,56 @@ The three exits matter: a malformed key and a duplicate key both stop before the
 reaches it. Note the asymmetry in failure handling — `IsKeyProcessedAsync` is not wrapped in a `try`/`catch`, so a store
 outage on the duplicate check fails the request, while a failure while caching the response afterwards is caught and
 logged and the client still gets its result.
+
+### Group-level declaration
+
+`RequiredIdempotentKey()` has a second overload that extends `RouteGroupBuilder`, so one declaration covers every
+matching endpoint in the group instead of repeating the call per route:
+
+```csharp
+public static RouteGroupBuilder RequiredIdempotentKey(
+    this RouteGroupBuilder group,
+    params string[] httpMethods);   // omitted or empty => POST only
+```
+
+```csharp
+var orders = app.MapGroup("/api/orders").RequiredIdempotentKey();                 // POST endpoints only
+var admin  = app.MapGroup("/api/admin").RequiredIdempotentKey("POST", "DELETE");  // explicit verb set
+
+orders.MapPost("/", CreateOrder);            // protected — no per-endpoint call needed
+orders.MapGet("/{id}", GetOrder);            // untouched: no header required, no duplicate lookup
+orders.MapGroup("/{id}/lines")               // nested group inherits the same verb selection
+      .MapPost("/", AddOrderLine);           // protected
+
+admin.MapDelete("/tenants/{id}", DeleteTenant);  // protected too, because DELETE was named
+```
+
+What the declaration does and does not reach:
+
+| Endpoint in a group declared with `RequiredIdempotentKey()` (default) | Covered? |
+|---|---|
+| `MapPost(...)` — registered before *or* after the declaring call | Yes |
+| `MapPost(...)` in a group nested under the declaring group, any depth | Yes — at the same verb selection |
+| `MapGet(...)`, `MapPut(...)`, `MapDelete(...)` | No — outside the covered verb set |
+| `Map(...)` with no verb constraint (also serves `GET`) | No — no routed verb to match |
+
+**The default covered verb set is `POST` only.** `PUT` and `DELETE` are idempotent by HTTP semantics already, so
+they are opt-in: name them explicitly (`RequiredIdempotentKey("POST", "DELETE")`) when your handlers need the
+protection anyway. Verbs are matched case-insensitively against the endpoint's routed verb, so `"post"` and
+`"POST"` are the same declaration.
+
+Coverage is decided **once at application start**, from the declaration plus the endpoint's routed verb — never
+from anything the caller sends. A `X-HTTP-Method-Override: GET` on a covered `POST` route therefore cannot move
+that endpoint out of coverage.
+
+An endpoint whose verb is outside the set is left completely untouched: no header requirement, no `400`, no
+duplicate lookup, no response retained. Reads in a protected group keep working normally for clients that never
+send an idempotency key, and a key sent to such an endpoint has no effect at all.
+
+A covered endpoint behaves exactly like one declared individually — same header name, same key validation, same
+duplicate handling, same retention, all still driven by `IdempotencyOptions`. The per-endpoint overload is
+unchanged, and an endpoint covered by *both* a group declaration and its own `RequiredIdempotentKey()` is
+protected exactly once: one handler invocation, one stored response, one duplicate report.
 
 ### Composite key validation (400 Bad Request)
 
@@ -374,8 +425,17 @@ The four store pages link back to this section instead of repeating the comparis
   a failure while *caching* the response after a successful handler run (`MarkKeyAsProcessedAsync`/serialization) is
   caught and logged — the original response still reaches the client even if it couldn't be cached for future
   replay.
-- **Minimal APIs only.** `RequiredIdempotentKey()` extends `RouteHandlerBuilder`, so it wires up through
-  `app.MapPost(...)`/`MapPut(...)` etc. It is not something you attach to an MVC controller action via attributes.
+- **Minimal APIs only.** `RequiredIdempotentKey()` extends `RouteHandlerBuilder` and `RouteGroupBuilder`, so it
+  wires up through `app.MapPost(...)`/`MapPut(...)`/`app.MapGroup(...)` etc. It is not something you attach to an
+  MVC controller action via attributes.
+- **A group declaration does not reach a verb-less endpoint.** An endpoint registered with `app.Map(...)` (or
+  `group.Map(...)`) carries no routed verb, so a group declaration — default or explicit — cannot match it and it
+  stays unprotected even though it accepts `POST`. Declare explicit verbs (`MapPost`, `MapPut`, ...) on endpoints
+  you want a group to protect.
+- **A group's verb set is the only control, and omissions are silent.** There is no per-endpoint opt-out inside a
+  protected group, and equally no warning when a state-changing endpoint falls outside the set you named — a
+  `MapPut` in a group declared `RequiredIdempotentKey()` (POST-only default) is simply unprotected. That is an
+  explicit choice; check the verb set against the group's mutating routes.
 - **`AddIdempotentKey<TStore>()` is call-once-wins, config delegate included.** If it's called more than once (e.g.
   by two library extension methods, or by an app calling it after a store package's own
   `AddIdempotencyWithXxxStore(...)`), the first call's store registration sticks *and* only the first call's `config`
