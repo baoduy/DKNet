@@ -57,39 +57,16 @@ internal sealed class IdempotencyRedisStore : IIdempotencyKeyStore
     #region Methods
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     Reserves with a single <c>SET key value NX GET</c> command (<c>StringSetAndGetAsync</c> with
+    ///     <see cref="When.NotExists" />) instead of a <c>GET</c> followed by a conditional <c>SET</c>: Redis
+    ///     sets the key only when it is absent and, in the very same round trip, returns whatever value was already
+    ///     there when it is not — atomically, with no window between the two previously separate commands.
+    /// </remarks>
     public async ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
     {
         var cacheKey = SanitizeKey(keyInfo.CompositeKey);
         _logger.LogDebug("Checking if idempotency key has been processed: {Key}", cacheKey);
-
-        var cachedJson = (string?)await _database.StringGetAsync(cacheKey).ConfigureAwait(false);
-
-        if (!string.IsNullOrWhiteSpace(cachedJson))
-        {
-            var cachedResponse = JsonSerializer.Deserialize<CachedResponse>(cachedJson, _options.JsonSerializerOptions);
-
-            if (cachedResponse?.IsExpired == true)
-            {
-                _logger.LogDebug("Cached response has expired for key: {Key}", cacheKey);
-                await _database.KeyDeleteAsync(cacheKey).ConfigureAwait(false);
-            }
-            else if (cachedResponse?.StatusCode == ReservationStatusCode)
-            {
-                _logger.LogDebug("Idempotency key reservation still in-flight: {Key}", cacheKey);
-                return (true, null);
-            }
-            else
-            {
-                _logger.LogInformation(
-                    "Idempotency key found with status code {StatusCode}: {Key}",
-                    cachedResponse?.StatusCode,
-                    cacheKey);
-
-                return (true, cachedResponse);
-            }
-        }
-
-        _logger.LogDebug("Idempotency key not found or expired, reserving: {Key}", cacheKey);
 
         var reservation = new CachedResponse
         {
@@ -102,46 +79,45 @@ internal sealed class IdempotencyRedisStore : IIdempotencyKeyStore
 
         var reservationJson = JsonSerializer.Serialize(reservation, _options.JsonSerializerOptions);
 
-        var reserved = await _database.StringSetAsync(
+        var previous = await _database.StringSetAndGetAsync(
                 cacheKey,
                 reservationJson,
                 _options.InFlightReservationTimeout,
-                When.NotExists)
+                when: When.NotExists)
             .ConfigureAwait(false);
 
-        if (reserved)
+        var previousJson = (string?)previous;
+
+        if (string.IsNullOrWhiteSpace(previousJson))
         {
+            // Nothing was there before this call - this call just reserved the key.
             return (false, null);
         }
 
-        // Another caller reserved the key first; re-read its value.
-        _logger.LogInformation(
-            "Idempotency key reservation collided with a concurrent request: {Key}. Re-checking status.",
-            cacheKey);
+        var existing = JsonSerializer.Deserialize<CachedResponse>(previousJson, _options.JsonSerializerOptions);
 
-        var concurrentJson = (string?)await _database.StringGetAsync(cacheKey).ConfigureAwait(false);
-
-        if (string.IsNullOrWhiteSpace(concurrentJson))
+        if (existing?.IsExpired == true)
         {
-            // The competing entry expired or was removed between the failed SET and the re-read.
-            return (false, null);
-        }
-
-        var concurrentResponse = JsonSerializer.Deserialize<CachedResponse>(concurrentJson, _options.JsonSerializerOptions);
-
-        if (concurrentResponse?.IsExpired == true)
-        {
-            _logger.LogDebug("Concurrent cached response has expired for key: {Key}", cacheKey);
+            // Redis has not evicted the key by TTL yet, but the payload itself considers itself stale
+            // (e.g. clock skew). Clear it and retry once so the retry's own SET NX GET reserves fresh -
+            // recursing back through the same atomic path rather than reserving here without re-checking.
+            _logger.LogDebug("Cached response has expired for key: {Key}", cacheKey);
             await _database.KeyDeleteAsync(cacheKey).ConfigureAwait(false);
-            return (false, null);
+            return await IsKeyProcessedAsync(keyInfo).ConfigureAwait(false);
         }
 
-        if (concurrentResponse?.StatusCode == ReservationStatusCode)
+        if (existing?.StatusCode == ReservationStatusCode)
         {
+            _logger.LogDebug("Idempotency key reservation still in-flight: {Key}", cacheKey);
             return (true, null);
         }
 
-        return (true, concurrentResponse);
+        _logger.LogInformation(
+            "Idempotency key found with status code {StatusCode}: {Key}",
+            existing?.StatusCode,
+            cacheKey);
+
+        return (true, existing);
     }
 
     /// <inheritdoc />
@@ -180,7 +156,7 @@ internal sealed class IdempotencyRedisStore : IIdempotencyKeyStore
     /// </returns>
     private string SanitizeKey(string key)
     {
-        return $"{_options.CachePrefix}{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()}";
+        return $"{_options.CachePrefix}{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)))}";
     }
 
     #endregion

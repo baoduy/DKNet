@@ -131,13 +131,18 @@ The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` chec
 
 ## 🧱 Where it fits
 
+Which of the two option properties you set decides how the `BlobServiceClient` is built, and that in
+turn decides whether `GetPublicAccessUrl` can sign anything:
+
+![Workflow diagram: AddAzureStorageAdapter supplies the options, the first operation picks BlobServiceClientFactory when set and otherwise ConnectionString, throws ArgumentException when neither is set, creates the container when missing, then runs uploads, listings and deletes, with SAS URL signing as a separate branch.](../diagrams/svc-blobstorage-azure-client-resolution.svg)
+
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `AzureStorageBlobService` derives
   from its `BlobService` base class; application code depends on `IBlobService`, and only the composition root
   references this package.
 - **[DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md)** — the usual stand-in for local runs and CI, where
   no storage account or emulator should be required.
-- **`DKNet.EfCore.Events` / `DKNet.EfCore.Repos`** — pair with them exactly as any provider does; see the Abstractions
-  page.
+- **`DKNet.EfCore.Events` / `DKNet.EfCore.Specifications`** — pair with them exactly as any provider does; see the
+  Abstractions page.
 
 ## ⚠️ Gotchas & limits
 

@@ -172,104 +172,29 @@ public class OrderingWindowTrackingTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Constructor_FromForeignSpecification_SynthesizesAscendingThenDescendingOrderClauses()
+    public void Constructor_FromForeignSpecification_CarriesNoOrdering()
     {
-        // Arrange: a foreign ISpecification (not a Specification<TEntity>) has no declared sequence of
-        // its own, so the copy constructor must synthesize one from its legacy segregated lists —
-        // ascending clauses first, then descending — preserving today's semantics for such callers.
-        Expression<Func<Product, object>> byName = p => p.Name;
-        Expression<Func<Product, object>> byPrice = p => p.Price;
-        var foreign = new ForeignSpecification([byName], [byPrice]);
+        // Arrange: foreign ISpecification implementations (not deriving from Specification<TEntity>) are
+        // not supported. The copy constructor no longer synthesizes a declared sequence for them — a
+        // foreign source simply contributes no ordering, skip/take, or read-only state to the copy.
+        var foreign = new ForeignSpecification();
 
         // Act
         var copy = new CopySpecification(foreign);
 
         // Assert
-        copy.OrderByClauses.Count.ShouldBe(2);
-        copy.OrderByClauses[0].Direction.ShouldBe(ListSortDirection.Ascending);
-        copy.OrderByClauses[1].Direction.ShouldBe(ListSortDirection.Descending);
-    }
-
-    [Fact]
-    public async Task ApplySpecs_ForeignSpecification_WithOnlyAscendingOrdering_AppliesLegacyOrderByChain()
-    {
-        // Arrange: a foreign ISpecification (not a Specification<TEntity>) takes the legacy two-phase
-        // ordering path in ApplySpecs. Two ascending clauses exercise both the initial OrderBy and the
-        // subsequent ThenBy.
-        _context.Products.AddRange(
-            new Product { Name = "B", Price = 20m, CategoryId = _categoryOneId },
-            new Product { Name = "A", Price = 10m, CategoryId = _categoryOneId });
-        await _context.SaveChangesAsync();
-
-        Expression<Func<Product, object>> byName = p => p.Name;
-        Expression<Func<Product, object>> byPrice = p => p.Price;
-        var foreign = new ForeignSpecification([byName, byPrice], []);
-
-        // Act
-        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
-
-        // Assert
-        results.Select(p => p.Name).ShouldBe(["A", "B"]);
-    }
-
-    [Fact]
-    public async Task ApplySpecs_ForeignSpecification_WithOnlyDescendingOrdering_AppliesLegacyOrderByDescendingChain()
-    {
-        // Arrange: two descending clauses exercise both the initial OrderByDescending and the
-        // subsequent ThenByDescending, with no ascending clauses present.
-        _context.Products.AddRange(
-            new Product { Name = "A", Price = 10m, CategoryId = _categoryOneId },
-            new Product { Name = "B", Price = 20m, CategoryId = _categoryOneId });
-        await _context.SaveChangesAsync();
-
-        Expression<Func<Product, object>> byPrice = p => p.Price;
-        Expression<Func<Product, object>> byName = p => p.Name;
-        var foreign = new ForeignSpecification([], [byPrice, byName]);
-
-        // Act
-        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
-
-        // Assert
-        results.Select(p => p.Name).ShouldBe(["B", "A"]);
-    }
-
-    [Fact]
-    public async Task ApplySpecs_ForeignSpecification_WithMixedOrdering_AppliesAscendingThenDescendingLegacyChain()
-    {
-        // Arrange: legacy behaviour applies all ascending clauses first (as the compound primary key),
-        // then descending clauses as a ThenByDescending tiebreaker — the opposite of the declared-
-        // sequence fix for same-kind Specification<TEntity> instances.
-        _context.Products.AddRange(
-            new Product { Name = "Same", Price = 10m, CategoryId = _categoryOneId },
-            new Product { Name = "Same", Price = 30m, CategoryId = _categoryOneId },
-            new Product { Name = "Other", Price = 5m, CategoryId = _categoryOneId });
-        await _context.SaveChangesAsync();
-
-        Expression<Func<Product, object>> byName = p => p.Name;
-        Expression<Func<Product, object>> byPrice = p => p.Price;
-        var foreign = new ForeignSpecification([byName], [byPrice]);
-
-        // Act
-        var results = await _context.Products.ApplySpecs(foreign).ToListAsync();
-
-        // Assert: Name ascending is primary; within the "Same" name, Price descending breaks the tie.
-        results.Select(p => p.Name).ShouldBe(["Other", "Same", "Same"]);
-        results.Select(p => p.Price).ShouldBe([5m, 30m, 10m]);
+        copy.OrderByClauses.ShouldBeEmpty();
     }
 
     #endregion
 
     /// <summary>A foreign <see cref="ISpecification{TEntity}" /> that is not a <see cref="Specification{TEntity}" />.</summary>
-    private sealed class ForeignSpecification(
-        IReadOnlyCollection<Expression<Func<Product, object>>> orderBy,
-        IReadOnlyCollection<Expression<Func<Product, object>>> orderByDescending) : ISpecification<Product>
+    private sealed class ForeignSpecification : ISpecification<Product>
     {
         public bool IsIgnoreQueryFilters => false;
         public Expression<Func<Product, bool>>? FilterQuery => null;
         public IReadOnlyCollection<Expression<Func<Product, object?>>> IncludeQueries => [];
         public IReadOnlyCollection<Func<IQueryable<Product>, IQueryable<Product>>> IncludeBuilders => [];
-        public IReadOnlyCollection<Expression<Func<Product, object>>> OrderByDescendingQueries => orderByDescending;
-        public IReadOnlyCollection<Expression<Func<Product, object>>> OrderByQueries => orderBy;
     }
 
     /// <summary>Copies whatever <see cref="ISpecification{Product}" /> it is given.</summary>

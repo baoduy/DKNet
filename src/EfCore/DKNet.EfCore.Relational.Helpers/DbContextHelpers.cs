@@ -17,11 +17,20 @@ public static class DbContextHelpers
     #region Methods
 
     /// <summary>
-    ///     Creates a table for the specified entity type. This is not a migration; ensure this method is called only once.
+    ///     Ensures the database exists and creates <b>every</b> table declared in the <see cref="DbContext" />'s
+    ///     model — not only the table for <typeparamref name="TEntity" />. This is not a migration; ensure this
+    ///     method is called only once, against a database that has none of the model's tables yet.
     /// </summary>
+    /// <remarks>
+    ///     <typeparamref name="TEntity" /> only gates whether creation runs at all: if its table already exists,
+    ///     the whole-model creation step is skipped, even for other tables in the model that do not exist yet. It
+    ///     does not create <typeparamref name="TEntity" />'s table in isolation — EF Core's
+    ///     <see cref="RelationalDatabaseCreator.CreateTablesAsync" /> has no per-table mode, it creates the whole
+    ///     schema in one pass.
+    /// </remarks>
     /// <param name="dbContext">The <see cref="DbContext" /> instance to operate on.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
-    /// <typeparam name="TEntity">The entity type for which to create the table.</typeparam>
+    /// <typeparam name="TEntity">The entity type whose presence gates whether the whole schema gets created.</typeparam>
     /// <returns>A <see cref="Task" /> representing the asynchronous operation.</returns>
     public static async Task CreateTableAsync<TEntity>(
         this DbContext dbContext,
@@ -82,14 +91,9 @@ public static class DbContextHelpers
         return (schema, tableName);
     }
 
-    private static bool IsSqlServer(this DbContext context) =>
-        string.Equals(
-            context.Database.ProviderName,
-            "Microsoft.EntityFrameworkCore.SqlServer",
-            StringComparison.OrdinalIgnoreCase);
-
     /// <summary>
-    ///     Checks whether a particular table for the specified entity exists in the database.
+    ///     Checks whether a particular table for the specified entity exists in the database, using the provider's
+    ///     <c>INFORMATION_SCHEMA.TABLES</c> catalog view (supported by both SQL Server and PostgreSQL).
     /// </summary>
     /// <param name="dbContext">The <see cref="DbContext" /> instance to operate on.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
@@ -100,15 +104,21 @@ public static class DbContextHelpers
         CancellationToken cancellationToken = default)
         where TEntity : class
     {
-        try
-        {
-            await dbContext.Set<TEntity>().AnyAsync(cancellationToken);
-            return true;
-        }
-        catch (DbException)
-        {
-            return false;
-        }
+        var (schema, tableName) = dbContext.GetTableName<TEntity>();
+        if (tableName is null)
+            throw new InvalidOperationException(
+                $"Entity type '{typeof(TEntity)}' is not part of the model for context '{dbContext.GetType().Name}'.");
+
+        // SingleAsync() composes over this query (adds a row-limiting wrapper), so per EF Core's SqlQuery<T>
+        // contract the projected column must be named "Value".
+        var query = schema is null
+            ? dbContext.Database.SqlQuery<int>(
+                $"SELECT COUNT(*) AS \"Value\" FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = {tableName}")
+            : dbContext.Database.SqlQuery<int>(
+                $"SELECT COUNT(*) AS \"Value\" FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = {tableName} AND TABLE_SCHEMA = {schema}");
+
+        var count = await query.SingleAsync(cancellationToken);
+        return count > 0;
     }
 
     #endregion

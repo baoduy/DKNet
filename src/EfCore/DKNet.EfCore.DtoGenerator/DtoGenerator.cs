@@ -48,8 +48,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var targets = CreateSyntaxProvider(context);
-        var compilation = context.CompilationProvider.Combine(targets.Collect());
-        RegisterSourceGeneration(context, compilation);
+        RegisterSourceGeneration(context, targets.Collect());
     }
 
     /// <summary>
@@ -69,17 +68,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// Registers the source generation step for all collected targets.
     /// </summary>
     /// <param name="context">The generator initialization context.</param>
-    /// <param name="compilation">The compilation and collected targets.</param>
+    /// <param name="targets">The collected DTO generation targets.</param>
     private static void RegisterSourceGeneration(
         IncrementalGeneratorInitializationContext context,
-        IncrementalValueProvider<(Compilation Left, ImmutableArray<Target> Right)> compilation)
+        IncrementalValueProvider<ImmutableArray<Target>> targets)
     {
-        // Combine compilation with analyzer config options to access global exclusions
-        var compilationWithOptions = compilation.Combine(context.AnalyzerConfigOptionsProvider);
-        
-        context.RegisterSourceOutput(compilationWithOptions, static (spc, pair) =>
+        // Combine targets with analyzer config options to access global exclusions. No Compilation is
+        // combined here: generation only ever needs the per-target symbols already resolved at extraction
+        // time, and Compilation's identity changes on every edit to any file in the project, which would
+        // force this whole step to re-run regardless of whether any DTO target actually changed.
+        var targetsWithOptions = targets.Combine(context.AnalyzerConfigOptionsProvider);
+
+        context.RegisterSourceOutput(targetsWithOptions, static (spc, pair) =>
         {
-            var ((compilation, targets), optionsProvider) = pair;
+            var (targets, optionsProvider) = pair;
 
             // Extract global exclusions from analyzer config
             var globalExclusions = ExtractGlobalExclusionsFromConfig(optionsProvider);
@@ -93,7 +95,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
                 try
                 {
-                    GenerateDtoSource(spc, compilation, target, globalExclusions, projectWideIgnoreComplexType);
+                    GenerateDtoSource(spc, target, globalExclusions, projectWideIgnoreComplexType);
                 }
                 catch (Exception ex)
                 {
@@ -491,13 +493,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// Generates the DTO source code for a given target and adds it to the compilation.
     /// </summary>
     /// <param name="context">The source production context.</param>
-    /// <param name="compilation">The Roslyn compilation.</param>
     /// <param name="target">The DTO generation target.</param>
     /// <param name="globalExclusions">The set of globally excluded property names.</param>
     /// <param name="projectWideIgnoreComplexType">
     /// The project-wide <c>DtoGeneratorIgnoreComplexType</c> MSBuild property value, or <see langword="null"/> if unset.
     /// </param>
-    private static void GenerateDtoSource(SourceProductionContext context, Compilation compilation, Target target, HashSet<string> globalExclusions, bool? projectWideIgnoreComplexType)
+    private static void GenerateDtoSource(SourceProductionContext context, Target target, HashSet<string> globalExclusions, bool? projectWideIgnoreComplexType)
     {
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
@@ -555,7 +556,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // Effective IgnoreComplexType: per-DTO value wins, then project-wide, then built-in default true.
         var effectiveIgnoreComplexType = target.IgnoreComplexType ?? projectWideIgnoreComplexType ?? true;
 
-        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions, effectiveIgnoreComplexType, compilation);
+        var includedProperties = FilterIncludedProperties(entityProperties, target.ExcludedProperties, target.IncludedProperties, globalExclusions, effectiveIgnoreComplexType);
         
         // Additional logging for property filtering
         if (includedProperties.Count < entityProperties.Count)
@@ -779,15 +780,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="includedProperties">The set of included property names.</param>
     /// <param name="globalExclusions">The set of globally excluded property names.</param>
     /// <param name="ignoreComplexType">Whether to automatically exclude complex types.</param>
-    /// <param name="compilation">The Roslyn compilation.</param>
     /// <returns>The filtered list of included properties.</returns>
     internal static List<IPropertySymbol> FilterIncludedProperties(
         List<IPropertySymbol> entityProperties,
         HashSet<string> excludedProperties,
         HashSet<string> includedProperties,
         HashSet<string> globalExclusions,
-        bool ignoreComplexType,
-        Compilation compilation)
+        bool ignoreComplexType)
     {
         // If Include is provided, only include those properties (ignores global exclusions and IgnoreComplexType)
         if (includedProperties.Count > 0)
@@ -810,7 +809,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (ignoreComplexType)
         {
             filteredProperties = filteredProperties
-                .Where(p => !IsComplexNavigationType(p, compilation))
+                .Where(p => !IsComplexNavigationType(p))
                 .ToList();
         }
 
@@ -1002,9 +1001,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// both single entity properties and collection properties.
     /// </summary>
     /// <param name="property">The property symbol.</param>
-    /// <param name="compilation">The Roslyn compilation.</param>
     /// <returns>True if the property is a complex navigation type.</returns>
-    internal static bool IsComplexNavigationType(IPropertySymbol property, Compilation compilation)
+    internal static bool IsComplexNavigationType(IPropertySymbol property)
     {
         var propertyType = property.Type;
 
@@ -1121,24 +1119,23 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="entitySymbol">The entity type carrying the <c>[RaisesEvent]</c> string-form rule.</param>
     /// <param name="recordName">The record name — the rule's string event name.</param>
     /// <param name="recordNamespace">The namespace to emit the record in, or <see langword="null"/> for the global namespace.</param>
-    /// <param name="compilation">The Roslyn compilation.</param>
     /// <param name="excludedProperties">The declaration's <c>Exclude</c> filter, or empty for none.</param>
     /// <param name="includedProperties">The declaration's <c>Include</c> filter, or empty for none.</param>
     /// <param name="globalExclusions">The project-wide <c>DtoGeneratorExclusions</c> set.</param>
     /// <returns>The generated C# source for the payload record.</returns>
     internal static string BuildRaisesEventRecordSource(
-        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace, Compilation compilation,
+        INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace,
         HashSet<string> excludedProperties, HashSet<string> includedProperties, HashSet<string> globalExclusions)
     {
         var entityProperties = GetEntityProperties(entitySymbol);
         var filteredProperties = FilterIncludedProperties(
-            entityProperties, excludedProperties, includedProperties, globalExclusions, true, compilation);
+            entityProperties, excludedProperties, includedProperties, globalExclusions, true);
 
         // FilterIncludedProperties short-circuits on a non-empty Include and never reaches the
         // ignoreComplexType branch — composed payloads must omit navigation/complex-type properties
         // unconditionally (DRK-692 §4), even when Include names one, so re-apply the filter here.
         filteredProperties = filteredProperties
-            .Where(p => !IsComplexNavigationType(p, compilation))
+            .Where(p => !IsComplexNavigationType(p))
             .ToList();
 
         var typeDisplayFormat = CreateTypeDisplayFormat();

@@ -35,14 +35,14 @@ only output is plain data.
 `GenerateDtoAttribute.cs` is packed as a compiled source file (`contentFiles/cs/any` + `content`, `BuildAction=Compile`), so it lands directly in your project's own compilation — no extra `using` beyond the namespace it declares, and no additional runtime assembly reference.
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 public class Product
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
 }
-
-using DKNet.EfCore.DtoGenerator;
 
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;
@@ -64,6 +64,8 @@ This emits `ProductDto.g.cs` with `Id`, `required string Name`, and `Price` as `
 | `IgnoreComplexType` | `bool` | unset (falls through to project-wide, then `true`) | When effectively `true`, navigation-style properties (see below) are dropped automatically. |
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // Exclude specific properties
 [GenerateDto(typeof(Product), Exclude = new[] { "Price" })]
 public partial record ProductNoPriceDto;
@@ -152,6 +154,8 @@ public class Product
 **Convention forms** — declare no hand-written `[GenerateDto]` record at all, and this generator emits the payload for you, named by fixed convention and with the same default shape as `[GenerateDto(typeof(Entity))]` (`IgnoreComplexType` is not configurable on these forms — navigation properties are always omitted). The composed name is entity name + optional label + sorted narrowing properties + operations (canonical order Created, Updated, Deleted) + `Event` — see [`EventNameComposer`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs), the single source both this generator and the runtime save hook use:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent("Touched", EventOperations.Created)]
 public class Customer
 {
@@ -170,6 +174,8 @@ public partial record CustomerTouchedCreatedEvent
 The convention forms accept the same `Exclude`/`Include` named arguments as `[GenerateDto]` to shape the composed payload — mutually exclusive, `Include` overriding the project-wide `DtoGeneratorExclusions` list, and never affecting the composed name:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
 [RaisesEvent(EventOperations.Created, Exclude = new[] { "InternalNote" })]
 public class Customer
 {
@@ -180,7 +186,7 @@ public class Customer
 // generates CustomerCreatedEvent without InternalNote
 ```
 
-The project-wide `DtoGeneratorExclusions` MSBuild property (see [Configuration reference](#️-configuration-reference) below) now also narrows composed convention-form payloads that don't set `Include`, exactly as it narrows hand-written `[GenerateDto]` DTOs.
+The project-wide `DtoGeneratorExclusions` MSBuild property (see [Configuration reference](#-configuration-reference) below) now also narrows composed convention-form payloads that don't set `Include`, exactly as it narrows hand-written `[GenerateDto]` DTOs.
 
 The convention forms have their own diagnostics: `DKRAISEVT004` (composed name already resolves to an existing, incompatible type — a hand-authored `partial record` stub with no `[GenerateDto]` is *not* a collision, it merges; guidance differs depending on whether the colliding type is a `[GenerateDto]` payload of the same entity), `DKRAISEVT005` (the label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier), `DKRAISEVT006` (two different entities in the same namespace compose the same name — never merged into one record), `DKRAISEVT007` (no operation named — the declaration, of any form, can never raise anything), `DKRAISEVT008` (two declarations on the SAME entity compose the same name — never merged into one record), `DKRAISEVT009` (both `Exclude` and `Include` specified on one declaration), `DKRAISEVT010` (a filter names a property that isn't a direct property of the entity), `DKRAISEVT011` (`Exclude`/`Include` supplied on the type-naming form, where the named payload record already owns its own shape).
 
@@ -219,6 +225,11 @@ All diagnostics use category `DKNet.EfCore.DtoGenerator`.
 | `EmitCompilerGeneratedFiles` / `CompilerGeneratedFilesOutputPath` | MSBuild properties | unset | Standard Roslyn generator switches (not specific to this package) to write `.g.cs` files to disk, e.g. under `obj/Generated`, for inspection/debugging. |
 
 ## 🧱 Where it fits
+
+The one rule worth memorising is the filter precedence — `Include` short-circuits everything, and only then do
+`Exclude`, the project-wide list, and `IgnoreComplexType` get a say:
+
+![Workflow diagram of DTO property selection: candidate properties are the public instance properties with public getters, walked up the base chain and de-duplicated. A non-empty Include bypasses every other filter and goes straight to the generated DTO; otherwise Exclude plus the project-wide DtoGeneratorExclusions drop properties by name, and IgnoreComplexType drops navigation properties, before the rest are emitted.](../diagrams/efcore-dtogenerator-property-filters.svg)
 
 - **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs.
 - **Generated DTOs are plain data types.** No base class, no interface, no attribute left on the output — a generated DTO has zero coupling to DKNet or to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`.

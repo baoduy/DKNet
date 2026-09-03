@@ -38,4 +38,31 @@ public partial record ProductDto;
 
 This emits `ProductDto.g.cs` with `Id`, `required string Name`, and `Price` as `init`-only properties.
 
-Full documentation: https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.DtoGenerator.md
+## Customisation reference
+
+Everything is compile-time: attribute arguments and MSBuild properties. There is nothing to register at runtime.
+
+`[GenerateDto]` — `AttributeTargets.Class | AttributeTargets.Struct`, `AllowMultiple = false`, not inherited:
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `entityType` (ctor arg) | `Type` | required | The entity to mirror, as `typeof(Entity)`. |
+| `Exclude` | `string[]` | `[]` | Property names to omit. Combined with the project-wide exclusions. Mutually exclusive with `Include`. |
+| `Include` | `string[]` | `[]` | When non-empty, **only** these properties are generated — local `Exclude`, the global list and `IgnoreComplexType` are all bypassed. |
+| `IgnoreComplexType` | `bool` | unset → project-wide value → `true` | When effectively `true`, navigation-style properties are dropped. |
+
+MSBuild properties, set in the consuming `.csproj`:
+
+| Property | Default | Effect |
+|---|---|---|
+| `DtoGeneratorExclusions` | unset | Comma/semicolon-separated property names excluded from every DTO in the project, and from `[RaisesEvent]` convention-form payloads. Already exposed to the compiler by this package. |
+| `DtoGeneratorIgnoreComplexType` | unset → built-in `true` | Project-wide default for `IgnoreComplexType` when a DTO does not set it. |
+| `EmitCompilerGeneratedFiles` / `CompilerGeneratedFilesOutputPath` | unset | Standard Roslyn switches for writing the generated `.g.cs` to disk for inspection. |
+
+Property selection, before any filter: every `public` instance property with a `public` getter and no index
+parameters, walked up the entity's base chain and de-duplicated by name.
+
+Build diagnostics: `DKDTOGEN001`–`DKDTOGEN005` from the DTO generator, and `DKRAISEVT001`–`DKRAISEVT011` from the
+`[RaisesEvent]` validator. The full table, with severity and meaning for each, is in the docs page below.
+
+Full documentation: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.DtoGenerator.md

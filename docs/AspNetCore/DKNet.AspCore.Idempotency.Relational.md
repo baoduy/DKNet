@@ -7,7 +7,7 @@ reserve/check/complete flow — that every relational idempotency store for
 > **Not for app authors.** This package has no `AddIdempotency...` extension of its own and
 > nothing in it is `public`. If you are wiring idempotency into an app, use
 > [`DKNet.AspCore.Idempotency`](DKNet.AspCore.Idempotency.md) — its
-> [Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) section covers when a
+> [Choosing a store](DKNet.AspCore.Idempotency.md#-choosing-a-store) section covers when a
 > relational store is the right call — plus a concrete provider package
 > ([MsSqlStore](DKNet.AspCore.Idempotency.MsSqlStore.md) /
 > [NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore.md)). Read on only if you are adding
@@ -74,8 +74,9 @@ internal sealed class IdempotencySqlServerStore(
 }
 ```
 
-**4. A DI registration extension** — register the closed `DbContext` *and its factory*, then hand
-the store to `AddIdempotentKey<TStore>` from the core package:
+**4. A DI registration extension** — register the closed `DbContext` *and its factory*, register the
+shared `IdempotencyMigrationHostedService<TContext>` to migrate at startup, then hand the store to
+`AddIdempotentKey<TStore>` from the core package:
 
 ```csharp
 public static IServiceCollection AddIdempotencyMsSqlStore(this IServiceCollection services, string connectionString)
@@ -94,6 +95,9 @@ public static IServiceCollection AddIdempotencyMsSqlStore(this IServiceCollectio
         }, optionsLifetime: ServiceLifetime.Singleton)
         .AddDbContextFactory<IdempotencyDbContext>();
 
+    // Migrate once at startup rather than on the request path.
+    services.AddHostedService<IdempotencyMigrationHostedService<IdempotencyDbContext>>();
+
     return services;
 }
 
@@ -109,11 +113,14 @@ public static IServiceCollection AddIdempotencyWithMsSqlStore(
 `Microsoft.Extensions.DependencyInjection`). `AddDbContextFactory<TContext>` is required — `IdempotencyRelationalStore<TContext>` resolves
 `IDbContextFactory<TContext>` per operation rather than injecting the context directly, so each
 reserve/check/complete call gets its own short-lived context instance instead of sharing one
-across a longer-lived scope.
+across a longer-lived scope. The `AddHostedService<IdempotencyMigrationHostedService<TContext>>()` call is what
+moves migration off the request path — see
+[`IdempotencyMigrationHostedService<TContext>`](#idempotencymigrationhostedservicetcontext--migrate-once-at-startup)
+below.
 
 Own the migrations too: they live in the derived provider project (a `Migrations/` folder, its own
 `MigrationsAssembly`), never in this base package — see
-[Gotchas & limits](#️-gotchas--limits).
+[Gotchas & limits](#-gotchas--limits).
 
 ## 🧩 Features
 
@@ -136,7 +143,7 @@ The `IEntityTypeConfiguration<IdempotencyKeyEntity>` base every provider's own c
 derives from. It owns every mapping detail that is identical across providers — key, lengths,
 unicode flags, the `ExpiresAt` index, the unique `UX_CompositeKey` index — and defers exactly two
 `protected abstract` members to the derived type (see
-[Configuration reference](#️-configuration-reference)).
+[Configuration reference](#-configuration-reference)).
 
 ### `IdempotencyDbContext` — mapping discovery from the derived assembly
 
@@ -165,25 +172,60 @@ The `IIdempotencyKeyStore` implementation itself:
 - **`MarkKeyAsProcessedAsync`** — turns the reservation row into the durable cached result via
   `entity.Complete(...)`. If no reservation row is found it defensively inserts one, and a
   unique-violation on that fallback insert is logged and swallowed rather than thrown.
-- **Migration guard** — `EnsureDatabaseCreatedAsync` applies any pending EF Core migrations once
-  per distinct connection string (tracked in a `static ConcurrentDictionary<string, bool>`, guarded
-  by a `SemaphoreSlim`), so a process that targets more than one database (per-tenant databases,
-  shared test hosts) migrates each one rather than skipping every database after the first.
+- **Migration guard (defensive fallback only)** — `EnsureDatabaseCreatedAsync` applies any pending EF Core
+  migrations once per distinct connection string (tracked in a `static ConcurrentDictionary<string, bool>`, guarded
+  by a `SemaphoreSlim`), so a process that targets more than one database (per-tenant databases, shared test hosts)
+  migrates each one rather than skipping every database after the first. This used to be the *only* migration path,
+  running from the first store call after startup while holding a process-wide lock — which could block every
+  concurrent request behind a schema migration. It is now a cheap fallback for a host that skips or reorders hosted
+  services; the primary mechanism is `IdempotencyMigrationHostedService<TContext>` below.
 - **Per-operation scoping** — each public method resolves `IDbContextFactory<TContext>` from an
   `AsyncServiceScope` created once per store instance, and creates a fresh, short-lived
   `DbContext` per call via `CreateDbContextAsync()`. The store is `IAsyncDisposable` and disposes
   that scope.
 
+### `IdempotencyMigrationHostedService<TContext>` — migrate once at startup
+
+```csharp
+internal sealed class IdempotencyMigrationHostedService<TContext>(IDbContextFactory<TContext> dbContextFactory)
+    : IHostedService
+    where TContext : DbContext
+```
+
+An `IHostedService` that applies any pending migrations for `TContext` once, in `StartAsync`, before the host
+begins serving requests. Both `AddIdempotencyMsSqlStore` and `AddIdempotencyNpgsqlStore` register it
+(`services.AddHostedService<IdempotencyMigrationHostedService<IdempotencyDbContext>>()`) as part of their DbContext
+registration — an app that calls either extension gets it automatically, with nothing further to wire up.
+
+This requires the host to actually **run** hosted services — a normal ASP.NET Core `WebApplication.RunAsync()` (or
+`Run()`) does this as part of its lifecycle, so most apps need not think about it. It matters if you host
+`IdempotencyDbContext` some other way (a worker service with a custom `IHost` build, a test harness that never
+calls `RunAsync`/`StartAsync` on the host) — in that case the migration never runs at startup, and the store falls
+back to the per-request guard described above, which self-heals the schema on the first request instead of
+failing outright.
+
 ## ⚙️ Configuration reference
 
-The base exposes no options type. What a derived configuration must supply:
+**This package has no public API surface at all**, so it has no customisation reference in the
+sense the other pages on this site do: `IdempotencyRelationalStore<TContext>`,
+`IdempotencyDbContext`, `IdempotencyKeyEntity` and `IdempotencyKeyConfiguration` are every type it
+declares, and all four are `internal`. There is no options class, no `Add…` extension, and nothing
+a consuming application can name, configure, or subclass. Runtime behaviour is driven entirely by
+the core package's `IdempotencyOptions` — see the
+[core configuration reference](DKNet.AspCore.Idempotency.md#-configuration-reference).
+
+What follows is the **internal implementation contract** for the in-repo provider packages that
+this package's `InternalsVisibleTo` list already names, reproduced here because that is the only
+audience this page has. None of it is available outside those assemblies.
+
+What a derived configuration must supply:
 
 | Member | Type | Purpose |
 |---|---|---|
 | `BodyColumnType` | `protected abstract string` | Provider column type for the response body — `nvarchar(max)` on SQL Server, `text` on PostgreSQL. |
 | `StatusCodeCheckConstraintSql` | `protected abstract string` | `CK_StatusCode_Valid` SQL, differing only in identifier quoting — `[StatusCode] BETWEEN 100 AND 599` vs `"StatusCode" BETWEEN 100 AND 599`. |
 
-Everything else is fixed by the shared mapping:
+Everything else is fixed by the shared mapping, and a derived provider cannot change it:
 
 | Column | Type / constraint | Notes |
 |---|---|---|
@@ -197,11 +239,18 @@ Everything else is fixed by the shared mapping:
 | `ContentType` | max 256, non-Unicode | MIME type, nullable |
 | `CreatedAt` / `ExpiresAt` | `DateTimeOffset` / `DateTimeOffset?` | `ExpiresAt` is indexed (`IX_IdempotencyKeys_ExpiresAt`) for cleanup queries |
 
-Runtime behaviour is driven by the core package's `IdempotencyOptions` — this store reads
-`InFlightReservationTimeout` for the reservation window; see the
-[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+Of the core package's options, the shared store itself reads only `InFlightReservationTimeout`
+(the reservation window on both the fresh-insert and reclaim paths). `Expiration`, the status-code
+window and every other option are applied by the endpoint filter before the store is ever called.
 
 ## 🧱 Where it fits
+
+![Workflow diagram of the shared check-and-reserve flow: a SELECT for an unexpired row either returns a duplicate or falls through to an INSERT of a 102 reservation row; the insert either wins outright or raises a provider unique violation, which is classified, and a still-live blocking row returns the winner's state while an expired one is reclaimed by a conditional UPDATE whose affected-row count picks a single winner.](../diagrams/idempotency-relational-reserve.svg)
+
+The two "Proceed" exits on the right are the only paths that let a caller run the protected
+handler, and each is reached through exactly one atomic step — the unique-index insert, or the
+conditional `UPDATE` whose affected-row count is `1`. Everything else converges on a duplicate
+answer.
 
 ```text
 DKNet.AspCore.Idempotency            core: IIdempotencyKeyStore, IdempotencyOptions, AddIdempotentKey<TStore>
@@ -245,6 +294,11 @@ store built on this base into DI.
 - **Reservation lifetime tracks `IdempotencyOptions.InFlightReservationTimeout`** (default 30
   seconds), not `Expiration`. A handler that runs longer than this timeout without completing
   leaves its reservation reclaimable by the next caller for the same key.
+- **Migrations now run at startup, not on the request path — but only if the host runs hosted services.**
+  `IdempotencyMigrationHostedService<TContext>` is what the MsSql/Npgsql setup extensions register for this; a host
+  that never runs its `IHostedService`s (e.g. a manually-driven `IHost` that skips `StartAsync`) never gets that
+  startup migration, and instead depends on the per-request `EnsureDatabaseCreatedAsync` fallback in
+  `IdempotencyRelationalStore<TContext>` to self-heal the schema on first use.
 - **Nothing purges expired rows.** Rows outlive their `ExpiresAt` until a colliding request
   reclaims them; `IX_IdempotencyKeys_ExpiresAt` exists so a provider or an application can add its
   own sweep, but the base ships none.

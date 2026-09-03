@@ -52,6 +52,24 @@ internal sealed class EfCoreAuditHook(
         return base.BeforeSaveAsync(context, cancellationToken);
     }
 
+    /// <summary>
+    ///     Publishes the audit log entries captured for this save to every registered
+    ///     <see cref="IAuditLogPublisher" /> keyed to the given <see cref="DbContext" /> type.
+    /// </summary>
+    /// <param name="context">The <see cref="DbContext" /> the entries were captured from.</param>
+    /// <param name="logs">The audit log entries to publish.</param>
+    /// <param name="cancellationToken">Cancellation token for the publish operation.</param>
+    /// <remarks>
+    ///     Called from <see cref="AfterSaveAsync" />, i.e. after the save has already committed — a
+    ///     publisher failure here cannot and must not roll the write back. Each
+    ///     <see cref="IAuditLogPublisher" /> is invoked inside its own try/catch: a failure is logged and
+    ///     swallowed, and that publisher's audit entries are lost. This is an accepted trade-off (the write
+    ///     already succeeded and cannot be undone), not a bug, but it means there is no recovery path for a
+    ///     dropped audit entry. Consumers that need at-least-once delivery of audit logs cannot rely on this
+    ///     hook; use a transactional outbox instead — persist the entries to an outbox table from
+    ///     <see cref="BeforeSaveAsync" /> inside the same save transaction, and drain that table with a
+    ///     separate dispatcher.
+    /// </remarks>
     private async Task PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken)
     {
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();

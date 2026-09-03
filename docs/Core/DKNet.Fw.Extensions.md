@@ -68,7 +68,11 @@ using DKNet.Fw.Extensions.Primitives;
   separators).
 - `string.IsNumber()` — a light heuristic check: not null/whitespace, at most one `.`, no `,,`,
   and any `-` must be in position 0 (a leading sign) or absent. It is not a full numeric parser —
-  see Gotchas.
+  see Gotchas. It deliberately does not enforce `,`/`.` ordering or count, so it accepts both the
+  US convention (`"123,456.789"` — comma thousands separator, dot decimal) and the European one
+  (`"123.456,789"` — dot thousands separator, comma decimal) as "looks numeric". This is
+  intentional: `decimal.TryParse` under `InvariantCulture` only accepts one of those conventions,
+  so `IsNumber()` fills a different, more permissive role.
 - `PropertyInfo?.IsStringOrValueType()` / `Type?.IsStringOrValueType()` — true when the property's
   (or the type's) unwrapped type is `string` or a value type; used to decide whether a value is
   "simple" enough to display/serialize directly.
@@ -118,10 +122,10 @@ public enum OrderStatus
 
 OrderStatus.Pending.GetAttribute<DisplayAttribute>()?.Name; // "Pending"
 
-var info = OrderStatus.Pending.GetEumInfo();
+var info = OrderStatus.Pending.GetEnumInfo();
 // info!.Key = "Pending", info.Name = "Pending", info.Description = "Waiting for processing"
 
-foreach (var i in EnumExtensions.GetEumInfos<OrderStatus>())
+foreach (var i in EnumExtensions.GetEnumInfos<OrderStatus>())
     Console.WriteLine($"{i.Key}: {i.Name}");
 // Pending: Pending
 // Processing: Processing   (Name falls back to the field name when there's no [Display])
@@ -130,22 +134,19 @@ foreach (var i in EnumExtensions.GetEumInfos<OrderStatus>())
 - `Enum?.GetAttribute<T>()` — fetches any custom attribute (not just `Display`) from the field
   backing the current enum value; returns `null` if the enum instance is `null` or the attribute
   isn't present.
-- `Enum?.GetEumInfo()` — builds a single `EnumInfo` (`Key`, `Name`, `Description`, `GroupName`)
+- `Enum?.GetEnumInfo()` — builds a single `EnumInfo` (`Key`, `Name`, `Description`, `GroupName`)
   from the value's `[Display]` attribute. If there's no `[Display]`, `Name` and `Description` come
-  back `null` (unlike the static `GetEumInfos<T>()` below, this instance method does **not**
+  back `null` (unlike the static `GetEnumInfos<T>()` below, this instance method does **not**
   fall back to the field name).
-- `EnumExtensions.GetEumInfos<T>()` (static, `where T : Enum`) — enumerates every named value of
+- `EnumExtensions.GetEnumInfos<T>()` (static, `where T : Enum`) — enumerates every named value of
   enum `T` as an `EnumInfo`, using the field name as `Name` when no `[Display(Name=...)]` is set.
   It skips the compiler-generated `value__` backing field automatically.
 
-`EnumInfo.Name` is declared `required string Name` (non-nullable), but `GetEumInfo()` assigns it
+`EnumInfo.Name` is declared `required string Name` (non-nullable), but `GetEnumInfo()` assigns it
 via `att?.Name!` with no fallback — if the enum value has no `[Display]` attribute (or the
 attribute has no `Name`), `Name` comes back `null` at runtime despite the non-nullable
-declaration. `GetEumInfos<T>()` doesn't have this problem because it falls back to the field
-name. Null-check `Name` after calling `GetEumInfo()`.
-
-Note the method names are `GetEumInfo`/`GetEumInfos` (missing the "n") — that's the real,
-published API; don't "fix" the typo when calling it.
+declaration. `GetEnumInfos<T>()` doesn't have this problem because it falls back to the field
+name. Null-check `Name` after calling `GetEnumInfo()`.
 
 ### DateTime extensions (`DateTimeExtensions`)
 
@@ -162,19 +163,23 @@ DateTime.Today.LastDayOfMonth();     // e.g. 2026-08-31, Kind = Local
   month, preserving hour/minute/second/millisecond. The result's `Kind` is always forced to
   `DateTimeKind.Local`, regardless of the input's `Kind` — see Gotchas.
 
-### Async enumerable extensions (`AsyncEnumerableExtensions`)
+### Async enumerable extensions — removed
+
+`AsyncEnumerableExtensions.ToListAsync(this IAsyncEnumerable<T>)` has been **removed**. It used to live
+in the ambient `System.Collections.Generic` namespace precisely so it would show up without an extra
+`using` — but that same ambient placement is what killed it: .NET 10 ships its own
+`System.Linq.AsyncEnumerable.ToListAsync` extension in that same reachable surface, and having both in
+scope made every call site ambiguous. Use the BCL method instead:
 
 ```csharp
-using System.Collections.Generic; // note: not a DKNet.Fw.Extensions.* namespace
+using System.Linq; // System.Linq.AsyncEnumerable.ToListAsync
 
 IAsyncEnumerable<int> source = GetAsyncNumbers();
-IList<int> all = await source.ToListAsync();
+List<int> all = await source.ToListAsync(cancellationToken);
 ```
 
-- `IAsyncEnumerable<T>.ToListAsync()` — buffers an async sequence into an `IList<T>`. This type is
-  deliberately declared in the `System.Collections.Generic` namespace (not `DKNet.Fw.Extensions`),
-  so it shows up for any file that already has `using System.Collections.Generic;` — no extra
-  `using` needed. Throws `ArgumentNullException` if the source sequence is `null`.
+The BCL version also takes a `CancellationToken` (DKNet's did not) and returns `List<T>` rather than
+`IList<T>`.
 
 ### Property extensions (`PropertyExtensions`)
 
@@ -306,6 +311,15 @@ var handlerTypes = assemblies
 - `TypeExtractor` (the internal implementation behind `ITypeExtractor`) throws
   `ArgumentException` if constructed with a null/empty assembly array; duplicate assemblies passed
   in are de-duplicated automatically.
+- **Every filter call returns a new extractor; none of them mutate the one you called them on.**
+  Branching off a shared extractor is safe:
+  ```csharp
+  var classes = assemblies.Extract().Classes();
+  var abstractOnes = classes.Abstract();      // does not affect classes
+  var concreteOnes = classes.NotAbstract();   // independent branch, sees the full Classes() set
+  ```
+  `abstractOnes` and `concreteOnes` each see every class, filtered only by their own branch —
+  `classes` itself stays reusable as the common ancestor for as many branches as you need.
 
 ## ⚙️ Configuration reference
 
@@ -320,6 +334,11 @@ parameter:
 
 ## 🧱 Where it fits
 
+`TypeExtractors` is the piece other DKNet packages lean on hardest — it is how they discover your entity
+configurations, seeders, and global model builders without you registering each one by hand:
+
+![Data-flow diagram of TypeExtractor: assemblies enter through Extract(), chain through shape filters (Classes, Interfaces, Enums, Abstract) and relationship filters (IsInstanceOf, HasAttribute, Where), and stay lazy until enumerated into the type list that DKNet's entity configuration, seeding, and model-builder discovery consume.](../diagrams/fw-extensions-type-extractor.svg)
+
 `DKNet.Fw.Extensions` sits at the bottom of the dependency graph and is referenced directly by:
 
 - `DKNet.EfCore.Extensions` — uses `Type.IsImplementOf<T>()` in entity-type configuration (e.g.
@@ -333,15 +352,13 @@ through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`.
 
 ## ⚠️ Gotchas & limits
 
-- **`GetEumInfos`/`GetEumInfo` naming** — the real, published method names are missing the "n"
-  (`GetEumInfo`, not `GetEnumInfo`). There is no `Quarter()` method either — it's `InQuarter()`.
-  Older docs/blog snippets that use `GetEnumInfo()` or `.Quarter()` will not compile against this
-  package.
+- **No `Quarter()` method** — it's `InQuarter()`. Older docs/blog snippets that use `.Quarter()`
+  will not compile against this package.
 - **`string.IsNumber()` is a heuristic, not a parser** — it accepts things like `"1,234"` or
   `"1.2.3"`-adjacent edge cases are only partially guarded (it only checks there's at most one
   `.`, no `,,`, and any `-` is at position 0). Don't use it as a substitute for
   `decimal.TryParse`/`double.TryParse` when you need correctness, only for a quick "looks numeric"
-  filter.
+  filter across both US and European decimal conventions.
 - **Reflection-heavy, no caching** — `PropertyExtensions`, `AttributeExtensions`, and
   `TypeExtractors` all do live reflection calls (`GetProperty`, `GetCustomAttributes`,
   `GetTypes()`) on every call/enumeration; nothing is cached internally. Fine for startup-time
@@ -359,11 +376,11 @@ through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`.
 - **There is no flat `DKNet.Fw.Extensions` namespace.** Members live in per-area namespaces —
   `DKNet.Fw.Extensions.Primitives` (string, `DateTime`), `.Reflection` (type, property, attribute),
   `.Enums`, `.Collections`, `.TypeExtractors` — while `ServiceCollectionExtensions` is declared in
-  `Microsoft.Extensions.DependencyInjection` and `ToListAsync` in `System.Collections.Generic`. A single
-  `using DKNet.Fw.Extensions;` does not compile.
-- **`AsyncEnumerableExtensions.ToListAsync` lives in `System.Collections.Generic`**, not
-  `DKNet.Fw.Extensions` — that's deliberate (so it's picked up without an extra `using`), but it
-  means you won't find it by browsing the `DKNet.Fw.Extensions` namespace in IntelliSense.
+  `Microsoft.Extensions.DependencyInjection`. A single `using DKNet.Fw.Extensions;` does not
+  compile.
+- **`ToListAsync` on `IAsyncEnumerable<T>` is no longer a DKNet method.** Use
+  `System.Linq.AsyncEnumerable.ToListAsync` from the BCL (`using System.Linq;`) — see
+  [Async enumerable extensions — removed](#async-enumerable-extensions--removed) above.
 
 ## 🔗 Related packages
 

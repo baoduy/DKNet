@@ -1,7 +1,7 @@
 # DKNet.AspCore.Idempotency.Relational
 
 [![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Idempotency.Relational.svg)](https://www.nuget.org/packages/DKNet.AspCore.Idempotency.Relational/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
 
 Shared Entity Framework Core base for building relational **DKNet.AspCore.Idempotency** stores — the entity, the
 entity mapping, the shared `DbContext`, and the concurrency-safe insert-or-query pattern that
@@ -63,6 +63,30 @@ services.AddIdempotentKey<IdempotencyPostgresStore>();
 Because the base types here are `internal`, the new provider project must be added to this package's
 `InternalsVisibleTo` list.
 
+## Customisation reference
+
+**This package exposes no public API, so there is nothing to configure and nothing to register.** The four types it
+declares — `IdempotencyRelationalStore<TContext>`, `IdempotencyDbContext`, `IdempotencyKeyEntity` and
+`IdempotencyKeyConfiguration` — are all `internal`, and its `InternalsVisibleTo` list names only
+`DKNet.AspCore.Idempotency.MsSqlStore`, `DKNet.AspCore.Idempotency.NpgsqlStore` and their two test projects. Adding
+this package to an application changes nothing about that application.
+
+The runtime knobs that affect a relational store are the core package's `IdempotencyOptions` — see
+[DKNet.AspCore.Idempotency](https://github.com/baoduy/DKNet/blob/main/src/AspNet/DKNet.AspCore.Idempotency/README.md).
+Of those, this base reads only `InFlightReservationTimeout` (30 seconds by default), the lifetime of the `StatusCode
+= 102` reservation row on both the fresh-insert and the reclaim path.
+
+For in-repo provider authors, the internal contract is two `protected abstract` members and one override:
+
+| Seam | Declared on | Example values |
+|---|---|---|
+| `BodyColumnType` | `IdempotencyKeyConfiguration` | `nvarchar(max)` on SQL Server, `text` on PostgreSQL |
+| `StatusCodeCheckConstraintSql` | `IdempotencyKeyConfiguration` | `[StatusCode] BETWEEN 100 AND 599` vs `"StatusCode" BETWEEN 100 AND 599` |
+| `IsProviderUniqueViolation(DbUpdateException)` | `IdempotencyRelationalStore<TContext>` | `SqlException { Number: 2601 or 2627 }` vs `PostgresException { SqlState: 23505 }` — never a message substring, which the server localises |
+
+Everything else — the table name, column lengths, the `UX_CompositeKey` unique index, the `IX_IdempotencyKeys_ExpiresAt`
+index and the reserve/complete/reclaim flow — is fixed by the shared mapping and cannot be overridden.
+
 ## Requirements
 
 - .NET 10.0+
@@ -76,8 +100,7 @@ for the full feature breakdown, mapping defaults, and gotchas.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for
-details.
+MIT — see [LICENSE](https://github.com/baoduy/DKNet/blob/main/LICENSE).
 
 ## About
 

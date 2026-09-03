@@ -277,8 +277,8 @@ public class EfCoreEncryptionSetupTests
     #endregion
 }
 
-// Helper class for testing abstract implementation
-internal class SetupTestKeyProvider : EncryptionKeyProvider
+// Helper class for testing interface implementation
+internal class SetupTestKeyProvider : IEncryptionKeyProvider
 {
     #region Fields
 
@@ -297,7 +297,7 @@ internal class SetupTestKeyProvider : EncryptionKeyProvider
 
     #region Methods
 
-    public override byte[] GetKey(Type entityType) => _key;
+    public byte[] GetKey(Type entityType) => _key;
 
     #endregion
 }

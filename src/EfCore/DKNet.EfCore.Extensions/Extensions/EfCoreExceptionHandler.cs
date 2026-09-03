@@ -3,6 +3,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using Microsoft.Extensions.Logging;
+
 namespace DKNet.EfCore.Extensions.Extensions;
 
 /// <summary>
@@ -50,7 +52,11 @@ public interface IEfCoreExceptionHandler
 /// <summary>
 ///     Provides an implementation for handling EF Core concurrency exceptions and resolving conflicts.
 /// </summary>
-public sealed class EfCoreExceptionHandler : IEfCoreExceptionHandler
+/// <param name="logger">
+///     An optional logger used to record concurrency conflicts. May be <c>null</c>, in which case no logging
+///     occurs; this keeps the parameterless-construction path (<c>new EfCoreExceptionHandler()</c>) working.
+/// </param>
+public sealed class EfCoreExceptionHandler(ILogger<EfCoreExceptionHandler>? logger = null) : IEfCoreExceptionHandler
 {
     #region Methods
 
@@ -58,9 +64,16 @@ public sealed class EfCoreExceptionHandler : IEfCoreExceptionHandler
     public async Task<EfConcurrencyResolution> HandlingAsync(DbContext context, DbUpdateConcurrencyException exception,
         CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"EfCoreExceptionHandler:HandlingAsync - {exception.Message}");
+        logger?.LogWarning(
+            exception,
+            "Concurrency conflict while saving {DbContextType}: {EntryCount} entrie(s) involved",
+            context.GetType().Name,
+            exception.Entries.Count);
 
-        if (!exception.Message.Contains("but actually affected 0 row(s)", StringComparison.OrdinalIgnoreCase))
+        // DbUpdateConcurrencyException.Entries is populated for the affected-zero-rows conflict this handler
+        // resolves by reloading and retrying (structured data, unlike matching EF's localisable message text).
+        // Any other conflict shape carries no entries and is not safe to retry automatically.
+        if (exception.Entries.Count == 0)
             return EfConcurrencyResolution.RethrowException;
 
         foreach (var entry in exception.Entries)

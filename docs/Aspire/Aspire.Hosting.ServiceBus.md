@@ -115,6 +115,11 @@ parameters.
 
 ## 🧱 Where it fits
 
+One `AddServiceBus` call adds the resource on the left and everything inside the boundary; you still supply
+the SQL Server resource and the config file:
+
+![Architecture diagram: the AppHost registers a ServiceBusResource whose SQL Server resource supplies the SQL_SERVER environment variable and is waited on, and whose Config.json is bind-mounted read-only; inside the boundary added by AddServiceBus the resource runs the mcr.microsoft.com emulator image at the latest tag, exposes the tcp 5672 and tcp2 5671 AMQP endpoints, and builds the UseDevelopmentEmulator connection string that is injected into a referencing API or worker project.](../diagrams/aspire-servicebus-resource-wiring.svg)
+
 Aspire only provisions the transport; message handling still runs through
 [`DKNet.SlimBus.Extensions`](../Messaging/DKNet.SlimBus.Extensions.md). Once you have wired
 `WithReference(serviceBus)` onto a downstream project, that project resolves the connection string

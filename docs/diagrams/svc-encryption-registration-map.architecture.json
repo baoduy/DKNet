@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.Svc.Encryption: which registration gives you which service",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration call"
+        },
+        "backend": {
+          "label": "Hashing service"
+        },
+        "security": {
+          "label": "Key-bearing cipher"
+        },
+        "database": {
+          "label": "Static helper, no registration"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1000,
+      586
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 4,
+    "cellW": 168,
+    "cellH": 66,
+    "gapX": 56,
+    "gapY": 44
+  },
+  "components": [
+    {
+      "id": "hashing_reg",
+      "type": "frontend",
+      "label": "AddEncryptionServices",
+      "sublabel": "no key, no cipher",
+      "row": 0,
+      "col": 0,
+      "size": [
+        164,
+        62
+      ]
+    },
+    {
+      "id": "sha",
+      "type": "backend",
+      "label": "IShaHashing",
+      "sublabel": "transient",
+      "row": 0,
+      "col": 1,
+      "tag": "hex output",
+      "size": [
+        130,
+        66
+      ]
+    },
+    {
+      "id": "hmac",
+      "type": "backend",
+      "label": "IHmacHashing",
+      "sublabel": "transient",
+      "row": 0,
+      "col": 2,
+      "tag": "base64 or hex",
+      "size": [
+        140,
+        66
+      ]
+    },
+    {
+      "id": "gcm_reg",
+      "type": "frontend",
+      "label": "AddAesGcmEncryption",
+      "sublabel": "base64 key",
+      "row": 1,
+      "col": 0,
+      "size": [
+        164,
+        62
+      ]
+    },
+    {
+      "id": "gcm",
+      "type": "security",
+      "label": "IAesGcmEncryption",
+      "sublabel": "singleton per key",
+      "row": 1,
+      "col": 1,
+      "tag": "AES-GCM",
+      "size": [
+        152,
+        66
+      ]
+    },
+    {
+      "id": "rsa_reg",
+      "type": "frontend",
+      "label": "AddRsaEncryption",
+      "sublabel": "PKCS#1 private key",
+      "row": 2,
+      "col": 0,
+      "size": [
+        152,
+        62
+      ]
+    },
+    {
+      "id": "rsa",
+      "type": "security",
+      "label": "IRsaEncryption",
+      "sublabel": "singleton per key",
+      "row": 2,
+      "col": 1,
+      "tag": "OAEP + PKCS#1",
+      "size": [
+        148,
+        66
+      ]
+    },
+    {
+      "id": "b64",
+      "type": "database",
+      "label": "Base64StringExtensions",
+      "sublabel": "static, not registered",
+      "row": 3,
+      "col": 2,
+      "size": [
+        170,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "You supply and persist the key",
+      "wraps": [
+        "gcm_reg",
+        "gcm",
+        "rsa_reg",
+        "rsa"
+      ],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    {
+      "from": "hashing_reg",
+      "to": "sha",
+      "label": "registers"
+    },
+    {
+      "from": "sha",
+      "to": "hmac",
+      "label": "and",
+      "variant": "dashed"
+    },
+    {
+      "from": "gcm_reg",
+      "to": "gcm",
+      "label": "registers",
+      "variant": "emphasis"
+    },
+    {
+      "from": "rsa_reg",
+      "to": "rsa",
+      "label": "registers",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "There is no options type",
+      "items": [
+        "The customisation surface is the three registration methods",
+        "Every one is idempotent — a second call adds nothing",
+        "Each cipher method throws for a blank key"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Key handling",
+      "items": [
+        "A cipher registration is a singleton over the key you passed",
+        "Rotating the key means new configuration and a restart",
+        "The package stores no key and offers no rotation"
+      ]
+    }
+  ]
+}

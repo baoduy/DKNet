@@ -1,0 +1,232 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Atomic check-and-reserve on a relational idempotency store",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "database": {
+          "label": "Database statement"
+        },
+        "security": {
+          "label": "Collision handling"
+        },
+        "backend": {
+          "label": "Result returned to the filter"
+        },
+        "external": {
+          "label": "Store entry point"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "store",
+      "label": "IdempotencyRelationalStore"
+    },
+    {
+      "id": "db",
+      "label": "Provider database"
+    },
+    {
+      "id": "outcomes",
+      "label": "Returned to the endpoint filter"
+    }
+  ],
+  "phases": [
+    {
+      "id": "read",
+      "label": "Read",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "reserve",
+      "label": "Reserve",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "reclaimphase",
+      "label": "Reclaim an expired row",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "enter",
+    "lookup",
+    "insert",
+    "violation",
+    "reclaim",
+    "reclaimed"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "enter"
+    ],
+    "allowedTerminals": [
+      "hit",
+      "won",
+      "blocked",
+      "reclaimed"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "enter",
+      "lane": "store",
+      "col": 0,
+      "type": "external",
+      "label": "IsKeyProcessedAsync",
+      "sublabel": "SHA-256 of the composite key",
+      "width": 143
+    },
+    {
+      "id": "lookup",
+      "lane": "db",
+      "col": 1,
+      "type": "database",
+      "label": "SELECT unexpired row",
+      "sublabel": "CompositeKey match, ExpiresAt in the future",
+      "width": 215
+    },
+    {
+      "id": "hit",
+      "lane": "outcomes",
+      "col": 2,
+      "type": "backend",
+      "label": "Duplicate",
+      "sublabel": "(true, response), or (true, null) at 102",
+      "width": 200
+    },
+    {
+      "id": "insert",
+      "lane": "store",
+      "col": 2,
+      "type": "database",
+      "label": "INSERT reservation row",
+      "sublabel": "StatusCode 102 placeholder",
+      "width": 144
+    },
+    {
+      "id": "won",
+      "lane": "outcomes",
+      "col": 3,
+      "type": "backend",
+      "label": "Proceed",
+      "sublabel": "(false, null) — this caller runs the handler",
+      "width": 220
+    },
+    {
+      "id": "violation",
+      "lane": "store",
+      "col": 3,
+      "type": "security",
+      "label": "IsProviderUniqueViolation",
+      "sublabel": "SQL Server 2601/2627, Postgres 23505",
+      "tag": "never matched on message text",
+      "width": 181
+    },
+    {
+      "id": "reclaim",
+      "lane": "store",
+      "col": 4,
+      "type": "database",
+      "label": "Conditional UPDATE",
+      "sublabel": "only while the row is still expired",
+      "width": 176
+    },
+    {
+      "id": "blocked",
+      "lane": "outcomes",
+      "col": 4,
+      "type": "backend",
+      "label": "Another caller holds it",
+      "sublabel": "winner's state re-read and returned",
+      "width": 176
+    },
+    {
+      "id": "reclaimed",
+      "lane": "outcomes",
+      "col": 5,
+      "type": "backend",
+      "label": "Proceed",
+      "sublabel": "(false, null) — expired row reclaimed",
+      "width": 186
+    }
+  ],
+  "edges": [
+    {
+      "id": "to-lookup",
+      "from": "enter",
+      "to": "lookup",
+      "variant": "default"
+    },
+    {
+      "id": "live-row",
+      "from": "lookup",
+      "to": "hit",
+      "label": "live row found",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "no-live-row",
+      "from": "lookup",
+      "to": "insert",
+      "label": "absent or expired",
+      "variant": "emphasis"
+    },
+    {
+      "id": "insert-wins",
+      "from": "insert",
+      "to": "won",
+      "label": "insert wins",
+      "variant": "emphasis",
+      "role": "branch"
+    },
+    {
+      "id": "insert-loses",
+      "from": "insert",
+      "to": "violation",
+      "label": "unique violation",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "still-live",
+      "from": "violation",
+      "to": "blocked",
+      "label": "blocking row still live",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "stale-row",
+      "from": "violation",
+      "to": "reclaim",
+      "label": "blocking row expired",
+      "variant": "default"
+    },
+    {
+      "id": "reclaim-wins",
+      "from": "reclaim",
+      "to": "reclaimed",
+      "label": "1 row updated",
+      "variant": "emphasis"
+    },
+    {
+      "id": "reclaim-loses",
+      "from": "reclaim",
+      "to": "blocked",
+      "label": "0 rows updated",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ]
+}

@@ -46,6 +46,37 @@ public class EventContextTests(EventRunnerFixture fixture) : IClassFixture<Event
         db.Set<Root>().Remove(root);
     }
 
+    [Fact]
+    public void GetEvents_AcrossMultipleEntities_YieldsEachEntitysOwnEventExactlyOnce()
+    {
+        // Arrange: two entities, each raising its own event. GetEvents() reuses a single HashSet across
+        // entities (Clear()-ed between iterations) instead of allocating a fresh one per entity — if that
+        // reuse ever forgot to clear, the first entity's event would still be sitting in the set and get
+        // yielded a second time while iterating the second entity's set.
+        var db = fixture.Provider.GetRequiredService<DddContext>();
+        var mapper = fixture.Provider.GetRequiredService<IMapper>();
+
+        var root1 = new Root("Root One", "TestOwner");
+        var root2 = new Root("Root Two", "TestOwner");
+        root1.AddEvent(new IdempotentTestEvent { Id = root1.Id });
+        root2.AddEvent(new IdempotentTestEvent { Id = root2.Id });
+        db.Set<Root>().AddRange(root1, root2);
+
+        using var snapshot = new SnapshotContext(db);
+        snapshot.Initialize();
+        var eventContext = new EventContext(snapshot, mapper);
+
+        // Act
+        var events = eventContext.GetEvents().Cast<IdempotentTestEvent>().ToList();
+
+        // Assert: exactly one event per entity, no leak or duplication across iterations
+        events.Count.ShouldBe(2);
+        events.ShouldContain(e => e.Id == root1.Id);
+        events.ShouldContain(e => e.Id == root2.Id);
+
+        db.Set<Root>().RemoveRange(root1, root2);
+    }
+
     #endregion
 }
 

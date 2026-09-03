@@ -13,7 +13,7 @@ public class ShaHashingIgnoreCaseTests
     [Fact]
     public void ShaHashing_VerifySha256_IgnoreCaseTrueOrFalse_ReturnsSameResult()
     {
-        using var sha = new ShaHashing();
+        var sha = new ShaHashing();
         var message = "test message";
         var hex = sha.ComputeSha256(message);
 
@@ -29,7 +29,7 @@ public class ShaHashingIgnoreCaseTests
     [Fact]
     public void ShaHashing_VerifySha512_IgnoreCaseTrueOrFalse_ReturnsSameResult()
     {
-        using var sha = new ShaHashing();
+        var sha = new ShaHashing();
         var message = "test message";
         var hex = sha.ComputeSha512(message);
 

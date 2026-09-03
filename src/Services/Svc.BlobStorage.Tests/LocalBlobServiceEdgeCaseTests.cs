@@ -130,6 +130,41 @@ public class LocalBlobServiceEdgeCaseTests : IDisposable
     }
 
     [Fact]
+    public async Task ListItemsAsync_RootNameRepeatsInSubPath_ResolvesToDistinctRelativeName()
+    {
+        // Regression for C9: a root whose folder name recurs as a subfolder (e.g. root ".../store"
+        // containing "tenants/store/a.txt") must not have every occurrence of "store" stripped out.
+        var root = Path.Combine(Path.GetTempPath(), "DKNet-LocalBlobEdge-" + Guid.NewGuid().ToString("N"), "store");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var options = Options.Create(new LocalDirectoryOptions { RootFolder = root });
+            var service = new LocalBlobService(options, NullLogger<LocalBlobService>.Instance);
+
+            var nested = Path.Combine(root, "tenants", "store");
+            Directory.CreateDirectory(nested);
+            await File.WriteAllTextAsync(Path.Combine(nested, "a.txt"), "x");
+
+            var items = new List<BlobDetails.BlobResult>();
+            await foreach (var item in service.ListItemsAsync(new BlobRequest("tenants")
+                               { Type = BlobTypes.Directory }))
+                items.Add(item);
+
+            var fileResult = items.Single(i => i.Type == BlobTypes.File);
+            fileResult.Name.ShouldBe(Path.Combine("tenants", "store", "a.txt"));
+
+            // Round-trip: the emitted relative name must resolve back to the same file.
+            var data = await service.GetAsync(new BlobRequest(fileResult.Name) { Type = BlobTypes.File });
+            data.ShouldNotBeNull();
+            data!.Data.ToString().ShouldBe("x");
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(root)!, true);
+        }
+    }
+
+    [Fact]
     public async Task SaveAsync_NestedPath_CreatesMissingDirectories()
     {
         var fileName = "nested/deep/created.txt";

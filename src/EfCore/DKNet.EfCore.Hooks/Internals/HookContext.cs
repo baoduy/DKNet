@@ -12,8 +12,8 @@ internal sealed class HookContext : IDisposable, IAsyncDisposable
     {
         var factory = provider.GetRequiredService<HookFactory>();
         var (before, afters) = factory.LoadHooks(db);
-        BeforeSaveHooks = [..before];
-        AfterSaveHooks = [..afters];
+        BeforeSaveHooks = before;
+        AfterSaveHooks = afters;
         Snapshot = new SnapshotContext(db);
     }
 

@@ -149,13 +149,18 @@ The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` chec
 
 ## 🧱 Where it fits
 
+The client is not built at registration — it is built lazily on the first operation, and that first
+operation is also what creates the bucket:
+
+![Workflow diagram: AddS3BlobService binds S3Options, the first operation builds an AmazonS3Config from ConnectionString, ForcePathStyle and DisablePayloadSigning, picks BasicAWSCredentials or the ambient AWS credential chain, lists buckets and creates the configured one when it is missing, then caches the client for the rest of the scope.](../diagrams/svc-blobstorage-awss3-client-bootstrap.svg)
+
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `S3BlobService` derives from its
   `BlobService` base class; application code depends on `IBlobService`, and only the composition root knows this package
   exists.
 - **[DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md)** — the usual stand-in for tests and local runs when
   you don't want a MinIO container.
-- **`DKNet.EfCore.Events` / `DKNet.EfCore.Repos`** — pair with them exactly as any provider does; see the Abstractions
-  page.
+- **`DKNet.EfCore.Events` / `DKNet.EfCore.Specifications`** — pair with them exactly as any provider does; see the
+  Abstractions page.
 
 ## ⚠️ Gotchas & limits
 

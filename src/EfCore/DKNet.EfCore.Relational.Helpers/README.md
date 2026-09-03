@@ -28,9 +28,27 @@ if (!await dbContext.TableExistsAsync<Product>())
 var (schema, table) = dbContext.GetTableName<Product>();
 ```
 
+## Customisation reference
+
+There is no options class, no `IServiceCollection` extension, and no MSBuild switch — the surface is the four
+methods' parameters and the provider-dependent behaviour they inherit.
+
+| Method | Knob | Type | Default | Effect |
+|---|---|---|---|---|
+| `CreateTableAsync<TEntity>` | `TEntity` | `class` | required | Picks the table whose existence is probed. Creation itself is not scoped to it — `CreateTablesAsync` creates every table missing from the model. |
+| `CreateTableAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Flows into the exists check, `EnsureCreatedAsync`, the table probe and `CreateTablesAsync`. |
+| `GetDbConnection` | `cancellationToken` | `CancellationToken` | `default` | Used only when the connection was closed and has to be opened. |
+| `GetTableName<TEntity>` | default schema | — | `"dbo"` on SQL Server, otherwise `null` | Substituted only when the provider name is exactly `Microsoft.EntityFrameworkCore.SqlServer` and the model supplies no schema. |
+| `GetTableName<TEntity>` | resolution order | — | `GetSchema()` → `GetDefaultSchema()` → default schema; `GetTableName()` → `GetDefaultTableName()` | Fixed. Returns `(null, null)` when `TEntity` is not in the model. |
+| `TableExistsAsync<TEntity>` | swallowed exception | — | `DbException` only | Any `DbException` reads as "table absent"; everything else propagates. |
+| `TableExistsAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Flows into the `AnyAsync` probe. |
+
+All four require a relational provider, and none of them record a migration — mixing `CreateTableAsync` with EF
+Core Migrations on the same database leaves an inconsistent `__EFMigrationsHistory`.
+
 ## Documentation
 
-Full method reference, gotchas, and provider notes: https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Relational.Helpers.md
+Full method reference, gotchas, and provider notes: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Relational.Helpers.md
 
 ## License
 

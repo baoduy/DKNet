@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How one changed entity becomes an AuditLogEntry",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Captured path"
+        },
+        "security": {
+          "label": "Skipped or redacted"
+        },
+        "database": {
+          "label": "Change-tracker snapshot"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      660
+    ]
+  },
+  "stages": [
+    {
+      "label": "Before the save"
+    },
+    {
+      "label": "Entity gate"
+    },
+    {
+      "label": "Property gate"
+    },
+    {
+      "label": "Captured entry"
+    },
+    {
+      "label": "After the save"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "entries",
+      "type": "database",
+      "label": "Snapshot entries",
+      "sublabel": "Added, Modified, Deleted",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "gate",
+      "type": "backend",
+      "label": "Entity gate",
+      "sublabel": "IAuditedProperties + behaviour",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "[IgnoreAuditLog] always wins"
+    },
+    {
+      "id": "skipped",
+      "type": "security",
+      "label": "Skipped entity",
+      "sublabel": "no IAuditedProperties, or opted out",
+      "stage": 1,
+      "row": 3,
+      "width": 156
+    },
+    {
+      "id": "policy",
+      "type": "backend",
+      "label": "Property gate",
+      "sublabel": "AuditPropertyPolicy",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "redact",
+      "type": "security",
+      "label": "Redactor",
+      "sublabel": "***REDACTED***",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "tag": "[SensitiveData] or a name pattern"
+    },
+    {
+      "id": "entry",
+      "type": "backend",
+      "label": "AuditLogEntry",
+      "sublabel": "keys, action, field changes",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "publishers",
+      "type": "messagebus",
+      "label": "IAuditLogPublisher",
+      "sublabel": "every publisher keyed to the DbContext",
+      "stage": 4,
+      "row": 1,
+      "width": 168
+    }
+  ],
+  "flows": [
+    {
+      "from": "entries",
+      "to": "gate",
+      "label": "one per changed entity",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "gate",
+      "to": "skipped",
+      "variant": "security",
+      "label": "skip",
+      "labelDy": 90
+    },
+    {
+      "from": "gate",
+      "to": "policy",
+      "label": "audited",
+      "variant": "emphasis"
+    },
+    {
+      "from": "policy",
+      "to": "entry",
+      "label": "plaintext value",
+      "variant": "emphasis"
+    },
+    {
+      "from": "policy",
+      "to": "redact",
+      "variant": "security",
+      "label": "redact",
+      "labelDy": 90
+    },
+    {
+      "from": "redact",
+      "to": "entry",
+      "label": "sentinel instead",
+      "variant": "security"
+    },
+    {
+      "from": "entry",
+      "to": "publishers",
+      "label": "published after the write",
+      "classification": "publisher failures are logged, never rethrown",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What lands in Changes",
+      "items": [
+        "Added: no field changes are recorded, only the entity-level entry",
+        "Modified: only properties whose value actually changed",
+        "Deleted: every captured property, OldValue only"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Redaction precedence",
+      "items": [
+        "[IgnoreAuditLog] on a property drops it before anything else",
+        "[SensitiveData] always redacts, even alongside [AuditLog]",
+        "[AuditLog] on a property forces plaintext past the name patterns"
+      ]
+    }
+  ]
+}

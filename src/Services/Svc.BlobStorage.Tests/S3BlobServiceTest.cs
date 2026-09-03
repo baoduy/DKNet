@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using DKNet.Svc.BlobStorage.AwsS3;
@@ -204,6 +205,54 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     }
 
     [Fact]
+    public async Task ListItemsAsync_ZeroByteAndOneByteFiles_AreClassifiedAsFileNotDirectory()
+    {
+        // Regression for C8: `obj.Size > 1` used to classify a 0- or 1-byte file as a directory.
+        // Only a trailing '/' in the key is S3's actual directory-marker convention.
+        var dir = $"tiny-files-{Guid.NewGuid()}";
+        await _service.SaveAsync(new BlobDetails.BlobData($"{dir}/empty.txt", new BinaryData([]))
+            { Overwrite = true, Type = BlobTypes.File });
+        await _service.SaveAsync(new BlobDetails.BlobData($"{dir}/one-byte.txt", new BinaryData("a"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File });
+
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.Count.ShouldBe(2);
+        items.ShouldAllBe(i => i.Type == BlobTypes.File);
+    }
+
+    [Fact]
+    public async Task ListItemsAsync_MoreThanOnePage_ReturnsAllObjectsAcrossPages()
+    {
+        // Regression for C8: ListItemsAsync used to read only the first ListObjectsV2 page and
+        // silently drop the rest. S3BlobService does not set MaxKeys, so it always requests the
+        // provider's default page size (1000 for both S3 and this Minio image) — there is no
+        // smaller way to make the server truncate the first page, so this genuinely uploads more
+        // than 1000 objects to force a real ContinuationToken round trip rather than merely
+        // asserting happy-path behaviour on a single page.
+        const int objectCount = 1001;
+        var dir = $"paged-{Guid.NewGuid()}";
+
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, objectCount),
+            new ParallelOptions { MaxDegreeOfParallelism = 32 },
+            async (i, ct) =>
+            {
+                var blob = new BlobDetails.BlobData($"{dir}/file{i:D4}.txt", new BinaryData("x"u8.ToArray()))
+                    { Overwrite = true, Type = BlobTypes.File };
+                await _service.SaveAsync(blob, ct);
+            });
+
+        var items = new List<BlobDetails.BlobResult>();
+        await foreach (var item in _service.ListItemsAsync(new BlobRequest(dir) { Type = BlobTypes.Directory }))
+            items.Add(item);
+
+        items.Count.ShouldBe(objectCount);
+    }
+
+    [Fact]
     public async Task DisposeReleasesUnderlyingClientAndIsIdempotent()
     {
         var service = new S3BlobService(Options.Create(fixture.Options), NullLogger<S3BlobService>.Instance);
@@ -213,6 +262,44 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
 
         Should.NotThrow(service.Dispose);
         Should.NotThrow(service.Dispose); // second call must be a no-op, not re-dispose a null client
+    }
+
+    [Fact]
+    public async Task GetS3ClientAsync_ConcurrentFirstCallers_BuildsClientAndProbesBucketExactlyOnce()
+    {
+        // Regression for P10: the client used to be built (and the bucket-ensure ListBuckets/PutBucket
+        // probe run) on every scoped instance, and even within one instance the null-check guard was not
+        // thread-safe. S3BlobService.BuildClientAsync logs exactly once per client build, so counting
+        // Information-level log entries across many concurrent first callers on a single instance proves
+        // the client build (and bucket probe) runs exactly once rather than once per caller.
+        var logger = new CountingLogger<S3BlobService>();
+        var service = new S3BlobService(Options.Create(fixture.Options), logger);
+
+        await Task.WhenAll(Enumerable.Range(0, 20)
+            .Select(i => service.CheckExistsAsync(new BlobRequest($"concurrent-probe-{i}-{Guid.NewGuid()}.txt"))));
+
+        logger.InformationCount.ShouldBe(1);
+    }
+
+    /// <summary>
+    ///     Minimal <see cref="ILogger{TCategoryName}" /> test double that counts Information-level log calls,
+    ///     used to observe how many times a one-time initialization path actually ran.
+    /// </summary>
+    private sealed class CountingLogger<T> : ILogger<T>
+    {
+        private int _informationCount;
+
+        public int InformationCount => _informationCount;
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Information) Interlocked.Increment(ref _informationCount);
+        }
     }
 
     #endregion

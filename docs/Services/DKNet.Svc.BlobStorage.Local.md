@@ -84,6 +84,10 @@ catch (FileNotFoundException)
 `CheckExistsAsync` has no such split — it returns `false` for a missing file (or missing directory, for a directory
 request) on every provider.
 
+`GetAsync` reads the file through a stream it properly closes once the content is buffered into the returned
+`BinaryData` — earlier revisions could leak the underlying `FileStream` handle, which on Windows blocked a
+subsequent write to the same path until the process released it.
+
 ### Save, overwrite, and directory creation
 
 `SaveAsync` validates against `BlobServiceOptions`, then throws `InvalidOperationException("File already existed")` when
@@ -98,11 +102,19 @@ var blob = new BlobDetails.BlobData("reports/2026/q1.pdf", BinaryData.FromString
 var location = await blobService.SaveAsync(blob, ct); // "reports/2026/q1.pdf"
 ```
 
+The write itself goes through `File.WriteAllBytesAsync` with the payload as a `ReadOnlyMemory<byte>`, so `SaveAsync`
+does not make an extra full-buffer copy of the blob's data before writing it.
+
 ### Listing a directory
 
 `ListItemsAsync` against a directory yields every file underneath it recursively (each with `Details` populated from
 `FileInfo`), then every nested directory as a bare entry with no `Details`. Against a single file path it yields just
-that one file, or nothing when the file is absent. Names come back relative to the root folder.
+that one file, or nothing when the file is absent — and a path that is neither an existing directory nor an
+existing file also yields an empty sequence, the same "not found ⇒ nothing" shape S3 and Azure Storage use, rather
+than throwing. Names come back relative to the root folder, computed with `Path.GetRelativePath` — correct even
+when a subfolder happens to share the root folder's own name (e.g. root `/var/store`, file
+`/var/store/tenants/store/a.txt` resolves to `tenants/store/a.txt`, not a mangled name that would point at the
+wrong file).
 
 ### No public URLs
 
@@ -121,6 +133,11 @@ Azure Storage if the calling code needs one.
 The shared `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb` checks apply unchanged.
 
 ## 🧱 Where it fits
+
+Every operation resolves the requested name to an absolute path and re-checks it against the root
+before touching the file system:
+
+![Workflow diagram: GetFinalPath drops a leading slash from the blob name, combines it with RootFolder and resolves it with Path.GetFullPath, then compares the result against the root prefix — ordinal on Linux, case-insensitive on Windows — throwing UnauthorizedAccessException when it escapes and otherwise reading or writing the file and returning the root-relative name.](../diagrams/svc-blobstorage-local-path-resolution.svg)
 
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — `LocalBlobService` derives from
   its `BlobService` base class, so validation and path normalization behave the same as on the cloud providers.

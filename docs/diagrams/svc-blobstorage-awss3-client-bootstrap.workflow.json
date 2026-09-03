@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "S3BlobService: how the AmazonS3Client is built on the first operation",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration"
+        },
+        "backend": {
+          "label": "Bootstrap step"
+        },
+        "security": {
+          "label": "Credential resolution"
+        },
+        "database": {
+          "label": "Cached AmazonS3Client"
+        },
+        "cloud": {
+          "label": "AWS S3 call"
+        }
+      }
+    },
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "host", "label": "Composition root" },
+    { "id": "svc", "label": "S3BlobService" },
+    { "id": "aws", "label": "S3 endpoint" }
+  ],
+  "mainPath": ["register", "resolve", "config", "creds", "bucket", "op"],
+  "nodes": [
+    { "id": "register", "lane": "host", "col": 0, "type": "frontend", "label": "AddS3BlobService", "sublabel": "binds BlobService:S3", "width": 148 },
+    { "id": "resolve", "lane": "svc", "col": 1, "type": "backend", "label": "First operation", "sublabel": "GetS3ClientAsync", "width": 140 },
+    { "id": "config", "lane": "svc", "col": 2, "type": "backend", "label": "AmazonS3Config", "sublabel": "ServiceURL, path style", "width": 152 },
+    { "id": "creds", "lane": "svc", "col": 3, "type": "security", "label": "Credential choice", "sublabel": "keys or AWS chain", "width": 148 },
+    { "id": "cached", "lane": "svc", "col": 4, "type": "database", "label": "Cached client", "sublabel": "one per scope", "width": 136 },
+    { "id": "bucket", "lane": "aws", "col": 4, "type": "cloud", "label": "ListBuckets", "sublabel": "PutBucket if absent", "width": 148 },
+    { "id": "op", "lane": "aws", "col": 5, "type": "cloud", "label": "Put / Get / List", "sublabel": "key without leading /", "width": 148 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "register", "to": "resolve", "label": "IOptions<S3Options>" },
+    { "id": "e2", "from": "resolve", "to": "config", "label": "no client yet", "variant": "emphasis" },
+    { "id": "e3", "from": "config", "to": "creds" },
+    { "id": "e4", "from": "creds", "to": "bucket", "label": "new AmazonS3Client", "variant": "emphasis" },
+    { "id": "e5", "from": "creds", "to": "cached", "label": "reused next call", "variant": "dashed", "role": "branch" },
+    { "id": "e6", "from": "bucket", "to": "op", "label": "bucket exists" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Read from S3Options",
+      "items": [
+        "ConnectionString becomes ServiceURL; http when not https",
+        "ForcePathStyle and DisablePayloadSigning pass straight through"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Worth knowing",
+      "items": [
+        "RegionEndpointName is never applied to the client",
+        "A typo in BucketName creates a new empty bucket"
+      ]
+    }
+  ]
+}

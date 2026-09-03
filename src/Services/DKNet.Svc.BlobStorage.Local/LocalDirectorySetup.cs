@@ -42,22 +42,7 @@ public static class LocalDirectorySetup
     /// </summary>
     /// <param name="path">The file-system path to evaluate.</param>
     /// <returns><c>true</c> when <paramref name="path" /> exists and is a directory; otherwise <c>false</c>.</returns>
-    public static bool IsDirectory(this string path)
-    {
-        try
-        {
-            var attr = File.GetAttributes(path);
-            return attr.HasFlag(FileAttributes.Directory);
-        }
-        catch (DirectoryNotFoundException)
-        {
-            return false;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-    }
+    public static bool IsDirectory(this string path) => Directory.Exists(path);
 
     #endregion
 }

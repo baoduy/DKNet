@@ -51,9 +51,9 @@ public sealed class SecretStore(IAesGcmEncryption aesGcm)
 ```
 
 `AddEncryptionServices` registers **no cipher** — only the hashing services. Each cipher has its own key-taking
-registration: `AddAesGcmEncryption`, `AddRsaEncryption`, and (migration only) `AddAesEncryption`. All four methods are
-idempotent — calling any of them twice does not double-register — and the three cipher methods throw `ArgumentException`
-for a null, empty, or whitespace key.
+registration: `AddAesGcmEncryption` and `AddRsaEncryption`. All three methods are idempotent — calling any of them
+twice does not double-register — and the two cipher methods throw `ArgumentException` for a null, empty, or
+whitespace key.
 
 > [!IMPORTANT]
 > A cipher's key is yours to supply and persist. `AddAesGcmEncryption(base64Key)` registers `IAesGcmEncryption` as a
@@ -74,9 +74,9 @@ string Key { get; } // Base64, persist this to decrypt later
 ```
 
 `new AesGcmEncryption()` generates a random 256-bit key; `new AesGcmEncryption(existingBase64Key)` reconstructs an
-instance from a previously persisted key (accepting 128/192/256-bit keys, and rejecting a key containing `:` — that shape
-belongs to the obsolete AES-CBC type). Every call produces a fresh random 12-byte nonce and 16-byte tag, so ciphertext is
-never deterministic even for the same plaintext:
+instance from a previously persisted key (accepting 128/192/256-bit keys, and rejecting a key containing `:` — that
+shape belonged to the removed AES-CBC type's `key:iv` format). Every call produces a fresh random 12-byte nonce and
+16-byte tag, so ciphertext is never deterministic even for the same plaintext:
 
 ```csharp
 using var aes = new AesGcmEncryption();          // keep aes.Key to decrypt later
@@ -125,8 +125,8 @@ not PEM, so don't paste them into a `-----BEGIN` block without re-encoding.
 ```csharp
 string ComputeSha256(string message, string secretKey, bool asBase64 = true);
 string ComputeSha512(string message, string secretKey, bool asBase64 = true);
-bool VerifySha256(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true, bool ignoreCase = true);
-bool VerifySha512(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true, bool ignoreCase = true);
+bool VerifySha256(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true);
+bool VerifySha512(string message, string secretKey, string expectedSignature, bool signatureIsBase64 = true);
 ```
 
 Set `asBase64 = false` to get upper-case hex instead, and match that choice with `signatureIsBase64` on the verify call —
@@ -154,28 +154,86 @@ Output is hex, lower-case unless `upperCase` is set. Verification is hex-only (`
 
 ### Base64 / Base64URL helpers
 
-`Base64StringExtensions` exposes plain static methods (not extension methods, despite the name): `ToBase64String`,
-`FromBase64String`, `ToBase64UrlString`, `FromBase64UrlString`, and `IsBase64String`. The URL variants are useful for
-JWT-style payloads without pulling in a JWT library:
+`Base64StringExtensions` exposes `ToBase64String`, `FromBase64String`, `ToBase64UrlString`, `FromBase64UrlString`, and
+`IsBase64String` as `this string` extension methods, so both call styles work:
 
 ```csharp
-var token = Base64StringExtensions.ToBase64UrlString(payloadJson);
-var back = Base64StringExtensions.FromBase64UrlString(token);
+using DKNet.Svc.Encryption;
+
+var token = payloadJson.ToBase64UrlString();          // extension-method call
+var back = Base64StringExtensions.FromBase64UrlString(token); // static call — still compiles
 ```
 
-Whitespace or empty input returns `string.Empty` from both decode helpers, and `IsBase64String` returns `false` for it.
-The older `Base65StringExtensions` (note the misspelling) is `[Obsolete]`, exposes the same operations as real extension
-methods, and forwards to the same logic — migrate off it.
+The URL variants are useful for JWT-style payloads without pulling in a JWT library. Whitespace or empty input
+returns `string.Empty` from both decode helpers, and `IsBase64String` returns `false` for it.
 
-### AES-CBC (`IAesEncryption`) — obsolete, do not adopt
+### AES-CBC (`IAesEncryption`) — removed
 
-`[Obsolete]` on both the interface and the implementation: "Uses AES-CBC which is vulnerable to padding oracle attacks.
-Use `IAesGcmEncryption` instead." It is not registered by `AddEncryptionServices`; a consumer still migrating off it opts
-in with `services.AddAesEncryption(keyString)` — itself `[Obsolete]` — passing the combined Base64 `key:iv` value that
-`AesEncryption.Key` returns. Its IV is fixed per instance, so identical plaintext always produces identical ciphertext, and that `key:iv`
-shape is one `AesGcmEncryption` explicitly rejects. New code uses `IAesGcmEncryption`.
+`IAesEncryption`, `AesEncryption`, and `EncryptionSetup.AddAesEncryption` have been **removed**, not merely
+deprecated. AES-CBC as this type used it kept a fixed IV embedded in the key, so encrypting the same plaintext twice
+always produced the same ciphertext — a real leak of information about the data (e.g. two customers sharing a
+password hash, or a repeated field, becomes visible from ciphertext alone) rather than a theoretical concern.
+`IAesGcmEncryption` (`AddAesGcmEncryption`) is authenticated, uses a fresh random nonce per call, and is the only
+symmetric cipher this package ships. There is no compatibility shim — code still calling `AddAesEncryption` or
+constructing `AesEncryption` will not build; re-encrypt existing ciphertext under `IAesGcmEncryption` and switch the
+call sites.
+
+## ⚙️ Configuration reference
+
+There is no options type and no `IConfiguration` binding path in this package. The entire customisation
+surface is the four registration methods and the constructors behind them — everything a caller can vary
+is an argument, so this table is the equivalent of a configuration reference.
+
+### Registration surface (`EncryptionSetup`)
+
+| Method | Argument | Registers | Lifetime | Throws |
+|---|---|---|---|---|
+| `AddEncryptionServices()` | — | `IShaHashing`, `IHmacHashing` | Transient | — |
+| `AddAesGcmEncryption(base64Key)` | Base64 128/192/256-bit key | `IAesGcmEncryption` | Singleton | `ArgumentException` on a blank key |
+| `AddRsaEncryption(privateKeyBase64)` | Base64 PKCS#1 private key | `IRsaEncryption` | Singleton | `ArgumentException` on a blank key |
+
+All three skip registration when the service type is already registered, so a second call is a no-op
+rather than a second instance — the **first** call's key is the one the application uses.
+
+### Constructor surface (when you build an instance yourself)
+
+| Constructor / factory | Parameter | Default | Effect |
+|---|---|---|---|
+| `new AesGcmEncryption(string? key = null)` | Base64 key, no `:` | `null` | `null` generates a random 256-bit key; a supplied key must decode to 16, 24, or 32 bytes. |
+| `new RsaEncryption(int keySize = 2048)` | Key size in bits | `2048` | Generates a fresh key pair at that size. |
+| `new RsaEncryption(string privateKeyBase64)` | PKCS#1 private key | *(required)* | Loads an existing pair; the public key is derived. |
+| `RsaEncryption.FromPublicKey(string publicKeyBase64)` | PKCS#1 public key | *(required)* | Public-only instance: `Encrypt`/`Verify` work, `Decrypt`/`Sign` throw. |
+
+### Per-call switches
+
+| Member | Parameter | Default | Effect |
+|---|---|---|---|
+| `IAesGcmEncryption.EncryptString` / `DecryptString` | `associatedData` | `null` | Extra bytes bound into the authentication tag; a mismatch on decrypt throws `CryptographicException`. |
+| `IHmacHashing.ComputeSha256` / `ComputeSha512` | `asBase64` | `true` | `false` returns upper-case hex instead of Base64. |
+| `IHmacHashing.VerifySha256` / `VerifySha512` | `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
+| `IShaHashing.VerifySha256` / `VerifySha512` | `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. (`IHmacHashing`'s `Verify*` overloads dropped this parameter entirely; it was never read.) |
+| `IShaHashing.ComputeSha256` / `ComputeSha512` | `upperCase` | `false` | `true` returns upper-case hex. |
+
+### Fixed algorithm choices
+
+These are not configurable and are worth knowing before you design around them:
+
+| Concern | Value |
+|---|---|
+| AES-GCM nonce / tag | 12 bytes / 16 bytes, fresh nonce per call |
+| AES-GCM generated key size | 256-bit |
+| AES-GCM package layout | Base64 of `base64(nonce):base64(tag):base64(cipher)` |
+| RSA encryption padding | OAEP-SHA256 |
+| RSA signature | SHA-256 with PKCS#1 v1.5 |
+| Key export format | Raw PKCS#1 DER, Base64 — not PEM |
+| Verification comparison | `CryptographicOperations.FixedTimeEquals` |
 
 ## 🧱 Where it fits
+
+Which registration you call decides which service you can resolve — and only the cipher registrations
+take a key:
+
+![Architecture diagram: AddEncryptionServices registers the transient IShaHashing and IHmacHashing services with no key; AddAesGcmEncryption and AddRsaEncryption each register one key-bearing singleton cipher inside a boundary labelled "you supply and persist the key"; Base64StringExtensions is static and never registered.](../diagrams/svc-encryption-registration-map.svg)
 
 - **[DKNet.EfCore.Encryption](../EfCore/DKNet.EfCore.Encryption.md)** — the transparent counterpart: encrypt a column
   without the calling code knowing. Use this package when the call site should decide; use that one when the storage
@@ -193,8 +251,10 @@ shape is one `AesGcmEncryption` explicitly rejects. New code uses `IAesGcmEncryp
 - **No password-based key derivation.** To encrypt with a user-supplied password, derive a key yourself (e.g.
   `Rfc2898DeriveBytes`) before constructing `AesGcmEncryption`. An earlier revision of this page documented a
   `PasswordAesEncryption` type; it does not exist in source.
-- **`ignoreCase` on every HMAC/SHA `Verify*` overload is a no-op.** Comparison is done on decoded bytes, so case never
-  matters — don't read the parameter as a behavior switch.
+- **`ignoreCase` on `IShaHashing.Verify*` is a no-op.** Comparison is done on decoded bytes, so case never matters —
+  don't read the parameter as a behavior switch. `IHmacHashing.Verify*` doesn't have the parameter at all.
+- **`IShaHashing` and `IHmacHashing` are not `IDisposable`.** Both are stateless wrappers over the static
+  `System.Security.Cryptography` hash APIs — no `using` needed, unlike `IAesGcmEncryption`/`IRsaEncryption` below.
 - **`Key`, `PrivateKey`, and `PublicKey` are yours to persist and rotate.** The package stores nothing and has no key
   rotation, versioning, or envelope-key support.
 - **String-only surface.** No stream, file, or `byte[]` overloads — a large payload is fully materialized as a UTF-8

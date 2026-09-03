@@ -48,6 +48,24 @@ public class GlobalQueryFilterTests
         entityType!.GetDeclaredQueryFilters().ShouldNotBeNull();
     }
 
+    [Fact]
+    public void IgnorableFilterKeys_AfterApply_ReturnsCachedArrayContainingFilterKey()
+    {
+        // Arrange: DbContext.Model lazily triggers OnModelCreating, which calls PassingFilter.Apply
+        using var context = new PassingFilterDbContext(
+            new DbContextOptionsBuilder<PassingFilterDbContext>().UseSqlite("Data Source=:memory:").Options);
+        _ = context.Model;
+
+        // Act: read the property twice
+        var first = GlobalQueryFilter.IgnorableFilterKeys;
+        var second = GlobalQueryFilter.IgnorableFilterKeys;
+
+        // Assert: the newly-applied filter is reflected, and both reads return the same cached
+        // array instance rather than a freshly rebuilt collection on every access (P21).
+        first.ShouldContain(nameof(PassingFilter));
+        ReferenceEquals(first, second).ShouldBeTrue();
+    }
+
     #endregion
 }
 

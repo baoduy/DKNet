@@ -28,8 +28,11 @@ public static class S3Setup
     {
         services.Configure<S3Options>(o => configuration.GetSection(S3Options.Name).Bind(o));
 
+        // Singleton: AmazonS3Client is documented thread-safe and meant to be long-lived, and
+        // S3BlobService lazily builds/bucket-ensures it exactly once (see S3BlobService.GetS3ClientAsync)
+        // rather than paying a ListBuckets round trip on every scoped instance.
         if (!services.Any(s => s.ServiceType == typeof(IBlobService) && s.ImplementationType == typeof(S3BlobService)))
-            services.AddScoped<IBlobService, S3BlobService>();
+            services.AddSingleton<IBlobService, S3BlobService>();
 
         return services;
     }

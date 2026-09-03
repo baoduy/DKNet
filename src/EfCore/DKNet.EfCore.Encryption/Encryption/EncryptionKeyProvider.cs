@@ -16,16 +16,3 @@ public interface IEncryptionKeyProvider
 
     #endregion
 }
-
-/// <summary>
-///     Base class for encryption key providers.
-/// </summary>
-public abstract class EncryptionKeyProvider : IEncryptionKeyProvider
-{
-    #region Methods
-
-    /// <inheritdoc />
-    public abstract byte[] GetKey(Type entityType);
-
-    #endregion
-}

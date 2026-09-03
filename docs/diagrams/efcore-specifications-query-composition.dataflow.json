@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "The order ApplySpecs composes a specification onto the queryable",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Composition order"
+        },
+        "database": {
+          "label": "Final queryable"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      360
+    ]
+  },
+  "stages": [
+    {
+      "label": "What you declared"
+    },
+    {
+      "label": "Filter"
+    },
+    {
+      "label": "Shape"
+    },
+    {
+      "label": "Order"
+    },
+    {
+      "label": "Window"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "spec",
+      "type": "external",
+      "label": "Specification<T>",
+      "sublabel": "declared in its constructor",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "filter",
+      "type": "backend",
+      "label": "Ignore + Where",
+      "sublabel": "ignorable filters, then FilterQuery",
+      "stage": 1,
+      "row": 0,
+      "width": 156
+    },
+    {
+      "id": "include",
+      "type": "backend",
+      "label": "Include chain",
+      "sublabel": "IncludeQueries, then builders",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "order",
+      "type": "backend",
+      "label": "OrderBy / ThenBy",
+      "sublabel": "in your declared sequence",
+      "stage": 3,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "window",
+      "type": "database",
+      "label": "NoTracking, Skip, Take",
+      "sublabel": "the IQueryable EF Core runs",
+      "stage": 4,
+      "row": 0,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "spec",
+      "to": "filter",
+      "label": "queryable",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "filter",
+      "to": "include",
+      "label": "filtered",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "include",
+      "to": "order",
+      "label": "shaped",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "order",
+      "to": "window",
+      "label": "ordered",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Only through ApplySpecs",
+      "items": [
+        "Skip and Take apply when the spec runs via Query<TEntity> or Query<TEntity, TModel>",
+        "Reading FilterQuery / IncludeQueries yourself skips every step above",
+        "IgnoreQueryFilters bypasses ignorable filters only, never ownership isolation"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "The two other read shapes",
+      "items": [
+        "ModelSpecification<TEntity, TModel> projects and is always no-tracking",
+        "ToKeysetPageAsync needs an ordering, or it throws NotSupportedException",
+        "ToPageEnumerable streams 100 rows per round trip, not configurable"
+      ]
+    }
+  ]
+}

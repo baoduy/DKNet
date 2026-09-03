@@ -34,6 +34,13 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     /// </summary>
     private static readonly ConcurrentDictionary<string, bool> KnownFilterKeys = new();
 
+    /// <summary>
+    ///     Cached snapshot of <see cref="IgnorableFilterKeys" />, rebuilt whenever <see cref="Apply" /> registers a
+    ///     filter. <see cref="KnownFilterKeys" /> only changes during model building, so recomputing the array on
+    ///     every read (as <c>SpecificationExtensions.ApplySpecs</c> does, once per specification) is pure waste.
+    /// </summary>
+    private static string[] _ignorableFilterKeysCache = [];
+
     #endregion
 
     #region Properties
@@ -57,8 +64,7 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     ///     <see cref="IsIgnorable" /> is <c>true</c> — the set of filters that
     ///     <c>SpecificationExtensions.ApplySpecs</c> is allowed to bypass.
     /// </summary>
-    public static IReadOnlyCollection<string> IgnorableFilterKeys =>
-        KnownFilterKeys.Where(kv => kv.Value).Select(kv => kv.Key).ToArray();
+    public static IReadOnlyCollection<string> IgnorableFilterKeys => _ignorableFilterKeysCache;
 
     #endregion
 
@@ -73,6 +79,7 @@ public abstract class GlobalQueryFilter : IGlobalModelBuilder
     {
         var entityTypes = GetEntityTypes(modelBuilder);
         KnownFilterKeys[FilterKey] = IsIgnorable;
+        _ignorableFilterKeysCache = KnownFilterKeys.Where(kv => kv.Value).Select(kv => kv.Key).ToArray();
 
         foreach (var entityType in entityTypes)
         {

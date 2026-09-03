@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace DKNet.Svc.BlobStorage.Abstractions;
 
 /// <summary>
@@ -16,7 +14,7 @@ public static class BlobExtensions
     /// <returns>The result of the operation.</returns>
     public static string GetContentTypeByExtension(this string fileName)
     {
-        var ext = Path.GetExtension(fileName).ToLower(CultureInfo.CurrentCulture);
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
         return ext switch
         {
             ".txt" => "text/plain",

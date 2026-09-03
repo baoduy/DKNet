@@ -299,5 +299,48 @@ public class AesGcmColumnEncryptionProviderTests
         decrypted.ShouldBe(plaintext);
     }
 
+    [Fact]
+    public void Decrypt_KnownCiphertext_ReturnsByteIdenticalPlaintext()
+    {
+        // Arrange: ciphertext produced by the pre-refactor (Buffer.BlockCopy based) implementation
+        // for a fixed key/iv/plaintext, to pin the wire format (iv || tag || ciphertext, base64) across the
+        // switch to span-based slicing.
+        var key = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
+        var provider = new AesGcmColumnEncryptionProvider(key);
+        const string knownCiphertext = "oKGio6SlpqeoqaqrTD8VpS9PLGxknBqonP2CWK12E1or62PRERLioScOpa0E";
+
+        // Act
+        var decrypted = provider.Decrypt(knownCiphertext);
+
+        // Assert
+        decrypted.ShouldBe("Known answer test");
+    }
+
+    [Fact]
+    public async Task EncryptDecrypt_UnderConcurrentLoad_EachRoundTripStaysCorrect()
+    {
+        // Arrange: AesGcm instances are not thread-safe, so this pins the (still) construct-per-call
+        // design used by Encrypt/Decrypt after the span-based allocation cleanup - no AesGcm instance
+        // is shared across threads, so concurrent round trips must never corrupt each other's data.
+        var provider = new AesGcmColumnEncryptionProvider(_validKey32);
+        const int parallelism = 32;
+        const int iterationsPerTask = 50;
+
+        // Act
+        var tasks = Enumerable.Range(0, parallelism).Select(taskId => Task.Run(() =>
+        {
+            for (var i = 0; i < iterationsPerTask; i++)
+            {
+                var plaintext = $"payload-{taskId}-{i}-{Guid.NewGuid()}";
+                var encrypted = provider.Encrypt(plaintext);
+                var decrypted = provider.Decrypt(encrypted);
+                decrypted.ShouldBe(plaintext);
+            }
+        }));
+
+        // Assert (round-trip mismatches above throw inside the tasks and fail the awaited Task.WhenAll)
+        await Task.WhenAll(tasks);
+    }
+
     #endregion
 }

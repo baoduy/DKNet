@@ -1,0 +1,182 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "What CreateTableAsync<TEntity> actually checks and creates",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Call and outcome"
+        },
+        "backend": {
+          "label": "Helper step"
+        },
+        "database": {
+          "label": "Database operation"
+        }
+      }
+    },
+    "viewBox": [
+      939,
+      534
+    ]
+  },
+  "lanes": [
+    {
+      "id": "you",
+      "label": "Your call and its outcome"
+    },
+    {
+      "id": "helper",
+      "label": "DbContextHelpers"
+    },
+    {
+      "id": "db",
+      "label": "Relational database creator"
+    }
+  ],
+  "phases": [
+    {
+      "id": "probe",
+      "label": "Probe",
+      "fromCol": 0,
+      "toCol": 3
+    },
+    {
+      "id": "create",
+      "label": "Create",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "dbexists",
+    "tableexists",
+    "createtables"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "you",
+      "col": 0,
+      "type": "external",
+      "label": "CreateTableAsync<T>()",
+      "sublabel": "not a migration",
+      "width": 158
+    },
+    {
+      "id": "nothing",
+      "lane": "you",
+      "col": 4,
+      "type": "external",
+      "label": "Nothing to do",
+      "sublabel": "returns without touching the database",
+      "width": 176
+    },
+    {
+      "id": "dbexists",
+      "lane": "helper",
+      "col": 1,
+      "type": "backend",
+      "label": "Database exists?",
+      "sublabel": "RelationalDatabaseCreator.ExistsAsync",
+      "width": 180
+    },
+    {
+      "id": "tableexists",
+      "lane": "helper",
+      "col": 3,
+      "type": "backend",
+      "label": "TableExistsAsync<T>",
+      "sublabel": "probes with AnyAsync",
+      "width": 168,
+      "tag": "any DbException reads as no"
+    },
+    {
+      "id": "ensure",
+      "lane": "db",
+      "col": 2,
+      "type": "database",
+      "label": "EnsureCreatedAsync",
+      "sublabel": "creates the database and every table",
+      "width": 180
+    },
+    {
+      "id": "createtables",
+      "lane": "db",
+      "col": 4,
+      "type": "database",
+      "label": "CreateTablesAsync",
+      "sublabel": "creates every missing table, not only yours",
+      "width": 184
+    }
+  ],
+  "edges": [
+    {
+      "id": "call-dbexists",
+      "from": "call",
+      "to": "dbexists",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dbexists-ensure",
+      "from": "dbexists",
+      "to": "ensure",
+      "label": "database missing",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "ensure-tableexists",
+      "from": "ensure",
+      "to": "tableexists",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "dbexists-tableexists",
+      "from": "dbexists",
+      "to": "tableexists",
+      "label": "database already there",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tableexists-createtables",
+      "from": "tableexists",
+      "to": "createtables",
+      "label": "table missing",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tableexists-nothing",
+      "from": "tableexists",
+      "to": "nothing",
+      "label": "table already there",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Read this before calling it",
+      "items": [
+        "CreateTablesAsync creates every table missing from the model, not only TEntity",
+        "TableExistsAsync swallows any DbException, so a permission error reads as absent",
+        "Nothing here records a migration, so mixing it with migrations diverges the schema"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "The rest of the surface",
+      "items": [
+        "GetDbConnection opens the connection when it is closed, and leaves it open",
+        "GetTableName returns (null, null) for a type that is not in the model",
+        "GetTableName defaults the schema to dbo only on SQL Server"
+      ]
+    }
+  ]
+}

@@ -97,6 +97,40 @@ There is **no `byte[]` overload and no separate "streaming" method** — every p
 `"application/octet-stream"` for anything else. It throws `NullReferenceException` for a `null` input — always pass a
 non-null file name.
 
+### Writing your own provider
+
+The extension surface is deliberately small and all of it is public:
+
+| Member | Accessibility | What you do with it |
+|---|---|---|
+| `IBlobService` | `public interface` | Implement it directly when you want no shared behaviour at all. |
+| `BlobService` | `public abstract class` | The usual base — derive from it and implement the six abstract members. |
+| `BlobService.ValidateFile(BlobData)` | `protected virtual` | Call it at the top of your `SaveAsync`; override it to add rules. |
+| `BlobService.GetBlobLocation(BlobRequest)` | `protected virtual` | Override to change how a name becomes a provider path. |
+| `BlobService.GetItemAsync(...)` | `public virtual` | Override when your store can fetch metadata without a full listing. |
+| `BlobServiceOptions` | `public class` | Derive from it so your provider's options inherit the shared validation. |
+
+```csharp
+public sealed class InMemoryBlobService(BlobServiceOptions options) : BlobService(options)
+{
+    private readonly Dictionary<string, BinaryData> _blobs = new(StringComparer.Ordinal);
+
+    public override Task<string> SaveAsync(BlobDetails.BlobData blob, CancellationToken ct = default)
+    {
+        ValidateFile(blob);                       // shared rules first
+        _blobs[GetBlobLocation(blob)] = blob.Data; // normalized "/name"
+        return Task.FromResult(blob.Name);
+    }
+
+    // CheckExistsAsync, DeleteAsync, GetAsync, GetPublicAccessUrl and ListItemsAsync
+    // are abstract too — every provider has to answer all six.
+}
+```
+
+Nothing else in the package is an extension point: there is no provider registry, no factory
+interface, and no way to intercept a call to an existing provider. Composition is DI ordering — register
+the `IBlobService` you want resolved last.
+
 ### Save-time validation
 
 `BlobService.ValidateFile` runs on every `SaveAsync` call and throws `FileLoadException` (`"File name is invalid."`,
@@ -119,13 +153,18 @@ default — there is none).
 
 ## 🧱 Where it fits
 
+Every `SaveAsync` runs the same two shared steps before a provider ever touches its SDK, and only the
+last step differs per backend:
+
+![Workflow diagram: SaveAsync runs ValidateFile and GetBlobLocation in the shared BlobService base class, throws FileLoadException when a BlobServiceOptions rule is violated, and otherwise hands the normalized name to the provider override, which writes to its backing store and returns the location.](../diagrams/svc-blobstorage-abstractions-save-path.svg)
+
 - **Provider adapters** — [AwsS3](./DKNet.Svc.BlobStorage.AwsS3.md),
   [AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage.md), and [Local](./DKNet.Svc.BlobStorage.Local.md) derive from the
   `BlobService` base class in this package and are the only components that reference a storage SDK.
 - **`DKNet.EfCore.Events`** — raise a domain event after `SaveAsync` returns the stored location so a handler can
   attach it to an aggregate.
-- **`DKNet.EfCore.Repos`** — store the returned location string as a value on your entity; the repository layer never
-  needs to know which blob provider is in use.
+- **`DKNet.EfCore.Specifications`** — store the returned location string as a value on your entity; `IRepositorySpec`
+  never needs to know which blob provider is in use.
 - **`DKNet.Fw.Extensions`** — general-purpose extensions used incidentally by the storage adapters; no hard dependency
   from your own code.
 

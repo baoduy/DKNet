@@ -14,7 +14,7 @@ protecting `POST`/`PUT`/`PATCH` handlers from network retries, double-clicks, an
   (`CachedResult`) or an explicit `409 Conflict` (`ConflictResponse`, the default).
 - **Pluggable storage** – The filter talks to an `IIdempotencyKeyStore` abstraction. Ship with the built-in
   distributed-cache store, or swap in an atomic store from the ecosystem (see
-  [Choosing a store](#️-choosing-a-store)).
+  [Choosing a store](#-choosing-a-store)).
 - **Minimal API-native** – A single `.RequiredIdempotentKey()` call on a `RouteHandlerBuilder` is all that's needed
   to protect an endpoint.
 
@@ -29,13 +29,14 @@ dotnet add package DKNet.AspCore.Idempotency
 
 ```csharp
 using DKNet.AspCore.Idempotency;
-using DKNet.AspCore.Idempotency.Store;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// The built-in store needs a distributed cache backend (in-memory here; swap for Redis/SQL Server in production).
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>();
+// AddIdempotentKey<TStore>() only accepts a store you can name. For a ready-made, atomic store, register one of
+// the provider packages below instead (AddIdempotencyWithMsSqlStore/NpgsqlStore/RedisStore) — each one calls
+// AddIdempotentKey<TStore> for you with its own internal store type. MyIdempotencyKeyStore here is a public
+// IIdempotencyKeyStore you write yourself (see "Pluggable store abstraction" below for the full contract).
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>();
 
 var app = builder.Build();
 
@@ -47,6 +48,20 @@ await app.RunAsync();
 
 Callers now must send an `X-Idempotency-Key` header on `POST /orders`. A retry with the same header value gets a
 `409 Conflict` (default) instead of creating a second order.
+
+> **Every shipped store type is `internal`.** `IdempotencyDistributedCacheStore` here, and
+> `IdempotencySqlServerStore`/`IdempotencyPostgresStore`/`IdempotencyRedisStore` in the sibling packages, are all
+> internal implementation details — this package exposes no public way to select any of them directly.
+> `AddIdempotentKey<TStore>()` can only name a store *you* declare (`TStore` must be accessible at your call site);
+> to use a shipped one, call its package's own `AddIdempotencyWithXxxStore(...)` extension instead, which registers
+> the internal store type for you. There used to be a non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)`
+> overload that defaulted to the built-in `IdempotencyDistributedCacheStore` — **it has been removed.**
+> `IdempotencyDistributedCacheStore` itself still exists and still works exactly as before, but with the overload
+> gone there is no public entry point left to select it: implement your own `IIdempotencyKeyStore` wrapping
+> `IDistributedCache` if you want that same trade-off (single-instance/dev, not atomic under concurrency), or prefer
+> one of the atomic store packages below. Every `AddIdempotentKey<TStore>()` sample on this page therefore uses
+> `MyIdempotencyKeyStore`, a public `IIdempotencyKeyStore` of your own (see
+> [Pluggable store abstraction](#pluggable-store-abstraction)).
 
 ## 🧩 Features
 
@@ -90,7 +105,7 @@ app.MapPost("/orders", CreateOrder)
 `IdempotencyOptions.ConflictHandling` controls what a client sees when the same composite key is reused:
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     // Default: tell the client explicitly that this was already processed.
     options.ConflictHandling = IdempotentConflictHandling.ConflictResponse; // 409 Conflict
@@ -110,7 +125,7 @@ or in `AdditionalCacheableStatusCodes` are cached; everything else (validation e
 unrecorded so a genuinely failed attempt can be retried as a new request:
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     // Also remember 201-with-redirect-style responses outside the 2xx window, e.g. 226.
     options.AdditionalCacheableStatusCodes.Add(226);
@@ -128,7 +143,7 @@ Two different callers sending the identical idempotency key to the identical end
 4. Otherwise, an empty scope (all anonymous callers share one scope for that key/endpoint/method).
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     options.ScopeHmacSecret = builder.Configuration["Idempotency:HmacSecret"];
     options.IncludeClientIpInScope = true; // last-resort fallback for fully anonymous callers
@@ -143,7 +158,7 @@ Supply your own resolver to bypass the default chain entirely — useful for mul
 key, or any other principal your app already tracks:
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     options.KeyScopeResolver = ctx => ctx.Request.Headers["X-Tenant-Id"].FirstOrDefault();
 });
@@ -163,15 +178,77 @@ public interface IIdempotencyKeyStore
 }
 ```
 
-`IsKeyProcessedAsync` must atomically check-and-reserve: a call that returns `(false, null)` has to durably record the
-key as in-flight so that no concurrent caller for the identical key can also observe `(false, null)`. This package
-ships one implementation, `IdempotencyDistributedCacheStore`, and the sibling packages below ship atomic alternatives
-— see [Choosing a store](#️-choosing-a-store).
+This is the package's one real extension point, and it carries a contract the compiler cannot enforce. A custom
+store must guarantee all four of the following:
+
+1. **Atomic check-and-reserve.** `IsKeyProcessedAsync` returning `(false, null)` must have *already durably recorded*
+   that this composite key is in flight, in the same indivisible operation that observed it absent. A unique index
+   insert, a Redis `SET NX`, or a compare-and-swap all qualify; a `Get` followed by a separate `Set` does not.
+   **If you get this wrong:** two concurrent requests both observe `(false, null)`, both run the handler, and the
+   side effect the filter exists to protect happens twice.
+2. **An in-flight reservation placeholder.** The reservation written in step 1 must be distinguishable from a
+   completed response, so that a concurrent duplicate is answered `(true, null)` — "already in flight, no cached
+   response yet" — rather than `(true, someResponse)`. Every shipped store uses HTTP `102 Processing` as that
+   sentinel. **If you get this wrong:** the filter's `CachedResult` strategy replays an empty or half-written body
+   as though it were the original response.
+3. **A bounded reservation lifetime.** The placeholder must expire after `IdempotencyOptions.InFlightReservationTimeout`
+   (default 30 seconds), and an expired one must be reclaimable — again atomically. **If you get this wrong:** a
+   handler that crashes mid-flight blocks that key permanently, and the caller can never retry.
+4. **Distinct keys stay distinct.** `IdempotentKeyInfo.CompositeKey` is `Scope:Method:Endpoint:Key` and is free-form
+   caller input. Hash it (every shipped store uses SHA-256) rather than escaping or truncating it, so two
+   structurally different composite keys can never collapse onto one storage key.
+
+`MarkKeyAsProcessedAsync` has no atomicity requirement — the filter calls it once, from the caller that won the
+reservation, and it should overwrite that caller's placeholder with the completed response.
 
 ```csharp
-// Register your own store implementation instead of the built-in one:
-builder.Services.AddIdempotentKey<MyCustomIdempotencyKeyStore>();
+using DKNet.AspCore.Idempotency.Filtering;
+using DKNet.AspCore.Idempotency.Store;
+
+public sealed class MyIdempotencyKeyStore : IIdempotencyKeyStore
+{
+    public ValueTask<(bool processed, CachedResponse? response)> IsKeyProcessedAsync(IdempotentKeyInfo keyInfo)
+    {
+        // Atomically: if no live entry exists for keyInfo.CompositeKey, write a reservation and return
+        // (false, null); otherwise return (true, null) while it is a reservation, or (true, response)
+        // once it holds a completed response.
+        throw new NotImplementedException();
+    }
+
+    public ValueTask MarkKeyAsProcessedAsync(IdempotentKeyInfo keyInfo, CachedResponse cachedResponse)
+    {
+        // Overwrite this caller's reservation with cachedResponse, expiring after IdempotencyOptions.Expiration.
+        throw new NotImplementedException();
+    }
+}
+
+// Register it in place of the built-in store:
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>();
 ```
+
+`CachedResponse` is what a store round-trips. Every member is `required` on construction:
+
+| Member | Type | Meaning |
+|---|---|---|
+| `StatusCode` | `int` | The original response's status code, replayed verbatim. `102` is reserved for the in-flight sentinel. |
+| `Body` | `string?` | The serialized response body, or `null` for a body-less response. |
+| `ContentType` | `string` | The original content type; the filter falls back to `"application/json"` when the response did not set one. |
+| `CreatedAt` | `DateTimeOffset` | When the entry was written (UTC). |
+| `ExpiresAt` | `DateTimeOffset?` | When it stops being valid, or `null` for no expiry. |
+| `IsExpired` | `bool` (derived) | `true` once a non-null `ExpiresAt` has passed. Stores are expected to honour it on read. |
+
+`IdempotentKeyInfo` is what a store receives. `Endpoint` and `Method` are `required`; both are already
+upper-invariant when the filter builds one:
+
+| Member | Type | Meaning |
+|---|---|---|
+| `IdempotentKey` | `string?` | The raw header value, or `null` when the header was absent. |
+| `Endpoint` | `string` | Route template (`RoutePattern.RawText`, then `IRouteDiagnosticsMetadata.Route`, then the request path), upper-invariant. |
+| `Method` | `string` | HTTP method, upper-invariant. |
+| `Scope` | `string` | Caller scope; `string.Empty` for an unscoped anonymous caller. |
+| `CompositeKey` | `string` (derived) | `$"{Scope}:{Method}:{Endpoint}:{IdempotentKey}"` — the value to hash and store under. |
+| `SafeKey` | `string` (derived) | `IdempotentKey` with CR/LF/U+2028/U+2029 and every other control character stripped. **Logging and display only** — never use it as a storage key. |
+| `IsValid(IdempotencyOptions)` | `IResultBase` | The presence/length/pattern check the filter runs before touching the store. |
 
 ### In-flight reservation window
 
@@ -181,7 +258,7 @@ as new. `InFlightReservationTimeout` (default 30 seconds) bounds how long that r
 or hung handler stops blocking retries of the same key:
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     options.InFlightReservationTimeout = TimeSpan.FromSeconds(10); // fail fast for quick handlers
 });
@@ -194,7 +271,7 @@ builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
 as brand-new again:
 
 ```csharp
-builder.Services.AddIdempotentKey<IdempotencyDistributedCacheStore>(options =>
+builder.Services.AddIdempotentKey<MyIdempotencyKeyStore>(options =>
 {
     options.CachePrefix = "checkout-idem";
     options.Expiration = TimeSpan.FromHours(24);
@@ -222,14 +299,15 @@ All options live on `IdempotencyOptions`, configured via the `Action<Idempotency
 | `ScopeHmacSecret` | `null` | Enables the `Authorization`-header HMAC fallback in the default scope chain. |
 | `IncludeClientIpInScope` | `false` | Enables the client-IP fallback in the default scope chain. |
 
-`AddIdempotentKey<TStore>()` validates these eagerly at registration time (empty header key, empty cache prefix,
-non-positive expiration, an out-of-range status window, etc. all throw `ArgumentException` immediately rather than
-failing later at request time).
+`AddIdempotentKey<TStore>()` registers `IdempotencyOptions` through the options pattern with ten `.Validate(...)`
+rules (empty header key, empty cache prefix, non-positive expiration, an out-of-range status window, a null
+`JsonSerializerOptions`, etc.) plus `.ValidateOnStart()`. That means misconfiguration no longer throws at
+registration time — it throws `OptionsValidationException` when the host **starts** (before it begins serving
+requests), which is still well before any request can observe a bad value, just later in the startup sequence than
+before.
 
 ## 🧱 Where it fits
 
-- **`DKNet.Fw.Extensions`** – the endpoint filter uses its reflection helper to unwrap `TypedResults`-style results
-  before serializing them for caching.
 - **`FluentResults`** – `IdempotentKeyInfo.IsValid` returns an `IResultBase`, following the same result pattern used
   across DKNet.
 - Pairs naturally with **`DKNet.AspCore.Tasks`** (start-up jobs) and other ASP.NET Core hardening utilities in the
@@ -242,20 +320,27 @@ This package owns the endpoint filter, options, and the store *contract* (`IIdem
 one store implementation — `IdempotencyDistributedCacheStore`, built on `IDistributedCache` — and four sibling
 packages provide alternatives with stronger concurrency guarantees:
 
-| Store | Package | Atomicity | Infra cost | Best for |
-|---|---|---|---|---|
-| Distributed cache (built-in) | `DKNet.AspCore.Idempotency` | Narrows, does not eliminate, the check-then-act race | None beyond an `IDistributedCache` you may already have | Single-instance apps, local dev, low-traffic endpoints |
-| Relational (base) | [`DKNet.AspCore.Idempotency.Relational`](DKNet.AspCore.Idempotency.Relational.md) | Atomic via a unique index / insert-or-query pattern | Shared EF Core building blocks for the two SQL stores below | Base for teams building a custom relational store |
-| SQL Server | [`DKNet.AspCore.Idempotency.MsSqlStore`](DKNet.AspCore.Idempotency.MsSqlStore.md) | Atomic (unique index) | A migrated table in an existing SQL Server database | Apps already running SQL Server that want an auditable, queryable idempotency table |
-| PostgreSQL | [`DKNet.AspCore.Idempotency.NpgsqlStore`](DKNet.AspCore.Idempotency.NpgsqlStore.md) | Atomic (unique index) | A migrated table in an existing PostgreSQL database | Apps already running PostgreSQL, same trade-offs as the SQL Server store |
-| Redis | [`DKNet.AspCore.Idempotency.RedisStore`](DKNet.AspCore.Idempotency.RedisStore.md) | Atomic (native Redis primitives, e.g. `SET NX`) | A Redis instance/cluster | High-throughput APIs, multi-instance deployments, when you don't want schema migrations |
+| Store | Package | How you select it | Atomicity | Infra cost | Best for |
+|---|---|---|---|---|---|
+| Distributed cache (built-in) | `DKNet.AspCore.Idempotency` | Not selectable — `IdempotencyDistributedCacheStore` is `internal` and this package no longer exposes any public registration for it | Narrows, does not eliminate, the check-then-act race | None beyond an `IDistributedCache` you may already have | Single-instance apps, local dev, low-traffic endpoints — implement your own thin `IIdempotencyKeyStore` over `IDistributedCache` to get this trade-off |
+| Relational (base) | [`DKNet.AspCore.Idempotency.Relational`](DKNet.AspCore.Idempotency.Relational.md) | Not selectable — every type in it is `internal` and its `InternalsVisibleTo` list is closed | Atomic via a unique index / insert-or-query pattern | Shared EF Core building blocks for the two SQL stores below | Nothing to register; read it only to add a *new* relational provider inside this repo |
+| SQL Server | [`DKNet.AspCore.Idempotency.MsSqlStore`](DKNet.AspCore.Idempotency.MsSqlStore.md) | `AddIdempotencyWithMsSqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing SQL Server database | Apps already running SQL Server that want an auditable, queryable idempotency table |
+| PostgreSQL | [`DKNet.AspCore.Idempotency.NpgsqlStore`](DKNet.AspCore.Idempotency.NpgsqlStore.md) | `AddIdempotencyWithNpgsqlStore(connectionString, options)` | Atomic (unique index) | A migrated table in an existing PostgreSQL database | Apps already running PostgreSQL, same trade-offs as the SQL Server store |
+| Redis | [`DKNet.AspCore.Idempotency.RedisStore`](DKNet.AspCore.Idempotency.RedisStore.md) | `AddIdempotencyWithRedisStore(connectionString, options)` | Atomic (native Redis primitives, e.g. `SET NX`) | A Redis instance/cluster | High-throughput APIs, multi-instance deployments, when you don't want schema migrations |
+| Your own | — | `AddIdempotentKey<TStore>(options)` | Whatever you implement — see [Pluggable store abstraction](#pluggable-store-abstraction) | Yours | A backing store none of the above covers |
 
 Guidance:
 
-- **Prefer the built-in distributed-cache store only for single-instance or development scenarios.** It logs a
-  startup warning to that effect. The `AddIdempotentKey<IdempotencyDistributedCacheStore>()` XML docs call out that
-  `IDistributedCache` has no atomic compare-and-set primitive — this store narrows the check-then-act race window
-  with a short-lived in-flight reservation but cannot close it the way a database unique index can.
+- **The built-in distributed-cache store is a single-instance/development trade-off, not something you can select
+  directly anymore.** It logs a startup warning to that effect
+  (`IdempotencyDistributedCacheStore is not atomic under concurrent load.`), and `IDistributedCache` has no atomic
+  compare-and-set primitive — it narrows the check-then-act race window with a short-lived in-flight reservation but
+  cannot close it the way a database unique index can. The type is `internal` and this package no longer exposes
+  any public entry point for it (the non-generic `AddIdempotentKey(...)` overload that used to default to it was
+  removed); reach for it only by writing your own equivalent `IIdempotencyKeyStore` over `IDistributedCache`.
+- **Do not plan on subclassing `DKNet.AspCore.Idempotency.Relational`.** Every type in it is `internal`, and its
+  `InternalsVisibleTo` list names only the two in-repo provider packages and their test projects. A store of your own
+  implements `IIdempotencyKeyStore` directly, the way the Redis store does.
 - **Pick a relational store (MsSql/Npgsql)** when the app already runs that relational database, you want the
   idempotency ledger to live alongside your business data (same backups, same transactional boundary tooling), or
   you want to query/audit processed keys with SQL. Concurrency correctness comes from a unique index plus an
@@ -291,10 +376,18 @@ The four store pages link back to this section instead of repeating the comparis
   replay.
 - **Minimal APIs only.** `RequiredIdempotentKey()` extends `RouteHandlerBuilder`, so it wires up through
   `app.MapPost(...)`/`MapPut(...)` etc. It is not something you attach to an MVC controller action via attributes.
-- **`AddIdempotentKey<TStore>()` is call-once-wins.** If it's called more than once (e.g. by two library extension
-  methods), the first call's options and store registration stick; later calls are no-ops.
-- **The non-generic `AddIdempotentKey(...)` overload is obsolete.** It defaulted to the built-in distributed-cache
-  store; use `AddIdempotentKey<IdempotencyDistributedCacheStore>()` (or an atomic store) explicitly instead.
+- **`AddIdempotentKey<TStore>()` is call-once-wins, config delegate included.** If it's called more than once (e.g.
+  by two library extension methods, or by an app calling it after a store package's own
+  `AddIdempotencyWithXxxStore(...)`), the first call's store registration sticks *and* only the first call's `config`
+  delegate ever runs — a second call's `config` is silently never invoked, not merged, not overridden. Validation
+  failures now surface via `OptionsValidationException` when the host starts (`ValidateOnStart()`), not at the
+  moment `AddIdempotentKey<TStore>()` runs.
+- **The non-generic `AddIdempotentKey(Action<IdempotencyOptions>?)` overload has been removed.** It used to default
+  to the built-in `IdempotencyDistributedCacheStore` when no store was named. There is no replacement overload —
+  every caller must now name a store type explicitly, either your own `IIdempotencyKeyStore` (`AddIdempotentKey<TStore>()`)
+  or a shipped provider package's own `AddIdempotencyWithXxxStore(...)` (which internally calls
+  `AddIdempotentKey<TStore>()` with its own internal store type). If you were relying on the old default, the closest
+  equivalent is now writing your own thin `IIdempotencyKeyStore` over `IDistributedCache`.
 - **Cache keys are hashed, not human-readable.** The built-in store's cache key is `CachePrefix` + a SHA-256 hex
   digest of the composite key — you cannot reconstruct the original key/scope/endpoint from the cache key alone;
   rely on structured logs (which log the raw composite key) if you need to trace a specific request.

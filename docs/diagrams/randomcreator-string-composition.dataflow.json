@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How RandomCreators fills a string and where each character comes from",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Quota fill order"
+        },
+        "security": {
+          "label": "Rejected argument, then shuffle"
+        },
+        "database": {
+          "label": "Returned value"
+        },
+        "default": {
+          "label": "Second quota, then letters"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      620
+    ]
+  },
+  "stages": [
+    {
+      "label": "Call"
+    },
+    {
+      "label": "Quota draws"
+    },
+    {
+      "label": "Fill"
+    },
+    {
+      "label": "Shuffle"
+    },
+    {
+      "label": "Result"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "type": "external",
+      "label": "NewString(...)",
+      "sublabel": "length defaults to 25",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "invalid",
+      "type": "security",
+      "label": "ArgumentException",
+      "sublabel": "quotas do not leave room",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "digits",
+      "type": "backend",
+      "label": "MinNumbers digits",
+      "sublabel": "pool 1234567890",
+      "stage": 1,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "symbols",
+      "type": "backend",
+      "label": "MinSpecials symbols",
+      "sublabel": "30-character pool",
+      "stage": 1,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "letters",
+      "type": "backend",
+      "label": "Letters fill the rest",
+      "sublabel": "a-z and A-Z only",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "shuffle",
+      "type": "security",
+      "label": "Shuffle",
+      "sublabel": "RandomNumberGenerator.Shuffle",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "char[] or string",
+      "sublabel": "NewChars or NewString",
+      "stage": 4,
+      "row": 1,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "call",
+      "to": "digits",
+      "label": "MinNumbers",
+      "variant": "emphasis"
+    },
+    {
+      "from": "call",
+      "to": "symbols",
+      "label": "MinSpecials",
+      "variant": "default"
+    },
+    {
+      "from": "call",
+      "to": "invalid",
+      "label": "reject",
+      "variant": "security",
+      "labelDy": 90
+    },
+    {
+      "from": "digits",
+      "to": "letters",
+      "label": "digits first",
+      "variant": "emphasis"
+    },
+    {
+      "from": "symbols",
+      "to": "letters",
+      "label": "then symbols",
+      "variant": "default"
+    },
+    {
+      "from": "letters",
+      "to": "shuffle",
+      "label": "buffer is full",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "shuffle",
+      "to": "result",
+      "label": "positions randomised",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Quotas are exact, not minimums",
+      "items": [
+        "MinNumbers and MinSpecials draw exactly that many characters",
+        "The letter pool never contributes digits or symbols, so the counts hold",
+        "Every draw and the final shuffle come from RandomNumberGenerator"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "What it will not do",
+      "items": [
+        "MinNumbers + MinSpecials must stay strictly below length",
+        "The character pools are fixed; there is no way to supply your own",
+        "There is no seed, so output is never reproducible"
+      ]
+    }
+  ]
+}

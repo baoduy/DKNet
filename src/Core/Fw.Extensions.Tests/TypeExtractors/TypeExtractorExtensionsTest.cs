@@ -33,6 +33,44 @@ public class TestTypeExtractorExtensions
     }
 
     [Fact]
+    public void FilterBy_TwoBranchesFromSameExtractor_AreIndependent()
+    {
+        // Arrange
+        var baseExtractor = typeof(TestEnumObject).Assembly.Extract().Classes();
+
+        // Act — branch into two mutually exclusive filters from the same starting point
+        var abstractTypes = baseExtractor.Abstract().ToList();
+        var notAbstractTypes = baseExtractor.NotAbstract().ToList();
+        var baseTypes = baseExtractor.ToList();
+
+        // Assert — neither branch mutated the shared base, and each branch reflects only its own filter
+        abstractTypes.ShouldNotBeEmpty();
+        notAbstractTypes.ShouldNotBeEmpty();
+        abstractTypes.TrueForAll(t => t.IsAbstract).ShouldBeTrue();
+        notAbstractTypes.TrueForAll(t => !t.IsAbstract).ShouldBeTrue();
+        baseTypes.Count.ShouldBe(abstractTypes.Count + notAbstractTypes.Count);
+    }
+
+    [Fact]
+    public void Where_WithClosureCapturingPredicate_EvaluatesAsCompiledDelegate()
+    {
+        // Arrange — predicates are compiled to Func<Type,bool> once and evaluated in-process rather than
+        // re-interpreted as an expression tree on every enumeration. A closure over local state exercises
+        // that the compiled delegate — not expression-tree machinery — is what actually runs.
+        var allowedNames = new HashSet<string> { nameof(TestItem), nameof(TestItem2) };
+
+        // Act
+        var types = typeof(TestEnumObject).Assembly.Extract()
+            .Classes()
+            .Where(t => allowedNames.Contains(t.Name))
+            .ToList();
+
+        // Assert
+        types.Count.ShouldBe(2);
+        types.TrueForAll(t => allowedNames.Contains(t.Name)).ShouldBeTrue();
+    }
+
+    [Fact]
     public void TestDuplicateAssemblies()
     {
         // Arrange

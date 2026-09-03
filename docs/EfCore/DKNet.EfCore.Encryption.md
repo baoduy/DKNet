@@ -23,7 +23,7 @@ Transparent, column-level encryption for EF Core `string` properties, applied at
 
 Do **not** reach for it when you need to filter, sort, or `LIKE`-search on the encrypted value in SQL — a random IV
 per write makes encrypted columns opaque to the database. See
-[Gotchas & limits](#️-gotchas--limits).
+[Gotchas & limits](#-gotchas--limits).
 
 ## 🚀 Quick Start
 
@@ -33,15 +33,15 @@ dotnet add package DKNet.EfCore.Encryption
 
 Three steps get a property encrypted end-to-end:
 
-**a) Supply a key.** Implement `IEncryptionKeyProvider` (or derive from the abstract `EncryptionKeyProvider` base, which just implements the interface abstractly — pick whichever base fits your DI style):
+**a) Supply a key.** Implement `IEncryptionKeyProvider`:
 
 ```csharp
-public sealed class AppEncryptionKeyProvider : EncryptionKeyProvider
+public sealed class AppEncryptionKeyProvider : IEncryptionKeyProvider
 {
     private readonly byte[] _key = Convert.FromBase64String(
         Environment.GetEnvironmentVariable("APP_ENCRYPTION_KEY")!); // 16, 24, or 32 bytes
 
-    public override byte[] GetKey(Type entityType) => _key;
+    public byte[] GetKey(Type entityType) => _key;
 }
 ```
 
@@ -139,21 +139,16 @@ public AesGcmColumnEncryptionProvider(byte[] key) // key.Length must be 16, 24, 
 - `Encrypt(string? plaintext)` — generates a random 12-byte IV per call, encrypts with AES-GCM, and returns Base64 of `IV (12 bytes) + Tag (16 bytes) + ciphertext`. Null/empty input passes through unchanged (never encrypted).
 - `Decrypt(string? ciphertext)` — reverses the packing; throws `ArgumentException` if the Base64 payload is shorter than `IV + Tag` (invalid format), or `InvalidOperationException` if AES-GCM authentication fails (wrong key or corrupted/tampered data).
 
-Because the IV is random per call, encrypting the same plaintext twice produces different ciphertext — this is by design (semantic security) but has query implications, see [Gotchas](#️-gotchas--limits).
+Because the IV is random per call, encrypting the same plaintext twice produces different ciphertext — this is by design (semantic security) but has query implications, see [Gotchas](#-gotchas--limits).
 
-### `IEncryptionKeyProvider` / `EncryptionKeyProvider` (`DKNet.EfCore.Encryption.Encryption`) — where key material comes from
+### `IEncryptionKeyProvider` (`DKNet.EfCore.Encryption.Encryption`) — where key material comes from
 ```csharp
 public interface IEncryptionKeyProvider
 {
     byte[] GetKey(Type entityType);
 }
-
-public abstract class EncryptionKeyProvider : IEncryptionKeyProvider
-{
-    public abstract byte[] GetKey(Type entityType);
-}
 ```
-The package supplies **no concrete key source** — no config binding, no Key Vault client, nothing that reads a connection string or secret store for you. You always write the implementation and decide where the bytes come from (environment variable, `IConfiguration`, Azure Key Vault SDK, a secrets file, etc.). `EncryptionKeyProvider` is purely a convenience base (implements the interface, still abstract) — implementing `IEncryptionKeyProvider` directly is equivalent.
+The package supplies **no concrete key source** — no config binding, no Key Vault client, nothing that reads a connection string or secret store for you. You always write the implementation and decide where the bytes come from (environment variable, `IConfiguration`, Azure Key Vault SDK, a secrets file, etc.), by implementing this interface directly. There is no abstract base class to derive from.
 
 `GetKey` receives the **entity's CLR type** (the property's `DeclaringType`), not the property name — so you can vary keys per entity type, but every `[Encrypted]` property on the same entity shares one key.
 
@@ -196,6 +191,11 @@ Behaviour worth knowing beyond the table:
 - **Nullable handling**: both `Encrypt` and `Decrypt` short-circuit on `null`/empty string and return the input unchanged — empty/null values are never turned into ciphertext.
 
 ## 🧱 Where it fits
+
+The whole package is one value converter wired up at model-build time — which is exactly why a key change needs a
+model rebuild and why the database never sees plaintext:
+
+![Data-flow diagram of column encryption: at model build, UseColumnEncryption attaches a ColumnEncryptionConverter to each [Encrypted] string property, rejecting key and foreign-key columns outright. The converter calls the AES-GCM provider, keyed by IEncryptionKeyProvider.GetKey for that entity type, and the database column stores Base64 of the IV, tag and ciphertext.](../diagrams/efcore-encryption-column-path.svg)
 
 - Built directly on EF Core's own `Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<TModel,TProvider>` — the package's `.csproj` has exactly one `PackageReference`, `Microsoft.EntityFrameworkCore`. It does **not** depend on `DKNet.EfCore.Abstractions`, `DKNet.EfCore.Extensions`, or `DKNet.EfCore.Hooks`.
 - It is a **model-build-time** mechanism (a `ValueConverter` applied in `OnModelCreating`), not a `SaveChanges` interceptor/hook — it does not participate in the `DKNet.EfCore.Hooks` pipeline and has no interaction with `IHook`/`SaveChangesAsync` interception.

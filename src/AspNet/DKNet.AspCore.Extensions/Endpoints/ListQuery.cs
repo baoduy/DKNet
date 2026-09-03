@@ -5,6 +5,7 @@
 // Description: Validates the filter/ordering parameters of the generic list endpoint into a specification input.
 
 using System.Collections.Concurrent;
+using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Reflection;
 using DKNet.EfCore.Specifications.Dynamics;
@@ -83,6 +84,14 @@ internal static class ListQuery
 
     /// <summary>Property names per type, so a case-insensitive lookup cannot throw on case-only overloads.</summary>
     private static readonly ConcurrentDictionary<Type, HashSet<string>> PropertyNames = new();
+
+    /// <summary>
+    ///     Free-text search predicate templates, cached per <c>(TModel, TEntity)</c> pair so the Dynamic LINQ
+    ///     parse of <see cref="ModelSearch.Clauses{TModel,TEntity}" /> runs once ever instead of once per
+    ///     request (see performance finding P5). <see langword="null" /> caches a model with no searchable
+    ///     field.
+    /// </summary>
+    private static readonly ConcurrentDictionary<(Type Model, Type Entity), SearchTemplate?> SearchTemplates = new();
 
     #endregion
 
@@ -214,13 +223,44 @@ internal static class ListQuery
         where TEntity : class
         where TModel : class
     {
+        var template = SearchTemplates.GetOrAdd(
+            (typeof(TModel), typeof(TEntity)),
+            static _ => BuildSearchTemplate<TEntity, TModel>());
+        if (template is null) return _ => false;
+
+        // A fresh box per call, not a mutation of the cached template's placeholder: concurrent requests must
+        // never race over the same mutable value. Swapping the constant node is cheap tree work, not a parse.
+        var box = new SearchBox { Value = search };
+        var swapped = new SearchBoxSwap(template.Placeholder, box).Visit(template.Expression);
+        return (Expression<Func<TEntity, bool>>)swapped;
+    }
+
+    /// <summary>
+    ///     Parses <typeparamref name="TModel" />'s search clauses into a single predicate, once per
+    ///     <c>(TModel, TEntity)</c> pair. The clause text always reads its comparison value through
+    ///     <see cref="SearchBox.Value" /> on a placeholder instance rather than a literal, so the parsed
+    ///     <see cref="ConstantExpression" /> node can be swapped for a new box on every request instead of
+    ///     re-parsed — and so EF Core reads the value through a member access, which it binds as a query
+    ///     parameter instead of inlining as a SQL literal.
+    /// </summary>
+    /// <typeparam name="TEntity">Entity type the search applies to.</typeparam>
+    /// <typeparam name="TModel">Projection model whose text fields are searched.</typeparam>
+    /// <returns>The parsed template, or <see langword="null" /> when the model has no searchable field.</returns>
+    private static SearchTemplate? BuildSearchTemplate<TEntity, TModel>()
+        where TEntity : class
+        where TModel : class
+    {
         var clauses = ModelSearch.Clauses<TModel, TEntity>();
-        if (clauses.Length == 0) return _ => false;
+        if (clauses.Length == 0) return null;
 
-        var predicate = PredicateBuilder.New<TEntity>();
-        foreach (var clause in clauses) predicate = predicate.DynamicOr(clause, search);
+        var combined = string.Join(
+            " || ",
+            clauses.Select(c => $"({c.Replace("@0", "@0.Value", StringComparison.Ordinal)})"));
 
-        return predicate;
+        var placeholder = new SearchBox();
+        var expression = DynamicExpressionParser.ParseLambda<TEntity, bool>(
+            ParsingConfig.Default, false, combined, placeholder);
+        return new SearchTemplate(expression, placeholder);
     }
 
     /// <summary>Determines whether <typeparamref name="T" /> declares a public instance property by name.</summary>
@@ -237,4 +277,30 @@ internal static class ListQuery
             .Contains(name);
 
     #endregion
+}
+
+/// <summary>A free-text search predicate, parsed once, plus the placeholder its value is read through.</summary>
+/// <param name="Expression">The parsed predicate; its comparisons read through <paramref name="Placeholder" />.</param>
+/// <param name="Placeholder">The <see cref="SearchBox" /> instance the parse embedded as a constant.</param>
+internal sealed record SearchTemplate(LambdaExpression Expression, SearchBox Placeholder);
+
+/// <summary>
+///     Mutable holder for a free-text search value. A cached predicate template reads the value through a
+///     member access on an instance of this class rather than a literal, so the value can be swapped per
+///     request without re-parsing, and so EF Core binds it as a query parameter instead of inlining it.
+/// </summary>
+internal sealed class SearchBox
+{
+    /// <summary>The search text the predicate compares against.</summary>
+    public string Value { get; init; } = string.Empty;
+}
+
+/// <summary>Replaces every reference to one <see cref="SearchBox" /> in an expression tree with another.</summary>
+/// <param name="from">The placeholder instance to replace.</param>
+/// <param name="to">The instance to replace it with.</param>
+internal sealed class SearchBoxSwap(SearchBox from, SearchBox to) : ExpressionVisitor
+{
+    /// <inheritdoc />
+    protected override Expression VisitConstant(ConstantExpression node) =>
+        ReferenceEquals(node.Value, from) ? Expression.Constant(to) : node;
 }

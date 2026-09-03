@@ -67,8 +67,8 @@ public sealed class ActiveExpensiveProductsSpec : Specification<Product>
     {
         WithFilter(p => p.IsActive && p.Price >= minPrice);   // FilterQuery
         AddInclude(p => p.Category);                          // IncludeQueries
-        AddOrderByDescending(p => p.Price);                    // OrderByDescendingQueries
-        AddOrderBy(p => p.Name);                               // OrderByQueries (declared-sequence: applied after)
+        AddOrderByDescending(p => p.Price);                    // OrderByClauses, declared-sequence
+        AddOrderBy(p => p.Name);                               // OrderByClauses, applied after Price
     }
 }
 ```
@@ -80,8 +80,11 @@ The public surface a repository (or your own `IQueryable` code, via `ApplySpecs`
 | `FilterQuery` | `Expression<Func<TEntity, bool>>?` — set once via `WithFilter`. |
 | `IncludeQueries` | Single-level `Expression<Func<TEntity, object?>>` includes added via `AddInclude(Expression<...>)`, e.g. `AddInclude(p => p.Category)`. Supports one level of filtered include, e.g. `AddInclude(p => p.OrderItems.Where(i => i.Quantity > 0))` — see the tracking caveat below. |
 | `IncludeBuilders` | `Func<IQueryable<TEntity>, IQueryable<TEntity>>` chains added via `AddInclude(Func<...>)`, for `Include(...).ThenInclude(...)` chains or per-navigation `Where`/`OrderBy`/`Skip`/`Take`. |
-| `OrderByQueries` / `OrderByDescendingQueries` | Legacy segregated ordering lists (ascending-first, then descending) — kept for any external `ISpecification<T>` implementation that doesn't use the declared-sequence path below. |
 | `IsIgnoreQueryFilters` | Set via `IgnoreQueryFilters()` — see "Configuration options and defaults". |
+
+Ordering is not exposed on `ISpecification<TEntity>`. Only `Specification<TEntity>` (the abstract base every
+specification derives from) carries it, as an `internal` declared-sequence list — foreign `ISpecification<TEntity>`
+implementations that don't derive from `Specification<TEntity>` are not supported and contribute no ordering.
 
 Additional protected builders on `Specification<TEntity>`:
 
@@ -89,11 +92,9 @@ Additional protected builders on `Specification<TEntity>`:
   PascalCase the same way the dynamic predicate builder does — see *Dynamic Predicate Builder* below), for when the sort column itself is
   runtime-supplied (e.g. an `?orderBy=` query parameter). Builds an `Expression<Func<TEntity, object>>` via
   reflection (`Expression.PropertyOrField`) and routes it through the same ordering path as the expression overload.
-- `AddOrderBy` / `AddOrderByDescending` (expression overloads) record ordering **in declaration order** internally
-  (`OrderByClauses`), so mixed-direction ordering (`OrderByDescending(Price).ThenBy(Name)`) applies exactly as
-  declared — not "all ascending, then all descending" — when the specification is a `Specification<TEntity>`.
-  (A foreign `ISpecification<TEntity>` implementation that only populates the legacy segregated lists still gets the
-  old two-phase behavior.)
+- `AddOrderBy` / `AddOrderByDescending` (expression overloads) record ordering **in declaration order**, so
+  mixed-direction ordering (`OrderByDescending(Price).ThenBy(Name)`) applies exactly as declared — not "all
+  ascending, then all descending".
 - `AsNoTracking()` — marks the specification's query read-only; `ApplySpecs` calls `.AsNoTracking()` on the
   `IQueryable` when this is set.
 - `Skip(int count)` / `Take(int count)` — declare an offset window; both throw `ArgumentOutOfRangeException` for
@@ -126,8 +127,8 @@ public sealed class ProductService(IRepositorySpec repo)
 }
 ```
 
-Core interface members: `AddAsync`/`AddRangeAsync`, `Delete`/`DeleteRange` (`DeleteRange` is `[Obsolete]` — prefer
-`BulkDeleteAsync`), `BulkDeleteAsync<TEntity>(predicate, ct)` (server-side `ExecuteDeleteAsync`), `Entry<TEntity>`,
+Core interface members: `AddAsync`/`AddRangeAsync`, `Delete`, `BulkDeleteAsync<TEntity>(predicate, ct)`
+(server-side `ExecuteDeleteAsync` — the replacement for the removed `DeleteRange`), `Entry<TEntity>`,
 `Query<TEntity>(spec)` / `Query<TEntity, TModel>(spec)`, `SaveChangesAsync`, `UpdateAsync`/`UpdateRangeAsync`, and
 `BeginTransactionAsync`.
 
@@ -141,10 +142,10 @@ implemented as extension members on `IRepositorySpec`:
 | `FirstAsync<TEntity>(spec, ct)` | `Task<TEntity>` (throws if empty) |
 | `FirstOrDefaultAsync<TEntity>(spec, ct)` | `Task<TEntity?>` |
 | `FirstAsync<TEntity, TModel>` / `FirstOrDefaultAsync<TEntity, TModel>(spec, ct)` | projected model (see *`ModelSpecification<TEntity, TModel>` — projections*) |
-| `ToListAsync<TEntity>(spec, ct)` / `ToListAsync<TEntity, TModel>(spec, ct)` | `Task<IList<T>>` |
+| `ToListAsync<TEntity>(spec, ct)` / `ToListAsync<TEntity, TModel>(spec, ct)` | `Task<List<T>>` |
 | `ToPagedListAsync<TEntity>(spec, pageNumber, pageSize, ct)` / `<TEntity, TModel>` overload | `Task<IPagedList<T>>` (X.PagedList) |
 | `ToPageEnumerable<TEntity>(spec)` / `<TEntity, TModel>` overload | `IAsyncEnumerable<T>`, internally paged (see *Keyset (cursor) pagination and streaming enumeration*) |
-| `ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)` / two-key overload | `Task<IList<TEntity>>` (see *Keyset (cursor) pagination and streaming enumeration*) |
+| `ToKeysetPageAsync<TEntity, TKey>(spec, keySelector, cursor, pageSize, ct)` / two-key overload | `Task<List<TEntity>>` (see *Keyset (cursor) pagination and streaming enumeration*) |
 
 `repo.Query<TEntity>(spec)` and `Query<TEntity, TModel>(spec)` also return the raw `IQueryable<T>` — call
 `.ToQueryString()` on it to inspect generated SQL, the pattern used throughout the test suite.
@@ -238,7 +239,7 @@ public sealed class ActiveProductSummariesSpec : ModelSpecification<Product, Pro
     }
 }
 
-IList<ProductSummaryDto> summaries =
+List<ProductSummaryDto> summaries =
     await repo.ToListAsync<Product, ProductSummaryDto>(new ActiveProductSummariesSpec(), ct);
 ```
 
@@ -336,6 +337,11 @@ The same points in full:
 
 ## 🧱 Where it fits
 
+A specification is inert data until `ApplySpecs` folds it onto an `IQueryable`, and it does that in a fixed order —
+filters, then includes, then ordering, then the tracking/window flags:
+
+![Data-flow diagram of ApplySpecs: the specification is applied to the queryable as IgnoreQueryFilters and Where, then Include and ThenInclude chains, then OrderBy and ThenBy in declaration sequence, and finally AsNoTracking, Skip and Take before EF Core executes the query.](../diagrams/efcore-specifications-query-composition.svg)
+
 - **Replaces `DKNet.EfCore.Repos`.** `IRepositorySpec` is the direct successor to `IRepository<T>` /
   `IReadRepository<T>` / `IWriteRepository<T>` — see
   [`Migrating-Repos-To-Specifications.md`](./Migrating-Repos-To-Specifications.md) for the full call-site mapping and
@@ -392,10 +398,9 @@ The same points in full:
 - [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – owns `GlobalQueryFilter`, the mechanism
   `IgnoreQueryFilters()` interacts with, plus the concurrency-handling save extension `RepositorySpec` calls. Reach
   for it to register a global filter or configure the model.
-- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping from the retired
-  repository interfaces onto `IRepositorySpec`. Reach for it when converting existing code.
-- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) – the retired predecessor. Reach for it only to understand behaviour
-  code you still maintain depends on.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping from the removed
+  repository interfaces onto `IRepositorySpec`. Reach for it when converting existing code, and for the record of what
+  `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` used to offer — those packages no longer ship.
 - [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – generates the DTO types
   `ModelSpecification<TEntity, TModel>` projects onto. Reach for it so the projection target does not have to be
   hand-maintained.

@@ -2,16 +2,16 @@
 
 ## Context First
 Before making code changes, load project context in this order:
-1. `src/memory-bank/README.md`
-2. `src/memory-bank/activeContext.md`
-3. `src/memory-bank/copilot-quick-reference.md`
-4. `src/memory-bank/systemPatterns.md`
-5. `src/memory-bank/copilot-rules.md`
+1. `CLAUDE.md` — repo map, architecture, conventions, pitfalls (authoritative)
+2. `src/AGENTS.md` — coding, testing and PR conventions
+3. `docs/<Area>/<Package>.md` — the reference page for each package you touch
+   (`Core/`, `EfCore/`, `AspNetCore/`, `Services/`, `Messaging/`, `Aspire/`)
+4. `docs/<Area>/README.md` — index of the packages in that area
 
 ## Architecture
 - DKNet is a `.NET 10` library suite for enterprise API development using **DDD** and **Onion Architecture**.
 - Keep domain behavior in domain types (aggregate roots, entities, value objects); keep infrastructure concerns in EF Core, messaging, and service packages.
-- Prefer Specification + Repository patterns for query composition and reuse.
+- Prefer Specifications (`DKNet.EfCore.Specifications` + `AddSpecRepo<TDbContext>()`) for query composition and reuse. `DKNet.EfCore.Repos`/`Repos.Abstractions` have been removed — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - For dynamic predicates, compose with LinqKit and use `.AsExpandable()` before `.Where()`.
 - Keep boundaries clear across `Core`, `EfCore`, `Services`, `SlimBus`, and `AspNet` modules.
 
@@ -47,6 +47,7 @@ dotnet pack DKNet.FW.sln --configuration Release
 ## Key References
 - Architecture and DDD: `docs/Architecture.md`
 - Contribution workflow and commands: `docs/Contributing.md`
-- Testing strategy: `TESTING_STRATEGY.md`, `src/coverage.runsettings`
+- Testing strategy: `docs/Testing-Strategy.md`, `src/coverage.runsettings`
 - Build/analyzer settings: `src/Directory.Build.props`, `src/Directory.Packages.props`, `src/global.json`
-- Detailed project guidance: `src/memory-bank/`
+- Per-package reference: `docs/<Area>/<Package>.md`
+- Source generators (`[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`, `[GenerateDto]`): `docs/Messaging/DKNet.SlimBus.Generators.md`, `docs/EfCore/DKNet.EfCore.DtoGenerator.md` — never hand-write a type a generator emits

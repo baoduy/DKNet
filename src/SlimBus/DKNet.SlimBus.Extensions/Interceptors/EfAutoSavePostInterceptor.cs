@@ -14,6 +14,16 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
     ILogger<EfAutoSavePostInterceptor<TRequest, TResponse>> logger)
     : IRequestHandlerInterceptor<TRequest, TResponse>, IInterceptorWithOrder
 {
+    #region Fields
+
+    private static readonly bool IsWrite =
+        typeof(Fluents.Requests.INoResponse).IsAssignableFrom(typeof(TRequest)) ||
+        typeof(TRequest).GetInterfaces().Any(i =>
+            i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(Fluents.Requests.IWitResponse<>));
+
+    #endregion
+
     #region Properties
 
     public int Order => int.MaxValue;
@@ -41,7 +51,7 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
             return response;
         }
 
-        if (!IsWriteRequest())
+        if (!IsWrite)
         {
             logger.LogDebug("Request is not a write request. Skipping auto-save.");
             return response;
@@ -75,12 +85,6 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
 
         return response;
     }
-
-    private static bool IsWriteRequest() =>
-        typeof(Fluents.Requests.INoResponse).IsAssignableFrom(typeof(TRequest)) ||
-        typeof(TRequest).GetInterfaces().Any(i =>
-            i.IsGenericType &&
-            i.GetGenericTypeDefinition() == typeof(Fluents.Requests.IWitResponse<>));
 
     #endregion
 }

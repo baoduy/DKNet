@@ -62,8 +62,7 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
         // Assert
         copy.FilterQuery.ShouldNotBeNull();
         copy.IncludeQueries.Count.ShouldBe(2);
-        copy.OrderByQueries.Count.ShouldBe(1);
-        copy.OrderByDescendingQueries.Count.ShouldBe(1);
+        copy.OrderByClauses.Count.ShouldBe(2);
         copy.IsIgnoreQueryFilters.ShouldBeTrue();
 
         // Verify they are separate instances
@@ -82,8 +81,7 @@ public class SpecificationAdvancedTests(TestDbFixture fixture) : IClassFixture<T
         // Assert
         copy.FilterQuery.ShouldBeNull();
         copy.IncludeQueries.ShouldBeEmpty();
-        copy.OrderByQueries.ShouldBeEmpty();
-        copy.OrderByDescendingQueries.ShouldBeEmpty();
+        copy.OrderByClauses.ShouldBeEmpty();
         copy.IsIgnoreQueryFilters.ShouldBeFalse();
     }
 

@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Row ownership: the read filter and the save-time stamp",
+    "legend": {
+      "entries": {
+        "security": {
+          "label": "Ownership decision point"
+        },
+        "backend": {
+          "label": "Your DbContext and its hook"
+        },
+        "database": {
+          "label": "Rows the caller sees"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1200,
+      540
+    ]
+  },
+  "components": [
+    {
+      "id": "provider",
+      "type": "security",
+      "label": "IDataOwnerProvider",
+      "sublabel": "you implement it",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        68
+      ],
+      "tag": "scoped, per caller"
+    },
+    {
+      "id": "dbcontext",
+      "type": "backend",
+      "label": "Your DbContext",
+      "sublabel": "IDataOwnerDbContext",
+      "pos": [
+        320,
+        80
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "filter",
+      "type": "security",
+      "label": "DataOwnerAuthQuery",
+      "sublabel": "global query filter",
+      "pos": [
+        660,
+        80
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "tag": "never bypassable"
+    },
+    {
+      "id": "rows",
+      "type": "database",
+      "label": "Visible rows",
+      "sublabel": "every IOwnedBy query",
+      "pos": [
+        990,
+        80
+      ],
+      "size": [
+        170,
+        68
+      ]
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "DataOwnerHook",
+      "sublabel": "runs before every save",
+      "pos": [
+        320,
+        390
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "saved",
+      "type": "database",
+      "label": "Saved rows",
+      "sublabel": "owner stamped or reverted",
+      "pos": [
+        660,
+        390
+      ],
+      "size": [
+        190,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "provider-dbcontext",
+      "from": "provider",
+      "to": "dbcontext",
+      "label": "key source",
+      "variant": "dashed",
+      "labelDy": -30
+    },
+    {
+      "id": "dbcontext-filter",
+      "from": "dbcontext",
+      "to": "filter",
+      "label": "keys + bypass flag",
+      "variant": "security"
+    },
+    {
+      "id": "filter-rows",
+      "from": "filter",
+      "to": "rows",
+      "label": "OwnedBy IN (keys)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "provider-hook",
+      "from": "provider",
+      "to": "hook",
+      "label": "GetOwnershipKey()",
+      "variant": "security",
+      "labelDy": 30
+    },
+    {
+      "id": "hook-saved",
+      "from": "hook",
+      "to": "saved",
+      "label": "stamp, then guard",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Read path",
+      "items": [
+        "An empty AccessibleKeys collection denies every owned row",
+        "Only IsUnrestrictedAccess bypasses the filter, and it is opt-in",
+        "A DbContext that is not IDataOwnerDbContext throws instead of showing everything"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Write path",
+      "items": [
+        "Added rows get OwnedBy, CreatedBy and CreatedOn when they are still blank",
+        "Modified rows keep an explicit SetUpdatedBy; otherwise the ambient key is stamped",
+        "Reassigning OwnedBy outside the accessible keys reverts to the original owner"
+      ]
+    }
+  ]
+}

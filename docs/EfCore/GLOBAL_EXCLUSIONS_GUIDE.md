@@ -8,7 +8,9 @@ Global exclusions allow you to configure a centralized list of property names th
 
 ### Add the MSBuild property
 
-In your `.csproj` file, add the `DtoGeneratorExclusions` property with a comma or semicolon-separated list of property names:
+In your `.csproj` file, add the `DtoGeneratorExclusions` property with a comma- or semicolon-separated list of
+property names. Names are trimmed, so whitespace around a separator is fine, and matching is **case-sensitive**
+(the generator collects them into a `HashSet<string>` with the default ordinal comparer):
 
 ```xml
 <PropertyGroup>
@@ -32,7 +34,7 @@ That's it — no `CompilerVisibleProperty` item is needed in the consuming proje
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="1.0.0" />
+    <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="*" /> <!-- use the current version -->
   </ItemGroup>
 </Project>
 ```
@@ -42,6 +44,8 @@ That's it — no `CompilerVisibleProperty` item is needed in the consuming proje
 ### Example 1: Basic Usage with Global Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // Entity with audit properties
 public class Product
 {
@@ -64,6 +68,8 @@ public partial record ProductDto;
 ### Example 2: Combining Global and Local Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 public class Order
 {
     public Guid Id { get; set; }
@@ -85,6 +91,8 @@ public partial record OrderDto;
 ### Example 3: Include Overrides Global Exclusions
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 // Include specific properties, ignoring global exclusions
 [GenerateDto(typeof(Product), Include = [
     nameof(Product.Id),
@@ -104,6 +112,27 @@ public partial record ProductSummaryDto;
 | 2 | Specified | None | Applied | Global + Local exclusions combined |
 | 3 | None | Specified | **Ignored** | Only Include list properties |
 | 4 | Specified | Specified | **Error** | Cannot use both Include and Exclude |
+
+### `[RaisesEvent]` convention-form payloads
+
+The list is not limited to hand-written `[GenerateDto]` records. A `[RaisesEvent]` **convention form** — the label
+and label-less constructors, which compose their payload record's name instead of naming an existing one — has its
+generated payload narrowed by `DtoGeneratorExclusions` exactly like the table above:
+
+```csharp
+// <DtoGeneratorExclusions>CreatedBy,UpdatedBy,CreatedAt,UpdatedAt</DtoGeneratorExclusions>
+
+using DKNet.EfCore.Abstractions.Events;
+
+[RaisesEvent(EventOperations.Created)]
+public class Customer { /* ... */ }
+// CustomerCreatedEvent is generated without CreatedBy, UpdatedBy, CreatedAt, UpdatedAt
+```
+
+The same precedence applies: the declaration's own `Exclude` combines with the global list, and a non-empty
+`Include` on the declaration replaces both. `Exclude`/`Include` on the **type-naming** form is a build error
+(`DKRAISEVT011`) — that form's payload record owns its own shape through its own `[GenerateDto]` filters, which
+are then subject to the matrix above.
 
 ## Diagnostics
 
@@ -159,6 +188,8 @@ Exclude sensitive or security-related fields:
 
 **Before** (without global exclusions):
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 [GenerateDto(typeof(Product), Exclude = ["CreatedBy", "UpdatedBy", "CreatedAt", "UpdatedAt"])]
 public partial record ProductDto;
 
@@ -176,6 +207,8 @@ public partial record CustomerDto;
 ```
 
 ```csharp
+using DKNet.EfCore.DtoGenerator;
+
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;
 
@@ -221,6 +254,7 @@ Global exclusions are processed at **compile-time**, not runtime:
 
 ## Related Documentation
 
-- [DKNet.EfCore.DtoGenerator Main Documentation](./DKNet.EfCore.DtoGenerator.md)
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) — the package's full reference
+- [EF Core packages index](./README.md) — where this page sits in the family
 - [Source Generator Documentation](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
 - [MSBuild Properties](https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild-properties)

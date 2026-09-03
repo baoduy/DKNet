@@ -52,6 +52,11 @@ public static class NavigationExtensions
         /// </returns>
         public bool IsNewEntity()
         {
+            // A Detached entry - reachable only via a navigation, never tracked by this context - is always
+            // considered new; short-circuit before materializing original key values (matches the contract
+            // documented above, and skips the most common case in a navigation walk).
+            if (entry.State is EntityState.Detached) return true;
+
             // If the entity's key is not set, it is considered new.
             if (!entry.IsKeySet) return true;
 
@@ -162,8 +167,9 @@ public static class NavigationExtensions
         }
 
         /// <summary>
-        ///     Returns the set of entries that the context may update; includes Detached, Modified and Unchanged states
-        ///     after running DetectChanges to ensure the tracker is up-to-date.
+        ///     Returns the set of entries that the context may update; includes Detached and Modified states
+        ///     after running DetectChanges to ensure the tracker is up-to-date. Unchanged entries are excluded -
+        ///     they are not part of this save, so their navigations are not worth walking (P22).
         /// </summary>
         /// <returns>An enumerable of potentially updating <see cref="EntityEntry" /> instances.</returns>
         public IEnumerable<EntityEntry> GetPossibleUpdatingEntities()
@@ -171,7 +177,7 @@ public static class NavigationExtensions
             if (context.ChangeTracker is null) return [];
             context.ChangeTracker.DetectChanges();
             return context.ChangeTracker.Entries().Where(e =>
-                e.State is EntityState.Detached or EntityState.Modified or EntityState.Unchanged);
+                e.State is EntityState.Detached or EntityState.Modified);
         }
 
         /// <summary>
@@ -184,10 +190,18 @@ public static class NavigationExtensions
         {
             var navigations = context.GetCollectionNavigations(entity.Metadata.ClrType);
             foreach (var nav in navigations)
-            foreach (var i in entity.Entity.GetNavigationValues(nav))
             {
-                var item = context.Entry(i);
-                if (item.IsNewEntity()) yield return i;
+                // EF's own compiled collection accessor: correct for backing-field-only navigations too,
+                // and avoids the PropertyInfo/FieldInfo reflection GetNavigationValues does per child.
+                var currentValue = entity.Collection(nav.Name).CurrentValue;
+                if (currentValue is null) continue;
+
+                foreach (var i in currentValue)
+                {
+                    if (i is null) continue;
+                    var item = context.Entry(i);
+                    if (item.IsNewEntity()) yield return i;
+                }
             }
         }
 

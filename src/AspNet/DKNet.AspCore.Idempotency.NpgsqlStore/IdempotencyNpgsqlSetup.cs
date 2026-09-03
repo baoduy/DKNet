@@ -5,6 +5,7 @@
 
 using DKNet.AspCore.Idempotency.NpgsqlStore.Data;
 using DKNet.AspCore.Idempotency.NpgsqlStore.Store;
+using DKNet.AspCore.Idempotency.Relational.Store;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -46,6 +47,10 @@ public static class IdempotencyNpgsqlSetup
                 });
             }, optionsLifetime: ServiceLifetime.Singleton)
             .AddDbContextFactory<IdempotencyDbContext>();
+
+        // Migrate once at startup rather than on the request path - see IdempotencyRelationalStore.
+        services.AddHostedService<IdempotencyMigrationHostedService<IdempotencyDbContext>>();
+
         return services;
     }
 

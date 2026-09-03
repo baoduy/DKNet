@@ -1,3 +1,4 @@
+using EfCore.HookTests;
 using HookContext = EfCore.HookTests.Data.HookContext;
 
 namespace EfCore.HookTests.Hooks;
@@ -113,6 +114,109 @@ public class HookDisablingTests(HookFixture fixture) : IClassFixture<HookFixture
         HookTest.AfterCalled.ShouldBeTrue();
         HookTest.BeforeCallCount.ShouldBeGreaterThan(0);
         HookTest.AfterCallCount.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void DisableHooks_WhenNested_RequiresMatchingDisposeCount()
+    {
+        using var db = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+
+        HookDisablingContext.IsHookDisabled(db).ShouldBeFalse();
+
+        var outer = db.DisableHooks();
+        HookDisablingContext.IsHookDisabled(db).ShouldBeTrue();
+
+        var inner = db.DisableHooks();
+        HookDisablingContext.IsHookDisabled(db).ShouldBeTrue();
+
+        inner.Dispose();
+        HookDisablingContext.IsHookDisabled(db).ShouldBeTrue(); // outer scope still active
+
+        outer.Dispose();
+        HookDisablingContext.IsHookDisabled(db).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void DisableHooks_WhenDisposedTwice_DoesNotUnderflow()
+    {
+        using var db = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+
+        var outer = db.DisableHooks();
+        var inner = db.DisableHooks();
+
+        outer.Dispose();
+        outer.Dispose(); // must be a no-op, not a second decrement
+
+        // If the double dispose above had under-counted, this would already be false.
+        HookDisablingContext.IsHookDisabled(db).ShouldBeTrue();
+
+        inner.Dispose();
+        HookDisablingContext.IsHookDisabled(db).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void DisableHooks_OnDifferentDbContextType_DoesNotAffectOther()
+    {
+        using var db1 = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+        using var db2 = new PlainHookContext(
+            new DbContextOptionsBuilder<PlainHookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+
+        using (db1.DisableHooks())
+        {
+            HookDisablingContext.IsHookDisabled(db1).ShouldBeTrue();
+            HookDisablingContext.IsHookDisabled(db2).ShouldBeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task DisableHooks_ConcurrentFlow_DoesNotAffectUnrelatedFlow()
+    {
+        // Same DbContext type on both sides on purpose: the old implementation keyed suppression
+        // by type name in a process-wide static dictionary, so a second, unrelated flow using the
+        // same DbContext type would incorrectly observe hooks as disabled.
+        using var db1 = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+        using var db2 = new HookContext(
+            new DbContextOptionsBuilder<HookContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options);
+
+        var scopeActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseScope = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Task A: disables hooks for db1's type and holds the scope open until told to release.
+        var disablingFlow = Task.Run(async () =>
+        {
+            using (db1.DisableHooks())
+            {
+                scopeActive.SetResult();
+                await releaseScope.Task;
+            }
+        });
+
+        await scopeActive.Task;
+
+        // Task B: started from THIS method's flow - a sibling of the disabling flow above, not a
+        // child of it - so it must not inherit the suppression even though db2 is the same type as db1.
+        var observedDisabledOnUnrelatedFlow = await Task.Run(() => HookDisablingContext.IsHookDisabled(db2));
+
+        releaseScope.SetResult();
+        await disablingFlow;
+
+        observedDisabledOnUnrelatedFlow.ShouldBeFalse();
     }
 
     #endregion

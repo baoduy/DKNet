@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace DKNet.EfCore.Specifications.Extensions;
@@ -15,6 +16,13 @@ public static class PropertyNameExtensions
     ///     Includes underscore ('_') and hyphen ('-').
     /// </summary>
     private static readonly char[] SegmentSeparators = ['_', '-'];
+
+    /// <summary>
+    ///     Memoizes <see cref="ToPascalCase" /> results. Filter property names are drawn from a bounded set
+    ///     (an entity's own properties) and repeat on every request, so caching removes the repeated
+    ///     allocation/scan cost of re-normalizing the same path.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, string> PascalCaseCache = new(StringComparer.Ordinal);
 
     #endregion
 
@@ -34,9 +42,9 @@ public static class PropertyNameExtensions
     public static string ToPascalCase(this string? propertyPath)
     {
         if (string.IsNullOrWhiteSpace(propertyPath)) return string.Empty;
-        return propertyPath.Contains('.', StringComparison.OrdinalIgnoreCase)
-            ? ToPascalCasePathInternal(propertyPath)
-            : ToPascalCaseInternal(propertyPath);
+        return PascalCaseCache.GetOrAdd(propertyPath, static path => path.Contains('.', StringComparison.OrdinalIgnoreCase)
+            ? ToPascalCasePathInternal(path)
+            : ToPascalCaseInternal(path));
     }
 
     /// <summary>

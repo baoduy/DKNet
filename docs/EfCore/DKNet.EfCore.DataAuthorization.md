@@ -46,9 +46,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public IEnumerable<string> AccessibleKeys { get; init; } = [];
     // IsUnrestrictedAccess defaults to false via the interface — override only for admin/system contexts.
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.UseAutoConfigModel(); // required — see "How it composes" below
 }
 
 // 3. Provider supplies the current owner key and the caller's accessible keys
@@ -59,10 +56,12 @@ public sealed class TenantOwnerProvider(ICurrentTenant currentTenant) : IDataOwn
     // override it if a caller may see more than one key (see `IDataOwnerProvider.GetAccessibleKeys()` below).
 }
 
-// 4. Registration
+// 4. Registration — UseAutoConfigModel is what attaches the global query filter to the model
 services
     .AddDataOwnerProvider<AppDbContext, TenantOwnerProvider>()
-    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
+    .AddDbContextWithHook<AppDbContext>(options =>
+        options.UseSqlServer(connectionString)
+               .UseAutoConfigModel<AppDbContext>());
 ```
 
 `AddDataOwnerProvider<TDbContext, TProvider>()` is an `extension(IServiceCollection)` member on
@@ -79,8 +78,9 @@ if you hit that error on upgrade. It:
 
 Two things it does **not** do for you, because they belong to the packages it builds on:
 
-- Call `UseAutoConfigModel(...)` on your `DbContextOptionsBuilder` / inside `OnModelCreating` — without it the
-  global query filter is never applied to the model (see section 5 and the gotchas below).
+- Call `UseAutoConfigModel<TDbContext>(...)` on your `DbContextOptionsBuilder` — without it the global query
+  filter is never applied to the model (see section 5 and the gotchas below). It is an options-builder extension,
+  not a `ModelBuilder` one, so it belongs in the registration delegate rather than in `OnModelCreating`.
 - Wire `UseHooks<TDbContext>(provider)` into your `DbContextOptionsBuilder` — `AddDbContextWithHook<TDbContext>`
   (from `DKNet.EfCore.Hooks`) does this for you; if you build the `DbContext` another way, add
   `options.UseHooks<TDbContext>(provider)` yourself or `DataOwnerHook` is registered in DI but never runs.
@@ -132,6 +132,16 @@ Key behaviors, verified from `DataOwnerAuthQuery`:
 - **Per-query evaluation.** The filter closes over the `DbContext` instance (`capturedContext`), so
   `AccessibleKeys`/`IsUnrestrictedAccess` are read fresh on every query, not fixed once at model-build time — a
   scoped `IDataOwnerDbContext` implementation naturally gets per-request/per-scope values.
+- **Not sargable — a reviewed, deliberate trade-off, documented on `DataOwnerAuthQuery` itself.** The
+  `IsUnrestrictedAccess || AccessibleKeys.Contains(...)` shape has two consequences for the generated SQL, not for
+  security: the `OR` disjunction means the query optimizer generally cannot use an index on `OwnedBy` (the
+  unrestricted branch means any row might qualify regardless of that column), and because `AccessibleKeys` is an
+  `IEnumerable<string>`, EF Core expands `Contains` inline as literal SQL — so callers with different accessible-key
+  counts produce different SQL text and different cached query plans, which is plan-cache churn on a multi-tenant
+  system with widely varying key counts (plus a `Contains`-expansion warning in the EF Core logs). The obvious fix —
+  drop the `OR` and handle unrestricted access by not applying the filter at all — was considered and deliberately
+  deferred: that moves the unrestricted-access decision into a different, security-relevant mechanism that needs
+  its own review, not a query-shape change. `IsIgnorable` stays `false` regardless.
 
 ### Ownership stamping and reassignment guard (`DataOwnerHook`)
 
@@ -190,12 +200,17 @@ implement:
 
 ## 🧱 Where it fits
 
+Ownership is enforced twice, by two different pieces: a global query filter on the read path and a before-save hook
+on the write path. Both read their keys from code you supply:
+
+![Architecture diagram of row ownership: your IDataOwnerProvider is usually the source of the keys your DbContext exposes as IDataOwnerDbContext; DataOwnerAuthQuery turns those keys plus the bypass flag into a never-bypassable global query filter over every IOwnedBy query, while DataOwnerHook takes the ownership key straight from the provider to stamp new rows and guard reassignment before each save.](../diagrams/efcore-dataauthorization-ownership.svg)
+
 This package is a consumer of two other EF Core building blocks, not a standalone interceptor:
 
 - **`DKNet.EfCore.Extensions` — global query filter plumbing.** `DataOwnerAuthQuery` derives from
   `DKNet.EfCore.Extensions.Configurations.GlobalQueryFilter` and is registered via
   `services.AddGlobalModelBuilder<DataOwnerAuthQuery>()`. That registration only takes effect once your
-  `DbContext` calls `modelBuilder`/`optionsBuilder.UseAutoConfigModel(...)` — `AutoConfigModelCustomizer` is what
+  `DbContext`'s options builder calls `UseAutoConfigModel<TDbContext>(...)` — `AutoConfigModelCustomizer` is what
   invokes `RegisterGlobalModelBuilders`, which instantiates every registered `IGlobalModelBuilder` (including
   `DataOwnerAuthQuery`) and calls `Apply(modelBuilder, dbContext)` for each `IOwnedBy` entity type in your model.
   Skip `UseAutoConfigModel` and the filter is simply never applied — see the gotcha below.
@@ -227,7 +242,7 @@ This package is a consumer of two other EF Core building blocks, not a standalon
   everything is the explicit `IsUnrestrictedAccess` opt-in. If you're upgrading from that older behavior, audit any
   context that relied on "empty keys ⇒ full access" — it will now return zero rows instead.
 - **Forgetting `UseAutoConfigModel` disables filtering silently.** The query filter is only attached to the model
-  when the DbContext calls `UseAutoConfigModel(...)`. There is no runtime error if you skip it — `IOwnedBy` entities
+  when the DbContext's options builder calls `UseAutoConfigModel<TDbContext>(...)`. There is no runtime error if you skip it — `IOwnedBy` entities
   simply have no query filter and every query returns all owners' rows.
 - **`IDataOwnerDbContext` on the `DbContext` is mandatory, and enforced twice.**
   `AddDataOwnerProvider<TDbContext, TProvider>()` constrains `TDbContext` to `DbContext, IDataOwnerDbContext`, so the

@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How a [RaisesEvent] declaration becomes a payload record",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Name that reaches the payload"
+        },
+        "default": {
+          "label": "Filters carried along"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1069,
+      640
+    ]
+  },
+  "stages": [
+    {
+      "label": "Declared on the entity"
+    },
+    {
+      "label": "Name resolution"
+    },
+    {
+      "label": "Payload record"
+    },
+    {
+      "label": "After a successful save"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "typeform",
+      "type": "external",
+      "label": "Type-naming form",
+      "sublabel": "[RaisesEvent(typeof(X), ops)]",
+      "stage": 0,
+      "row": 0,
+      "width": 150,
+      "tag": "you own the record"
+    },
+    {
+      "id": "labelform",
+      "type": "external",
+      "label": "Label form",
+      "sublabel": "[RaisesEvent(\"Touched\", ops)]",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "plainform",
+      "type": "external",
+      "label": "Label-less form",
+      "sublabel": "[RaisesEvent(ops)]",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "composer",
+      "type": "backend",
+      "label": "EventNameComposer",
+      "sublabel": "Compose(entity, label, props, ops)",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "one file, build and runtime"
+    },
+    {
+      "id": "dto",
+      "type": "backend",
+      "label": "Your [GenerateDto] record",
+      "sublabel": "you declare it, generator fills it",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "composed",
+      "type": "backend",
+      "label": "Generated record",
+      "sublabel": "public partial record ...Event",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "tag": "entity's own namespace"
+    },
+    {
+      "id": "hook",
+      "type": "messagebus",
+      "label": "EventHook",
+      "sublabel": "maps entity to payload, publishes",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "typeform",
+      "to": "dto",
+      "label": "EventType names it",
+      "classification": "same entity, build-checked",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "from": "labelform",
+      "to": "composer",
+      "label": "label + props + ops",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "plainform",
+      "to": "composer",
+      "label": "props + ops",
+      "variant": "default"
+    },
+    {
+      "from": "composer",
+      "to": "composed",
+      "label": "composed name",
+      "classification": "DtoGenerator emits it",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "dto",
+      "to": "hook",
+      "label": "raised as declared",
+      "variant": "emphasis"
+    },
+    {
+      "from": "composed",
+      "to": "hook",
+      "label": "re-composed at save",
+      "classification": "same source, cannot drift",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Composition order is fixed",
+      "items": [
+        "Entity name, then the label when one is given",
+        "Then narrowing properties, de-duplicated and ordinal-sorted",
+        "Then operations in the order Created, Updated, Deleted",
+        "Then the literal suffix Event"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "What the build rejects",
+      "items": [
+        "A composed name that is not a valid C# identifier (DKRAISEVT005)",
+        "Two declarations composing to the same name (DKRAISEVT006 / DKRAISEVT008)",
+        "Exclude or Include on the type-naming form (DKRAISEVT011)"
+      ]
+    }
+  ]
+}

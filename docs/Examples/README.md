@@ -1,42 +1,28 @@
 # Examples & Recipes
 
-This section provides practical examples and implementation patterns for using DKNet Framework components.
+Working implementation patterns for the DKNet packages. Every sample on this page compiles against the package
+projects in `src/`; the `using` directives are part of the sample, because several DKNet extension methods live in
+namespaces you would not guess (see the
+[namespace table](../Configuration.md#where-each-extension-method-lives)).
 
-## 📋 Table of Contents
+## Contents
 
-### 🏗️ Architecture Patterns
 - [Complete CRUD API with CQRS](#complete-crud-api-with-cqrs)
-- [Domain Event Implementation](#domain-event-implementation)
-- [Repository Pattern with Specifications](#repository-pattern-with-specifications)
-- [Multi-tenant Application](#multi-tenant-application)
-
-### 🔧 Core Framework
-- [Extension Methods Usage](#extension-methods-usage)
-- [Property Utilities](#property-utilities)
-- [Type Conversions](#type-conversions)
-
-### 🗄️ Entity Framework Core
-- [Custom Repository Implementation](#custom-repository-implementation)
-- [Entity Hooks and Lifecycle](#entity-hooks-and-lifecycle)
-- [Data Authorization](#data-authorization)
-
-### 📨 Messaging & CQRS
-- [Command/Query Handlers](#commandquery-handlers)
-- [Event-Driven Architecture](#event-driven-architecture)
-- [Message Bus Integration](#message-bus-integration)
-
-### 🗃️ Services
-- [Blob Storage Operations](#blob-storage-operations)
-- [Data Transformation](#data-transformation)
+- [Domain event implementation](#domain-event-implementation)
+- [Querying with specifications](#querying-with-specifications)
+- [Multi-tenant application](#multi-tenant-application)
+- [Blob storage operations](#blob-storage-operations)
+- [Core framework helpers](#core-framework-helpers)
 
 ---
 
-## 🏗️ Complete CRUD API with CQRS
+## Complete CRUD API with CQRS
 
-### Entity Definition
+### Entity definition
 
 ```csharp
 using DKNet.EfCore.Abstractions.Entities;
+using System.ComponentModel.DataAnnotations.Schema;
 
 [Table("Products", Schema = "catalog")]
 public class Product : AuditedEntity
@@ -75,7 +61,7 @@ public class Product : AuditedEntity
 }
 ```
 
-### Commands and Queries
+### Commands and queries
 
 Handlers talk to the `DbContext` directly and let `AddSlimBusEfCoreInterceptor<AppDbContext>()` save on success —
 see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
@@ -85,19 +71,9 @@ using DKNet.SlimBus.Extensions;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 
-// Create Command
+// Create command
 public record CreateProductCommand(string Name, decimal Price, string? Description)
     : Fluents.Requests.IWitResponse<Guid>;
-
-public class CreateProductValidator : AbstractValidator<CreateProductCommand>
-{
-    public CreateProductValidator()
-    {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Price).GreaterThan(0);
-        RuleFor(x => x.Description).MaximumLength(1000);
-    }
-}
 
 internal sealed class CreateProductHandler(AppDbContext db)
     : Fluents.Requests.IHandler<CreateProductCommand, Guid>
@@ -105,11 +81,12 @@ internal sealed class CreateProductHandler(AppDbContext db)
     public async Task<IResult<Guid>> OnHandle(CreateProductCommand request, CancellationToken cancellationToken)
     {
         if (await db.Products.AnyAsync(p => p.Name == request.Name, cancellationToken))
-            return Result.Fail($"Product with name '{request.Name}' already exists");
+            return Result.Fail<Guid>($"Product with name '{request.Name}' already exists");
 
         var product = Product.Create(request.Name, request.Price, request.Description ?? string.Empty, "system");
         await db.Products.AddAsync(product, cancellationToken);
 
+        // No SaveChangesAsync — the auto-save interceptor runs it once this returns a success result.
         return Result.Ok(product.Id);
     }
 }
@@ -129,14 +106,20 @@ internal sealed class GetProductHandler(AppDbContext db)
 }
 ```
 
-### Minimal API Endpoints
+DKNet ships **no validation pipeline**. If you want FluentValidation (or anything else) to run before a handler,
+register it as a SlimMessageBus `IRequestHandlerInterceptor` yourself — a bare `AbstractValidator<T>` class next to
+the command is never invoked.
+
+### Minimal API endpoints
+
+`.Response()` turns a `FluentResults` result into an `IResult`, mapping failures to `ProblemDetails`:
 
 ```csharp
-using DKNet.AspCore.Extensions;
-using DKNet.SlimBus.Extensions;
+using DKNet.AspCore.Extensions.Responses;
+using SlimMessageBus;
 
 app.MapGet("/products/{id:guid}", async (IMessageBus bus, Guid id) =>
-    (await bus.Send(new GetProductQuery(id))) is { } dto ? Results.Ok(dto) : Results.NotFound());
+    await bus.Send(new GetProductQuery(id)) is { } dto ? Results.Ok(dto) : Results.NotFound());
 
 app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
     (await bus.Send(cmd)).Response(isCreated: true));
@@ -144,26 +127,33 @@ app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
 
 ---
 
-## 🔥 Domain Event Implementation
+## Domain event implementation
 
-### Event Definition
+### Event definition
+
+Deriving from `EventItem` is optional but gives the event an `EventType` and an `AdditionalData` bag that
+`SlimBusEventPublisher` copies onto the message headers:
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
+
 public record ProductCreatedEvent(Guid ProductId, string ProductName) : EventItem;
-
 public record ProductUpdatedEvent(Guid ProductId, string ProductName) : EventItem;
-
 public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : EventItem;
 ```
 
-Raised from the aggregate via `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched to every
-registered `IEventPublisher` by `DKNet.EfCore.Events` after a successful `SaveChangesAsync`.
-`AddSlimBusEventPublisher<AppDbContext>()` forwards each one onto SlimMessageBus for the consumers below to
-pick up — see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
+Events are queued on the entity by `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched by
+`DKNet.EfCore.Events` to every registered `IEventPublisher` **after** a successful `SaveChangesAsync`.
+`AddSlimBusEventPublisher<AppDbContext>()` adds a publisher that forwards each one onto SlimMessageBus, where the
+consumers below pick it up. The whole path is traced in
+[A domain event end to end](../Architecture.md#a-domain-event-end-to-end).
 
-### Event Handlers
+### Event consumers
 
 ```csharp
+using DKNet.SlimBus.Extensions;
+using Microsoft.Extensions.Logging;
+
 public class ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmailService emailService)
     : Fluents.EventsConsumers.IHandler<ProductCreatedEvent>
 {
@@ -172,7 +162,6 @@ public class ProductCreatedHandler(ILogger<ProductCreatedHandler> logger, IEmail
         logger.LogInformation("Product created: {ProductId} - {ProductName}",
             message.ProductId, message.ProductName);
 
-        // Send notification email
         await emailService.SendProductCreatedNotificationAsync(
             message.ProductId, message.ProductName, cancellationToken);
     }
@@ -203,17 +192,20 @@ public class ProductEventLogger(ILogger<ProductEventLogger> logger) :
 }
 ```
 
+A publisher that throws is logged and swallowed: the row stays committed and that event is lost. Use a durable
+transport when a consumer must not miss an event.
+
 ---
 
-## 🗄️ Repository Pattern with Specifications
-
-### Specification Pattern
+## Querying with specifications
 
 A `Specification<TEntity>` is configured entirely from its constructor via `protected` builder methods — there is
 no boolean `.And()`/`.Or()`/`.Not()` combinator; compose criteria by passing them into one specification's
 constructor instead. See [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) for the full API.
 
 ```csharp
+using DKNet.EfCore.Specifications.Definitions;
+
 public sealed class ActiveProductsInPriceRangeSpec : Specification<Product>
 {
     public ActiveProductsInPriceRangeSpec(decimal minPrice, decimal maxPrice)
@@ -235,9 +227,14 @@ public sealed class ActiveProductsByNameSpec : Specification<Product>
 }
 ```
 
-### Using Specifications
+One injected `IRepositorySpec` serves every entity type; the entity comes from the specification. The
+`ToListAsync`/`FirstOrDefaultAsync`/`ToPagedListAsync` overloads are extension members, so
+`DKNet.EfCore.Specifications.Extensions` has to be imported:
 
 ```csharp
+using DKNet.EfCore.Specifications.Extensions;
+using DKNet.EfCore.Specifications.Repositories;
+
 public class ProductService(IRepositorySpec repo)
 {
     public Task<IList<Product>> GetActiveProductsInPriceRangeAsync(
@@ -252,29 +249,30 @@ public class ProductService(IRepositorySpec repo)
 
 ---
 
-## 🔐 Multi-tenant Application
+## Multi-tenant application
 
 Row-level, ownership-based isolation is a built-in feature —
 [DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — rather than something to hand-roll
 per repository. An entity opts in via `IOwnedBy`; a global query filter and a `SaveChanges` hook do the rest.
 
-### Tenant-Owned Entity
+### Tenant-owned entity
 
 ```csharp
+using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.DataAuthorization;
 
-public class Product : AuditedEntity, IOwnedBy
+public class Invoice : AuditedEntity, IOwnedBy
 {
     public string OwnedBy { get; private set; } = string.Empty;
-    public string Name { get; private set; } = null!;
-    // ... other properties
+    public string Reference { get; private set; } = null!;
 }
 ```
 
-### Tenant Provider
+### Tenant provider
 
 ```csharp
 using DKNet.EfCore.DataAuthorization;
+using Microsoft.AspNetCore.Http;
 
 public sealed class HttpTenantProvider(IHttpContextAccessor httpContextAccessor) : IDataOwnerProvider
 {
@@ -282,162 +280,152 @@ public sealed class HttpTenantProvider(IHttpContextAccessor httpContextAccessor)
     {
         var context = httpContextAccessor.HttpContext;
 
-        // Try header first
+        // Header first
         if (context?.Request.Headers.TryGetValue("X-Tenant-Id", out var tenantHeader) == true)
             return tenantHeader.FirstOrDefault() ?? "default";
 
-        // Try claim from JWT
+        // Then the JWT claim
         return context?.User?.FindFirst("tenant_id")?.Value ?? "default";
     }
 }
 ```
 
-### Registration
+### DbContext and registration
 
-`AppDbContext` must implement `IDataOwnerDbContext` and call `UseAutoConfigModel()` in `OnModelCreating` — see
-[DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) for the full wiring.
+The `DbContext` must implement `IDataOwnerDbContext` — the generic constraint on `AddDataOwnerProvider` enforces
+it — and the model must be built through `UseAutoConfigModel<TContext>()`, which is a
+`DbContextOptionsBuilder<TContext>` extension and therefore belongs in the `AddDbContextWithHook` callback, **not**
+in `OnModelCreating`:
 
 ```csharp
+using DKNet.EfCore.DataAuthorization;
+using DKNet.EfCore.Hooks;
+using Microsoft.EntityFrameworkCore;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options)
+    : DbContext(options), IDataOwnerDbContext
+{
+    // Declare it as IEnumerable<string>: EF Core cannot translate ICollection<string>.Contains
+    // inside a query filter.
+    public IEnumerable<string> AccessibleKeys { get; init; } = [];
+
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+}
+
 services
     .AddDataOwnerProvider<AppDbContext, HttpTenantProvider>()
-    .AddDbContextWithHook<AppDbContext>(options => options.UseSqlServer(connectionString));
+    .AddDbContextWithHook<AppDbContext>(options => options
+        .UseSqlServer(connectionString)
+        .UseAutoConfigModel<AppDbContext>());
 ```
+
+`AddDataOwnerProvider` registers its filter in a **static** model-builder list, so every `DbContext` in the process
+that calls `UseAutoConfigModel()` applies it. A second context whose model contains `IOwnedBy` entities must also
+implement `IDataOwnerDbContext` — see the
+[Migration Guide](../Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
 
 ---
 
-## 🗃️ Blob Storage Operations
+## Blob storage operations
 
-### File Upload Service
+`IBlobService` is provider-agnostic: swap `AddAzureStorageAdapter` for `AddS3BlobService` or
+`AddLocalDirectoryBlobService` and this code does not change.
 
 ```csharp
-public class FileUploadService
+using DKNet.Svc.BlobStorage.Abstractions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+public class FileUploadService(IBlobService blobStorage, ILogger<FileUploadService> logger)
 {
-    private readonly IBlobService _blobStorage;
-    private readonly ILogger<FileUploadService> _logger;
-
-    public FileUploadService(IBlobService blobStorage, ILogger<FileUploadService> logger)
-    {
-        _blobStorage = blobStorage;
-        _logger = logger;
-    }
-
     public async Task<string> UploadFileAsync(IFormFile file, string folder = "uploads")
     {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("File is required");
+        if (file is null || file.Length == 0)
+            throw new ArgumentException("File is required", nameof(file));
 
-        // Generate unique filename
         var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
         var filePath = $"{folder}/{fileName}";
 
-        // Upload file
-        using var stream = file.OpenReadStream();
-        var blob = new BlobDetails.BlobData(filePath, BinaryData.FromStream(stream)) { ContentType = file.ContentType };
-        var location = await _blobStorage.SaveAsync(blob);
+        await using var stream = file.OpenReadStream();
+        var blob = new BlobDetails.BlobData(filePath, await BinaryData.FromStreamAsync(stream))
+        {
+            ContentType = file.ContentType,
+        };
 
-        _logger.LogInformation("File uploaded: {FilePath}", location);
+        // SaveAsync returns the stored blob's name, after the shared validation in BlobService.
+        var location = await blobStorage.SaveAsync(blob);
+
+        logger.LogInformation("File uploaded: {FilePath}", location);
         return location;
     }
 
     public async Task<BinaryData?> DownloadFileAsync(string filePath)
     {
-        var result = await _blobStorage.GetAsync(new BlobRequest(filePath));
+        var result = await blobStorage.GetAsync(new BlobRequest(filePath));
         return result?.Data;
     }
 
     public async Task DeleteFileAsync(string filePath)
     {
-        await _blobStorage.DeleteAsync(new BlobRequest(filePath));
-        _logger.LogInformation("File deleted: {FilePath}", filePath);
+        var deleted = await blobStorage.DeleteAsync(new BlobRequest(filePath));
+        logger.LogInformation("File delete requested: {FilePath}, deleted: {Deleted}", filePath, deleted);
     }
 }
 ```
 
-### Image Processing Example
-
-```csharp
-public class ImageProcessingService
-{
-    private readonly IBlobService _blobStorage;
-    private readonly IImageProcessor _imageProcessor;
-
-    public async Task<string> ProcessAndUploadImageAsync(IFormFile imageFile)
-    {
-        // Download original
-        using var originalStream = imageFile.OpenReadStream();
-        
-        // Process image (resize, optimize, etc.)
-        using var processedStream = await _imageProcessor.ResizeAsync(originalStream, 800, 600);
-        
-        // Upload processed image
-        var fileName = $"processed/{Guid.NewGuid()}.jpg";
-        var blob = new BlobDetails.BlobData(fileName, BinaryData.FromStream(processedStream)) { ContentType = "image/jpeg" };
-        return await _blobStorage.SaveAsync(blob);
-    }
-}
-```
+`BlobRequest` infers its `Type` from the name: a name with no file extension is treated as a directory. Give
+files an extension, or set `Type` explicitly.
 
 ---
 
-## 🔧 Extension Methods Usage
+## Core framework helpers
 
-### Type Extensions
+### Type and property reflection
 
 ```csharp
-// Check if type implements interface
-if (typeof(Product).IsImplementOf<IAuditable>())
+using DKNet.EfCore.Abstractions.Events;
+using DKNet.Fw.Extensions.Reflection;
+
+// Does this type implement an interface?
+if (typeof(Product).IsImplementOf<IEventEntity>())
 {
-    // Handle auditable entity
+    // Product carries a domain-event queue
 }
 
-// Get property value dynamically
-var product = new Product();
-var name = product.GetPropertyValue("Name");
+var product = Product.Create("Widget", 9.99m, "A widget", "system");
 
-// Set property value
-product.SetPropertyValue("Name", "New Product Name");
+// Read and write by name
+var name = product.GetPropertyValue("Name");
+product.SetPropertyValue("Name", "New product name");
 ```
 
-### Enum Extensions
+### Enum metadata
 
 ```csharp
+using DKNet.Fw.Extensions.Enums;
+using System.ComponentModel.DataAnnotations;
+
 public enum OrderStatus
 {
-    [Display(Name = "Order is pending")]
-    Pending,
-
-    [Display(Name = "Order is confirmed")]
-    Confirmed,
-
-    [Display(Name = "Order is shipped")]
-    Shipped
+    [Display(Name = "Order is pending")] Pending,
+    [Display(Name = "Order is confirmed")] Confirmed,
+    [Display(Name = "Order is shipped")] Shipped,
 }
 
-// Get description via the Display attribute
 var status = OrderStatus.Pending;
-var description = status.GetAttribute<DisplayAttribute>()?.Name; // "Order is pending"
 
-// Get info for every named value
-var allInfos = EnumExtensions.GetEumInfos<OrderStatus>();
-```
+// Read the attribute off the value
+var description = status.GetAttribute<DisplayAttribute>()?.Name;   // "Order is pending"
 
-### Collection Extensions
-
-```csharp
-// Async enumerable to list
-var asyncItems = GetItemsAsync();
-var list = await asyncItems.ToListAsync();
+// Or enumerate every named value at once
+var allInfos = EnumExtensions.GetEnumInfos<OrderStatus>();
 ```
 
 ---
 
-## 📖 More Examples
+## More examples
 
-For complete working examples, check out:
-
-- **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** - Complete API implementation and end-to-end tests, in the DKNet.Templates repository
-- **Unit Tests** - Comprehensive test examples in the sibling `*.Tests` projects next to each package under `src/`
-
----
-
-> 💡 **Example Tip**: All examples are based on real implementations in the DKNet codebase. Check the source code for the most up-to-date patterns!
+- **[SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates)** — a complete API implementation
+  with end-to-end tests, in the DKNet.Templates repository
+- **Unit tests** — the sibling `*.Tests` projects next to each package under `src/` are the most current usage
+  reference for any API on these pages

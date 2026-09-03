@@ -53,15 +53,6 @@ public interface IRepositorySpec
     void Delete<TEntity>(TEntity entity) where TEntity : class;
 
     /// <summary>
-    ///     Marks a collection of entities for deletion.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <param name="entities">The entities to delete.</param>
-    [Obsolete(
-        "Using the BulkDeleteRangeAsync <see cref=\"BulkDeleteRangeAsync{TEntity}(IEnumerable{TEntity}, CancellationToken)\" />")]
-    void DeleteRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class;
-
-    /// <summary>
     ///     The bulk deletes a collection of entities asynchronously.
     /// </summary>
     /// <param name="predicate"></param>
@@ -200,12 +191,6 @@ public sealed class RepositorySpec<TDbContext> : IRepositorySpec where TDbContex
         => _dbContext.Set<TEntity>().Remove(entity);
 
     /// <inheritdoc />
-    public void DeleteRange<TEntity>(IEnumerable<TEntity> entities)
-        where TEntity : class
-        => _dbContext.Set<TEntity>().RemoveRange(entities);
-
-
-    /// <inheritdoc />
     public EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
         => _dbContext.Entry(entity);
 
@@ -236,9 +221,10 @@ public sealed class RepositorySpec<TDbContext> : IRepositorySpec where TDbContex
     public async Task<int> UpdateAsync<TEntity>(TEntity entity, CancellationToken cancellationToken = default)
         where TEntity : class
     {
-        _dbContext.Entry(entity).State = EntityState.Modified;
+        var entry = _dbContext.Entry(entity);
+        entry.State = EntityState.Modified;
 
-        var newEntities = _dbContext.GetNewEntitiesFromNavigations(_dbContext.Entry(entity)).ToList();
+        var newEntities = _dbContext.GetNewEntitiesFromNavigations(entry).ToList();
         await _dbContext.AddRangeAsync(newEntities, cancellationToken);
         return newEntities.Count;
     }

@@ -28,6 +28,12 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     private readonly S3Options _options = options.Value;
 
+    // Race-safe run-once client build + bucket-ensure: the service is registered as a singleton (the
+    // AWS SDK client is documented thread-safe and meant to be long-lived), so without this lazy, concurrent
+    // first callers would each build their own client and each pay the ListBuckets/PutBucket round trip.
+    private readonly Lazy<Task<AmazonS3Client>> _clientLazy =
+        new(() => BuildClientAsync(options.Value, logger), LazyThreadSafetyMode.ExecutionAndPublication);
+
     private AmazonS3Client? _client;
 
     #endregion
@@ -194,6 +200,31 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     }
 
     /// <summary>
+    ///     Opens a read stream directly against the S3 object's HTTP response for the provided <paramref name="blob" />
+    ///     request, without buffering the whole object into memory. The caller owns the returned stream and must
+    ///     dispose it.
+    /// </summary>
+    /// <param name="blob">Blob request describing which object to read.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>A caller-owned, readable stream when found; otherwise <c>null</c>.</returns>
+    public override async Task<Stream?> OpenReadAsync(BlobRequest blob, CancellationToken cancellationToken = default)
+    {
+        var location = GetBlobLocation(blob).TrimStart('/');
+        var client = await GetS3ClientAsync(cancellationToken);
+        try
+        {
+            var info = await client.GetObjectAsync(_options.BucketName, location, cancellationToken);
+            return info.ResponseStream;
+        }
+        catch (AmazonS3Exception e)
+        {
+            if (e.StatusCode == HttpStatusCode.NotFound) return null;
+
+            throw;
+        }
+    }
+
+    /// <summary>
     ///     Generates a pre-signed public access URL for the specified blob when supported by the S3 bucket.
     /// </summary>
     /// <param name="blob">Blob request describing the object to generate a URL for.</param>
@@ -223,46 +254,57 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     }
 
     /// <summary>
-    ///     Creates or returns a cached <see cref="AmazonS3Client" /> configured from <see cref="S3Options" />.
-    ///     The client will attempt to create the configured bucket if it does not already exist.
+    ///     Returns the process-lifetime <see cref="AmazonS3Client" /> configured from <see cref="S3Options" />,
+    ///     building it and ensuring the configured bucket exactly once even when awaited concurrently by
+    ///     multiple callers.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>An initialized <see cref="AmazonS3Client" /> instance.</returns>
     private async Task<AmazonS3Client> GetS3ClientAsync(CancellationToken cancellationToken = default)
     {
-        if (_client != null) return _client;
+        var client = await _clientLazy.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+        _client = client;
+        return client;
+    }
 
+    /// <summary>
+    ///     Builds the <see cref="AmazonS3Client" /> and creates the configured bucket if it does not already
+    ///     exist. Invoked at most once per instance via <see cref="_clientLazy" />. Static so it can be used
+    ///     as a field-initializer delegate, closing only over the constructor parameters rather than instance state.
+    /// </summary>
+    /// <param name="options">The configured <see cref="S3Options" />.</param>
+    /// <param name="logger">Logger instance for diagnostic output.</param>
+    /// <returns>The newly built and bucket-verified <see cref="AmazonS3Client" />.</returns>
+    private static async Task<AmazonS3Client> BuildClientAsync(S3Options options, ILogger<S3BlobService> logger)
+    {
         var config = new AmazonS3Config
         {
-            ServiceURL = _options.ConnectionString,
-            ForcePathStyle = _options.ForcePathStyle,
-            UseHttp = !_options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
+            ServiceURL = options.ConnectionString,
+            ForcePathStyle = options.ForcePathStyle,
+            UseHttp = !options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
             RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
             ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
         };
 
-        if (!string.IsNullOrWhiteSpace(_options.AccessKey) && !string.IsNullOrWhiteSpace(_options.Secret))
+        AmazonS3Client client;
+        if (!string.IsNullOrWhiteSpace(options.AccessKey) && !string.IsNullOrWhiteSpace(options.Secret))
         {
-            _client = new AmazonS3Client(
-                new BasicAWSCredentials(_options.AccessKey, _options.Secret),
-                config);
+            client = new AmazonS3Client(new BasicAWSCredentials(options.AccessKey, options.Secret), config);
             logger.LogInformation("Loaded AmazonS3Client with BasicAWSCredentials");
         }
         else
         {
-            _client = new AmazonS3Client(config);
+            client = new AmazonS3Client(config);
             logger.LogInformation("Loaded AmazonS3Client without Credentials");
         }
 
         //Create Bucket if not exists
-        var buckets = await _client.ListBucketsAsync(cancellationToken);
+        var buckets = await client.ListBucketsAsync();
         if (buckets.Buckets is null || !buckets.Buckets.Exists(b =>
-                b.BucketName.Equals(_options.BucketName, StringComparison.OrdinalIgnoreCase)))
-            await _client.PutBucketAsync(
-                new PutBucketRequest { BucketName = _options.BucketName },
-                cancellationToken);
+                b.BucketName.Equals(options.BucketName, StringComparison.OrdinalIgnoreCase)))
+            await client.PutBucketAsync(new PutBucketRequest { BucketName = options.BucketName });
 
-        return _client;
+        return client;
     }
 
     /// <summary>
@@ -278,33 +320,44 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         var location = GetBlobLocation(blob).TrimStart('/');
         var client = await GetS3ClientAsync(cancellationToken);
 
-        var info = await client.ListObjectsV2Async(
-            new ListObjectsV2Request
-            {
-                BucketName = _options.BucketName,
-                Prefix = location
-            },
-            cancellationToken);
-
-        if (info?.S3Objects is null) yield break;
-
-        foreach (var obj in info.S3Objects)
+        string? continuationToken = null;
+        do
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            yield return new BlobDetails.BlobResult(obj.Key)
+            var info = await client.ListObjectsV2Async(
+                new ListObjectsV2Request
+                {
+                    BucketName = _options.BucketName,
+                    Prefix = location,
+                    ContinuationToken = continuationToken
+                },
+                cancellationToken);
+
+            if (info?.S3Objects is null) yield break;
+
+            foreach (var obj in info.S3Objects)
             {
-                Type = obj.Size > 1 ? BlobTypes.File : BlobTypes.Directory,
-                Details = obj.Size > 1
-                    ? new BlobDetails
-                    {
-                        ContentType = string.Empty,
-                        ContentLength = obj.Size.Value,
-                        CreatedOn = obj.LastModified!.Value,
-                        LastModified = obj.LastModified!.Value
-                    }
-                    : null
-            };
-        }
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // The '/' suffix is S3's own directory-marker convention; object size says nothing
+                // about whether a key is a directory.
+                var isDirectory = obj.Key.EndsWith('/');
+                yield return new BlobDetails.BlobResult(obj.Key)
+                {
+                    Type = isDirectory ? BlobTypes.Directory : BlobTypes.File,
+                    Details = isDirectory
+                        ? null
+                        : new BlobDetails
+                        {
+                            ContentType = string.Empty,
+                            ContentLength = obj.Size.GetValueOrDefault(),
+                            CreatedOn = obj.LastModified!.Value,
+                            LastModified = obj.LastModified!.Value
+                        }
+                };
+            }
+
+            continuationToken = info.IsTruncated == true ? info.NextContinuationToken : null;
+        } while (continuationToken is not null);
     }
 
     /// <summary>
@@ -313,10 +366,27 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     /// <param name="blob">The blob payload and metadata to upload.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>The original blob name when the upload completes.</returns>
-    public override async Task<string> SaveAsync(BlobDetails.BlobData blob,
+    public override Task<string> SaveAsync(BlobDetails.BlobData blob,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(
+            new BlobDetails.BlobStreamData(blob.Name, blob.Data.ToStream())
+            {
+                Overwrite = blob.Overwrite,
+                ContentType = blob.ContentType
+            },
+            cancellationToken);
+
+    /// <summary>
+    ///     Uploads the provided blob stream to S3 and returns the saved blob name. The stream is handed directly
+    ///     to the S3 client's request rather than being copied through <see cref="BinaryData" /> first.
+    /// </summary>
+    /// <param name="blob">The blob name, stream content and metadata to upload.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The original blob name when the upload completes.</returns>
+    public override async Task<string> SaveAsync(BlobDetails.BlobStreamData blob,
         CancellationToken cancellationToken = default)
     {
-        ValidateFile(blob);
+        var content = ValidateFile(blob);
 
         var existed = await CheckExistsAsync(blob, cancellationToken);
         if (existed && !blob.Overwrite)
@@ -329,7 +399,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         {
             BucketName = _options.BucketName,
             Key = location,
-            InputStream = blob.Data.ToStream(),
+            InputStream = content,
             ContentType = blob.ContentType,
             DisablePayloadSigning = _options.DisablePayloadSigning
         };

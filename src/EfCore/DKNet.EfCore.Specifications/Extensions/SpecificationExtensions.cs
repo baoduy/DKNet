@@ -43,78 +43,30 @@ internal static class SpecificationExtensions
                 queryable,
                 (current, builder) => builder(current));
 
-        if (specification is Specification<TEntity> s && s.OrderByClauses.Count > 0)
+        // Foreign ISpecification implementations (not deriving from Specification<TEntity>) are not
+        // supported: only the declared-sequence ordering, window (Skip/Take) and read-only state carried
+        // by the abstract base class are recognised here.
+        if (specification is Specification<TEntity> s)
         {
-            // Declared-sequence ordering: apply mixed-direction clauses in the order they were added.
-            IOrderedQueryable<TEntity>? ordered = null;
-            foreach (var clause in s.OrderByClauses)
-                ordered = ordered is null
-                    ? clause.Direction == ListSortDirection.Ascending
-                        ? queryable.OrderBy(clause.KeySelector)
-                        : queryable.OrderByDescending(clause.KeySelector)
-                    : clause.Direction == ListSortDirection.Ascending
-                        ? ordered.ThenBy(clause.KeySelector)
-                        : ordered.ThenByDescending(clause.KeySelector);
-
-            queryable = ordered!;
-        }
-        else
-        {
-            // Legacy two-phase ordering for foreign ISpecification implementations: all ascending queries
-            // first, then all descending queries.
-            var hasOrderBy = specification.OrderByQueries.Count > 0;
-            var hasOrderByDesc = specification.OrderByDescendingQueries.Count > 0;
-            IOrderedQueryable<TEntity>? ordered = null;
-
-            // Apply OrderBy queries first
-            if (hasOrderBy)
+            if (s.OrderByClauses.Count > 0)
             {
-                var isFirst = true;
-                foreach (var expr in specification.OrderByQueries)
-                    if (isFirst)
-                    {
-                        ordered = queryable.OrderBy(expr);
-                        isFirst = false;
-                    }
-                    else
-                    {
-                        ordered = ordered!.ThenBy(expr);
-                    }
+                // Declared-sequence ordering: apply mixed-direction clauses in the order they were added.
+                IOrderedQueryable<TEntity>? ordered = null;
+                foreach (var clause in s.OrderByClauses)
+                    ordered = ordered is null
+                        ? clause.Direction == ListSortDirection.Ascending
+                            ? queryable.OrderBy(clause.KeySelector)
+                            : queryable.OrderByDescending(clause.KeySelector)
+                        : clause.Direction == ListSortDirection.Ascending
+                            ? ordered.ThenBy(clause.KeySelector)
+                            : ordered.ThenByDescending(clause.KeySelector);
+
+                queryable = ordered!;
             }
 
-            // Then apply OrderByDescending queries
-            if (hasOrderByDesc)
-            {
-                if (ordered == null)
-                {
-                    var isFirst = true;
-                    foreach (var expr in specification.OrderByDescendingQueries)
-                        if (isFirst)
-                        {
-                            ordered = queryable.OrderByDescending(expr);
-                            isFirst = false;
-                        }
-                        else
-                        {
-                            ordered = ordered!.ThenByDescending(expr);
-                        }
-                }
-                else
-                {
-                    ordered = specification.OrderByDescendingQueries.Aggregate(
-                        ordered,
-                        (current, expr) => current.ThenByDescending(expr));
-                }
-            }
-
-            if (ordered != null) queryable = ordered;
-        }
-
-        if (specification is Specification<TEntity> ws)
-        {
-            if (ws.IsReadOnly) queryable = queryable.AsNoTracking();
-            if (ws.SkipCount is { } skip) queryable = queryable.Skip(skip);
-            if (ws.TakeCount is { } take) queryable = queryable.Take(take);
+            if (s.IsReadOnly) queryable = queryable.AsNoTracking();
+            if (s.SkipCount is { } skip) queryable = queryable.Skip(skip);
+            if (s.TakeCount is { } take) queryable = queryable.Take(take);
         }
 
         return queryable;
@@ -123,7 +75,8 @@ internal static class SpecificationExtensions
     public static void EnsureSpecHasOrdering<TEntity>(this ISpecification<TEntity> specification)
         where TEntity : class
     {
-        if (specification.OrderByQueries.Count == 0 && specification.OrderByDescendingQueries.Count == 0)
+        var hasOrdering = specification is Specification<TEntity> { OrderByClauses.Count: > 0 };
+        if (!hasOrdering)
             throw new NotSupportedException("The specification must include at least one ordering.");
     }
 

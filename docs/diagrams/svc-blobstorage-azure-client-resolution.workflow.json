@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AzureStorageBlobService: client resolution and SAS signing",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Registration"
+        },
+        "backend": {
+          "label": "Bootstrap step"
+        },
+        "security": {
+          "label": "Client source and SAS signing"
+        },
+        "cloud": {
+          "label": "Azure Blob Storage call"
+        }
+      }
+    },
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "host", "label": "Composition root" },
+    { "id": "svc", "label": "AzureStorageBlobService" },
+    { "id": "fail", "label": "Fails", "variant": "exception" },
+    { "id": "azure", "label": "Azure Storage" }
+  ],
+  "mainPath": ["register", "start", "pick", "container", "ops"],
+  "nodes": [
+    { "id": "register", "lane": "host", "col": 0, "type": "frontend", "label": "AddAzureStorageAdapter", "sublabel": "IConfiguration overload", "width": 172 },
+    { "id": "start", "lane": "svc", "col": 1, "type": "backend", "label": "First operation", "sublabel": "reads the options", "width": 142 },
+    { "id": "pick", "lane": "svc", "col": 2, "type": "security", "label": "Client source", "sublabel": "factory or string", "width": 140 },
+    { "id": "none", "lane": "fail", "col": 3, "type": "security", "label": "ArgumentException", "sublabel": "neither was set", "width": 152 },
+    { "id": "container", "lane": "azure", "col": 3, "type": "cloud", "label": "CreateIfNotExists", "sublabel": "ContainerName", "width": 152 },
+    { "id": "ops", "lane": "azure", "col": 4, "type": "cloud", "label": "Upload / list / delete", "sublabel": "no leading slash", "width": 168 },
+    { "id": "sas", "lane": "azure", "col": 5, "type": "security", "label": "SAS read URL", "sublabel": "1 day by default", "width": 142 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "register", "to": "start", "label": "IOptions" },
+    { "id": "e2", "from": "start", "to": "pick" },
+    { "id": "e3", "from": "pick", "to": "container", "label": "BlobServiceClient", "variant": "emphasis" },
+    { "id": "e4", "from": "pick", "to": "none", "label": "both null", "variant": "security", "role": "error" },
+    { "id": "e5", "from": "container", "to": "ops" },
+    { "id": "e6", "from": "ops", "to": "sas", "label": "GetPublicAccessUrl", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two ways to build the client",
+      "items": [
+        "BlobServiceClientFactory wins when set — the managed-identity hook",
+        "Otherwise ConnectionString builds the client"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Worth knowing",
+      "items": [
+        "A token-credential client cannot sign a SAS",
+        "GetAsync surfaces the SDK 404 instead of returning null"
+      ]
+    }
+  ]
+}

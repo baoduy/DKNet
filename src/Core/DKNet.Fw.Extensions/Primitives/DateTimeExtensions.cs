@@ -31,19 +31,8 @@ public static class DateTimeExtensions
     /// </summary>
     /// <param name="date">The date to get the last day of the month for.</param>
     /// <returns>A DateTime representing the last day of the month.</returns>
-    public static DateTime LastDayOfMonth(this DateTime date)
-    {
-        var lastDay = DateTime.DaysInMonth(date.Year, date.Month);
-        return new DateTime(
-            date.Year,
-            date.Month,
-            lastDay,
-            date.Hour,
-            date.Minute,
-            date.Second,
-            date.Millisecond,
-            DateTimeKind.Local);
-    }
+    public static DateTime LastDayOfMonth(this DateTime date) =>
+        date.AddDays(DateTime.DaysInMonth(date.Year, date.Month) - date.Day);
 
     #endregion
 }

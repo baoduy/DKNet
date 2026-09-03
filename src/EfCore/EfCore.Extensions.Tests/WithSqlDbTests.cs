@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using DKNet.EfCore.Extensions.Extensions;
 
 namespace EfCore.Extensions.Tests;
 
@@ -55,11 +56,97 @@ public class WithSqlDbTests(PostgresFixture fixture) : IClassFixture<PostgresFix
         val2!.Value.ShouldBeGreaterThan(0L);
     }
 
+    /// <summary>
+    ///     Regression for S16: <c>NextSeqValue</c> used to open the context's connection via
+    ///     <c>Database.OpenConnectionAsync()</c>/<c>CloseConnectionAsync()</c> with no <c>try/finally</c>, so any
+    ///     exception between the two leaked the reference-counted open forever. It now releases the open in a
+    ///     <c>finally</c>. This proves an ambient explicit transaction survives a nested sequence call: the
+    ///     connection stays open, further work on the same transaction succeeds, and the transaction still commits.
+    /// </summary>
+    [Fact]
+    public async Task NextSeqValue_WithinExplicitTransaction_DoesNotCloseAmbientConnection()
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        var user = new User("SeqTxTest") { FirstName = "Seq", LastName = "Tx" };
+        _db.Set<User>().Add(user);
+        await _db.SaveChangesAsync();
+
+        var val = await _db.NextSeqValue<SequencesTest, long>(SequencesTest.Invoice);
+        val!.Value.ShouldBeGreaterThan(0L);
+
+        // The ambient transaction's connection must still be open and usable after the sequence call.
+        _db.Database.GetDbConnection().State.ShouldBe(ConnectionState.Open);
+
+        // Further work on the same transaction must still succeed and be committable.
+        var count = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
+        count.ShouldBe(1);
+
+        await tx.CommitAsync();
+
+        var persisted = await _db.Set<User>().CountAsync(u => u.Id == user.Id);
+        persisted.ShouldBe(1);
+    }
+
     [Fact]
     public async Task SequenceValueWithFormatTestAsync()
     {
         var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
         val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
+    }
+
+    /// <summary>
+    ///     Covers the recoverable branch of <see cref="EfCoreExceptionHandler.HandlingAsync" /> (S23): a real
+    ///     <see cref="DbUpdateConcurrencyException" /> carries entries, so the handler reloads the database
+    ///     values, keeps the caller's in-flight edit, and reports <see cref="EfConcurrencyResolution.RetrySaveChanges" />
+    ///     - after which the retried save succeeds.
+    /// </summary>
+    [Fact]
+    public async Task HandlingAsync_WithRealConcurrencyConflict_ReloadsValuesAndReturnsRetrySaveChanges()
+    {
+        // Arrange - same conflicting-update setup as TestConcurrentUpdateThrowsExceptionAsync.
+        var user = new User("ConcurrencyHandlerTest") { FirstName = "Test", LastName = "User" };
+        _db.Set<User>().Add(user);
+        await _db.SaveChangesAsync();
+
+        var dbOptions = _db.GetService<IDbContextServices>().ContextOptions;
+
+        await using var db1 = new MyDbContext(dbOptions);
+        await using var db2 = new MyDbContext(dbOptions);
+
+        var user1 = await db1.Set<User>().FindAsync(user.Id);
+        var user2 = await db2.Set<User>().FindAsync(user.Id);
+
+        user1!.FirstName = "Updated1";
+        await db1.SaveChangesAsync();
+
+        user2!.FirstName = "Updated2";
+
+        DbUpdateConcurrencyException? conflict = null;
+        try
+        {
+            await db2.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            conflict = ex;
+        }
+
+        conflict.ShouldNotBeNull();
+        conflict.Entries.ShouldNotBeEmpty();
+
+        var handler = new EfCoreExceptionHandler();
+
+        // Act
+        var result = await handler.HandlingAsync(db2, conflict);
+
+        // Assert
+        result.ShouldBe(EfConcurrencyResolution.RetrySaveChanges);
+        user2.FirstName.ShouldBe("Updated2", "the caller's in-flight edit must survive the reload");
+
+        // The reload reconciled the row version, so the retried save now succeeds.
+        var saveCount = await db2.SaveChangesAsync();
+        saveCount.ShouldBeGreaterThan(0);
     }
 
     [Fact]

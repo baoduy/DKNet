@@ -109,4 +109,31 @@ public record BlobDetails
 
         #endregion
     }
+
+    /// <summary>
+    ///     BlobData operation backed by a <see cref="Stream" /> instead of a fully-buffered <see cref="BinaryData" />,
+    ///     so a large payload can be saved without holding it all in memory at once.
+    /// </summary>
+    /// <param name="Name">The Name parameter.</param>
+    /// <param name="Data">
+    ///     The content stream. The <see cref="IBlobService" /> implementation reads from it but does not own it —
+    ///     the caller remains responsible for disposing it once the save call completes.
+    /// </param>
+    /// <returns>The result of the operation.</returns>
+    public record BlobStreamData(string Name, Stream Data) : BlobRequest(Name)
+    {
+        #region Properties
+
+        /// <summary>
+        ///     Gets or sets Overwrite.
+        /// </summary>
+        public bool Overwrite { get; set; }
+
+        /// <summary>
+        ///     Gets or sets ContentType.
+        /// </summary>
+        public string ContentType { get; init; } = Name.GetContentTypeByExtension();
+
+        #endregion
+    }
 }

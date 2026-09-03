@@ -20,12 +20,9 @@ Architecture. Each package below is independent and opt-in — pull in only what
 - [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) — the specification pattern
   and `IRepositorySpec`, including the Dynamic Predicate Builder. The current, supported way to
   query and persist through a `DbContext`.
-- [DKNet.EfCore.Repos](./DKNet.EfCore.Repos.md) — **retired**, source-only generic repository,
-  superseded by Specifications. Kept for existing consumers.
-- [DKNet.EfCore.Repos.Abstractions](./DKNet.EfCore.Repos.Abstractions.md) — **retired**,
-  source-only repository interfaces implemented by `DKNet.EfCore.Repos`.
-- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — call-site
-  mapping for moving off `DKNet.EfCore.Repos`/`Repos.Abstractions` onto Specifications.
+- [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — `DKNet.EfCore.Repos`
+  and `DKNet.EfCore.Repos.Abstractions` were removed; this is the call-site mapping for consumers
+  still upgrading off them onto Specifications.
 
 ## SaveChanges pipeline
 
@@ -54,19 +51,30 @@ Architecture. Each package below is independent and opt-in — pull in only what
 
 ## How the pieces fit together
 
-```
-Abstractions  (entity base classes, event/audit attributes)
-     ↑
-Extensions    (DI wiring, global query filters, SnapshotContext)
-     ↑
-Hooks         (SaveChanges interceptor pipeline)
-     ↑
-Events · AuditLogs · DataAuthorization   (each registers a hook)
+Every row is the package's own `ProjectReference` set in `src/EfCore/` — nothing else in the family is pulled in
+implicitly.
 
-Specifications (queries + writes via IRepositorySpec)  ─┐
-Repos / Repos.Abstractions (retired)                    ┴─ both consume Abstractions entities
+| Package | Depends on (inside DKNet) | Attaches to your `DbContext` via |
+|---|---|---|
+| `DKNet.EfCore.Abstractions` | *nothing* | base classes you derive from |
+| `DKNet.EfCore.Extensions` | `DKNet.Fw.Extensions`, `Abstractions` | `UseAutoConfigModel<TContext>()` |
+| `DKNet.EfCore.Hooks` | `DKNet.Fw.Extensions`, `Extensions` | `AddDbContextWithHook<TDbContext>()` |
+| `DKNet.EfCore.Specifications` | `Extensions` | `AddSpecRepo<TDbContext>()` |
+| `DKNet.EfCore.Events` | `Abstractions`, `Hooks` | a hook, plus `AddEventPublisher<TDbContext, TImpl>()` |
+| `DKNet.EfCore.AuditLogs` | `Abstractions`, `Hooks` | a hook, plus `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
+| `DKNet.EfCore.DataAuthorization` | `Extensions`, `Hooks` | a global query filter and a hook, via `AddDataOwnerProvider<TDbContext, TProvider>()` |
+| `DKNet.EfCore.Encryption` | *nothing* | a `ValueConverter`, via `AddEfCoreEncryption<TKeyProvider>()` |
+| `DKNet.EfCore.DtoGenerator` | *nothing* | compile time only — nothing is registered |
+| `DKNet.EfCore.Relational.Helpers` | *nothing* | plain `DbContext` extension methods |
 
-Encryption      (EF Core value converter, independent of the hook pipeline)
-DtoGenerator    (compile-time, independent of the hook pipeline)
-Relational.Helpers (standalone DbContext utilities)
-```
+Two consequences worth remembering:
+
+- **`Events`, `AuditLogs`, and `DataAuthorization` all need the hook pipeline.** Register the context with
+  `AddDbContextWithHook<TDbContext>()`, not `AddDbContext`, or their hooks never run.
+- **`Encryption`, `DtoGenerator`, and `Relational.Helpers` are independent.** They work on a `DbContext` that uses
+  none of the rest of this family.
+
+The same picture across the whole suite, plus a request and a domain event traced end to end, is in the
+[Architecture Guide](../Architecture.md).
+
+![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks.](../diagrams/dknet-onion-packages.svg)

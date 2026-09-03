@@ -4,18 +4,18 @@ using Shouldly;
 
 namespace EfCore.Encryption.Tests;
 
-// Test implementation for abstract class
-internal class TestEncryptionKeyProvider(byte[] key) : EncryptionKeyProvider
+// Test implementation of the key provider interface
+internal class TestEncryptionKeyProvider(byte[] key) : IEncryptionKeyProvider
 {
     #region Methods
 
-    public override byte[] GetKey(Type entityType) => key;
+    public byte[] GetKey(Type entityType) => key;
 
     #endregion
 }
 
 // Another test implementation that returns different keys per type
-internal class TypeSpecificKeyProvider : EncryptionKeyProvider
+internal class TypeSpecificKeyProvider : IEncryptionKeyProvider
 {
     #region Fields
 
@@ -30,7 +30,7 @@ internal class TypeSpecificKeyProvider : EncryptionKeyProvider
         _keys[entityType] = key;
     }
 
-    public override byte[] GetKey(Type entityType) => _keys.TryGetValue(entityType, out var key)
+    public byte[] GetKey(Type entityType) => _keys.TryGetValue(entityType, out var key)
         ? key
         : throw new InvalidOperationException($"No key configured for {entityType.Name}");
 
@@ -40,26 +40,6 @@ internal class TypeSpecificKeyProvider : EncryptionKeyProvider
 public class EncryptionKeyProviderTests
 {
     #region Methods
-
-    [Fact]
-    public void EncryptionKeyProvider_ShouldBeAbstract()
-    {
-        // Arrange & Act
-        var providerType = typeof(EncryptionKeyProvider);
-
-        // Assert
-        providerType.IsAbstract.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void EncryptionKeyProvider_ShouldImplementIEncryptionKeyProvider()
-    {
-        // Arrange & Act
-        var providerType = typeof(EncryptionKeyProvider);
-
-        // Assert
-        typeof(IEncryptionKeyProvider).IsAssignableFrom(providerType).ShouldBeTrue();
-    }
 
     [Fact]
     public void EncryptionKeyProvider_ShouldSupportMultipleImplementations()

@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 using FluentResults;
 
 namespace DKNet.AspCore.Idempotency.Filtering;
@@ -17,6 +16,19 @@ namespace DKNet.AspCore.Idempotency.Filtering;
 /// </remarks>
 public sealed record IdempotentKeyInfo
 {
+    /// <summary>
+    ///     Backing field for <see cref="SafeKey" />, computed lazily on first access. Caching is safe here
+    ///     because every property on this record is <c>init</c>-only and nothing in this codebase copies an
+    ///     instance via a <c>with</c> expression, so once constructed the record never changes.
+    /// </summary>
+    private string? _safeKey;
+
+    /// <summary>
+    ///     Backing field for <see cref="CompositeKey" />, computed lazily on first access. See
+    ///     <see cref="_safeKey" /> for why caching on this record is safe.
+    /// </summary>
+    private string? _compositeKey;
+
     /// <summary>
     ///     Gets or initializes the idempotency key extracted from the request header.
     /// </summary>
@@ -37,28 +49,28 @@ public sealed record IdempotentKeyInfo
     /// <remarks>
     ///     This projection is for logging and client-facing display only — it must never be used to compute
     ///     <see cref="CompositeKey" /> or for storage/lookup, both of which continue to use the raw
-    ///     <see cref="IdempotentKey" />.
+    ///     <see cref="IdempotentKey" />. Computed once and cached: <see cref="IdempotencyEndpointFilter" />
+    ///     reads this property several times per request (every log statement and both 409 bodies).
     /// </remarks>
-    public string SafeKey
+    public string SafeKey => _safeKey ??= ComputeSafeKey();
+
+    private string ComputeSafeKey()
     {
-        get
+        if (string.IsNullOrEmpty(IdempotentKey)) return string.Empty;
+
+        var noNewLines = IdempotentKey
+            .Replace("\r\n", " ", StringComparison.Ordinal)
+            .Replace("\r", " ", StringComparison.Ordinal)
+            .Replace("\n", " ", StringComparison.Ordinal);
+
+        var builder = new StringBuilder(noNewLines.Length);
+        foreach (var c in noNewLines)
         {
-            if (string.IsNullOrEmpty(IdempotentKey)) return string.Empty;
-
-            var noNewLines = IdempotentKey
-                .Replace("\r\n", " ", StringComparison.Ordinal)
-                .Replace("\r", " ", StringComparison.Ordinal)
-                .Replace("\n", " ", StringComparison.Ordinal);
-
-            var builder = new StringBuilder(noNewLines.Length);
-            foreach (var c in noNewLines)
-            {
-                if (char.IsControl(c) || c == '\u2028' || c == '\u2029') continue;
-                builder.Append(c);
-            }
-
-            return builder.ToString();
+            if (char.IsControl(c) || c == '\u2028' || c == '\u2029') continue;
+            builder.Append(c);
         }
+
+        return builder.ToString();
     }
 
     /// <summary>
@@ -127,7 +139,7 @@ public sealed record IdempotentKeyInfo
                 $"Idempotency key must not exceed {options.MaxIdempotencyKeyLength} characters.");
 
         // Validate key format
-        if (!Regex.IsMatch(IdempotentKey, options.IdempotencyKeyPattern))
+        if (!options.IdempotencyKeyPatternRegex.IsMatch(IdempotentKey))
             return Result.Fail(
                 "Idempotency key format is invalid. Allowed characters: alphanumeric, hyphens, underscores.");
 
@@ -166,7 +178,7 @@ public sealed record IdempotentKeyInfo
     ///         </item>
     ///     </list>
     /// </remarks>
-    public string CompositeKey => $"{Scope}:{Method}:{Endpoint}:{IdempotentKey ?? string.Empty}";
+    public string CompositeKey => _compositeKey ??= $"{Scope}:{Method}:{Endpoint}:{IdempotentKey ?? string.Empty}";
 
     /// <summary>
     ///     Returns a log/display-safe representation of this instance.

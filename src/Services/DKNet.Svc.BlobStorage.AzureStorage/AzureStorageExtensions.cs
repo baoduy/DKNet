@@ -4,15 +4,12 @@
 // File: AzureStorageExtensions.cs
 // Description: Small helper extension methods used by the Azure Storage blob provider.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace DKNet.Svc.BlobStorage.AzureStorage;
 
 /// <summary>
 ///     Helper extension methods used by the Azure Storage blob provider.
 ///     Contains simple path and blob helpers used to normalize paths and determine directory entries.
 /// </summary>
-[SuppressMessage("Performance", "CA1867:Use char overload")]
 public static class AzureStorageExtensions
 {
     #region Methods
@@ -24,7 +21,7 @@ public static class AzureStorageExtensions
     /// <param name="path">The path to normalize.</param>
     /// <returns>The input path guaranteed to end with '/'.</returns>
     public static string EnsureTrailingSlash(this string path) =>
-        path.EndsWith("/", StringComparison.OrdinalIgnoreCase) ? path : $"{path}/";
+        path.EndsWith('/') ? path : $"{path}/";
 
     /// <summary>
     ///     Determines whether the given <paramref name="blob" /> represents a virtual directory entry.
@@ -42,7 +39,7 @@ public static class AzureStorageExtensions
     /// <param name="path">The path to normalize.</param>
     /// <returns>The input path without a leading slash.</returns>
     public static string RemoveHeadingSlash(this string path) =>
-        path.StartsWith("/", StringComparison.OrdinalIgnoreCase) ? path[1..] : path;
+        path.StartsWith('/') ? path[1..] : path;
 
     #endregion
 }

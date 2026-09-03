@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "PdfGenerator: what actually happens between Markdown and the PDF on disk",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Markdown to PDF path"
+        },
+        "default": {
+          "label": "Options passed through"
+        },
+        "dashed": {
+          "label": "No code path"
+        },
+        "database": {
+          "label": "Written PDF"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1068,
+      620
+    ]
+  },
+  "stages": [
+    {
+      "label": "Input"
+    },
+    {
+      "label": "Markdown"
+    },
+    {
+      "label": "HTML"
+    },
+    {
+      "label": "Chromium"
+    },
+    {
+      "label": "Output"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "md",
+      "type": "external",
+      "label": "Markdown file",
+      "sublabel": "one or many",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "html_in",
+      "type": "external",
+      "label": "HTML string",
+      "sublabel": "or HTML file",
+      "stage": 0,
+      "row": 2
+    },
+    {
+      "id": "markdig",
+      "type": "backend",
+      "label": "Markdig",
+      "sublabel": "fixed pipeline",
+      "stage": 1,
+      "row": 0,
+      "tag": "3 extensions"
+    },
+    {
+      "id": "html",
+      "type": "backend",
+      "label": "HTML text",
+      "sublabel": "no head, no theme",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "inert",
+      "type": "security",
+      "label": "Unused options",
+      "sublabel": "theme, TOC, modules",
+      "stage": 2,
+      "row": 3,
+      "tag": "never read"
+    },
+    {
+      "id": "page",
+      "type": "cloud",
+      "label": "Headless page",
+      "sublabel": "SetContentAsync",
+      "stage": 3,
+      "row": 1,
+      "tag": "screen media"
+    },
+    {
+      "id": "print",
+      "type": "cloud",
+      "label": "PdfOptions",
+      "sublabel": "format, margins, scale",
+      "stage": 3,
+      "row": 3
+    },
+    {
+      "id": "pdf",
+      "type": "database",
+      "label": "PDF file",
+      "sublabel": "path returned",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "md",
+      "to": "markdig",
+      "label": "file text",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f2",
+      "from": "markdig",
+      "to": "html",
+      "label": "rendered HTML",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f3",
+      "from": "html_in",
+      "to": "html",
+      "label": "passed through"
+    },
+    {
+      "id": "f4",
+      "from": "html",
+      "to": "page",
+      "label": "whole document",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f5",
+      "from": "print",
+      "to": "page",
+      "label": "layout settings"
+    },
+    {
+      "id": "f6",
+      "from": "page",
+      "to": "pdf",
+      "label": "PdfAsync",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f7",
+      "from": "inert",
+      "to": "html",
+      "label": "no code path",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Options the pipeline reads",
+      "items": [
+        "Format, IsLandscape, Scale and MarginOptions become Chromium PdfOptions",
+        "HeaderHtml or FooterHtml turns the header and footer on",
+        "ChromePath skips the on-demand Chromium download"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Options nothing consumes today",
+      "items": [
+        "Theme, CodeHighlightTheme, ModuleOptions and TableOfContents",
+        "DocumentTitle, MetadataTitle, CustomHeadContent, KeepHtml",
+        "The services that would use them are never constructed"
+      ]
+    }
+  ]
+}

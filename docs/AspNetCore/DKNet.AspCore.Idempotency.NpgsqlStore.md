@@ -17,7 +17,7 @@ PostgreSQL-backed `IIdempotencyKeyStore` for
   connection string, so one process fronting several Postgres databases prepares each of them.
 
 Reach for this store when Postgres is already part of your stack — see
-[Choosing a store](DKNet.AspCore.Idempotency.md#️-choosing-a-store) on the core page for how it
+[Choosing a store](DKNet.AspCore.Idempotency.md#-choosing-a-store) on the core page for how it
 compares to Redis and to the SQL Server store; that comparison is not repeated here.
 
 ## 🚀 Quick Start
@@ -50,12 +50,43 @@ await app.RunAsync();
 
 `AddIdempotencyWithNpgsqlStore` (in `IdempotencyNpgsqlSetup`) registers `IdempotencyDbContext` — a
 scoped `AddDbContext` with a singleton `DbContextOptions`, plus an
-`IDbContextFactory<IdempotencyDbContext>` — against the given Npgsql connection string, then calls
-`AddIdempotentKey<IdempotencyPostgresStore>(config)` to wire it up as the `IIdempotencyKeyStore`.
-Call `AddIdempotencyNpgsqlStore(connectionString)` on its own if you only need the `DbContext`
-registered — e.g. to run migrations from a start-up job — without replacing the key store.
+`IDbContextFactory<IdempotencyDbContext>` and a hosted service that migrates the schema once at
+application startup (`IdempotencyMigrationHostedService<IdempotencyDbContext>`) — against the given
+Npgsql connection string, then calls `AddIdempotentKey<IdempotencyPostgresStore>(config)` to wire it
+up as the `IIdempotencyKeyStore`. Call `AddIdempotencyNpgsqlStore(connectionString)` on its own if
+you only need the `DbContext` (and the startup migration) registered without replacing the key store.
 
 ## 🧩 Features
+
+### Registration entry points
+
+`IdempotencyNpgsqlSetup` is the package's only public type, and it declares exactly two extension methods on
+`IServiceCollection`:
+
+| Method | Registers | Does **not** register |
+|---|---|---|
+| `AddIdempotencyNpgsqlStore(string connectionString)` | `IdempotencyDbContext` via `AddDbContext` (scoped context, singleton `DbContextOptions`), `AddDbContextFactory<IdempotencyDbContext>`, and `IdempotencyMigrationHostedService<IdempotencyDbContext>` (migrates at startup) | The key store. Called on its own, no `IIdempotencyKeyStore` exists and `RequiredIdempotentKey()` cannot resolve the filter's dependency. |
+| `AddIdempotencyWithNpgsqlStore(string connectionString, Action<IdempotencyOptions>? config = null)` | Everything the first method does, then `AddIdempotentKey<IdempotencyPostgresStore>(config)` | Nothing — this is the call an application makes. |
+
+Both throw `ArgumentNullException` on a null `services` and `ArgumentException` on a null, empty or
+whitespace connection string, and both are first-wins: a second call with a different connection string is
+silently a no-op once `IdempotencyDbContext` (or any `IIdempotencyKeyStore`) is already registered.
+
+`IdempotencyPostgresStore` is `internal`, so `AddIdempotentKey<IdempotencyPostgresStore>()` is not something
+application code can write — `AddIdempotencyWithNpgsqlStore(...)` is the supported way in. Reach for
+`AddIdempotencyNpgsqlStore(...)` on its own only when you want the `DbContext` registered without replacing
+the key store, for example to run migrations from a start-up job.
+
+### What the package creates, and what you provide
+
+| Thing | Who provides it |
+|---|---|
+| The `IdempotencyKeys` table, `UX_CompositeKey`, `IX_IdempotencyKeys_ExpiresAt` and `CK_StatusCode_Valid` | The package — created by the shipped `Initial` migration |
+| Applying that migration | The package, automatically, once at application startup via a hosted service (or you, ahead of time — see [Gotchas & limits](#-gotchas--limits)) |
+| The `migrate.IdempotencyDbContext` migrations-history table and the `migrate` schema | The package, through EF Core |
+| A reachable PostgreSQL database and a role that can create tables and schemas in it | **You** |
+| Row expiry / cleanup of keys nobody ever retries | **You** — `ExpiresAt` is indexed, but nothing sweeps it |
+| Backup, retention and PII policy for cached response bodies | **You** — `Body` holds the serialized response verbatim |
 
 ### The `IdempotencyKeys` table
 
@@ -87,10 +118,16 @@ protected override bool IsProviderUniqueViolation(DbUpdateException ex) =>
 
 ### Per-connection-string migration guard
 
-Multiple Postgres databases behind the same process — e.g. one store per tenant database — are each
-migrated and guarded independently: the "migrations ensured" state is keyed per connection string,
-not by a single process-wide flag, so registering this store against two different connection
-strings prepares both (see `IdempotencyMultiDatabaseTests`).
+For the common case, migration now happens once at application startup via
+`IdempotencyMigrationHostedService<IdempotencyDbContext>`, which `AddIdempotencyNpgsqlStore` registers
+automatically — see
+[DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational.md#idempotencymigrationhostedservicetcontext--migrate-once-at-startup).
+The relational base's older per-request guard still exists underneath as a defensive fallback (for a host that
+skips or reorders hosted services), and multiple Postgres databases behind the same process — e.g. one store per
+tenant database — are still each migrated and guarded independently there: the "migrations ensured" state is keyed
+per connection string, not by a single process-wide flag, so a process working against more than one connection
+string prepares each one rather than skipping every database after the first (see
+`IdempotencyMultiDatabaseTests`).
 
 ### Design-time tooling
 
@@ -103,7 +140,7 @@ from app configuration, and throws `InvalidOperationException` when that variabl
 
 There is no PostgreSQL-specific options type — expiration, conflict handling, header name, and key
 scope resolution all come from the shared `IdempotencyOptions`; see the
-[core configuration reference](DKNet.AspCore.Idempotency.md#️-configuration-reference).
+[core configuration reference](DKNet.AspCore.Idempotency.md#-configuration-reference).
 
 Registration bakes in Npgsql-specific EF Core configuration rather than exposing it through
 `IdempotencyOptions`:
@@ -118,6 +155,8 @@ Registration bakes in Npgsql-specific EF Core configuration rather than exposing
 
 ## 🧱 Where it fits
 
+![Architecture diagram: one AddIdempotencyWithNpgsqlStore call wires the core package's endpoint filter to IdempotencyPostgresStore, which inherits every shared step from IdempotencyRelationalStore and reaches PostgreSQL's IdempotencyKeys table, applying this package's own migrations history on first use.](../diagrams/idempotency-npgsql-composition.svg)
+
 `IdempotencyPostgresStore` supplies only the Postgres unique-violation check; the reserve → check →
 complete flow, the expired-reservation reclaim, and the per-connection-string migration guard all
 live in `IdempotencyRelationalStore<TContext>` — see
@@ -129,10 +168,12 @@ is the relational base's. The HTTP-facing pieces — endpoint filter, key scope 
 
 ## ⚠️ Gotchas & limits
 
-- **Migrations run automatically**, not on demand: the first call against a given connection string
-  checks for and applies pending migrations under a lock. There is no separate "apply migrations"
-  step to remember, but also no opt-out — the first request against a fresh database pays that
-  cost.
+- **Migrations run automatically**, not on demand: `AddIdempotencyNpgsqlStore` registers a hosted service
+  (`IdempotencyMigrationHostedService<IdempotencyDbContext>`) that applies pending migrations once at application
+  startup. There is no separate "apply migrations" step to remember, but also no opt-out. A host that skips or
+  reorders hosted services falls back to the relational base's per-request guard instead, which checks for and
+  applies pending migrations under a lock the first time the store is used against a given connection string — so
+  the first request against a fresh database pays that cost in that case.
 - **Registration is first-wins.** `AddIdempotencyNpgsqlStore` / `AddIdempotencyWithNpgsqlStore`
   return early once `IdempotencyDbContext` is registered, and `AddIdempotentKey<TStore>` returns
   early once an `IIdempotencyKeyStore` is registered — calling either again, even with a different

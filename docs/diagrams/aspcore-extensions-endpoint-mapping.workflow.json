@@ -1,0 +1,223 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How UseEndpointConfigs turns an IEndpointConfig into a mapped route group",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Mapping step"
+        },
+        "security": {
+          "label": "Guard / policy"
+        },
+        "external": {
+          "label": "Entry and early exit"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "host",
+      "label": "Host start-up"
+    },
+    {
+      "id": "group",
+      "label": "Per-config route group"
+    },
+    {
+      "id": "exits",
+      "label": "Early exits",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "discover",
+      "label": "Guard, then discover",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "build",
+      "label": "Build the group",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "wire",
+      "label": "Filters, authorization, Map",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "entry",
+    "discovery",
+    "versioned",
+    "population",
+    "hostsetup",
+    "authmap"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "entry"
+    ],
+    "allowedTerminals": [
+      "noversioning",
+      "nogroups",
+      "nopopulation",
+      "authmap"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "entry",
+      "lane": "host",
+      "col": 0,
+      "type": "external",
+      "label": "app.UseEndpointConfigs()",
+      "sublabel": "options plus assemblies to scan",
+      "width": 158
+    },
+    {
+      "id": "noversioning",
+      "lane": "exits",
+      "col": 0,
+      "type": "security",
+      "label": "InvalidOperationException",
+      "sublabel": "EnableVersioning on, no AddApiVersioning",
+      "tag": "thrown before discovery",
+      "width": 200
+    },
+    {
+      "id": "discovery",
+      "lane": "host",
+      "col": 1,
+      "type": "backend",
+      "label": "Discover IEndpointConfig",
+      "sublabel": "non-abstract, non-generic classes",
+      "tag": "every loaded assembly by default",
+      "width": 167
+    },
+    {
+      "id": "nogroups",
+      "lane": "exits",
+      "col": 1,
+      "type": "external",
+      "label": "Empty list returned",
+      "sublabel": "nothing is mapped",
+      "width": 124
+    },
+    {
+      "id": "versioned",
+      "lane": "group",
+      "col": 2,
+      "type": "backend",
+      "label": "Versioned route group",
+      "sublabel": "MapGroup, version metadata, tags",
+      "tag": "one ApiVersionSet for every config",
+      "width": 162
+    },
+    {
+      "id": "population",
+      "lane": "group",
+      "col": 3,
+      "type": "security",
+      "label": "Contextual population filter",
+      "sublabel": "added first, ahead of host filters",
+      "width": 185
+    },
+    {
+      "id": "nopopulation",
+      "lane": "exits",
+      "col": 3,
+      "type": "security",
+      "label": "InvalidOperationException",
+      "sublabel": "declared source, mechanism never registered",
+      "width": 215
+    },
+    {
+      "id": "hostsetup",
+      "lane": "group",
+      "col": 4,
+      "type": "backend",
+      "label": "ConfigureGroup(group, config)",
+      "sublabel": "host filters, e.g. validation",
+      "width": 192
+    },
+    {
+      "id": "authmap",
+      "lane": "group",
+      "col": 5,
+      "type": "backend",
+      "label": "RequireAuthorization, Map",
+      "sublabel": "AuthPolicy, or no policy",
+      "width": 164
+    }
+  ],
+  "edges": [
+    {
+      "id": "guard-fails",
+      "from": "entry",
+      "to": "noversioning",
+      "label": "no versioning services",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "guard-passes",
+      "from": "entry",
+      "to": "discovery",
+      "label": "guard passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "found-none",
+      "from": "discovery",
+      "to": "nogroups",
+      "label": "zero configs",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "found-configs",
+      "from": "discovery",
+      "to": "versioned",
+      "label": "one group per config",
+      "variant": "emphasis"
+    },
+    {
+      "id": "add-filter",
+      "from": "versioned",
+      "to": "population",
+      "variant": "default"
+    },
+    {
+      "id": "unregistered",
+      "from": "population",
+      "to": "nopopulation",
+      "label": "at endpoint build",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "then-host",
+      "from": "population",
+      "to": "hostsetup",
+      "variant": "default"
+    },
+    {
+      "id": "then-auth",
+      "from": "hostsetup",
+      "to": "authmap",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "bottom"
+    }
+  ]
+}

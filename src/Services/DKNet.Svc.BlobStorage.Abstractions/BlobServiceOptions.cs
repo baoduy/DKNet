@@ -9,7 +9,7 @@ public class BlobServiceOptions
 
     /// <summary>
     /// </summary>
-    public IEnumerable<string> IncludedExtensions { get; set; } = [];
+    public IReadOnlyList<string> IncludedExtensions { get; set; } = [];
 
     /// <summary>
     ///     Gets or sets MaxFileNameLength.

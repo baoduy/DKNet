@@ -43,7 +43,7 @@ services.AddHook<AppDbContext, MyAuditHook>();
 `AddDbContextWithHook<TDbContext>` has two overloads — one taking `Action<IServiceProvider, DbContextOptionsBuilder>`, one taking `Action<DbContextOptionsBuilder<TDbContext>>` — both mirroring the standard `AddDbContext` overloads and internally calling `AddHookRunner<TDbContext>()` plus `options.UseHooks<TDbContext>(provider)` for you. If you must register the `DbContext` yourself (e.g. a base class already calls `AddDbContext`), call `UseHooks<TDbContext>(provider)` explicitly inside your own options delegate instead:
 
 ```csharp
-services.AddHookRunner<AppDbContext>(); // internal-only: normally implied by AddDbContextWithHook/AddHook
+services.AddHook<AppDbContext, MyAuditHook>(); // also registers the interceptor for AppDbContext
 services.AddDbContext<AppDbContext>((provider, options) =>
 {
     options.UseSqlServer(connectionString);
@@ -99,12 +99,14 @@ public sealed class AuditStampHook(ICurrentUserService currentUser) : IBeforeSav
         var now = DateTimeOffset.UtcNow;
         foreach (var entry in context.Entities)
         {
-            if (entry.Entity is not IAuditedProperties audited) continue;
+            if (entry.Entity is not IAuditedProperties) continue;
 
+            // IAuditedProperties declares get-only properties on purpose, so write through the
+            // tracked entry rather than assigning to the interface.
             if (entry.OriginalState == EntityState.Added)
-                audited.CreatedBy = currentUser.UserId;
+                entry.Entry.Property(nameof(IAuditedProperties.CreatedBy)).CurrentValue = currentUser.UserId;
             if (entry.OriginalState is EntityState.Added or EntityState.Modified)
-                audited.UpdatedOn = now;
+                entry.Entry.Property(nameof(IAuditedProperties.UpdatedOn)).CurrentValue = now;
         }
 
         return Task.CompletedTask;
@@ -119,7 +121,10 @@ public sealed class DomainEventPublishingHook(IEventPublisher publisher) : IAfte
         {
             if (entry.Entity is not IEventEntity eventEntity) continue;
 
-            foreach (var domainEvent in eventEntity.GetEvents())
+            // GetEvents() returns (object[] Events, Type[] EventTypes); the second queue needs an
+            // IMapper to materialise, which is what DKNet.EfCore.Events does for you.
+            var (events, _) = eventEntity.GetEvents();
+            foreach (var domainEvent in events)
                 await publisher.PublishAsync(domainEvent, cancellationToken);
 
             eventEntity.ClearEvents();
@@ -181,6 +186,11 @@ There is no options object for this package — behavior is controlled entirely 
 | Disabling hooks | Enabled | `dbContext.DisableHooks()` around a `using`/`await using` scope |
 
 ## 🧱 Where it fits
+
+The interceptor owns two points inside one `SaveChangesAsync` — before EF Core writes, and after it has written
+successfully — plus the two exits where your hooks are skipped entirely:
+
+![Workflow diagram of one SaveChangesAsync: SavingChangesAsync builds a HookContext that resolves the registered hooks and captures a snapshot, before-save hooks run in DI order, EF Core writes, and SavedChangesAsync runs the after-save hooks. A DisableHooks scope or an empty change set skips both phases, and a failed save disposes the context without running after-save hooks.](../diagrams/efcore-hooks-save-pipeline.svg)
 
 `DKNet.EfCore.Events`, `DKNet.EfCore.AuditLogs`, and `DKNet.EfCore.DataAuthorization` are all built as hooks on top of this package, sharing the same `HookRunnerInterceptor` pipeline and the same `SnapshotContext` type — verified directly against their internal hook classes:
 

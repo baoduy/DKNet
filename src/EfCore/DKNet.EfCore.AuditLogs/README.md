@@ -40,4 +40,31 @@ public sealed class MyAuditLogPublisher : IAuditLogPublisher
 }
 ```
 
-Full documentation: https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.AuditLogs.md
+## Customisation reference
+
+`AddEfCoreAuditHook<TDbContext>` and `AddEfCoreAuditLogs<TDbContext, TPublisher>` take the same two optional
+arguments. They are fixed at registration time for the whole application — there is no per-save or per-entity
+override, and no options class to reconfigure afterwards.
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `behaviour` | `AuditLogBehaviour` | `IncludeAllAuditedEntities` | `IncludeAllAuditedEntities` audits every `IAuditedProperties` entity not marked `[IgnoreAuditLog]`. `OnlyAttributedAuditedEntities` audits only entities marked `[AuditLog]` at class level. |
+| `propertyPolicy` | `AuditPropertyPolicy` | `RedactSensitive` | `RedactSensitive` captures every non-ignored property, replacing sensitive-looking values with `***REDACTED***`. `OnlyAttributedProperties` captures only properties marked `[AuditLog]`. |
+
+Attribute-level control comes from `DKNet.EfCore.Abstractions`:
+
+| Attribute | On | Effect |
+|---|---|---|
+| `[IgnoreAuditLog]` | class or property | Excluded unconditionally, whatever the behaviour and policy. |
+| `[AuditLog]` | class | Opts the entity in under `OnlyAttributedAuditedEntities`. |
+| `[AuditLog]` | property | Forces plaintext past the sensitive-name patterns, and allow-lists it under `OnlyAttributedProperties`. |
+| `[SensitiveData]` | property | Always redacted, even alongside `[AuditLog]`. |
+
+The built-in sensitive-name fragments are `password`, `secret`, `token`, `apikey`, `api_key`, `ssn`,
+`socialsecuritynumber`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`, `passphrase`, `accesskey`
+and `salt` (case-insensitive substring match), plus any property typed `SecureString`. The list is not
+configurable — use `[SensitiveData]` to add to it and `[AuditLog]` to opt out of it per property.
+
+An entity that does not implement `IAuditedProperties` is skipped before any attribute is inspected.
+
+Full documentation: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.AuditLogs.md

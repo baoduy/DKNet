@@ -97,7 +97,8 @@ services.AddTransformerService(options =>
 `DefaultDefinitions` is add-only (there is no setter) and already contains `SquareBrackets`, so the square-bracket style
 stays active alongside anything you add.
 
-Define your own pair with `new TokenDefinition(begin, end)` — it throws `ArgumentException` for a null or whitespace tag.
+Define your own pair with `new TokenDefinition(begin, end)` (from `DKNet.Svc.Transformation.TokenExtractors`) —
+it throws `ArgumentException` for a null or whitespace tag.
 A candidate only counts as a token when its inner text is non-empty and contains **no** character from either tag, so
 `[Total (USD)]` resolves but `[a[b]` does not.
 
@@ -111,7 +112,7 @@ public enum TokenNotFoundBehavior { LeaveAsIs, Remove, ThrowError } // default: 
 services.AddTransformerService(options => options.TokenNotFoundBehavior = TokenNotFoundBehavior.LeaveAsIs);
 ```
 
-`ThrowError` (the default) throws `UnResolvedTokenException` on the first token nothing can resolve; `LeaveAsIs` keeps
+`ThrowError` (the default) throws `UnResolvedTokenException` on the first token nothing can resolve; (`InvalidTokenException` is the other exception type in the package — thrown when a `TokenResult` is constructed from text its `ITokenDefinition` rejects, which only surfaces if you build custom extractors); `LeaveAsIs` keeps
 the token text verbatim; `Remove` replaces it with an empty string. A property that exists but holds `null` counts as
 unresolved — there is no way to distinguish "missing" from "null" here.
 
@@ -144,6 +145,23 @@ services.AddTransformerService(options => options.Formatter = new IsoDateFormatt
 `Convert` receives the `IToken` as well as the value, so a custom formatter can branch on `token.Key` when one template
 needs a token-specific format.
 
+### Public extension points — what you can and cannot replace
+
+The value-resolution surface is only partly open. Check the column before designing against an interface:
+
+| Type | Accessibility | Can you supply your own? |
+|---|---|---|
+| `ITokenDefinition` / `TokenDefinition` | `public interface` / `public sealed class` | **Yes** — add instances to `TransformOptions.DefaultDefinitions`. |
+| `IValueFormatter` / `ValueFormatter` | `public interface` / `public class`, `Convert` and the three format properties are `virtual` | **Yes** — assign `TransformOptions.Formatter`. |
+| `ITransformerService` | `public interface` | **Yes** — register your own implementation before calling `AddTransformerService`, which then returns early. |
+| `ITokenExtractor` | `public interface`, but `TokenExtractor` is `internal sealed` | **No** — `TransformerService` builds one extractor per definition itself; there is no property or parameter that accepts an `ITokenExtractor`. |
+| `ITokenResolver` | `public interface`, but `TokenResolver` is `internal sealed` | **No** — `TransformerService` constructs `new TokenResolver()` in a field initializer; nothing reads an `ITokenResolver` from options or DI. |
+| `IToken` / `TokenResult` | `public interface`, `TokenResult` is `internal sealed` | Read-only — you receive `IToken` in a formatter; you never construct one. |
+
+So: to change *which* text counts as a token, add a definition. To change *how* a resolved value is rendered,
+supply a formatter. To change *how* a value is looked up, replace `ITransformerService` outright — there is no
+smaller seam.
+
 ### Global parameters
 
 ```csharp
@@ -167,6 +185,11 @@ shared by every template the app renders (company name, support address). With n
 | `TokenNotFoundBehavior` | `TokenNotFoundBehavior` | `ThrowError` | `LeaveAsIs` / `Remove` for lenient rendering. |
 
 ## 🧱 Where it fits
+
+One `Transform` call runs the whole chain — extract, resolve, format, rebuild — and the two swappable pieces sit
+at the ends of it:
+
+![Data-flow diagram: the template string is scanned by one extractor per token definition, producing tokens with a key and an index; TokenResolver looks each key up against the call's parameters and then the global parameters, taking the first non-null value; resolved values go through IValueFormatter and unresolved ones through the not-found policy, and both feed the filled string that is rebuilt in a single pass.](../diagrams/svc-transformation-token-resolution.svg)
 
 - **[DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md)** — fill a Markdown or HTML template here, then convert the
   filled result to PDF.
@@ -195,8 +218,10 @@ shared by every template the app renders (company name, support address). With n
   template.
 - **Overlapping bracket styles are ambiguous.** Enabling both `CurlyBrackets` and `DoubleCurlyBrackets` means the same
   text can match two definitions and be substituted twice; pick one of the two.
-- **`ITokenExtractor`/`ITokenResolver` implementations are `internal`.** Extend behaviour through `TransformOptions`
-  (definitions, formatter, not-found behaviour), not by implementing those interfaces.
+- **`ITokenExtractor` and `ITokenResolver` are public interfaces with no injection point.** Both implementations
+  are `internal sealed`, and `TransformerService` constructs them itself — implementing either interface compiles
+  but nothing will ever call it. Extend behaviour through `TransformOptions` (definitions, formatter, not-found
+  behaviour), or replace `ITransformerService` entirely.
 - **No conditionals, loops, or partials.** This is token substitution, not a template engine — reach for Razor,
   Scriban, or Handlebars if a template needs logic.
 
