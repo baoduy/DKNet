@@ -222,21 +222,21 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         {
             var directory = new DirectoryInfo(internalLocation);
 
-            foreach (var file in directory.EnumerateFiles("*", SearchOption.AllDirectories))
+            // Single recursive walk instead of a separate EnumerateFiles then EnumerateDirectories pass:
+            // both used to walk the whole tree independently, doubling the syscalls for the same result.
+            // Files and directories now interleave in whatever order the file system yields them rather
+            // than files-then-directories; no consumer or test depends on that ordering.
+            foreach (var entry in directory.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                yield return new BlobDetails.BlobResult(GetRelativePath(file.FullName))
-                {
-                    Type = BlobTypes.File,
-                    Details = CreateBlobDetails(file)
-                };
-            }
-
-            foreach (var folder in directory.EnumerateDirectories("*", SearchOption.AllDirectories))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return new BlobDetails.BlobResult(GetRelativePath(folder.FullName));
+                yield return entry is FileInfo file
+                    ? new BlobDetails.BlobResult(GetRelativePath(file.FullName))
+                    {
+                        Type = BlobTypes.File,
+                        Details = CreateBlobDetails(file)
+                    }
+                    : new BlobDetails.BlobResult(GetRelativePath(entry.FullName));
             }
         }
         else

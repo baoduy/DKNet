@@ -28,6 +28,12 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     private readonly S3Options _options = options.Value;
 
+    // Race-safe run-once client build + bucket-ensure: the service is registered as a singleton (the
+    // AWS SDK client is documented thread-safe and meant to be long-lived), so without this lazy, concurrent
+    // first callers would each build their own client and each pay the ListBuckets/PutBucket round trip.
+    private readonly Lazy<Task<AmazonS3Client>> _clientLazy =
+        new(() => BuildClientAsync(options.Value, logger), LazyThreadSafetyMode.ExecutionAndPublication);
+
     private AmazonS3Client? _client;
 
     #endregion
@@ -248,46 +254,57 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     }
 
     /// <summary>
-    ///     Creates or returns a cached <see cref="AmazonS3Client" /> configured from <see cref="S3Options" />.
-    ///     The client will attempt to create the configured bucket if it does not already exist.
+    ///     Returns the process-lifetime <see cref="AmazonS3Client" /> configured from <see cref="S3Options" />,
+    ///     building it and ensuring the configured bucket exactly once even when awaited concurrently by
+    ///     multiple callers.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>An initialized <see cref="AmazonS3Client" /> instance.</returns>
     private async Task<AmazonS3Client> GetS3ClientAsync(CancellationToken cancellationToken = default)
     {
-        if (_client != null) return _client;
+        var client = await _clientLazy.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+        _client = client;
+        return client;
+    }
 
+    /// <summary>
+    ///     Builds the <see cref="AmazonS3Client" /> and creates the configured bucket if it does not already
+    ///     exist. Invoked at most once per instance via <see cref="_clientLazy" />. Static so it can be used
+    ///     as a field-initializer delegate, closing only over the constructor parameters rather than instance state.
+    /// </summary>
+    /// <param name="options">The configured <see cref="S3Options" />.</param>
+    /// <param name="logger">Logger instance for diagnostic output.</param>
+    /// <returns>The newly built and bucket-verified <see cref="AmazonS3Client" />.</returns>
+    private static async Task<AmazonS3Client> BuildClientAsync(S3Options options, ILogger<S3BlobService> logger)
+    {
         var config = new AmazonS3Config
         {
-            ServiceURL = _options.ConnectionString,
-            ForcePathStyle = _options.ForcePathStyle,
-            UseHttp = !_options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
+            ServiceURL = options.ConnectionString,
+            ForcePathStyle = options.ForcePathStyle,
+            UseHttp = !options.ConnectionString.StartsWith("https", StringComparison.CurrentCultureIgnoreCase),
             RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
             ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
         };
 
-        if (!string.IsNullOrWhiteSpace(_options.AccessKey) && !string.IsNullOrWhiteSpace(_options.Secret))
+        AmazonS3Client client;
+        if (!string.IsNullOrWhiteSpace(options.AccessKey) && !string.IsNullOrWhiteSpace(options.Secret))
         {
-            _client = new AmazonS3Client(
-                new BasicAWSCredentials(_options.AccessKey, _options.Secret),
-                config);
+            client = new AmazonS3Client(new BasicAWSCredentials(options.AccessKey, options.Secret), config);
             logger.LogInformation("Loaded AmazonS3Client with BasicAWSCredentials");
         }
         else
         {
-            _client = new AmazonS3Client(config);
+            client = new AmazonS3Client(config);
             logger.LogInformation("Loaded AmazonS3Client without Credentials");
         }
 
         //Create Bucket if not exists
-        var buckets = await _client.ListBucketsAsync(cancellationToken);
+        var buckets = await client.ListBucketsAsync();
         if (buckets.Buckets is null || !buckets.Buckets.Exists(b =>
-                b.BucketName.Equals(_options.BucketName, StringComparison.OrdinalIgnoreCase)))
-            await _client.PutBucketAsync(
-                new PutBucketRequest { BucketName = _options.BucketName },
-                cancellationToken);
+                b.BucketName.Equals(options.BucketName, StringComparison.OrdinalIgnoreCase)))
+            await client.PutBucketAsync(new PutBucketRequest { BucketName = options.BucketName });
 
-        return _client;
+        return client;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using DKNet.Svc.BlobStorage.AwsS3;
@@ -261,6 +262,44 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
 
         Should.NotThrow(service.Dispose);
         Should.NotThrow(service.Dispose); // second call must be a no-op, not re-dispose a null client
+    }
+
+    [Fact]
+    public async Task GetS3ClientAsync_ConcurrentFirstCallers_BuildsClientAndProbesBucketExactlyOnce()
+    {
+        // Regression for P10: the client used to be built (and the bucket-ensure ListBuckets/PutBucket
+        // probe run) on every scoped instance, and even within one instance the null-check guard was not
+        // thread-safe. S3BlobService.BuildClientAsync logs exactly once per client build, so counting
+        // Information-level log entries across many concurrent first callers on a single instance proves
+        // the client build (and bucket probe) runs exactly once rather than once per caller.
+        var logger = new CountingLogger<S3BlobService>();
+        var service = new S3BlobService(Options.Create(fixture.Options), logger);
+
+        await Task.WhenAll(Enumerable.Range(0, 20)
+            .Select(i => service.CheckExistsAsync(new BlobRequest($"concurrent-probe-{i}-{Guid.NewGuid()}.txt"))));
+
+        logger.InformationCount.ShouldBe(1);
+    }
+
+    /// <summary>
+    ///     Minimal <see cref="ILogger{TCategoryName}" /> test double that counts Information-level log calls,
+    ///     used to observe how many times a one-time initialization path actually ran.
+    /// </summary>
+    private sealed class CountingLogger<T> : ILogger<T>
+    {
+        private int _informationCount;
+
+        public int InformationCount => _informationCount;
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Information) Interlocked.Increment(ref _informationCount);
+        }
     }
 
     #endregion

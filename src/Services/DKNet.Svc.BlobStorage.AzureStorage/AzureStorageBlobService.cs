@@ -4,6 +4,8 @@
 // File: AzureStorageBlobService.cs
 // Description: Azure Blob Storage implementation of the BlobService abstraction.
 
+using Azure;
+
 namespace DKNet.Svc.BlobStorage.AzureStorage;
 
 /// <summary>
@@ -24,7 +26,11 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     private readonly AzureStorageOptions _options =
         options.Value ?? throw new ArgumentNullException(nameof(options));
 
-    private BlobContainerClient? _containerClient;
+    // Race-safe run-once client build + container-ensure: the service is registered as a singleton (the
+    // BlobContainerClient is documented thread-safe and meant to be long-lived), so without this lazy,
+    // concurrent first callers would each build their own client and each pay the CreateIfNotExists round trip.
+    private readonly Lazy<Task<BlobContainerClient>> _containerClientLazy =
+        new(() => BuildContainerClientAsync(options.Value), LazyThreadSafetyMode.ExecutionAndPublication);
 
     #endregion
 
@@ -121,22 +127,26 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
         var client = await GetClient();
         var location = GetBlobLocation(blob);
         var b = client.GetBlobClient(location);
-        var props = await b.GetPropertiesAsync(cancellationToken: cancellationToken);
-        var es = await b.ExistsAsync(cancellationToken);
-        if (!es.Value) return null;
-
-        var data = await b.DownloadContentAsync(cancellationToken);
-        return new BlobDetails.BlobDataResult(blob.Name, data.Value.Content)
+        try
         {
-            Type = BlobTypes.File,
-            Details = new BlobDetails
+            var data = await b.DownloadContentAsync(cancellationToken);
+            var props = data.Value.Details;
+            return new BlobDetails.BlobDataResult(blob.Name, data.Value.Content)
             {
-                ContentType = props.Value.ContentType,
-                ContentLength = props.Value.ContentLength,
-                CreatedOn = props.Value.CreatedOn.LocalDateTime,
-                LastModified = props.Value.LastModified.LocalDateTime
-            }
-        };
+                Type = BlobTypes.File,
+                Details = new BlobDetails
+                {
+                    ContentType = props.ContentType,
+                    ContentLength = props.ContentLength,
+                    CreatedOn = props.CreatedOn.LocalDateTime,
+                    LastModified = props.LastModified.LocalDateTime
+                }
+            };
+        }
+        catch (RequestFailedException e) when (e.Status == 404)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -159,25 +169,34 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     }
 
     /// <summary>
-    ///     Creates or returns a cached <see cref="BlobContainerClient" /> for the configured container.
+    ///     Returns the process-lifetime <see cref="BlobContainerClient" /> for the configured container, building
+    ///     it and ensuring the container exactly once even when awaited concurrently by multiple callers.
     /// </summary>
     /// <returns>An initialized <see cref="BlobContainerClient" /> instance.</returns>
-    private async Task<BlobContainerClient> GetClient()
-    {
-        if (_containerClient != null) return _containerClient;
+    private Task<BlobContainerClient> GetClient() => _containerClientLazy.Value;
 
-        var client = _options switch
+    /// <summary>
+    ///     Builds the <see cref="BlobContainerClient" /> and creates the configured container if it does not
+    ///     already exist. Invoked at most once per instance via <see cref="_containerClientLazy" />. Static so
+    ///     it can be used as a field-initializer delegate, closing only over the constructor parameter rather
+    ///     than instance state.
+    /// </summary>
+    /// <param name="options">The configured <see cref="AzureStorageOptions" />.</param>
+    /// <returns>The newly built and container-verified <see cref="BlobContainerClient" />.</returns>
+    private static async Task<BlobContainerClient> BuildContainerClientAsync(AzureStorageOptions options)
+    {
+        var client = options switch
         {
-            { BlobServiceClientFactory: not null } => await _options.BlobServiceClientFactory.Invoke(_options),
+            { BlobServiceClientFactory: not null } => await options.BlobServiceClientFactory.Invoke(options),
             { ConnectionString: { } cs } => new BlobServiceClient(cs),
             _ => throw new ArgumentException(
                 "AzureStorageOptions requires either a ConnectionString or BlobServiceClientFactory to be set.")
         };
 
-        _containerClient = client.GetBlobContainerClient(_options.ContainerName);
-        await _containerClient!.CreateIfNotExistsAsync();
+        var containerClient = client.GetBlobContainerClient(options.ContainerName);
+        await containerClient.CreateIfNotExistsAsync();
 
-        return _containerClient;
+        return containerClient;
     }
 
     /// <summary>
