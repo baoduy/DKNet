@@ -493,6 +493,126 @@ public class KeysetQueryExtensionsTests : IClassFixture<TestDbFixture>
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // DRK-628 T3 — cursor is a query parameter, not an inlined literal (S10)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    ///     Strips <c>ToQueryString()</c>'s <c>.param set @X value</c> debug preamble, leaving only the
+    ///     actual SQL command text that gets sent to the database (and cached as a query plan).
+    /// </summary>
+    private static string CommandTextOnly(string queryString)
+    {
+        var index = queryString.IndexOf("SELECT", StringComparison.Ordinal);
+        return index < 0 ? queryString : queryString[index..];
+    }
+
+    /// <summary>
+    ///     Verifies that AfterKeyset (single key) binds the cursor as a SQL parameter rather than an
+    ///     inlined literal: the command text contains a parameter placeholder, not the cursor's digits.
+    /// </summary>
+    [Fact]
+    public void AfterKeyset_SingleKey_BindsCursorAsParameter_NotLiteral()
+    {
+        // Act
+        var sql = _context.Products.OrderBy(p => p.Id).AfterKeyset(p => p.Id, 424242).ToQueryString();
+        var commandText = CommandTextOnly(sql);
+
+        // Assert
+        commandText.ShouldContain("@");
+        commandText.ShouldNotContain("424242");
+    }
+
+    /// <summary>
+    ///     Verifies that two AfterKeyset (single key) queries built from different cursor values produce
+    ///     byte-identical SQL command text, i.e. the same server-side query plan is reused instead of one
+    ///     plan per distinct cursor.
+    /// </summary>
+    [Fact]
+    public void AfterKeyset_SingleKey_DifferentCursors_ProduceIdenticalCommandText()
+    {
+        // Act
+        var sql1 = CommandTextOnly(_context.Products.OrderBy(p => p.Id).AfterKeyset(p => p.Id, 5).ToQueryString());
+        var sql2 = CommandTextOnly(_context.Products.OrderBy(p => p.Id).AfterKeyset(p => p.Id, 999).ToQueryString());
+
+        // Assert
+        sql1.ShouldBe(sql2);
+    }
+
+    /// <summary>
+    ///     Verifies that BeforeKeyset (single key) also binds its cursor as a parameter.
+    /// </summary>
+    [Fact]
+    public void BeforeKeyset_SingleKey_BindsCursorAsParameter_NotLiteral()
+    {
+        // Act
+        var sql = _context.Products.OrderByDescending(p => p.Id).BeforeKeyset(p => p.Id, 424242).ToQueryString();
+        var commandText = CommandTextOnly(sql);
+
+        // Assert
+        commandText.ShouldContain("@");
+        commandText.ShouldNotContain("424242");
+    }
+
+    /// <summary>
+    ///     Verifies that AfterKeyset (composite key) binds both cursor values as parameters and that two
+    ///     queries built from different cursor pairs produce identical command text.
+    /// </summary>
+    [Fact]
+    public void AfterKeyset_CompositeKey_DifferentCursors_ProduceIdenticalCommandText()
+    {
+        // Act
+        var sql1 = CommandTextOnly(_context.Products
+            .OrderBy(p => p.CreatedDate).ThenBy(p => p.Id)
+            .AfterKeyset(p => p.CreatedDate, p => p.Id, new DateTime(2020, 1, 1), 5)
+            .ToQueryString());
+        var sql2 = CommandTextOnly(_context.Products
+            .OrderBy(p => p.CreatedDate).ThenBy(p => p.Id)
+            .AfterKeyset(p => p.CreatedDate, p => p.Id, new DateTime(2024, 6, 15), 999)
+            .ToQueryString());
+
+        // Assert
+        sql1.ShouldBe(sql2);
+        sql1.ShouldNotContain("999");
+    }
+
+    /// <summary>
+    ///     Verifies the composite forward predicate carries the redundant leading
+    ///     <c>key1 &gt;= cursor1</c> conjunct ahead of the OR-decomposition — the same index-seek aid
+    ///     <c>MR.EntityFrameworkCore.KeysetPagination</c>'s default strategy adds for multi-column keysets.
+    /// </summary>
+    [Fact]
+    public void AfterKeyset_CompositeKey_EmitsLeadingColumnSeekBound()
+    {
+        // Act
+        var sql = CommandTextOnly(_context.Products
+            .OrderBy(p => p.CreatedDate).ThenBy(p => p.Id)
+            .AfterKeyset(p => p.CreatedDate, p => p.Id, new DateTime(2020, 1, 1), 5)
+            .ToQueryString());
+
+        // Assert
+        sql.ShouldContain("\"p\".\"CreatedDate\" >= @");
+        sql.ShouldContain("\"p\".\"CreatedDate\" > @");
+        sql.ShouldContain(" OR (\"p\".\"CreatedDate\" = @");
+    }
+
+    /// <summary>
+    ///     Verifies the composite backward predicate uses the mirrored <c>&lt;=</c> leading bound.
+    /// </summary>
+    [Fact]
+    public void BeforeKeyset_CompositeKey_EmitsLeadingColumnSeekBound()
+    {
+        // Act
+        var sql = CommandTextOnly(_context.Products
+            .OrderByDescending(p => p.CreatedDate).ThenByDescending(p => p.Id)
+            .BeforeKeyset(p => p.CreatedDate, p => p.Id, new DateTime(2020, 1, 1), 5)
+            .ToQueryString());
+
+        // Assert
+        sql.ShouldContain("\"p\".\"CreatedDate\" <= @");
+        sql.ShouldContain("\"p\".\"CreatedDate\" < @");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Argument validation
     // ──────────────────────────────────────────────────────────────────────
 

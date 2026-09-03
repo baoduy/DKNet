@@ -17,6 +17,19 @@ namespace LinqKit;
 /// </summary>
 public static class DynamicPredicateExtensions
 {
+    #region Constants
+
+    /// <summary>
+    ///     Parsing configuration for the typed <c>(property, Ops, value)</c> path.
+    ///     <see cref="ParsingConfig.UseParameterizedNamesInDynamicQuery" /> is required: the default
+    ///     configuration renders each filter value as a <see cref="ConstantExpression" />, which EF Core
+    ///     inlines into the SQL as a literal. Every distinct filter value then yields distinct command
+    ///     text and a distinct server-side query plan — plan-cache pollution on the list-endpoint path.
+    /// </summary>
+    private static readonly ParsingConfig ParameterizedConfig = new() { UseParameterizedNamesInDynamicQuery = true };
+
+    #endregion
+
     #region Methods
 
     /// <summary>
@@ -49,7 +62,7 @@ public static class DynamicPredicateExtensions
             var nullClause = DynamicPredicateBuilderExtensions.BuildClause(normalizedPath, operation, null, 0);
             try
             {
-                return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, nullClause);
+                return DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, nullClause);
             }
             catch (ParseException)
             {
@@ -92,8 +105,8 @@ public static class DynamicPredicateExtensions
             // Use System.Linq.Dynamic.Core to parse the predicate string
             // For In/NotIn, value is the array passed as @0 parameter
             return coercedValue == null
-                ? DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString)
-                : DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig.Default, false, predicateString,
+                ? DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, predicateString)
+                : DynamicExpressionParser.ParseLambda<T, bool>(ParameterizedConfig, false, predicateString,
                     coercedValue);
         }
         catch (ParseException)

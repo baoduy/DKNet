@@ -215,9 +215,9 @@ public static class SpecRepoExtensions
         ///     Asynchronously returns a keyset-paginated list of entities matching the specification,
         ///     starting after the provided composite two-key cursor value.
         ///     Keyset pagination is significantly more efficient than offset pagination for large datasets
-        ///     because it uses an index seek instead of a full table scan.
-        ///     The generated SQL is equivalent to the row-value comparison
-        ///     <c>(key1, key2) &gt; (cursor1, cursor2)</c>.
+        ///     because it uses an index seek instead of a full table scan. Cursor values are bound as query
+        ///     parameters, not inlined as SQL literals, so repeated calls with different cursors reuse the
+        ///     same query plan.
         /// </summary>
         /// <typeparam name="TEntity">Type of the entity.</typeparam>
         /// <typeparam name="TKey1">Type of the primary key column.</typeparam>
