@@ -16,21 +16,11 @@ namespace DKNet.AspCore.Extensions.Endpoints;
 /// <remarks>
 ///     Every property is nullable so that an absent parameter is distinguishable from a supplied one and the
 ///     defaults live here rather than being restated at each call site. <see cref="PageNumberValue" /> and
-///     <see cref="PageSizeValue" /> are the values an endpoint should actually page by — they apply the
+///     <see cref="GetPageSize" /> are the values an endpoint should actually page by — they apply the
 ///     defaults and the ceiling, so a caller cannot ask for an unbounded page.
 /// </remarks>
 public sealed record ListQueryRequest
 {
-    #region Fields
-
-    /// <summary>Page size used when the caller does not ask for one.</summary>
-    private const int DefaultPageSize = 20;
-
-    /// <summary>Largest page a caller may request, whatever they ask for.</summary>
-    private const int MaxPageSize = 100;
-
-    #endregion
-
     #region Properties
 
     /// <summary>One-based page to return. Values below 1 are treated as the first page.</summary>
@@ -38,9 +28,9 @@ public sealed record ListQueryRequest
     [Description("One-based page number. Values below 1 are treated as the first page.")]
     public int? PageNumber { get; init; }
 
-    /// <summary>Items per page. Defaults to 20 and is capped at 100.</summary>
+    /// <summary>Items per page. Defaults to and is capped at the values configured via <see cref="ListQueryOptions" />.</summary>
     [FromQuery(Name = "pageSize")]
-    [Description("Number of items per page. Values above 100 are clamped to 100.")]
+    [Description("Number of items per page. Values above the configured maximum are clamped to it.")]
     public int? PageSize { get; init; }
 
     /// <summary>Filter conditions, all of which must hold. Repeat the parameter to add conditions.</summary>
@@ -66,9 +56,10 @@ public sealed record ListQueryRequest
     /// <summary>The page number to actually query, with the below-1 case folded to the first page.</summary>
     internal int PageNumberValue => PageNumber is null or < 1 ? 1 : PageNumber.Value;
 
-    /// <summary>The page size to actually query, with the default applied and the ceiling enforced.</summary>
-    internal int PageSizeValue =>
-        PageSize is null or < 1 ? DefaultPageSize : Math.Min(PageSize.Value, MaxPageSize);
+    /// <summary>The page size to actually query, with <paramref name="options" />'s default applied and ceiling enforced.</summary>
+    /// <param name="options">The host's configured page-size default and ceiling.</param>
+    internal int GetPageSize(ListQueryOptions options) =>
+        PageSize is null or < 1 ? options.DefaultPageSize : Math.Min(PageSize.Value, options.MaxPageSize);
 
     /// <summary>Whether ordering is descending, defaulting to ascending.</summary>
     internal bool IsDescending => Desc ?? false;
