@@ -78,6 +78,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EfCoreExceptionHandler` (`DKNet.EfCore.Extensions`) gained an optional `ILogger<EfCoreExceptionHandler>?`
   constructor parameter; parameterless construction still works.
 - `NextSeqValue`/`NextSeqValueWithFormat` (`DKNet.EfCore.Extensions`) gained an optional `CancellationToken`.
+- The page-size ceiling every generic list endpoint (`MapGetList`, `DKNet.AspCore.Extensions`) is subject to is now
+  host-configurable and defaults to `1000`, replacing the hard-coded `private const MaxPageSize = 100` on
+  `ListQueryRequest`. A consumer who upgrades and configures nothing therefore serves up to 1,000 rows per list
+  request where 100 was previously the worst case. Bind the `DKNet:ListQuery:MaxPageSize` configuration key, or call
+  `services.AddListQueryOptions(o => o.MaxPageSize = 100)`, to keep the old ceiling. The clamp semantics are
+  unchanged: an oversized `pageSize` is still served trimmed to the ceiling, never rejected with a `400`. See
+  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
 
 ### Removed
 - **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`
