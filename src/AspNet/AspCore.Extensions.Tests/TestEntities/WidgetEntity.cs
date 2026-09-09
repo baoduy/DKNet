@@ -87,5 +87,9 @@ public sealed class WidgetDbContext(DbContextOptions<WidgetDbContext> options) :
 
     public DbSet<CouponEntity> Coupons => Set<CouponEntity>();
 
+    public DbSet<OrderEntity> Orders => Set<OrderEntity>();
+
+    public DbSet<TicketEntity> Tickets => Set<TicketEntity>();
+
     #endregion
 }

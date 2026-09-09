@@ -32,6 +32,13 @@ public sealed class PagingTestHost : IAsyncLifetime
     /// <summary>Ids of every seeded widget, oldest-created first (index 0), for walking-pages/order assertions.</summary>
     public List<Guid> SeededWidgetIds { get; } = [];
 
+    /// <summary>
+    ///     The instant two seeded gadgets share, anchored to "10 days ago" rather than a fixed calendar date so
+    ///     it always sits inside the generic list endpoint's default recent-activity window (DRK-1166)
+    ///     regardless of when the suite runs.
+    /// </summary>
+    public DateTimeOffset TieInstant { get; } = Truncate(DateTimeOffset.UtcNow.AddDays(-10));
+
     #endregion
 
     #region Methods
@@ -70,15 +77,14 @@ public sealed class PagingTestHost : IAsyncLifetime
             }
 
             // Two rows share a CreatedOn instant to prove Id is the tie-break, one is strictly newer.
-            var tieInstant = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
             db.Gadgets.AddRange(
                 new GadgetEntity(
-                    new Guid("00000000-0000-0000-0000-000000000101"), "gadget-tie-low", "seed", tieInstant),
+                    new Guid("00000000-0000-0000-0000-000000000101"), "gadget-tie-low", "seed", TieInstant),
                 new GadgetEntity(
-                    new Guid("00000000-0000-0000-0000-000000000102"), "gadget-tie-high", "seed", tieInstant),
+                    new Guid("00000000-0000-0000-0000-000000000102"), "gadget-tie-high", "seed", TieInstant),
                 new GadgetEntity(
                     new Guid("00000000-0000-0000-0000-000000000001"), "gadget-newest", "seed",
-                    tieInstant.AddDays(1)));
+                    TieInstant.AddDays(1)));
 
             await db.SaveChangesAsync();
         }
@@ -92,6 +98,10 @@ public sealed class PagingTestHost : IAsyncLifetime
         _app = app;
         Client = app.GetTestClient();
     }
+
+    /// <summary>Drops sub-second precision so the anchor round-trips cleanly through query-string parsing.</summary>
+    private static DateTimeOffset Truncate(DateTimeOffset value) =>
+        new(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second, TimeSpan.Zero);
 
     #endregion
 }

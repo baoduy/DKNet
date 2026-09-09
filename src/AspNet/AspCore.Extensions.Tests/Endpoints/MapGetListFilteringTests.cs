@@ -82,7 +82,7 @@ public class MapGetListFilteringTests(PagingTestHost host) : IClassFixture<Pagin
         // DateTimeOffset has no TypeCode, so Convert.ChangeType cannot reach it — an uncoerced string reaching
         // the parser is a 500. Two gadgets sit on the boundary instant and one a day later.
         var response = await host.Client.GetAsync(
-            "/p/gadgets?filter=createdOn:GreaterThan:2026-01-01T00:00:00Z");
+            $"/p/gadgets?filter=createdOn:GreaterThan:{host.TieInstant:yyyy-MM-ddTHH:mm:ss'Z'}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<GadgetModel>>();
@@ -95,7 +95,7 @@ public class MapGetListFilteringTests(PagingTestHost host) : IClassFixture<Pagin
     public async Task MapGetList_SnakeCaseFieldName_ResolvesToTheModelProperty()
     {
         var response = await host.Client.GetAsync(
-            "/p/gadgets?filter=created_on:LessThanOrEqual:2026-01-01T00:00:00Z");
+            $"/p/gadgets?filter=created_on:LessThanOrEqual:{host.TieInstant:yyyy-MM-ddTHH:mm:ss'Z'}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<GadgetModel>>();
