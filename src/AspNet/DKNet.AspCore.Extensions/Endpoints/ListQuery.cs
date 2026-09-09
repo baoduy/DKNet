@@ -70,6 +70,21 @@ internal static class ListQuery
         "At least 2 characters. Case sensitivity follows the database collation. Combines with 'filter' " +
         "using AND. Omit or leave blank for no search; to match a non-text field exactly, use 'filter' instead.";
 
+    /// <summary>OpenAPI description for the <c>fromDate</c> parameter.</summary>
+    internal const string FromDateDescription =
+        "Inclusive lower bound on last activity: matches a record whose creation or last-update moment falls " +
+        "on or after this instant. Naming either 'fromDate' or 'toDate' replaces the host's default window " +
+        "entirely, leaving the omitted side open. Omitting both applies the host-configured default recent-" +
+        "activity window (3 months unless changed). Use '0001-01-01T00:00:00Z' to reach all history. Ignored " +
+        "for listed types that carry no audit timestamps.";
+
+    /// <summary>OpenAPI description for the <c>toDate</c> parameter.</summary>
+    internal const string ToDateDescription =
+        "Inclusive upper bound on last activity: matches a record whose creation or last-update moment falls " +
+        "on or before this instant. Naming either 'toDate' or 'fromDate' replaces the host's default window " +
+        "entirely, leaving the omitted side open. Omitting both applies the host-configured default recent-" +
+        "activity window (3 months unless changed). Ignored for listed types that carry no audit timestamps.";
+
     /// <summary>
     ///     Most filter conditions accepted per request. Each one costs reflection, parsing, and a SQL
     ///     predicate, so the work a single request can demand has to be bounded.
@@ -103,22 +118,32 @@ internal static class ListQuery
     /// <typeparam name="TEntity">Entity type the filters are applied to.</typeparam>
     /// <typeparam name="TModel">Projection model whose properties define what may be filtered and sorted.</typeparam>
     /// <param name="request">The endpoint's bound query-string parameters.</param>
+    /// <param name="options">The host's configured page-size and activity-window defaults.</param>
     /// <param name="query">The validated inputs on success; otherwise <see langword="null" />.</param>
     /// <param name="error">A caller-facing reason on failure; otherwise <see langword="null" />.</param>
     /// <returns><see langword="true" /> when every input was valid; otherwise <see langword="false" />.</returns>
     internal static bool TryValidate<TEntity, TModel>(
         ListQueryRequest request,
+        ListQueryOptions options,
         out ListQuery<TEntity>? query,
         out string? error)
         where TEntity : class
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(options);
 
         query = null;
         Expression<Func<TEntity, bool>>? combined = null;
         var search = request.Search;
         var orderBy = request.OrderBy;
+
+        // Checked before any other work: an impossible window must never fall through to an empty page.
+        if (request.FromDate is not null && request.ToDate is not null && request.FromDate > request.ToDate)
+        {
+            error = $"fromDate '{request.FromDate:O}' is later than toDate '{request.ToDate:O}'.";
+            return false;
+        }
 
         if (request.Filter is { Length: > MaxFilterCount })
         {
@@ -148,6 +173,11 @@ internal static class ListQuery
             combined = combined is null ? searchExpression : combined.And(searchExpression);
         }
 
+        var (windowFrom, windowTo) = ResolveActivityWindow(request, options);
+        var windowExpression = ActivityWindow.Build<TEntity>(windowFrom, windowTo);
+        if (windowExpression is not null)
+            combined = combined is null ? windowExpression : combined.And(windowExpression);
+
         var order = orderBy.ToPascalCase();
         if (order.Length == 0)
             order = null;
@@ -160,6 +190,27 @@ internal static class ListQuery
         error = null;
         query = new ListQuery<TEntity>(combined, order, request.IsDescending);
         return true;
+    }
+
+    /// <summary>
+    ///     Resolves the effective activity-window bounds: the caller's own bounds verbatim when either is
+    ///     supplied (R3 — the host default is not applied), otherwise the host's default window measured back
+    ///     from now (R2), or no window at all when <see cref="ListQueryOptions.DefaultActivityWindowMonths" />
+    ///     is <c>0</c> (R12).
+    /// </summary>
+    /// <param name="request">The endpoint's bound query-string parameters.</param>
+    /// <param name="options">The host's configured activity-window default.</param>
+    /// <returns>The resolved <c>(from, to)</c> bounds; either side may be <see langword="null" /> for "open".</returns>
+    private static (DateTimeOffset? From, DateTimeOffset? To) ResolveActivityWindow(
+        ListQueryRequest request,
+        ListQueryOptions options)
+    {
+        if (request.FromDate is not null || request.ToDate is not null)
+            return (request.FromDate, request.ToDate);
+
+        return options.DefaultActivityWindowMonths <= 0
+            ? (null, null)
+            : (DateTimeOffset.UtcNow.AddMonths(-options.DefaultActivityWindowMonths), null);
     }
 
     /// <summary>

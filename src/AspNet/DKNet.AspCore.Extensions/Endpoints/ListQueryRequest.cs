@@ -53,6 +53,16 @@ public sealed record ListQueryRequest
     [Description("Sort descending instead of ascending. Ignored without orderBy.")]
     public bool? Desc { get; init; }
 
+    /// <summary>Inclusive lower bound on last activity, replacing the host's default recent-activity window.</summary>
+    [FromQuery(Name = "fromDate")]
+    [Description(ListQuery.FromDateDescription)]
+    public DateTimeOffset? FromDate { get; init; }
+
+    /// <summary>Inclusive upper bound on last activity, replacing the host's default recent-activity window.</summary>
+    [FromQuery(Name = "toDate")]
+    [Description(ListQuery.ToDateDescription)]
+    public DateTimeOffset? ToDate { get; init; }
+
     /// <summary>The page number to actually query, with the below-1 case folded to the first page.</summary>
     internal int PageNumberValue => PageNumber is null or < 1 ? 1 : PageNumber.Value;
 
