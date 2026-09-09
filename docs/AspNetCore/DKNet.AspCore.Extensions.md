@@ -514,8 +514,12 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 | Option | Type | Default | Effect |
 |---|---|---|---|
 | `DefaultPageSize` | `int`, `[Range(1, int.MaxValue)]` | `20` | Page size used when `pageSize` is absent, `null` or below 1. |
-| `MaxPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Ceiling a caller-supplied `pageSize` is clamped to. Still a clamp — an oversized request is served, never rejected with `400`. |
+| `MaxPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Ceiling every page is subject to. Still a clamp — an oversized request is served trimmed, never rejected with `400`. |
 | `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | The configuration section the options are meant to bind from. |
+
+`MaxPageSize` is a hard ceiling on every path, the default included: a caller who omits `pageSize`
+receives `min(DefaultPageSize, MaxPageSize)`, so a `MaxPageSize` configured below `DefaultPageSize`
+lowers the default page too rather than being bypassed by it.
 
 Raise or lower it from configuration:
 
@@ -608,9 +612,6 @@ built. Neither is a runtime surprise — both happen at startup.
 - **`pageSize` is silently clamped, not rejected.** Asking for 5,000 rows returns
   `ListQueryOptions.MaxPageSize` rows — 1,000 unless the host raised it — without any indication
   that the request was trimmed.
-- **A `MaxPageSize` below `DefaultPageSize` does not lower the default.** The clamp applies only to a
-  `pageSize` the caller actually supplied, so configuring `MaxPageSize: 10` while leaving
-  `DefaultPageSize` at 20 still serves 20 rows to a caller who omits `pageSize`. Lower both together.
 - **`MapDeleteById` performs a hard delete** and does no ownership or tenancy check of its own;
   authorization is whatever the enclosing route group requires.
 - Registration order is deliberate: the contextual-population filter is added *before*

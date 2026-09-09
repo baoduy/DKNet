@@ -139,7 +139,7 @@ host, not per endpoint:
 | Knob | Type | Default | Effect |
 |---|---|---|---|
 | `DefaultPageSize` | `int` | `20` | Page size used when `pageSize` is absent, null or below 1. |
-| `MaxPageSize` | `int` | `1000` | Ceiling a caller-supplied `pageSize` is clamped to; an oversized request is served, never rejected. |
+| `MaxPageSize` | `int` | `1000` | Ceiling every page is subject to, `DefaultPageSize` included; an oversized request is served trimmed, never rejected. |
 | `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | Section the options are meant to bind from. |
 
 `AddListQueryOptions` binds no configuration itself — it adds
