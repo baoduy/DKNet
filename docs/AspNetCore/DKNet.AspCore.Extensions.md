@@ -527,12 +527,15 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 |---|---|---|---|
 | `DefaultPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Page size used when `pageSize` is absent, `null` or below 1. |
 | `MaxPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Ceiling every page is subject to. Still a clamp — an oversized request is served trimmed, never rejected with `400`. |
-| `DefaultActivityWindowMonths` | `int` | `3` | How many months back a listing of audited records reaches when the caller names neither `fromDate` nor `toDate`. `0` switches the default window off. See [Default recent-activity window](#default-recent-activity-window). |
+| `DefaultActivityWindowMonths` | `int`, minimum `0` | `3` | How many months back a listing of audited records reaches when the caller names neither `fromDate` nor `toDate`. `0` switches the default window off. See [Default recent-activity window](#default-recent-activity-window). |
 | `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | The configuration section the options are meant to bind from. |
 
 `MaxPageSize` is a hard ceiling on every path, the default included: a caller who omits `pageSize`
 receives `min(DefaultPageSize, MaxPageSize)`, so a `MaxPageSize` configured below `DefaultPageSize`
 lowers the default page too rather than being bypassed by it.
+
+Both `DefaultPageSize` and `DefaultActivityWindowMonths` are the values used when the host
+configures nothing: a host that already sets either one keeps its own value untouched.
 
 Raise or lower it from configuration:
 
