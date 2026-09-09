@@ -42,6 +42,37 @@ public class MapGetListPageSizeCeilingTests(PagingCeilingTestHost host) : IClass
         page.Items.Count.ShouldBe(1000);
     }
 
+    // Given: a host that never calls AddListQueryOptions (R5 — the built-in default applies).
+    // When: the caller names no page size at all.
+    // Then: the new 1000 default is served in full (DRK-1164 §5, "A bare request receives a full page").
+    [Fact]
+    public async Task UnconfiguredHost_BareRequest_ServesOneThousand()
+    {
+        var response = await host.Client.GetAsync("/p/widgets");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.PageSize.ShouldBe(1000);
+        page.Items.Count.ShouldBe(1000);
+    }
+
+    // Given: a page size below the minimum of one.
+    // When: the request asks for pageSize=0.
+    // Then: the server falls back to the new 1000 default (DRK-1164 §5, "A page size below one falls back to
+    // the default").
+    [Fact]
+    public async Task UnconfiguredHost_PageSizeZero_FallsBackToOneThousand()
+    {
+        var response = await host.Client.GetAsync("/p/widgets?pageSize=0");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        page.ShouldNotBeNull();
+        page.PageSize.ShouldBe(1000);
+        page.Items.Count.ShouldBe(1000);
+    }
+
     // Given: a page size far above the default ceiling.
     // When: the request asks for pageSize=100000.
     // Then: the ceiling clamps it down (never a 400 — R2) and the reported size is the effective ceiling.

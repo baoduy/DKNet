@@ -53,7 +53,7 @@ public sealed class ListQuerySearchParameterizationTests : IAsyncLifetime
     private string CommandTextFor(string search)
     {
         ListQuery.TryValidate<WidgetEntity, WidgetModel>(
-            new ListQueryRequest { Search = search }, out var query, out var error);
+            new ListQueryRequest { Search = search }, new ListQueryOptions(), out var query, out var error);
         error.ShouldBeNull();
         query.ShouldNotBeNull();
         query.Filter.ShouldNotBeNull();
@@ -90,7 +90,7 @@ public sealed class ListQuerySearchParameterizationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         ListQuery.TryValidate<WidgetEntity, WidgetModel>(
-            new ListQueryRequest { Search = "widget" }, out var query, out _);
+            new ListQueryRequest { Search = "widget" }, new ListQueryOptions(), out var query, out _);
 
         var results = await _context.Widgets.Where(query!.Filter!).ToListAsync();
 

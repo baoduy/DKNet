@@ -20,9 +20,10 @@ public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTe
 
     // Given: a bare list request with no query parameters at all (the DRK-513 reversal — this used to 400).
     // When: the request hits MapGetList.
-    // Then: it succeeds and serves page 1 at the default size of 20.
+    // Then: it succeeds and serves the new 1000 default in full — the 205-row seed is a smaller collection
+    // than the default, so it is served whole (DRK-1164 §5, "A smaller collection is served whole").
     [Fact]
-    public async Task BareRequest_NoQueryParams_ReturnsPageOneOfTwenty()
+    public async Task BareRequest_NoQueryParams_ReturnsPageOneOfTheFullSeed()
     {
         var response = await host.Client.GetAsync("/p/widgets");
 
@@ -30,25 +31,26 @@ public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTe
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
         page.ShouldNotBeNull();
         page.PageNumber.ShouldBe(1);
-        page.PageSize.ShouldBe(20);
-        page.Items.Count.ShouldBe(20);
+        page.PageSize.ShouldBe(1000);
+        page.Items.Count.ShouldBe(PagingTestHost.SeededWidgetCount);
     }
 
     // Given: a page size below the minimum of one.
     // When: the request asks for pageSize=0 or a negative value.
-    // Then: the server falls back to the default of 20 rather than returning an empty or error response.
+    // Then: the server falls back to the new default (served whole here, same as the bare request) rather than
+    // returning an empty or error response.
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    public async Task PageSizeBelowOne_FallsBackToTwenty(int requestedPageSize)
+    public async Task PageSizeBelowOne_FallsBackToTheFullSeed(int requestedPageSize)
     {
         var response = await host.Client.GetAsync($"/p/widgets?pageSize={requestedPageSize}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
         page.ShouldNotBeNull();
-        page.PageSize.ShouldBe(20);
-        page.Items.Count.ShouldBe(20);
+        page.PageSize.ShouldBe(1000);
+        page.Items.Count.ShouldBe(PagingTestHost.SeededWidgetCount);
     }
 
     // Given: an audited entity where two rows share the same CreatedOn instant and one row is strictly newer.
@@ -57,7 +59,10 @@ public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTe
     [Fact]
     public async Task AuditedEntity_OrdersByCreatedOnDescendingThenIdDescending()
     {
-        var response = await host.Client.GetAsync("/p/gadgets?pageSize=10");
+        // fromDate at the earliest representable moment opts out of the new default recent-activity window
+        // (DRK-1164 §5) — the gadgets here are seeded at a fixed 2026-01-01 instant, outside that window by
+        // the time this suite runs, and this test is about ordering, not the window.
+        var response = await host.Client.GetAsync("/p/gadgets?pageSize=10&fromDate=0001-01-01T00:00:00Z");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<GadgetModel>>();
