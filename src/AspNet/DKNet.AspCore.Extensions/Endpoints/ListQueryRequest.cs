@@ -59,7 +59,9 @@ public sealed record ListQueryRequest
     /// <summary>The page size to actually query, with <paramref name="options" />'s default applied and ceiling enforced.</summary>
     /// <param name="options">The host's configured page-size default and ceiling.</param>
     internal int GetPageSize(ListQueryOptions options) =>
-        PageSize is null or < 1 ? options.DefaultPageSize : Math.Min(PageSize.Value, options.MaxPageSize);
+        PageSize is null or < 1
+            ? Math.Min(options.DefaultPageSize, options.MaxPageSize)
+            : Math.Min(PageSize.Value, options.MaxPageSize);
 
     /// <summary>Whether ordering is descending, defaulting to ascending.</summary>
     internal bool IsDescending => Desc ?? false;
