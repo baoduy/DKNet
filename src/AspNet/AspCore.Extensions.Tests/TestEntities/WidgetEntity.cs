@@ -1,4 +1,5 @@
 using DKNet.EfCore.Abstractions.Entities;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AspCore.Extensions.Tests.TestEntities;
 
@@ -86,6 +87,37 @@ public sealed class WidgetDbContext(DbContextOptions<WidgetDbContext> options) :
     public DbSet<SprocketEntity> Sprockets => Set<SprocketEntity>();
 
     public DbSet<CouponEntity> Coupons => Set<CouponEntity>();
+
+    public DbSet<OrderEntity> Orders => Set<OrderEntity>();
+
+    public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
+
+    #endregion
+
+    #region Methods
+
+    /// <inheritdoc />
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Sqlite's default DateTimeOffset mapping supports equality only, not ordering comparisons — the
+        // provider throws "could not be translated" on '>=' / '<='. Converting to UTC ticks for storage keeps
+        // ordering translatable for the Sqlite-backed parameterization tests; the InMemory-backed HTTP hosts
+        // are unaffected either way (LINQ-to-objects needs no such conversion).
+        DateTimeOffsetToUtcTicks(modelBuilder.Entity<OrderEntity>().Property(o => o.CreatedOn));
+        DateTimeOffsetToUtcTicks(modelBuilder.Entity<OrderEntity>().Property(o => o.UpdatedOn));
+        DateTimeOffsetToUtcTicks(modelBuilder.Entity<InvoiceEntity>().Property(i => i.CreatedOn));
+        DateTimeOffsetToUtcTicks(modelBuilder.Entity<InvoiceEntity>().Property(i => i.UpdatedOn));
+    }
+
+    private static void DateTimeOffsetToUtcTicks(PropertyBuilder<DateTimeOffset> property) =>
+        property.HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
+
+    private static void DateTimeOffsetToUtcTicks(PropertyBuilder<DateTimeOffset?> property) =>
+        property.HasConversion(
+            v => v.HasValue ? v.Value.UtcTicks : (long?)null,
+            v => v.HasValue ? new DateTimeOffset(v.Value, TimeSpan.Zero) : (DateTimeOffset?)null);
 
     #endregion
 }

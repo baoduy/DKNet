@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Reflection;
+using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Specifications.Dynamics;
 using DKNet.EfCore.Specifications.Extensions;
 using LinqKit;
@@ -70,6 +71,21 @@ internal static class ListQuery
         "At least 2 characters. Case sensitivity follows the database collation. Combines with 'filter' " +
         "using AND. Omit or leave blank for no search; to match a non-text field exactly, use 'filter' instead.";
 
+    /// <summary>OpenAPI description for the <c>fromDate</c> parameter.</summary>
+    internal const string FromDateDescription =
+        "Inclusive lower bound on when a record was last active — created or updated. Naming either " +
+        "'fromDate' or 'toDate' replaces the default activity window entirely, rather than narrowing it. " +
+        "Pass the earliest representable moment (0001-01-01T00:00:00Z) to ask for all history. With neither " +
+        "bound supplied, records that carry audit timestamps are limited to the host's default recent-activity " +
+        "window (3 months, unless the host configures a different DefaultActivityWindowMonths). Ignored for " +
+        "records that carry no audit timestamps.";
+
+    /// <summary>OpenAPI description for the <c>toDate</c> parameter.</summary>
+    internal const string ToDateDescription =
+        "Inclusive upper bound on the same last-active notion as 'fromDate'. Naming either bound replaces " +
+        "the default activity window entirely, rather than narrowing it. Ignored for records that carry no " +
+        "audit timestamps.";
+
     /// <summary>
     ///     Most filter conditions accepted per request. Each one costs reflection, parsing, and a SQL
     ///     predicate, so the work a single request can demand has to be bounded.
@@ -93,6 +109,14 @@ internal static class ListQuery
     /// </summary>
     private static readonly ConcurrentDictionary<(Type Model, Type Entity), SearchTemplate?> SearchTemplates = new();
 
+    /// <summary>
+    ///     Recent-activity window predicate templates, cached per <c>(TEntity, shape)</c> pair — <see cref="WindowShape" />
+    ///     picks which side(s) of the window are bound — so the reflection over <c>CreatedOn</c>/<c>UpdatedOn</c>
+    ///     and the expression tree built from it run once ever instead of once per request. Only reached for a
+    ///     <c>TEntity</c> that implements <see cref="IAuditedProperties" /> (R2/R6); the caller checks that first.
+    /// </summary>
+    private static readonly ConcurrentDictionary<(Type Entity, WindowShape Shape), WindowTemplate> WindowTemplates = new();
+
     #endregion
 
     #region Methods
@@ -103,22 +127,33 @@ internal static class ListQuery
     /// <typeparam name="TEntity">Entity type the filters are applied to.</typeparam>
     /// <typeparam name="TModel">Projection model whose properties define what may be filtered and sorted.</typeparam>
     /// <param name="request">The endpoint's bound query-string parameters.</param>
+    /// <param name="options">The host's configured page-size and activity-window defaults.</param>
     /// <param name="query">The validated inputs on success; otherwise <see langword="null" />.</param>
     /// <param name="error">A caller-facing reason on failure; otherwise <see langword="null" />.</param>
     /// <returns><see langword="true" /> when every input was valid; otherwise <see langword="false" />.</returns>
     internal static bool TryValidate<TEntity, TModel>(
         ListQueryRequest request,
+        ListQueryOptions options,
         out ListQuery<TEntity>? query,
         out string? error)
         where TEntity : class
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(options);
 
         query = null;
         Expression<Func<TEntity, bool>>? combined = null;
         var search = request.Search;
         var orderBy = request.OrderBy;
+
+        // R1: an impossible window is refused before anything else — including for a type the window will
+        // turn out to ignore (R2/R6) — because a self-contradictory request is a caller mistake regardless.
+        if (request.FromDate is not null && request.ToDate is not null && request.FromDate > request.ToDate)
+        {
+            error = $"fromDate '{request.FromDate:O}' is later than toDate '{request.ToDate:O}'.";
+            return false;
+        }
 
         if (request.Filter is { Length: > MaxFilterCount })
         {
@@ -147,6 +182,13 @@ internal static class ListQuery
             var searchExpression = Search<TEntity, TModel>(text);
             combined = combined is null ? searchExpression : combined.And(searchExpression);
         }
+
+        // R2/R6: the window applies only where TEntity carries audit timestamps; otherwise the bounds are
+        // ignored (never refused). R3: the caller's own bounds replace the default outright; absent both, the
+        // host's configured window applies unless switched off.
+        var windowExpression = BuildWindowExpression<TEntity>(request, options);
+        if (windowExpression is not null)
+            combined = combined is null ? windowExpression : combined.And(windowExpression);
 
         var order = orderBy.ToPascalCase();
         if (order.Length == 0)
@@ -263,6 +305,121 @@ internal static class ListQuery
         return new SearchTemplate(expression, placeholder);
     }
 
+    /// <summary>
+    ///     Resolves the effective recent-activity window (R3) for <typeparamref name="TEntity" /> and, where one
+    ///     applies, builds its predicate. Returns <see langword="null" /> whenever no window predicate is
+    ///     needed: <typeparamref name="TEntity" /> carries no audit timestamps (R2/R6), or neither bound was
+    ///     named and the host's default window is switched off.
+    /// </summary>
+    /// <typeparam name="TEntity">Entity type the window applies to.</typeparam>
+    /// <param name="request">The endpoint's bound query-string parameters.</param>
+    /// <param name="options">The host's configured default activity-window width.</param>
+    /// <returns>The window predicate, or <see langword="null" /> when none applies.</returns>
+    private static Expression<Func<TEntity, bool>>? BuildWindowExpression<TEntity>(
+        ListQueryRequest request,
+        ListQueryOptions options)
+        where TEntity : class
+    {
+        if (!typeof(IAuditedProperties).IsAssignableFrom(typeof(TEntity))) return null; // R2/R6
+
+        DateTimeOffset? from;
+        DateTimeOffset? to;
+        if (request.FromDate is not null || request.ToDate is not null)
+        {
+            // The caller's own bounds replace the default entirely — open-ended on whichever side they left out.
+            from = request.FromDate;
+            to = request.ToDate;
+        }
+        else if (options.DefaultActivityWindowMonths > 0)
+        {
+            from = DateTimeOffset.UtcNow.AddMonths(-options.DefaultActivityWindowMonths);
+            to = null;
+        }
+        else
+        {
+            return null;
+        }
+
+        // Which side(s) are bound decides the predicate's *shape*, not just its values — a template is cached
+        // per (TEntity, shape) so the tree the caller-visible bound(s) sit in never carries a branch for a side
+        // that is not present, and no "is this bound null" check ever has to reach the database.
+        var shape = from is not null && to is not null
+            ? WindowShape.Both
+            : from is not null
+                ? WindowShape.FromOnly
+                : WindowShape.ToOnly;
+
+        var template = WindowTemplates.GetOrAdd((typeof(TEntity), shape), static key => BuildWindowTemplate<TEntity>(key.Shape));
+
+        // A fresh box per call, not a mutation of the cached template's placeholder: concurrent requests must
+        // never race over the same mutable bounds. Swapping the constant node is cheap tree work, not a rebuild.
+        // Only the side(s) the chosen shape's template actually references are guaranteed non-null here.
+        var box = new WindowBox { From = from.GetValueOrDefault(), To = to.GetValueOrDefault() };
+        var swapped = new WindowBoxSwap(template.Placeholder, box).Visit(template.Expression);
+        return (Expression<Func<TEntity, bool>>)swapped;
+    }
+
+    /// <summary>
+    ///     Builds the recent-activity window predicate template for <typeparamref name="TEntity" /> and a given
+    ///     bound <paramref name="shape" />, once per <c>(TEntity, shape)</c> pair:
+    ///     <c>inRange(CreatedOn) || (UpdatedOn != null &amp;&amp; inRange(UpdatedOn))</c> (R4), where
+    ///     <c>inRange</c> compares only the side(s) <paramref name="shape" /> carries, reading the bound(s)
+    ///     through a placeholder <see cref="WindowBox" /> member access rather than a literal — the same shape
+    ///     <see cref="BuildSearchTemplate{TEntity,TModel}" /> uses for the search value — so EF Core binds them
+    ///     as query parameters instead of inlining them, and a fresh box can be swapped in per request without
+    ///     rebuilding the tree.
+    /// </summary>
+    /// <typeparam name="TEntity">Entity type to reflect <c>CreatedOn</c>/<c>UpdatedOn</c> off.</typeparam>
+    /// <param name="shape">Which side(s) of the window are bound.</param>
+    /// <returns>The template. <typeparamref name="TEntity" />'s <see cref="IAuditedProperties" /> membership is checked by the caller.</returns>
+    private static WindowTemplate BuildWindowTemplate<TEntity>(WindowShape shape)
+        where TEntity : class
+    {
+        // Reflected off TEntity itself, not IAuditedProperties: TEntity is not statically constrained to the
+        // interface, and reading through the concrete property (rather than an interface cast) is what lets EF
+        // Core translate the access — CreatedOn/UpdatedOn are guaranteed present by the interface check the
+        // caller already made.
+        var createdOnProperty = typeof(TEntity).GetProperty(nameof(IAuditedProperties.CreatedOn))!;
+        var updatedOnProperty = typeof(TEntity).GetProperty(nameof(IAuditedProperties.UpdatedOn))!;
+
+        var parameter = Expression.Parameter(typeof(TEntity), "e");
+        var placeholder = new WindowBox();
+        var fromAccess = Expression.Property(Expression.Constant(placeholder), nameof(WindowBox.From));
+        var toAccess = Expression.Property(Expression.Constant(placeholder), nameof(WindowBox.To));
+
+        Expression InRange(Expression dateAccess)
+        {
+            // dateAccess is CreatedOn (DateTimeOffset) or UpdatedOn (DateTimeOffset?); the box's bounds are
+            // always non-nullable, so any lifting needed is entirely on dateAccess's side.
+            Expression Ge(Expression bound) =>
+                dateAccess.Type == typeof(DateTimeOffset?)
+                    ? Expression.GreaterThanOrEqual(dateAccess, Expression.Convert(bound, typeof(DateTimeOffset?)))
+                    : Expression.GreaterThanOrEqual(dateAccess, bound);
+
+            Expression Le(Expression bound) =>
+                dateAccess.Type == typeof(DateTimeOffset?)
+                    ? Expression.LessThanOrEqual(dateAccess, Expression.Convert(bound, typeof(DateTimeOffset?)))
+                    : Expression.LessThanOrEqual(dateAccess, bound);
+
+            return shape switch
+            {
+                WindowShape.FromOnly => Ge(fromAccess),
+                WindowShape.ToOnly => Le(toAccess),
+                _ => Expression.AndAlso(Ge(fromAccess), Le(toAccess)),
+            };
+        }
+
+        var createdOnAccess = Expression.Property(parameter, createdOnProperty);
+        Expression body = InRange(createdOnAccess);
+
+        var updatedOnAccess = Expression.Property(parameter, updatedOnProperty);
+        var updatedOnNotNull = Expression.NotEqual(updatedOnAccess, Expression.Constant(null, typeof(DateTimeOffset?)));
+        body = Expression.OrElse(body, Expression.AndAlso(updatedOnNotNull, InRange(updatedOnAccess)));
+
+        var lambda = Expression.Lambda(body, parameter);
+        return new WindowTemplate(lambda, placeholder);
+    }
+
     /// <summary>Determines whether <typeparamref name="T" /> declares a public instance property by name.</summary>
     /// <typeparam name="T">The type to inspect.</typeparam>
     /// <param name="name">Property name; matched case-insensitively.</param>
@@ -299,6 +456,56 @@ internal sealed class SearchBox
 /// <param name="from">The placeholder instance to replace.</param>
 /// <param name="to">The instance to replace it with.</param>
 internal sealed class SearchBoxSwap(SearchBox from, SearchBox to) : ExpressionVisitor
+{
+    /// <inheritdoc />
+    protected override Expression VisitConstant(ConstantExpression node) =>
+        ReferenceEquals(node.Value, from) ? Expression.Constant(to) : node;
+}
+
+/// <summary>Which side(s) of a recent-activity window are bound — decides a window predicate template's shape.</summary>
+internal enum WindowShape
+{
+    /// <summary>Only a lower bound; open-ended above.</summary>
+    FromOnly,
+
+    /// <summary>Only an upper bound; open-ended below.</summary>
+    ToOnly,
+
+    /// <summary>Both a lower and an upper bound.</summary>
+    Both,
+}
+
+/// <summary>A recent-activity window predicate, built once per entity type, plus the placeholder its bounds are read through.</summary>
+/// <param name="Expression">The predicate; its bound comparisons read through <paramref name="Placeholder" />.</param>
+/// <param name="Placeholder">The <see cref="WindowBox" /> instance the tree embedded as a constant.</param>
+internal sealed record WindowTemplate(LambdaExpression Expression, WindowBox Placeholder);
+
+/// <summary>
+///     Mutable holder for a recent-activity window's bounds. A cached predicate template reads the bounds
+///     through a member access on an instance of this class rather than a literal, so a fresh pair of bounds can
+///     be swapped in per request without rebuilding the tree, and so EF Core binds them as query parameters
+///     instead of inlining them — the default window's lower bound is a distinct value on every request, and an
+///     inlined literal would seed a fresh query plan each time.
+/// </summary>
+internal sealed class WindowBox
+{
+    /// <summary>
+    ///     Inclusive lower bound. Only meaningful when the cached template's <see cref="WindowShape" /> is
+    ///     <see cref="WindowShape.FromOnly" /> or <see cref="WindowShape.Both" /> — otherwise unreferenced.
+    /// </summary>
+    public DateTimeOffset From { get; init; }
+
+    /// <summary>
+    ///     Inclusive upper bound. Only meaningful when the cached template's <see cref="WindowShape" /> is
+    ///     <see cref="WindowShape.ToOnly" /> or <see cref="WindowShape.Both" /> — otherwise unreferenced.
+    /// </summary>
+    public DateTimeOffset To { get; init; }
+}
+
+/// <summary>Replaces every reference to one <see cref="WindowBox" /> in an expression tree with another.</summary>
+/// <param name="from">The placeholder instance to replace.</param>
+/// <param name="to">The instance to replace it with.</param>
+internal sealed class WindowBoxSwap(WindowBox from, WindowBox to) : ExpressionVisitor
 {
     /// <inheritdoc />
     protected override Expression VisitConstant(ConstantExpression node) =>

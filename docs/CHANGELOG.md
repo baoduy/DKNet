@@ -78,6 +78,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EfCoreExceptionHandler` (`DKNet.EfCore.Extensions`) gained an optional `ILogger<EfCoreExceptionHandler>?`
   constructor parameter; parameterless construction still works.
 - `NextSeqValue`/`NextSeqValueWithFormat` (`DKNet.EfCore.Extensions`) gained an optional `CancellationToken`.
+- The page-size ceiling every generic list endpoint (`MapGetList`, `DKNet.AspCore.Extensions`) is subject to is now
+  host-configurable and defaults to `1000`, replacing the hard-coded `private const MaxPageSize = 100` on
+  `ListQueryRequest`. A consumer who upgrades and configures nothing therefore serves up to 1,000 rows per list
+  request where 100 was previously the worst case. Bind the `DKNet:ListQuery:MaxPageSize` configuration key, or call
+  `services.AddListQueryOptions(o => o.MaxPageSize = 100)`, to keep the old ceiling. The clamp semantics are
+  unchanged: an oversized `pageSize` is still served trimmed to the ceiling, never rejected with a `400`. See
+  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+- **Behaviour change on upgrade:** the page size a generic list endpoint (`MapGetList`,
+  `DKNet.AspCore.Extensions`) serves when the caller asks for none is now `1000` instead of `20`, matching the
+  ceiling. A consumer who upgrades and configures nothing therefore answers a bare list request with up to 1,000
+  items where it previously answered with 20. Everything else about paging is unchanged: `MaxPageSize` still wins
+  whenever it is lower than the default in force, an oversized explicit `pageSize` is still trimmed rather than
+  rejected, and an absent or below-one `pageNumber` is still the first page. Set
+  `DKNet:ListQuery:DefaultPageSize` to `20`, or call `services.AddListQueryOptions(o => o.DefaultPageSize = 20)`,
+  to keep the old default. See
+  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+- **Behaviour change on upgrade:** a generic list endpoint (`MapGetList`, `DKNet.AspCore.Extensions`) over records
+  that carry audit timestamps (`IAuditedProperties`) now answers a bare request with the last **3 months** of
+  activity instead of all history, and accepts two new query parameters — `fromDate` and `toDate` — that bound a
+  listing by when a record was last active (either its `CreatedOn` or its `UpdatedOn` moment inside the bounds).
+  A caller who names either bound replaces the default window entirely, open-ended on the side they leave out, so
+  `fromDate=0001-01-01T00:00:00Z` asks for all history; a `fromDate` later than `toDate` is a `400`. The window is
+  applied by the database, so it narrows `TotalItemCount` as well as the returned items, and a listed type with no
+  audit timestamps ignores the bounds rather than rejecting them. The window length is the new
+  `ListQueryOptions.DefaultActivityWindowMonths`: bind `DKNet:ListQuery:DefaultActivityWindowMonths`, or call
+  `services.AddListQueryOptions(o => o.DefaultActivityWindowMonths = 0)`, to switch the default window off and keep
+  today's unbounded listing. See
+  [Default recent-activity window](AspNetCore/DKNet.AspCore.Extensions.md#default-recent-activity-window).
 
 ### Removed
 - **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`

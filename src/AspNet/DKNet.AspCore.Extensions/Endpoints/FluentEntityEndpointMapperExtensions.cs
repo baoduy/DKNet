@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Extensions.Endpoints;
 
@@ -144,19 +146,26 @@ public static class FluentsEntityEndpointMapperExtensions
             where TKey : IEquatable<TKey>
             where TModel : class
         {
+            // Resolved once at map time rather than per request: IOptions<T> itself is the safe thing to hold
+            // onto here (its .Value is lazily materialized, so a startup validation failure still surfaces on
+            // first access rather than moving to this mapping call), and each RouteGroupBuilder carries its own
+            // ServiceProvider, so two hosts mapped in the same process each close over their own instance.
+            var listOptions = ((IEndpointRouteBuilder)app).ServiceProvider
+                .GetRequiredService<IOptions<ListQueryOptions>>();
+
             return app.MapGet(
                     endpoint,
                     async (
                         [FromServices] IRepositorySpec repo,
                         [AsParameters] ListQueryRequest request) =>
                     {
-                        if (!ListQuery.TryValidate<TEntity, TModel>(request, out var query, out var error))
+                        if (!ListQuery.TryValidate<TEntity, TModel>(request, listOptions.Value, out var query, out var error))
                             return Results.Problem(error, statusCode: StatusCodes.Status400BadRequest);
 
                         var page = await repo.ToPagedListAsync(
                             new EntityListSpecification<TEntity, TKey, TModel>(query!),
                             request.PageNumberValue,
-                            request.PageSizeValue);
+                            request.GetPageSize(listOptions.Value));
                         return Results.Ok(new PagedResponse<TModel>(page));
                     })
                 .Produces<PagedResponse<TModel>>()
