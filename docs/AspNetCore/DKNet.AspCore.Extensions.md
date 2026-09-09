@@ -283,6 +283,12 @@ with `Id` descending as tie-break when the entity implements `IAuditedEntity<TKe
 descending alone otherwise. A caller-supplied `orderBy` replaces that default outright, and `Id`
 descending is appended as a tie-break unless the caller already ordered by `Id`.
 
+What a bare `GET` against a `MapGetList` endpoint returns is decided by two more defaults, both
+host-configurable: it is served a full page of up to 1,000 items
+([Page-size defaults and ceiling](#page-size-defaults-and-ceiling)) and — where the listed records
+carry audit timestamps — only the last three months of activity
+([Default recent-activity window](#default-recent-activity-window)).
+
 ### The list-endpoint query contract — `ListQueryRequest` and `ListFilter`
 
 `MapGetList` binds `ListQueryRequest` with `[AsParameters]`, so its properties are the endpoint's
@@ -292,11 +298,13 @@ one:
 | Query parameter | Property | Type | Default | Effect |
 |---|---|---|---|---|
 | `pageNumber` | `PageNumber` | `int?` | `null` → page 1 | One-based page. `null` or any value below 1 is treated as the first page. |
-| `pageSize` | `PageSize` | `int?` | `null` → 20 | Items per page. `null` or below 1 becomes `ListQueryOptions.DefaultPageSize` (20); anything above `ListQueryOptions.MaxPageSize` (1,000) is clamped to it. Both are host-configurable — see [Page-size defaults and ceiling](#page-size-defaults-and-ceiling). |
+| `pageSize` | `PageSize` | `int?` | `null` → 1,000 | Items per page. `null` or below 1 becomes `ListQueryOptions.DefaultPageSize` (1,000); anything above `ListQueryOptions.MaxPageSize` (1,000) is clamped to it. Both are host-configurable — see [Page-size defaults and ceiling](#page-size-defaults-and-ceiling). |
 | `filter` | `Filter` | `ListFilter[]?` | `null` | Repeatable `field:operation:value` conditions, AND-combined. At most 20 per request. |
 | `search` | `Search` | `string?` | `null` | Free-text `LIKE '%…%'` across the model's text fields, OR-combined, then AND-ed onto `filter`. Minimum 2 characters after trimming; blank is treated as absent. |
 | `orderBy` | `OrderBy` | `string?` | `null` | Field to sort by, replacing the endpoint's default ordering. |
 | `desc` | `Desc` | `bool?` | `null` → `false` | Sort descending. Ignored without `orderBy`. |
+| `fromDate` | `FromDate` | `DateTimeOffset?` | `null` → last 3 months | Lower bound on when a record was last active. `null` on both bounds applies `ListQueryOptions.DefaultActivityWindowMonths` — see [Default recent-activity window](#default-recent-activity-window). |
+| `toDate` | `ToDate` | `DateTimeOffset?` | `null` → open-ended | Upper bound on when a record was last active. |
 
 `ListFilter` is a `readonly record struct (string Field, Ops Operation, string Value)` implementing
 `IParsable<ListFilter>`, which is what lets minimal APIs bind a repeated `?filter=…&filter=…`
@@ -335,6 +343,10 @@ Rules the parser and validator enforce, all traceable to `ListFilter.TryParse` a
   rejected with `400`, never silently dropped — dropping a condition would answer a filtered query
   with unfiltered data.
 - **Bounds**: more than 20 conditions, or a search shorter than 2 characters, is a `400`.
+- **`fromDate`/`toDate` are not filter conditions.** They bound the listing by activity rather than by
+  a named field, so they work even when the returned model hides its audit timestamps, and they
+  AND onto whatever `filter` conditions the caller also sent instead of replacing them. A
+  `fromDate` later than `toDate` is a `400`.
 
 ### Paged responses — `PagedResponse<T>`
 
@@ -513,13 +525,17 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 
 | Option | Type | Default | Effect |
 |---|---|---|---|
-| `DefaultPageSize` | `int`, `[Range(1, int.MaxValue)]` | `20` | Page size used when `pageSize` is absent, `null` or below 1. |
+| `DefaultPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Page size used when `pageSize` is absent, `null` or below 1. |
 | `MaxPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Ceiling every page is subject to. Still a clamp — an oversized request is served trimmed, never rejected with `400`. |
+| `DefaultActivityWindowMonths` | `int`, minimum `0` | `3` | How many months back a listing of audited records reaches when the caller names neither `fromDate` nor `toDate`. `0` switches the default window off. See [Default recent-activity window](#default-recent-activity-window). |
 | `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | The configuration section the options are meant to bind from. |
 
 `MaxPageSize` is a hard ceiling on every path, the default included: a caller who omits `pageSize`
 receives `min(DefaultPageSize, MaxPageSize)`, so a `MaxPageSize` configured below `DefaultPageSize`
 lowers the default page too rather than being bypassed by it.
+
+Both `DefaultPageSize` and `DefaultActivityWindowMonths` are the values used when the host
+configures nothing: a host that already sets either one keeps its own value untouched.
 
 Raise or lower it from configuration:
 
@@ -527,8 +543,9 @@ Raise or lower it from configuration:
 {
   "DKNet": {
     "ListQuery": {
-      "DefaultPageSize": 20,
-      "MaxPageSize": 5000
+      "DefaultPageSize": 1000,
+      "MaxPageSize": 5000,
+      "DefaultActivityWindowMonths": 3
     }
   }
 }
@@ -545,6 +562,17 @@ builder.Services.Configure<ListQueryOptions>(
 builder.Services.AddListQueryOptions(o => o.MaxPageSize = 5000);
 ```
 
+To keep the behaviour a host had before these defaults changed — 20 items for a bare request, and no
+default time window — set both explicitly:
+
+```csharp
+builder.Services.AddListQueryOptions(o =>
+{
+    o.DefaultPageSize = 20;
+    o.DefaultActivityWindowMonths = 0;
+});
+```
+
 `AddListQueryOptions` binds no configuration of its own — it registers the options with
 `ValidateDataAnnotations().ValidateOnStart()`, so a `DefaultPageSize` or `MaxPageSize` below 1 fails
 the host at start-up rather than silently degrading a live endpoint. Because that validation runs
@@ -554,6 +582,72 @@ neither still resolves `IOptions<ListQueryOptions>` and pages by the defaults ab
 
 `ListQueryRequest`'s remaining query-string defaults are listed under
 [The list-endpoint query contract](#the-list-endpoint-query-contract--listqueryrequest-and-listfilter).
+
+### Default recent-activity window
+
+A `MapGetList` endpoint over records that carry audit timestamps answers a bare request — no
+`fromDate`, no `toDate` — with the last **3 months** of activity rather than the whole table. The
+length of that window is `ListQueryOptions.DefaultActivityWindowMonths`, host-configurable through
+the same `DKNet:ListQuery` section:
+
+```json
+{
+  "DKNet": {
+    "ListQuery": {
+      "DefaultActivityWindowMonths": 6
+    }
+  }
+}
+```
+
+```csharp
+builder.Services.AddListQueryOptions(o => o.DefaultActivityWindowMonths = 0); // no default window
+```
+
+How the window is decided, in order:
+
+| The caller sends | The listing covers |
+|---|---|
+| neither bound | now minus `DefaultActivityWindowMonths` up to now |
+| neither bound, with `DefaultActivityWindowMonths` = `0` | all history — the window is switched off |
+| `fromDate` only | `fromDate` onwards, open-ended at the top |
+| `toDate` only | everything up to `toDate`, open-ended at the bottom |
+| both | exactly the range named |
+| `fromDate=0001-01-01T00:00:00Z` | all history — the documented way for a caller to opt out |
+
+Naming either bound **replaces** the default rather than narrowing it, which is why a single
+`fromDate` widens the listing rather than restricting it further:
+
+```text
+GET /v1/products                                        # last 3 months of activity
+GET /v1/products?fromDate=2026-01-01T00:00:00Z          # 2026-01-01 onwards, no upper bound
+GET /v1/products?fromDate=0001-01-01T00:00:00Z          # all history
+GET /v1/products?fromDate=2026-01-01T00:00:00Z&toDate=2026-03-31T23:59:59Z
+```
+
+What "last active" means: a record is in range when **either** its `CreatedOn` **or** its `UpdatedOn`
+moment falls inside the bounds. A record never updated since creation is matched on `CreatedOn`
+alone and is never dropped for lacking an update; a record created years ago but edited yesterday is
+in a 3-month window, which is the intended reading of *recently active*.
+
+The rest of the contract:
+
+- The window is evaluated by the database, so it narrows `PagedResponse<T>.TotalItemCount` as well as
+  the returned items — the page and the reported total always agree.
+- A `fromDate` later than `toDate` is refused with a `400`, not answered with an empty page: an
+  impossible window is a caller mistake, and this package refuses an unusable condition rather than
+  dropping it silently.
+- The bounds AND onto `filter`, `search` and `orderBy` — a caller who already bounds the listing with
+  a `filter` condition over a timestamp field keeps that condition, combined with the window.
+- Ordering is untouched. The window decides which records are in the page, never their order.
+- A listed type whose entity carries **no** audit timestamps ignores both bounds — they are ignored,
+  not rejected, and such a listing is never narrowed by the default window either.
+
+The window applies on the strength of the audit timestamps alone — any `TEntity` assignable to
+`IAuditedProperties` (`CreatedOn`/`UpdatedOn`) — which is a **wider** set of types than the
+newest-first default ordering recognises: that check is against `IAuditedEntity<TKey>`. A type that
+carries the timestamps without implementing `IAuditedEntity<TKey>` is therefore windowed but not
+reordered, until the two are aligned.
 
 ## 🧱 Where it fits
 
@@ -612,6 +706,21 @@ built. Neither is a runtime surprise — both happen at startup.
 - **`pageSize` is silently clamped, not rejected.** Asking for 5,000 rows returns
   `ListQueryOptions.MaxPageSize` rows — 1,000 unless the host raised it — without any indication
   that the request was trimmed.
+- **A bare request now asks for a full page.** With nothing configured, omitting `pageSize` serves up
+  to `DefaultPageSize` = 1,000 rows, not 20. On a large table over a slow link that is a much heavier
+  response than before; lower `DefaultPageSize` (and, if you want a hard cap, `MaxPageSize`) on a
+  host where that matters.
+- **The default activity window narrows an answer the caller did not ask to narrow.** A bare listing
+  of audited records covers the last 3 months, so a record older than that is absent from both the
+  page and `TotalItemCount` with no field in the response saying a window was applied. It is always
+  overridable per request (`fromDate`/`toDate`) and switchable off per host
+  (`DefaultActivityWindowMonths = 0`).
+- **`fromDate`/`toDate` replace the default window, they do not intersect it.** A caller who sends
+  only `toDate` gets an open-ended lower bound — the whole history up to that date — which is wider
+  than the bare request they started from.
+- **The window and the newest-first ordering key off different contracts.** The window applies to any
+  entity with `IAuditedProperties`; the default ordering only to `IAuditedEntity<TKey>`. A type that
+  has the timestamps but not the entity interface is windowed without being reordered.
 - **`MapDeleteById` performs a hard delete** and does no ownership or tenancy check of its own;
   authorization is whatever the enclosing route group requires.
 - Registration order is deliberate: the contextual-population filter is added *before*

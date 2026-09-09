@@ -21,13 +21,21 @@ public sealed class ListQueryOptions
     /// <summary>Configuration section name this options type binds to: <c>DKNet:ListQuery</c>.</summary>
     public const string ConfigSectionName = "DKNet:ListQuery";
 
-    /// <summary>Page size applied when the caller does not ask for one. Defaults to 20.</summary>
+    /// <summary>Page size applied when the caller does not ask for one. Defaults to 1000.</summary>
     [Range(1, int.MaxValue)]
-    public int DefaultPageSize { get; set; } = 20;
+    public int DefaultPageSize { get; set; } = 1000;
 
     /// <summary>Largest page a caller may request, whatever they ask for. Defaults to 1000.</summary>
     [Range(1, int.MaxValue)]
     public int MaxPageSize { get; set; } = 1000;
+
+    /// <summary>
+    ///     Width, in months, of the default recent-activity window applied to a <c>MapGetList</c> request that
+    ///     names neither <c>fromDate</c> nor <c>toDate</c>, for a listed type that carries audit timestamps.
+    ///     Defaults to 3. <c>0</c> switches the window off, so an unbounded request is served in full.
+    /// </summary>
+    [Range(0, int.MaxValue)]
+    public int DefaultActivityWindowMonths { get; set; } = 3;
 }
 
 /// <summary>Registers <see cref="ListQueryOptions" /> on <see cref="IServiceCollection" />.</summary>

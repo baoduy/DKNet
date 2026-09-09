@@ -159,7 +159,7 @@ public static class FluentsEntityEndpointMapperExtensions
                         [FromServices] IRepositorySpec repo,
                         [AsParameters] ListQueryRequest request) =>
                     {
-                        if (!ListQuery.TryValidate<TEntity, TModel>(request, out var query, out var error))
+                        if (!ListQuery.TryValidate<TEntity, TModel>(request, listOptions.Value, out var query, out var error))
                             return Results.Problem(error, statusCode: StatusCodes.Status400BadRequest);
 
                         var page = await repo.ToPagedListAsync(
