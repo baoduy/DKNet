@@ -138,8 +138,9 @@ host, not per endpoint:
 
 | Knob | Type | Default | Effect |
 |---|---|---|---|
-| `DefaultPageSize` | `int` | `20` | Page size used when `pageSize` is absent, null or below 1. |
+| `DefaultPageSize` | `int` | `1000` | Page size used when `pageSize` is absent, null or below 1. |
 | `MaxPageSize` | `int` | `1000` | Ceiling every page is subject to, `DefaultPageSize` included; an oversized request is served trimmed, never rejected. |
+| `DefaultActivityWindowMonths` | `int` | `3` | How many months back a listing of audited records reaches when the caller names neither `fromDate` nor `toDate`. `0` switches the default window off, restoring an unbounded listing. Ignored for listed types that carry no audit timestamps. |
 | `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | Section the options are meant to bind from. |
 
 `AddListQueryOptions` binds no configuration itself — it adds
@@ -151,14 +152,23 @@ calls are optional: with neither, the defaults above apply.
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
 | `pageNumber` | `int?` | page 1 | One-based; anything below 1 is the first page. |
-| `pageSize` | `int?` | `20` | Clamped to `ListQueryOptions.MaxPageSize` (1,000 by default), silently. |
+| `pageSize` | `int?` | `1000` | `ListQueryOptions.DefaultPageSize` when absent, null or below 1; clamped to `ListQueryOptions.MaxPageSize` (1,000 by default), silently. |
 | `filter` | `ListFilter[]?` | none | Repeatable `field:operation:value`, AND-combined, at most 20 per request. Operations: `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `NotContains`, `StartsWith`, `EndsWith`, `In`, `NotIn`, `IsNull`, `IsNotNull`. `In`/`NotIn` take a comma-separated list; `IsNull`/`IsNotNull` take no value. |
 | `search` | `string?` | none | Free-text match across the returned model's text fields, minimum 2 characters. |
 | `orderBy` | `string?` | endpoint default | Field on the returned model to sort by. |
 | `desc` | `bool?` | `false` | Sort descending; ignored without `orderBy`. |
+| `fromDate` | `DateTimeOffset?` | last 3 months | Lower bound on when a record was last active. |
+| `toDate` | `DateTimeOffset?` | open-ended | Upper bound on when a record was last active. |
 
 Only fields the returned model declares can be filtered, searched or sorted; anything else is
 rejected with `400` rather than silently ignored.
+
+`fromDate`/`toDate` bound the listing by activity: a record is in range when either its `CreatedOn`
+or its `UpdatedOn` moment falls inside the bounds, so a record edited recently stays listed however
+old it is, and a record never updated is matched on `CreatedOn` alone. Naming either bound replaces
+the default window entirely and is open-ended on the side left out — `fromDate=0001-01-01T00:00:00Z`
+is how a caller asks for all history. `fromDate` later than `toDate` is a `400`. Listed types that
+carry no audit timestamps ignore both bounds rather than rejecting them.
 
 Attributes and other extension points:
 
