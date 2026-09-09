@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using AspCore.Extensions.Tests.Fixtures;
 using AspCore.Extensions.Tests.TestEntities;
 using DKNet.AspCore.Extensions.Endpoints;
@@ -10,9 +9,10 @@ namespace AspCore.Extensions.Tests.Endpoints;
 
 /// <summary>
 ///     BDD-style coverage of the <c>MapGetList</c> paging-hardening feature (DRK-519 §5, "Standard list endpoint
-///     paging"): default page/size, ceiling/floor clamps, the published ceiling description, newest-first
-///     ordering (audited and non-audited), lossless page-walking, and next/previous flags — exercised through a
-///     real HTTP pipeline against a real EF Core InMemory store (see <see cref="PagingTestHost" />).
+///     paging"): default page/size, the below-1 floor clamp, newest-first ordering (audited and non-audited),
+///     lossless page-walking, and next/previous flags — exercised through a real HTTP pipeline against a real
+///     EF Core InMemory store (see <see cref="PagingTestHost" />). The page-size ceiling itself (DRK-1149) is
+///     covered by <see cref="MapGetListPageSizeCeilingTests" />.
 /// </summary>
 public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTestHost>
 {
@@ -34,21 +34,6 @@ public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTe
         page.Items.Count.ShouldBe(20);
     }
 
-    // Given: a page size far above the published ceiling.
-    // When: the request asks for pageSize=100000.
-    // Then: the server clamps it down to 100 and actually serves 100 rows (not just echoes the clamp back).
-    [Fact]
-    public async Task PageSizeAboveCeiling_ClampsToOneHundred()
-    {
-        var response = await host.Client.GetAsync("/p/widgets?pageSize=100000");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
-        page.ShouldNotBeNull();
-        page.PageSize.ShouldBe(100);
-        page.Items.Count.ShouldBe(100);
-    }
-
     // Given: a page size below the minimum of one.
     // When: the request asks for pageSize=0 or a negative value.
     // Then: the server falls back to the default of 20 rather than returning an empty or error response.
@@ -64,26 +49,6 @@ public class MapGetListPagingTests(PagingTestHost host) : IClassFixture<PagingTe
         page.ShouldNotBeNull();
         page.PageSize.ShouldBe(20);
         page.Items.Count.ShouldBe(20);
-    }
-
-    // Given: the published OpenAPI description for the pageSize parameter on a MapGetList endpoint.
-    // When: a client (or client-generator) reads the API description alone, without ever calling the endpoint.
-    // Then: the 100-row ceiling is discoverable from that description text.
-    [Fact]
-    public async Task PageSizeCeiling_IsDiscoverableInThePublishedApiDescription()
-    {
-        var response = await host.Client.GetAsync("/openapi/v1.json");
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var pageSizeParam = document.RootElement
-            .GetProperty("paths").GetProperty("/p/widgets").GetProperty("get").GetProperty("parameters")
-            .EnumerateArray()
-            .Single(p => p.GetProperty("name").GetString() == "pageSize");
-
-        var description = pageSizeParam.GetProperty("description").GetString();
-        description.ShouldNotBeNull();
-        description.ShouldContain("100");
     }
 
     // Given: an audited entity where two rows share the same CreatedOn instant and one row is strictly newer.
