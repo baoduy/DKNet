@@ -159,6 +159,36 @@ public class MapGetListPageSizeCeilingTests(PagingCeilingTestHost host) : IClass
         await Should.ThrowAsync<OptionsValidationException>(Act);
     }
 
+    // Given: two hosts built in the same process — one left at the default ceiling, one lowered to 50 — proving
+    // the options resolved for MapGetList's mapping do not leak between hosts (R2; guards against the
+    // process-wide static this refactor deliberately avoids — see §4 of the spec).
+    // When: both are asked for pageSize=1000.
+    // Then: each serves its own ceiling, not the other's.
+    [Fact]
+    public async Task TwoHostsInOneProcess_KeepSeparateCeilings()
+    {
+        await using var defaultHost = await BuildHostAsync(_ => { }, seedWidgetCount: 1100);
+        await using var loweredHost = await BuildHostAsync(
+            builder => builder.Services.AddListQueryOptions(o => o.MaxPageSize = 50),
+            seedWidgetCount: 60);
+        using var defaultClient = defaultHost.GetTestClient();
+        using var loweredClient = loweredHost.GetTestClient();
+
+        var defaultResponse = await defaultClient.GetAsync("/p/widgets?pageSize=1000");
+        var loweredResponse = await loweredClient.GetAsync("/p/widgets?pageSize=1000");
+
+        defaultResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        loweredResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var defaultPage = await defaultResponse.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        var loweredPage = await loweredResponse.Content.ReadFromJsonAsync<PagedResponse<WidgetModel>>();
+        defaultPage.ShouldNotBeNull();
+        loweredPage.ShouldNotBeNull();
+        defaultPage.PageSize.ShouldBe(1000);
+        defaultPage.Items.Count.ShouldBe(1000);
+        loweredPage.PageSize.ShouldBe(50);
+        loweredPage.Items.Count.ShouldBe(50);
+    }
+
     /// <summary>Builds and starts a throwaway <c>MapGetList</c> host with the given DI/configuration tweak.</summary>
     /// <param name="configureBuilder">Applies the scenario's configuration or DI registration before the host builds.</param>
     /// <param name="seedWidgetCount">Number of widget rows to seed before the host starts.</param>
