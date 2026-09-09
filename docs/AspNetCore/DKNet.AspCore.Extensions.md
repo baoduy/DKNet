@@ -283,6 +283,12 @@ with `Id` descending as tie-break when the entity implements `IAuditedEntity<TKe
 descending alone otherwise. A caller-supplied `orderBy` replaces that default outright, and `Id`
 descending is appended as a tie-break unless the caller already ordered by `Id`.
 
+What a bare `GET` against a `MapGetList` endpoint returns is decided by two more defaults, both
+host-configurable: it is served a full page of up to 1,000 items
+([Page-size defaults and ceiling](#page-size-defaults-and-ceiling)) and — where the listed records
+carry audit timestamps — only the last three months of activity
+([Default recent-activity window](#default-recent-activity-window)).
+
 ### The list-endpoint query contract — `ListQueryRequest` and `ListFilter`
 
 `MapGetList` binds `ListQueryRequest` with `[AsParameters]`, so its properties are the endpoint's
