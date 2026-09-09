@@ -276,7 +276,7 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
 | [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
 | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
-| [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]` |
+| [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
 | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) | `IdempotencyOptions` in full |
 | [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
 | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) | `BlobServiceOptions` validation keys shared by all adapters |

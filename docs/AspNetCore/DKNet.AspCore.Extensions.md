@@ -61,7 +61,7 @@ Every sample below assumes the `using` that owns the type it shows:
 |---|---|
 | `DKNet.AspCore.Extensions` | `IEndpointConfig` |
 | `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
-| `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
+| `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListQueryOptions`, `AddListQueryOptions()`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
 | `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions` |
 
 ## 🧩 Features
@@ -292,7 +292,7 @@ one:
 | Query parameter | Property | Type | Default | Effect |
 |---|---|---|---|---|
 | `pageNumber` | `PageNumber` | `int?` | `null` → page 1 | One-based page. `null` or any value below 1 is treated as the first page. |
-| `pageSize` | `PageSize` | `int?` | `null` → 20 | Items per page. `null` or below 1 becomes 20; anything above 100 is clamped to 100. |
+| `pageSize` | `PageSize` | `int?` | `null` → 20 | Items per page. `null` or below 1 becomes `ListQueryOptions.DefaultPageSize` (20); anything above `ListQueryOptions.MaxPageSize` (1,000) is clamped to it. Both are host-configurable — see [Page-size defaults and ceiling](#page-size-defaults-and-ceiling). |
 | `filter` | `Filter` | `ListFilter[]?` | `null` | Repeatable `field:operation:value` conditions, AND-combined. At most 20 per request. |
 | `search` | `Search` | `string?` | `null` | Free-text `LIKE '%…%'` across the model's text fields, OR-combined, then AND-ed onto `filter`. Minimum 2 characters after trimming; blank is treated as absent. |
 | `orderBy` | `OrderBy` | `string?` | `null` | Field to sort by, replacing the endpoint's default ordering. |
@@ -506,9 +506,54 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 | `configureOptions` | `Action<EndpointRegistrationOptions>?` | `null` | Leave `null` to keep every default above. |
 | `assemblies` | `params Assembly[]` | empty → `AppDomain.CurrentDomain.GetAssemblies()` | Assemblies scanned for `IEndpointConfig` implementations. |
 
-`ListQueryRequest`'s query-string defaults and ceilings are listed under
-[The list-endpoint query contract](#the-list-endpoint-query-contract--listqueryrequest-and-listfilter);
-they are constants on the record, not configurable per endpoint.
+### Page-size defaults and ceiling
+
+`ListQueryOptions` (namespace `DKNet.AspCore.Extensions.Endpoints`) holds the page size every
+`MapGetList` endpoint actually pages by. It is global to the host, not per endpoint:
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `DefaultPageSize` | `int`, `[Range(1, int.MaxValue)]` | `20` | Page size used when `pageSize` is absent, `null` or below 1. |
+| `MaxPageSize` | `int`, `[Range(1, int.MaxValue)]` | `1000` | Ceiling every page is subject to. Still a clamp — an oversized request is served trimmed, never rejected with `400`. |
+| `ConfigSectionName` | `const string` | `"DKNet:ListQuery"` | The configuration section the options are meant to bind from. |
+
+`MaxPageSize` is a hard ceiling on every path, the default included: a caller who omits `pageSize`
+receives `min(DefaultPageSize, MaxPageSize)`, so a `MaxPageSize` configured below `DefaultPageSize`
+lowers the default page too rather than being bypassed by it.
+
+Raise or lower it from configuration:
+
+```json
+{
+  "DKNet": {
+    "ListQuery": {
+      "DefaultPageSize": 20,
+      "MaxPageSize": 5000
+    }
+  }
+}
+```
+
+```csharp
+builder.Services.Configure<ListQueryOptions>(
+    builder.Configuration.GetSection(ListQueryOptions.ConfigSectionName));
+```
+
+…or in code:
+
+```csharp
+builder.Services.AddListQueryOptions(o => o.MaxPageSize = 5000);
+```
+
+`AddListQueryOptions` binds no configuration of its own — it registers the options with
+`ValidateDataAnnotations().ValidateOnStart()`, so a `DefaultPageSize` or `MaxPageSize` below 1 fails
+the host at start-up rather than silently degrading a live endpoint. Because that validation runs
+against the final computed options, calling it alongside `Configure<ListQueryOptions>(…)` extends the
+same start-up check to configuration-supplied values. Both calls are optional: a host that makes
+neither still resolves `IOptions<ListQueryOptions>` and pages by the defaults above.
+
+`ListQueryRequest`'s remaining query-string defaults are listed under
+[The list-endpoint query contract](#the-list-endpoint-query-contract--listqueryrequest-and-listfilter).
 
 ## 🧱 Where it fits
 
@@ -564,8 +609,9 @@ built. Neither is a runtime surprise — both happen at startup.
 - **A model with no `string` property cannot match a `search`** — the predicate matches nothing and
   the endpoint answers with an empty page rather than an error. Search walks at most two property
   hops (`Name`, `Merchant.Name`; not `Merchant.Address.City`).
-- **`pageSize` is silently clamped, not rejected.** Asking for 5,000 rows returns 100 without any
-  indication that the request was trimmed.
+- **`pageSize` is silently clamped, not rejected.** Asking for 5,000 rows returns
+  `ListQueryOptions.MaxPageSize` rows — 1,000 unless the host raised it — without any indication
+  that the request was trimmed.
 - **`MapDeleteById` performs a hard delete** and does no ownership or tenancy check of its own;
   authorization is whatever the enclosing route group requires.
 - Registration order is deliberate: the contextual-population filter is added *before*

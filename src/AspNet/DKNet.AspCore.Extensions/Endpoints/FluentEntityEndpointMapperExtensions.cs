@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Extensions.Endpoints;
 
@@ -148,6 +149,7 @@ public static class FluentsEntityEndpointMapperExtensions
                     endpoint,
                     async (
                         [FromServices] IRepositorySpec repo,
+                        [FromServices] IOptions<ListQueryOptions> listOptions,
                         [AsParameters] ListQueryRequest request) =>
                     {
                         if (!ListQuery.TryValidate<TEntity, TModel>(request, out var query, out var error))
@@ -156,7 +158,7 @@ public static class FluentsEntityEndpointMapperExtensions
                         var page = await repo.ToPagedListAsync(
                             new EntityListSpecification<TEntity, TKey, TModel>(query!),
                             request.PageNumberValue,
-                            request.PageSizeValue);
+                            request.GetPageSize(listOptions.Value));
                         return Results.Ok(new PagedResponse<TModel>(page));
                     })
                 .Produces<PagedResponse<TModel>>()
