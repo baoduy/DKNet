@@ -80,10 +80,10 @@ public class AttributeArgumentEmissionTests
                 public Type[] Types { get; }
             }
 
-            public sealed class ProbeMarkerArrayArgAttribute : Attribute
+            public sealed class ProbeKindArrayArgAttribute : Attribute
             {
-                public ProbeMarkerArrayArgAttribute(Probe.Markers.Marker[] markers) => Markers = markers;
-                public Probe.Markers.Marker[] Markers { get; }
+                public ProbeKindArrayArgAttribute(Probe.Enums.ProbeKind[] kinds) => Kinds = kinds;
+                public Probe.Enums.ProbeKind[] Kinds { get; }
             }
         }
 
@@ -212,11 +212,11 @@ public class AttributeArgumentEmissionTests
     private const string NonKeywordArrayElementEntitySource = """
         namespace Probe.Entities
         {
-            public sealed class MarkerArrayProduct
+            public sealed class KindArrayProduct
             {
                 public int ProductId { get; set; }
 
-                [System.ComponentModel.DataAnnotations.ProbeMarkerArrayArg(new Probe.Markers.Marker[] { null })]
+                [System.ComponentModel.DataAnnotations.ProbeKindArrayArg(new[] { Probe.Enums.ProbeKind.First })]
                 public decimal Price { get; set; }
             }
         }
@@ -362,13 +362,13 @@ public class AttributeArgumentEmissionTests
     public void NonKeywordArrayElementType_GeneratedSource_CompilesWithNoWarningOrAboveDiagnostic()
     {
         // Arrange
-        var dtoSource = BuildDtoSource("MarkerArrayProduct", "MarkerArrayProductDto");
+        var dtoSource = BuildDtoSource("KindArrayProduct", "KindArrayProductDto");
 
         // Act
         var (source, diagnostics) = CompileAndCaptureSource(NonKeywordArrayElementEntitySource, dtoSource);
 
         // Assert
-        source.ShouldContain("Probe.Markers.Marker[] {");
+        source.ShouldContain("Probe.Enums.ProbeKind[] {");
         var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
         atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }
