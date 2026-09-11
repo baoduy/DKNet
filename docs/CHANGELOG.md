@@ -150,8 +150,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` now emit attribute arguments as valid C# literals
-  when carrying an entity's attributes onto generated code. Previously a `float` or `decimal` argument was
-  emitted without its `f`/`m` suffix, a non-finite `double` (`NaN`, positive/negative infinity) as a bare
+  when carrying an entity's attributes onto generated code. Previously a `float` argument was emitted
+  without its `f` suffix, a non-finite `double` (`NaN`, positive/negative infinity) as a bare
   `NaN`/`Infinity` word rather than `double.NaN`/`double.PositiveInfinity`/`double.NegativeInfinity`, a `'` or
   `\` `char` without an escape, and a string containing a backslash without escaping it — each produced
   generated code that did not compile. Finite `double` emission is unchanged (an unsuffixed decimal literal
