@@ -17,11 +17,19 @@ namespace DKNet.SlimBus.Generators;
 /// Source text of every <c>System.ComponentModel.DataAnnotations</c> attribute carried by the parameter,
 /// reconstructed verbatim (e.g. <c>[global::System.ComponentModel.DataAnnotations.Required]</c>).
 /// </param>
+/// <param name="IsRequired">
+/// <see langword="true"/> when the emitted property must carry the C# <c>required</c> modifier — decided
+/// from the parameter symbol's nullability, not from <see cref="TypeFullName"/>'s rendered text. A
+/// parameter whose nullable annotation is <c>Annotated</c> (nullable reference type or nullable value
+/// type) is optional (<see langword="false"/>); everything else, including a nullable-disabled context
+/// (annotation <c>None</c>), is required.
+/// </param>
 internal sealed record CrudParamModel(
     string Name,
     string PascalName,
     string TypeFullName,
-    ImmutableArray<string> AnnotationSources)
+    ImmutableArray<string> AnnotationSources,
+    bool IsRequired)
 {
     /// <inheritdoc />
     public bool Equals(CrudParamModel? other) =>
@@ -29,6 +37,7 @@ internal sealed record CrudParamModel(
         Name == other.Name &&
         PascalName == other.PascalName &&
         TypeFullName == other.TypeFullName &&
+        IsRequired == other.IsRequired &&
         AnnotationSources.SequenceEqual(other.AnnotationSources);
 
     /// <inheritdoc />
@@ -41,6 +50,7 @@ internal sealed record CrudParamModel(
             hash = hash * 31 + Name.GetHashCode();
             hash = hash * 31 + PascalName.GetHashCode();
             hash = hash * 31 + TypeFullName.GetHashCode();
+            hash = hash * 31 + IsRequired.GetHashCode();
             foreach (var source in AnnotationSources) hash = hash * 31 + source.GetHashCode();
             return hash;
         }
