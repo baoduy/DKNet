@@ -138,6 +138,13 @@ internal static class CrudModelBuilder
     private const string EntityInterfaceName = "IEntity";
     private const string DataAnnotationsNamespace = "System.ComponentModel.DataAnnotations";
 
+    // Renders the nullable-reference-type "?" modifier (e.g. "string?") alongside the fully qualified name;
+    // FullyQualifiedFormat alone omits it. Nullable value types (e.g. "decimal?") already render their "?"
+    // without this option — see ExpandNullable, which this format also omits and does not need.
+    private static readonly SymbolDisplayFormat ParamTypeFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     // Cheap name-prefix filter: skip framework and well-known third-party assemblies while walking
     // referenced assemblies for CRUD-attributed members.
     private static readonly string[] SkippedAssemblyPrefixes =
@@ -471,7 +478,7 @@ internal static class CrudModelBuilder
 
     private static CrudParamModel BuildParamModel(IParameterSymbol parameter)
     {
-        var typeFullName = parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var typeFullName = parameter.Type.ToDisplayString(ParamTypeFormat);
         var pascalName = ToPascalCase(parameter.Name);
 
         var annotations = ImmutableArray.CreateBuilder<string>();
@@ -482,7 +489,12 @@ internal static class CrudModelBuilder
             annotations.Add(BuildAttributeSource(attribute));
         }
 
-        return new CrudParamModel(parameter.Name, pascalName, typeFullName, annotations.ToImmutable());
+        // Nullable reference type (NullableAnnotation.Annotated) or nullable value type (Nullable<T>) is
+        // optional. A nullable-disabled context (annotation None) keeps today's behaviour: required.
+        var isOptional = parameter.NullableAnnotation == NullableAnnotation.Annotated ||
+                          parameter.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+
+        return new CrudParamModel(parameter.Name, pascalName, typeFullName, annotations.ToImmutable(), !isOptional);
     }
 
     private static string ToPascalCase(string name) =>
@@ -710,9 +722,8 @@ internal static class Emitter
             foreach (var annotation in param.AnnotationSources)
                 builder.Append("    ").AppendLine(annotation);
 
-            var isNullable = param.TypeFullName.EndsWith("?", StringComparison.Ordinal);
             builder.Append("    public ");
-            if (!isNullable) builder.Append("required ");
+            if (param.IsRequired) builder.Append("required ");
             builder.Append(param.TypeFullName).Append(' ').Append(param.PascalName).AppendLine(" { get; init; }");
 
             if (i < member.Params.Length - 1) builder.AppendLine();

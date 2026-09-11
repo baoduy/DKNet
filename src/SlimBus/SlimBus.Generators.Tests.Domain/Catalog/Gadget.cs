@@ -12,18 +12,26 @@ public sealed class Gadget : Entity
     } // EF
 
     [CrudCreate]
-    public Gadget([Required, MaxLength(100)] string name, decimal price)
+    public Gadget([Required, MaxLength(100)] string name, decimal price, string? nickname)
     {
         Name = name;
         Price = price;
+        Nickname = nickname;
         AddEvent(new GadgetCreated(Id));
     }
 
     public string Name { get; private set; } = null!;
 
+    /// <summary>Optional nullable reference-type field — proves DRK-1194's fix on the create path.</summary>
+    public string? Nickname { get; private set; }
+
     public decimal Price { get; private set; }
 
     public bool IsApproved { get; private set; }
+
+    /// <summary>Optional nullable reference-type field set by <see cref="Approve" /> — proves the fix on the
+    /// shared update/action emission path, not just create.</summary>
+    public string? ApprovalNote { get; private set; }
 
     public bool IsDiscontinued { get; private set; }
 
@@ -36,7 +44,11 @@ public sealed class Gadget : Entity
     ///     Proves DRK-861's generated request/handler/endpoint slice end-to-end via <c>GadgetCrudSliceTests</c>.
     /// </summary>
     [CrudAction]
-    public void Approve() => IsApproved = true;
+    public void Approve(string? approvalNote)
+    {
+        IsApproved = true;
+        ApprovalNote = approvalNote;
+    }
 
     /// <summary>
     ///     A second action whose generated handler is suppressed in <c>SlimBus.Generators.Tests.Api</c> by a
