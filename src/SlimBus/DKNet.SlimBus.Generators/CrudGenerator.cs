@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -528,11 +529,24 @@ internal static class CrudModelBuilder
             case TypedConstantKind.Array:
                 return "new[] { " + string.Join(", ", constant.Values.Select(FormatTypedConstant)) + " }";
             default:
+                // Mirrors DtoGenerator.FormatAttributeArgument (DRK-1222 items 1-3): `string`/`char` route
+                // through SymbolDisplay.FormatPrimitive for control-character coverage; `bool` stays ahead
+                // of `IFormattable` (R3); `float`/`decimal` get their required literal suffix and
+                // non-finite `float`/`double` become constant references — finite `double` is untouched
+                // and keeps falling through to the `IFormattable` arm, unsuffixed (R2).
                 return constant.Value switch
                 {
-                    string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+                    string s => SymbolDisplay.FormatPrimitive(s, quoteStrings: true, useHexadecimalNumbers: false),
                     bool b => b ? "true" : "false",
-                    char c => "'" + c + "'",
+                    char c => SymbolDisplay.FormatPrimitive(c, quoteStrings: true, useHexadecimalNumbers: false),
+                    float.NaN => "float.NaN",
+                    float f when float.IsPositiveInfinity(f) => "float.PositiveInfinity",
+                    float f when float.IsNegativeInfinity(f) => "float.NegativeInfinity",
+                    float f => SymbolDisplay.FormatPrimitive(f, quoteStrings: false, useHexadecimalNumbers: false) + "f",
+                    double.NaN => "double.NaN",
+                    double d when double.IsPositiveInfinity(d) => "double.PositiveInfinity",
+                    double d when double.IsNegativeInfinity(d) => "double.NegativeInfinity",
+                    decimal m => SymbolDisplay.FormatPrimitive(m, quoteStrings: false, useHexadecimalNumbers: false) + "m",
                     IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
                     _ => constant.Value?.ToString() ?? "null"
                 };

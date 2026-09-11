@@ -1575,10 +1575,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         if (arg.Value is string stringValue)
         {
-            // Escape string literals
-            return $"\"{stringValue.Replace("\"", "\\\"")}\"";
+            // SymbolDisplay.FormatPrimitive escapes '\' and control characters as well as '"' — a
+            // hand-rolled Replace("\"", "\\\"") missed both (review follow-up, DRK-1222 item 1).
+            return SymbolDisplay.FormatPrimitive(stringValue, quoteStrings: true, useHexadecimalNumbers: false);
         }
 
+        // Must stay ahead of the `IFormattable` arm below: `bool` implements `IFormattable` (via
+        // `ISpanFormattable`), so an `IFormattable` arm placed first would emit `True`/`False` instead
+        // of the lowercase C# keywords (R3; pinned by BooleanArgument_* facts, DRK-1222 item 4).
         if (arg.Value is bool boolValue)
         {
             return boolValue ? "true" : "false";
@@ -1586,7 +1590,43 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         if (arg.Value is char charValue)
         {
-            return $"'{charValue}'";
+            // Same escaping gap as the string arm — a raw `'{c}'` breaks for `'`, `\`, and control
+            // characters (review follow-up, DRK-1222 item 1).
+            return SymbolDisplay.FormatPrimitive(charValue, quoteStrings: true, useHexadecimalNumbers: false);
+        }
+
+        // `float`/`decimal` and non-finite `float`/`double` need special handling ahead of the generic
+        // `IFormattable` arm below (both types implement it): an unsuffixed decimal-point literal binds
+        // to `double`, not `float`/`decimal` (CS0664), and `NaN`/`±Infinity` have no C# literal form at
+        // all (review follow-up, DRK-1222 items 2-3). Finite `double` is untouched — it already binds
+        // correctly unsuffixed and must keep emitting exactly that (R2).
+        if (arg.Value is float floatValue)
+        {
+            if (float.IsNaN(floatValue))
+                return "float.NaN";
+            if (float.IsPositiveInfinity(floatValue))
+                return "float.PositiveInfinity";
+            if (float.IsNegativeInfinity(floatValue))
+                return "float.NegativeInfinity";
+
+            return SymbolDisplay.FormatPrimitive(floatValue, quoteStrings: false, useHexadecimalNumbers: false) + "f";
+        }
+
+        if (arg.Value is double doubleValue)
+        {
+            if (double.IsNaN(doubleValue))
+                return "double.NaN";
+            if (double.IsPositiveInfinity(doubleValue))
+                return "double.PositiveInfinity";
+            if (double.IsNegativeInfinity(doubleValue))
+                return "double.NegativeInfinity";
+
+            // Finite: fall through to the `IFormattable` arm below, unchanged and unsuffixed (R2).
+        }
+
+        if (arg.Value is decimal decimalValue)
+        {
+            return SymbolDisplay.FormatPrimitive(decimalValue, quoteStrings: false, useHexadecimalNumbers: false) + "m";
         }
 
         if (arg.Value is IFormattable formattableValue)
