@@ -143,7 +143,7 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("Tolerance(1.5f)");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
@@ -184,7 +184,7 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("Marked('\\'', \"a\\\\b\")");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
