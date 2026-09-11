@@ -23,9 +23,6 @@ public class AnnotationFormattingTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithNamedAndDoubleAnnotationArguments_RendersThemVerbatim()
     {
@@ -55,7 +52,7 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("StringLength(50, MinimumLength = 2)");
         text.ShouldContain("Range(0.5, 9.9)");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -102,7 +99,7 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("'x', true");
         text.ShouldContain("new[] { \"one\", \"two\" }");
         // Alpha | Beta (= 3) matches no single named member, so the formatter falls back to a cast literal.

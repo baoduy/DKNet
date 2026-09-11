@@ -47,15 +47,12 @@ public class EndpointEmissionTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithFullSlice_EmitsMapCrudExtensionComposingExistingMappers()
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("public static class ProductCrudEndpointExtensions");
         text.ShouldContain("MapProductCrud(");
         text.ShouldContain("MapGetById<");
@@ -71,7 +68,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}\");");
         text.ShouldContain("group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}/update-name\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -95,7 +92,7 @@ public class EndpointEmissionTests
         // is byte-identical to today's, and that no action registration appears at all.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
         text.ShouldContain("group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
         text.ShouldContain("group.MapDeleteById<global::MyDomain.Product, global::System.Guid>();");
@@ -150,7 +147,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateUpdateAndExplicitRouteAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approval\", \"POST\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -183,7 +180,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithActionDefaultingSegment, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<RejectOrderOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reject-order\", \"POST\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -216,7 +213,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPatchAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ArchiveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/archive\", \"PATCH\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -252,7 +249,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPutActionAndUpdateMember, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ReinstateOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reinstate\", \"PUT\");");
         text.ShouldContain(
@@ -287,7 +284,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithSoleAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldNotContain("MapPutById");
@@ -353,7 +350,7 @@ public class EndpointEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldContain(
