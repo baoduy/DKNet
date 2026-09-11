@@ -1440,9 +1440,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // A `params` constructor argument (e.g. SensitiveDataAttribute(params string[] roles)) arrives
         // here as a single Array-kind TypedConstant. Spread its values as individual arguments — the
         // natural attribute-usage form ("pricing", "audit") rather than an array-creation literal — and
-        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4).
+        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4). An
+        // explicit `null` array argument (e.g. [SensitiveData(null)]) is still Array-kind but its
+        // Values is default — spreading that throws, so route it through FormatAttributeArgument's own
+        // null handling instead (review finding, round 1).
         var constructorArgumentStrings = attribute.ConstructorArguments
-            .SelectMany(arg => arg.Kind == TypedConstantKind.Array
+            .SelectMany(arg => arg.Kind == TypedConstantKind.Array && !arg.IsNull
                 ? arg.Values.Select(FormatAttributeArgument)
                 : [FormatAttributeArgument(arg)])
             .ToList();

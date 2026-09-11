@@ -63,7 +63,18 @@ public static class SensitiveDataJsonExtensions
         if (principal?.Identity?.IsAuthenticated != true)
             return false;
 
-        return roles.Count == 0 || roles.Any(principal.IsInRole);
+        if (roles.Count == 0)
+            return true;
+
+        // A plain loop avoids the per-call delegate + enumerator allocation `roles.Any(principal.IsInRole)`
+        // would incur for every sensitive property of every serialized object.
+        foreach (var role in roles)
+        {
+            if (principal.IsInRole(role))
+                return true;
+        }
+
+        return false;
     }
 
     private static void Modify(JsonTypeInfo typeInfo, ISensitiveDataPrincipalAccessor accessor)
