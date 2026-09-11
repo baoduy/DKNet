@@ -109,4 +109,86 @@ public class AnnotationFormattingTests
         text.ShouldContain("(global::System.ComponentModel.DataAnnotations.TagKinds)3");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Run_WithFloatAnnotationArgument_RendersSuffixedLiteral()
+    {
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class ToleranceAttribute : Attribute
+                {
+                    public ToleranceAttribute(float value) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Tolerance(1.5f)] decimal price)
+                    {
+                        Price = price;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public decimal Price { get; private set; }
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("Tolerance(1.5f)");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEscapedCharAndBackslashStringAnnotationArguments_RendersEscapedLiterals()
+    {
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class MarkedAttribute : Attribute
+                {
+                    public MarkedAttribute(char delimiter, string pattern) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Marked('\'', "a\\b")] string name)
+                    {
+                        Name = name;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("Marked('\\'', \"a\\\\b\")");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -97,6 +98,24 @@ public class AttributeArgumentEmissionTests
             {
                 public ProbeDoubleArgAttribute(double value) => Value = value;
                 public double Value { get; }
+            }
+
+            public sealed class ProbeBoolArgAttribute : Attribute
+            {
+                public ProbeBoolArgAttribute(bool value) => Value = value;
+                public bool Value { get; }
+            }
+
+            public sealed class ProbeFloatArgAttribute : Attribute
+            {
+                public ProbeFloatArgAttribute(float value) => Value = value;
+                public float Value { get; }
+            }
+
+            public sealed class ProbeCharArgAttribute : Attribute
+            {
+                public ProbeCharArgAttribute(char value) => Value = value;
+                public char Value { get; }
             }
         }
 
@@ -269,6 +288,149 @@ public class AttributeArgumentEmissionTests
         }
         """;
 
+    private const string BoolTrueArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class BoolTrueArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeBoolArg(true)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string BoolFalseArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class BoolFalseArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeBoolArg(false)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string FloatArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class FloatArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeFloatArg(1.5f)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NaNDoubleArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class NaNDoubleArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeDoubleArg(double.NaN)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string PositiveInfinityDoubleArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class PositiveInfinityDoubleArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeDoubleArg(double.PositiveInfinity)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NegativeInfinityDoubleArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class NegativeInfinityDoubleArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeDoubleArg(double.NegativeInfinity)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NaNFloatArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class NaNFloatArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeFloatArg(float.NaN)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string PositiveInfinityFloatArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class PositiveInfinityFloatArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeFloatArg(float.PositiveInfinity)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NegativeInfinityFloatArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class NegativeInfinityFloatArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeFloatArg(float.NegativeInfinity)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string CharEscapeArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class CharEscapeArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeCharArg('\'')]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string StringBackslashArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class StringBackslashArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeNullArg("a\\b")]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
     private static readonly MetadataReference[] References =
     [
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
@@ -392,24 +554,183 @@ public class AttributeArgumentEmissionTests
     {
         // Arrange
         var dtoSource = BuildDtoSource("DoubleArgProduct", "DoubleArgProductDto");
-        var originalCulture = CultureInfo.CurrentCulture;
-        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
 
-        try
-        {
-            // Act
-            var (source, diagnostics) = CompileAndCaptureSource(DoubleArgEntitySource, dtoSource);
+        // Act — the comma-decimal culture is confined to a dedicated, throwaway thread (R5): it never
+        // touches this test-runner thread's own CurrentCulture, so it cannot leak into a sibling fact
+        // that happens to reuse the same pooled thread under xUnit parallelisation.
+        var (source, diagnostics) = CompileUnderCulture(
+            DoubleArgEntitySource, dtoSource, CultureInfo.GetCultureInfo("de-DE"));
 
-            // Assert
-            source.ShouldContain("1.5");
-            source.ShouldNotContain("1,5");
-            var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
-            atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = originalCulture;
-        }
+        // Assert
+        source.ShouldContain("ProbeDoubleArg(1.5)");
+        source.ShouldNotContain("1,5");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void BooleanArgument_True_EmitsLowercaseKeyword()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("BoolTrueArgProduct", "BoolTrueArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(BoolTrueArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeBoolArg(true)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void BooleanArgument_False_EmitsLowercaseKeyword()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("BoolFalseArgProduct", "BoolFalseArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(BoolFalseArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeBoolArg(false)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void FloatArgument_EmitsSuffixedLiteral_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("FloatArgProduct", "FloatArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(FloatArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeFloatArg(1.5f)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NaNDoubleArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("NaNDoubleArgProduct", "NaNDoubleArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NaNDoubleArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeDoubleArg(double.NaN)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void PositiveInfinityDoubleArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("PositiveInfinityDoubleArgProduct", "PositiveInfinityDoubleArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(PositiveInfinityDoubleArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeDoubleArg(double.PositiveInfinity)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NegativeInfinityDoubleArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("NegativeInfinityDoubleArgProduct", "NegativeInfinityDoubleArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NegativeInfinityDoubleArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeDoubleArg(double.NegativeInfinity)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NaNFloatArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("NaNFloatArgProduct", "NaNFloatArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NaNFloatArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeFloatArg(float.NaN)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void PositiveInfinityFloatArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("PositiveInfinityFloatArgProduct", "PositiveInfinityFloatArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(PositiveInfinityFloatArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeFloatArg(float.PositiveInfinity)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NegativeInfinityFloatArgument_EmitsConstantReference_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("NegativeInfinityFloatArgProduct", "NegativeInfinityFloatArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NegativeInfinityFloatArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeFloatArg(float.NegativeInfinity)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void CharArgument_NeedingEscape_EmitsEscapedLiteral_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("CharEscapeArgProduct", "CharEscapeArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(CharEscapeArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeCharArg('\\'')");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void StringArgument_ContainingBackslash_EmitsEscapedLiteral_AndCompiles()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("StringBackslashArgProduct", "StringBackslashArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(StringBackslashArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("ProbeNullArg(\"a\\\\b\")");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }
 
     [Fact]
@@ -474,6 +795,26 @@ public class AttributeArgumentEmissionTests
 
     private static List<Diagnostic> Compile(string entitySource, string dtoSource) =>
         CompileAndCaptureSource(entitySource, dtoSource).Diagnostics;
+
+    /// <summary>
+    /// Runs <see cref="CompileAndCaptureSource"/> on a dedicated, throwaway thread with
+    /// <see cref="CultureInfo.CurrentCulture"/> set to <paramref name="culture"/> for that thread only
+    /// (R5) — the calling (test-runner) thread's own culture is never touched, so no sibling fact can
+    /// observe the mutation even under xUnit thread-pool reuse.
+    /// </summary>
+    private static (string Source, List<Diagnostic> Diagnostics) CompileUnderCulture(
+        string entitySource, string dtoSource, CultureInfo culture)
+    {
+        (string Source, List<Diagnostic> Diagnostics) result = default;
+        var worker = new Thread(() =>
+        {
+            CultureInfo.CurrentCulture = culture;
+            result = CompileAndCaptureSource(entitySource, dtoSource);
+        });
+        worker.Start();
+        worker.Join();
+        return result;
+    }
 
     private static (string Source, List<Diagnostic> Diagnostics) CompileAndCaptureSource(
         string entitySource, string dtoSource)
