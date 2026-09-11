@@ -39,14 +39,18 @@ public class SensitiveDataDtoGenerationTests
     // (DRK-1183 §4 invariant), so the probe compilation supplies its own stub.
     private const string SensitiveDataAttributeSource = """
         using System;
+        using System.Collections.Generic;
 
         namespace DKNet.EfCore.Abstractions.Attributes
         {
             [AttributeUsage(AttributeTargets.Property, Inherited = false)]
             public sealed class SensitiveDataAttribute : Attribute
             {
-                public SensitiveDataAttribute(params string[] roles) => Roles = roles;
-                public string[] Roles { get; }
+                public SensitiveDataAttribute(params string[] roles) => Roles = roles ?? Array.Empty<string>();
+                public SensitiveDataAttribute() : this(Array.Empty<string>())
+                {
+                }
+                public IReadOnlyList<string> Roles { get; }
             }
         }
         """;

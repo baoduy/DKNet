@@ -18,7 +18,6 @@ namespace DKNet.EfCore.DtoGenerator;
 /// <c>BuildRaisesEventRecordSource</c>, reused here) named by <see cref="EventNameComposer"/>, so this
 /// generator never references <c>DKNet.EfCore.Events</c>.
 /// </summary>
-[ExcludeFromCodeCoverage]
 [Generator]
 [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:This compiler extension should not be implemented in an assembly with target framework", Justification = "Targeting .NET 9+ only")]
 public sealed class RaisesEventValidator : IIncrementalGenerator

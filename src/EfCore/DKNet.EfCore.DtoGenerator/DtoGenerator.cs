@@ -18,7 +18,6 @@ namespace DKNet.EfCore.DtoGenerator;
 /// readable property of the entity (adds 'required' for non-nullable reference types).
 /// No mapping helper methods are generated (entity to DTO mapping can be handled externally e.g. via Mapster Adapt).
 /// </summary>
-[ExcludeFromCodeCoverage]
 [Generator]
 [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:This compiler extension should not be implemented in an assembly with target framework", Justification = "Targeting .NET 9+ only")]
 public sealed class DtoGenerator : IIncrementalGenerator
@@ -1443,9 +1442,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4). An
         // explicit `null` array argument (e.g. [SensitiveData(null)]) is still Array-kind but its
         // Values is default — spreading that throws, so route it through FormatAttributeArgument's own
-        // null handling instead (review finding, round 1).
+        // null handling instead (review finding, round 1). Only a genuinely `params` constructor
+        // parameter is spread — a plain (non-`params`) array parameter keeps its array-creation form,
+        // resolved positionally against the constructor actually bound (round-2 review finding).
+        var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
         var constructorArgumentStrings = attribute.ConstructorArguments
-            .SelectMany(arg => arg.Kind == TypedConstantKind.Array && !arg.IsNull
+            .SelectMany((arg, i) => arg.Kind == TypedConstantKind.Array && !arg.IsNull &&
+                                     i < parameters.Length && parameters[i].IsParams
                 ? arg.Values.Select(FormatAttributeArgument)
                 : [FormatAttributeArgument(arg)])
             .ToList();
@@ -1497,21 +1500,43 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <returns>The formatted argument string.</returns>
     private static string FormatAttributeArgument(TypedConstant arg)
     {
+        // The null-forgiving `!` keeps this a valid attribute-argument constant while suppressing every
+        // nullable warning at both the literal (CS8625) and the call site (CS8604) regardless of the
+        // target parameter's declared type — including a target `arg.Type` that is null or an error type,
+        // which a type-driven cast/`default` form could not handle uniformly (review finding, round 2).
         if (arg.IsNull)
-            return "null";
+            return "null!";
 
         if (arg.Kind == TypedConstantKind.Array)
         {
+            // An implicitly-typed `new[] { ... }` fails to compile for an empty array (CS0826: no best
+            // type found) or an array containing only a null element (CS1503 — a lone `null!` carries no
+            // inferable type) — both real shapes for a non-`params` array constructor argument (review
+            // finding, round 2). Naming the argument's own declared element type sidesteps inference
+            // entirely. The `?? null` fallback below is defensive rather than reachable: an attribute
+            // constructor whose array parameter has an unresolved element type never binds to an
+            // Array-kind TypedConstant in practice — Roslyn instead collapses the whole argument to
+            // TypedConstantKind.Error (undeclared element type), leaves AttributeConstructor/
+            // ConstructorArguments empty (missing-assembly-reference element type), or resolves cleanly
+            // with IsNull true (ambiguous overload picks the valid one) — verified empirically against
+            // five constructions (round-2 review finding, nit 1) rather than assumed.
+            var elementTypeName = arg.Type is IArrayTypeSymbol { ElementType.TypeKind: not TypeKind.Error } arrayType
+                ? BuildCleanTypeName(arrayType.ElementType)
+                : null;
+
             var arrayBuilder = new StringBuilder();
-            arrayBuilder.Append("new[] { ");
-            
+            if (elementTypeName is not null)
+                arrayBuilder.Append("new ").Append(elementTypeName).Append("[] { ");
+            else
+                arrayBuilder.Append("new[] { ");
+
             for (int i = 0; i < arg.Values.Length; i++)
             {
                 if (i > 0)
                     arrayBuilder.Append(", ");
                 arrayBuilder.Append(FormatAttributeArgument(arg.Values[i]));
             }
-            
+
             arrayBuilder.Append(" }");
             return arrayBuilder.ToString();
         }
