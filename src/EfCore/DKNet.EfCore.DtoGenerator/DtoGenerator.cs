@@ -1513,8 +1513,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
             // type found) or an array containing only a null element (CS1503 — a lone `null!` carries no
             // inferable type) — both real shapes for a non-`params` array constructor argument (review
             // finding, round 2). Naming the argument's own declared element type sidesteps inference
-            // entirely; fall back to the implicit form only when the type is unresolved (null or an
-            // error type), where there is no reliable element type to name.
+            // entirely. The `?? null` fallback below is defensive rather than reachable: an attribute
+            // constructor whose array parameter has an unresolved element type never binds to an
+            // Array-kind TypedConstant in practice — Roslyn instead collapses the whole argument to
+            // TypedConstantKind.Error (undeclared element type), leaves AttributeConstructor/
+            // ConstructorArguments empty (missing-assembly-reference element type), or resolves cleanly
+            // with IsNull true (ambiguous overload picks the valid one) — verified empirically against
+            // five constructions (round-2 review finding, nit 1) rather than assumed.
             var elementTypeName = arg.Type is IArrayTypeSymbol { ElementType.TypeKind: not TypeKind.Error } arrayType
                 ? BuildCleanTypeName(arrayType.ElementType)
                 : null;
