@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Immutable;
+using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -85,11 +86,31 @@ public class AttributeArgumentEmissionTests
                 public ProbeKindArrayArgAttribute(Probe.Enums.ProbeKind[] kinds) => Kinds = kinds;
                 public Probe.Enums.ProbeKind[] Kinds { get; }
             }
+
+            public sealed class ProbeFlagsArgAttribute : Attribute
+            {
+                public ProbeFlagsArgAttribute(Probe.Enums.ProbeFlags flags) => Flags = flags;
+                public Probe.Enums.ProbeFlags Flags { get; }
+            }
+
+            public sealed class ProbeDoubleArgAttribute : Attribute
+            {
+                public ProbeDoubleArgAttribute(double value) => Value = value;
+                public double Value { get; }
+            }
         }
 
         namespace Probe.Enums
         {
             public enum ProbeKind
+            {
+                None = 0,
+                First = 1,
+                Second = 2,
+            }
+
+            [Flags]
+            public enum ProbeFlags
             {
                 None = 0,
                 First = 1,
@@ -222,6 +243,32 @@ public class AttributeArgumentEmissionTests
         }
         """;
 
+    private const string FlagsArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class FlagsArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeFlagsArg(Probe.Enums.ProbeFlags.First | Probe.Enums.ProbeFlags.Second)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string DoubleArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class DoubleArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeDoubleArg(1.5)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
     private static readonly MetadataReference[] References =
     [
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
@@ -320,10 +367,49 @@ public class AttributeArgumentEmissionTests
         var (source, diagnostics) = CompileAndCaptureSource(TypeofOnTypeParamEntitySource, dtoSource);
 
         // Assert
-        source.ShouldContain("typeof(");
-        source.ShouldContain("Probe.Markers.Marker");
+        source.ShouldContain("typeof(global::Probe.Markers.Marker)");
         var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
         atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void FlagsCombinationArgument_NoMatchingMember_EmitsQualifiedCast()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("FlagsArgProduct", "FlagsArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(FlagsArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("((global::Probe.Enums.ProbeFlags)3)");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void DoubleArgument_UnderCommaDecimalCulture_EmitsInvariantFormatting()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("DoubleArgProduct", "DoubleArgProductDto");
+        var originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+
+        try
+        {
+            // Act
+            var (source, diagnostics) = CompileAndCaptureSource(DoubleArgEntitySource, dtoSource);
+
+            // Assert
+            source.ShouldContain("1.5");
+            source.ShouldNotContain("1,5");
+            var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+            atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 
     [Fact]
@@ -336,8 +422,7 @@ public class AttributeArgumentEmissionTests
         var (source, diagnostics) = CompileAndCaptureSource(TypeofOnObjectParamEntitySource, dtoSource);
 
         // Assert
-        source.ShouldContain("typeof(");
-        source.ShouldContain("Probe.Markers.Marker");
+        source.ShouldContain("typeof(global::Probe.Markers.Marker)");
         var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
         atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }
@@ -352,8 +437,7 @@ public class AttributeArgumentEmissionTests
         var (source, diagnostics) = CompileAndCaptureSource(TypeofInArrayEntitySource, dtoSource);
 
         // Assert
-        source.ShouldContain("typeof(");
-        source.ShouldContain("Probe.Markers.Marker");
+        source.ShouldContain("typeof(global::Probe.Markers.Marker)");
         var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
         atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }

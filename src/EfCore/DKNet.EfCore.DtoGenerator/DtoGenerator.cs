@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -1586,6 +1587,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (arg.Value is char charValue)
         {
             return $"'{charValue}'";
+        }
+
+        if (arg.Value is IFormattable formattableValue)
+        {
+            return formattableValue.ToString(null, CultureInfo.InvariantCulture);
         }
 
         // Default: ToString
