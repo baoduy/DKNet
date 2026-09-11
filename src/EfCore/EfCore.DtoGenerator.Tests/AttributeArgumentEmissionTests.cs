@@ -84,6 +84,32 @@ public class AttributeArgumentEmissionTests
         }
         """;
 
+    private const string EmptyNonParamsArrayEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class EmptyTagsProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeTags(new string[0])]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NullElementNonParamsArrayEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class NullElementTagsProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeTags(new string[] { null })]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
     private static readonly MetadataReference[] References =
     [
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
@@ -120,10 +146,40 @@ public class AttributeArgumentEmissionTests
         var (source, diagnostics) = CompileAndCaptureSource(NonParamsArrayEntitySource, dtoSource);
 
         // Assert
-        source.ShouldContain("new[] {");
+        source.ShouldContain("new string[] {");
         source.ShouldNotContain("ProbeTags(\"a\", \"b\")");
         diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ShouldBeEmpty(
             string.Join('\n', diagnostics.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void EmptyNonParamsArrayArgument_GeneratedSource_CompilesWithNoWarningOrAboveDiagnostic()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("EmptyTagsProduct", "EmptyTagsProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(EmptyNonParamsArrayEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("new string[] {");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NullElementInNonParamsArrayArgument_GeneratedSource_CompilesWithNoWarningOrAboveDiagnostic()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("NullElementTagsProduct", "NullElementTagsProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NullElementNonParamsArrayEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("new string[] {");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }
 
     #endregion

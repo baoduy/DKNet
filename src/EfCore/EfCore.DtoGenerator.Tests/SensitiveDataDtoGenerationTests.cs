@@ -38,15 +38,16 @@ public class SensitiveDataDtoGenerationTests
     // generator matches it by namespace + name string only and must never reference the real type
     // (DRK-1183 §4 invariant), so the probe compilation supplies its own stub.
     private const string SensitiveDataAttributeSource = """
+        using System;
         using System.Collections.Generic;
 
         namespace DKNet.EfCore.Abstractions.Attributes
         {
-            [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
-            public sealed class SensitiveDataAttribute : System.Attribute
+            [AttributeUsage(AttributeTargets.Property, Inherited = false)]
+            public sealed class SensitiveDataAttribute : Attribute
             {
-                public SensitiveDataAttribute(params string[] roles) => Roles = roles ?? System.Array.Empty<string>();
-                public SensitiveDataAttribute() : this(System.Array.Empty<string>())
+                public SensitiveDataAttribute(params string[] roles) => Roles = roles ?? Array.Empty<string>();
+                public SensitiveDataAttribute() : this(Array.Empty<string>())
                 {
                 }
                 public IReadOnlyList<string> Roles { get; }

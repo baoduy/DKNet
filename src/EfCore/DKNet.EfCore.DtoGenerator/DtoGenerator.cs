@@ -1445,7 +1445,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // null handling instead (review finding, round 1). Only a genuinely `params` constructor
         // parameter is spread — a plain (non-`params`) array parameter keeps its array-creation form,
         // resolved positionally against the constructor actually bound (round-2 review finding).
-        var parameters = attribute.AttributeConstructor?.Parameters ?? default;
+        var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
         var constructorArgumentStrings = attribute.ConstructorArguments
             .SelectMany((arg, i) => arg.Kind == TypedConstantKind.Array && !arg.IsNull &&
                                      i < parameters.Length && parameters[i].IsParams
@@ -1509,16 +1509,29 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         if (arg.Kind == TypedConstantKind.Array)
         {
+            // An implicitly-typed `new[] { ... }` fails to compile for an empty array (CS0826: no best
+            // type found) or an array containing only a null element (CS1503 — a lone `null!` carries no
+            // inferable type) — both real shapes for a non-`params` array constructor argument (review
+            // finding, round 2). Naming the argument's own declared element type sidesteps inference
+            // entirely; fall back to the implicit form only when the type is unresolved (null or an
+            // error type), where there is no reliable element type to name.
+            var elementTypeName = arg.Type is IArrayTypeSymbol { ElementType.TypeKind: not TypeKind.Error } arrayType
+                ? BuildCleanTypeName(arrayType.ElementType)
+                : null;
+
             var arrayBuilder = new StringBuilder();
-            arrayBuilder.Append("new[] { ");
-            
+            if (elementTypeName is not null)
+                arrayBuilder.Append("new ").Append(elementTypeName).Append("[] { ");
+            else
+                arrayBuilder.Append("new[] { ");
+
             for (int i = 0; i < arg.Values.Length; i++)
             {
                 if (i > 0)
                     arrayBuilder.Append(", ");
                 arrayBuilder.Append(FormatAttributeArgument(arg.Values[i]));
             }
-            
+
             arrayBuilder.Append(" }");
             return arrayBuilder.ToString();
         }
