@@ -492,7 +492,7 @@ internal static class CrudModelBuilder
         // Nullable reference type (NullableAnnotation.Annotated) or nullable value type (Nullable<T>) is
         // optional. A nullable-disabled context (annotation None) keeps today's behaviour: required.
         var isOptional = parameter.NullableAnnotation == NullableAnnotation.Annotated ||
-                          parameter.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+                         parameter.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
 
         return new CrudParamModel(parameter.Name, pascalName, typeFullName, annotations.ToImmutable(), !isOptional);
     }
