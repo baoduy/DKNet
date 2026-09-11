@@ -149,6 +149,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 
 ### Fixed
+- `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` now emit attribute arguments as valid C# literals
+  when carrying an entity's attributes onto generated code. Previously a `float` or `decimal` argument was
+  emitted without its `f`/`m` suffix, a non-finite `double` (`NaN`, positive/negative infinity) as a bare
+  `NaN`/`Infinity` word rather than `double.NaN`/`double.PositiveInfinity`/`double.NegativeInfinity`, a `'` or
+  `\` `char` without an escape, and a string containing a backslash without escaping it — each produced
+  generated code that did not compile. Finite `double` emission is unchanged (an unsuffixed decimal literal
+  already is a `double`).
 - `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
   record when a non-empty `Include` names it — `Include` narrowed the entity's *own* scalar properties but was
   silently reusing the property as-is when it named a navigation, shipping every property of the referenced type.
