@@ -40,6 +40,19 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
         dto.Nickname.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task PostGadget_WithNickname_Returns201AndRoundTripsNickname()
+    {
+        // Proves the optional parameter is actually bound and passed to the generated constructor call, not
+        // just tolerated when absent (the sibling omit-nickname test above can't tell the two apart).
+        var response = await host.Client.PostAsJsonAsync("/gadgets", new { name = "has-nickname", price = 6m, nickname = "nick" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
+        dto.ShouldNotBeNull();
+        dto.Nickname.ShouldBe("nick");
+    }
+
     // ponytail: the repo's only established minimal-API validation pattern (SharpGrip
     // FluentValidation.AutoValidation + a hand-written AbstractValidator<T>) needs a hand-written validator
     // per request, which would break this task's zero-hand-written-code proof; .NET 10 minimal APIs have no

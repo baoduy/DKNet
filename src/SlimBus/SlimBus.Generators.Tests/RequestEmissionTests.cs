@@ -335,8 +335,10 @@ public class RequestEmissionTests
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
 
         var text = GeneratedText(result);
-        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.Required]");
-        text.ShouldContain("public string? Note { get; init; }");
+        // Single assertion that the annotation sits immediately before the Note declaration it belongs to —
+        // two independent ShouldContain calls can't tell "adjacent" from "somewhere else in the file".
+        text.ShouldContain(
+            "    [global::System.ComponentModel.DataAnnotations.Required]\n    public string? Note { get; init; }");
         text.ShouldNotContain("public required string? Note");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }

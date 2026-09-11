@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using DKNet.SlimBus.Generators;
 using Microsoft.CodeAnalysis;
@@ -32,52 +33,35 @@ internal static class GeneratorTestHelper
         }
         """;
 
-    // AppDomain.CurrentDomain.GetAssemblies() only returns assemblies already loaded into the process.
-    // A ProjectReference alone does not force that — .NET loads assemblies lazily on first use — so touch
-    // one public type from each reference the test sources need before collecting metadata references.
+    // The reference set comes from the test host's trusted-platform-assemblies list rather than
+    // AppDomain.CurrentDomain.GetAssemblies(): the latter only contains assemblies already loaded into the
+    // process, which .NET loads lazily on first use, so the set (and which tests pass) depended on
+    // process-wide load order — which other test classes had already run first. TPA lists every assembly the
+    // test host resolved from its deps.json up front, so it doesn't have that problem.
     // (DKNet.EfCore.Repos.Abstractions is retired/obsolete and unused by any test source here, so neither it
     // nor a ProjectReference to it belongs in this project — see RetiredLibraryDependencyBoundaryTests.)
-    private static readonly Type[] ForceLoadedAssemblies =
-    [
-        typeof(DKNet.EfCore.Abstractions.Entities.IEntity<object>),
-        typeof(DKNet.EfCore.DtoGenerator.DtoGenerator),
-        typeof(DKNet.SlimBus.Extensions.Fluents),
-        // Fluents' generated requests implement SlimMessageBus.IRequest<T>; that assembly is only
-        // pulled in by touching one of its own types, not by touching DKNet.SlimBus.Extensions alone.
-        typeof(SlimMessageBus.IRequest<object>),
-        typeof(FluentResults.Result),
-        // Without this, [Required] fails to resolve while compiling the "Domain" source (its assembly
-        // isn't loaded yet), and the attribute silently drops rather than raising a visible diagnostic.
-        typeof(System.ComponentModel.DataAnnotations.RequiredAttribute),
-        // Generated handlers reference IRepositorySpec/Specification/SpecRepoExtensions (all in this
-        // one assembly) and MapsterMapper.IMapper (shipped inside the "Mapster" assembly).
-        typeof(DKNet.EfCore.Specifications.Repositories.IRepositorySpec),
-        typeof(MapsterMapper.IMapper),
-        // Endpoint-emission tests need the FluentsEntityEndpointMapperExtensions/FluentsEndpointMapperExtensions
-        // this assembly declares, plus the ASP.NET Core RouteGroupBuilder those extension members target.
-        // The latter is only pulled in by touching one of its own types, not by touching AspCore.Extensions
-        // alone (same reasoning as the SlimMessageBus.IRequest<object> entry above).
-        typeof(DKNet.AspCore.Extensions.Endpoints.CrudMapOptions),
-        typeof(Microsoft.AspNetCore.Routing.RouteGroupBuilder)
-    ];
+    private static readonly Lazy<ImmutableArray<MetadataReference>> TrustedPlatformReferences = new(() =>
+        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(File.Exists)
+            .GroupBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .Select(path => MetadataReference.CreateFromFile(path))
+            .Cast<MetadataReference>()
+            .ToImmutableArray());
 
     /// <summary>
-    /// Runs the generator as <see cref="Run(string, string)" />, except any loaded assembly whose simple
+    /// Runs the generator as <see cref="Run(string, string)" />, except any reference whose simple assembly
     /// name appears in <paramref name="excludedAssemblyNames" /> is left out of the "MyApi" compilation's
-    /// references — used to exercise generator behavior when a given assembly isn't referenced, without
-    /// depending on process-wide assembly load order (once force-loaded, an assembly stays loaded and
-    /// would otherwise leak into every subsequent call in the same test run).
+    /// references — used to exercise generator behavior when a given assembly isn't referenced.
     /// </summary>
     public static (Compilation Output, ImmutableArray<Diagnostic> Diagnostics, GeneratorDriverRunResult Result)
         Run(string domainSource, string apiSource, string[]? excludedAssemblyNames = null)
     {
-        _ = ForceLoadedAssemblies;
-
-        var refs = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Where(a => excludedAssemblyNames is null || !excludedAssemblyNames.Contains(a.GetName().Name))
-            .Select(a => MetadataReference.CreateFromFile(a.Location))
-            .Cast<MetadataReference>().ToList();
+        var refs = TrustedPlatformReferences.Value
+            .Where(r => excludedAssemblyNames is null ||
+                        !excludedAssemblyNames.Contains(Path.GetFileNameWithoutExtension(r.Display)))
+            .ToList();
 
         var domain = CSharpCompilation.Create("Domain",
             [CSharpSyntaxTree.ParseText(domainSource)], refs,
