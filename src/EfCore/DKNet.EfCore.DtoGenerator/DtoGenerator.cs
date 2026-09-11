@@ -1580,9 +1580,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return SymbolDisplay.FormatPrimitive(stringValue, quoteStrings: true, useHexadecimalNumbers: false);
         }
 
-        // Must stay ahead of the `IFormattable` arm below: `bool` implements `IFormattable` (via
-        // `ISpanFormattable`), so an `IFormattable` arm placed first would emit `True`/`False` instead
-        // of the lowercase C# keywords (R3; pinned by BooleanArgument_* facts, DRK-1222 item 4).
+        // `System.Boolean` does not implement `IFormattable`, so this arm's position relative to the
+        // `IFormattable` arm below is immaterial — a boolean never reaches that arm either way. It exists
+        // because without it a boolean falls through to the default `arg.Value?.ToString()` and emits
+        // `True`/`False`, which do not bind to a `bool` attribute parameter. The BooleanArgument_* facts
+        // pin the emitted text and close the arm's 0-of-2 branch gap (R3 corrected; DRK-1222 item 4).
         if (arg.Value is bool boolValue)
         {
             return boolValue ? "true" : "false";

@@ -530,8 +530,10 @@ internal static class CrudModelBuilder
                 return "new[] { " + string.Join(", ", constant.Values.Select(FormatTypedConstant)) + " }";
             default:
                 // Mirrors DtoGenerator.FormatAttributeArgument (DRK-1222 items 1-3): `string`/`char` route
-                // through SymbolDisplay.FormatPrimitive for control-character coverage; `bool` stays ahead
-                // of `IFormattable` (R3); `float`/`decimal` get their required literal suffix and
+                // through SymbolDisplay.FormatPrimitive for control-character coverage. `bool` does not
+                // implement `IFormattable`, so its position here is immaterial — it exists only because
+                // without it a boolean falls through to `ToString()` and emits `True`/`False`, which does
+                // not compile (R3 corrected). `float`/`decimal` get their required literal suffix and
                 // non-finite `float`/`double` become constant references — finite `double` is untouched
                 // and keeps falling through to the `IFormattable` arm, unsuffixed (R2).
                 return constant.Value switch
