@@ -26,8 +26,10 @@ dotnet add package DKNet.EfCore.Abstractions
 - `IConcurrencyEntity<TType>` — optimistic concurrency via a `RowVersion` token
 - `ISoftDeletableEntity` — soft-delete contract (`IsDeleted`, `DeletedOn`, `DeletedBy`, `Delete(...)`)
 - `[Sequence]` / `[SqlSequence]` — database-generated sequential values for fields and enum-backed SQL sequences
-- `[AuditLog]` / `[IgnoreAuditLog]` / `[SensitiveDataAttribute]` — audit-log opt-in and redaction markers (consumed
-  by `DKNet.EfCore.AuditLogs`)
+- `[AuditLog]` / `[IgnoreAuditLog]` — audit-log opt-in and exclusion markers (consumed by `DKNet.EfCore.AuditLogs`)
+- `[SensitiveData(params string[] roles)]` — one declaration read by two consumers: always redacted in the audit
+  log (`DKNet.EfCore.AuditLogs`), and withheld from API responses for callers outside the named roles once a host
+  opts in (`DKNet.EfCore.Extensions`). Naming no role means *any authenticated caller*
 - `[IgnoreEntity]` — marker to exclude a class from automatic entity mapping
 - `IEventPublisher` / `DefaultEventPublisher` / `IEventItem` / `EventItem` — the event-publishing contract consumed
   by `DKNet.EfCore.Events`
@@ -88,7 +90,18 @@ Convention-form names are composed in a fixed order: entity name, label (when gi
 `[SqlSequence]` (`AttributeTargets.Enum`): `Schema` (ctor arg) — `string`, default `"seq"`.
 
 Marker attributes with no properties: `[AuditLog]` (class or property), `[IgnoreAuditLog]` (class or property),
-`[SensitiveData]` (property), `[IgnoreEntity]` (class).
+`[IgnoreEntity]` (class).
+
+`[SensitiveData]` (`AttributeTargets.Property`):
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `roles` (trailing `params string[]` ctor arg) | `string[]` | empty | Role names permitted to receive the property in an API response. |
+| `Roles` | `IReadOnlyList<string>` | empty, never `null` | Empty means *any authenticated caller* — not *everyone*; an unauthenticated caller is always refused. |
+
+Audit-log redaction ignores `Roles` entirely and is unchanged. The response filtering is opt-in per host and lives
+in `DKNet.EfCore.Extensions` — see
+[docs/EfCore/DKNet.EfCore.Extensions.md](https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
 
 CRUD vertical-slice markers, consumed by `DKNet.SlimBus.Generators`: `[CrudCreate]` and `[CrudUpdate]` each expose
 `Name` (`string?`, default `null`); `[CrudAction]` adds `route` (ctor arg, `string?`, default `null` → the

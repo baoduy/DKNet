@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `[SensitiveData]` now accepts optional role names (`[SensitiveData("pricing", "audit")]`, `Roles` never null).
+  `DKNet.EfCore.DtoGenerator` carries the declaration from the entity onto the generated response model, and
+  `JsonSerializerOptions.UseRoleAwareSensitiveData(ISensitiveDataPrincipalAccessor)` in
+  `DKNet.EfCore.Extensions` lets a host omit the property from JSON responses for callers outside those roles —
+  absent from the payload, not null or masked. Opt-in per options instance and fail-closed (no identity, or an
+  unauthenticated one, withholds the property); naming no role admits any authenticated caller. Audit-log
+  redaction and hosts that do not opt in are unchanged. The `DtoGenerator` no longer emits an uncompilable
+  `new[] {  }` for an empty `params` array attribute argument.
 - `[RaisesEvent]` convention forms now accept `Exclude`/`Include` named arguments to shape the automatically
   composed payload record — mutually exclusive, resolved against the entity's properties at build time
   (`DKRAISEVT009`/`DKRAISEVT010`/`DKRAISEVT011`), and never affecting the composed event name.

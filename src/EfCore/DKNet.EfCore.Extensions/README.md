@@ -25,6 +25,9 @@ query filters, data seeding, GUID v7 keys, SQL sequences and the `SnapshotContex
 - **Navigation & change-tracking helpers** — `IsNewEntity()`, `AddNewEntitiesFromNavigations()`, and related
   `EntityEntry`/`DbContext` extensions.
 - **Concurrency-aware `SaveChanges`** — `IEfCoreExceptionHandler` + `SaveChangesWithConcurrencyHandlingAsync`.
+- **Role-gated sensitive properties** — `JsonSerializerOptions.UseRoleAwareSensitiveData(accessor)` omits a
+  `[SensitiveData(...)]` property from the JSON payload unless the caller is authenticated and holds one of the
+  declared roles. Opt-in per options instance, fail-closed, and the property is *absent* rather than null.
 
 ## Installation
 
@@ -76,6 +79,12 @@ There is no options class — everything is a registration argument, an attribut
 | `IDataSeedingConfiguration.Order` | your override | `0` | **Declared but never read** — seeders run in assembly-scan order. |
 | `DefaultEntityTypeConfiguration<T>.Configure` | your override | applies key, audit and concurrency conventions | Call `base.Configure(builder)` first, then add your own mapping. |
 | `[Sequence]` / `[SqlSequence]` | `DKNet.EfCore.Abstractions` | see that package | Registered only when the provider is SQL Server or Npgsql. |
+| `JsonSerializerOptions.UseRoleAwareSensitiveData(ISensitiveDataPrincipalAccessor)` | `DKNet.EfCore.Extensions.Serialization` | off | Opts that one options instance into role-gated `[SensitiveData]` filtering. Call it at startup, before the options are first used. |
+| `ISensitiveDataPrincipalAccessor.Current` | your implementation | — | Supplies the `ClaimsPrincipal?` each serialization is judged against. `null` or unauthenticated ⇒ the property is withheld. |
+
+This package takes **no** `Microsoft.AspNetCore.*` dependency by design, so you write the accessor — typically a
+one-liner over `IHttpContextAccessor`. Full wiring example, the decision table, and the before/after payloads:
+https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers
 
 `DefaultEntityTypeConfiguration<T>` applies, by reflection: `Id` as the key (`ValueGeneratedOnAdd`, plus
 `GuidV7ValueGenerator` for `Guid`), `IAuditedProperties` columns (`CreatedBy`/`CreatedOn` required, max length

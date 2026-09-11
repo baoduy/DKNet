@@ -16,6 +16,8 @@ hooks are built on.
 - You want structured, idempotent-by-design data seeding that plugs into EF Core's native
   `UseSeeding`/`UseAsyncSeeding` pipeline.
 - You need SQL Server/PostgreSQL sequences declared from an enum instead of raw migrations SQL.
+- You want one property (a supplier cost, an internal note) withheld from API responses unless the caller holds a
+  given role, declared once on the entity rather than branched on in every endpoint.
 - You are building another EF Core add-on (a hook, an audit log, a data-authorization filter) and need the
   shared `SnapshotContext` abstraction that the rest of the family already speaks.
 
@@ -300,6 +302,159 @@ foreach (var e in snapshot.Entities)
 
 You will rarely construct this yourself in application code — see the next section for who does.
 
+### Withhold sensitive properties from unauthorised callers
+
+A property declared `[SensitiveData(...)]` in `DKNet.EfCore.Abstractions` (and carried onto the generated
+response model by `DKNet.EfCore.DtoGenerator`) can be **omitted from the JSON payload** unless the caller holds
+one of the roles the declaration names. This is entirely opt-in: it only applies to the
+`JsonSerializerOptions` instance you call `UseRoleAwareSensitiveData` on.
+
+Two types, both in `DKNet.EfCore.Extensions.Serialization`:
+
+```csharp
+namespace DKNet.EfCore.Extensions.Serialization;
+
+public interface ISensitiveDataPrincipalAccessor
+{
+    ClaimsPrincipal? Current { get; }
+}
+
+public static class SensitiveDataJsonExtensions
+{
+    public static JsonSerializerOptions UseRoleAwareSensitiveData(
+        this JsonSerializerOptions options,
+        ISensitiveDataPrincipalAccessor accessor);
+}
+```
+
+`ISensitiveDataPrincipalAccessor` is the seam that keeps this package free of any ASP.NET Core dependency —
+**you write the implementation**. That is deliberate: `DKNet.EfCore.*` references no `Microsoft.AspNetCore.*`
+package, so an EF Core model project, a worker service, or a test can use the same assemblies without dragging
+in the web stack. `ClaimsPrincipal` (`System.Security.Claims`) and `System.Text.Json` are in-box on `net10.0`,
+and they are the only identity and serialization types involved.
+
+#### Wiring it up in ASP.NET Core
+
+The accessor is a handful of lines over `IHttpContextAccessor`, which lives in your host project:
+
+```csharp
+using DKNet.EfCore.Extensions.Serialization;
+using System.Security.Claims;
+
+internal sealed class HttpContextSensitiveDataPrincipalAccessor(IHttpContextAccessor httpContextAccessor)
+    : ISensitiveDataPrincipalAccessor
+{
+    public ClaimsPrincipal? Current => httpContextAccessor.HttpContext?.User;
+}
+```
+
+Register it, then opt in the `JsonSerializerOptions` your endpoints actually serialize with. For minimal APIs
+that is `Microsoft.AspNetCore.Http.Json.JsonOptions`; configure it once the container can resolve the accessor:
+
+```csharp
+using DKNet.EfCore.Extensions.Serialization;
+using Microsoft.Extensions.Options;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<ISensitiveDataPrincipalAccessor, HttpContextSensitiveDataPrincipalAccessor>();
+
+builder.Services.AddSingleton<IConfigureOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>(sp =>
+    new ConfigureOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>(o =>
+        o.SerializerOptions.UseRoleAwareSensitiveData(
+            sp.GetRequiredService<ISensitiveDataPrincipalAccessor>())));
+
+var app = builder.Build();
+```
+
+For MVC/controllers it is the same shape against `Microsoft.AspNetCore.Mvc.JsonOptions`:
+
+```csharp
+builder.Services.AddControllers();
+builder.Services.AddSingleton<IConfigureOptions<Microsoft.AspNetCore.Mvc.JsonOptions>>(sp =>
+    new ConfigureOptions<Microsoft.AspNetCore.Mvc.JsonOptions>(o =>
+        o.JsonSerializerOptions.UseRoleAwareSensitiveData(
+            sp.GetRequiredService<ISensitiveDataPrincipalAccessor>())));
+```
+
+The accessor is registered as a singleton on purpose: it holds no state of its own, and
+`IHttpContextAccessor` resolves the current request's `HttpContext` from an `AsyncLocal` on every read.
+
+Call it **before** the options instance has serialized anything. `System.Text.Json` freezes a
+`JsonSerializerOptions` on first use, and a frozen instance rejects the resolver change with
+`InvalidOperationException` — which is why the opt-in belongs in startup, not in a request handler.
+
+#### What the caller sees
+
+Given this entity and its generated response model:
+
+```csharp
+public class Product
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+
+    [SensitiveData("pricing")]
+    public decimal SupplierCostPrice { get; set; }
+}
+
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
+
+A caller authenticated and in the `pricing` role:
+
+```json
+{
+  "name": "Espresso Machine",
+  "price": 899.00,
+  "supplierCostPrice": 412.50
+}
+```
+
+A caller authenticated but holding only `support`:
+
+```json
+{
+  "name": "Espresso Machine",
+  "price": 899.00
+}
+```
+
+The property is **absent** — not `null`, not `"***"`, not an empty string. Nothing in the payload hints that a
+property was withheld, and a client deserializing into a type with a nullable `SupplierCostPrice` simply sees
+`null` because nothing was assigned. Properties that carry no `[SensitiveData]` are untouched: they get no
+`ShouldSerialize` callback at all, so a model with no sensitive property serializes byte-for-byte as it did
+before you opted in.
+
+#### The decision rules
+
+| Caller | `[SensitiveData]` | `[SensitiveData("pricing")]` |
+|---|---|---|
+| No accessor value (`Current` is `null`) | withheld | withheld |
+| Authenticated `false` | withheld | withheld |
+| Authenticated, no roles | **sent** | withheld |
+| Authenticated, in `pricing` | **sent** | **sent** |
+| Authenticated, in `support` only | **sent** | withheld |
+
+It **fails closed**: when no caller identity is available, or the identity is not authenticated, the property is
+withheld no matter which roles were named — including the no-roles form. Background code serializing with an
+opted-in options instance and no ambient principal therefore gets the redacted shape, not the full one.
+
+The check runs **per property, per serialization**, reading `accessor.Current` as the payload is written. Two
+callers hitting the same endpoint through the same `JsonSerializerOptions` instance are judged independently;
+no decision is cached onto the `JsonTypeInfo`.
+
+The rule applies wherever the attribute is visible, including a `[SensitiveData]` property on a nested object
+inside the response — the modifier runs for every object type the payload touches, not just the root.
+
+`UseRoleAwareSensitiveData` **composes** with whatever `TypeInfoResolver` the options already carry — naming
+policies, converters and source-generated contexts you configured keep working, and the modifier is layered on
+top rather than replacing them. It returns the same options instance for chaining, throws `ArgumentNullException`
+on a null `options` or `accessor`, and is safe to call twice (the second call adds a redundant modifier, not a
+broken one).
+
 ## ⚙️ Configuration reference
 
 | Setting | Default | Where |
@@ -312,6 +467,9 @@ You will rarely construct this yourself in application code — see the next sec
 | `SequenceAttribute.Cyclic` | `true` | `SequenceAttribute` |
 | `SqlSequenceAttribute.Schema` | `"seq"` | `SqlSequenceAttribute` |
 | Sequence registration | Only runs when `context.IsSqlServer()` or `context.IsNpgsql()` | `AutoConfigModelCustomizer` |
+| Role-aware sensitive-property filtering | **Off.** Applies only to a `JsonSerializerOptions` you called `UseRoleAwareSensitiveData(accessor)` on | `SensitiveDataJsonExtensions` |
+| `[SensitiveData]` with no role named | Any **authenticated** caller; an unauthenticated one is still refused | `SensitiveDataJsonExtensions` |
+| Role comparison | `ClaimsPrincipal.IsInRole` as configured by your identity stack (ordinal by default) | `SensitiveDataJsonExtensions` |
 
 ## 🧱 Where it fits
 
@@ -389,6 +547,25 @@ Everything `UseAutoConfigModel` does happens once, inside EF Core's own model bu
 - **`IgnoreEntityAttribute`** (defined in `DKNet.EfCore.Abstractions`) exists but is not currently
   referenced anywhere in this package's discovery/customizer code — it isn't wired into
   `AutoConfigModelCustomizer`, so decorating an entity with it has no effect on auto-configuration today.
+- **Role-aware sensitive-property filtering is not a global switch.** It applies to exactly the
+  `JsonSerializerOptions` instance you called `UseRoleAwareSensitiveData` on. Background jobs, outbox and
+  messaging payloads, cache writes, log enrichers and CLI tooling almost always build their own options (or use
+  `JsonSerializerOptions.Default`) and are unaffected — a property withheld from an HTTP response can still be
+  written in full to a queue. Opt each serializer in deliberately, or accept that it only guards the HTTP surface.
+- **It guards responses, not requests.** Nothing here touches deserialization or model binding: a caller who
+  cannot read `SupplierCostPrice` can still POST a body containing it. Validate inbound payloads as you would
+  have anyway.
+- **Only an explicit `[SensitiveData]` declaration gates a response.** `DKNet.EfCore.AuditLogs`' built-in
+  sensitive-name deny-list (`password`, `token`, `apikey`, …) is an *audit-log* default and has no effect here —
+  a `SupplierApiKey` property that nobody declared sensitive is redacted in the audit trail and still returned in
+  full by the API. This is a deliberate decision, not an oversight: declare the property `[SensitiveData]` if the
+  API must withhold it too.
+- **Opt in before the options are used.** `System.Text.Json` freezes a `JsonSerializerOptions` on its first
+  serialize; calling `UseRoleAwareSensitiveData` afterwards throws `InvalidOperationException`. Do it during
+  startup configuration.
+- **Fail-closed means background serialization sees nothing.** With no ambient `ClaimsPrincipal`,
+  `accessor.Current` is `null` and every declared-sensitive property is withheld — including ones declared with no
+  role at all. If a job needs the full object, serialize it with an options instance that has not opted in.
 - **`AddGlobalModelBuilder<T>()` and assembly-scanned filters are merged and de-duplicated by type** (`Union(...).Distinct()`), so registering a filter both ways is harmless, but each filter is instantiated via `Activator.CreateInstance` — implementations needing constructor dependencies must be registered by hand and cannot rely on assembly scanning.
 
 ## 🔗 Related packages
@@ -406,5 +583,8 @@ Everything `UseAutoConfigModel` does happens once, inside EF Core's own model bu
   implemented as a non-ignorable `GlobalQueryFilter`; reach for it instead of writing that filter yourself.
 - [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the query/repository layer that runs on
   top of the model this package builds.
+- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – carries `[SensitiveData]` from the entity onto the
+  generated response model, which is what `UseRoleAwareSensitiveData` then reads. Reach for it so you never
+  re-declare the attribute on a DTO by hand.
 - [DKNet.Fw.Extensions](../Core/DKNet.Fw.Extensions.md) – the reflection and type-scanning helpers
   (`IsImplementOf`, `TypeExtractors`) this package's discovery is written against.
