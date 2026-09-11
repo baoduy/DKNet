@@ -204,7 +204,7 @@ public class DiagnosticTests
 
         // Both-annotations is never silently resolved in favour of either: the member is emitted as
         // neither an update nor an action (spec §3.8 / R4).
-        var text = string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldNotContain("ApproveOrderRequest");
     }
 

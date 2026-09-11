@@ -44,15 +44,12 @@ public class RequestEmissionTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithCrudCreateCtor_EmitsCreateRequestImplementingIWitResponseOfDto()
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateCtor, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("sealed partial record CreateProductRequest");
         text.ShouldContain("IWitResponse<global::MyApi.ProductDto>");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -63,7 +60,7 @@ public class RequestEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateCtor, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("IWithKey<global::System.Guid>");
         text.ShouldContain("public global::System.Guid Id");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -98,7 +95,7 @@ public class RequestEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("[global::System.ComponentModel.DataAnnotations.Required]");
         text.ShouldContain("public required string Name");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -133,7 +130,7 @@ public class RequestEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         // FullyQualifiedFormat renders SpecialType members (decimal, int, string, ...) as their C#
         // keyword, not "global::System.Decimal" — consistent with how TypeFullName is rendered
         // everywhere else in this generator (e.g. "required decimal Price").
@@ -170,7 +167,7 @@ public class RequestEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("global::System.ComponentModel.DataAnnotations.DataType.EmailAddress");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
@@ -214,7 +211,7 @@ public class RequestEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithActionAndAnnotatedParameter, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("sealed partial record ApproveOrderRequest");
         text.ShouldContain("IWitResponse<global::MyApi.OrderDto>");
         text.ShouldContain("IWithKey<global::System.Guid>");
@@ -253,7 +250,7 @@ public class RequestEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("sealed partial record MakeProductRequest");
         text.ShouldNotContain("CreateProductRequest");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -296,7 +293,7 @@ public class RequestEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("public string? Nickname { get; init; }");
         text.ShouldNotContain("public required string? Nickname");
         // The non-nullable control parameter on the same member must still be required.
@@ -310,7 +307,7 @@ public class RequestEmissionTests
         // AppendParams is shared across create/update/action emission — prove the fix on the action path too.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("public string? ApprovalNote { get; init; }");
         text.ShouldNotContain("public required string? ApprovalNote");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -321,7 +318,7 @@ public class RequestEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("public decimal? Discount { get; init; }");
         text.ShouldNotContain("public required decimal? Discount");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -334,7 +331,7 @@ public class RequestEmissionTests
         // still be copied verbatim even though the property itself stays optional.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         // Single assertion that the annotation sits immediately before the Note declaration it belongs to —
         // two independent ShouldContain calls can't tell "adjacent" from "somewhere else in the file".
         text.ShouldContain(

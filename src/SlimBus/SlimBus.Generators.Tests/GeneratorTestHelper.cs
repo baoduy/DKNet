@@ -40,14 +40,13 @@ internal static class GeneratorTestHelper
     // test host resolved from its deps.json up front, so it doesn't have that problem.
     // (DKNet.EfCore.Repos.Abstractions is retired/obsolete and unused by any test source here, so neither it
     // nor a ProjectReference to it belongs in this project — see RetiredLibraryDependencyBoundaryTests.)
-    private static readonly Lazy<ImmutableArray<MetadataReference>> TrustedPlatformReferences = new(() =>
+    private static readonly Lazy<ImmutableArray<(string Name, MetadataReference Reference)>> TrustedPlatformReferences = new(() =>
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(File.Exists)
             .GroupBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
-            .Select(path => MetadataReference.CreateFromFile(path))
-            .Cast<MetadataReference>()
+            .Select(path => (Name: Path.GetFileNameWithoutExtension(path), Reference: (MetadataReference)MetadataReference.CreateFromFile(path)))
             .ToImmutableArray());
 
     /// <summary>
@@ -59,8 +58,8 @@ internal static class GeneratorTestHelper
         Run(string domainSource, string apiSource, string[]? excludedAssemblyNames = null)
     {
         var refs = TrustedPlatformReferences.Value
-            .Where(r => excludedAssemblyNames is null ||
-                        !excludedAssemblyNames.Contains(Path.GetFileNameWithoutExtension(r.Display)))
+            .Where(r => excludedAssemblyNames is null || !excludedAssemblyNames.Contains(r.Name))
+            .Select(r => r.Reference)
             .ToList();
 
         var domain = CSharpCompilation.Create("Domain",
@@ -78,4 +77,15 @@ internal static class GeneratorTestHelper
         var ranDriver = driver.RunGeneratorsAndUpdateCompilation(api, out var output, out var diagnostics);
         return (output, diagnostics, ranDriver.GetRunResult());
     }
+
+    /// <summary>
+    /// Joins every generated source's text, with line endings normalised to <c>\n</c>.
+    /// </summary>
+    /// <param name="result">The generator run result to read generated sources from.</param>
+    /// <returns>The concatenated generated source text, using only <c>\n</c> as a line separator.</returns>
+    public static string GeneratedText(GeneratorDriverRunResult result) =>
+        // CrudGenerator builds its output via StringBuilder.AppendLine, which writes Environment.NewLine —
+        // \r\n on Windows. Normalising here keeps assertions that embed a literal \n host-independent.
+        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()))
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
 }
