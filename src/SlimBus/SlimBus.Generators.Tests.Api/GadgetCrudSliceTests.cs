@@ -28,6 +28,18 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
         dto.Price.ShouldBe(5m);
     }
 
+    [Fact]
+    public async Task PostGadget_OmittingOptionalNickname_Returns201AndPersistsNullNickname()
+    {
+        // DRK-1194: a nullable reference-type parameter must be optional over HTTP, not rejected at binding.
+        var response = await host.Client.PostAsJsonAsync("/gadgets", new { name = "no-nickname", price = 6m });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
+        dto.ShouldNotBeNull();
+        dto.Nickname.ShouldBeNull();
+    }
+
     // ponytail: the repo's only established minimal-API validation pattern (SharpGrip
     // FluentValidation.AutoValidation + a hand-written AbstractValidator<T>) needs a hand-written validator
     // per request, which would break this task's zero-hand-written-code proof; .NET 10 minimal APIs have no
