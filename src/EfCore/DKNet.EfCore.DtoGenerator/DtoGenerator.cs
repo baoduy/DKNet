@@ -1085,7 +1085,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Extracts validation attributes from a property symbol.
+    /// Extracts validation attributes (and the carried <c>[SensitiveData]</c> declaration, matched by
+    /// namespace + name string only — see <see cref="IsSensitiveDataAttribute"/>) from a property symbol.
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <returns>A list of attribute data for validation attributes.</returns>
@@ -1101,7 +1102,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
             var attributeNamespace = attribute.AttributeClass.ContainingNamespace.ToDisplayString();
 
             // Check if this is a System.ComponentModel.DataAnnotations attribute
-            if (attributeNamespace == "System.ComponentModel.DataAnnotations")
+            if (attributeNamespace == "System.ComponentModel.DataAnnotations" ||
+                IsSensitiveDataAttribute(attribute.AttributeClass, attributeNamespace))
             {
                 validationAttributes.Add(attribute);
             }
@@ -1109,6 +1111,19 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         return validationAttributes;
     }
+
+    /// <summary>
+    /// Tests whether an attribute class is <c>DKNet.EfCore.Abstractions.Attributes.SensitiveDataAttribute</c>,
+    /// matched by namespace + name string only. This project deliberately references neither
+    /// <c>DKNet.EfCore.Abstractions</c> nor <c>DKNet.EfCore.Events</c> (analyzer packaging constraint), so the
+    /// attribute cannot be identified by type reference.
+    /// </summary>
+    /// <param name="attributeClass">The attribute's class symbol.</param>
+    /// <param name="attributeNamespace">The attribute class's containing namespace, pre-computed by the caller.</param>
+    /// <returns><see langword="true"/> when the attribute is the sensitive-data declaration.</returns>
+    private static bool IsSensitiveDataAttribute(INamedTypeSymbol attributeClass, string attributeNamespace) =>
+        attributeNamespace == "DKNet.EfCore.Abstractions.Attributes" &&
+        attributeClass.Name == "SensitiveDataAttribute";
 
     /// <summary>
     /// Builds the default-shape payload record source for a <c>[RaisesEvent]</c> string-form declaration:
@@ -1164,17 +1179,17 @@ public sealed class DtoGenerator : IIncrementalGenerator
         {
             CollectNamespacesFromType(property.Type, namespaces, dtoNamespace);
             
-            // Check if property has validation attributes
+            // Check if property has validation attributes (or the carried [SensitiveData] declaration)
             foreach (var attribute in property.GetAttributes())
             {
                 if (attribute.AttributeClass is null)
                     continue;
 
                 var attributeNamespace = attribute.AttributeClass.ContainingNamespace.ToDisplayString();
-                if (attributeNamespace == "System.ComponentModel.DataAnnotations")
+                if (attributeNamespace == "System.ComponentModel.DataAnnotations" ||
+                    IsSensitiveDataAttribute(attribute.AttributeClass, attributeNamespace))
                 {
                     namespaces.Add(attributeNamespace);
-                    break; // Only need to add the namespace once
                 }
             }
         }
@@ -1422,27 +1437,35 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var builder = new StringBuilder();
         builder.Append('[').Append(attributeName);
 
-        // Check if we need to add arguments (constructor or named)
-        bool hasArguments = attribute.ConstructorArguments.Length > 0 || attribute.NamedArguments.Length > 0;
-        
+        // A `params` constructor argument (e.g. SensitiveDataAttribute(params string[] roles)) arrives
+        // here as a single Array-kind TypedConstant. Spread its values as individual arguments — the
+        // natural attribute-usage form ("pricing", "audit") rather than an array-creation literal — and
+        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4).
+        var constructorArgumentStrings = attribute.ConstructorArguments
+            .SelectMany(arg => arg.Kind == TypedConstantKind.Array
+                ? arg.Values.Select(FormatAttributeArgument)
+                : [FormatAttributeArgument(arg)])
+            .ToList();
+
+        bool hasArguments = constructorArgumentStrings.Count > 0 || attribute.NamedArguments.Length > 0;
+
         if (hasArguments)
         {
             builder.Append('(');
-            
+
             // Add constructor arguments
-            for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
+            for (int i = 0; i < constructorArgumentStrings.Count; i++)
             {
                 if (i > 0)
                     builder.Append(", ");
 
-                var arg = attribute.ConstructorArguments[i];
-                builder.Append(FormatAttributeArgument(arg));
+                builder.Append(constructorArgumentStrings[i]);
             }
 
             // Add named arguments
             if (attribute.NamedArguments.Length > 0)
             {
-                if (attribute.ConstructorArguments.Length > 0)
+                if (constructorArgumentStrings.Count > 0)
                     builder.Append(", ");
 
                 for (int i = 0; i < attribute.NamedArguments.Length; i++)
