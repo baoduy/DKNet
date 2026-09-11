@@ -117,6 +117,66 @@ A property counts as an excluded "navigation" when, after unwrapping arrays/`Lis
 
 `Include` always wins over `IgnoreComplexType` — naming a navigation property in `Include` generates it regardless of the flag.
 
+### Attributes carried onto the generated property
+
+Some attributes on the entity property are re-emitted verbatim onto the generated DTO property, so the DTO keeps
+the declaration without you restating it:
+
+| Attribute source | Carried? |
+|---|---|
+| `System.ComponentModel.DataAnnotations` (`[Required]`, `[MaxLength]`, `[Range]`, `[EmailAddress]`, …) | Yes |
+| `DKNet.EfCore.Abstractions.Attributes.SensitiveDataAttribute` | Yes, with its role arguments |
+| Anything else — your own validation attributes, `[JsonPropertyName]`, attributes from other namespaces | No |
+
+Matching is by namespace and type name, and the constructor/named arguments are re-serialized best-effort. The
+`using` directives the carried attributes need are added to the generated file automatically.
+
+```csharp
+public class Product
+{
+    [MaxLength(255)]
+    public string Name { get; set; } = string.Empty;
+
+    [SensitiveData("pricing")]
+    public decimal SupplierCostPrice { get; set; }
+
+    [SensitiveData]
+    public string SupplierReferenceCode { get; set; } = string.Empty;
+}
+
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
+
+generates, in `ProductDto.g.cs`:
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using DKNet.EfCore.Abstractions.Attributes;
+
+public partial record ProductDto
+{
+    [MaxLength(255)]
+    public required string Name { get; init; }
+
+    [SensitiveData("pricing")]
+    public decimal SupplierCostPrice { get; init; }
+
+    [SensitiveData]
+    public required string SupplierReferenceCode { get; init; }
+}
+```
+
+A role-less `[SensitiveData]` is emitted as the bare attribute — never as an empty array literal — so the
+generated source compiles either way.
+
+You never re-declare `[SensitiveData]` on the DTO: declare it once on the entity, and every generated response
+model that includes the property carries it. What the attribute then *does* depends on the consumer — audit-log
+redaction in `DKNet.EfCore.AuditLogs`, and role-gated response filtering if the host opted in via
+[`UseRoleAwareSensitiveData`](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
+Excluding the property (`Exclude`, the global exclusions list, or `IgnoreComplexType`) removes it from the DTO
+entirely, attribute and all — that is the blunter way to keep a value out of a response.
+
 ### `[RaisesEvent]` validation (`RaisesEventValidator`)
 
 `RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
@@ -231,8 +291,8 @@ The one rule worth memorising is the filter precedence — `Include` short-circu
 
 ![Workflow diagram of DTO property selection: candidate properties are the public instance properties with public getters, walked up the base chain and de-duplicated. A non-empty Include bypasses every other filter and goes straight to the generated DTO; otherwise Exclude plus the project-wide DtoGeneratorExclusions drop properties by name, and IgnoreComplexType drops navigation properties, before the rest are emitted.](../diagrams/efcore-dtogenerator-property-filters.svg)
 
-- **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs.
-- **Generated DTOs are plain data types.** No base class, no interface, no attribute left on the output — a generated DTO has zero coupling to DKNet or to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`.
+- **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs — unless an entity declares `[SensitiveData]`, which is carried onto the DTO and so needs `DKNet.EfCore.Abstractions` referenced. The generator itself still has no reference to that package: it matches the attribute by namespace and name in the compilation, never by loading the type.
+- **Generated DTOs are plain data types.** No base class and no interface — a generated DTO has no coupling to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`. The only things carried onto it are the property-level attributes listed in [Attributes carried onto the generated property](#attributes-carried-onto-the-generated-property); a DTO whose entity declares `[SensitiveData]` therefore does reference `DKNet.EfCore.Abstractions`.
 - **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). The one exception is the naming algorithm itself: `EventNameComposer.cs` lives in `DKNet.EfCore.Abstractions` and is `<Compile Include>`-linked (not project-referenced) into this generator, so the build-time composed name and the `DKNet.EfCore.Events` runtime-composed name are produced by the exact same source and can never disagree. A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.
 - **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
 - **No built-in Mapster/AutoMapper integration.** Unlike some earlier iterations of this generator, no mapping helper methods are emitted — you choose your own mapping approach (e.g. Mapster's `Adapt`/`ProjectToType`, or manual assignment) for entity ↔ DTO conversion.
@@ -246,7 +306,8 @@ The one rule worth memorising is the filter precedence — `Include` short-circu
 - **Records and value-object-style properties are never treated as navigation**, even with `IgnoreComplexType = true` — the navigation check only fires for `class` types that are not `record`. Model value objects as `record` (or mark them `[Owned]`) if you want them to survive the default flat-DTO filtering.
 - **Generic entities have limited support** — the DTO shell itself must be non-generic; there is no generated generic DTO shape for a generic entity.
 - **Nullability drives the generated shape, not just the type name:** non-nullable `string` → `required`; non-nullable collection → initialized with `= [];`; a non-nullable complex reference type that *is* generated (e.g. `IgnoreComplexType = false`, or an `[Owned]`/record/BCL type) → initialized with `= null!;` to satisfy nullable-reference-type analysis. Nullable variants get no initializer.
-- **Only `System.ComponentModel.DataAnnotations` attributes are copied** from entity property to DTO property (best-effort re-serialization of the attribute's constructor/named arguments) — custom validation attributes and attributes from other namespaces are not copied.
+- **Only `System.ComponentModel.DataAnnotations` attributes and `[SensitiveData]` are copied** from entity property to DTO property (best-effort re-serialization of the attribute's constructor/named arguments) — custom validation attributes and attributes from any other namespace are not copied.
+- **A carried `[SensitiveData]` makes the generated DTO reference `DKNet.EfCore.Abstractions`.** That is the one exception to "generated DTOs are plain data types": the emitted `using DKNet.EfCore.Abstractions.Attributes;` means the project holding the DTO must reference that package to compile — which it already does if the entity lives in the same solution. DTOs generated from entities with no `[SensitiveData]` stay dependency-free as before.
 - **Diagnostics don't all stop the build.** `DKDTOGEN00x` codes are Warning/Info only — a mistake there degrades the generated DTO shape but still compiles. `DKRAISEVT00x` codes are all Error except `003`, which is a Warning — every Error-level one fails the build.
 
 ## 🔗 Related packages
