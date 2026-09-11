@@ -1520,8 +1520,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
             // ConstructorArguments empty (missing-assembly-reference element type), or resolves cleanly
             // with IsNull true (ambiguous overload picks the valid one) — verified empirically against
             // five constructions (round-2 review finding, nit 1) rather than assumed.
+            // Fully qualified (not BuildCleanTypeName's simple name) because the generated file's usings
+            // are attribute-namespace-only (~1187-1191) — an element type from any other namespace would
+            // not resolve otherwise (§3 row 3). FullyQualifiedFormat sets UseSpecialTypes, so `string`
+            // still renders `string` and does not disturb the existing "new string[] {" assertions.
             var elementTypeName = arg.Type is IArrayTypeSymbol { ElementType.TypeKind: not TypeKind.Error } arrayType
-                ? BuildCleanTypeName(arrayType.ElementType)
+                ? arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                 : null;
 
             var arrayBuilder = new StringBuilder();
@@ -1541,11 +1545,31 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return arrayBuilder.ToString();
         }
 
-        if (arg.Type?.TypeKind == TypeKind.Enum)
+        // TypedConstant.Kind — not the parameter's declared SpecialType — is the only discriminator that
+        // reaches every typeof(...) shape: object-typed and array-element parameters share Kind.Type with
+        // a Type-typed parameter, but a SpecialType.System_Object guard only ever matches the object-typed
+        // case (§3 row 2, dead-code review finding). Full qualification is required because the generated
+        // file's usings are attribute-namespace-only (~1187-1191).
+        if (arg.Kind == TypedConstantKind.Type && arg.Value is ITypeSymbol typeSymbol)
         {
-            // Format enum values
-            var enumTypeName = arg.Type.Name;
-            return $"{enumTypeName}.{arg.Value}";
+            return $"typeof({typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
+        }
+
+        if (arg.Kind == TypedConstantKind.Enum && arg.Type is not null)
+        {
+            // arg.Value is the boxed underlying integer and arg.Type.Name carries no namespace, so both
+            // resolving the actual member and qualifying the enum type are required for the emitted
+            // argument to compile outside the generated file's attribute-namespace-only usings (§3 row 1).
+            // A flags combination or an out-of-range value has no single matching field — fall back to a
+            // cast, which still compiles for any integral underlying type.
+            var qualifiedEnumType = arg.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var matchingMember = arg.Type.GetMembers()
+                .OfType<IFieldSymbol>()
+                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, arg.Value));
+
+            return matchingMember is not null
+                ? $"{qualifiedEnumType}.{matchingMember.Name}"
+                : $"(({qualifiedEnumType}){arg.Value})";
         }
 
         if (arg.Value is string stringValue)
@@ -1562,15 +1586,6 @@ public sealed class DtoGenerator : IIncrementalGenerator
         if (arg.Value is char charValue)
         {
             return $"'{charValue}'";
-        }
-
-        if (arg.Type?.SpecialType == SpecialType.System_Object && arg.Value != null)
-        {
-            // Type argument (typeof)
-            if (arg.Value is ITypeSymbol typeSymbol)
-            {
-                return $"typeof({typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)})";
-            }
         }
 
         // Default: ToString

@@ -55,6 +55,53 @@ public class AttributeArgumentEmissionTests
                 public ProbeTagsAttribute(string[] tags) => Tags = tags;
                 public string[] Tags { get; }
             }
+
+            public sealed class ProbeEnumArgAttribute : Attribute
+            {
+                public ProbeEnumArgAttribute(Probe.Enums.ProbeKind kind) => Kind = kind;
+                public Probe.Enums.ProbeKind Kind { get; }
+            }
+
+            public sealed class ProbeTypeArgAttribute : Attribute
+            {
+                public ProbeTypeArgAttribute(Type type) => Type = type;
+                public Type Type { get; }
+            }
+
+            public sealed class ProbeObjectArgAttribute : Attribute
+            {
+                public ProbeObjectArgAttribute(object value) => Value = value;
+                public object Value { get; }
+            }
+
+            public sealed class ProbeTypeArrayArgAttribute : Attribute
+            {
+                public ProbeTypeArrayArgAttribute(Type[] types) => Types = types;
+                public Type[] Types { get; }
+            }
+
+            public sealed class ProbeKindArrayArgAttribute : Attribute
+            {
+                public ProbeKindArrayArgAttribute(Probe.Enums.ProbeKind[] kinds) => Kinds = kinds;
+                public Probe.Enums.ProbeKind[] Kinds { get; }
+            }
+        }
+
+        namespace Probe.Enums
+        {
+            public enum ProbeKind
+            {
+                None = 0,
+                First = 1,
+                Second = 2,
+            }
+        }
+
+        namespace Probe.Markers
+        {
+            public sealed class Marker
+            {
+            }
         }
         """;
 
@@ -105,6 +152,71 @@ public class AttributeArgumentEmissionTests
                 public int ProductId { get; set; }
 
                 [System.ComponentModel.DataAnnotations.ProbeTags(new string[] { null })]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string EnumArgEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class EnumArgProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeEnumArg(Probe.Enums.ProbeKind.Second)]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string TypeofOnTypeParamEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class TypeofOnTypeParamProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeTypeArg(typeof(Probe.Markers.Marker))]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string TypeofOnObjectParamEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class TypeofOnObjectParamProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeObjectArg(typeof(Probe.Markers.Marker))]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string TypeofInArrayEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class TypeofInArrayProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeTypeArrayArg(new[] { typeof(Probe.Markers.Marker) })]
+                public decimal Price { get; set; }
+            }
+        }
+        """;
+
+    private const string NonKeywordArrayElementEntitySource = """
+        namespace Probe.Entities
+        {
+            public sealed class KindArrayProduct
+            {
+                public int ProductId { get; set; }
+
+                [System.ComponentModel.DataAnnotations.ProbeKindArrayArg(new[] { Probe.Enums.ProbeKind.First })]
                 public decimal Price { get; set; }
             }
         }
@@ -178,6 +290,85 @@ public class AttributeArgumentEmissionTests
 
         // Assert
         source.ShouldContain("new string[] {");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void EnumArgument_EmitsQualifiedMemberName_NotUnderlyingInteger()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("EnumArgProduct", "EnumArgProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(EnumArgEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("Probe.Enums.ProbeKind.Second");
+        source.ShouldNotContain("ProbeKind.2");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void TypeofArgument_OnTypeTypedParameter_EmitsQualifiedTypeofExpression()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("TypeofOnTypeParamProduct", "TypeofOnTypeParamProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(TypeofOnTypeParamEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("typeof(");
+        source.ShouldContain("Probe.Markers.Marker");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void TypeofArgument_OnObjectTypedParameter_EmitsQualifiedTypeofExpression()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("TypeofOnObjectParamProduct", "TypeofOnObjectParamProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(TypeofOnObjectParamEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("typeof(");
+        source.ShouldContain("Probe.Markers.Marker");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void TypeofArgument_InsideArray_EmitsQualifiedTypeofExpression()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("TypeofInArrayProduct", "TypeofInArrayProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(TypeofInArrayEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("typeof(");
+        source.ShouldContain("Probe.Markers.Marker");
+        var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
+        atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
+    }
+
+    [Fact]
+    public void NonKeywordArrayElementType_GeneratedSource_CompilesWithNoWarningOrAboveDiagnostic()
+    {
+        // Arrange
+        var dtoSource = BuildDtoSource("KindArrayProduct", "KindArrayProductDto");
+
+        // Act
+        var (source, diagnostics) = CompileAndCaptureSource(NonKeywordArrayElementEntitySource, dtoSource);
+
+        // Assert
+        source.ShouldContain("Probe.Enums.ProbeKind[] {");
         var atOrAboveWarning = diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).ToList();
         atOrAboveWarning.ShouldBeEmpty(string.Join('\n', atOrAboveWarning.Select(d => d.ToString())));
     }
