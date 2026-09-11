@@ -86,6 +86,14 @@ internal static class GeneratorTestHelper
     public static string GeneratedText(GeneratorDriverRunResult result) =>
         // CrudGenerator builds its output via StringBuilder.AppendLine, which writes Environment.NewLine —
         // \r\n on Windows. Normalising here keeps assertions that embed a literal \n host-independent.
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()))
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        NormaliseNewLines(string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString())));
+
+    /// <summary>
+    /// Replaces every <c>\r\n</c> in <paramref name="text"/> with <c>\n</c>, ordinal comparison. A lone
+    /// <c>\r</c> not followed by <c>\n</c> is left untouched.
+    /// </summary>
+    /// <param name="text">The text to normalise.</param>
+    /// <returns><paramref name="text"/> with every <c>\r\n</c> replaced by <c>\n</c>.</returns>
+    internal static string NormaliseNewLines(string text) =>
+        text.Replace("\r\n", "\n", StringComparison.Ordinal);
 }
