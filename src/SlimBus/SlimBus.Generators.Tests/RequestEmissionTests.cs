@@ -258,4 +258,86 @@ public class RequestEmissionTests
         text.ShouldNotContain("CreateProductRequest");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
+
+    private const string DomainWithNullableParameters = """
+        using System;
+        using System.ComponentModel.DataAnnotations;
+        using DKNet.EfCore.Abstractions.Attributes;
+        using DKNet.EfCore.Abstractions.Entities;
+
+        namespace MyDomain
+        {
+            public class Product : IEntity<Guid>
+            {
+                [CrudCreate]
+                public Product(string name, string? nickname, decimal? discount, [Required] string? note)
+                {
+                    Name = name;
+                    Nickname = nickname;
+                    Discount = discount;
+                    Note = note;
+                }
+
+                [CrudAction("approval")]
+                public void Approve(string? approvalNote) => ApprovalNote = approvalNote;
+
+                public Guid Id { get; private set; }
+                public string Name { get; private set; } = string.Empty;
+                public string? Nickname { get; private set; }
+                public decimal? Discount { get; private set; }
+                public string? Note { get; private set; }
+                public string? ApprovalNote { get; private set; }
+            }
+        }
+        """;
+
+    [Fact]
+    public void Run_WithNullableReferenceCreateParameter_EmitsOptionalNullableProperty()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("public string? Nickname { get; init; }");
+        text.ShouldNotContain("public required string? Nickname");
+        // The non-nullable control parameter on the same member must still be required.
+        text.ShouldContain("public required string Name { get; init; }");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNullableReferenceActionParameter_EmitsOptionalNullableProperty()
+    {
+        // AppendParams is shared across create/update/action emission — prove the fix on the action path too.
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("public string? ApprovalNote { get; init; }");
+        text.ShouldNotContain("public required string? ApprovalNote");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNullableValueTypeParameter_StaysOptional()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("public decimal? Discount { get; init; }");
+        text.ShouldNotContain("public required decimal? Discount");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithRequiredAnnotatedNullableParameter_KeepsAnnotationButIsNotRequired()
+    {
+        // The [Required] data annotation and the C# `required` modifier are independent: the annotation must
+        // still be copied verbatim even though the property itself stays optional.
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithNullableParameters, ApiWithProductDto);
+
+        var text = GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.Required]");
+        text.ShouldContain("public string? Note { get; init; }");
+        text.ShouldNotContain("public required string? Note");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
 }

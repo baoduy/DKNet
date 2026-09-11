@@ -16,7 +16,7 @@ namespace SlimBus.Generators.Tests;
 public class CrudModelEqualityTests
 {
     private static CrudParamModel BuildParam(params string[] annotations) =>
-        new("name", "Name", "global::System.String", [.. annotations]);
+        new("name", "Name", "global::System.String", [.. annotations], IsRequired: true);
 
     private static CrudMemberModel BuildCreate(bool handWritten = false) =>
         new("CreateProductRequest", ".ctor", true, [BuildParam("[Required]")], handWritten);
@@ -58,6 +58,18 @@ public class CrudModelEqualityTests
     public void Equals_ParamModelComparedToNull_IsFalse()
     {
         BuildParam().Equals(null as CrudParamModel).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Equals_ParamModelsDifferingOnlyInIsRequired_AreNotEqual()
+    {
+        // IsRequired decides whether `required` is emitted; a cache hit across it would serve stale output
+        // when only a parameter's nullability changed.
+        var required = BuildParam() with { IsRequired = true };
+        var optional = BuildParam() with { IsRequired = false };
+
+        required.Equals(optional).ShouldBeFalse();
+        required.GetHashCode().ShouldNotBe(optional.GetHashCode());
     }
 
     [Fact]
