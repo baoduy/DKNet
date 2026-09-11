@@ -18,7 +18,6 @@ namespace DKNet.EfCore.DtoGenerator;
 /// readable property of the entity (adds 'required' for non-nullable reference types).
 /// No mapping helper methods are generated (entity to DTO mapping can be handled externally e.g. via Mapster Adapt).
 /// </summary>
-[ExcludeFromCodeCoverage]
 [Generator]
 [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:This compiler extension should not be implemented in an assembly with target framework", Justification = "Targeting .NET 9+ only")]
 public sealed class DtoGenerator : IIncrementalGenerator
@@ -1443,9 +1442,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4). An
         // explicit `null` array argument (e.g. [SensitiveData(null)]) is still Array-kind but its
         // Values is default — spreading that throws, so route it through FormatAttributeArgument's own
-        // null handling instead (review finding, round 1).
+        // null handling instead (review finding, round 1). Only a genuinely `params` constructor
+        // parameter is spread — a plain (non-`params`) array parameter keeps its array-creation form,
+        // resolved positionally against the constructor actually bound (round-2 review finding).
+        var parameters = attribute.AttributeConstructor?.Parameters ?? default;
         var constructorArgumentStrings = attribute.ConstructorArguments
-            .SelectMany(arg => arg.Kind == TypedConstantKind.Array && !arg.IsNull
+            .SelectMany((arg, i) => arg.Kind == TypedConstantKind.Array && !arg.IsNull &&
+                                     i < parameters.Length && parameters[i].IsParams
                 ? arg.Values.Select(FormatAttributeArgument)
                 : [FormatAttributeArgument(arg)])
             .ToList();
@@ -1497,8 +1500,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <returns>The formatted argument string.</returns>
     private static string FormatAttributeArgument(TypedConstant arg)
     {
+        // The null-forgiving `!` keeps this a valid attribute-argument constant while suppressing every
+        // nullable warning at both the literal (CS8625) and the call site (CS8604) regardless of the
+        // target parameter's declared type — including a target `arg.Type` that is null or an error type,
+        // which a type-driven cast/`default` form could not handle uniformly (review finding, round 2).
         if (arg.IsNull)
-            return "null";
+            return "null!";
 
         if (arg.Kind == TypedConstantKind.Array)
         {
