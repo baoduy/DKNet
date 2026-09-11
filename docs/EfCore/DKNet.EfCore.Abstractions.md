@@ -362,7 +362,9 @@ itself) but they only make sense in terms of that consumer, so they're covered t
   `IConcurrencyEntity<TType>.RowVersion`) are pre-decorated with it in this package — the audit trail's own
   bookkeeping fields never audit-log themselves.
 - `[SensitiveDataAttribute]` on a property: always redacts the value in the audit log, even when `[AuditLog]` is
-  also present on the same property (redaction wins over the allow-list).
+  also present on the same property (redaction wins over the allow-list). It also gates the property in API
+  responses once a host opts in — see [Declaring a property sensitive](#declaring-a-property-sensitive--sensitivedata)
+  below.
 
 ```csharp
 [AuditLog] // only needed under OnlyAttributedAuditedEntities behaviour
@@ -378,6 +380,52 @@ public class Customer : AuditedEntity
 **Requires `IAuditedProperties`.** Verified against `DKNet.EfCore.AuditLogs`' `AuditLogExtensions.BuildAuditLog`:
 an entity that doesn't implement `IAuditedProperties` is skipped before any of these attributes are even inspected
 — attaching `[AuditLog]` to a plain `Entity` does nothing.
+
+### Declaring a property sensitive — `[SensitiveData]`
+
+`[SensitiveData]` is one declaration on the domain property, read by two independent consumers:
+
+1. **Audit-log redaction** (`DKNet.EfCore.AuditLogs`) — the value is replaced with `"***REDACTED***"` in the
+   captured audit entry. This is the original behaviour and it is unchanged.
+2. **Role-gated API response filtering** (`DKNet.EfCore.Extensions`) — the property is omitted from the
+   serialized JSON unless the caller is authenticated and holds one of the roles the declaration names. This
+   consumer is **opt-in per host**; see
+   [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
+
+The attribute takes an optional `params string[] roles`:
+
+```csharp
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+
+public class Product : AuditedEntity
+{
+    public string Name { get; private set; } = null!;
+    public decimal Price { get; private set; }
+
+    [SensitiveData("pricing")]              // only callers in the "pricing" role
+    public decimal SupplierCostPrice { get; private set; }
+
+    [SensitiveData("pricing", "audit")]     // either role is enough
+    public decimal SupplierRebate { get; private set; }
+
+    [SensitiveData]                         // any authenticated caller
+    public string SupplierReferenceCode { get; private set; } = null!;
+}
+```
+
+| Declaration | `Roles` | Who receives the property (when a host has opted in) |
+|---|---|---|
+| `[SensitiveData]` | empty | Any **authenticated** caller. Naming no role does *not* mean "everyone" — an unauthenticated or unknown caller is still refused. |
+| `[SensitiveData("pricing")]` | `["pricing"]` | An authenticated caller for whom `IsInRole("pricing")` is true. |
+| `[SensitiveData("pricing", "audit")]` | `["pricing", "audit"]` | An authenticated caller in **at least one** of the named roles. |
+
+`Roles` is never `null` — it is an empty `IReadOnlyList<string>` when no role is named. Role names are matched by
+`ClaimsPrincipal.IsInRole`, whose comparison is the one your identity stack configures (ordinal by default), so
+write the role names exactly as they appear in the caller's claims.
+
+Nothing here reaches the API on its own: this package defines the attribute, `DKNet.EfCore.DtoGenerator` carries
+it onto the generated response model, and `DKNet.EfCore.Extensions` is where a host turns the filtering on.
 
 ### Excluding a class from automatic mapping — `[IgnoreEntity]`
 
@@ -494,14 +542,22 @@ Three constructor forms, exactly one of which each declaration uses:
 
 ### Audit-log markers (`DKNet.EfCore.Abstractions.Attributes`)
 
-None of these carry properties — presence is the whole configuration. All are `sealed` and `Inherited = false`.
+Only `SensitiveDataAttribute` carries configuration; for the rest, presence is the whole configuration. All are
+`sealed` and `Inherited = false`.
 
 | Attribute | Targets | Effect |
 |---|---|---|
 | `AuditLogAttribute` | `Class`, `Property` | On a class: opts the entity in under `AuditLogBehaviour.OnlyAttributedAuditedEntities`. On a property: forces plaintext capture past the sensitive-name patterns, and allow-lists it under `AuditPropertyPolicy.OnlyAttributedProperties`. |
 | `IgnoreAuditLogAttribute` | `Class`, `Property` | Excludes it from audit logging unconditionally, whatever the behaviour and policy. |
-| `SensitiveDataAttribute` | `Property` | Always redacts the value in the audit log, even alongside `[AuditLog]` on the same property. |
+| `SensitiveDataAttribute` | `Property` | Always redacts the value in the audit log, even alongside `[AuditLog]` on the same property. Also gates the property in API responses for hosts that opted into role-aware serialization. |
 | `IgnoreEntityAttribute` | `Class` | Declared as an opt-out from automatic entity mapping — see the caveat in [Excluding a class from automatic mapping](#excluding-a-class-from-automatic-mapping--ignoreentity). |
+
+`SensitiveDataAttribute`'s own surface:
+
+| Member | Type | Default | Effect |
+|---|---|---|---|
+| `roles` (trailing `params string[]` ctor arg) | `string[]` | empty | Role names permitted to receive the property in an API response. `[SensitiveData]` with no argument stays valid. |
+| `Roles` | `IReadOnlyList<string>` | empty, never `null` | Read-only view of the declared role names. Empty means *any authenticated caller*, not *everyone*. |
 
 ### CRUD vertical-slice markers (`DKNet.EfCore.Abstractions.Attributes`)
 
@@ -601,8 +657,18 @@ types declared here. Concretely (all verified by reading the consuming source, n
   or less is silently not applied rather than rejected.
 - **The CRUD markers do nothing on their own.** `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` are inert unless the
   project also references `DKNet.SlimBus.Generators`; this package only defines the attribute types.
-- **`[SensitiveDataAttribute]` only affects the audit log**, not storage, serialization, or logging elsewhere in
-  your application — it has nothing to do with `DKNet.EfCore.Encryption`'s `[Encrypted]`.
+- **`[SensitiveData]` affects the audit log and, for hosts that opt in, API response serialization — nothing
+  else.** It does not encrypt or otherwise protect the value at rest (that is
+  `DKNet.EfCore.Encryption`'s `[Encrypted]`), it does not redact it in your own `ILogger` output, and it does not
+  touch request deserialization or model binding — a caller who cannot *read* the property may still be able to
+  *send* it.
+- **Naming roles changes nothing until a host opts in.** `[SensitiveData("pricing")]` on its own behaves exactly
+  like `[SensitiveData]`: redacted in the audit log, returned in full by every API response. The response
+  filtering only exists once the host calls `UseRoleAwareSensitiveData` on the `JsonSerializerOptions` that
+  serializes those responses — see
+  [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
+- **Audit-log redaction ignores the role names entirely.** There is no "this role may read the audit trail"
+  behaviour — a declared-sensitive value is redacted for every audit entry, whoever reads it.
 - **No dependency on `Microsoft.EntityFrameworkCore`.** This is intentional (keeps the domain layer persistence-
   technology-agnostic) but means nothing in this package can validate itself against a real `DbContext` — mistakes
   (e.g. a `[Sequence]` on an unsupported type) surface as an attribute-construction `NotSupportedException`, not an
@@ -611,14 +677,15 @@ types declared here. Concretely (all verified by reading the consuming source, n
 ## 🔗 Related packages
 
 - [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – turns these contracts into model configuration: primary
-  keys and GUID v7 generators, audit columns, `RowVersion` concurrency tokens, `[Sequence]` registration. Reach for it
-  to make the declarations here take effect.
+  keys and GUID v7 generators, audit columns, `RowVersion` concurrency tokens, `[Sequence]` registration. Also the
+  host opt-in that turns `[SensitiveData]` role names into response filtering. Reach for it to make the
+  declarations here take effect.
 - [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline the runtime packages plug into. Reach for
   it when you need a custom before/after-save hook.
 - [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – dispatches the events queued with `AddEvent` and raised by
   `[RaisesEvent]`. Reach for it to actually publish them.
-- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – the sole consumer of `[AuditLog]`, `[IgnoreAuditLog]`, and
-  `[SensitiveData]`. Reach for it for a field-level change trail.
+- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – the consumer of `[AuditLog]`, `[IgnoreAuditLog]`, and (for
+  redaction) `[SensitiveData]`. Reach for it for a field-level change trail.
 - [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level ownership on top of these
   entities. Reach for it for multi-tenant isolation.
 - [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – compile-time validation of `[RaisesEvent]` and

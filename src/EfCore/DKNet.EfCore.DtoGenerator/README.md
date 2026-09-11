@@ -16,9 +16,9 @@ A Roslyn incremental source generator that emits DTO properties from an entity t
 - **`Exclude` / `Include`** — per-DTO property filtering (mutually exclusive; `Include` takes only the listed properties).
 - **`IgnoreComplexType`** — flattens out navigation-style properties by default; per-DTO or project-wide (`DtoGeneratorIgnoreComplexType`) override.
 - **Global exclusions** (`DtoGeneratorExclusions` MSBuild property) — exclude the same properties (e.g. audit columns) across every DTO in the project.
-- **Validation attribute copy-through** — `System.ComponentModel.DataAnnotations` attributes on entity properties are copied to the generated DTO properties.
+- **Attribute copy-through** — `System.ComponentModel.DataAnnotations` attributes on entity properties are copied to the generated DTO properties, as is `[SensitiveData(...)]` from `DKNet.EfCore.Abstractions` (with its role arguments, and emitted as the bare `[SensitiveData]` when no role is named). You declare a property sensitive once, on the entity; every generated response model carries it. Attributes from any other namespace are not copied.
 - **`[RaisesEvent]` build-time validation** — a second generator in this package validates `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declarations against their `[GenerateDto]` payloads, and generates the payload record for the attribute's convention forms, named by fixed convention (entity name + optional label + narrowing properties + operations + `Event`).
-- **Zero runtime coupling** — generated DTOs are plain `record`/`class` types with no base type, interface, or attribute left on them.
+- **Zero runtime coupling** — generated DTOs are plain `record`/`class` types with no base type or interface, and nothing on them but the copied attributes above. A DTO that carries `[SensitiveData]` needs `DKNet.EfCore.Abstractions` referenced; the generator itself still references no DKNet package, matching the attribute by namespace and name only.
 
 ## Quick start
 
