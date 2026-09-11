@@ -68,6 +68,22 @@ public class SensitiveDataDtoGenerationTests
         }
         """;
 
+    // Regression probe for a review finding (DRK-1185 round 1): an explicit `null` array constructor
+    // argument — a pre-existing System.ComponentModel.DataAnnotations shape too, [SensitiveData] just
+    // takes the identical path — must not abort generation.
+    private const string EntityWithNullRolesSource = """
+        namespace Probe.Entities
+        {
+            public sealed class ProductWithNullRoles
+            {
+                public int ProductId { get; set; }
+
+                [DKNet.EfCore.Abstractions.Attributes.SensitiveData(null)]
+                public decimal SupplierCostPrice { get; set; }
+            }
+        }
+        """;
+
     private static readonly MetadataReference[] References =
     [
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
@@ -140,6 +156,36 @@ public class SensitiveDataDtoGenerationTests
             string.Join('\n', diagnostics.Select(d => d.ToString())));
     }
 
+    [Fact]
+    public void NullRolesArgument_StillGeneratesSource_WithNoDiagnostic()
+    {
+        // Arrange
+        var compilation = CSharpCompilation.Create(
+            "NullRolesProbeCompilation",
+            [
+                CSharpSyntaxTree.ParseText(GenerateDtoAttributeSource),
+                CSharpSyntaxTree.ParseText(SensitiveDataAttributeSource),
+                CSharpSyntaxTree.ParseText(EntityWithNullRolesSource),
+                CSharpSyntaxTree.ParseText(BuildNullRolesDtoSource()),
+            ],
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var generator = new DKNet.EfCore.DtoGenerator.DtoGenerator().AsSourceGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator], optionsProvider: new TestAnalyzerConfigOptionsProvider());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out _);
+        var runResult = ((CSharpGeneratorDriver)driver).GetRunResult();
+
+        // Assert
+        runResult.Diagnostics.ShouldNotContain(d => d.Id == "DKDTOGEN001",
+            string.Join('\n', runResult.Diagnostics.Select(d => d.ToString())));
+        runResult.Results.SelectMany(r => r.GeneratedSources).ShouldNotBeEmpty(
+            "generator should still produce DTO source for a null-roles [SensitiveData] declaration");
+    }
+
     #endregion
 
     #region Internals
@@ -152,6 +198,17 @@ public class SensitiveDataDtoGenerationTests
         {
             [GenerateDto(typeof(Probe.Entities.Product))]
             public partial record ProductDto;
+        }
+        """;
+
+    private static string BuildNullRolesDtoSource() =>
+        """
+        using DKNet.EfCore.DtoGenerator;
+
+        namespace Probe.Dtos
+        {
+            [GenerateDto(typeof(Probe.Entities.ProductWithNullRoles))]
+            public partial record ProductWithNullRolesDto;
         }
         """;
 

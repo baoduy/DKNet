@@ -64,5 +64,28 @@ public class SensitiveDataAttributeTests
         attributeType.IsSealed.ShouldBeTrue();
     }
 
+    [Fact]
+    public void Roles_IsEmpty_NotNull_WhenRolesArgumentIsExplicitNull()
+    {
+        // Arrange & Act
+        var attribute = new SensitiveDataAttribute(null!);
+
+        // Assert
+        attribute.Roles.ShouldNotBeNull();
+        attribute.Roles.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void SensitiveDataAttribute_ExposesTrueParameterlessConstructor_ForBinaryCompatibility()
+    {
+        // Arrange & Act — a consumer already compiled against the pre-DRK-1183 marker-only shape
+        // recorded a call to .ctor() in its attribute blob; that constructor must still exist in
+        // metadata, not merely be reachable via a zero-argument params-array call.
+        var ctor = typeof(SensitiveDataAttribute).GetConstructor(Type.EmptyTypes);
+
+        // Assert
+        ctor.ShouldNotBeNull();
+    }
+
     #endregion
 }
