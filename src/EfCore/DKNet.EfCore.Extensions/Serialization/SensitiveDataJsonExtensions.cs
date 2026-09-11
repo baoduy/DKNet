@@ -66,11 +66,11 @@ public static class SensitiveDataJsonExtensions
         if (roles.Count == 0)
             return true;
 
-        // A plain loop avoids the per-call delegate + enumerator allocation `roles.Any(principal.IsInRole)`
+        // A plain index loop avoids the per-call delegate + enumerator allocation `roles.Any(principal.IsInRole)`
         // would incur for every sensitive property of every serialized object.
-        foreach (var role in roles)
+        for (var i = 0; i < roles.Count; i++)
         {
-            if (principal.IsInRole(role))
+            if (principal.IsInRole(roles[i]))
                 return true;
         }
 
