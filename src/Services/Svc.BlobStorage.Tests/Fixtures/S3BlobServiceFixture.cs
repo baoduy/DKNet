@@ -15,7 +15,10 @@ public sealed class S3BlobServiceFixture : IDisposable
 
     public S3BlobServiceFixture()
     {
-        _minioContainer = new MinioBuilder("minio/minio:RELEASE.2023-01-31T02-24-19Z")
+        // Pulled from quay.io: the minio/minio repository was withdrawn from Docker Hub, so the
+        // unqualified name now fails with "pull access denied ... repository does not exist".
+        // quay.io/minio/minio is MinIO's own registry and still serves this exact release tag.
+        _minioContainer = new MinioBuilder("quay.io/minio/minio:RELEASE.2023-01-31T02-24-19Z")
             .Build();
 
         _minioContainer.StartAsync().GetAwaiter().GetResult();
