@@ -25,6 +25,7 @@ jobs:
           dotnet-version: '9.x'
 
       - name: Build project
+        shell: bash # `bash -eo pipefail`; the default `bash -e` would exit with tee's status (0).
         run: dotnet build src/DKNet.FW.sln --configuration Release 2>&1 | tee build.log
 
       - name: Extract warnings

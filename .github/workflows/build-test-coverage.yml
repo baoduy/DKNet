@@ -51,18 +51,20 @@ jobs:
         run: dotnet build src/DKNet.FW.sln --no-restore --configuration Release
 
       - name: Test
-        continue-on-error: true
         run: dotnet test src/DKNet.FW.sln --no-build --configuration Release --collect:"XPlat Code Coverage;Format=opencover" --settings src/coverage.runsettings --verbosity minimal
 
       - name: Install ReportGenerator
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate Coverage Report
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: reportgenerator -reports:"**/coverage.*.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura;JsonSummary" -title:"DKNet Framework Coverage Report"
 
       - name: Upload to CodeCov
+        if: ${{ !cancelled() }}
         continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
@@ -74,6 +76,7 @@ jobs:
           verbose: true
 
       - name: Commit SonarCloud Results
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
@@ -106,13 +109,14 @@ jobs:
           fi
 
       - name: Upload Coverage Report as Artifact
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage-report/
 
       - name: Comment PR with Coverage
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
           script: |
