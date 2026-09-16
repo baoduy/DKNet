@@ -258,6 +258,7 @@ form for any key type, and a `Guid` shorthand that forwards to it.
 | `MapGetById<TEntity, TKey, TModel>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>`, `TModel : class` | `200` with the projected model, `404` when no row matches |
 | `MapGetById<TEntity, TModel>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form with `TKey = Guid` |
 | `MapDeleteById<TEntity, TKey>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>` | `204`, `404` when no row matches, `409` when `SaveChangesAsync` throws `DbUpdateException` |
+| `MapDeleteById<TEntity, TKey, TRequest>(endpoint = "{id}")` | `{id}` | as above, plus `TRequest : class, Fluents.Requests.IWithKey<TKey>` | identical `204`/`404`/`409` — `TRequest` is bound `[AsParameters]` so a group filter can validate it |
 | `MapDeleteById<TEntity>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form |
 | `MapGetList<TEntity, TKey, TModel>(endpoint = "/")` | `/` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>`, `TModel : class` | `200` with `PagedResponse<TModel>`, `400` on an unusable `filter`/`search`/`orderBy` |
 | `MapGetList<TEntity, TModel>(endpoint = "/")` | `/` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form |
@@ -267,8 +268,42 @@ group.MapGetById<Product, ProductModel>("/{id:guid}");        // Guid-keyed shor
 group.MapGetById<Sprocket, int, SprocketModel>("/{id}");      // int key
 group.MapGetById<Coupon, string, CouponModel>("/{id}");       // string key
 group.MapDeleteById<Sprocket, int>("/{id}");
+group.MapDeleteById<Product, Guid, DeleteProductRequest>();   // same route, but a rule can refuse the delete
 group.MapGetList<Product, ProductModel>("/");
 ```
+
+#### Attaching a rule to a delete — the three-type-argument overload
+
+`MapDeleteById<TEntity, TKey, TRequest>` exists only so a delete can be refused. `TRequest` carries nothing but
+the key and is bound with `[AsParameters]`, so a group-level validation filter — `AddFluentValidationAutoValidation()`
+via [`ConfigureGroup`](#endpoint-group-discovery-and-mapping--iendpointconfig--useendpointconfigs), for instance — sees one validatable argument
+even though the route still never reads a request body. The key is still bound from the route template, and the
+route address, HTTP verb and every status code are the same as the two-type-argument form:
+
+```csharp
+public sealed record DeleteProductRequest : Fluents.Requests.IWithKey<Guid>
+{
+    public Guid Id { get; set; }
+}
+
+public sealed class DeleteProductRequestValidator : AbstractValidator<DeleteProductRequest>
+{
+    public DeleteProductRequestValidator(AppDbContext db) =>
+        RuleFor(x => x.Id)
+            .MustAsync(async (id, ct) => !await db.OrderLines.AnyAsync(l => l.ProductId == id, ct))
+            .WithMessage("Product is still on an order and cannot be deleted.");
+}
+```
+
+A refused delete is answered by whatever failure filter the group already registers — with the
+`AddFluentValidationAutoValidation()` pattern above that is a `400` `ProblemDetails` — and never reaches
+`SaveChangesAsync`, so the row survives and no audit entry or domain event is raised for it.
+
+`MapDeleteById<TEntity, TKey>` and the `Guid` shorthand are unchanged: same signatures, same behaviour, same
+status codes. Both forms route through one shared delete helper, so a caller that registers no rule sees
+nothing different. `DKNet.SlimBus.Generators` emits a `Delete{Entity}Request` per entity and calls this
+overload from `Map{Entity}Crud` — see
+[the generator's docs](../Messaging/DKNet.SlimBus.Generators.md).
 
 `TKey` is constrained to `IEquatable<TKey>` rather than `IParsable<TSelf>` on purpose: the looser
 constraint keeps `string` keys usable, and minimal APIs bind those natively. The cost is that a key
@@ -461,7 +496,7 @@ public static class ProductCrudEndpointExtensions
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
             group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::MyDomain.Product, global::System.Guid>();
+            group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
             group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
