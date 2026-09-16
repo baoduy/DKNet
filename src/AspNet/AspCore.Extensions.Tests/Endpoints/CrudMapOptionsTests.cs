@@ -186,4 +186,23 @@ public class CrudMapOptionsTests
     [Fact]
     public void Apply_WithNullBuilder_ThrowsArgumentNullException() =>
         Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Apply(CrudOp.Update, "Rename", null!));
+
+    // DRK-1355 §5: per-member exclusion of generated update and action routes. §3 row 2's own proof column
+    // names "a null-name unit test" as what a missing null guard on Exclude(string[]) turns red.
+
+    [Fact]
+    public void IsExcluded_ByName_ByDefault_ReturnsFalse() =>
+        // R6: nothing is excluded by default — pinned at the name-based overload independently of the
+        // pre-existing CrudOp-kind overload's own default test above.
+        new CrudMapOptions().IsExcluded("Rename").ShouldBeFalse();
+
+    [Fact]
+    public void Exclude_ByName_WithNullArray_ThrowsArgumentNullException() =>
+        Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Exclude((string[])null!));
+
+    [Fact]
+    public void Exclude_ByName_WithNullElement_ThrowsArgumentNullException() =>
+        // A null name matches no route and would silently leave an endpoint reachable (§3 row 2) — refused
+        // rather than silently ignored.
+        Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Exclude("Rename", null!));
 }

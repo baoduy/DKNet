@@ -56,11 +56,28 @@ public sealed class CrudMapOptions
     }
 
     /// <summary>
+    ///     Excludes the one generated route carrying the given member name, leaving the entity's other routes
+    ///     of the same kind published (see the package documentation for the naming rule). Excluding a name no
+    ///     generated route carries is reported by <see cref="ValidateRouteNames" />, never silently ignored.
+    /// </summary>
+    /// <param name="routeNames">The route name(s) to exclude.</param>
+    /// <returns>This instance, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="routeNames" /> or one of its elements is <see langword="null" />.</exception>
+    public CrudMapOptions Exclude(params string[] routeNames) => throw new NotImplementedException();
+
+    /// <summary>
     ///     Determines whether the given operation was excluded.
     /// </summary>
     /// <param name="operation">The operation to check.</param>
     /// <returns><see langword="true" /> when <paramref name="operation" /> was excluded.</returns>
     public bool IsExcluded(CrudOp operation) => _excluded.Contains(operation);
+
+    /// <summary>
+    ///     Determines whether the route carrying the given name was excluded.
+    /// </summary>
+    /// <param name="routeName">The route name to check.</param>
+    /// <returns><see langword="true" /> when <paramref name="routeName" /> was excluded.</returns>
+    public bool IsExcluded(string routeName) => throw new NotImplementedException();
 
     /// <summary>
     ///     Registers a setting to run against every generated route of the given operation kind. Additive:
