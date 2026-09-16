@@ -134,7 +134,7 @@ the validation path needs no second registration. Both knobs are host-wide — t
 |---|---|---|---|
 | `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status the failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
 | `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike — a member added here is never on one failure kind only, and appears on every error response the host returns. Name each member you add; nothing is added for you. |
-| `configure` (method parameter) | `Action<ErrorResponseOptions>?` | `null` | Leave `null`, or skip the call entirely, to keep both defaults — today's responses unchanged. |
+| `configure` (method parameter) | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep both knobs unset — each unset knob is a no-op, so the responses stay today's. Skipping the call entirely leaves the setting unregistered, which the mappers resolve as an optional service and fall back the same way. |
 
 Each callback receives an `ErrorResponseContext`: `Source` (`Command` or `Validation`) and `Errors`, a
 list of `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry

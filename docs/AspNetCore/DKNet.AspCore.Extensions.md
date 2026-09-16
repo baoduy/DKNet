@@ -62,7 +62,7 @@ Every sample below assumes the `using` that owns the type it shows:
 | `DKNet.AspCore.Extensions` | `IEndpointConfig` |
 | `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
 | `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListQueryOptions`, `AddListQueryOptions()`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
-| `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions` |
+| `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions`, `ErrorResponseOptions`, `AddErrorResponses()`, `ErrorResponseContext`, `ErrorItem`, `ErrorSource` |
 
 ## 🧩 Features
 
@@ -410,7 +410,9 @@ error messages into the response's `errors` extension property.
 A DKNet host refuses a request in two different places: a SlimBus handler returns a failed
 `FluentResults` result, or FluentValidation refuses the input before the handler ever runs.
 `AddErrorResponses` is the one registration that shapes both — call it once, and the validation path
-is wired by that same call rather than configured separately:
+is wired by that same call rather than configured separately (it swaps in the result factory that
+applies the setting; auto-validation itself still turns on where you already turn it on, per route
+group or route):
 
 ```csharp
 using DKNet.AspCore.Extensions.Responses;
@@ -424,6 +426,9 @@ builder.Services.AddErrorResponses(o =>
 
 A handler that fails with a `business-refusal` code and a validator that refuses the same rule with
 that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code` member.
+Every endpoint the fluent mappers registered picks the setting up on its own — they resolve it from
+the container as an optional service, so registering it is the whole wiring step and leaving it
+unregistered is not an error.
 
 **The status comes from the failure, never from the route.** `StatusCode` receives an
 `ErrorResponseContext` and nothing else:
@@ -448,8 +453,8 @@ differ; the member itself is always present on both.
 > about when you wrote the callback. That is why nothing is added for you: name each member you add,
 > and add only what every caller of every endpoint is allowed to see.
 
-**What a host that registers nothing still gets.** `AddErrorResponses` is optional, and every member
-left unset keeps today's behaviour exactly:
+**What a host that registers nothing still gets.** `AddErrorResponses` is optional. Without it — and,
+member by member, wherever it is called but left unset — the responses are exactly today's:
 
 | Failure | Status | Body |
 |---|---|---|
@@ -569,6 +574,21 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 |---|---|---|---|
 | `configureOptions` | `Action<EndpointRegistrationOptions>?` | `null` | Leave `null` to keep every default above. |
 | `assemblies` | `params Assembly[]` | empty → `AppDomain.CurrentDomain.GetAssemblies()` | Assemblies scanned for `IEndpointConfig` implementations. |
+
+`ErrorResponseOptions` — via `AddErrorResponses(Action<ErrorResponseOptions>?)`. Registered once and
+host-wide: both knobs apply to every route, and to a failed command handler and refused validation
+input alike. See [One error-response setting](#one-error-response-setting--adderrorresponses):
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status that failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
+| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike. Whatever it adds appears on every error response the host returns. |
+
+`AddErrorResponses`'s own parameter:
+
+| Parameter | Type | Default | Effect |
+|---|---|---|---|
+| `configure` | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep both knobs unset — each unset knob is a no-op, so the responses stay today's. Skipping the call entirely leaves the setting unregistered, which the mappers resolve as an optional service and fall back the same way. |
 
 ### Page-size defaults and ceiling
 
