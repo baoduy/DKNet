@@ -126,6 +126,11 @@ Via `DKNet.EfCore.DataAuthorization`:
    `AddDataOwnerProvider<TDbContext, TProvider>()`.
 3. Register an `IDataOwnerProvider` that returns the current owner key.
 4. Build the model through `UseAutoConfigModel<TContext>()`, which is what attaches the filter.
+5. **Optional** — register an `ICurrentUserProvider` with
+   `services.AddCurrentUserProvider<AppDbContext, SignedInUserProvider>()` (from `DKNet.EfCore.AuditLogs`) if
+   `CreatedBy`/`UpdatedBy` should name the signed-in *user* rather than the tenant. Skip this step and the
+   ownership key keeps filling those audit fields, which is also what happens for any save where the provider
+   returns no user. Ownership itself (`OwnedBy`) always comes from the ownership key, either way.
 
 A global query filter then scopes every read, and a `SaveChanges` hook stamps the owner on new rows. Worked
 example: [Multi-tenant application](Examples/README.md#multi-tenant-application).

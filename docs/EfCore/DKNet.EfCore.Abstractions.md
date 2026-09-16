@@ -226,6 +226,17 @@ simply never raises them until the application also registers `DKNet.EfCore.Even
 and `UpdatedBy` also carry `[MaxLength(500)]`. `IAuditedEntity<TKey>` combines `IEntity<TKey>` and
 `IAuditedProperties` into one contract.
 
+This package declares the fields; it never fills them. Two hook packages do, and which one depends on whether a
+signed-in user is available for the save:
+
+| Source of the value | Filled by | When |
+|---|---|---|
+| Your own domain method (`SetCreatedBy`/`SetUpdatedBy`) | the entity itself | always wins — the hooks below never overwrite it |
+| The signed-in user, via `ICurrentUserProvider.GetCurrentUser()` | [`DKNet.EfCore.AuditLogs`](./DKNet.EfCore.AuditLogs.md)' `EfCoreAuditHook` | a provider is registered (`AddCurrentUserProvider<TDbContext, TProvider>()`) and returns a non-empty value for that save |
+| The tenant ownership key, via `IDataOwnerProvider.GetOwnershipKey()` | [`DKNet.EfCore.DataAuthorization`](./DKNet.EfCore.DataAuthorization.md)' `DataOwnerHook` | no current-user value is available for that save — no provider registered, or one that returned `null`/empty |
+
+With neither hook registered, the four properties stay exactly as your code left them.
+
 `AuditedEntity<TKey>` / `AuditedEntity` (Guid-keyed) is the base class you actually derive from. It implements the
 four properties with private setters plus two derived, `[NotMapped]` conveniences — `LastModifiedBy` (falls back to
 `CreatedBy` when never updated) and `LastModifiedOn` (falls back to `CreatedOn`) — and two `protected` mutators:
@@ -255,8 +266,9 @@ public class Invoice : AuditedEntity
 
 Merely deriving from `AuditedEntity` does not populate these fields for you on every save — that stamping is
 performed by whichever hook or interceptor your application wires up (DKNet ships this behavior in
-`DKNet.EfCore.Hooks`/`DKNet.EfCore.DataAuthorization`, which detect `IAuditedProperties` and set `CreatedBy` on
-`Added` entries — see "Composition"). Implementing `IAuditedProperties` is also the switch that turns an entity
+`DKNet.EfCore.AuditLogs` and `DKNet.EfCore.DataAuthorization`, both running on the `DKNet.EfCore.Hooks` pipeline;
+they detect `IAuditedProperties` and stamp `CreatedBy` on `Added` and `UpdatedBy` on `Modified` entries, from the
+signed-in user or the ownership key per the table above — see "Composition"). Implementing `IAuditedProperties` is also the switch that turns an entity
 into a candidate for audit *logging* (feature 6) — an entity that doesn't implement it is invisible to
 `DKNet.EfCore.AuditLogs` regardless of any attributes you put on it.
 
@@ -607,11 +619,14 @@ types declared here. Concretely (all verified by reading the consuming source, n
   the `IEventEntity`/`IAuditedProperties` interfaces.
 - **`DKNet.EfCore.AuditLogs`** is the sole consumer of `[AuditLog]`, `[IgnoreAuditLog]`, and
   `[SensitiveDataAttribute]`, and it gates everything on `IAuditedProperties` first (see *Audit-log opt-in and redaction* below). It also reads
-  `IAuditedProperties.CreatedBy`/`UpdatedBy` directly for the "who" side of each audit entry.
-- **`DKNet.EfCore.DataAuthorization`** stamps `IAuditedProperties.CreatedBy` on newly added entities (when empty)
-  as part of assigning row ownership, and generally targets entities exposing the abstractions in this package
-  (`DataOwnerHook` inspects `IAuditedProperties`, and works alongside `IConcurrencyEntity`/`Entity<TKey>`-shaped
-  models).
+  `IAuditedProperties.CreatedBy`/`UpdatedBy` directly for the "who" side of each audit entry — and *writes* them
+  first, from `ICurrentUserProvider`, when one is registered: `CreatedBy`/`CreatedOn` on `Added` entries,
+  `UpdatedBy`/`UpdatedOn` on `Modified` ones, before the entry is captured.
+- **`DKNet.EfCore.DataAuthorization`** stamps `IAuditedProperties.CreatedBy`/`UpdatedBy` from the row's ownership
+  key — but only for a save where no `ICurrentUserProvider` value was available, since otherwise `AuditLogs` owns
+  those fields and this hook stamps `IOwnedBy.OwnedBy` alone. It generally targets entities exposing the
+  abstractions in this package (`DataOwnerHook` inspects `IAuditedProperties`, and works alongside
+  `IConcurrencyEntity`/`Entity<TKey>`-shaped models).
 - **`DKNet.EfCore.Encryption`** does **not** reuse `[SensitiveDataAttribute]` — it defines its own,
   narrower-purpose `[Encrypted]` attribute (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`) for
   column-level encryption via a value converter. Don't conflate the two: `[SensitiveDataAttribute]` only affects

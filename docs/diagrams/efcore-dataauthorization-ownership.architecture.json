@@ -2,24 +2,24 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Row ownership: the read filter and the save-time stamp",
+    "title": "Row ownership: the read filter, the owner stamp, and the audit identity",
     "legend": {
       "entries": {
         "security": {
-          "label": "Ownership decision point"
+          "label": "Provider you implement — the decision point"
         },
         "backend": {
-          "label": "Your DbContext and its hook"
+          "label": "Your DbContext and the two save hooks"
         },
         "database": {
-          "label": "Rows the caller sees"
+          "label": "Rows the caller sees, and rows as saved"
         }
       }
     },
     "quality_profile": "showcase",
     "viewBox": [
       1200,
-      540
+      600
     ]
   },
   "components": [
@@ -30,10 +30,10 @@
       "sublabel": "you implement it",
       "pos": [
         40,
-        230
+        200
       ],
       "size": [
-        180,
+        190,
         68
       ],
       "tag": "scoped, per caller"
@@ -44,11 +44,11 @@
       "label": "Your DbContext",
       "sublabel": "IDataOwnerDbContext",
       "pos": [
-        320,
-        80
+        340,
+        60
       ],
       "size": [
-        180,
+        190,
         68
       ]
     },
@@ -58,11 +58,11 @@
       "label": "DataOwnerAuthQuery",
       "sublabel": "global query filter",
       "pos": [
-        660,
-        80
+        690,
+        60
       ],
       "size": [
-        190,
+        200,
         68
       ],
       "tag": "never bypassable"
@@ -73,8 +73,8 @@
       "label": "Visible rows",
       "sublabel": "every IOwnedBy query",
       "pos": [
-        990,
-        80
+        1000,
+        60
       ],
       "size": [
         170,
@@ -85,29 +85,60 @@
       "id": "hook",
       "type": "backend",
       "label": "DataOwnerHook",
-      "sublabel": "runs before every save",
+      "sublabel": "DataAuthorization",
       "pos": [
-        320,
-        390
+        340,
+        300
       ],
       "size": [
-        180,
+        200,
         68
-      ]
+      ],
+      "tag": "before every save"
     },
     {
       "id": "saved",
       "type": "database",
       "label": "Saved rows",
-      "sublabel": "owner stamped or reverted",
+      "sublabel": "owner and audit fields set",
       "pos": [
-        660,
-        390
+        770,
+        370
+      ],
+      "size": [
+        200,
+        68
+      ]
+    },
+    {
+      "id": "userprovider",
+      "type": "security",
+      "label": "ICurrentUserProvider",
+      "sublabel": "optional, from AuditLogs",
+      "pos": [
+        40,
+        440
       ],
       "size": [
         190,
         68
-      ]
+      ],
+      "tag": "application-wide"
+    },
+    {
+      "id": "audithook",
+      "type": "backend",
+      "label": "EfCoreAuditHook",
+      "sublabel": "AuditLogs",
+      "pos": [
+        340,
+        440
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "tag": "stamps, then captures"
     }
   ],
   "connections": [
@@ -138,15 +169,36 @@
       "from": "provider",
       "to": "hook",
       "label": "GetOwnershipKey()",
-      "variant": "security",
-      "labelDy": 30
+      "variant": "security"
     },
     {
       "id": "hook-saved",
       "from": "hook",
       "to": "saved",
-      "label": "stamp, then guard",
+      "label": "OwnedBy, always",
       "variant": "emphasis"
+    },
+    {
+      "id": "userprovider-audithook",
+      "from": "userprovider",
+      "to": "audithook",
+      "label": "GetCurrentUser()",
+      "variant": "security",
+      "labelDy": 22
+    },
+    {
+      "id": "audithook-saved",
+      "from": "audithook",
+      "to": "saved",
+      "label": "CreatedBy / UpdatedBy when non-empty",
+      "variant": "emphasis"
+    },
+    {
+      "id": "userprovider-hook",
+      "from": "userprovider",
+      "to": "hook",
+      "label": "null or empty: owner key fills them",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -163,8 +215,10 @@
       "dot": "emerald",
       "title": "Write path",
       "items": [
-        "Added rows get OwnedBy, CreatedBy and CreatedOn when they are still blank",
-        "Modified rows keep an explicit SetUpdatedBy; otherwise the ambient key is stamped",
+        "OwnedBy comes from the ownership key, and only DataOwnerHook ever stamps it",
+        "A non-empty GetCurrentUser() moves CreatedBy and UpdatedBy to EfCoreAuditHook",
+        "No provider, or no user for that save, leaves the ownership key filling them as before",
+        "Both hooks keep an explicit SetCreatedBy or SetUpdatedBy already recorded",
         "Reassigning OwnedBy outside the accessible keys reverts to the original owner"
       ]
     }

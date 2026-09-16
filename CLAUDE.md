@@ -166,6 +166,13 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 - `dev` is the integration branch and the default PR base. Recent history shows many small `up` / fix commits — squash where it makes sense.
 - Diagrams are tracked: `Diagram.drawio` / `Diagram.png` at the repo root and `src/EfCore/Diagrams/`. If you change an architectural relationship, update the relevant diagram or call it out in the PR.
+- **A public-API or behaviour change updates `docs/` in the same PR.** Whenever a change alters a package's public
+  API surface or its documented behaviour, update that package's `docs/<Area>/<Package>.md` page **and** every
+  cross-cutting page that describes the behaviour (`docs/Architecture.md`, `docs/Configuration.md`,
+  `docs/Security.md`, `docs/FAQ.md`, `docs/CHANGELOG.md`, and the affected `docs/diagrams/` source plus its
+  rendered asset) in the same pull request. Updating the package's `README.md` alone is **not** enough: `docs/` is
+  the reference knowledge base agents read before generating code, so a stale page there produces wrong code long
+  after the source is right.
 - Generated artefacts — `nupkgs/`, `TestResults/`, `coverage-report*/` — must never be committed.
 
 ## Quick Reference for Common Pitfalls
