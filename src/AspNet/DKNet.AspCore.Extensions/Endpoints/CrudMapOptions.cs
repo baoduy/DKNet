@@ -39,6 +39,7 @@ public enum CrudOp
 public sealed class CrudMapOptions
 {
     private readonly HashSet<CrudOp> _excluded = [];
+    private readonly HashSet<string> _excludedNames = new(StringComparer.Ordinal);
     private readonly Dictionary<CrudOp, List<Action<RouteHandlerBuilder>>> _opSettings = [];
     private readonly Dictionary<string, List<Action<RouteHandlerBuilder>>> _routeSettings = new(StringComparer.Ordinal);
 
@@ -56,11 +57,39 @@ public sealed class CrudMapOptions
     }
 
     /// <summary>
+    ///     Excludes the one generated route carrying the given member name, leaving the entity's other routes
+    ///     of the same kind published (see the package documentation for the naming rule). Excluding a name no
+    ///     generated route carries is reported by <see cref="ValidateRouteNames" />, never silently ignored.
+    /// </summary>
+    /// <param name="routeNames">The route name(s) to exclude.</param>
+    /// <returns>This instance, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="routeNames" /> or one of its elements is <see langword="null" />.</exception>
+    public CrudMapOptions Exclude(params string[] routeNames)
+    {
+        ArgumentNullException.ThrowIfNull(routeNames);
+
+        foreach (var routeName in routeNames)
+        {
+            ArgumentNullException.ThrowIfNull(routeName);
+            _excludedNames.Add(routeName);
+        }
+
+        return this;
+    }
+
+    /// <summary>
     ///     Determines whether the given operation was excluded.
     /// </summary>
     /// <param name="operation">The operation to check.</param>
     /// <returns><see langword="true" /> when <paramref name="operation" /> was excluded.</returns>
     public bool IsExcluded(CrudOp operation) => _excluded.Contains(operation);
+
+    /// <summary>
+    ///     Determines whether the route carrying the given name was excluded.
+    /// </summary>
+    /// <param name="routeName">The route name to check.</param>
+    /// <returns><see langword="true" /> when <paramref name="routeName" /> was excluded.</returns>
+    public bool IsExcluded(string routeName) => _excludedNames.Contains(routeName);
 
     /// <summary>
     ///     Registers a setting to run against every generated route of the given operation kind. Additive:
@@ -108,18 +137,25 @@ public sealed class CrudMapOptions
 
     /// <summary>
     ///     Validates that every route name configured via <see cref="Configure(string, Action{RouteHandlerBuilder})" />
-    ///     is one of the entity's <paramref name="knownRouteNames" />.
+    ///     or excluded via <see cref="Exclude(string[])" /> is one of the entity's <paramref name="knownRouteNames" />.
     /// </summary>
     /// <param name="entityName">The entity's name, used in the exception message.</param>
     /// <param name="knownRouteNames">Every route name the entity has, compared ordinally.</param>
-    /// <exception cref="ArgumentException">A configured route name is not in <paramref name="knownRouteNames" />.</exception>
+    /// <exception cref="ArgumentException">
+    ///     A route name configured via <see cref="Configure(string, Action{RouteHandlerBuilder})" /> or excluded via
+    ///     <see cref="Exclude(string[])" /> is not in <paramref name="knownRouteNames" />.
+    /// </exception>
     public void ValidateRouteNames(string entityName, params string[] knownRouteNames)
     {
         var known = new HashSet<string>(knownRouteNames, StringComparer.Ordinal);
         // Sorted ordinally rather than left in dictionary-enumeration order: Dictionary<TKey,TValue> key
         // order is unspecified (insertion order in practice, but not a contract), and the message needs to
         // be deterministic.
-        var unknown = _routeSettings.Keys.Where(name => !known.Contains(name)).Order(StringComparer.Ordinal).ToArray();
+        var unknown = _routeSettings.Keys.Concat(_excludedNames)
+            .Where(name => !known.Contains(name))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
         if (unknown.Length == 0) return;
 
         throw new ArgumentException(

@@ -359,4 +359,28 @@ public class EndpointEmissionTests
             "group.MapPutById<ChangeStatusOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
+
+    /// <summary>
+    ///     DRK-1355 §5 / §3 row 5 (proof: "EndpointEmissionTests guard-shape assertion"): a route's registration
+    ///     guard must check BOTH its operation-kind exclusion and its own route-name exclusion, for every route
+    ///     kind — not only Update/Action — so a caller can drop one named route while its kind-mates still
+    ///     register. Literal guard text copied from the brief's §5 contract table.
+    /// </summary>
+    [Fact]
+    public void Run_WithCreateAndTwoUpdates_GuardsEveryRouteByBothOperationKindAndRouteName()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain(
+            "if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById) && " +
+            "!options.IsExcluded(\"GetById\"))");
+        text.ShouldContain(
+            "if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && " +
+            "!options.IsExcluded(\"UpdatePrice\"))");
+        text.ShouldContain(
+            "if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && " +
+            "!options.IsExcluded(\"UpdateName\"))");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
 }

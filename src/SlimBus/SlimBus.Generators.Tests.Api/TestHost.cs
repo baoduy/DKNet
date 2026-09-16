@@ -95,6 +95,11 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         // an actions-excluded group still serves updates while dropping the action route(s) (spec §3.7).
         app.MapGroup("/gadgets-no-actions").MapGadgetCrud(o => o.Exclude(CrudOp.Action));
 
+        // DRK-1355 §5 scenario outline (update kind): excluding the whole Update kind still removes every
+        // update route, mirroring "/gadgets-no-actions" above for the Update side. Uses only the pre-existing
+        // CrudOp-kind Exclude overload (KEEP, spec R2) — safe to share this host with the @existing tests.
+        app.MapGroup("/gadgets-no-updates").MapGadgetCrud(o => o.Exclude(CrudOp.Update));
+
         // DRK-1326: the generated delete route now binds its own request type (DeleteGadgetRequest) rather
         // than the plain 2-arg MapDeleteById, so a group with no validation filter registered is unaffected
         // (R1) while a guarded group below can attach a rule to it.

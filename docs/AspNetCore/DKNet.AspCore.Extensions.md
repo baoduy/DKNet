@@ -548,30 +548,58 @@ namespace MyApi.Crud;                          // always {AssemblyName}.Crud
 /// <summary>Registers the generated CRUD endpoints for Product.</summary>
 public static class ProductCrudEndpointExtensions
 {
+    /// <summary>Maps GET {id}, GET /, POST /, PUT {id} (per update request), DELETE {id} and each generated domain-action endpoint for Product.</summary>
     public static global::Microsoft.AspNetCore.Routing.RouteGroupBuilder MapProductCrud(
         this global::Microsoft.AspNetCore.Routing.RouteGroupBuilder group,
         global::System.Action<global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions>? configure = null)
     {
         var options = new global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions();
         configure?.Invoke(options);
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById))
-            group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
-            group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
-            group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/update-name");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
-            group.MapActionById<ApproveProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/approval", "POST");
+        options.ValidateRouteNames("Product", "GetById", "GetList", "Create", "Delete", "UpdatePrice", "UpdateName", "Approve");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById) && !options.IsExcluded("GetById"))
+        {
+            var routeBuilder = group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById, "GetById", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList) && !options.IsExcluded("GetList"))
+        {
+            var routeBuilder = group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList, "GetList", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete) && !options.IsExcluded("Delete"))
+        {
+            var routeBuilder = group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete, "Delete", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create) && !options.IsExcluded("Create"))
+        {
+            var routeBuilder = group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create, "Create", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("UpdatePrice"))
+        {
+            var routeBuilder = group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "UpdatePrice", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("UpdateName"))
+        {
+            var routeBuilder = group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/update-name");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "UpdateName", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action) && !options.IsExcluded("Approve"))
+        {
+            var routeBuilder = group.MapActionById<ApproveProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/approval", "POST");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action, "Approve", routeBuilder);
+        }
         return group;
     }
 }
 ```
+
+Every registration passes two guards — its `CrudOp` and its own route name — so `Exclude(CrudOp.Update)`
+drops both PUTs while `Exclude("UpdateName")` drops only the second. `ValidateRouteNames` runs before any
+mapping, with every name the entity has, which is what turns an unmatched `Exclude`/`Configure` name into an
+`ArgumentException` instead of a silent no-op.
 
 Note the routing rules that fall out of that emission: registration order is GetById, GetList,
 Delete, Create, then each `[CrudUpdate]` in declaration order, then each `[CrudAction]`. The **first**
@@ -579,35 +607,43 @@ Delete, Create, then each `[CrudUpdate]` in declaration order, then each `[CrudA
 an action never claims the plain `{id}` route, whatever verb it uses, and defaults its segment to the
 kebab-cased method name when `[CrudAction]` carries no explicit route.
 
-`CrudMapOptions` is the only knob on the generated method — it excludes operations, and it attaches
-`RouteHandlerBuilder` settings to the routes that survive:
+`CrudMapOptions` is the only knob on the generated method — it excludes whole operation kinds or individual
+named routes, and it attaches `RouteHandlerBuilder` settings to the routes that survive:
 
 ```csharp
+// By operation kind — drops every delete route and every action route.
 group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
+
+// By route name — drops only the UpdateName route. UpdatePrice keeps `{id}` and
+// Approve keeps `{id}/approval`; neither moves.
+group.MapProductCrud(o => o.Exclude("UpdateName"));
 
 group.MapProductCrud(o => o
     .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
-    .Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
+    .Configure("UpdateName", b => b.RequireAuthorization("product.rename")));
 ```
 
 | Member | Signature | Behaviour |
 |---|---|---|
 | `Exclude` | `CrudMapOptions Exclude(params CrudOp[] operations)` | Adds each operation to the exclusion set and returns `this` for chaining. Nothing is excluded by default. |
-| `IsExcluded` | `bool IsExcluded(CrudOp operation)` | What the generated code calls per registration. |
+| `Exclude` | `CrudMapOptions Exclude(params string[] routeNames)` | Adds each route name to the exclusion set and returns `this`. Drops the one route carrying that name and leaves the entity's other routes of the same kind published, at the addresses they already had. A name the entity has no route for throws `ArgumentException` at registration — the same check a misspelt `Configure(string, …)` name hits, never a silent no-op. Nothing is excluded by default. |
+| `IsExcluded` | `bool IsExcluded(CrudOp operation)` | What the generated code calls per registration, for the route's operation kind. |
+| `IsExcluded` | `bool IsExcluded(string routeName)` | What the generated code calls per registration, for the route's own name. A route is registered only when neither check excludes it. |
 | `Configure` | `CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure)` | Runs the setting against every generated route of that operation kind. Additive — several calls for one operation all run, in call order — and returns `this`. |
 | `Configure` | `CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure)` | Runs the setting against the one route carrying that name. Additive and chainable in the same way. |
-| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. `Update` and `Action` are all-or-nothing for `Exclude` — there is no per-method exclusion; `Configure(string, …)` is how a single update or action route is singled out. |
+| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. Excluding `Update` or `Action` drops every route of that kind at once; naming a `[CrudUpdate]`/`[CrudAction]` member excludes that one route alone. |
 
 Route names come from the generator, not from this package: `GetById`, `GetList`, `Create` and `Delete` for
 the four fixed operations, and each `[CrudUpdate]`/`[CrudAction]` member's own C# method name for the rest —
 not the kebab-cased segment. The rule and a worked example live in
 [DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions).
 
-The generated method validates every name given to `Configure(string, …)` before it maps anything, so a name
-the entity does not have throws `ArgumentException` and the group publishes nothing — a misspelt name fails
-loudly instead of dropping a `RequireAuthorization` on the floor. For each route, operation-kind settings run
-first and name settings after. A setting naming a route whose operation was excluded is still validated, then
-dropped with the route; that combination is not an error.
+The generated method validates every name given to `Exclude(string, …)` and to `Configure(string, …)` before it
+maps anything, so a name the entity does not have throws `ArgumentException` and the group publishes nothing —
+a misspelt name fails loudly instead of dropping a `RequireAuthorization` on the floor or leaving a route you
+meant to withdraw published. For each route, operation-kind settings run first and name settings after. A
+setting naming a route whose operation was excluded is still validated, then dropped with the route; that
+combination is not an error.
 
 ## ⚙️ Configuration reference
 
