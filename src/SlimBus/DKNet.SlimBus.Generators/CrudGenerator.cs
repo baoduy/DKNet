@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -88,6 +89,12 @@ internal static class CrudDiagnostics
         "DKCRUDGEN008",
         "Two CRUD members resolve to the same route segment",
         "Entity '{0}' members '{1}' and '{2}' both resolve to route segment '{3}'; give one an explicit distinct segment",
+        Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor DuplicateRouteName = new(
+        "DKCRUDGEN009",
+        "Two CRUD routes resolve to the same name",
+        "Entity '{0}' has more than one route named '{1}'; a [CrudUpdate]/[CrudAction] member must not reuse a reserved name (GetById, GetList, Create, Delete) or another route's name",
         Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
 }
 
@@ -278,6 +285,7 @@ internal static class CrudModelBuilder
         }
 
         CheckDuplicateRouteSegments(type, updateMembers, actionMembers, diagnostics);
+        CheckDuplicateRouteNames(type, updateMembers, actionMembers, diagnostics);
 
         if (!hasAnyCrudMember) return null;
 
@@ -368,6 +376,35 @@ internal static class CrudModelBuilder
         }
 
         seenSegments[segment] = memberName;
+    }
+
+    // The reserved route names (R1) an [CrudUpdate]/[CrudAction] member's own name (R2) must not collide
+    // with, nor may two such members share a name with each other (DKCRUDGEN009).
+    private static readonly string[] ReservedRouteNames = ["GetById", "GetList", "Create", "Delete"];
+
+    private static void CheckDuplicateRouteNames(
+        INamedTypeSymbol type,
+        ImmutableArray<CrudMemberModel>.Builder updateMembers,
+        ImmutableArray<CrudMemberModel>.Builder actionMembers,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        var seenNames = new HashSet<string>(ReservedRouteNames, StringComparer.Ordinal);
+
+        foreach (var update in updateMembers)
+            CheckName(type, update.MemberName, seenNames, diagnostics);
+
+        foreach (var action in actionMembers)
+            CheckName(type, action.MemberName, seenNames, diagnostics);
+    }
+
+    private static void CheckName(
+        INamedTypeSymbol type,
+        string name,
+        HashSet<string> seenNames,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        if (!seenNames.Add(name))
+            diagnostics.Add(Diagnostic.Create(CrudDiagnostics.DuplicateRouteName, Location.None, type.Name, name));
     }
 
     private static CrudMemberModel BuildMemberModel(
@@ -528,11 +565,26 @@ internal static class CrudModelBuilder
             case TypedConstantKind.Array:
                 return "new[] { " + string.Join(", ", constant.Values.Select(FormatTypedConstant)) + " }";
             default:
+                // Mirrors DtoGenerator.FormatAttributeArgument (DRK-1222 items 1-3): `string`/`char` route
+                // through SymbolDisplay.FormatPrimitive for control-character coverage. `bool` does not
+                // implement `IFormattable`, so its position here is immaterial — it exists only because
+                // without it a boolean falls through to `ToString()` and emits `True`/`False`, which does
+                // not compile (R3 corrected). `float`/`decimal` get their required literal suffix and
+                // non-finite `float`/`double` become constant references — finite `double` is untouched
+                // and keeps falling through to the `IFormattable` arm, unsuffixed (R2).
                 return constant.Value switch
                 {
-                    string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+                    string s => SymbolDisplay.FormatPrimitive(s, quoteStrings: true, useHexadecimalNumbers: false),
                     bool b => b ? "true" : "false",
-                    char c => "'" + c + "'",
+                    char c => SymbolDisplay.FormatPrimitive(c, quoteStrings: true, useHexadecimalNumbers: false),
+                    float.NaN => "float.NaN",
+                    float f when float.IsPositiveInfinity(f) => "float.PositiveInfinity",
+                    float f when float.IsNegativeInfinity(f) => "float.NegativeInfinity",
+                    float f => SymbolDisplay.FormatPrimitive(f, quoteStrings: false, useHexadecimalNumbers: false) + "f",
+                    double.NaN => "double.NaN",
+                    double d when double.IsPositiveInfinity(d) => "double.PositiveInfinity",
+                    double d when double.IsNegativeInfinity(d) => "double.NegativeInfinity",
+                    decimal m => SymbolDisplay.FormatPrimitive(m, quoteStrings: false, useHexadecimalNumbers: false) + "m",
                     IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
                     _ => constant.Value?.ToString() ?? "null"
                 };
@@ -681,7 +733,36 @@ internal static class Emitter
             builder.AppendLine();
         }
 
+        if (!HasDeleteRequestNameCollision(entity, out var deleteRequestName))
+        {
+            AppendDeleteRequest(builder, entity, deleteRequestName);
+            builder.AppendLine();
+        }
+
         return builder.ToString();
+    }
+
+    // Every entity in the generated set gets a delete request unconditionally (spec R5) — unless a
+    // create/update/action member already claims the same name, in which case row 6's guard skips both
+    // the record (here) and the 3-arg map call (BuildEndpointsSource) rather than emit a duplicate type.
+    private static bool HasDeleteRequestNameCollision(CrudEntityModel entity, out string deleteRequestName)
+    {
+        var name = deleteRequestName = $"Delete{entity.EntityName}Request";
+        if (entity.Create is not null && entity.Create.RequestName == name) return true;
+        if (entity.Updates.Any(u => u.RequestName == name)) return true;
+        return entity.Actions.Any(a => a.RequestName == name);
+    }
+
+    private static void AppendDeleteRequest(StringBuilder builder, CrudEntityModel entity, string requestName)
+    {
+        builder.Append("/// <summary>Delete request generated for ").Append(entity.EntityName)
+            .AppendLine(", carrying the target's key bound from the route.</summary>");
+        builder.Append("public sealed partial record ").Append(requestName)
+            .Append(" : ").Append(WithKeyInterface).Append(entity.KeyFullName).AppendLine(">");
+        builder.AppendLine("{");
+        builder.Append("    /// <summary>The target ").Append(entity.EntityName).AppendLine(" identifier (bound from route).</summary>");
+        builder.Append("    public ").Append(entity.KeyFullName).AppendLine(" Id { get; set; }");
+        builder.AppendLine("}");
     }
 
     private static void AppendCreateRequest(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
@@ -887,28 +968,40 @@ internal static class Emitter
         builder.Append("        var options = new ").Append(optionsType).AppendLine("();");
         builder.AppendLine("        configure?.Invoke(options);");
 
-        AppendMapCall(builder, opType, "GetById",
+        // Every route name the entity has (R1/R2), regardless of any Exclude — R4: a setting naming an
+        // excluded route still validates, it just never applies (see AppendMapCall's IsExcluded guard).
+        builder.Append("        options.ValidateRouteNames(\"").Append(entity.EntityName).Append('"');
+        builder.Append(", \"GetById\", \"GetList\"");
+        if (entity.Create is not null) builder.Append(", \"Create\"");
+        builder.Append(", \"Delete\"");
+        foreach (var update in entity.Updates) builder.Append(", \"").Append(update.MemberName).Append('"');
+        foreach (var action in entity.Actions) builder.Append(", \"").Append(action.MemberName).Append('"');
+        builder.AppendLine(");");
+
+        AppendMapCall(builder, opType, "GetById", "GetById",
             $"group.MapGetById<{entity.EntityFullName}, {entity.KeyFullName}, {entity.DtoFullName}>();");
-        AppendMapCall(builder, opType, "GetList",
+        AppendMapCall(builder, opType, "GetList", "GetList",
             $"group.MapGetList<{entity.EntityFullName}, {entity.KeyFullName}, {entity.DtoFullName}>();");
-        AppendMapCall(builder, opType, "Delete",
-            $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}>();");
+        AppendMapCall(builder, opType, "Delete", "Delete",
+            HasDeleteRequestNameCollision(entity, out var deleteRequestName)
+                ? $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}>();"
+                : $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}, {deleteRequestName}>();");
 
         if (entity.Create is not null)
-            AppendMapCall(builder, opType, "Create",
+            AppendMapCall(builder, opType, "Create", "Create",
                 $"group.MapPost<{entity.Create.RequestName}, {entity.DtoFullName}>(\"/\");");
 
         for (var i = 0; i < entity.Updates.Length; i++)
         {
             var update = entity.Updates[i];
             var route = i == 0 ? "{id}" : $"{{id}}/{ToKebabCase(update.MemberName)}";
-            AppendMapCall(builder, opType, "Update",
+            AppendMapCall(builder, opType, "Update", update.MemberName,
                 $"group.MapPutById<{update.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{route}\");");
         }
 
         // An action never claims the plain "{id}" route, whatever verb it uses (spec §3.11 / R1).
         foreach (var action in entity.Actions)
-            AppendMapCall(builder, opType, "Action",
+            AppendMapCall(builder, opType, "Action", action.MemberName,
                 $"group.MapActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");");
 
         builder.AppendLine("        return group;");
@@ -917,10 +1010,14 @@ internal static class Emitter
         return builder.ToString();
     }
 
-    private static void AppendMapCall(StringBuilder builder, string opType, string op, string mapCallStatement)
+    private static void AppendMapCall(StringBuilder builder, string opType, string op, string routeName, string mapCallStatement)
     {
         builder.Append("        if (!options.IsExcluded(").Append(opType).Append('.').Append(op).AppendLine("))");
-        builder.Append("            ").AppendLine(mapCallStatement);
+        builder.AppendLine("        {");
+        builder.Append("            var routeBuilder = ").AppendLine(mapCallStatement);
+        builder.Append("            options.Apply(").Append(opType).Append('.').Append(op)
+            .Append(", \"").Append(routeName).AppendLine("\", routeBuilder);");
+        builder.AppendLine("        }");
     }
 
     // "UpdatePrice" -> "update-price". Used for the second-and-later [CrudUpdate] route segment (first

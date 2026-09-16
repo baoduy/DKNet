@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Generated CRUD endpoints can now be configured per route and per operation kind.
+  `CrudMapOptions.Configure(CrudOp, Action<RouteHandlerBuilder>)` applies a setting — `RequireAuthorization`
+  first of all — to every generated route of that operation kind, and
+  `CrudMapOptions.Configure(string routeName, Action<RouteHandlerBuilder>)` applies one to a single named
+  route. Both are additive and chainable; for a given route, operation-kind settings run before name
+  settings. A route's name is `GetById`, `GetList`, `Create` or `Delete` for the four fixed operations and the
+  `[CrudUpdate]`/`[CrudAction]` member's own C# method name for the rest. `Map{Entity}Crud` validates every
+  configured name before mapping anything, so an unknown name throws `ArgumentException` at registration
+  rather than silently dropping the setting; a name belonging to an excluded operation is validated and then
+  dropped with the route. Two routes of one entity resolving to the same name is the new `DKCRUDGEN009`.
 - `[SensitiveData]` now accepts optional role names (`[SensitiveData("pricing", "audit")]`, `Roles` never null).
   `DKNet.EfCore.DtoGenerator` carries the declaration from the entity onto the generated response model, and
   `JsonSerializerOptions.UseRoleAwareSensitiveData(ISensitiveDataPrincipalAccessor)` in
@@ -149,6 +159,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 
 ### Fixed
+- The EF Core auto-save `DbContext` type registry (`DKNet.SlimBus.Extensions`) was a static set shared by every
+  service provider in the process, so providers built concurrently could throw
+  `InvalidOperationException: Operations that change non-concurrent collections must have exclusive access` out of
+  `AddSlimBusEfCoreInterceptor<TDbContext>()`, and one provider's auto-save could reach for a `DbContext` type only
+  another provider had registered. The registry now lives in the `IServiceCollection` — one registration per
+  `TDbContext`, deduplicated, resolved from the request's own provider — so providers no longer share it. No
+  public API change.
+- `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` now emit attribute arguments as valid C# literals
+  when carrying an entity's attributes onto generated code. Previously a `float` argument was emitted
+  without its `f` suffix, a non-finite `double` (`NaN`, positive/negative infinity) as a bare
+  `NaN`/`Infinity` word rather than `double.NaN`/`double.PositiveInfinity`/`double.NegativeInfinity`, a `'` or
+  `\` `char` without an escape, and a string containing a backslash without escaping it — each produced
+  generated code that did not compile. Finite `double` emission is unchanged (an unsuffixed decimal literal
+  already is a `double`).
 - `[RaisesEvent]` convention-form composed payloads no longer pull a navigation/complex-type property into the
   record when a non-empty `Include` names it — `Include` narrowed the entity's *own* scalar properties but was
   silently reusing the property as-is when it named a navigation, shipping every property of the referenced type.

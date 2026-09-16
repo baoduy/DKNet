@@ -62,7 +62,7 @@ Every sample below assumes the `using` that owns the type it shows:
 | `DKNet.AspCore.Extensions` | `IEndpointConfig` |
 | `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
 | `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListQueryOptions`, `AddListQueryOptions()`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
-| `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions` |
+| `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions`, `ErrorResponseOptions`, `AddErrorResponses()`, `ErrorResponseContext`, `ErrorItem`, `ErrorSource` |
 
 ## 🧩 Features
 
@@ -258,6 +258,7 @@ form for any key type, and a `Guid` shorthand that forwards to it.
 | `MapGetById<TEntity, TKey, TModel>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>`, `TModel : class` | `200` with the projected model, `404` when no row matches |
 | `MapGetById<TEntity, TModel>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form with `TKey = Guid` |
 | `MapDeleteById<TEntity, TKey>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>` | `204`, `404` when no row matches, `409` when `SaveChangesAsync` throws `DbUpdateException` |
+| `MapDeleteById<TEntity, TKey, TRequest>(endpoint = "{id}")` | `{id}` | as above, plus `TRequest : class, Fluents.Requests.IWithKey<TKey>` | identical `204`/`404`/`409` — `TRequest` is bound `[AsParameters]` so a group filter can validate it |
 | `MapDeleteById<TEntity>(endpoint = "{id}")` | `{id}` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form |
 | `MapGetList<TEntity, TKey, TModel>(endpoint = "/")` | `/` | `TEntity : class, IEntity<TKey>`, `TKey : IEquatable<TKey>`, `TModel : class` | `200` with `PagedResponse<TModel>`, `400` on an unusable `filter`/`search`/`orderBy` |
 | `MapGetList<TEntity, TModel>(endpoint = "/")` | `/` | `TEntity : class, IEntity<Guid>` | forwards to the `TKey` form |
@@ -267,8 +268,42 @@ group.MapGetById<Product, ProductModel>("/{id:guid}");        // Guid-keyed shor
 group.MapGetById<Sprocket, int, SprocketModel>("/{id}");      // int key
 group.MapGetById<Coupon, string, CouponModel>("/{id}");       // string key
 group.MapDeleteById<Sprocket, int>("/{id}");
+group.MapDeleteById<Product, Guid, DeleteProductRequest>();   // same route, but a rule can refuse the delete
 group.MapGetList<Product, ProductModel>("/");
 ```
+
+#### Attaching a rule to a delete — the three-type-argument overload
+
+`MapDeleteById<TEntity, TKey, TRequest>` exists only so a delete can be refused. `TRequest` carries nothing but
+the key and is bound with `[AsParameters]`, so a group-level validation filter — `AddFluentValidationAutoValidation()`
+via [`ConfigureGroup`](#endpoint-group-discovery-and-mapping--iendpointconfig--useendpointconfigs), for instance — sees one validatable argument
+even though the route still never reads a request body. The key is still bound from the route template, and the
+route address, HTTP verb and every status code are the same as the two-type-argument form:
+
+```csharp
+public sealed record DeleteProductRequest : Fluents.Requests.IWithKey<Guid>
+{
+    public Guid Id { get; set; }
+}
+
+public sealed class DeleteProductRequestValidator : AbstractValidator<DeleteProductRequest>
+{
+    public DeleteProductRequestValidator(AppDbContext db) =>
+        RuleFor(x => x.Id)
+            .MustAsync(async (id, ct) => !await db.OrderLines.AnyAsync(l => l.ProductId == id, ct))
+            .WithMessage("Product is still on an order and cannot be deleted.");
+}
+```
+
+A refused delete is answered by whatever failure filter the group already registers — with the
+`AddFluentValidationAutoValidation()` pattern above that is a `400` `ProblemDetails` — and never reaches
+`SaveChangesAsync`, so the row survives and no audit entry or domain event is raised for it.
+
+`MapDeleteById<TEntity, TKey>` and the `Guid` shorthand are unchanged: same signatures, same behaviour, same
+status codes. Both forms route through one shared delete helper, so a caller that registers no rule sees
+nothing different. `DKNet.SlimBus.Generators` emits a `Delete{Entity}Request` per entity and calls this
+overload from `Map{Entity}Crud` — see
+[the generator's docs](../Messaging/DKNet.SlimBus.Generators.md).
 
 `TKey` is constrained to `IEquatable<TKey>` rather than `IParsable<TSelf>` on purpose: the looser
 constraint keeps `string` keys usable, and minimal APIs bind those natively. The cost is that a key
@@ -388,6 +423,11 @@ app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
 | `IResult<T>` success | `true` | `TypedResults.Created("/", value)` — the location is a literal `"/"` placeholder |
 | `IResultBase` success | `false` / `true` | `TypedResults.Ok()` / `TypedResults.Created()` |
 | either, failure | any | `TypedResults.Problem(problemDetails)` |
+| either, failure, through the `Response(ErrorResponseOptions?, …)` overload | any | `TypedResults.Problem(problemDetails)` with the host's error-response setting applied — see [One error-response setting](#one-error-response-setting--adderrorresponses) |
+
+Both overloads that take an `ErrorResponseOptions?` — one per result type — behave exactly as the
+rows above on success; only the failure row differs. These are the overloads the fluent mappers call,
+resolving the setting from the container.
 
 `ProblemDetailsExtensions.ToProblemDetails()` builds the underlying `ProblemDetails` from either an
 `IResultBase` or an ASP.NET Core `ModelStateDictionary`:
@@ -400,10 +440,68 @@ if (!ModelState.IsValid)
 | Overload | Default status | Notes |
 |---|---|---|
 | `ToProblemDetails(this IResultBase, HttpStatusCode statusCode = BadRequest)` | `400` | Promoted to `404` when any error is a `NotFoundError`. `Title` is always `"Error"`, `Type` is the status name, `Detail` is the first message. |
+| `ToProblemDetails(this IResultBase, ErrorResponseOptions? options)` | `400` | Same base status as the overload above, `404` promotion included, then `options.StatusCode` and `options.Customize` are applied on top — see [One error-response setting](#one-error-response-setting--adderrorresponses). A `null` `options` keeps today's status and body. |
 | `ToProblemDetails(this ModelStateDictionary)` | `400` | Not configurable. |
 
-Both return `null` on success/valid input, and both collect distinct (case-insensitive), non-empty
-error messages into the response's `errors` extension property.
+All three return `null` on success/valid input, and all three collect distinct (case-insensitive),
+non-empty error messages into the response's `errors` extension property.
+
+### One error-response setting — `AddErrorResponses`
+
+A DKNet host refuses a request in two different places: a SlimBus handler returns a failed
+`FluentResults` result, or FluentValidation refuses the input before the handler ever runs.
+`AddErrorResponses` is the one registration that shapes both — call it once, and the validation path
+is wired by that same call rather than configured separately (it swaps in the result factory that
+applies the setting; auto-validation itself still turns on where you already turn it on, per route
+group or route):
+
+```csharp
+using DKNet.AspCore.Extensions.Responses;
+
+builder.Services.AddErrorResponses(o =>
+{
+    o.StatusCode = ctx => ctx.Errors.Any(e => e.Code == "business-refusal") ? 422 : null;
+    o.Customize = (problem, ctx) => problem.Extensions["error-code"] = ctx.Errors.FirstOrDefault()?.Code;
+});
+```
+
+A handler that fails with a `business-refusal` code and a validator that refuses the same rule with
+that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code` member.
+Every endpoint the fluent mappers registered picks the setting up on its own — they resolve it from
+the container as an optional service, so registering it is the whole wiring step and leaving it
+unregistered is not an error.
+
+**The status comes from the failure, never from the route.** `StatusCode` receives an
+`ErrorResponseContext` and nothing else:
+
+| Member | Type | What it carries |
+|---|---|---|
+| `Source` | `ErrorSource` | `Command` for a failed FluentResults handler, `Validation` for input FluentValidation refused. |
+| `Errors` | `IReadOnlyList<ErrorItem>` | `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry (`Command`) or the validation failure's `ErrorCode` (`Validation`); `Field` names the refused input member and is always `null` for a command failure. |
+
+The context deliberately carries no `HttpContext`, request path or HTTP method, so the same failure
+maps to the same status wherever it is raised — two routes cannot disagree about what a
+`business-refusal` means. Returning `null` keeps the status that failure would have had anyway, which
+is how one callback can map two error codes and leave everything else alone.
+
+**`Customize` applies to both failure kinds.** It runs after the status is chosen, against the
+`ProblemDetails` about to be written, for `ErrorSource.Command` and `ErrorSource.Validation` alike —
+a member added there cannot appear on one failure kind only. Use `ctx.Source` if the *value* should
+differ; the member itself is always present on both.
+
+> ⚠️ **The setting is host-wide.** It applies to every route in the host, so anything `Customize`
+> adds appears on every error response the API returns — including endpoints you were not thinking
+> about when you wrote the callback. That is why nothing is added for you: name each member you add,
+> and add only what every caller of every endpoint is allowed to see.
+
+**What a host that registers nothing still gets.** `AddErrorResponses` is optional. Without it — and,
+member by member, wherever it is called but left unset — the responses are exactly today's:
+
+| Failure | Status | Body |
+|---|---|---|
+| Command handler returns a failed result | `400` | `application/problem+json`, `errors` a flat list of the distinct failure messages. |
+| Validator refuses the input | `400` | `application/problem+json`, `errors` a field → messages map (FluentValidation auto-validation's default factory). |
+| Failure carries a `NotFoundError` | `404` | `application/problem+json`. Needs no setting, and survives a `StatusCode` callback that returns `null` for it. |
 
 ### Generated CRUD endpoints — `CrudMapOptions` and `CrudOp`
 
@@ -445,7 +543,7 @@ What the generator emits into `ProductCrudEndpoints.g.cs`, verbatim in shape:
 // <auto-generated by DKNet.SlimBus.Generators />
 #nullable enable
 using DKNet.AspCore.Extensions.Endpoints;
-namespace MyApi;
+namespace MyApi.Crud;                          // always {AssemblyName}.Crud
 
 /// <summary>Registers the generated CRUD endpoints for Product.</summary>
 public static class ProductCrudEndpointExtensions
@@ -461,7 +559,7 @@ public static class ProductCrudEndpointExtensions
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
             group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::MyDomain.Product, global::System.Guid>();
+            group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
             group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
@@ -481,17 +579,35 @@ Delete, Create, then each `[CrudUpdate]` in declaration order, then each `[CrudA
 an action never claims the plain `{id}` route, whatever verb it uses, and defaults its segment to the
 kebab-cased method name when `[CrudAction]` carries no explicit route.
 
-`CrudMapOptions` is the only knob on the generated method — it excludes operations, nothing more:
+`CrudMapOptions` is the only knob on the generated method — it excludes operations, and it attaches
+`RouteHandlerBuilder` settings to the routes that survive:
 
 ```csharp
 group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
+
+group.MapProductCrud(o => o
+    .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
+    .Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
 ```
 
 | Member | Signature | Behaviour |
 |---|---|---|
 | `Exclude` | `CrudMapOptions Exclude(params CrudOp[] operations)` | Adds each operation to the exclusion set and returns `this` for chaining. Nothing is excluded by default. |
 | `IsExcluded` | `bool IsExcluded(CrudOp operation)` | What the generated code calls per registration. |
-| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. `Update` and `Action` are all-or-nothing — there is no per-method exclusion. |
+| `Configure` | `CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure)` | Runs the setting against every generated route of that operation kind. Additive — several calls for one operation all run, in call order — and returns `this`. |
+| `Configure` | `CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure)` | Runs the setting against the one route carrying that name. Additive and chainable in the same way. |
+| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. `Update` and `Action` are all-or-nothing for `Exclude` — there is no per-method exclusion; `Configure(string, …)` is how a single update or action route is singled out. |
+
+Route names come from the generator, not from this package: `GetById`, `GetList`, `Create` and `Delete` for
+the four fixed operations, and each `[CrudUpdate]`/`[CrudAction]` member's own C# method name for the rest —
+not the kebab-cased segment. The rule and a worked example live in
+[DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions).
+
+The generated method validates every name given to `Configure(string, …)` before it maps anything, so a name
+the entity does not have throws `ArgumentException` and the group publishes nothing — a misspelt name fails
+loudly instead of dropping a `RequireAuthorization` on the floor. For each route, operation-kind settings run
+first and name settings after. A setting naming a route whose operation was excluded is still validated, then
+dropped with the route; that combination is not an error.
 
 ## ⚙️ Configuration reference
 
@@ -517,6 +633,21 @@ group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
 |---|---|---|---|
 | `configureOptions` | `Action<EndpointRegistrationOptions>?` | `null` | Leave `null` to keep every default above. |
 | `assemblies` | `params Assembly[]` | empty → `AppDomain.CurrentDomain.GetAssemblies()` | Assemblies scanned for `IEndpointConfig` implementations. |
+
+`ErrorResponseOptions` — via `AddErrorResponses(Action<ErrorResponseOptions>?)`. Registered once and
+host-wide: both knobs apply to every route, and to a failed command handler and refused validation
+input alike. See [One error-response setting](#one-error-response-setting--adderrorresponses):
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status that failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
+| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike. Whatever it adds appears on every error response the host returns. |
+
+`AddErrorResponses`'s own parameter:
+
+| Parameter | Type | Default | Effect |
+|---|---|---|---|
+| `configure` | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep both knobs unset — each unset knob is a no-op, so the responses stay today's. Skipping the call entirely leaves the setting unregistered, which the mappers resolve as an optional service and fall back the same way. |
 
 ### Page-size defaults and ceiling
 

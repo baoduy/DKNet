@@ -47,15 +47,12 @@ public class EndpointEmissionTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithFullSlice_EmitsMapCrudExtensionComposingExistingMappers()
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("public static class ProductCrudEndpointExtensions");
         text.ShouldContain("MapProductCrud(");
         text.ShouldContain("MapGetById<");
@@ -71,7 +68,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}\");");
         text.ShouldContain("group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}/update-name\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -92,13 +89,15 @@ public class EndpointEmissionTests
     {
         // Spec Appendix B.2: the only existing-behaviour Gherkin scenario covers update routing; this closes
         // the gap by asserting the FULL slice (create/read/list/delete too) for an entity declaring no actions
-        // is byte-identical to today's, and that no action registration appears at all.
+        // is byte-identical to today's, and that no action registration appears at all. DRK-1326 changed the
+        // delete row specifically (R5): every entity in the generated set now gets its own DeleteXRequest and
+        // the 3-arg MapDeleteById wired to it, unless its name collides with a create/update/action member.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
         text.ShouldContain("group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
-        text.ShouldContain("group.MapDeleteById<global::MyDomain.Product, global::System.Guid>();");
+        text.ShouldContain("group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();");
         text.ShouldContain("group.MapPost<CreateProductRequest, global::MyApi.ProductDto>(\"/\");");
         text.ShouldContain("group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}\");");
         text.ShouldContain("group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}/update-name\");");
@@ -150,7 +149,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateUpdateAndExplicitRouteAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approval\", \"POST\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -183,7 +182,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithActionDefaultingSegment, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<RejectOrderOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reject-order\", \"POST\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -216,7 +215,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPatchAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ArchiveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/archive\", \"PATCH\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -252,7 +251,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPutActionAndUpdateMember, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ReinstateOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reinstate\", \"PUT\");");
         text.ShouldContain(
@@ -287,7 +286,7 @@ public class EndpointEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithSoleAction, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldNotContain("MapPutById");
@@ -353,7 +352,7 @@ public class EndpointEmissionTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithOrderDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
             "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldContain(

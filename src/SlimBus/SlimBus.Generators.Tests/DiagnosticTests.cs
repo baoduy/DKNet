@@ -204,7 +204,7 @@ public class DiagnosticTests
 
         // Both-annotations is never silently resolved in favour of either: the member is emitted as
         // neither an update nor an action (spec §3.8 / R4).
-        var text = string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldNotContain("ApproveOrderRequest");
     }
 
@@ -306,6 +306,155 @@ public class DiagnosticTests
         message.ShouldContain("Discontinue");
         message.ShouldContain("Retire");
         message.ShouldContain("archive");
+    }
+
+    [Fact]
+    public void Run_WithUpdateMemberNamedDelete_ReportsDKCRUDGEN009NamingTheMember()
+    {
+        // R1/R2: "Delete" is GetById/GetList/Create/Delete's own reserved route name; an [CrudUpdate]
+        // member reusing it collides even though it resolves to a distinct route SEGMENT ("{id}/delete"),
+        // so DKCRUDGEN008 (segment collision) does not fire here — only DKCRUDGEN009 (name collision).
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product(string name) => Name = name;
+
+                    [CrudUpdate]
+                    public void ChangePrice(decimal price) { }
+
+                    [CrudUpdate]
+                    public void Delete(string reason) => Name = reason;
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Product))]
+                public partial record ProductDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        diagnostics.ShouldNotContain(d => d.Id == "DKCRUDGEN008");
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Entity 'Product'");
+        // Quoted '{1}' is the offending member's own name; the descriptor's boilerplate also lists the bare,
+        // unquoted word "Delete" among the reserved names, so only the quoted form pins THIS member.
+        message.ShouldContain("route named 'Delete'");
+    }
+
+    [Fact]
+    public void Run_WithActionMemberNamedGetList_ReportsDKCRUDGEN009NamingTheMember()
+    {
+        // Same rule (R1/R2), exercised on an [CrudAction] member instead of [CrudUpdate], and against a
+        // different reserved name — proves the check isn't special-cased to "Delete" or to update members.
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Order : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Order(string customer) => Customer = customer;
+
+                    [CrudAction]
+                    public void GetList() => Status = "Listed";
+
+                    public Guid Id { get; private set; }
+                    public string Customer { get; private set; } = string.Empty;
+                    public string Status { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Order))]
+                public partial record OrderDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Entity 'Order'");
+        message.ShouldContain("route named 'GetList'");
+    }
+
+    [Fact]
+    public void Run_WithTwoActionOverloadsKeptApartOnlyByExplicitSegments_ReportsDKCRUDGEN009NotDKCRUDGEN008()
+    {
+        // R2: the route NAME is the member's own C# name verbatim — unaffected by an explicit [CrudAction]
+        // segment. Two "Approve" overloads with distinct explicit segments never collide on SEGMENT
+        // (DKCRUDGEN008 does not fire) but both resolve to the same NAME, "Approve" (DKCRUDGEN009 does).
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Order : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Order(string customer) => Customer = customer;
+
+                    [CrudAction("approve-plain")]
+                    public void Approve() => Status = "Approved";
+
+                    [CrudAction("approve-with-note")]
+                    public void Approve(string note) => Status = "Approved: " + note;
+
+                    public Guid Id { get; private set; }
+                    public string Customer { get; private set; } = string.Empty;
+                    public string Status { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Order))]
+                public partial record OrderDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        diagnostics.ShouldNotContain(d => d.Id == "DKCRUDGEN008");
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Entity 'Order'");
+        message.ShouldContain("route named 'Approve'");
     }
 
     [Fact]

@@ -44,15 +44,12 @@ public class HandlerEmissionTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithCrudCreate_EmitsHandlerCallingCtorAndAddAsync()
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndUpdate, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("class CreateProductHandler");
         text.ShouldContain("new global::MyDomain.Product(request.Name, request.Price)");
         text.ShouldContain("repository.AddAsync(entity, cancellationToken)");
@@ -64,7 +61,7 @@ public class HandlerEmissionTests
     {
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndUpdate, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("class UpdatePriceProductHandler");
         text.ShouldContain("ProductByIdCrudSpec");
         text.ShouldContain("global::DKNet.SlimBus.Extensions.NotFoundError");
@@ -98,7 +95,7 @@ public class HandlerEmissionTests
 
         var (_, diagnostics, result) = GeneratorTestHelper.Run(DomainWithCreateAndUpdate, api);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldNotContain("class CreateProductHandler");
         // Only the create request has a hand-written override; the update handler still generates.
         text.ShouldContain("class UpdatePriceProductHandler");
@@ -139,7 +136,7 @@ public class HandlerEmissionTests
         // "updatesToEmit.Length > 0 || actionsToEmit.Length > 0", not on updates alone.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndAction, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("using DKNet.EfCore.Specifications.Extensions;");
         text.ShouldContain("class ProductByIdCrudSpec");
         text.ShouldContain("class DiscontinueProductHandler");
@@ -174,7 +171,7 @@ public class HandlerEmissionTests
 
         var (_, diagnostics, result) = GeneratorTestHelper.Run(DomainWithCreateAndAction, api);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldNotContain("class DiscontinueProductHandler");
         // The create request has no override; its handler still generates.
         text.ShouldContain("class CreateProductHandler");
@@ -209,7 +206,7 @@ public class HandlerEmissionTests
 
         var (_, diagnostics, result) = GeneratorTestHelper.Run(DomainWithCreateAndUpdate, api);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldNotContain("class CreateProductHandler");
         diagnostics.ShouldContain(d => d.Id == "DKCRUDGEN005");
     }

@@ -146,8 +146,9 @@ public class NpgsqlSequenceTests(PostgresFixture fixture) : IClassFixture<Postgr
         var val = await context.NextSeqValueWithFormat(SequencesTest.Invoice);
 
         // Assert
-        // NextSeqValueWithFormat uses DateTime.UtcNow internally, format: {0:yyMMdd}{1:00000}
-        val.ShouldStartWith(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}", DateTime.UtcNow));
+        // NextSeqValueWithFormat uses DateTime.UtcNow internally, format: {0:yyMMdd}{1:00000},
+        // formatted with CultureInfo.InvariantCulture, so the expected value must use it too.
+        val.ShouldStartWith(string.Format(CultureInfo.InvariantCulture, "T{0:yyMMdd}", DateTime.UtcNow));
     }
 
     #endregion

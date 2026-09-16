@@ -49,10 +49,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (IMessageBus bus, [FromBody] TCommand request) =>
+                    async (IMessageBus bus, [FromBody] TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response();
+                        return rs.Response(errorOptions);
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -68,10 +68,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                 endpoint,
-                async (IMessageBus bus, [AsParameters] TCommand request) =>
+                async (IMessageBus bus, [AsParameters] TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response();
+                    return rs.Response(errorOptions);
                 }).ProducesCommons();
         }
 
@@ -129,10 +129,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response();
+                        return rs.Response(errorOptions);
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -148,10 +148,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                 endpoint,
-                async (IMessageBus bus, TCommand request) =>
+                async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response();
+                    return rs.Response(errorOptions);
                 }).ProducesCommons();
         }
 
@@ -170,10 +170,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(isCreating);
+                        return rs.Response(errorOptions, isCreating);
                     }).Produces<TResponse>(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -192,10 +192,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(isCreating);
+                        return rs.Response(errorOptions, isCreating);
                     }).Produces(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -212,10 +212,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TCommand request) =>
+                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response();
+                        return rs.Response(errorOptions);
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -231,10 +231,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                 endpoint,
-                async (IMessageBus bus, TCommand request) =>
+                async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response();
+                    return rs.Response(errorOptions);
                 }).ProducesCommons();
         }
 
@@ -254,11 +254,11 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TKey id, TCommand request) =>
+                    async (IMessageBus bus, TKey id, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         request.Id = id;
                         var rs = await bus.Send(request);
-                        return rs.Response();
+                        return rs.Response(errorOptions);
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -282,11 +282,11 @@ public static class FluentsEndpointMapperExtensions
             return app.MapMethods(
                     endpoint,
                     [httpMethod],
-                    async (IMessageBus bus, TKey id, TCommand request) =>
+                    async (IMessageBus bus, TKey id, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
                     {
                         request.Id = id;
                         var rs = await bus.Send(request);
-                        return rs.Response();
+                        return rs.Response(errorOptions);
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }

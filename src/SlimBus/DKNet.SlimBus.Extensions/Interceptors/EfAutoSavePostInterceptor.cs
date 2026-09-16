@@ -59,8 +59,9 @@ internal sealed class EfAutoSavePostInterceptor<TRequest, TResponse>(
 
         //Global exception handling.
         var exceptionHandler = serviceProvider.GetService<IEfCoreExceptionHandler>();
-        var dbContexts = EfAutoSavePostProcessorRegistration.DbContextTypes
-            .Select(serviceProvider.GetService).OfType<DbContext>().ToArray();
+        var dbContexts = serviceProvider.GetServices<IAutoSaveDbContextRegistration>()
+            .Select(registration => serviceProvider.GetService(registration.DbContextType))
+            .OfType<DbContext>().ToArray();
 
         var dbContextCount = dbContexts.Length;
         logger.LogDebug("Found {DbContextCount} DbContext(s) for auto-save.", dbContextCount);

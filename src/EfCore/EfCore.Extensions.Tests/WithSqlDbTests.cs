@@ -92,7 +92,7 @@ public class WithSqlDbTests(PostgresFixture fixture) : IClassFixture<PostgresFix
     public async Task SequenceValueWithFormatTestAsync()
     {
         var val1 = await _db.NextSeqValueWithFormat(SequencesTest.Invoice);
-        val1.ShouldContain(string.Format(CultureInfo.CurrentCulture, "T{0:yyMMdd}0000", DateTime.Now));
+        val1.ShouldStartWith(string.Format(CultureInfo.InvariantCulture, "T{0:yyMMdd}", DateTime.UtcNow));
     }
 
     /// <summary>

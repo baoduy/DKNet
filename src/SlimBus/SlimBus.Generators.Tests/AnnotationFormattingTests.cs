@@ -23,9 +23,6 @@ public class AnnotationFormattingTests
         }
         """;
 
-    private static string GeneratedText(GeneratorDriverRunResult result) =>
-        string.Join("\n", result.Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString()));
-
     [Fact]
     public void Run_WithNamedAndDoubleAnnotationArguments_RendersThemVerbatim()
     {
@@ -55,7 +52,7 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("StringLength(50, MinimumLength = 2)");
         text.ShouldContain("Range(0.5, 9.9)");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -102,11 +99,177 @@ public class AnnotationFormattingTests
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
 
-        var text = GeneratedText(result);
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("'x', true");
         text.ShouldContain("new[] { \"one\", \"two\" }");
         // Alpha | Beta (= 3) matches no single named member, so the formatter falls back to a cast literal.
         text.ShouldContain("(global::System.ComponentModel.DataAnnotations.TagKinds)3");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithFloatAnnotationArgument_RendersSuffixedLiteral()
+    {
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class ToleranceAttribute : Attribute
+                {
+                    public ToleranceAttribute(float value) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Tolerance(1.5f)] decimal price)
+                    {
+                        Price = price;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public decimal Price { get; private set; }
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("Tolerance(1.5f)");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEscapedCharAndBackslashStringAnnotationArguments_RendersEscapedLiterals()
+    {
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class MarkedAttribute : Attribute
+                {
+                    public MarkedAttribute(char delimiter, string pattern) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Marked('\'', "a\\b")] string name)
+                    {
+                        Name = name;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("Marked('\\'', \"a\\\\b\")");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNaNFloatAnnotationArgument_RendersConstantReference()
+    {
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class ToleranceAttribute : Attribute
+                {
+                    public ToleranceAttribute(float value) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Tolerance(float.NaN)] decimal price)
+                    {
+                        Price = price;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public decimal Price { get; private set; }
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("Tolerance(float.NaN)");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNaNDoubleAndFalseBoolAnnotationArguments_RendersConstantReferenceAndLowercaseKeyword()
+    {
+        // The `false` argument alongside the non-finite double exercises the bool arm's other branch —
+        // Run_WithBoolCharArrayAndFlagsEnumAnnotationArguments... above already covers `true` (:106).
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace System.ComponentModel.DataAnnotations
+            {
+                public sealed class RatingAttribute : Attribute
+                {
+                    public RatingAttribute(double value, bool verified) { }
+                }
+            }
+
+            namespace MyDomain
+            {
+                using System.ComponentModel.DataAnnotations;
+
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product([Rating(double.NaN, false)] string name)
+                    {
+                        Name = name;
+                    }
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("Rating(double.NaN, false)");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
 }

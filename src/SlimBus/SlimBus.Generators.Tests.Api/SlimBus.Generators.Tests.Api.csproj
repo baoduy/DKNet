@@ -13,6 +13,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
         <PackageReference Include="Mapster"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
@@ -38,6 +39,7 @@
         <ProjectReference Include="..\DKNet.SlimBus.Extensions\DKNet.SlimBus.Extensions.csproj"/>
         <ProjectReference Include="..\..\AspNet\DKNet.AspCore.Extensions\DKNet.AspCore.Extensions.csproj"/>
         <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Specifications\DKNet.EfCore.Specifications.csproj"/>
+        <ProjectReference Include="..\..\EfCore\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
 
         <!-- Real end-to-end analyzer wiring: the generator only needs to run during compilation, its
              assembly is never referenced by this project's own code. -->

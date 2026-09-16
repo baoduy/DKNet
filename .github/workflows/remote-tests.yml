@@ -52,13 +52,18 @@ jobs:
         run: dotnet restore src/DKNet.FW.sln
 
       - name: Build
+        # `shell: bash` runs the step as `bash --noprofile --norc -eo pipefail {0}`. Without it the
+        # default shell is `bash -e {0}` (no pipefail) and the step would exit with tee's status (0),
+        # masking a build failure.
+        shell: bash
         run: |
           mkdir -p src/TestResults
-          # pipefail is on by default in GitHub's bash shell, so a build error still fails the step.
           dotnet build src/DKNet.FW.sln --no-restore --configuration Release 2>&1 \
             | tee src/TestResults/build.log
 
       - name: Test
+        # pipefail — see the Build step; without it `dotnet test ... | tee` always exits 0.
+        shell: bash
         working-directory: src
         env:
           PROJECT: ${{ inputs.project }}

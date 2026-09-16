@@ -357,9 +357,9 @@ replacing those types.
   through `Fluents.Requests`, is never recognized as a write.
 - **No cross-`DbContext` transaction.** Each registered context with pending changes is saved independently in a loop;
   if a later save throws, earlier ones have already committed.
-- **The `DbContext` type registry is static process-wide state.** Registration adds to a shared `HashSet<Type>`, not
-  something scoped to one `IServiceCollection` — in a process that builds several service providers (parallel test
-  fixtures, for instance) the registered types accumulate across all of them.
+- **The `DbContext` type registry is scoped to the `IServiceCollection`.** Each registration is resolved from the
+  provider built out of that collection, so separately built providers (parallel test fixtures, for instance) never
+  see each other's registered types — each one has to call `AddSlimBusEfCoreInterceptor<TDbContext>()` for itself.
 - **A `null` or failed response silently skips the save**, including an exception the handler caught and turned into
   `Result.Fail(...)`. Unhandled exceptions propagate through SlimMessageBus's own pipeline; this package adds no
   exception handling around the handler call.
