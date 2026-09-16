@@ -75,6 +75,23 @@ public static class ProblemDetailsExtensions
     }
 
     /// <summary>
+    ///     Converts a failed <see cref="IResultBase" /> into a <see cref="ProblemDetails" /> instance, choosing the
+    ///     status code from the failure's own errors via <paramref name="options" /> — never from the route that
+    ///     produced it — and applying <see cref="ErrorResponseOptions.Customize" /> afterwards. Returns
+    ///     <see langword="null" /> for success results.
+    /// </summary>
+    /// <param name="result">The fluent result to convert.</param>
+    /// <param name="options">
+    ///     The error-response setting to apply. A <see langword="null" /> <see cref="ErrorResponseOptions.StatusCode" />
+    ///     result, or a <see langword="null" /> <paramref name="options" /> itself, keeps today's status code.
+    /// </param>
+    /// <returns>A <see cref="ProblemDetails" /> when the result is a failure; otherwise <c>null</c>.</returns>
+    public static ProblemDetails? ToProblemDetails(this IResultBase result, ErrorResponseOptions? options) =>
+        throw new NotImplementedException(
+            "DRK-1328 Build stage: derive ErrorResponseContext from result.Errors, apply options.StatusCode " +
+            "then options.Customize, preserving the NotFoundError-to-404 rule.");
+
+    /// <summary>
     ///     Converts an ASP.NET Core <see cref="ModelStateDictionary" /> into a <see cref="ProblemDetails" /> instance
     ///     when the model state contains validation errors; returns <c>null</c> when the model state is valid.
     /// </summary>
