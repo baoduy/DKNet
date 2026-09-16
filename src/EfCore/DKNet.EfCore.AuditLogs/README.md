@@ -94,11 +94,14 @@ The current-user provider is optional. Register one with
 - **`UpdatedBy` follows the caller of each save** — except when a domain method already recorded a modifier
   for that change set with `SetUpdatedBy(...)`. An explicit modifier always wins over both the current user
   and the ownership key.
-- **`GetCurrentUser()` returning `null` or empty stamps nothing** — the save still succeeds and the audit
-  properties are left as they are.
-- **Without a current-user provider nothing changes.** `CreatedBy`/`UpdatedBy` keep coming from the
-  `IDataOwnerProvider` ownership key when `DKNet.EfCore.DataAuthorization` is in use, and stay unset when it
-  is not.
+- **`GetCurrentUser()` returning `null` or empty stamps nothing from this package** — the save still
+  succeeds; when `DKNet.EfCore.DataAuthorization` is also registered, the ownership-key fallback below applies
+  to that save, so a background job or an unauthenticated request lands the tenant key in
+  `CreatedBy`/`UpdatedBy`. With no ownership key either, the audit properties are left as they are.
+- **The ownership-key fallback is decided per save, on the value not the registration.** `CreatedBy`/`UpdatedBy`
+  come from the `IDataOwnerProvider` ownership key whenever no current-user value is available for that save
+  — no current-user provider registered, or a registered one that returned `null`/empty — and stay unset when
+  `DKNet.EfCore.DataAuthorization` is not in use.
 
 Whatever the provider returns is published **unmasked** to every registered `IAuditLogPublisher` — the
 redaction rules above cover entity property values, not the audit identity itself. An application subject to a
