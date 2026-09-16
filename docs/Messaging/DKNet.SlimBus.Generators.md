@@ -105,7 +105,8 @@ All three attributes live in `DKNet.EfCore.Abstractions`, so the domain layer ta
   method form has a sharp edge — see [the emitted handler](#crudcreate-on-a-constructor) below.
 - `[CrudUpdate]` — on any public instance method; one generated request per marked method.
 - `[CrudAction]` — a named operation at its own route segment (see below).
-- Delete needs no attribute — `MapDeleteById` covers it generically.
+- Delete needs no attribute — `MapDeleteById` covers it generically, and every entity also gets a
+  `Delete{Entity}Request` to hang a delete rule on (see [Refusing a delete](#refusing-a-delete--deleteentityrequest)).
 
 The generator scans **both the compiling project and its referenced assemblies**, so an entity in a separate `Domain`
 project is discovered from the API project with nothing redeclared. Referenced assemblies whose name is, or starts
@@ -124,7 +125,7 @@ an API-layer type itself.
 
 ### Request records
 
-One `sealed partial record` per marked member, with a `Request` suffix:
+One `sealed partial record` per marked member, plus one delete request per entity, all with a `Request` suffix:
 
 - Properties mirror the member's parameters (PascalCase names, original types).
 - `System.ComponentModel.DataAnnotations` attributes on the parameters (`[Required]`, `[Range]`, …) are copied onto the
@@ -132,6 +133,9 @@ One `sealed partial record` per marked member, with a `Request` suffix:
 - `[CrudCreate]` → implements `Fluents.Requests.IWitResponse<TDto>`.
 - `[CrudUpdate]` and `[CrudAction]` → implement `IWitResponse<TDto>` **and** `IWithKey<TKey>`, whose `Id` is bound from
   the route.
+- `Delete{Entity}Request` → emitted for every entity with no attribute at all; implements `IWithKey<TKey>` only, and
+  gets no handler, because the delete route goes straight to the repository. See
+  [Refusing a delete](#refusing-a-delete--deleteentityrequest).
 
 ### Handlers
 
@@ -366,7 +370,7 @@ public static class ProductCrudEndpointExtensions
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
             group.MapGetList<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::Catalog.Product, global::System.Guid>();
+            group.MapDeleteById<global::Catalog.Product, global::System.Guid, DeleteProductRequest>();
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
             group.MapPost<CreateProductRequest, global::Api.ProductDto>("/");
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
@@ -398,6 +402,7 @@ Everything the generator names is derived, never configurable beyond the attribu
 | Endpoints file | `{Entity}CrudEndpoints.g.cs`; emitted only when the project references `DKNet.AspCore.Extensions` | `ProductCrudEndpoints.g.cs` |
 | Create request | `Create{Entity}Request` for a constructor, `{Method}{Entity}Request` for a method; `Name` on the attribute overrides both | `CreateProductRequest` |
 | Update / action request | `{Method}{Entity}Request`; `Name` overrides | `RenameProductRequest` |
+| Delete request | `Delete{Entity}Request`, one per entity, not overridable — suppressed when another member already resolves to that name ([Refusing a delete](#refusing-a-delete--deleteentityrequest)) | `DeleteProductRequest` |
 | Handler | the request name with a trailing `Request` replaced by `Handler` (appended when the name does not end in `Request`) | `RenameProductHandler` |
 | By-id specification | `{Entity}ByIdCrudSpec`, `file`-scoped, one per handlers file | `ProductByIdCrudSpec` |
 | Endpoint extension class | `{Entity}CrudEndpointExtensions` | `ProductCrudEndpointExtensions` |
@@ -538,11 +543,73 @@ A non-generic `Map{Entity}Crud(this RouteGroupBuilder, Action<CrudMapOptions>? c
 | PUT — first `[CrudUpdate]` | `{id}` | 200 + DTO body / 404 |
 | PUT — additional `[CrudUpdate]`s | `{id}/{kebab-case-method-name}` | 200 + DTO body / 404 |
 | `[CrudAction]` (POST/PUT/PATCH) | `{id}/{segment}` | 200 + DTO body / 404 |
-| DELETE by id | `{id}` | 200 / 404 |
+| DELETE by id | `{id}` | 204 / 404, or 409 when the database rejects the delete |
 
 Additional `[CrudUpdate]` methods route in declaration order: the first keeps the plain `{id}` PUT, and each one after
 it gets its method name kebab-cased onto the route (`UpdatePrice` → `{id}/update-price`). Two members resolving to the
 same segment is `DKCRUDGEN008`.
+
+### Refusing a delete — `Delete{Entity}Request`
+
+The DELETE route takes no request body and needs no attribute, so before there was nothing to hang a rule on.
+The generator now closes that gap by emitting, into `{Entity}CrudRequests.g.cs` alongside the create and update
+records:
+
+```csharp
+/// <summary>Delete request generated for Product, carrying the target's key bound from the route.</summary>
+public sealed partial record DeleteProductRequest : global::DKNet.SlimBus.Extensions.Fluents.Requests.IWithKey<global::System.Guid>
+{
+    /// <summary>The target Product identifier (bound from route).</summary>
+    public global::System.Guid Id { get; set; }
+}
+```
+
+`Map{Entity}Crud` binds it on the DELETE route — `group.MapDeleteById<Product, Guid, DeleteProductRequest>()`,
+the three-type-argument overload in `DKNet.AspCore.Extensions`. Nothing else moves:
+
+- **No annotation, no opt-in.** It is emitted for every entity in the generated set, and the domain class is
+  untouched.
+- **Nothing changes on the wire.** The key is still bound from the route template; route address and HTTP verb
+  are unchanged, and the request body is still never read.
+- **No handler.** The delete goes straight to `IRepositorySpec` through `MapDeleteById`, not through SlimBus.
+- **Register no rule and nothing changes**: 204 on success, 404 when no row matches, 409 when the database
+  rejects the delete.
+
+To refuse a delete, validate the generated request and let the group's failure filter answer. With the
+`SharpGrip.FluentValidation.AutoValidation.Endpoints` pattern that is a 400 `ProblemDetails`:
+
+```csharp
+using FluentValidation;
+using CrudConsumer.Crud;              // the {AssemblyName}.Crud namespace the requests are emitted into
+
+public sealed class DeleteProductRequestValidator : AbstractValidator<DeleteProductRequest>
+{
+    public DeleteProductRequestValidator(AppDbContext db) =>
+        RuleFor(x => x.Id)
+            .MustAsync(async (id, ct) => !await db.OrderLines.AnyAsync(l => l.ProductId == id, ct))
+            .WithMessage("Product is still on an order and cannot be deleted.");
+}
+```
+
+```csharp
+using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
+
+builder.Services.AddValidatorsFromAssemblyContaining<DeleteProductRequestValidator>();
+
+var products = app.MapGroup("/products");
+products.MapProductCrud();
+products.AddFluentValidationAutoValidation();   // only groups that opt in consult the validator
+```
+
+A refused delete never reaches `SaveChanges`, so the row survives and no audit entry or domain event is raised
+for it. The rule is keyed on the request type, so a rule on `DeleteProductRequest` never fires for
+`DeleteOrderRequest`.
+
+**Name collision.** If a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member already resolves to the name
+`Delete{Entity}Request` (e.g. a `[CrudUpdate] public void Delete()`), the generator emits neither the delete
+record nor the three-argument map call, and falls back to `MapDeleteById<{Entity}, {Key}>()`. That entity's
+DELETE route keeps working unchanged, but there is no delete request to guard — rename the member if you need
+the rule.
 
 ### Domain actions — `[CrudAction]`
 
