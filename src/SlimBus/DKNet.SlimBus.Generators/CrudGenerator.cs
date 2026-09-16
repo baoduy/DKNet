@@ -90,6 +90,12 @@ internal static class CrudDiagnostics
         "Two CRUD members resolve to the same route segment",
         "Entity '{0}' members '{1}' and '{2}' both resolve to route segment '{3}'; give one an explicit distinct segment",
         Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor DuplicateRouteName = new(
+        "DKCRUDGEN009",
+        "Two CRUD routes resolve to the same name",
+        "Entity '{0}' has more than one route named '{1}'; a [CrudUpdate]/[CrudAction] member must not reuse a reserved name (GetById, GetList, Create, Delete) or another route's name",
+        Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
 }
 
 /// <summary>
@@ -279,6 +285,7 @@ internal static class CrudModelBuilder
         }
 
         CheckDuplicateRouteSegments(type, updateMembers, actionMembers, diagnostics);
+        CheckDuplicateRouteNames(type, updateMembers, actionMembers, diagnostics);
 
         if (!hasAnyCrudMember) return null;
 
@@ -369,6 +376,35 @@ internal static class CrudModelBuilder
         }
 
         seenSegments[segment] = memberName;
+    }
+
+    // The reserved route names (R1) an [CrudUpdate]/[CrudAction] member's own name (R2) must not collide
+    // with, nor may two such members share a name with each other (DKCRUDGEN009).
+    private static readonly string[] ReservedRouteNames = ["GetById", "GetList", "Create", "Delete"];
+
+    private static void CheckDuplicateRouteNames(
+        INamedTypeSymbol type,
+        ImmutableArray<CrudMemberModel>.Builder updateMembers,
+        ImmutableArray<CrudMemberModel>.Builder actionMembers,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        var seenNames = new HashSet<string>(ReservedRouteNames, StringComparer.Ordinal);
+
+        foreach (var update in updateMembers)
+            CheckName(type, update.MemberName, seenNames, diagnostics);
+
+        foreach (var action in actionMembers)
+            CheckName(type, action.MemberName, seenNames, diagnostics);
+    }
+
+    private static void CheckName(
+        INamedTypeSymbol type,
+        string name,
+        HashSet<string> seenNames,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        if (!seenNames.Add(name))
+            diagnostics.Add(Diagnostic.Create(CrudDiagnostics.DuplicateRouteName, Location.None, type.Name, name));
     }
 
     private static CrudMemberModel BuildMemberModel(
@@ -903,28 +939,38 @@ internal static class Emitter
         builder.Append("        var options = new ").Append(optionsType).AppendLine("();");
         builder.AppendLine("        configure?.Invoke(options);");
 
-        AppendMapCall(builder, opType, "GetById",
+        // Every route name the entity has (R1/R2), regardless of any Exclude — R4: a setting naming an
+        // excluded route still validates, it just never applies (see AppendMapCall's IsExcluded guard).
+        builder.Append("        options.ValidateRouteNames(\"").Append(entity.EntityName).Append('"');
+        builder.Append(", \"GetById\", \"GetList\"");
+        if (entity.Create is not null) builder.Append(", \"Create\"");
+        builder.Append(", \"Delete\"");
+        foreach (var update in entity.Updates) builder.Append(", \"").Append(update.MemberName).Append('"');
+        foreach (var action in entity.Actions) builder.Append(", \"").Append(action.MemberName).Append('"');
+        builder.AppendLine(");");
+
+        AppendMapCall(builder, opType, "GetById", "GetById",
             $"group.MapGetById<{entity.EntityFullName}, {entity.KeyFullName}, {entity.DtoFullName}>();");
-        AppendMapCall(builder, opType, "GetList",
+        AppendMapCall(builder, opType, "GetList", "GetList",
             $"group.MapGetList<{entity.EntityFullName}, {entity.KeyFullName}, {entity.DtoFullName}>();");
-        AppendMapCall(builder, opType, "Delete",
+        AppendMapCall(builder, opType, "Delete", "Delete",
             $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}>();");
 
         if (entity.Create is not null)
-            AppendMapCall(builder, opType, "Create",
+            AppendMapCall(builder, opType, "Create", "Create",
                 $"group.MapPost<{entity.Create.RequestName}, {entity.DtoFullName}>(\"/\");");
 
         for (var i = 0; i < entity.Updates.Length; i++)
         {
             var update = entity.Updates[i];
             var route = i == 0 ? "{id}" : $"{{id}}/{ToKebabCase(update.MemberName)}";
-            AppendMapCall(builder, opType, "Update",
+            AppendMapCall(builder, opType, "Update", update.MemberName,
                 $"group.MapPutById<{update.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{route}\");");
         }
 
         // An action never claims the plain "{id}" route, whatever verb it uses (spec §3.11 / R1).
         foreach (var action in entity.Actions)
-            AppendMapCall(builder, opType, "Action",
+            AppendMapCall(builder, opType, "Action", action.MemberName,
                 $"group.MapActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");");
 
         builder.AppendLine("        return group;");
@@ -933,10 +979,14 @@ internal static class Emitter
         return builder.ToString();
     }
 
-    private static void AppendMapCall(StringBuilder builder, string opType, string op, string mapCallStatement)
+    private static void AppendMapCall(StringBuilder builder, string opType, string op, string routeName, string mapCallStatement)
     {
         builder.Append("        if (!options.IsExcluded(").Append(opType).Append('.').Append(op).AppendLine("))");
-        builder.Append("            ").AppendLine(mapCallStatement);
+        builder.AppendLine("        {");
+        builder.Append("            var routeBuilder = ").AppendLine(mapCallStatement);
+        builder.Append("            options.Apply(").Append(opType).Append('.').Append(op)
+            .Append(", \"").Append(routeName).AppendLine("\", routeBuilder);");
+        builder.AppendLine("        }");
     }
 
     // "UpdatePrice" -> "update-price". Used for the second-and-later [CrudUpdate] route segment (first

@@ -39,6 +39,8 @@ public enum CrudOp
 public sealed class CrudMapOptions
 {
     private readonly HashSet<CrudOp> _excluded = [];
+    private readonly Dictionary<CrudOp, List<Action<RouteHandlerBuilder>>> _opSettings = [];
+    private readonly Dictionary<string, List<Action<RouteHandlerBuilder>>> _routeSettings = new(StringComparer.Ordinal);
 
     /// <summary>
     ///     Excludes the given operations from registration.
@@ -67,9 +69,17 @@ public sealed class CrudMapOptions
     /// <param name="operation">The operation kind the setting applies to.</param>
     /// <param name="configure">The setting to apply to each matching route's <see cref="RouteHandlerBuilder" />.</param>
     /// <returns>This instance, so calls can be chained.</returns>
-    /// <exception cref="NotImplementedException">Always — DRK-1327 Build stage implements this member.</exception>
-    public CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure) =>
-        throw new NotImplementedException();
+    public CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure)
+    {
+        if (!_opSettings.TryGetValue(operation, out var settings))
+        {
+            settings = [];
+            _opSettings[operation] = settings;
+        }
+
+        settings.Add(configure);
+        return this;
+    }
 
     /// <summary>
     ///     Registers a setting to run against the one generated route carrying the given name. Additive:
@@ -78,9 +88,17 @@ public sealed class CrudMapOptions
     /// <param name="routeName">The route's name (see the package documentation for the naming rule).</param>
     /// <param name="configure">The setting to apply to the named route's <see cref="RouteHandlerBuilder" />.</param>
     /// <returns>This instance, so calls can be chained.</returns>
-    /// <exception cref="NotImplementedException">Always — DRK-1327 Build stage implements this member.</exception>
-    public CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure) =>
-        throw new NotImplementedException();
+    public CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure)
+    {
+        if (!_routeSettings.TryGetValue(routeName, out var settings))
+        {
+            settings = [];
+            _routeSettings[routeName] = settings;
+        }
+
+        settings.Add(configure);
+        return this;
+    }
 
     /// <summary>
     ///     Validates that every route name configured via <see cref="Configure(string, Action{RouteHandlerBuilder})" />
@@ -89,9 +107,16 @@ public sealed class CrudMapOptions
     /// <param name="entityName">The entity's name, used in the exception message.</param>
     /// <param name="knownRouteNames">Every route name the entity has, compared ordinally.</param>
     /// <exception cref="ArgumentException">A configured route name is not in <paramref name="knownRouteNames" />.</exception>
-    /// <exception cref="NotImplementedException">Always — DRK-1327 Build stage implements this member.</exception>
-    public void ValidateRouteNames(string entityName, params string[] knownRouteNames) =>
-        throw new NotImplementedException();
+    public void ValidateRouteNames(string entityName, params string[] knownRouteNames)
+    {
+        var known = new HashSet<string>(knownRouteNames, StringComparer.Ordinal);
+        var unknown = _routeSettings.Keys.Where(name => !known.Contains(name)).ToArray();
+        if (unknown.Length == 0) return;
+
+        throw new ArgumentException(
+            $"Entity '{entityName}' has no route(s) named {string.Join(", ", unknown.Select(n => $"'{n}'"))}. " +
+            $"Known route names: {string.Join(", ", knownRouteNames.Select(n => $"'{n}'"))}.");
+    }
 
     /// <summary>
     ///     Runs every setting configured for <paramref name="operation" /> and for <paramref name="routeName" />,
@@ -100,7 +125,14 @@ public sealed class CrudMapOptions
     /// <param name="operation">The route's operation kind.</param>
     /// <param name="routeName">The route's name.</param>
     /// <param name="builder">The route's <see cref="RouteHandlerBuilder" />.</param>
-    /// <exception cref="NotImplementedException">Always — DRK-1327 Build stage implements this member.</exception>
-    public void Apply(CrudOp operation, string routeName, RouteHandlerBuilder builder) =>
-        throw new NotImplementedException();
+    public void Apply(CrudOp operation, string routeName, RouteHandlerBuilder builder)
+    {
+        if (_opSettings.TryGetValue(operation, out var opSettings))
+            foreach (var configure in opSettings)
+                configure(builder);
+
+        if (_routeSettings.TryGetValue(routeName, out var routeSettings))
+            foreach (var configure in routeSettings)
+                configure(builder);
+    }
 }

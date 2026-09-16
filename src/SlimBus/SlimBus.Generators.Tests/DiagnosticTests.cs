@@ -309,6 +309,102 @@ public class DiagnosticTests
     }
 
     [Fact]
+    public void Run_WithUpdateMemberNamedDelete_ReportsDKCRUDGEN009NamingTheMember()
+    {
+        // R1/R2: "Delete" is GetById/GetList/Create/Delete's own reserved route name; an [CrudUpdate]
+        // member reusing it collides even though it resolves to a distinct route SEGMENT ("{id}/delete"),
+        // so DKCRUDGEN008 (segment collision) does not fire here — only DKCRUDGEN009 (name collision).
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Product : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Product(string name) => Name = name;
+
+                    [CrudUpdate]
+                    public void ChangePrice(decimal price) { }
+
+                    [CrudUpdate]
+                    public void Delete(string reason) => Name = reason;
+
+                    public Guid Id { get; private set; }
+                    public string Name { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Product))]
+                public partial record ProductDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        diagnostics.ShouldNotContain(d => d.Id == "DKCRUDGEN008");
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Product");
+        message.ShouldContain("Delete");
+    }
+
+    [Fact]
+    public void Run_WithActionMemberNamedGetList_ReportsDKCRUDGEN009NamingTheMember()
+    {
+        // Same rule (R1/R2), exercised on an [CrudAction] member instead of [CrudUpdate], and against a
+        // different reserved name — proves the check isn't special-cased to "Delete" or to update members.
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Order : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Order(string customer) => Customer = customer;
+
+                    [CrudAction]
+                    public void GetList() => Status = "Listed";
+
+                    public Guid Id { get; private set; }
+                    public string Customer { get; private set; } = string.Empty;
+                    public string Status { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Order))]
+                public partial record OrderDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Order");
+        message.ShouldContain("GetList");
+    }
+
+    [Fact]
     public void Run_WithEntityNotImplementingIEntity_ReportsDKCRUDGEN006()
     {
         const string domain = """
