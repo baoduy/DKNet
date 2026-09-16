@@ -89,13 +89,15 @@ public class EndpointEmissionTests
     {
         // Spec Appendix B.2: the only existing-behaviour Gherkin scenario covers update routing; this closes
         // the gap by asserting the FULL slice (create/read/list/delete too) for an entity declaring no actions
-        // is byte-identical to today's, and that no action registration appears at all.
+        // is byte-identical to today's, and that no action registration appears at all. DRK-1326 changed the
+        // delete row specifically (R5): every entity in the generated set now gets its own DeleteXRequest and
+        // the 3-arg MapDeleteById wired to it, unless its name collides with a create/update/action member.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateAndTwoUpdates, ApiWithProductDto);
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
         text.ShouldContain("group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();");
-        text.ShouldContain("group.MapDeleteById<global::MyDomain.Product, global::System.Guid>();");
+        text.ShouldContain("group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();");
         text.ShouldContain("group.MapPost<CreateProductRequest, global::MyApi.ProductDto>(\"/\");");
         text.ShouldContain("group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}\");");
         text.ShouldContain("group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>(\"{id}/update-name\");");

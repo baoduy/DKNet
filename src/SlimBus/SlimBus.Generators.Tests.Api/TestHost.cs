@@ -89,23 +89,19 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         // an actions-excluded group still serves updates while dropping the action route(s) (spec §3.7).
         app.MapGroup("/gadgets-no-actions").MapGadgetCrud(o => o.Exclude(CrudOp.Action));
 
-        // DRK-1326: manual delete-request routes standing in for DKNet.SlimBus.Generators' future 3-arg
-        // wiring (the generator itself isn't changed by this acceptance-tests slice — tracked separately).
-        // Each group excludes the generator's own 2-arg Delete so this hand-mapped route is the only DELETE
-        // registered on it.
-        app.MapGroup("/gadgets-request").MapGadgetCrud(o => o.Exclude(CrudOp.Delete));
-        app.MapGroup("/gadgets-request").MapDeleteById<Gadget, Guid, DeleteGadgetRequest>();
+        // DRK-1326: the generated delete route now binds its own request type (DeleteGadgetRequest) rather
+        // than the plain 2-arg MapDeleteById, so a group with no validation filter registered is unaffected
+        // (R1) while a guarded group below can attach a rule to it.
+        app.MapGroup("/gadgets-request").MapGadgetCrud();
 
         var guardedGadgets = app.MapGroup("/gadgets-guarded");
-        guardedGadgets.MapGadgetCrud(o => o.Exclude(CrudOp.Delete));
-        guardedGadgets.MapDeleteById<Gadget, Guid, DeleteGadgetRequest>();
+        guardedGadgets.MapGadgetCrud();
         guardedGadgets.AddFluentValidationAutoValidation();
 
         app.MapGroup("/widgets").MapWidgetCrud();
 
         var guardedWidgets = app.MapGroup("/widgets-guarded");
-        guardedWidgets.MapWidgetCrud(o => o.Exclude(CrudOp.Delete));
-        guardedWidgets.MapDeleteById<Widget, Guid, DeleteWidgetRequest>();
+        guardedWidgets.MapWidgetCrud();
         guardedWidgets.AddFluentValidationAutoValidation();
 
         await app.StartAsync();

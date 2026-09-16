@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using SlimBus.Generators.Tests.Api.Crud;
 
 namespace SlimBus.Generators.Tests.Api;
 

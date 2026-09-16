@@ -94,24 +94,8 @@ public static class FluentsEntityEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (TKey id, [FromServices] IRepositorySpec repo, CancellationToken cancellationToken) =>
-                    {
-                        var entity = await repo.FirstOrDefaultAsync(
-                            new EntityByIdSpecification<TEntity, TKey>(id), cancellationToken);
-                        if (entity is null) return Results.NotFound();
-
-                        repo.Delete(entity);
-                        try
-                        {
-                            await repo.SaveChangesAsync(cancellationToken);
-                        }
-                        catch (DbUpdateException)
-                        {
-                            return Results.Conflict();
-                        }
-
-                        return Results.NoContent();
-                    })
+                    (TKey id, [FromServices] IRepositorySpec repo, CancellationToken cancellationToken) =>
+                        DeleteEntityAsync<TEntity, TKey>(id, repo, cancellationToken))
                 .Produces(StatusCodes.Status204NoContent)
                 .ProducesCommons();
         }
@@ -133,16 +117,10 @@ public static class FluentsEntityEndpointMapperExtensions
         ///     attach a validation rule to the delete without the route ever accepting a request body.
         /// </summary>
         /// <remarks>
-        ///     <para>
-        ///         Not yet implemented (DRK-1326): this overload's signature is frozen by its acceptance tests;
-        ///         the delete/save behaviour lands in a later change once those tests are approved.
-        ///     </para>
-        ///     <para>
-        ///         <typeparamref name="TRequest" /> is bound with <c>[AsParameters]</c> so it arrives as a single,
-        ///         validatable argument — the same shape a group-level validation filter (for example SharpGrip's
-        ///         <c>AddFluentValidationAutoValidation()</c>) already inspects for <see cref="FluentsEndpointMapperExtensions.MapPutById{TCommand,TKey,TResponse}" />-style
-        ///         routes — even though the caller never sends a body.
-        ///     </para>
+        ///     <typeparamref name="TRequest" /> is bound with <c>[AsParameters]</c> so it arrives as a single,
+        ///     validatable argument — the same shape a group-level validation filter (for example SharpGrip's
+        ///     <c>AddFluentValidationAutoValidation()</c>) already inspects for <see cref="FluentsEndpointMapperExtensions.MapPutById{TCommand,TKey,TResponse}" />-style
+        ///     routes — even though the caller never sends a body.
         /// </remarks>
         /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" />.</typeparam>
         /// <typeparam name="TKey">The entity's primary key type.</typeparam>
@@ -151,17 +129,15 @@ public static class FluentsEntityEndpointMapperExtensions
         /// </typeparam>
         /// <param name="endpoint">The URL template for the endpoint.</param>
         /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
-        /// <exception cref="NotImplementedException">Always, until DRK-1326's implementation lands.</exception>
         public RouteHandlerBuilder MapDeleteById<TEntity, TKey, TRequest>(string endpoint = "{id}")
             where TEntity : class, IEntity<TKey>
             where TKey : IEquatable<TKey>
             where TRequest : class, Fluents.Requests.IWithKey<TKey>
         {
-            Func<TRequest, IResult> handler = ([AsParameters] TRequest request) => throw new NotImplementedException(
-                $"{nameof(MapDeleteById)}<{typeof(TEntity).Name}, {typeof(TKey).Name}, {typeof(TRequest).Name}> " +
-                "is not implemented yet (DRK-1326).");
-
-            return app.MapDelete(endpoint, handler)
+            return app.MapDelete(
+                    endpoint,
+                    ([AsParameters] TRequest request, [FromServices] IRepositorySpec repo, CancellationToken cancellationToken) =>
+                        DeleteEntityAsync<TEntity, TKey>(request.Id, repo, cancellationToken))
                 .Produces(StatusCodes.Status204NoContent)
                 .ProducesCommons();
         }
@@ -224,6 +200,33 @@ public static class FluentsEntityEndpointMapperExtensions
             where TEntity : class, IEntity<Guid>
             where TModel : class
             => app.MapGetList<TEntity, Guid, TModel>(endpoint);
+    }
+
+    /// <summary>
+    ///     Loads <typeparamref name="TEntity" /> by <paramref name="id" /> and deletes it through
+    ///     <paramref name="repo" />'s save pipeline. Shared by <see cref="MapDeleteById{TEntity,TKey}" /> and
+    ///     <see cref="MapDeleteById{TEntity,TKey,TRequest}" /> so both answer 204/404/409 identically.
+    /// </summary>
+    private static async Task<IResult> DeleteEntityAsync<TEntity, TKey>(
+        TKey id, IRepositorySpec repo, CancellationToken cancellationToken)
+        where TEntity : class, IEntity<TKey>
+        where TKey : IEquatable<TKey>
+    {
+        var entity = await repo.FirstOrDefaultAsync(
+            new EntityByIdSpecification<TEntity, TKey>(id), cancellationToken);
+        if (entity is null) return Results.NotFound();
+
+        repo.Delete(entity);
+        try
+        {
+            await repo.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Results.Conflict();
+        }
+
+        return Results.NoContent();
     }
 }
 
