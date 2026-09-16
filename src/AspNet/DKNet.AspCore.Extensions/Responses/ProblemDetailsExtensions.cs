@@ -75,6 +75,68 @@ public static class ProblemDetailsExtensions
     }
 
     /// <summary>
+    ///     Converts a failed <see cref="IResultBase" /> into a <see cref="ProblemDetails" /> instance, choosing the
+    ///     status code from the failure's own errors via <paramref name="options" /> — never from the route that
+    ///     produced it — and applying <see cref="ErrorResponseOptions.Customize" /> afterwards. Returns
+    ///     <see langword="null" /> for success results.
+    /// </summary>
+    /// <param name="result">The fluent result to convert.</param>
+    /// <param name="options">
+    ///     The error-response setting to apply. A <see langword="null" /> <see cref="ErrorResponseOptions.StatusCode" />
+    ///     result, or a <see langword="null" /> <paramref name="options" /> itself, keeps today's status code.
+    /// </param>
+    /// <returns>A <see cref="ProblemDetails" /> when the result is a failure; otherwise <c>null</c>.</returns>
+    public static ProblemDetails? ToProblemDetails(this IResultBase result, ErrorResponseOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        if (result.IsSuccess) return null;
+
+        var statusCode = HttpStatusCode.BadRequest;
+        if (result.Errors.Any(e => e is NotFoundError))
+            statusCode = HttpStatusCode.NotFound;
+
+        var errors = result.Errors.Select(e => e.Message)
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var firstMessage = errors.FirstOrDefault() ?? statusCode.ToString();
+        var pd = CreateProblemDetails(statusCode, firstMessage, errors);
+
+        if (options is null) return pd;
+
+        var context = result.ToErrorResponseContext();
+
+        var configuredStatus = options.StatusCode?.Invoke(context);
+        if (configuredStatus is not null)
+            pd.Status = configuredStatus;
+
+        options.Customize?.Invoke(pd, context);
+
+        return pd;
+    }
+
+    /// <summary>
+    ///     Builds the <see cref="ErrorResponseContext" /> an <see cref="ErrorResponseOptions" /> callback sees for a
+    ///     failed command: one <see cref="ErrorItem" /> per <see cref="IResultBase.Errors" /> entry, its
+    ///     <see cref="ErrorItem.Code" /> taken from the error's <c>"Code"</c> metadata entry when present.
+    ///     <see cref="ErrorItem.Field" /> is always <see langword="null" /> — commands do not name an input member.
+    /// </summary>
+    /// <param name="result">The failed fluent result to derive the context from.</param>
+    /// <returns>An <see cref="ErrorResponseContext" /> with <see cref="ErrorSource.Command" />.</returns>
+    internal static ErrorResponseContext ToErrorResponseContext(this IResultBase result) =>
+        new()
+        {
+            Source = ErrorSource.Command,
+            Errors = result.Errors
+                .Select(e => new ErrorItem(
+                    e.Message,
+                    e.Metadata.TryGetValue("Code", out var code) ? code as string : null))
+                .ToList()
+        };
+
+    /// <summary>
     ///     Converts an ASP.NET Core <see cref="ModelStateDictionary" /> into a <see cref="ProblemDetails" /> instance
     ///     when the model state contains validation errors; returns <c>null</c> when the model state is valid.
     /// </summary>

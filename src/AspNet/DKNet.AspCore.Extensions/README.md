@@ -29,6 +29,10 @@ dotnet add package DKNet.AspCore.Extensions
 - **Result/ProblemDetails conversion** — `Response()`/`Response<T>()` turn a `FluentResults`
   outcome into the right minimal-API `IResult`; `ToProblemDetails()` does the same for a
   `ModelStateDictionary`.
+- **One error-response setting** — `AddErrorResponses()` registers a single `ErrorResponseOptions`
+  that shapes both a failed command handler and input a validator refused: choose the status from the
+  failure's own errors, and add body members that land on both failure kinds. Register nothing and
+  today's responses are unchanged.
 
 ## Quick Start
 
@@ -102,7 +106,7 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 
 ## Customisation reference
 
-Three options types, plus the type parameters and attributes that make up the rest of the public
+Four options types, plus the type parameters and attributes that make up the rest of the public
 surface. Defaults are the ones the code applies when you pass nothing.
 
 `ContextualPopulationOptions` — `AddContextualRequestPopulation(Action<ContextualPopulationOptions>?)`:
@@ -121,6 +125,21 @@ surface. Defaults are the ones the code applies when you pass nothing.
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()`, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Host setup per group. Runs after tags/version metadata, before authorization and before `IEndpointConfig.Map`. |
 | `assemblies` (method parameter) | `params Assembly[]` | empty → every currently loaded assembly | Assemblies scanned for `IEndpointConfig` implementations. |
+
+`ErrorResponseOptions` — `services.AddErrorResponses(Action<ErrorResponseOptions>?)`. The one place a
+host shapes error responses: it covers a failed command handler and refused validation input alike, so
+the validation path needs no second registration. Both knobs are host-wide — they apply to every route:
+
+| Knob | Type | Default | Effect |
+|---|---|---|---|
+| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status the failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
+| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike — a member added here is never on one failure kind only, and appears on every error response the host returns. Name each member you add; nothing is added for you. |
+| `configure` (method parameter) | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep both knobs unset — each unset knob is a no-op, so the responses stay today's. Skipping the call entirely leaves the setting unregistered, which the mappers resolve as an optional service and fall back the same way. |
+
+Each callback receives an `ErrorResponseContext`: `Source` (`Command` or `Validation`) and `Errors`, a
+list of `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry
+for a command failure and the validation failure's `ErrorCode` for refused input; `Field` names the
+refused input member and is always `null` for a command failure.
 
 `IEndpointConfig` — what each implementation supplies:
 
