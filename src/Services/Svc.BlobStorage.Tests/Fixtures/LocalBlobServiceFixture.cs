@@ -6,9 +6,7 @@ public sealed class LocalBlobServiceFixture : IDisposable
 
     public LocalBlobServiceFixture()
     {
-        TestRoot = Path.Combine(Directory.GetCurrentDirectory(), "Test-Folder");
-
-        if (Directory.Exists(TestRoot)) Directory.Delete(TestRoot, true);
+        TestRoot = Path.Combine(Path.GetTempPath(), "DKNet-LocalBlob-", Guid.NewGuid().ToString("N"));
 
         Directory.CreateDirectory(TestRoot);
 
@@ -16,7 +14,7 @@ public sealed class LocalBlobServiceFixture : IDisposable
             .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "BlobStorage:LocalFolder:RootFolder", "Test-Folder" }
+                    { "BlobStorage:LocalFolder:RootFolder", TestRoot }
                 })
             .Build();
 
