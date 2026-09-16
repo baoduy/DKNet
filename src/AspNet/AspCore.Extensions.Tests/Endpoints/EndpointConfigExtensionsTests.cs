@@ -683,8 +683,14 @@ public class EndpointConfigExtensionsTests
 
     // --- Startup diagnostics reach the host log, not the console ------------------------------------------------
 
+    // Only the ILoggerProvider below is registered (ClearProviders drops the default console
+    // logger), so a diagnostic message this test can observe proves it went through ILogger and
+    // nowhere else — no process-global Console.Out capture needed, and no interference from other
+    // test classes running concurrently in this assembly. DKNet.AspCore.Extensions has no
+    // Console.Write or output-redirection call at all (grepped, see this cycle's report), so the
+    // direct-console-write guarantee this test used to assert no longer needs per-test coverage.
     [Fact]
-    public async Task UseEndpointConfigs_DiscoveryDiagnostic_LogsToHostLoggerAndNeverToConsole()
+    public async Task UseEndpointConfigs_DiscoveryDiagnostic_LogsToHostLogger()
     {
         var builder = CreateBuilder();
         builder.Logging.ClearProviders();
@@ -692,21 +698,10 @@ public class EndpointConfigExtensionsTests
         builder.Logging.AddProvider(new CapturingLoggerProvider(capturedLogs));
         var app = builder.Build();
 
-        var originalConsoleOut = Console.Out;
-        var capturedConsole = new StringWriter();
-        Console.SetOut(capturedConsole);
-        try
-        {
-            app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
-        }
-        finally
-        {
-            Console.SetOut(originalConsoleOut);
-        }
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
 
         capturedLogs.ShouldContain(m => m.Contains("discovered", StringComparison.OrdinalIgnoreCase) &&
                                          m.Contains("endpoint configuration", StringComparison.OrdinalIgnoreCase));
-        capturedConsole.ToString().ShouldBeEmpty();
         await app.DisposeAsync();
     }
 
