@@ -354,8 +354,10 @@ public class DiagnosticTests
         diagnostics.ShouldNotContain(d => d.Id == "DKCRUDGEN008");
         var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
         var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
-        message.ShouldContain("Product");
-        message.ShouldContain("Delete");
+        message.ShouldContain("Entity 'Product'");
+        // Quoted '{1}' is the offending member's own name; the descriptor's boilerplate also lists the bare,
+        // unquoted word "Delete" among the reserved names, so only the quoted form pins THIS member.
+        message.ShouldContain("route named 'Delete'");
     }
 
     [Fact]
@@ -400,8 +402,8 @@ public class DiagnosticTests
 
         var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
         var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
-        message.ShouldContain("Order");
-        message.ShouldContain("GetList");
+        message.ShouldContain("Entity 'Order'");
+        message.ShouldContain("route named 'GetList'");
     }
 
     [Fact]

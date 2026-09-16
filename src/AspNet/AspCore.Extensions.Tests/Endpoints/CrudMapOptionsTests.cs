@@ -1,4 +1,7 @@
 using DKNet.AspCore.Extensions.Endpoints;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace AspCore.Extensions.Tests.Endpoints;
 
@@ -64,5 +67,109 @@ public class CrudMapOptionsTests
         ((int)CrudOp.Update).ShouldBe(3);
         ((int)CrudOp.Delete).ShouldBe(4);
         ((int)CrudOp.Action).ShouldBe(5);
+    }
+
+    private static RouteHandlerBuilder MapRoute() =>
+        WebApplication.CreateBuilder().Build().MapGet("/", () => Results.Ok());
+
+    [Fact]
+    public void ValidateRouteNames_WithUnknownConfiguredName_ThrowsNamingItAndTheKnownNames()
+    {
+        var options = new CrudMapOptions();
+        options.Configure("UpdatePrise", _ => { });
+
+        var exception = Should.Throw<ArgumentException>(() =>
+            options.ValidateRouteNames("Gadget", "GetById", "GetList", "Create", "Delete", "UpdatePrice"));
+
+        exception.Message.ShouldBe(
+            "Entity 'Gadget' has no route(s) named 'UpdatePrise'. " +
+            "Known route names: 'GetById', 'GetList', 'Create', 'Delete', 'UpdatePrice'.");
+    }
+
+    [Fact]
+    public void ValidateRouteNames_WithMultipleUnknownConfiguredNames_NamesAllOfThemInConfigureOrder()
+    {
+        var options = new CrudMapOptions();
+        options.Configure("Foo", _ => { });
+        options.Configure("Bar", _ => { });
+
+        var exception = Should.Throw<ArgumentException>(() =>
+            options.ValidateRouteNames("Gadget", "GetById"));
+
+        exception.Message.ShouldBe("Entity 'Gadget' has no route(s) named 'Foo', 'Bar'. Known route names: 'GetById'.");
+    }
+
+    [Fact]
+    public void ValidateRouteNames_WithOnlyKnownConfiguredNames_DoesNotThrow() =>
+        Should.NotThrow(() =>
+        {
+            var options = new CrudMapOptions();
+            options.Configure("GetById", _ => { });
+            options.ValidateRouteNames("Gadget", "GetById", "GetList");
+        });
+
+    [Fact]
+    public void ValidateRouteNames_IgnoresOpKindConfiguredNames()
+    {
+        // R4/scenario 6: the op-kind form never reaches name validation — only Configure(string, ...) does.
+        var options = new CrudMapOptions();
+        options.Configure(CrudOp.Delete, _ => { });
+
+        Should.NotThrow(() => options.ValidateRouteNames("Gadget", "GetById"));
+    }
+
+    [Fact]
+    public void Apply_RunsOpKindSettingsBeforeRouteNameSettings_BothForTheMatchingKeys()
+    {
+        var options = new CrudMapOptions();
+        var order = new List<string>();
+        options.Configure(CrudOp.Update, _ => order.Add("op"));
+        options.Configure("UpdatePrice", _ => order.Add("route"));
+        options.Configure("OtherRoute", _ => order.Add("other"));
+        options.Configure(CrudOp.Delete, _ => order.Add("wrong-op"));
+
+        options.Apply(CrudOp.Update, "UpdatePrice", MapRoute());
+
+        order.ShouldBe(["op", "route"]);
+    }
+
+    [Fact]
+    public void Apply_WithNoMatchingSettings_DoesNothing() =>
+        Should.NotThrow(() => new CrudMapOptions().Apply(CrudOp.Update, "UpdatePrice", MapRoute()));
+
+    [Fact]
+    public void Configure_ByOpKind_RunsEveryRegisteredActionInCallOrder()
+    {
+        var options = new CrudMapOptions();
+        var order = new List<int>();
+        options.Configure(CrudOp.Update, _ => order.Add(1));
+        options.Configure(CrudOp.Update, _ => order.Add(2));
+
+        options.Apply(CrudOp.Update, "AnyRoute", MapRoute());
+
+        order.ShouldBe([1, 2]);
+    }
+
+    [Fact]
+    public void Configure_ByRouteName_RunsEveryRegisteredActionInCallOrder()
+    {
+        var options = new CrudMapOptions();
+        var order = new List<int>();
+        options.Configure("Rename", _ => order.Add(1));
+        options.Configure("Rename", _ => order.Add(2));
+
+        options.Apply(CrudOp.Update, "Rename", MapRoute());
+
+        order.ShouldBe([1, 2]);
+    }
+
+    [Fact]
+    public void Configure_ReturnsSameInstance_SoCallsCanChain()
+    {
+        var options = new CrudMapOptions();
+
+        options.Configure(CrudOp.Update, _ => { })
+            .Configure("Rename", _ => { })
+            .ShouldBeSameAs(options);
     }
 }
