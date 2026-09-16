@@ -62,7 +62,7 @@ public class RegistrySafetyTests
             .AddServicesFromAssembly(typeof(Fixture).Assembly)
             .AddChildBus(
                 "ImMemory",
-                me => me.WithProviderMemory().AutoDeclareFrom(typeof(Fixture).Assembly)));
+                me => me.WithProviderMemory().AutoDeclareFrom(typeof(Fixture).Assembly).PerMessageScopeEnabled()));
 
         return services.BuildServiceProvider();
     }
