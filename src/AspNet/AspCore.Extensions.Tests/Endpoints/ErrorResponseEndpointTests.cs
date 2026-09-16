@@ -98,6 +98,7 @@ public class ErrorResponseEndpointTests
             "/ledger/groups/find", new FindAccountGroupCommand { GroupName = "treasury-ops", Exists = false });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
     }
 
     // --- Scenario Outline: A service that registers no setting keeps today's responses ----------------------
@@ -111,6 +112,7 @@ public class ErrorResponseEndpointTests
             "/ledger/groups/close", new CloseAccountGroupCommand { GroupName = "treasury-ops" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         body.ShouldNotBeNull();
         // Today's shape: Extensions["errors"] is a flat list of message strings, not a field->messages map.
@@ -129,6 +131,7 @@ public class ErrorResponseEndpointTests
             new ValidatedCloseAccountGroupCommand { GroupName = "treasury-ops", StillHoldsAccounts = true });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         body.ShouldNotBeNull();
         // Today's shape: SharpGrip's default factory puts a field->messages map under "errors".
