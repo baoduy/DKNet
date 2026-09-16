@@ -39,6 +39,7 @@ public enum CrudOp
 public sealed class CrudMapOptions
 {
     private readonly HashSet<CrudOp> _excluded = [];
+    private readonly HashSet<string> _excludedNames = new(StringComparer.Ordinal);
     private readonly Dictionary<CrudOp, List<Action<RouteHandlerBuilder>>> _opSettings = [];
     private readonly Dictionary<string, List<Action<RouteHandlerBuilder>>> _routeSettings = new(StringComparer.Ordinal);
 
@@ -63,7 +64,18 @@ public sealed class CrudMapOptions
     /// <param name="routeNames">The route name(s) to exclude.</param>
     /// <returns>This instance, so calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="routeNames" /> or one of its elements is <see langword="null" />.</exception>
-    public CrudMapOptions Exclude(params string[] routeNames) => throw new NotImplementedException();
+    public CrudMapOptions Exclude(params string[] routeNames)
+    {
+        ArgumentNullException.ThrowIfNull(routeNames);
+
+        foreach (var routeName in routeNames)
+        {
+            ArgumentNullException.ThrowIfNull(routeName);
+            _excludedNames.Add(routeName);
+        }
+
+        return this;
+    }
 
     /// <summary>
     ///     Determines whether the given operation was excluded.
@@ -77,7 +89,7 @@ public sealed class CrudMapOptions
     /// </summary>
     /// <param name="routeName">The route name to check.</param>
     /// <returns><see langword="true" /> when <paramref name="routeName" /> was excluded.</returns>
-    public bool IsExcluded(string routeName) => throw new NotImplementedException();
+    public bool IsExcluded(string routeName) => _excludedNames.Contains(routeName);
 
     /// <summary>
     ///     Registers a setting to run against every generated route of the given operation kind. Additive:
@@ -136,7 +148,11 @@ public sealed class CrudMapOptions
         // Sorted ordinally rather than left in dictionary-enumeration order: Dictionary<TKey,TValue> key
         // order is unspecified (insertion order in practice, but not a contract), and the message needs to
         // be deterministic.
-        var unknown = _routeSettings.Keys.Where(name => !known.Contains(name)).Order(StringComparer.Ordinal).ToArray();
+        var unknown = _routeSettings.Keys.Concat(_excludedNames)
+            .Where(name => !known.Contains(name))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
         if (unknown.Length == 0) return;
 
         throw new ArgumentException(
