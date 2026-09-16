@@ -6,6 +6,7 @@
 // never from the route: calls ToProblemDetails(IResultBase, ErrorResponseOptions) directly, with no HTTP
 // endpoint involved at all.
 
+using System.Net;
 using DKNet.AspCore.Extensions.Responses;
 using FluentResults;
 
@@ -28,6 +29,37 @@ public class ErrorResponseStatusCodeTests
 
         pd.ShouldNotBeNull();
         pd.Status.ShouldBe(409);
+    }
+
+    [Fact]
+    public void ToProblemDetails_SuccessResult_WithOptions_ReturnsNull()
+    {
+        var options = new ErrorResponseOptions { StatusCode = _ => 409 };
+
+        var pd = Result.Ok().ToProblemDetails(options);
+
+        pd.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ToProblemDetails_WithOptions_NullResult_ThrowsArgumentNullException()
+    {
+        IResultBase result = null!;
+        var options = new ErrorResponseOptions();
+
+        Should.Throw<ArgumentNullException>(() => result.ToProblemDetails(options));
+    }
+
+    [Fact]
+    public void ToProblemDetails_WithOptions_AllErrorMessagesBlank_FallsBackToStatusCodeText()
+    {
+        var options = new ErrorResponseOptions();
+        var result = Result.Fail(new Error(" "));
+
+        var pd = result.ToProblemDetails(options);
+
+        pd.ShouldNotBeNull();
+        pd.Detail.ShouldBe(HttpStatusCode.BadRequest.ToString());
     }
 
     #endregion

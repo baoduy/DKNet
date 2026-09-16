@@ -46,6 +46,35 @@ public static class ResultResponseExtensions
     }
 
     /// <summary>
+    ///     Converts a typed Fluent result into an <see cref="IResult" />, applying <paramref name="options" /> to a
+    ///     failure the same way <see cref="ProblemDetailsExtensions.ToProblemDetails(FluentResults.IResultBase,ErrorResponseOptions)" />
+    ///     does. Success behaviour is unchanged from the parameterless overload.
+    /// </summary>
+    /// <typeparam name="TObject">The result value type.</typeparam>
+    /// <param name="result">The Fluent result to convert. Must not be null.</param>
+    /// <param name="options">
+    ///     The error-response setting to apply on failure; <see langword="null" /> keeps today's status and body.
+    /// </param>
+    /// <param name="isCreated">Indicates whether a successful response should be a 201 Created.</param>
+    /// <returns>An <see cref="IResult" /> representing the appropriate HTTP response.</returns>
+    public static IResult Response<TObject>(this IResult<TObject> result, ErrorResponseOptions? options,
+        bool isCreated = false)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        if (!result.IsSuccess)
+        {
+            var pd = result.ToProblemDetails(options);
+            return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
+        }
+
+        if (isCreated)
+            return TypedResults.Created("/", result.Value);
+
+        return result.ValueOrDefault is null ? TypedResults.Ok() : TypedResults.Json(result.Value);
+    }
+
+    /// <summary>
     ///     Converts a non-generic Fluent result into an <see cref="IResult" />. On success this returns Ok (or Created when
     ///     <paramref name="isCreated" /> is true), and on failure a ProblemDetails response is returned.
     /// </summary>
@@ -59,6 +88,27 @@ public static class ResultResponseExtensions
         if (result.IsSuccess) return isCreated ? TypedResults.Created() : TypedResults.Ok();
 
         var pd = result.ToProblemDetails();
+        return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
+    }
+
+    /// <summary>
+    ///     Converts a failed <see cref="IResultBase" /> into an <see cref="IResult" />, applying
+    ///     <paramref name="options" /> the same way <see cref="ProblemDetailsExtensions.ToProblemDetails(IResultBase,ErrorResponseOptions)" />
+    ///     does. Success behaviour is unchanged from the parameterless overload.
+    /// </summary>
+    /// <param name="result">The Fluent result to convert. Must not be null.</param>
+    /// <param name="options">
+    ///     The error-response setting to apply on failure; <see langword="null" /> keeps today's status and body.
+    /// </param>
+    /// <param name="isCreated">When <c>true</c> a successful response will be 201 Created.</param>
+    /// <returns>An <see cref="IResult" /> representing the appropriate HTTP response.</returns>
+    public static IResult Response(this IResultBase result, ErrorResponseOptions? options, bool isCreated = false)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        if (result.IsSuccess) return isCreated ? TypedResults.Created() : TypedResults.Ok();
+
+        var pd = result.ToProblemDetails(options);
         return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
     }
 

@@ -6,6 +6,7 @@
 // command handler and refused validation input, with no second place a host can configure instead.
 
 using Microsoft.Extensions.DependencyInjection;
+using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace DKNet.AspCore.Extensions.Responses;
 
@@ -25,7 +26,15 @@ public static class ErrorResponseServiceCollectionExtensions
     /// <returns>The same <see cref="IServiceCollection" />, for chaining.</returns>
     public static IServiceCollection AddErrorResponses(
         this IServiceCollection services,
-        Action<ErrorResponseOptions>? configure = null) =>
-        throw new NotImplementedException(
-            "DRK-1328 Build stage: bind ErrorResponseOptions and wire the FluentValidation result factory.");
+        Action<ErrorResponseOptions>? configure = null)
+    {
+        var options = new ErrorResponseOptions();
+        configure?.Invoke(options);
+
+        services.AddSingleton(options);
+        services.AddFluentValidationAutoValidation(cfg =>
+            cfg.OverrideDefaultResultFactoryWith<ErrorResponseValidationResultFactory>());
+
+        return services;
+    }
 }
