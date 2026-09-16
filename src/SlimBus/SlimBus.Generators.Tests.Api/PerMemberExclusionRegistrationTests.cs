@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.EfCore.Hooks;
@@ -7,6 +8,7 @@ using DKNet.SlimBus.Extensions;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -57,10 +59,19 @@ public class PerMemberExclusionRegistrationTests
     private static int CountEndpoints(IEndpointRouteBuilder group) =>
         group.DataSources.SelectMany(ds => ds.Endpoints).Count();
 
+    private static HashSet<string> RouteSignatures(IEndpointRouteBuilder group) =>
+        group.DataSources
+            .SelectMany(ds => ds.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Select(e => $"{e.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Single()} {e.RoutePattern.RawText}")
+            .ToHashSet();
+
     [Fact]
     public void MapGadgetCrud_ExcludingTwoNamesInEitherOrder_PublishesTheSameSixRoutes()
     {
-        // R5: exclusion is a set — call order must not change the published surface.
+        // R5: exclusion is a set — call order must not change the published surface. Comparing the route
+        // SETS (pattern + HTTP method), not just their counts, is the point of the scenario: two different
+        // sets of six would satisfy a count-only assertion.
         var (appA, connectionA) = BuildAppWithoutHost();
         using var _1 = connectionA;
         var groupA = appA.MapGroup("/gadgets");
@@ -71,8 +82,11 @@ public class PerMemberExclusionRegistrationTests
         var groupB = appB.MapGroup("/gadgets");
         groupB.MapGadgetCrud(o => o.Exclude("Discontinue").Exclude("Rename"));
 
-        CountEndpoints(groupA).ShouldBe(6);
-        CountEndpoints(groupB).ShouldBe(6);
+        var routesA = RouteSignatures(groupA);
+        var routesB = RouteSignatures(groupB);
+
+        routesA.Count.ShouldBe(6);
+        routesB.ShouldBe(routesA);
     }
 
     [Fact]
