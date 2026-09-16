@@ -60,7 +60,10 @@ public class LocalBlobServiceFixtureTests
         };
         await fixtureB.Service.SaveAsync(blobB);
 
+        var fixtureBRoot = fixtureB.TestRoot;
         fixtureB.Dispose();
+
+        Directory.Exists(fixtureBRoot).ShouldBeFalse();
 
         var requestA = new BlobRequest("a-persist.txt") { Type = BlobTypes.File };
         (await fixtureA.Service.CheckExistsAsync(requestA)).ShouldBeTrue();
