@@ -12,6 +12,9 @@ deleted entity, and hands the batch to publishers you register.
   trail cannot silently become a credential leak.
 - **Declarative opt-in and opt-out** — `[AuditLog]`, `[IgnoreAuditLog]`, and `[SensitiveData]` on the entity decide
   what is captured, so the policy lives next to the model rather than in audit plumbing.
+- **The audit identity is your application's, not the tenant's** — register an `ICurrentUserProvider` and the same
+  hook stamps `CreatedBy`/`UpdatedBy` from the signed-in user *before* it captures the entry, so the saved row and
+  its audit record always agree on who made the change.
 - **You own the sink** — the package produces `AuditLogEntry` records and calls your `IAuditLogPublisher`; where they
   land (table, queue, log sink) is your decision, keyed per `DbContext` type.
 - **Shares one pipeline with the other hook packages** — auditing, domain events, and data authorization all run in
@@ -44,9 +47,15 @@ services.AddDbContextWithHook<AppDbContext>((provider, options) =>
 
 // 2. Register the audit hook plus a publisher, keyed to AppDbContext.
 services.AddEfCoreAuditLogs<AppDbContext, MyAuditLogPublisher>();
+
+// 3. Optional: fill CreatedBy/UpdatedBy from the signed-in user instead of leaving them to
+//    DKNet.EfCore.DataAuthorization's ownership key.
+services.AddCurrentUserProvider<AppDbContext, SignedInUserProvider>();
 ```
 
 `AddEfCoreAuditLogs<TDbContext, TPublisher>()` is the one-call setup: it registers `TPublisher` as a keyed `IAuditLogPublisher` (keyed by `typeof(TDbContext).FullName`) and internally calls `AddEfCoreAuditHook<TDbContext>()`, which registers the `AuditLogOptions` and adds `EfCoreAuditHook` via `services.AddHook<TDbContext, EfCoreAuditHook>()`. If you want the hook without a publisher yet (e.g. registering publishers separately, or several of them), call `AddEfCoreAuditHook<TDbContext>()` directly and add publishers with `services.AddKeyedScoped<IAuditLogPublisher, TPublisher>(typeof(TDbContext).FullName!)`.
+
+Step 3 is independent of the other two: `AddCurrentUserProvider<TDbContext, TProvider>()` attaches the audit hook itself, so it works on its own when you only want `CreatedBy`/`UpdatedBy` filled and no audit trail published — see [`ICurrentUserProvider`](#icurrentuserprovider--who-the-change-is-attributed-to).
 
 ## 🧩 Features
 
@@ -75,7 +84,7 @@ public sealed record AuditFieldChange
 }
 ```
 
-`Keys` comes from the entity's EF-mapped primary key (via the same `GetEntityKeyValues()` extension used elsewhere in DKNet), so composite keys are represented as multiple dictionary entries. `CreatedBy`/`CreatedOn`/`UpdatedBy`/`UpdatedOn` are copied from the audited entity itself (it must implement `IAuditedProperties`), not from the audit entry's own creation time.
+`Keys` comes from the entity's EF-mapped primary key (via the same `GetEntityKeyValues()` extension used elsewhere in DKNet), so composite keys are represented as multiple dictionary entries. `CreatedBy`/`CreatedOn`/`UpdatedBy`/`UpdatedOn` are copied from the audited entity itself (it must implement `IAuditedProperties`), not from the audit entry's own creation time — and when an `ICurrentUserProvider` is registered, the same hook has already stamped those properties onto the entity earlier in the *same* `BeforeSaveAsync` pass (see [`ICurrentUserProvider`](#icurrentuserprovider--who-the-change-is-attributed-to)), so the entry and the row it describes can never disagree.
 
 ### `EfCoreAuditHook` — how capture happens
 
@@ -83,10 +92,84 @@ public sealed record AuditFieldChange
 
 Its mechanics, split across the two save phases:
 
-- **`BeforeSaveAsync`** — for every tracked entity whose original state is `Added`, `Modified`, or `Deleted`, calls an internal `entry.BuildAuditLog(...)` to produce an `AuditLogEntry` (entities that don't implement `IAuditedProperties`, or that are excluded per the configured behaviour — see [Configuration reference](#-configuration-reference) — yield `null` and are skipped). The resulting entries are cached in memory keyed by the `DbContext` instance's `ContextId`, so entries built here survive to the after-save phase of the *same* save call.
+- **`BeforeSaveAsync`** — first stamps `CreatedBy`/`UpdatedBy` from the registered `ICurrentUserProvider`, if there is one (`StampCurrentUser`, a no-op otherwise). Then, for every tracked entity whose original state is `Added`, `Modified`, or `Deleted`, calls an internal `entry.BuildAuditLog(...)` to produce an `AuditLogEntry` (entities that don't implement `IAuditedProperties`, or that are excluded per the configured behaviour — see [Configuration reference](#-configuration-reference) — yield `null` and are skipped). The resulting entries are cached in memory keyed by the `DbContext` instance's `ContextId`, so entries built here survive to the after-save phase of the *same* save call.
 - **`AfterSaveAsync`** — after the save has completed successfully, retrieves the cached entries for this `DbContext` instance, removes them from the cache, and publishes them to every `IAuditLogPublisher` registered for that `DbContext` type. This is a normal `await` inside `AfterSaveAsync` — publishing latency is part of `SaveChangesAsync`'s own completion time, it is not fire-and-forget.
 
 For `Created` entities, `Changes` is always empty — the field-diff loop only runs when the original state is not `Added` — so a create audit entry carries `Action = Created`, `Keys`, and the audit metadata, but no field-level detail. For `Deleted` entities, every captured property gets `NewValue = null` and `OldValue` set to the last known value (or the redaction sentinel).
+
+### `ICurrentUserProvider` — who the change is attributed to
+
+```csharp
+namespace DKNet.EfCore.AuditLogs;
+
+public interface ICurrentUserProvider
+{
+    string? GetCurrentUser();
+}
+```
+
+Implement it over whatever your application already uses to represent the caller, and register it with
+`AddCurrentUserProvider<TDbContext, TProvider>()`:
+
+```csharp
+public sealed class SignedInUserProvider(ICurrentPrincipal principal) : ICurrentUserProvider
+{
+    // Return a stable, non-personal identifier — see the privacy note at the end of this section.
+    public string? GetCurrentUser() => principal.SubjectId; // e.g. "sub-8f21c0"
+}
+
+services.AddDbContextWithHook<AppDbContext>((provider, options) => options.UseSqlServer(connectionString));
+services.AddCurrentUserProvider<AppDbContext, SignedInUserProvider>();
+```
+
+What that one call does, from `EfCoreAuditLogSetup`:
+
+- Registers `TProvider` as a **scoped, application-wide** `ICurrentUserProvider` — guarded by
+  `IsRegistered<ICurrentUserProvider>()`, so the **first caller wins**. The provider is *not* keyed per
+  `DbContext`: a later call naming another `TDbContext` attaches the hook there too but keeps the provider already
+  registered. This is the same single-active-provider shape as `AddDataOwnerProvider`.
+- Attaches `EfCoreAuditHook` to `TDbContext` via `AddHook<TDbContext, EfCoreAuditHook>()`, so the call stands on
+  its own when you want the stamping and nothing else — the hook stamps whether or not any `IAuditLogPublisher` is
+  registered.
+- Registers the default `AuditLogOptions` **only when none is registered yet**, so it never overwrites the
+  `behaviour`/`propertyPolicy` an earlier `AddEfCoreAuditHook`/`AddEfCoreAuditLogs` call chose. The two calls may
+  therefore appear in either order.
+
+Stamping happens in `StampCurrentUser`, called at the top of `BeforeSaveAsync` **before** the audit entries are
+built — which is what makes a published entry carry the same values the row was saved with:
+
+| Original state | Stamped from the current user | Left alone when |
+|---|---|---|
+| `Added` | `CreatedBy`, `CreatedOn` (`DateTimeOffset.UtcNow`) | `CreatedBy` is already non-empty — first write wins, so a domain factory's `SetCreatedBy(...)` survives |
+| `Modified` | `UpdatedBy`, `UpdatedOn` (`DateTimeOffset.UtcNow`) | a domain method already changed `UpdatedBy`/`UpdatedOn` in this change set (`SetUpdatedBy(...)`), or the entity has no mapped `UpdatedBy` property |
+| `Deleted` | nothing | always — a delete is recorded in the trail, never stamped |
+
+`GetCurrentUser()` returning `null` or empty makes the whole pass a no-op: the save still succeeds and this
+package writes nothing.
+
+#### Composing with `DKNet.EfCore.DataAuthorization`
+
+Both providers are optional and each works without the other. `DataOwnerHook` takes the same
+`ICurrentUserProvider` as an optional dependency and decides from its **value for that save**, never from hook
+registration order — so the two hooks cannot fight over the audit fields:
+
+| Registered | `CreatedBy`/`UpdatedBy` come from | `OwnedBy` comes from |
+|---|---|---|
+| current-user provider only | `GetCurrentUser()` | not stamped |
+| ownership provider only | `IDataOwnerProvider.GetOwnershipKey()` | the same ownership key |
+| both, `GetCurrentUser()` returned a value | `GetCurrentUser()` | the ownership key |
+| both, `GetCurrentUser()` returned `null`/empty | the ownership key — the pre-existing behaviour | the ownership key |
+
+The last row is why adding a current-user provider is a backwards-compatible change: a background job or an
+unauthenticated request for which the provider has no user still lands the tenant key in `CreatedBy`/`UpdatedBy`,
+exactly as before. With neither provider supplying a value, the audit properties are left as the entity set them.
+
+#### Privacy: the value is published unmasked
+
+Whatever `GetCurrentUser()` returns reaches every registered `IAuditLogPublisher` **in full** — the redaction
+rules above cover entity property values, not the audit identity itself. An application subject to a personal-data
+rule (GDPR, PDPA) should therefore return a stable, non-personal identifier such as the token subject id
+(`"sub-8f21c0"`), rather than an email address or any other directly identifying value.
 
 ### `IAuditLogPublisher` — where the entries go
 
@@ -166,6 +249,10 @@ parameters — there is no options class to configure post-registration:
 | `behaviour` | `AuditLogBehaviour` | `IncludeAllAuditedEntities` | `IncludeAllAuditedEntities` audits every `IAuditedProperties` entity not marked `[IgnoreAuditLog]`; `OnlyAttributedAuditedEntities` audits only entities marked `[AuditLog]` at class level. |
 | `propertyPolicy` | `AuditPropertyPolicy` | `RedactSensitive` | `RedactSensitive` captures every non-ignored property, replacing sensitive-looking values with `"***REDACTED***"`; `OnlyAttributedProperties` captures only properties marked `[AuditLog]` and omits the rest. |
 
+`AddCurrentUserProvider<TDbContext, TProvider>()` takes no arguments at all. It registers those same defaults only
+when no `AuditLogOptions` is registered yet, so non-default values must come from an
+`AddEfCoreAuditHook`/`AddEfCoreAuditLogs` call — in either order, since neither call overwrites the other's options.
+
 The two values reach the hook through an internal `AuditLogOptions` singleton, so they are fixed at registration time
 for the whole application — there is no per-save or per-entity override.
 
@@ -210,6 +297,9 @@ gate driven by `AuditPropertyPolicy` and the redactor:
 - **Publisher exceptions are swallowed, not surfaced.** A throwing `PublishAsync` is caught, optionally logged (if an `ILogger<EfCoreAuditHook>` is configured, at `Error` level, best-effort including a JSON dump of the failed batch), and does not fail the save — other registered publishers still run. This is an accepted trade-off, not a bug: `PublishLogsAsync` runs from `AfterSaveAsync`, after the write has already committed, so there is no recovery path for a dropped audit entry — a failure here cannot roll back the save, and by the time it happens the one chance to persist the audit entry atomically with the write is already gone. Retrying or queuing *inside* `IAuditLogPublisher` doesn't close that gap, since the entry it would retry was never durably recorded in the first place. If you need at-least-once delivery of audit logs, don't rely on this hook for it — write the entries to an outbox table from a `BeforeSaveHookAsync` inside the *same* save transaction as the entity write, and drain that table with a separate dispatcher.
 - **Performance cost scales with tracked entities and properties per `SaveChangesAsync` call.** `BeforeSaveAsync` walks every tracked `Added`/`Modified`/`Deleted` entry and every one of its mapped scalar properties (with a reflection-based attribute check per property) on every save. Narrowing scope with `AuditLogBehaviour.OnlyAttributedAuditedEntities` and/or `AuditPropertyPolicy.OnlyAttributedProperties` reduces that cost for hot paths.
 - **Navigation properties and collections are not diffed.** Only the scalar/mapped properties on `entry.Properties` are captured; related-entity changes are audited independently, on their own `AuditLogEntry`, if the related entity itself implements `IAuditedProperties`.
+- **`ICurrentUserProvider` is application-wide, and the first registration wins.** `AddCurrentUserProvider<TDbContext, TProvider>()` registers the provider un-keyed behind an `IsRegistered<ICurrentUserProvider>()` guard, so a second call with a *different* `TProvider` silently keeps the first one — only the hook attachment to the new `TDbContext` takes effect. There is no per-`DbContext` current-user provider.
+- **The current-user value is published unmasked.** It is the audit identity, not an entity property, so no redaction rule applies to it. Return a stable non-personal identifier (a token subject id) if the audit trail is subject to a personal-data rule.
+- **No current user means no stamp from this package, not an error.** `GetCurrentUser()` returning `null`/empty skips stamping silently; if `DKNet.EfCore.DataAuthorization` is also registered, its ownership key fills `CreatedBy`/`UpdatedBy` for that save instead. A registration mistake therefore shows up as a tenant key in `CreatedBy`, or as blank audit fields — never as an exception.
 - **Registering the same publisher type twice is a no-op.** `AddEfCoreAuditLogs<TDbContext, TPublisher>` returns early if a keyed registration for that exact `TPublisher` and `DbContext` key already exists, so a second call (e.g. from two library extension methods) does not double-publish — but it also silently ignores any different `behaviour`/`propertyPolicy` you passed on the second call.
 
 ## 🔗 Related packages
@@ -224,4 +314,5 @@ gate driven by `AuditPropertyPolicy` and the redactor:
 - [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) – column-level encryption. Reach for it to protect a value
   at rest; this package only decides whether the value appears in an audit entry.
 - [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level ownership filtering on the same
-  hook pipeline. Reach for it to control who can *see* a row, not who changed it.
+  hook pipeline. Reach for it to control who can *see* a row, not who changed it. It also supplies the ownership-key
+  fallback for `CreatedBy`/`UpdatedBy` when no current user is available for a save.

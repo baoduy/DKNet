@@ -85,7 +85,11 @@ public abstract class HookAsync : IHookAsync
 
 Implement `IBeforeSaveHookAsync` for a before-only hook, `IAfterSaveHookAsync` for an after-only hook, `IHookAsync` (or inherit `HookAsync` and override only what you need) for both. `SnapshotContext.Entities` (an `IReadOnlyCollection<SnapshotEntityEntry>`) exposes `Entity`, `Entry` (the underlying EF Core `EntityEntry`) and `OriginalState` for every entry that was `Added`, `Modified`, or `Deleted` at the moment the snapshot was captured — the same snapshot instance is shared by every hook registered on the `DbContext`, captured once before the before-save hooks run.
 
-Example — a before-save audit stamp hook and an after-save event-publishing hook:
+Example — a before-save audit stamp hook and an after-save event-publishing hook. The first one is illustrative
+only: `DKNet.EfCore.AuditLogs` already ships exactly this behaviour behind
+`services.AddCurrentUserProvider<TDbContext, TProvider>()`, which stamps `CreatedBy`/`CreatedOn` and
+`UpdatedBy`/`UpdatedOn` from an `ICurrentUserProvider` without overwriting a value a domain method already
+recorded — reach for that instead of hand-rolling this, and read it here only as a hook you could write:
 
 ```csharp
 using DKNet.EfCore.Hooks;
@@ -198,7 +202,9 @@ successfully — plus the two exits where your hooks are skipped entirely:
 - **`DKNet.EfCore.AuditLogs`** — `EfCoreAuditHook : HookAsync` (`DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs`) builds audit log entries from `context.Entities` in `BeforeSaveAsync`, caches them per `DbContext` instance ID, and publishes them via registered `IAuditLogPublisher`s in `AfterSaveAsync`. See [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md).
 - **`DKNet.EfCore.DataAuthorization`** — `DataOwnerHook : IBeforeSaveHookAsync` (`DKNet.EfCore.DataAuthorization/Internals/DataOwnerHook.cs`) stamps ownership on newly added entities and guards modified entities against cross-tenant `OwnedBy` reassignment, entirely in `BeforeSaveAsync`.
 
-Because all three register through the same `AddHook<TDbContext, THook>()` extension against your `DbContext`, they compose automatically: register your `DbContext` once with `AddDbContextWithHook`, then add whichever of `AddEventPublisher<TDbContext, TPublisher>()`, `AddEfCoreAuditLogs<TDbContext, TPublisher>()`, and `AddDataOwnerProvider<TDbContext, TProvider>()` your application needs — they run side by side without needing to know about each other. A single `dbContext.DisableHooks()` scope suppresses all of them at once, which is exactly why it's the recommended way to bypass audit/event/ownership stamping during seeding.
+Because all three register through the same `AddHook<TDbContext, THook>()` extension against your `DbContext`, they compose automatically: register your `DbContext` once with `AddDbContextWithHook`, then add whichever of `AddEventPublisher<TDbContext, TPublisher>()`, `AddEfCoreAuditLogs<TDbContext, TPublisher>()`, and `AddDataOwnerProvider<TDbContext, TProvider>()` your application needs. A single `dbContext.DisableHooks()` scope suppresses all of them at once, which is exactly why it's the recommended way to bypass audit/event/ownership stamping during seeding.
+
+The one place two of them do share state is the audit identity, and they coordinate through a service rather than through this pipeline: `EfCoreAuditHook` and `DataOwnerHook` both take `DKNet.EfCore.AuditLogs`' optional `ICurrentUserProvider`, and each decides from **its value for the save** whether it stamps `CreatedBy`/`UpdatedBy`. A non-empty current user means the audit hook stamps them and `DataOwnerHook` stamps `OwnedBy` only; no value (or no provider registered) means `DataOwnerHook` fills them from the ownership key, as it always did. Because the decision comes from the provider and not from who ran first, registration order still does not matter here — but the two hooks are no longer strictly ignorant of each other. See [Who fills `CreatedBy`/`UpdatedBy`](./DKNet.EfCore.DataAuthorization.md#who-fills-createdbyupdatedby-the-audit-field-split).
 
 ## ⚠️ Gotchas & limits
 
