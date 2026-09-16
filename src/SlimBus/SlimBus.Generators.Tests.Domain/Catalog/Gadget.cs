@@ -39,6 +39,14 @@ public sealed class Gadget : Entity
     public void UpdatePrice([Range(0, 1_000_000)] decimal price) => Price = price;
 
     /// <summary>
+    ///     A second <c>[CrudUpdate]</c> member, declared after <see cref="UpdatePrice" /> — publishes a second
+    ///     update route (<c>{id}/rename</c>) so a route setting can be told apart from an operation-kind setting
+    ///     (DRK-1327 §5 scenarios 1-3).
+    /// </summary>
+    [CrudUpdate]
+    public void Rename([Required, MaxLength(100)] string name) => Name = name;
+
+    /// <summary>
     ///     A domain action (as opposed to a state-replacing update): published as POST at
     ///     <c>{id}/approve</c>, never at the plain by-id route <see cref="UpdatePrice" /> already claims.
     ///     Proves DRK-861's generated request/handler/endpoint slice end-to-end via <c>GadgetCrudSliceTests</c>.

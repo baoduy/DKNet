@@ -1,13 +1,19 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.EfCore.Specifications;
 using DKNet.SlimBus.Extensions;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SlimBus.Generators.Tests.Api.Crud;
 using SlimBus.Generators.Tests.Domain.Catalog;
 using SlimMessageBus.Host;
@@ -82,6 +88,144 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
     public async Task DisposeAsync()
     {
         Client.Dispose();
+        if (_app is not null)
+        {
+            await _app.StopAsync();
+            await _app.DisposeAsync();
+        }
+
+        if (_connection is not null) await _connection.DisposeAsync();
+    }
+}
+
+/// <summary>
+///     Authenticates every request as whatever <see cref="ScopesHeader" />/<see cref="UserHeader" /> say, so
+///     one running host can play Dana/Mei/Ravi (DRK-1327 §5 scenarios 1-3) by varying request headers rather
+///     than reconfiguring the host. Mirrors the scheme-stub pattern in
+///     <c>AspCore.Extensions.Tests/Fixtures/EndpointConfigSupport.cs</c>'s <c>TestAuthHandler</c>, adapted so
+///     the scopes vary per request instead of per DI registration.
+/// </summary>
+public sealed class ScopedTestAuthHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder)
+    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+{
+    public const string SchemeName = "TestScoped";
+
+    /// <summary>Comma-separated scope claim values for this request; absent or empty means no scopes (Dana).</summary>
+    public const string ScopesHeader = "X-Test-Scopes";
+
+    /// <summary>The authenticated identity's name for this request; defaults to "anonymous-scoped-user".</summary>
+    public const string UserHeader = "X-Test-User";
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var user = Request.Headers.TryGetValue(UserHeader, out var u) ? u.ToString() : "anonymous-scoped-user";
+        var scopes = Request.Headers.TryGetValue(ScopesHeader, out var s)
+            ? s.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : [];
+
+        var claims = new List<Claim> { new(ClaimTypes.Name, user) };
+        claims.AddRange(scopes.Select(scope => new Claim("scope", scope)));
+
+        var identity = new ClaimsIdentity(claims, SchemeName);
+        var principal = new ClaimsPrincipal(identity);
+        return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));
+    }
+}
+
+/// <summary>
+///     A second real minimal-API host, separate from <see cref="GadgetTestHost" />, wiring the test
+///     authentication scheme plus <c>product.write</c>/<c>product.price</c> authorization policies and mapping
+///     <c>MapGadgetCrud()</c> with per-route-configuration <c>CrudMapOptions.Configure</c> calls (DRK-1327 §5
+///     scenarios 1, 2, 3, 6, 7). Kept out of <see cref="GadgetTestHost" /> so that host's baseline groups
+///     (used by <c>GadgetCrudSliceTests</c>) never depend on <c>Configure</c>, which the Acceptance-tests stage
+///     leaves throwing <see cref="NotImplementedException" />.
+/// </summary>
+public sealed class GadgetAuthTestHost : IAsyncLifetime, IDisposable
+{
+    private WebApplication? _app;
+    private SqliteConnection? _connection;
+
+    public HttpClient Client { get; private set; } = null!;
+
+    public void Dispose() => _connection?.Dispose();
+
+    public async Task InitializeAsync()
+    {
+        _connection = new SqliteConnection("DataSource=:memory:");
+        await _connection.OpenAsync();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+
+        builder.Services.AddSingleton<IMapper>(new Mapper(new TypeAdapterConfig()));
+        builder.Services.AddDbContext<GadgetDbContext>(o => o.UseSqlite(_connection));
+        builder.Services.AddScoped<DbContext>(p => p.GetRequiredService<GadgetDbContext>());
+        builder.Services.AddSpecRepo<GadgetDbContext>();
+
+        builder.Services
+            .AddSlimBusEfCoreInterceptor<GadgetDbContext>()
+            .AddSlimMessageBus(mbb => mbb
+                .AddJsonSerializer()
+                .AddServicesFromAssembly(typeof(GadgetAuthTestHost).Assembly)
+                .AddChildBus(
+                    "Memory",
+                    mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(GadgetAuthTestHost).Assembly)));
+
+        builder.Services
+            .AddAuthentication(ScopedTestAuthHandler.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, ScopedTestAuthHandler>(ScopedTestAuthHandler.SchemeName, _ => { });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("product.write", p => p.RequireClaim("scope", "product.write"))
+            .AddPolicy("product.price", p => p.RequireClaim("scope", "product.price"));
+
+        var app = builder.Build();
+
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<GadgetDbContext>();
+            await db.Database.EnsureCreatedAsync();
+        }
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        // Scenario 1: a route setting (by name) carries its own scope; the other update route is unaffected.
+        app.MapGroup("/gadgets-route-scope")
+            .MapGadgetCrud(o => o.Configure("UpdatePrice", b => b.RequireAuthorization("product.price")));
+
+        // Scenario 2: an operation-kind setting applies the same scope to every route of that kind.
+        app.MapGroup("/gadgets-op-scope")
+            .MapGadgetCrud(o => o.Configure(CrudOp.Update, b => b.RequireAuthorization("product.write")));
+
+        // Scenario 3: an operation-kind setting and a route setting both apply to the same route.
+        app.MapGroup("/gadgets-both-scopes")
+            .MapGadgetCrud(o => o
+                .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
+                .Configure("UpdatePrice", b => b.RequireAuthorization("product.price")));
+
+        // Scenario 6: excluding a route also drops the settings that name it — no error, route just absent.
+        app.MapGroup("/gadgets-excluded-delete-scope")
+            .MapGadgetCrud(o => o
+                .Configure(CrudOp.Delete, b => b.RequireAuthorization("product.write"))
+                .Exclude(CrudOp.Delete));
+
+        // Scenario 7: a service that configures nothing is unchanged — every route stays open, even with the
+        // authentication/authorization middleware above wired into the same host.
+        app.MapGroup("/gadgets-unconfigured").MapGadgetCrud();
+
+        await app.StartAsync();
+        _app = app;
+        Client = app.GetTestClient();
+    }
+
+    public async Task DisposeAsync()
+    {
+        // Client stays null when InitializeAsync throws before reaching app.StartAsync() — e.g. today, while
+        // CrudMapOptions.Configure is a NotImplementedException stub (DRK-1327 Acceptance-tests stage).
+        Client?.Dispose();
         if (_app is not null)
         {
             await _app.StopAsync();
