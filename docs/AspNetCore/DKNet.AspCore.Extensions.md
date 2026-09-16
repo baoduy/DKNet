@@ -388,6 +388,11 @@ app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
 | `IResult<T>` success | `true` | `TypedResults.Created("/", value)` — the location is a literal `"/"` placeholder |
 | `IResultBase` success | `false` / `true` | `TypedResults.Ok()` / `TypedResults.Created()` |
 | either, failure | any | `TypedResults.Problem(problemDetails)` |
+| either, failure, through the `Response(ErrorResponseOptions?, …)` overload | any | `TypedResults.Problem(problemDetails)` with the host's error-response setting applied — see [One error-response setting](#one-error-response-setting--adderrorresponses) |
+
+Both overloads that take an `ErrorResponseOptions?` — one per result type — behave exactly as the
+rows above on success; only the failure row differs. These are the overloads the fluent mappers call,
+resolving the setting from the container.
 
 `ProblemDetailsExtensions.ToProblemDetails()` builds the underlying `ProblemDetails` from either an
 `IResultBase` or an ASP.NET Core `ModelStateDictionary`:
@@ -400,10 +405,11 @@ if (!ModelState.IsValid)
 | Overload | Default status | Notes |
 |---|---|---|
 | `ToProblemDetails(this IResultBase, HttpStatusCode statusCode = BadRequest)` | `400` | Promoted to `404` when any error is a `NotFoundError`. `Title` is always `"Error"`, `Type` is the status name, `Detail` is the first message. |
+| `ToProblemDetails(this IResultBase, ErrorResponseOptions? options)` | `400` | Same base status as the overload above, `404` promotion included, then `options.StatusCode` and `options.Customize` are applied on top — see [One error-response setting](#one-error-response-setting--adderrorresponses). A `null` `options` keeps today's status and body. |
 | `ToProblemDetails(this ModelStateDictionary)` | `400` | Not configurable. |
 
-Both return `null` on success/valid input, and both collect distinct (case-insensitive), non-empty
-error messages into the response's `errors` extension property.
+All three return `null` on success/valid input, and all three collect distinct (case-insensitive),
+non-empty error messages into the response's `errors` extension property.
 
 ### One error-response setting — `AddErrorResponses`
 
