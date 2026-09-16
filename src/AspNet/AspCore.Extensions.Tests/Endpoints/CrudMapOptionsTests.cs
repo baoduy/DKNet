@@ -87,8 +87,10 @@ public class CrudMapOptionsTests
     }
 
     [Fact]
-    public void ValidateRouteNames_WithMultipleUnknownConfiguredNames_NamesAllOfThemInConfigureOrder()
+    public void ValidateRouteNames_WithMultipleUnknownConfiguredNames_NamesAllOfThemOrdinallySorted()
     {
+        // Configured in the opposite order from the expected message: the message is sorted ordinally, not
+        // enumerated in Configure call order — Dictionary<string, ...> key order is not a contract (nit 2).
         var options = new CrudMapOptions();
         options.Configure("Foo", _ => { });
         options.Configure("Bar", _ => { });
@@ -96,7 +98,7 @@ public class CrudMapOptionsTests
         var exception = Should.Throw<ArgumentException>(() =>
             options.ValidateRouteNames("Gadget", "GetById"));
 
-        exception.Message.ShouldBe("Entity 'Gadget' has no route(s) named 'Foo', 'Bar'. Known route names: 'GetById'.");
+        exception.Message.ShouldBe("Entity 'Gadget' has no route(s) named 'Bar', 'Foo'. Known route names: 'GetById'.");
     }
 
     [Fact]
@@ -172,4 +174,16 @@ public class CrudMapOptionsTests
             .Configure("Rename", _ => { })
             .ShouldBeSameAs(options);
     }
+
+    [Fact]
+    public void Configure_ByOpKind_WithNullAction_ThrowsArgumentNullException() =>
+        Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Configure(CrudOp.Update, null!));
+
+    [Fact]
+    public void Configure_ByRouteName_WithNullAction_ThrowsArgumentNullException() =>
+        Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Configure("Rename", null!));
+
+    [Fact]
+    public void Apply_WithNullBuilder_ThrowsArgumentNullException() =>
+        Should.Throw<ArgumentNullException>(() => new CrudMapOptions().Apply(CrudOp.Update, "Rename", null!));
 }

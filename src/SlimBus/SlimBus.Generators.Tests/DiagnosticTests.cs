@@ -407,6 +407,57 @@ public class DiagnosticTests
     }
 
     [Fact]
+    public void Run_WithTwoActionOverloadsKeptApartOnlyByExplicitSegments_ReportsDKCRUDGEN009NotDKCRUDGEN008()
+    {
+        // R2: the route NAME is the member's own C# name verbatim — unaffected by an explicit [CrudAction]
+        // segment. Two "Approve" overloads with distinct explicit segments never collide on SEGMENT
+        // (DKCRUDGEN008 does not fire) but both resolve to the same NAME, "Approve" (DKCRUDGEN009 does).
+        const string domain = """
+            using System;
+            using DKNet.EfCore.Abstractions.Attributes;
+            using DKNet.EfCore.Abstractions.Entities;
+
+            namespace MyDomain
+            {
+                public class Order : IEntity<Guid>
+                {
+                    [CrudCreate]
+                    public Order(string customer) => Customer = customer;
+
+                    [CrudAction("approve-plain")]
+                    public void Approve() => Status = "Approved";
+
+                    [CrudAction("approve-with-note")]
+                    public void Approve(string note) => Status = "Approved: " + note;
+
+                    public Guid Id { get; private set; }
+                    public string Customer { get; private set; } = string.Empty;
+                    public string Status { get; private set; } = string.Empty;
+                }
+            }
+            """;
+
+        const string api = """
+            using DKNet.EfCore.DtoGenerator;
+            using MyDomain;
+
+            namespace MyApi
+            {
+                [GenerateDto(typeof(Order))]
+                public partial record OrderDto;
+            }
+            """;
+
+        var (_, diagnostics, _) = GeneratorTestHelper.Run(domain, api);
+
+        diagnostics.ShouldNotContain(d => d.Id == "DKCRUDGEN008");
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN009");
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Entity 'Order'");
+        message.ShouldContain("route named 'Approve'");
+    }
+
+    [Fact]
     public void Run_WithEntityNotImplementingIEntity_ReportsDKCRUDGEN006()
     {
         const string domain = """

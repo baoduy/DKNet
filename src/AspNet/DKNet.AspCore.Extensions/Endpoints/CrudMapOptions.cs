@@ -69,8 +69,11 @@ public sealed class CrudMapOptions
     /// <param name="operation">The operation kind the setting applies to.</param>
     /// <param name="configure">The setting to apply to each matching route's <see cref="RouteHandlerBuilder" />.</param>
     /// <returns>This instance, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure" /> is <see langword="null" />.</exception>
     public CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
+
         if (!_opSettings.TryGetValue(operation, out var settings))
         {
             settings = [];
@@ -88,8 +91,11 @@ public sealed class CrudMapOptions
     /// <param name="routeName">The route's name (see the package documentation for the naming rule).</param>
     /// <param name="configure">The setting to apply to the named route's <see cref="RouteHandlerBuilder" />.</param>
     /// <returns>This instance, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure" /> is <see langword="null" />.</exception>
     public CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
+
         if (!_routeSettings.TryGetValue(routeName, out var settings))
         {
             settings = [];
@@ -110,7 +116,10 @@ public sealed class CrudMapOptions
     public void ValidateRouteNames(string entityName, params string[] knownRouteNames)
     {
         var known = new HashSet<string>(knownRouteNames, StringComparer.Ordinal);
-        var unknown = _routeSettings.Keys.Where(name => !known.Contains(name)).ToArray();
+        // Sorted ordinally rather than left in dictionary-enumeration order: Dictionary<TKey,TValue> key
+        // order is unspecified (insertion order in practice, but not a contract), and the message needs to
+        // be deterministic.
+        var unknown = _routeSettings.Keys.Where(name => !known.Contains(name)).Order(StringComparer.Ordinal).ToArray();
         if (unknown.Length == 0) return;
 
         throw new ArgumentException(
@@ -125,8 +134,11 @@ public sealed class CrudMapOptions
     /// <param name="operation">The route's operation kind.</param>
     /// <param name="routeName">The route's name.</param>
     /// <param name="builder">The route's <see cref="RouteHandlerBuilder" />.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="builder" /> is <see langword="null" />.</exception>
     public void Apply(CrudOp operation, string routeName, RouteHandlerBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
+
         if (_opSettings.TryGetValue(operation, out var opSettings))
             foreach (var configure in opSettings)
                 configure(builder);
