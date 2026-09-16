@@ -424,6 +424,91 @@ becomes `export-x-m-l`. Two members resolving to the same segment is `DKCRUDGEN0
 Registration order inside `Map{Entity}Crud` is fixed: `GetById`, `GetList`, `Delete`, `Create`, each
 `[CrudUpdate]` in declaration order, then each `[CrudAction]` in declaration order.
 
+Route names:
+
+Every registered route also carries a **name**, separate from its segment. The name is what
+`CrudMapOptions.Configure(string, …)` matches on, and it is never kebab-cased, never the generated request
+record's name, and never changed by `Name` on `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` or by an explicit
+`[CrudAction]` segment:
+
+| Route | Name |
+|---|---|
+| GET by id | `GetById` |
+| GET list | `GetList` |
+| POST create | `Create` |
+| DELETE by id | `Delete` |
+| Each `[CrudUpdate]` member | its C# method name, verbatim |
+| Each `[CrudAction]` member | its C# method name, verbatim |
+
+The four fixed routes are named exactly as their `CrudOp` members are spelled. Names are compared
+**ordinally** and must be unique within an entity; two routes of one entity resolving to the same name is
+`DKCRUDGEN009`. That needs a deliberate collision — a `[CrudUpdate]`/`[CrudAction]` method called `GetById`,
+`GetList`, `Create` or `Delete`, or two attributed overloads of one method name kept apart only by explicit
+route segments.
+
+#### Worked example — every route `Product` publishes
+
+```csharp crud-naming-example
+using System;
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.DtoGenerator;
+
+namespace MyDomain
+{
+    public class Product : IEntity<Guid>
+    {
+        [CrudCreate]
+        public Product(string name, decimal price)
+        {
+            Name = name;
+            Price = price;
+        }
+
+        [CrudUpdate]
+        public void Rename(string name) => Name = name;
+
+        [CrudUpdate]
+        public void ChangePrice(decimal price) => Price = price;
+
+        public Guid Id { get; private set; }
+        public string Name { get; private set; } = string.Empty;
+        public decimal Price { get; private set; }
+    }
+}
+
+namespace MyApi
+{
+    [GenerateDto(typeof(MyDomain.Product))]
+    public partial record ProductDto;
+}
+```
+
+That entity publishes six routes, and these are all of them:
+
+| Name | HTTP method | Segment |
+|---|---|---|
+| `GetById` | GET | `{id}` |
+| `GetList` | GET | `/` |
+| `Create` | POST | `/` |
+| `Delete` | DELETE | `{id}` |
+| `Rename` | PUT | `{id}` |
+| `ChangePrice` | PUT | `{id}/change-price` |
+
+```text crud-naming-routes
+GetById
+GetList
+Create
+Delete
+Rename
+ChangePrice
+```
+
+`Rename` is declared first, so it keeps the plain `{id}` PUT and `ChangePrice` gets the kebab-cased segment —
+but neither name is kebab-cased, and `ChangePrice` is the name whether or not it is the route that moved.
+`GetById` and `Delete` share the `{id}` segment under different verbs and still have distinct names: a name
+identifies a route, not a segment. `Product` declares no `[CrudAction]`, so it publishes no action routes.
+
 ### The DTO and domain-event paths
 
 Two things this generator is often assumed to do, and what it actually does:
@@ -571,6 +656,7 @@ Per-operation exclusion at *mapping* time is a separate mechanism — `CrudMapOp
 | `DKCRUDGEN006` | Error | The entity does not implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>`. |
 | `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one. |
 | `DKCRUDGEN008` | Error | Two members resolve to the same route segment; give one an explicit distinct segment. |
+| `DKCRUDGEN009` | Error | Two routes of the entity resolve to the same route name; rename one of the members. |
 
 ## ⚙️ Configuration reference
 
@@ -595,7 +681,15 @@ There is no options object — configuration is the attributes on the entity plu
 | Member | Effect |
 |---|---|
 | `Exclude(params CrudOp[])` | Skips the named operations entirely — nothing is registered for them, not merely hidden. Fluent, so calls chain. |
+| `Configure(CrudOp, Action<RouteHandlerBuilder>)` | Applies the setting to every generated route of that operation kind. Additive: several calls for one operation all run, in call order. Fluent. |
+| `Configure(string routeName, Action<RouteHandlerBuilder>)` | Applies the setting to the one route carrying that name (see [Route names](#naming-and-routing-conventions)). Additive and fluent, same as above. |
 | `CrudOp` values | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. |
+
+`Map{Entity}Crud` validates every name passed to `Configure(string, …)` against the entity's own route names
+**before** it maps anything, so a misspelt name throws `ArgumentException` at registration and the group
+publishes nothing — that is the safety net for "my authorization silently vanished". Settings then run per
+route, operation-kind settings first and route settings after. Naming a route whose operation is excluded is
+not an error: the name is still validated, and the setting is then silently dropped along with the route.
 
 ## 🧱 Where it fits
 

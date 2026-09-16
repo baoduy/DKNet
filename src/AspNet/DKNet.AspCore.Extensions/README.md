@@ -178,6 +178,8 @@ Attributes and other extension points:
 | `IContextualSource` | marker interface on your own attribute | — | Opts a new source kind into the same mechanism. |
 | `IContextualValueResolver` | interface you register in DI | `ClaimValueResolver` for `[FromClaim]` | `CanResolve` selects the resolver; the mechanism never switches on a concrete attribute type. |
 | `CrudMapOptions.Exclude(params CrudOp[])` | builder method | nothing excluded | Skips operations in the generated `Map{Entity}Crud`. `CrudOp` is `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. |
+| `CrudMapOptions.Configure(CrudOp, Action<RouteHandlerBuilder>)` | builder method | no settings | Applies a `RouteHandlerBuilder` setting (e.g. `RequireAuthorization`) to every generated route of that operation kind. Additive and chainable. |
+| `CrudMapOptions.Configure(string, Action<RouteHandlerBuilder>)` | builder method | no settings | Same, for the one route carrying that name. Operation-kind settings run first, name settings after; an unknown name throws `ArgumentException` at registration. Route names are the generator's — see [DKNet.SlimBus.Generators](https://github.com/baoduy/DKNet/blob/main/docs/Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions). |
 
 ## Full Documentation
 

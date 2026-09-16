@@ -516,17 +516,35 @@ Delete, Create, then each `[CrudUpdate]` in declaration order, then each `[CrudA
 an action never claims the plain `{id}` route, whatever verb it uses, and defaults its segment to the
 kebab-cased method name when `[CrudAction]` carries no explicit route.
 
-`CrudMapOptions` is the only knob on the generated method — it excludes operations, nothing more:
+`CrudMapOptions` is the only knob on the generated method — it excludes operations, and it attaches
+`RouteHandlerBuilder` settings to the routes that survive:
 
 ```csharp
 group.MapProductCrud(o => o.Exclude(CrudOp.Delete, CrudOp.Action));
+
+group.MapProductCrud(o => o
+    .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
+    .Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
 ```
 
 | Member | Signature | Behaviour |
 |---|---|---|
 | `Exclude` | `CrudMapOptions Exclude(params CrudOp[] operations)` | Adds each operation to the exclusion set and returns `this` for chaining. Nothing is excluded by default. |
 | `IsExcluded` | `bool IsExcluded(CrudOp operation)` | What the generated code calls per registration. |
-| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. `Update` and `Action` are all-or-nothing — there is no per-method exclusion. |
+| `Configure` | `CrudMapOptions Configure(CrudOp operation, Action<RouteHandlerBuilder> configure)` | Runs the setting against every generated route of that operation kind. Additive — several calls for one operation all run, in call order — and returns `this`. |
+| `Configure` | `CrudMapOptions Configure(string routeName, Action<RouteHandlerBuilder> configure)` | Runs the setting against the one route carrying that name. Additive and chainable in the same way. |
+| `CrudOp` | enum | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. `Update` and `Action` are all-or-nothing for `Exclude` — there is no per-method exclusion; `Configure(string, …)` is how a single update or action route is singled out. |
+
+Route names come from the generator, not from this package: `GetById`, `GetList`, `Create` and `Delete` for
+the four fixed operations, and each `[CrudUpdate]`/`[CrudAction]` member's own C# method name for the rest —
+not the kebab-cased segment. The rule and a worked example live in
+[DKNet.SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions).
+
+The generated method validates every name given to `Configure(string, …)` before it maps anything, so a name
+the entity does not have throws `ArgumentException` and the group publishes nothing — a misspelt name fails
+loudly instead of dropping a `RequireAuthorization` on the floor. For each route, operation-kind settings run
+first and name settings after. A setting naming a route whose operation was excluded is still validated, then
+dropped with the route; that combination is not an error.
 
 ## ⚙️ Configuration reference
 
