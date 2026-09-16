@@ -175,6 +175,36 @@ app.MapGroup("/products").MapProductCrud(o => o.Exclude(CrudOp.Delete));
 `CrudMapOptions.Exclude` takes any number of `CrudOp` values (`GetById`, `GetList`, `Create`, `Update`,
 `Delete`, `Action`); excluded operations are skipped entirely, not just hidden.
 
+### Configuring routes
+
+`CrudMapOptions.Configure` attaches any `RouteHandlerBuilder` setting — authorization first of all — either to
+one named route or to every route of one operation kind:
+
+```csharp
+// one named route: only the ChangePrice PUT needs the scope
+app.MapGroup("/products")
+   .MapProductCrud(o => o.Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
+
+// one operation kind: every generated PUT needs the scope
+app.MapGroup("/products")
+   .MapProductCrud(o => o.Configure(CrudOp.Update, b => b.RequireAuthorization("product.write")));
+
+// both on the same route: ChangePrice ends up requiring product.write and product.price
+app.MapGroup("/products")
+   .MapProductCrud(o => o
+       .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
+       .Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
+```
+
+A route's name is `GetById`, `GetList`, `Create` or `Delete` for the four fixed operations, and the C# method
+name verbatim for each `[CrudUpdate]`/`[CrudAction]` member — never the kebab-cased segment and never the
+request record's name. Both overloads are additive: for a given route, every setting registered for its
+operation kind runs first, then every setting registered for its name. A name the entity does not have throws
+`ArgumentException` at registration, so nothing is published; a name whose operation is excluded is validated
+and then silently dropped with the route. Two routes resolving to one name is `DKCRUDGEN009`. The full rule,
+with a worked example, is in the
+[naming and routing conventions](https://github.com/baoduy/DKNet/blob/main/docs/Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions).
+
 ## Validation attributes are metadata, not enforcement
 
 `System.ComponentModel.DataAnnotations` attributes on a `[CrudCreate]`/`[CrudUpdate]` member's parameters are
@@ -220,6 +250,7 @@ same shape, so mixing them is seamless.
 | `DKCRUDGEN006` | Error | The entity does not implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>`. |
 | `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one — the member is emitted as neither. |
 | `DKCRUDGEN008` | Error | Two members on the entity resolve to the same route segment; give one an explicit distinct segment. |
+| `DKCRUDGEN009` | Error | Two routes of the entity resolve to the same route name; rename one of the members. |
 
 ## Cross-assembly discovery
 

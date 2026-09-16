@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Generated CRUD endpoints can now be configured per route and per operation kind.
+  `CrudMapOptions.Configure(CrudOp, Action<RouteHandlerBuilder>)` applies a setting — `RequireAuthorization`
+  first of all — to every generated route of that operation kind, and
+  `CrudMapOptions.Configure(string routeName, Action<RouteHandlerBuilder>)` applies one to a single named
+  route. Both are additive and chainable; for a given route, operation-kind settings run before name
+  settings. A route's name is `GetById`, `GetList`, `Create` or `Delete` for the four fixed operations and the
+  `[CrudUpdate]`/`[CrudAction]` member's own C# method name for the rest. `Map{Entity}Crud` validates every
+  configured name before mapping anything, so an unknown name throws `ArgumentException` at registration
+  rather than silently dropping the setting; a name belonging to an excluded operation is validated and then
+  dropped with the route. Two routes of one entity resolving to the same name is the new `DKCRUDGEN009`.
 - `[SensitiveData]` now accepts optional role names (`[SensitiveData("pricing", "audit")]`, `Roles` never null).
   `DKNet.EfCore.DtoGenerator` carries the declaration from the entity onto the generated response model, and
   `JsonSerializerOptions.UseRoleAwareSensitiveData(ISensitiveDataPrincipalAccessor)` in
