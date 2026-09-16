@@ -137,11 +137,14 @@ public sealed class CrudMapOptions
 
     /// <summary>
     ///     Validates that every route name configured via <see cref="Configure(string, Action{RouteHandlerBuilder})" />
-    ///     is one of the entity's <paramref name="knownRouteNames" />.
+    ///     or excluded via <see cref="Exclude(string[])" /> is one of the entity's <paramref name="knownRouteNames" />.
     /// </summary>
     /// <param name="entityName">The entity's name, used in the exception message.</param>
     /// <param name="knownRouteNames">Every route name the entity has, compared ordinally.</param>
-    /// <exception cref="ArgumentException">A configured route name is not in <paramref name="knownRouteNames" />.</exception>
+    /// <exception cref="ArgumentException">
+    ///     A route name configured via <see cref="Configure(string, Action{RouteHandlerBuilder})" /> or excluded via
+    ///     <see cref="Exclude(string[])" /> is not in <paramref name="knownRouteNames" />.
+    /// </exception>
     public void ValidateRouteNames(string entityName, params string[] knownRouteNames)
     {
         var known = new HashSet<string>(knownRouteNames, StringComparer.Ordinal);
