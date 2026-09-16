@@ -1012,7 +1012,8 @@ internal static class Emitter
 
     private static void AppendMapCall(StringBuilder builder, string opType, string op, string routeName, string mapCallStatement)
     {
-        builder.Append("        if (!options.IsExcluded(").Append(opType).Append('.').Append(op).AppendLine("))");
+        builder.Append("        if (!options.IsExcluded(").Append(opType).Append('.').Append(op)
+            .Append(") && !options.IsExcluded(\"").Append(routeName).AppendLine("\"))");
         builder.AppendLine("        {");
         builder.Append("            var routeBuilder = ").AppendLine(mapCallStatement);
         builder.Append("            options.Apply(").Append(opType).Append('.').Append(op)

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Generated CRUD endpoints can now be excluded per route, not only per operation kind.
+  `CrudMapOptions.Exclude(params string[] routeNames)` withdraws the one route carrying each name and leaves
+  the entity's other routes of the same kind published at their existing addresses — so a single
+  `[CrudUpdate]`/`[CrudAction]` member can be dropped without taking `Update` or `Action` down wholesale. The
+  names are the same ones `Configure(string, …)` takes, and they go through the same validation:
+  `Map{Entity}Crud` throws `ArgumentException` at registration for a name the entity has no route for, so an
+  exclusion that matches nothing fails loudly instead of leaving the route live. Nothing is excluded by default.
 - Generated CRUD endpoints can now be configured per route and per operation kind.
   `CrudMapOptions.Configure(CrudOp, Action<RouteHandlerBuilder>)` applies a setting — `RequireAuthorization`
   first of all — to every generated route of that operation kind, and
