@@ -77,10 +77,12 @@ public sealed class PerRouteScopedAuthorizationTests(GadgetAuthTestHost host) : 
     {
         var id = await CreateGadgetAsync("/gadgets-excluded-delete-scope");
 
-        // The delete route is excluded, so its "product.write" scope setting never applies — the route is
-        // simply absent (404), not guarded (403). Registration itself must not have thrown either.
+        // The delete route is excluded, so its "product.write" scope setting never applies — DELETE {id}
+        // shares its route template with GET/PUT {id}, so an unmatched method yields 405 (RFC 9110 §15.5.6),
+        // not a 401/403 a registered-but-guarded DELETE would have answered. 405 is the proof the route was
+        // never registered. Registration itself must not have thrown either.
         var delete = await SendAsync(HttpMethod.Delete, $"/gadgets-excluded-delete-scope/{id}");
-        delete.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        delete.StatusCode.ShouldBe(HttpStatusCode.MethodNotAllowed);
     }
 
     [Fact]
