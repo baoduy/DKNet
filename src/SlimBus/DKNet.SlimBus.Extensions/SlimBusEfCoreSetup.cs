@@ -7,6 +7,7 @@
 using DKNet.SlimBus.Extensions.Handlers;
 using DKNet.SlimBus.Extensions.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SlimMessageBus.Host.Interceptor;
 
 // ReSharper disable once CheckNamespace
@@ -45,7 +46,8 @@ public static class SlimBusEfCoreSetup
         public IServiceCollection AddSlimBusEfCoreInterceptor<TDbContext>()
             where TDbContext : DbContext
         {
-            EfAutoSavePostProcessorRegistration.RegisterDbContextType<TDbContext>();
+            serviceCollection.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IAutoSaveDbContextRegistration, AutoSaveDbContextRegistration<TDbContext>>());
 
             if (serviceCollection.Any(serviceDescriptor =>
                     serviceDescriptor.ServiceType == typeof(IRequestHandlerInterceptor<,>)))
