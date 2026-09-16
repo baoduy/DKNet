@@ -352,7 +352,8 @@ public sealed partial record ArchiveProductRequest :
 
 #### The endpoint file, for all four members at once
 
-One extension method per entity; every registration is guarded by its `CrudOp` so `Exclude` can drop it:
+One extension method per entity; every registration is guarded by both its `CrudOp` and its route name, so
+`Exclude` can drop it by operation kind **or** by member name:
 
 ```csharp
 /// <summary>Registers the generated CRUD endpoints for Product.</summary>
@@ -529,7 +530,11 @@ Two things this generator is often assumed to do, and what it actually does:
 ### Endpoint registration — `Map{Entity}Crud`
 
 ```csharp
+// By operation kind — no DELETE route is registered at all.
 app.MapGroup("/products").MapProductCrud(o => o.Exclude(CrudOp.Delete));
+
+// By route name — `ChangePrice` is withdrawn, `Rename` keeps the plain `{id}` PUT.
+app.MapGroup("/products").MapProductCrud(o => o.Exclude("ChangePrice"));
 ```
 
 A non-generic `Map{Entity}Crud(this RouteGroupBuilder, Action<CrudMapOptions>? configure = null)` composing the
@@ -642,7 +647,8 @@ generator skips that request's handler and reports `DKCRUDGEN005` (Info) at the 
 still generated. Matching is by the **request type's name only** — the hand-written type's DTO type argument is not
 cross-checked, so get it right by hand.
 
-Per-operation exclusion at *mapping* time is a separate mechanism — `CrudMapOptions.Exclude`, above.
+Exclusion at *mapping* time — by operation kind or by route name — is a separate mechanism:
+`CrudMapOptions.Exclude`, above.
 
 ### Diagnostics
 
@@ -680,16 +686,18 @@ There is no options object — configuration is the attributes on the entity plu
 
 | Member | Effect |
 |---|---|
-| `Exclude(params CrudOp[])` | Skips the named operations entirely — nothing is registered for them, not merely hidden. Fluent, so calls chain. |
+| `Exclude(params CrudOp[])` | Skips the named operations entirely — nothing is registered for them, not merely hidden. Fluent, so calls chain. Nothing is excluded by default. |
+| `Exclude(params string[] routeNames)` | Skips the one route carrying each name (see [Route names](#naming-and-routing-conventions)), leaving the entity's other routes of the same kind published at their existing addresses. Nothing is registered for the withdrawn route, not merely hidden. A name the entity has no route for throws `ArgumentException` at registration — never a silent no-op. Fluent, and nothing is excluded by default. |
 | `Configure(CrudOp, Action<RouteHandlerBuilder>)` | Applies the setting to every generated route of that operation kind. Additive: several calls for one operation all run, in call order. Fluent. |
 | `Configure(string routeName, Action<RouteHandlerBuilder>)` | Applies the setting to the one route carrying that name (see [Route names](#naming-and-routing-conventions)). Additive and fluent, same as above. |
 | `CrudOp` values | `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. |
 
-`Map{Entity}Crud` validates every name passed to `Configure(string, …)` against the entity's own route names
-**before** it maps anything, so a misspelt name throws `ArgumentException` at registration and the group
-publishes nothing — that is the safety net for "my authorization silently vanished". Settings then run per
-route, operation-kind settings first and route settings after. Naming a route whose operation is excluded is
-not an error: the name is still validated, and the setting is then silently dropped along with the route.
+`Map{Entity}Crud` validates every name passed to `Exclude(string, …)` and `Configure(string, …)` against the
+entity's own route names **before** it maps anything, so a misspelt name throws `ArgumentException` at
+registration and the group publishes nothing — that is the safety net for "my authorization silently vanished"
+and for "the route I withdrew is still live". Settings then run per route, operation-kind settings first and
+route settings after. Naming a route whose operation is excluded is not an error: the name is still validated,
+and the setting is then silently dropped along with the route.
 
 ## 🧱 Where it fits
 
