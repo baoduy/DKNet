@@ -149,6 +149,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 
 ### Fixed
+- The EF Core auto-save `DbContext` type registry (`DKNet.SlimBus.Extensions`) was a static set shared by every
+  service provider in the process, so providers built concurrently could throw
+  `InvalidOperationException: Operations that change non-concurrent collections must have exclusive access` out of
+  `AddSlimBusEfCoreInterceptor<TDbContext>()`, and one provider's auto-save could reach for a `DbContext` type only
+  another provider had registered. The registry now lives in the `IServiceCollection` — one registration per
+  `TDbContext`, deduplicated, resolved from the request's own provider — so providers no longer share it. No
+  public API change.
 - `DKNet.EfCore.DtoGenerator` and `DKNet.SlimBus.Generators` now emit attribute arguments as valid C# literals
   when carrying an entity's attributes onto generated code. Previously a `float` argument was emitted
   without its `f` suffix, a non-finite `double` (`NaN`, positive/negative infinity) as a bare
