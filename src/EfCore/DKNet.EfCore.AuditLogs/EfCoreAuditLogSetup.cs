@@ -139,5 +139,20 @@ public static class EfCoreAuditLogSetup
             services.AddEfCoreAuditHook<TDbContext>(behaviour, propertyPolicy);
             return services;
         }
+
+        /// <summary>
+        ///     Registers <typeparamref name="TProvider" /> as the <see cref="ICurrentUserProvider" /> that fills
+        ///     <c>CreatedBy</c>/<c>UpdatedBy</c> for <typeparamref name="TDbContext" />, and ensures the audit hook
+        ///     is attached to it — without overwriting <see cref="AuditLogOptions" /> already registered by an
+        ///     earlier <see cref="AddEfCoreAuditHook{TDbContext}" /> or <see cref="AddEfCoreAuditLogs{TDbContext,TPublisher}" />
+        ///     call. The hook stamps regardless of whether any <see cref="IAuditLogPublisher" /> is registered.
+        /// </summary>
+        /// <typeparam name="TDbContext">The application's DbContext type.</typeparam>
+        /// <typeparam name="TProvider">The current-user provider implementation to register.</typeparam>
+        /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
+        public IServiceCollection AddCurrentUserProvider<TDbContext, TProvider>()
+            where TDbContext : DbContext
+            where TProvider : class, ICurrentUserProvider =>
+            throw new NotImplementedException();
     }
 }
