@@ -10,6 +10,7 @@ using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Specifications.Definitions;
 using DKNet.EfCore.Specifications.Extensions;
 using DKNet.EfCore.Specifications.Repositories;
+using DKNet.SlimBus.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -125,6 +126,45 @@ public static class FluentsEntityEndpointMapperExtensions
         public RouteHandlerBuilder MapDeleteById<TEntity>(string endpoint = "{id}")
             where TEntity : class, IEntity<Guid>
             => app.MapDeleteById<TEntity, Guid>(endpoint);
+
+        /// <summary>
+        ///     Maps an HTTP DELETE endpoint that hard-deletes a single <typeparamref name="TEntity" /> by the
+        ///     <typeparamref name="TKey" /> id carried on <typeparamref name="TRequest" />, so a service can
+        ///     attach a validation rule to the delete without the route ever accepting a request body.
+        /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         Not yet implemented (DRK-1326): this overload's signature is frozen by its acceptance tests;
+        ///         the delete/save behaviour lands in a later change once those tests are approved.
+        ///     </para>
+        ///     <para>
+        ///         <typeparamref name="TRequest" /> is bound with <c>[AsParameters]</c> so it arrives as a single,
+        ///         validatable argument — the same shape a group-level validation filter (for example SharpGrip's
+        ///         <c>AddFluentValidationAutoValidation()</c>) already inspects for <see cref="FluentsEndpointMapperExtensions.MapPutById{TCommand,TKey,TResponse}" />-style
+        ///         routes — even though the caller never sends a body.
+        ///     </para>
+        /// </remarks>
+        /// <typeparam name="TEntity">Entity type implementing <see cref="IEntity{TKey}" />.</typeparam>
+        /// <typeparam name="TKey">The entity's primary key type.</typeparam>
+        /// <typeparam name="TRequest">
+        ///     Request type carrying the route-bound key, implementing <see cref="Fluents.Requests.IWithKey{TKey}" />.
+        /// </typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        /// <exception cref="NotImplementedException">Always, until DRK-1326's implementation lands.</exception>
+        public RouteHandlerBuilder MapDeleteById<TEntity, TKey, TRequest>(string endpoint = "{id}")
+            where TEntity : class, IEntity<TKey>
+            where TKey : IEquatable<TKey>
+            where TRequest : class, Fluents.Requests.IWithKey<TKey>
+        {
+            Func<TRequest, IResult> handler = ([AsParameters] TRequest request) => throw new NotImplementedException(
+                $"{nameof(MapDeleteById)}<{typeof(TEntity).Name}, {typeof(TKey).Name}, {typeof(TRequest).Name}> " +
+                "is not implemented yet (DRK-1326).");
+
+            return app.MapDelete(endpoint, handler)
+                .Produces(StatusCodes.Status204NoContent)
+                .ProducesCommons();
+        }
 
         /// <summary>
         ///     Maps an HTTP GET endpoint that returns a page of <typeparamref name="TEntity" /> records projected to
