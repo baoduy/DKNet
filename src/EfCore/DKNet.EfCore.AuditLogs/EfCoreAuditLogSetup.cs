@@ -152,7 +152,19 @@ public static class EfCoreAuditLogSetup
         /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
         public IServiceCollection AddCurrentUserProvider<TDbContext, TProvider>()
             where TDbContext : DbContext
-            where TProvider : class, ICurrentUserProvider =>
-            throw new NotImplementedException();
+            where TProvider : class, ICurrentUserProvider
+        {
+            if (!services.IsRegistered<ICurrentUserProvider>())
+                services.AddScoped<ICurrentUserProvider, TProvider>();
+
+            if (!services.IsRegistered<IOptions<AuditLogOptions>>())
+                services.AddSingleton(Options.Create(new AuditLogOptions
+                {
+                    Behaviour = AuditLogBehaviour.IncludeAllAuditedEntities,
+                    PropertyPolicy = AuditPropertyPolicy.RedactSensitive
+                }));
+
+            return services.AddHook<TDbContext, EfCoreAuditHook>();
+        }
     }
 }
