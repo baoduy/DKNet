@@ -7,19 +7,19 @@ public sealed class TestPublisher : IAuditLogPublisher
 {
     #region Fields
 
-    private static readonly ConcurrentBag<AuditLogEntry> _received = [];
+    private readonly ConcurrentBag<AuditLogEntry> _received = [];
 
     #endregion
 
     #region Properties
 
-    public static IReadOnlyCollection<AuditLogEntry> Received => _received;
+    public IReadOnlyCollection<AuditLogEntry> Received => _received;
 
     #endregion
 
     #region Methods
 
-    public static void Clear()
+    public void Clear()
     {
         while (_received.TryTake(out _))
         {
