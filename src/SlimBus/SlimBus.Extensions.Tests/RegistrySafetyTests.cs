@@ -48,7 +48,8 @@ public class RegistrySafetyTests
             .ToArray();
     }
 
-    private static ServiceProvider BuildBusProvider(Action<IServiceCollection> configureDbContexts)
+    private static ServiceProvider BuildBusProvider(
+        Action<IServiceCollection> configureDbContexts, bool perMessageScope = false)
     {
         var services = new ServiceCollection()
             .AddLogging()
@@ -62,7 +63,11 @@ public class RegistrySafetyTests
             .AddServicesFromAssembly(typeof(Fixture).Assembly)
             .AddChildBus(
                 "ImMemory",
-                me => me.WithProviderMemory().AutoDeclareFrom(typeof(Fixture).Assembly).PerMessageScopeEnabled()));
+                me =>
+                {
+                    me.WithProviderMemory().AutoDeclareFrom(typeof(Fixture).Assembly);
+                    if (perMessageScope) me.PerMessageScopeEnabled();
+                }));
 
         return services.BuildServiceProvider();
     }
@@ -149,7 +154,7 @@ public class RegistrySafetyTests
     {
         await using var provider = BuildBusProvider(services => services
             .AddDbContext<TestDbContext>(b => b.UseInMemoryDatabase(Guid.NewGuid().ToString()))
-            .AddSlimBusEfCoreInterceptor<TestDbContext>());
+            .AddSlimBusEfCoreInterceptor<TestDbContext>(), perMessageScope: true);
         var bus = provider.GetRequiredService<IMessageBus>();
 
         const int sendCount = 300;
