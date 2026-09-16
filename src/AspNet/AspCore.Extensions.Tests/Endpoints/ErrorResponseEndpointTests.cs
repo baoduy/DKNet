@@ -116,7 +116,7 @@ public class ErrorResponseEndpointTests
         // Today's shape: Extensions["errors"] is a flat list of message strings, not a field->messages map.
         var errors = body["errors"].ToString();
         errors.ShouldNotBeNull();
-        errors.ShouldContain("still holds accounts");
+        errors.ShouldContain("Account group 'treasury-ops' still holds accounts.");
     }
 
     [Fact]
