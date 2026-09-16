@@ -405,6 +405,58 @@ if (!ModelState.IsValid)
 Both return `null` on success/valid input, and both collect distinct (case-insensitive), non-empty
 error messages into the response's `errors` extension property.
 
+### One error-response setting — `AddErrorResponses`
+
+A DKNet host refuses a request in two different places: a SlimBus handler returns a failed
+`FluentResults` result, or FluentValidation refuses the input before the handler ever runs.
+`AddErrorResponses` is the one registration that shapes both — call it once, and the validation path
+is wired by that same call rather than configured separately:
+
+```csharp
+using DKNet.AspCore.Extensions.Responses;
+
+builder.Services.AddErrorResponses(o =>
+{
+    o.StatusCode = ctx => ctx.Errors.Any(e => e.Code == "business-refusal") ? 422 : null;
+    o.Customize = (problem, ctx) => problem.Extensions["error-code"] = ctx.Errors.FirstOrDefault()?.Code;
+});
+```
+
+A handler that fails with a `business-refusal` code and a validator that refuses the same rule with
+that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code` member.
+
+**The status comes from the failure, never from the route.** `StatusCode` receives an
+`ErrorResponseContext` and nothing else:
+
+| Member | Type | What it carries |
+|---|---|---|
+| `Source` | `ErrorSource` | `Command` for a failed FluentResults handler, `Validation` for input FluentValidation refused. |
+| `Errors` | `IReadOnlyList<ErrorItem>` | `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry (`Command`) or the validation failure's `ErrorCode` (`Validation`); `Field` names the refused input member and is always `null` for a command failure. |
+
+The context deliberately carries no `HttpContext`, request path or HTTP method, so the same failure
+maps to the same status wherever it is raised — two routes cannot disagree about what a
+`business-refusal` means. Returning `null` keeps the status that failure would have had anyway, which
+is how one callback can map two error codes and leave everything else alone.
+
+**`Customize` applies to both failure kinds.** It runs after the status is chosen, against the
+`ProblemDetails` about to be written, for `ErrorSource.Command` and `ErrorSource.Validation` alike —
+a member added there cannot appear on one failure kind only. Use `ctx.Source` if the *value* should
+differ; the member itself is always present on both.
+
+> ⚠️ **The setting is host-wide.** It applies to every route in the host, so anything `Customize`
+> adds appears on every error response the API returns — including endpoints you were not thinking
+> about when you wrote the callback. That is why nothing is added for you: name each member you add,
+> and add only what every caller of every endpoint is allowed to see.
+
+**What a host that registers nothing still gets.** `AddErrorResponses` is optional, and every member
+left unset keeps today's behaviour exactly:
+
+| Failure | Status | Body |
+|---|---|---|
+| Command handler returns a failed result | `400` | `application/problem+json`, `errors` a flat list of the distinct failure messages. |
+| Validator refuses the input | `400` | `application/problem+json`, `errors` a field → messages map (FluentValidation auto-validation's default factory). |
+| Failure carries a `NotFoundError` | `404` | `application/problem+json`. Needs no setting, and survives a `StatusCode` callback that returns `null` for it. |
+
 ### Generated CRUD endpoints — `CrudMapOptions` and `CrudOp`
 
 `CrudMapOptions` and `CrudOp` are this package's half of the vertical-slice CRUD generator. You
