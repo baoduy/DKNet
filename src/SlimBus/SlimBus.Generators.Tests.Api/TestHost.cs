@@ -1,6 +1,8 @@
 using DKNet.AspCore.Extensions.Endpoints;
+using DKNet.EfCore.Hooks;
 using DKNet.EfCore.Specifications;
 using DKNet.SlimBus.Extensions;
+using FluentValidation;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 using SlimBus.Generators.Tests.Api.Crud;
 using SlimBus.Generators.Tests.Domain.Catalog;
 using SlimMessageBus.Host;
@@ -20,6 +23,8 @@ namespace SlimBus.Generators.Tests.Api;
 public sealed class GadgetDbContext(DbContextOptions<GadgetDbContext> options) : DbContext(options)
 {
     public DbSet<Gadget> Gadgets => Set<Gadget>();
+
+    public DbSet<Widget> Widgets => Set<Widget>();
 }
 
 /// <summary>
@@ -35,6 +40,10 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
 
     public HttpClient Client { get; private set; } = null!;
 
+    /// <summary>Exposes the host's root <see cref="IServiceProvider" /> — used by DRK-1326 tests to read
+    /// <see cref="GadgetSaveAttemptRecorder" /> after a request completes.</summary>
+    public IServiceProvider Services => _app!.Services;
+
     public void Dispose() => _connection?.Dispose();
 
     public async Task InitializeAsync()
@@ -48,9 +57,15 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         builder.WebHost.UseTestServer();
 
         builder.Services.AddSingleton<IMapper>(new Mapper(new TypeAdapterConfig()));
-        builder.Services.AddDbContext<GadgetDbContext>(o => o.UseSqlite(_connection));
+        builder.Services.AddSingleton<GadgetSaveAttemptRecorder>();
+        builder.Services.AddDbContextWithHook<GadgetDbContext>((_, o) => o.UseSqlite(_connection));
+        builder.Services.AddHook<GadgetDbContext, GadgetDeleteRecordingHook>();
         builder.Services.AddScoped<DbContext>(p => p.GetRequiredService<GadgetDbContext>());
         builder.Services.AddSpecRepo<GadgetDbContext>();
+
+        // DRK-1326 §5 scenario 2/4/7 fixture: only the groups below that call
+        // AddFluentValidationAutoValidation() ever consult this.
+        builder.Services.AddValidatorsFromAssemblyContaining<DeleteGadgetRequestValidator>();
 
         builder.Services
             .AddSlimBusEfCoreInterceptor<GadgetDbContext>()
@@ -73,6 +88,21 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         // Same generated MapGadgetCrud(), same underlying data — only the registration options differ, proving
         // an actions-excluded group still serves updates while dropping the action route(s) (spec §3.7).
         app.MapGroup("/gadgets-no-actions").MapGadgetCrud(o => o.Exclude(CrudOp.Action));
+
+        // DRK-1326: the generated delete route now binds its own request type (DeleteGadgetRequest) rather
+        // than the plain 2-arg MapDeleteById, so a group with no validation filter registered is unaffected
+        // (R1) while a guarded group below can attach a rule to it.
+        app.MapGroup("/gadgets-request").MapGadgetCrud();
+
+        var guardedGadgets = app.MapGroup("/gadgets-guarded");
+        guardedGadgets.MapGadgetCrud();
+        guardedGadgets.AddFluentValidationAutoValidation();
+
+        app.MapGroup("/widgets").MapWidgetCrud();
+
+        var guardedWidgets = app.MapGroup("/widgets-guarded");
+        guardedWidgets.MapWidgetCrud();
+        guardedWidgets.AddFluentValidationAutoValidation();
 
         await app.StartAsync();
         _app = app;

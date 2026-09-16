@@ -697,7 +697,36 @@ internal static class Emitter
             builder.AppendLine();
         }
 
+        if (!HasDeleteRequestNameCollision(entity, out var deleteRequestName))
+        {
+            AppendDeleteRequest(builder, entity, deleteRequestName);
+            builder.AppendLine();
+        }
+
         return builder.ToString();
+    }
+
+    // Every entity in the generated set gets a delete request unconditionally (spec R5) — unless a
+    // create/update/action member already claims the same name, in which case row 6's guard skips both
+    // the record (here) and the 3-arg map call (BuildEndpointsSource) rather than emit a duplicate type.
+    private static bool HasDeleteRequestNameCollision(CrudEntityModel entity, out string deleteRequestName)
+    {
+        var name = deleteRequestName = $"Delete{entity.EntityName}Request";
+        if (entity.Create is not null && entity.Create.RequestName == name) return true;
+        if (entity.Updates.Any(u => u.RequestName == name)) return true;
+        return entity.Actions.Any(a => a.RequestName == name);
+    }
+
+    private static void AppendDeleteRequest(StringBuilder builder, CrudEntityModel entity, string requestName)
+    {
+        builder.Append("/// <summary>Delete request generated for ").Append(entity.EntityName)
+            .AppendLine(", carrying the target's key bound from the route.</summary>");
+        builder.Append("public sealed partial record ").Append(requestName)
+            .Append(" : ").Append(WithKeyInterface).Append(entity.KeyFullName).AppendLine(">");
+        builder.AppendLine("{");
+        builder.Append("    /// <summary>The target ").Append(entity.EntityName).AppendLine(" identifier (bound from route).</summary>");
+        builder.Append("    public ").Append(entity.KeyFullName).AppendLine(" Id { get; set; }");
+        builder.AppendLine("}");
     }
 
     private static void AppendCreateRequest(StringBuilder builder, CrudEntityModel entity, CrudMemberModel member)
@@ -908,7 +937,9 @@ internal static class Emitter
         AppendMapCall(builder, opType, "GetList",
             $"group.MapGetList<{entity.EntityFullName}, {entity.KeyFullName}, {entity.DtoFullName}>();");
         AppendMapCall(builder, opType, "Delete",
-            $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}>();");
+            HasDeleteRequestNameCollision(entity, out var deleteRequestName)
+                ? $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}>();"
+                : $"group.MapDeleteById<{entity.EntityFullName}, {entity.KeyFullName}, {deleteRequestName}>();");
 
         if (entity.Create is not null)
             AppendMapCall(builder, opType, "Create",
