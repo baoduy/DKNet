@@ -1,11 +1,8 @@
-using System.Reflection;
-using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.AuditLogs;
+using DKNet.EfCore.AuditLogs.Internals;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
-using DKNet.Fw.Extensions;
-using DKNet.Fw.Extensions.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DKNet.EfCore.DataAuthorization.Internals;
 
@@ -23,7 +20,15 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 ///     Initializes a new instance of the <see cref="DataOwnerHook" /> class.
 /// </remarks>
 /// <param name="dataOwnerProvider">The provider that supplies ownership information.</param>
-internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBeforeSaveHookAsync
+/// <param name="currentUserProvider">
+///     The optional signed-in-user provider. When registered and returning a non-empty value, it takes
+///     precedence over <paramref name="dataOwnerProvider" /> for <c>CreatedBy</c>/<c>UpdatedBy</c> — this
+///     hook then stamps <c>OwnedBy</c> only, leaving <c>CreatedBy</c>/<c>CreatedOn</c>/<c>UpdatedBy</c>/
+///     <c>UpdatedOn</c> for <c>EfCoreAuditHook</c> to stamp instead. The decision is made independently by
+///     each hook from <see cref="ICurrentUserProvider" />'s own value, never from hook run order.
+/// </param>
+internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider, ICurrentUserProvider? currentUserProvider = null)
+    : IBeforeSaveHookAsync
 {
     #region Methods
 
@@ -54,17 +59,19 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
         {
             var ownerKey = dataOwnerProvider.GetOwnershipKey();
             var accessibleKeys = dataOwnerProvider.GetAccessibleKeys();
+            var stampAuditFromOwner = string.IsNullOrEmpty(currentUserProvider?.GetCurrentUser());
 
             foreach (var entry in context.Entities)
                 switch (entry.OriginalState)
                 {
                     case EntityState.Added when !string.IsNullOrEmpty(ownerKey):
-                        StampAddedEntity(entry, ownerKey);
+                        StampAddedEntity(entry, ownerKey, stampAuditFromOwner);
                         break;
 
                     case EntityState.Modified:
                         GuardOwnedByReassignment(entry, accessibleKeys);
-                        if (!string.IsNullOrEmpty(ownerKey)) StampModifiedEntity(entry, ownerKey);
+                        if (!string.IsNullOrEmpty(ownerKey) && stampAuditFromOwner)
+                            AuditPropertyStamper.StampUpdatedBy(entry, ownerKey);
                         break;
                 }
         }
@@ -75,123 +82,24 @@ internal sealed class DataOwnerHook(IDataOwnerProvider dataOwnerProvider) : IBef
     }
 
     /// <summary>
-    ///     Stamps audit and ownership properties on a newly added entity.
+    ///     Stamps <see cref="IOwnedBy.OwnedBy" /> on a newly added entity, and — only when no
+    ///     <see cref="ICurrentUserProvider" /> value takes precedence — <c>CreatedBy</c>/<c>CreatedOn</c> too.
     /// </summary>
     /// <param name="entry">The snapshot entry for the newly added entity.</param>
     /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
-    private static void StampAddedEntity(SnapshotEntityEntry entry, string ownerKey)
+    /// <param name="stampAuditFromOwner">
+    ///     Whether <c>CreatedBy</c>/<c>CreatedOn</c> should be stamped from <paramref name="ownerKey" /> —
+    ///     <see langword="false" /> when a registered <see cref="ICurrentUserProvider" /> is supplying them
+    ///     instead.
+    /// </param>
+    private static void StampAddedEntity(SnapshotEntityEntry entry, string ownerKey, bool stampAuditFromOwner)
     {
         var entity = entry.Entity;
 
-        if (entity is IAuditedProperties au && string.IsNullOrEmpty(au.CreatedBy))
-        {
-            SetOwnedProperty(entry.Entry, au, nameof(au.CreatedBy), ownerKey);
-            SetOwnedProperty(entry.Entry, au, nameof(au.CreatedOn), DateTimeOffset.UtcNow);
-        }
+        if (stampAuditFromOwner) AuditPropertyStamper.StampCreatedBy(entry, ownerKey);
 
         if (entity is IOwnedBy own && string.IsNullOrEmpty(own.OwnedBy))
-            SetOwnedProperty(entry.Entry, own, nameof(IOwnedBy.OwnedBy), ownerKey);
-    }
-
-    /// <summary>
-    ///     Stamps modification audit properties on a modified entity with the current context's ownership key,
-    ///     unless an explicit modifier was already supplied for this change set.
-    /// </summary>
-    /// <param name="entry">The snapshot entry for the modified entity.</param>
-    /// <param name="ownerKey">The ownership key of the current context (guaranteed non-empty).</param>
-    /// <remarks>
-    ///     An explicit modifier is detected by comparing <see cref="IAuditedProperties.UpdatedBy" /> and
-    ///     <see cref="IAuditedProperties.UpdatedOn" />'s current values against their <c>OriginalValue</c>s for
-    ///     this change set: a difference in either means a domain method already called <c>SetUpdatedBy</c> (which
-    ///     always writes both together), so both properties are left untouched — even when the modifier it
-    ///     supplied equals the one recorded by an earlier save. Otherwise neither value changed explicitly, so the
-    ///     ambient ownership key and current time are stamped.
-    /// </remarks>
-    private static void StampModifiedEntity(SnapshotEntityEntry entry, string ownerKey)
-    {
-        if (entry.Entity is not IAuditedProperties au) return;
-        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedBy)) is null) return;
-        if (HasExplicitModifier(entry, au)) return;
-
-        SetOwnedProperty(entry.Entry, au, nameof(IAuditedProperties.UpdatedBy), ownerKey);
-        SetOwnedProperty(entry.Entry, au, nameof(IAuditedProperties.UpdatedOn), DateTimeOffset.UtcNow);
-    }
-
-    /// <summary>
-    ///     Determines whether a domain method already recorded an explicit modifier for this change set, by
-    ///     comparing <see cref="IAuditedProperties.UpdatedBy" /> and <see cref="IAuditedProperties.UpdatedOn" />
-    ///     against their original values.
-    /// </summary>
-    /// <param name="entry">The snapshot entry for the modified entity.</param>
-    /// <param name="au">The entity's audited-properties view.</param>
-    private static bool HasExplicitModifier(SnapshotEntityEntry entry, IAuditedProperties au)
-    {
-        var originalUpdatedBy = entry.Entry.Property(nameof(IAuditedProperties.UpdatedBy)).OriginalValue as string;
-        if (!string.Equals(originalUpdatedBy, au.UpdatedBy, StringComparison.Ordinal)) return true;
-
-        if (entry.Entry.Metadata.FindProperty(nameof(IAuditedProperties.UpdatedOn)) is null) return false;
-
-        var originalUpdatedOn =
-            entry.Entry.Property(nameof(IAuditedProperties.UpdatedOn)).OriginalValue as DateTimeOffset?;
-        return originalUpdatedOn != au.UpdatedOn;
-    }
-
-    /// <summary>
-    ///     Sets a property's value on <paramref name="entity" />, preferring EF Core's own compiled property
-    ///     accessor (<paramref name="entry" />) — which needs no reflection and reaches private setters,
-    ///     init-only properties, and shadow properties that <see cref="FindWritableProperty" /> cannot. Falls
-    ///     back to the type-hierarchy reflection walk only when the property is not part of the EF model at
-    ///     all (for example an explicitly ignored column).
-    /// </summary>
-    /// <param name="entry">The EF Core entry tracking <paramref name="entity" />.</param>
-    /// <param name="entity">The object to set the property on.</param>
-    /// <param name="propertyName">The name of the property to set.</param>
-    /// <param name="value">The value to set.</param>
-    /// <exception cref="ArgumentException">
-    ///     No writable property named <paramref name="propertyName" /> exists anywhere in <paramref name="entity" />'s
-    ///     type hierarchy, and it is not part of the EF model either.
-    /// </exception>
-    private static void SetOwnedProperty(EntityEntry entry, object entity, string propertyName, object value)
-    {
-        if (entry.Metadata.FindProperty(propertyName) is not null)
-        {
-            entry.Property(propertyName).CurrentValue = value;
-            return;
-        }
-
-        var property = FindWritableProperty(entity.GetType(), propertyName) ??
-                       throw new ArgumentException(
-                           $"Property '{propertyName}' not found on type '{entity.GetType().FullName}'.",
-                           nameof(propertyName));
-
-        entity.SetPropertyValue(property, value);
-    }
-
-    /// <summary>
-    ///     Finds a property by name, walking up from <paramref name="type" /> through its base types.
-    /// </summary>
-    /// <remarks>
-    ///     <see cref="Type.GetProperty(string, BindingFlags)" /> on a derived type only resolves non-public
-    ///     accessors declared directly on that type — it does not see a non-public setter declared on a base
-    ///     class, exactly the "private setter + intention-revealing method" pattern this codebase favors
-    ///     (e.g. <c>AuditedEntity&lt;TKey&gt;</c>). Searching each type in the hierarchy with
-    ///     <see cref="BindingFlags.DeclaredOnly" /> finds it.
-    /// </remarks>
-    /// <param name="type">The runtime type to start searching from.</param>
-    /// <param name="propertyName">The name of the property to find.</param>
-    /// <returns>The writable <see cref="PropertyInfo" />, or <c>null</c> if none exists in the hierarchy.</returns>
-    private static PropertyInfo? FindWritableProperty(Type type, string propertyName)
-    {
-        for (var current = type; current is not null; current = current.BaseType)
-        {
-            var property = current.GetProperty(propertyName,
-                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-            if (property?.GetSetMethod(true) is not null) return property;
-        }
-
-        return null;
+            AuditPropertyStamper.SetOwnedProperty(entry.Entry, own, nameof(IOwnedBy.OwnedBy), ownerKey);
     }
 
     /// <summary>

@@ -139,5 +139,37 @@ public static class EfCoreAuditLogSetup
             services.AddEfCoreAuditHook<TDbContext>(behaviour, propertyPolicy);
             return services;
         }
+
+        /// <summary>
+        ///     Registers <typeparamref name="TProvider" /> as the application-wide <see cref="ICurrentUserProvider" />
+        ///     — first caller wins, exactly like <c>AddDataOwnerProvider</c>'s single active tenant provider — and
+        ///     ensures the audit hook is attached to <typeparamref name="TDbContext" />, without overwriting
+        ///     <see cref="AuditLogOptions" /> already registered by an earlier
+        ///     <see cref="AddEfCoreAuditHook{TDbContext}" /> or <see cref="AddEfCoreAuditLogs{TDbContext,TPublisher}" />
+        ///     call. The hook stamps regardless of whether any <see cref="IAuditLogPublisher" /> is registered.
+        /// </summary>
+        /// <typeparam name="TDbContext">The DbContext type to attach the audit hook to.</typeparam>
+        /// <typeparam name="TProvider">
+        ///     The current-user provider implementation to register — application-wide, not scoped to
+        ///     <typeparamref name="TDbContext" />; a later call for another <c>TDbContext</c> attaches the hook
+        ///     there too but keeps this provider.
+        /// </typeparam>
+        /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
+        public IServiceCollection AddCurrentUserProvider<TDbContext, TProvider>()
+            where TDbContext : DbContext
+            where TProvider : class, ICurrentUserProvider
+        {
+            if (!services.IsRegistered<ICurrentUserProvider>())
+                services.AddScoped<ICurrentUserProvider, TProvider>();
+
+            if (!services.IsRegistered<IOptions<AuditLogOptions>>())
+                services.AddSingleton(Options.Create(new AuditLogOptions
+                {
+                    Behaviour = AuditLogBehaviour.IncludeAllAuditedEntities,
+                    PropertyPolicy = AuditPropertyPolicy.RedactSensitive
+                }));
+
+            return services.AddHook<TDbContext, EfCoreAuditHook>();
+        }
     }
 }

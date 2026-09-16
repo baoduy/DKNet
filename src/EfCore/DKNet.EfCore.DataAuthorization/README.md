@@ -19,6 +19,11 @@ dotnet add package DKNet.EfCore.DataAuthorization
 - **Automatic ownership stamping** — a `SaveChanges` hook stamps the current owner key onto newly added `IOwnedBy`
   entities (and `CreatedBy`/`CreatedOn` when the entity is also audited), and reverts any attempt to silently
   reassign an existing row's owner to a key the caller can't access.
+- **Composes with signed-in-user auditing** — when an `ICurrentUserProvider` from
+  [`DKNet.EfCore.AuditLogs`](../DKNet.EfCore.AuditLogs/README.md) supplies a non-empty user for the save, this
+  package stamps `OwnedBy` only and the audit identity comes from that provider. Whenever it does not — no
+  such provider registered, or one that returned `null`/empty — the ownership key keeps filling
+  `CreatedBy`/`UpdatedBy` exactly as before, so existing applications need no code change.
 - **One DI call to wire it up** — `AddDataOwnerProvider<TDbContext, TProvider>()` registers the query filter, the
   hook, and your `IDataOwnerProvider` implementation together. `TDbContext` must implement `IDataOwnerDbContext`;
   the requirement is compile-enforced by the method's generic constraint.
@@ -62,7 +67,7 @@ you implement plus one DI call.
 | `AddDataOwnerProvider<TDbContext, TProvider>()` | `IServiceCollection` | not registered | Registers `DataOwnerAuthQuery` as a global model builder, `TProvider` as a scoped `IDataOwnerProvider`, and `DataOwnerHook` as a keyed hook for `TDbContext`. Constrained to `DbContext, IDataOwnerDbContext`. |
 | `IDataOwnerDbContext.AccessibleKeys` | your `DbContext` | you supply it | The keys the caller may read. **Empty denies every owned row** — it never means "all". |
 | `IDataOwnerDbContext.IsUnrestrictedAccess` | your `DbContext` | `false` (interface default) | `true` bypasses the filter completely for that context. The only escape hatch. |
-| `IDataOwnerProvider.GetOwnershipKey()` | your provider | required, no default | The owner key stamped on new `IOwnedBy` rows. Null or blank means the hook stamps nothing. |
+| `IDataOwnerProvider.GetOwnershipKey()` | your provider | required, no default | The owner key stamped on new `IOwnedBy` rows, and — unless an `ICurrentUserProvider` supplied a user for that save — on `CreatedBy`/`UpdatedBy` too. Null or blank means the hook stamps nothing. |
 | `IDataOwnerProvider.GetAccessibleKeys()` | your provider | wraps `GetOwnershipKey()` into a single-key collection, or empty | The keys ownership may be reassigned to. Override for callers that span several owners. |
 | `DataOwnerAuthQuery.FilterKey` | fixed | `nameof(DataOwnerAuthQuery)` | Named EF Core query-filter key; not configurable. |
 | `DataOwnerAuthQuery.IsIgnorable` | fixed | `false` | A specification's `IgnoreQueryFilters()` can never bypass ownership isolation. |
@@ -70,6 +75,15 @@ you implement plus one DI call.
 The hook stamps `OwnedBy` (and `CreatedBy`/`CreatedOn` on audited entities) only when they are still blank, keeps
 an explicit `SetUpdatedBy` from being overwritten, and reverts an `OwnedBy` change that targets a key outside
 `GetAccessibleKeys()`.
+
+### User identity vs. ownership
+
+Ownership and "who did this" are separate keys, and only ownership belongs here. To stamp `CreatedBy`/`UpdatedBy`
+with the signed-in user rather than the tenant key, register an `ICurrentUserProvider` via
+`AddCurrentUserProvider<TDbContext, TProvider>()` from
+[`DKNet.EfCore.AuditLogs`](../DKNet.EfCore.AuditLogs/README.md); that package documents the provider contract and
+the identifier to return. Both providers are independent and optional — adding one changes neither the global
+query filter nor the ownership-reassignment guard described above.
 
 Full documentation, configuration options, and gotchas:
 [DKNet.EfCore.DataAuthorization docs](https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.DataAuthorization.md)

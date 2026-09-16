@@ -18,6 +18,7 @@
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="EfCore.AuditLogs.Tests"/>
+        <InternalsVisibleTo Include="DKNet.EfCore.DataAuthorization"/>
     </ItemGroup>
 
 </Project>

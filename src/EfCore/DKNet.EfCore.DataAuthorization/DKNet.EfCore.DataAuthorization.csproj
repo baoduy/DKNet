@@ -14,6 +14,7 @@
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.Extensions\DKNet.EfCore.Extensions.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.Hooks\DKNet.EfCore.Hooks.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.AuditLogs\DKNet.EfCore.AuditLogs.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

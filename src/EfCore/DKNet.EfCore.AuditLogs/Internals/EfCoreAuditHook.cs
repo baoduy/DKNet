@@ -11,7 +11,8 @@ namespace DKNet.EfCore.AuditLogs.Internals;
 internal sealed class EfCoreAuditHook(
     IServiceProvider serviceProvider,
     IOptions<AuditLogOptions> option,
-    ILogger<EfCoreAuditHook> logger) : HookAsync
+    ILogger<EfCoreAuditHook> logger,
+    ICurrentUserProvider? currentUserProvider = null) : HookAsync
 {
     #region Fields
 
@@ -34,6 +35,8 @@ internal sealed class EfCoreAuditHook(
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
+        StampCurrentUser(context);
+
         var logs = context.Entities
             .Where(e => e.OriginalState is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(e => e.Entry.BuildAuditLog(e.OriginalState, option.Value.Behaviour, option.Value.PropertyPolicy))
@@ -50,6 +53,31 @@ internal sealed class EfCoreAuditHook(
         if (logs is { Count: > 0 }) _cache[context.DbContext.ContextId.InstanceId] = logs;
 
         return base.BeforeSaveAsync(context, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Stamps <c>CreatedBy</c>/<c>CreatedOn</c> on every added entry and <c>UpdatedBy</c>/<c>UpdatedOn</c>
+    ///     on every modified entry from the registered <see cref="ICurrentUserProvider" />, before the audit
+    ///     log entries are captured below — so a published entry carries the same values the row was saved
+    ///     with. No-op when no provider is registered or it returns null/empty.
+    /// </summary>
+    /// <param name="context">The snapshot context containing entity changes.</param>
+    private void StampCurrentUser(SnapshotContext context)
+    {
+        var currentUser = currentUserProvider?.GetCurrentUser();
+        if (string.IsNullOrEmpty(currentUser)) return;
+
+        foreach (var entry in context.Entities)
+            switch (entry.OriginalState)
+            {
+                case EntityState.Added:
+                    AuditPropertyStamper.StampCreatedBy(entry, currentUser);
+                    break;
+
+                case EntityState.Modified:
+                    AuditPropertyStamper.StampUpdatedBy(entry, currentUser);
+                    break;
+            }
     }
 
     /// <summary>
