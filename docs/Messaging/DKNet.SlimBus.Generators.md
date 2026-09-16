@@ -366,30 +366,62 @@ public static class ProductCrudEndpointExtensions
     {
         var options = new global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions();
         configure?.Invoke(options);
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById))
-            group.MapGetById<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
-            group.MapGetList<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::Catalog.Product, global::System.Guid, DeleteProductRequest>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
-            group.MapPost<CreateProductRequest, global::Api.ProductDto>("/");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::Api.ProductDto>("{id}");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<RenameProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/rename");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
-            group.MapActionById<ApproveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/approval", "POST");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
-            group.MapActionById<ArchiveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/archive", "PATCH");
+        options.ValidateRouteNames("Product", "GetById", "GetList", "Create", "Delete", "UpdatePrice", "Rename", "Approve", "Archive");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById) && !options.IsExcluded("GetById"))
+        {
+            var routeBuilder = group.MapGetById<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById, "GetById", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList) && !options.IsExcluded("GetList"))
+        {
+            var routeBuilder = group.MapGetList<global::Catalog.Product, global::System.Guid, global::Api.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList, "GetList", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete) && !options.IsExcluded("Delete"))
+        {
+            var routeBuilder = group.MapDeleteById<global::Catalog.Product, global::System.Guid, DeleteProductRequest>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete, "Delete", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create) && !options.IsExcluded("Create"))
+        {
+            var routeBuilder = group.MapPost<CreateProductRequest, global::Api.ProductDto>("/");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create, "Create", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("UpdatePrice"))
+        {
+            var routeBuilder = group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::Api.ProductDto>("{id}");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "UpdatePrice", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("Rename"))
+        {
+            var routeBuilder = group.MapPutById<RenameProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/rename");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "Rename", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action) && !options.IsExcluded("Approve"))
+        {
+            var routeBuilder = group.MapActionById<ApproveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/approval", "POST");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action, "Approve", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action) && !options.IsExcluded("Archive"))
+        {
+            var routeBuilder = group.MapActionById<ArchiveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/archive", "PATCH");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action, "Archive", routeBuilder);
+        }
         return group;
     }
 }
 ```
 
-Read the last five lines as the routing rules in action: `UpdatePrice` was declared first so it keeps the plain
-`{id}` PUT; `Rename` came second so it landed on `{id}/rename`; `Approve` used the attribute's explicit
-`"approval"` segment; `Archive` fell back to its kebab-cased method name and to `PATCH` because of `Verb`.
+Read the last four registrations as the routing rules in action: `UpdatePrice` was declared first so it keeps
+the plain `{id}` PUT; `Rename` came second so it landed on `{id}/rename`; `Approve` used the attribute's
+explicit `"approval"` segment; `Archive` fell back to its kebab-cased method name and to `PATCH` because of
+`Verb`.
+
+Two things in that method are the exclusion and configuration surface. `ValidateRouteNames` is emitted with
+every name the entity has and runs before anything is mapped, so a name `Exclude`/`Configure` passed that the
+entity does not have throws there. Each registration is then behind both guards — `Exclude(CrudOp.Update)`
+drops both PUTs, `Exclude("Rename")` drops only the second — and `options.Apply` is what runs the route's
+settings, operation-kind first, name second.
 
 ### Naming and routing conventions
 

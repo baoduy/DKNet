@@ -548,30 +548,58 @@ namespace MyApi.Crud;                          // always {AssemblyName}.Crud
 /// <summary>Registers the generated CRUD endpoints for Product.</summary>
 public static class ProductCrudEndpointExtensions
 {
+    /// <summary>Maps GET {id}, GET /, POST /, PUT {id} (per update request), DELETE {id} and each generated domain-action endpoint for Product.</summary>
     public static global::Microsoft.AspNetCore.Routing.RouteGroupBuilder MapProductCrud(
         this global::Microsoft.AspNetCore.Routing.RouteGroupBuilder group,
         global::System.Action<global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions>? configure = null)
     {
         var options = new global::DKNet.AspCore.Extensions.Endpoints.CrudMapOptions();
         configure?.Invoke(options);
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById))
-            group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList))
-            group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete))
-            group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create))
-            group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update))
-            group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/update-name");
-        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action))
-            group.MapActionById<ApproveProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/approval", "POST");
+        options.ValidateRouteNames("Product", "GetById", "GetList", "Create", "Delete", "UpdatePrice", "UpdateName", "Approve");
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById) && !options.IsExcluded("GetById"))
+        {
+            var routeBuilder = group.MapGetById<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetById, "GetById", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList) && !options.IsExcluded("GetList"))
+        {
+            var routeBuilder = group.MapGetList<global::MyDomain.Product, global::System.Guid, global::MyApi.ProductDto>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.GetList, "GetList", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete) && !options.IsExcluded("Delete"))
+        {
+            var routeBuilder = group.MapDeleteById<global::MyDomain.Product, global::System.Guid, DeleteProductRequest>();
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Delete, "Delete", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create) && !options.IsExcluded("Create"))
+        {
+            var routeBuilder = group.MapPost<CreateProductRequest, global::MyApi.ProductDto>("/");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Create, "Create", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("UpdatePrice"))
+        {
+            var routeBuilder = group.MapPutById<UpdatePriceProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "UpdatePrice", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update) && !options.IsExcluded("UpdateName"))
+        {
+            var routeBuilder = group.MapPutById<UpdateNameProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/update-name");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Update, "UpdateName", routeBuilder);
+        }
+        if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action) && !options.IsExcluded("Approve"))
+        {
+            var routeBuilder = group.MapActionById<ApproveProductRequest, global::System.Guid, global::MyApi.ProductDto>("{id}/approval", "POST");
+            options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action, "Approve", routeBuilder);
+        }
         return group;
     }
 }
 ```
+
+Every registration passes two guards — its `CrudOp` and its own route name — so `Exclude(CrudOp.Update)`
+drops both PUTs while `Exclude("UpdateName")` drops only the second. `ValidateRouteNames` runs before any
+mapping, with every name the entity has, which is what turns an unmatched `Exclude`/`Configure` name into an
+`ArgumentException` instead of a silent no-op.
 
 Note the routing rules that fall out of that emission: registration order is GetById, GetList,
 Delete, Create, then each `[CrudUpdate]` in declaration order, then each `[CrudAction]`. The **first**
