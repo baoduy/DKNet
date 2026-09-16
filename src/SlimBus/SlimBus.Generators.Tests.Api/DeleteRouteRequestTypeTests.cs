@@ -48,7 +48,9 @@ public sealed class DeleteRouteRequestTypeTests(GadgetTestHost host) : IClassFix
 
         var response = await host.Client.DeleteAsync($"/gadgets-guarded/{gadget.Id}");
 
-        response.IsSuccessStatusCode.ShouldBeFalse();
+        // Pinned to the literal status AddFluentValidationAutoValidation() answers a failed rule with —
+        // not just "not a 2xx", which a 500 from the still-unimplemented delegate would also satisfy.
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await host.Client.GetAsync($"/gadgets/{gadget.Id}")).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
@@ -109,7 +111,9 @@ public sealed class DeleteRouteRequestTypeTests(GadgetTestHost host) : IClassFix
 
         var response = await host.Client.DeleteAsync($"/gadgets-guarded/{gadget.Id}");
 
-        response.IsSuccessStatusCode.ShouldBeFalse();
+        // Same pin as AGroupThatStillHoldsAccountsIsRefused — distinguishes an actual refusal from the
+        // still-unimplemented delegate's 500.
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var recorder = host.Services.GetRequiredService<GadgetSaveAttemptRecorder>();
         recorder.DeletedGadgetIds.ShouldNotContain(gadget.Id);
         (await host.Client.GetAsync($"/gadgets/{gadget.Id}")).StatusCode.ShouldBe(HttpStatusCode.OK);
