@@ -1,5 +1,6 @@
 using DKNet.AspCore.Extensions.Endpoints;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Shouldly;
 using SlimBus.Generators.Tests.Api.Crud;
 
@@ -13,16 +14,19 @@ namespace SlimBus.Generators.Tests.Api;
 public class PerRouteConfigurationRegistrationTests
 {
     [Fact]
-    public void MapGadgetCrud_WithMisspeltRouteName_ReportsAnErrorNamingIt()
+    public void MapGadgetCrud_WithMisspeltRouteName_ReportsAnErrorNamingItAndPublishesNoRoute()
     {
         // Gadget publishes update routes "UpdatePrice" and "Rename" (DRK-1327 §5 slice mapping); "UpdatePrise"
         // is the deliberate typo of "UpdatePrice", mirroring the spec's own "ChangePrise" typo of "ChangePrice".
         var app = WebApplication.CreateBuilder().Build();
+        var group = app.MapGroup("/gadgets-typo");
 
         var exception = Should.Throw<ArgumentException>(() =>
-            app.MapGroup("/gadgets-typo")
-                .MapGadgetCrud(o => o.Configure("UpdatePrise", b => b.RequireAuthorization("product.price"))));
+            group.MapGadgetCrud(o => o.Configure("UpdatePrise", b => b.RequireAuthorization("product.price"))));
 
         exception.Message.ShouldContain("UpdatePrise");
+
+        // R5: the throw happens before any route is registered — no partial registration.
+        ((IEndpointRouteBuilder)group).DataSources.ShouldBeEmpty();
     }
 }

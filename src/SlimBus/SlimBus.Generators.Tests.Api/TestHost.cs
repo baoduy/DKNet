@@ -207,9 +207,12 @@ public sealed class GadgetAuthTestHost : IAsyncLifetime, IDisposable
                 .Configure("UpdatePrice", b => b.RequireAuthorization("product.price")));
 
         // Scenario 6: excluding a route also drops the settings that name it — no error, route just absent.
+        // Uses the route-NAME form (R1: "Delete" is the Delete op's own route name), not the op-kind form:
+        // only the name form reaches ValidateRouteNames, which is what R4 says still validates (then never
+        // applies) a setting naming an excluded route.
         app.MapGroup("/gadgets-excluded-delete-scope")
             .MapGadgetCrud(o => o
-                .Configure(CrudOp.Delete, b => b.RequireAuthorization("product.write"))
+                .Configure("Delete", b => b.RequireAuthorization("product.write"))
                 .Exclude(CrudOp.Delete));
 
         // Scenario 7: a service that configures nothing is unchanged — every route stays open, even with the

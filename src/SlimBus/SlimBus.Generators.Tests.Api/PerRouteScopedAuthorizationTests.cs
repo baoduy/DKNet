@@ -97,6 +97,14 @@ public sealed class PerRouteScopedAuthorizationTests(GadgetAuthTestHost host) : 
         var renamed = await host.Client.PutAsJsonAsync($"/gadgets-unconfigured/{dto.Id}/rename", new { name = "renamed" });
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
 
+        // "all five routes are published" (§7 slice note) — GET {id} and GET / included, not just the
+        // create/update/delete routes exercised above.
+        var byId = await host.Client.GetAsync($"/gadgets-unconfigured/{dto.Id}");
+        byId.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var list = await host.Client.GetAsync("/gadgets-unconfigured");
+        list.StatusCode.ShouldBe(HttpStatusCode.OK);
+
         var deleted = await host.Client.DeleteAsync($"/gadgets-unconfigured/{dto.Id}");
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
