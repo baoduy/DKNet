@@ -141,14 +141,19 @@ public static class EfCoreAuditLogSetup
         }
 
         /// <summary>
-        ///     Registers <typeparamref name="TProvider" /> as the <see cref="ICurrentUserProvider" /> that fills
-        ///     <c>CreatedBy</c>/<c>UpdatedBy</c> for <typeparamref name="TDbContext" />, and ensures the audit hook
-        ///     is attached to it — without overwriting <see cref="AuditLogOptions" /> already registered by an
-        ///     earlier <see cref="AddEfCoreAuditHook{TDbContext}" /> or <see cref="AddEfCoreAuditLogs{TDbContext,TPublisher}" />
+        ///     Registers <typeparamref name="TProvider" /> as the application-wide <see cref="ICurrentUserProvider" />
+        ///     — first caller wins, exactly like <c>AddDataOwnerProvider</c>'s single active tenant provider — and
+        ///     ensures the audit hook is attached to <typeparamref name="TDbContext" />, without overwriting
+        ///     <see cref="AuditLogOptions" /> already registered by an earlier
+        ///     <see cref="AddEfCoreAuditHook{TDbContext}" /> or <see cref="AddEfCoreAuditLogs{TDbContext,TPublisher}" />
         ///     call. The hook stamps regardless of whether any <see cref="IAuditLogPublisher" /> is registered.
         /// </summary>
-        /// <typeparam name="TDbContext">The application's DbContext type.</typeparam>
-        /// <typeparam name="TProvider">The current-user provider implementation to register.</typeparam>
+        /// <typeparam name="TDbContext">The DbContext type to attach the audit hook to.</typeparam>
+        /// <typeparam name="TProvider">
+        ///     The current-user provider implementation to register — application-wide, not scoped to
+        ///     <typeparamref name="TDbContext" />; a later call for another <c>TDbContext</c> attaches the hook
+        ///     there too but keeps this provider.
+        /// </typeparam>
         /// <returns>The updated <see cref="IServiceCollection" /> for chaining.</returns>
         public IServiceCollection AddCurrentUserProvider<TDbContext, TProvider>()
             where TDbContext : DbContext

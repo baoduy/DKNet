@@ -4,6 +4,7 @@
 // registered" halves of §3 row 4's contract need their own coverage.
 
 using DKNet.EfCore.AuditLogs;
+using DKNet.EfCore.DataAuthorization;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -69,6 +70,39 @@ public class EfCoreAuditLogSetupTests
         // CreatedBy — an empty CreatedBy alone can't tell "never touched" from "touched with empty".
         entity.CreatedBy.ShouldBeNullOrEmpty();
         entity.CreatedOn.ShouldBe(default);
+    }
+
+    [Fact]
+    public async Task RegisteredCurrentUserProvider_ReturningEmpty_FallsBackToOwnershipKey()
+    {
+        // N2 (PR #458 POLISH round on DRK-1401): with BOTH a tenant provider and a current-user
+        // provider registered, an empty GetCurrentUser() must still let DataOwnerHook fall back to the
+        // ownership key for CreatedBy — pins that DataOwnerHook.cs:62 keys off the provider's *value*,
+        // not merely whether one is registered (a `currentUserProvider is null` rewrite would also
+        // pass every other test in this suite, since none pairs a registered-but-empty provider with a
+        // tenant provider).
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDataOwnerProvider<CustomerAuditDbContext, MutableTenantProvider>();
+        services.AddCurrentUserProvider<CustomerAuditDbContext, MutableCurrentUserProvider>();
+        services.AddDbContextWithHook<CustomerAuditDbContext>((_, o) =>
+            o.UseSqlite($"Data Source={Path.Combine(Path.GetTempPath(), $"n2_{Guid.NewGuid():N}.db")}"));
+
+        await using var root = services.BuildServiceProvider();
+        using var scope = root.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CustomerAuditDbContext>();
+        await db.Database.EnsureCreatedAsync();
+        ((MutableTenantProvider)scope.ServiceProvider.GetRequiredService<IDataOwnerProvider>()).OwnershipKey =
+            "acme-sg";
+        ((MutableCurrentUserProvider)scope.ServiceProvider.GetRequiredService<ICurrentUserProvider>()).CurrentUser =
+            string.Empty;
+
+        var entity = new CustomerRecord { Name = "Acme N2" };
+        db.CustomerRecords.Add(entity);
+        await db.SaveChangesAsync();
+
+        entity.CreatedBy.ShouldBe("acme-sg");
+        entity.OwnedBy.ShouldBe("acme-sg");
     }
 
     #endregion
