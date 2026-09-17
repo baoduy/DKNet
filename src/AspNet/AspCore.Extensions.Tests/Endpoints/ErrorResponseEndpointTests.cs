@@ -9,6 +9,7 @@
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using AspCore.Extensions.Tests.Fixtures;
 
 namespace AspCore.Extensions.Tests.Endpoints;
@@ -101,10 +102,10 @@ public class ErrorResponseEndpointTests
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
     }
 
-    // --- Scenario Outline: A service that registers no setting keeps today's responses ----------------------
+    // --- Scenario Outline: A service that registers no setting still gets DRK-1484's unified command-failure shape ----
 
     [Fact]
-    public async Task NoErrorResponseSettingRegistered_CommandHandlerRefusal_Returns400FlatMessageList()
+    public async Task NoErrorResponseSettingRegistered_CommandHandlerRefusal_Returns400UnifiedErrorItemList()
     {
         await using var host = await LedgerTestHost.CreateAsync();
 
@@ -113,12 +114,12 @@ public class ErrorResponseEndpointTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
-        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-        body.ShouldNotBeNull();
-        // Today's shape: Extensions["errors"] is a flat list of message strings, not a field->messages map.
-        var errors = body["errors"].ToString();
-        errors.ShouldNotBeNull();
-        errors.ShouldContain("Account group 'treasury-ops' still holds accounts.");
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        // DRK-1484: the short-form Response() always answers with the unified body — errors is an ErrorItem[]
+        // (objects, not flat strings), even with no ErrorResponseOptions registered at all.
+        var errors = body.GetProperty("errors").EnumerateArray().ToList();
+        errors.ShouldHaveSingleItem();
+        errors[0].GetProperty("message").GetString().ShouldBe("Account group 'treasury-ops' still holds accounts.");
     }
 
     [Fact]

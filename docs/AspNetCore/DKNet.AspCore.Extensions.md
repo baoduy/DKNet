@@ -17,8 +17,8 @@ versioned endpoint groups, one-line verb-to-command mappers, generic list/read/d
   `DKNet.EfCore.Specifications`;
 - a paging, filtering, searching and ordering contract (`ListQueryRequest`, `ListFilter`,
   `PagedResponse<T>`) shared by every list endpoint; and
-- converting a `FluentResults` result (or an ASP.NET Core `ModelStateDictionary`) into the
-  `IResult`/`ProblemDetails` shape minimal APIs and OpenAPI both expect.
+- converting a `FluentResults` result into the `IResult`/`ProblemDetails` shape minimal APIs and
+  OpenAPI both expect.
 
 Reach for it whenever you are building minimal-API endpoints on top of DKNet's SlimBus/CQRS and
 EF Core Specifications packages — it is what turns a command/query class, or a bare entity, into a
@@ -251,9 +251,11 @@ public sealed record ApproveOrderCommand
 }
 ```
 
-`ProducesCommons()` adds the shared `400`/`401`/`403`/`404`/`409`/`429`/`500` response metadata so
-the published OpenAPI description is consistent across endpoints. It is public — call it yourself on
-a hand-written `RouteHandlerBuilder` to match:
+`ProducesCommons()` adds two things: the shared `400`/`401`/`403`/`404`/`409`/`429`/`500` response
+metadata, so the published OpenAPI description is consistent across endpoints, and the endpoint
+filter that answers an unhandled exception with the standard error body (see
+[One error-response setting](#one-error-response-setting--adderrorresponses)). It is
+public — call it yourself on a hand-written `RouteHandlerBuilder` to get both:
 
 ```csharp
 app.MapGet("/health", () => "ok").ProducesCommons();
@@ -434,38 +436,31 @@ app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
 | `IResult<T>` success, null value | `false` | `TypedResults.Ok()` |
 | `IResult<T>` success | `true` | `TypedResults.Created("/", value)` — the location is a literal `"/"` placeholder |
 | `IResultBase` success | `false` / `true` | `TypedResults.Ok()` / `TypedResults.Created()` |
-| either, failure | any | `TypedResults.Problem(problemDetails)` |
-| either, failure, through the `Response(ErrorResponseOptions?, …)` overload | any | `TypedResults.Problem(problemDetails)` with the host's error-response setting applied — see [One error-response setting](#one-error-response-setting--adderrorresponses) |
+| either, failure | any | `TypedResults.Problem(problemDetails)`, with a host's registered [error-response setting](#one-error-response-setting--adderrorresponses) applied — resolved from the container when the response executes, so the endpoint never has to name it |
 
-Both overloads that take an `ErrorResponseOptions?` — one per result type — behave exactly as the
-rows above on success; only the failure row differs. These are the overloads the fluent mappers call,
-resolving the setting from the container.
+`Response(ErrorResponseOptions?, …)` is retired (it let an endpoint skip the registered setting by
+passing `null`); the overloads above read the registered setting on their own.
 
-`ProblemDetailsExtensions.ToProblemDetails()` builds the underlying `ProblemDetails` from either an
-`IResultBase` or an ASP.NET Core `ModelStateDictionary`:
+`Response()`/`Response<T>()` are the only public path onto the standard body. The
+`ProblemDetailsExtensions.ToProblemDetails()` that builds it is `internal` — a caller can no longer
+answer a failure while skipping the registered setting, which is the whole point of having one
+setting. `ToProblemDetails(this IResultBase, HttpStatusCode)` and
+`ToProblemDetails(this ModelStateDictionary)` are retired outright.
 
-```csharp
-if (!ModelState.IsValid)
-    return Results.Problem(ModelState.ToProblemDetails()!);
-```
-
-| Overload | Default status | Notes |
-|---|---|---|
-| `ToProblemDetails(this IResultBase, HttpStatusCode statusCode = BadRequest)` | `400` | Promoted to `404` when any error is a `NotFoundError`. `Title` is always `"Error"`, `Type` is the status name, `Detail` is the first message. |
-| `ToProblemDetails(this IResultBase, ErrorResponseOptions? options)` | `400` | Same base status as the overload above, `404` promotion included, then `options.StatusCode` and `options.Customize` are applied on top — see [One error-response setting](#one-error-response-setting--adderrorresponses). A `null` `options` keeps today's status and body. |
-| `ToProblemDetails(this ModelStateDictionary)` | `400` | Not configurable. |
-
-All three return `null` on success/valid input, and all three collect distinct (case-insensitive),
-non-empty error messages into the response's `errors` extension property.
+The status a failure gets before any callback: `400`, promoted to `404` when any error is a
+`NotFoundError`. On failure the body is the one shape every failure kind in this package answers
+with (see the next section) — `Title` is always `"Error"`, `Detail` is never set, and `errors` is an
+`ErrorItem[]`, never a flat string list or a field → messages map.
 
 ### One error-response setting — `AddErrorResponses`
 
-A DKNet host refuses a request in two different places: a SlimBus handler returns a failed
-`FluentResults` result, or FluentValidation refuses the input before the handler ever runs.
-`AddErrorResponses` is the one registration that shapes both — call it once, and the validation path
-is wired by that same call rather than configured separately (it swaps in the result factory that
-applies the setting; auto-validation itself still turns on where you already turn it on, per route
-group or route):
+A DKNet host can refuse or fail a request in three different places: a SlimBus handler returns a
+failed `FluentResults` result, FluentValidation refuses the input before the handler ever runs, or an
+exception goes unhandled. `AddErrorResponses` is the one registration that shapes all three — call it
+once; no second call configures the validation path or wires exception handling separately (it swaps
+in the result factory that applies the setting, and registers the `IExceptionHandler` plus
+`UseExceptionHandler()` for you). The call is idempotent — a host that reaches it from two
+composition roots registers one setting, not two, and the first call's `configure` wins:
 
 ```csharp
 using DKNet.AspCore.Extensions.Responses;
@@ -478,28 +473,97 @@ builder.Services.AddErrorResponses(o =>
 ```
 
 A handler that fails with a `business-refusal` code and a validator that refuses the same rule with
-that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code` member.
-Every endpoint the fluent mappers registered picks the setting up on its own — they resolve it from
-the container as an optional service, so registering it is the whole wiring step and leaving it
-unregistered is not an error.
+that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code`
+member. One callback maps as many codes as you need — this one answers `409 Conflict` for anything
+carrying a `precondition` code and leaves every other failure at the status it would have had:
+
+```csharp
+builder.Services.AddErrorResponses(o =>
+    o.StatusCode = ctx => ctx.Errors.Any(e => e.Code == "precondition") ? 409 : null);
+```
+
+The body that answers then reads `"status": 409, "type": "Conflict"` — `type` follows the status the
+callback chose, not the `400` the failure started at. Every endpoint the fluent mappers registered picks the setting up on its own — they resolve
+it from the container when the response executes, so registering it is the whole wiring step and
+leaving it unregistered is not an error.
+
+**The standard body.** Every failure kind — a failed command, refused input, or an unhandled
+exception — answers with the same shape:
+
+```json
+{
+  "title": "Error",
+  "status": 422,
+  "type": "UnprocessableEntity",
+  "traceId": "00-...-00",
+  "errors": [ { "message": "...", "code": "business-refusal", "field": null } ]
+}
+```
+
+`type` is always the final response status' `HttpStatusCode` name — recomputed after `StatusCode`
+runs, never left at the status the failure would have had before the callback. `traceId` is
+`Activity.Current?.Id`, falling back to `HttpContext.TraceIdentifier` wherever a request is available.
+There is no `Detail` member.
+
+**An unhandled exception's body says nothing about the exception.** Outside the `Development`
+environment the single `ErrorItem` carries one fixed message — `"An unexpected error occurred. Quote
+the trace-id when reporting this."` — and nothing the exception carried: no exception message, no
+type name, no stack trace. Inside `Development` that one entry carries the exception's own message
+instead, so a local run is still debuggable. `type` is the response status' name (`InternalServerError`
+for the default `500`) in every environment; it never names the exception type. `traceId` is the one
+member a caller quotes to get the real exception out of your logs.
+
+**Where an unhandled exception is caught.** Two places, both building the body through the same
+factory, so a caller cannot tell them apart:
+
+| Endpoint | Caught by |
+|---|---|
+| Anything the fluent mappers registered — every `MapPost`/`MapPut`/`MapPatch`/`MapDelete`/`MapGet`/`MapGetPage` and the generic `MapGetById`/`MapGetList`/`MapDeleteById` | The single endpoint filter `ProducesCommons()` adds. |
+| Everything else in the host | The `IExceptionHandler` that `AddErrorResponses` registers. |
+
+The endpoint filter exists because ASP.NET Core's `Development`-only developer exception page sits
+closer to the endpoint than any `IExceptionHandler`, and would otherwise answer first with an HTML
+page instead of the standard body. A filter sits closer still, so it wins.
+
+> **Known boundary.** An endpoint that does not go through `ProducesCommons()` — a raw
+> `app.MapGet(...)`, or anything registered outside the fluent mappers — has no filter, so in
+> `Development` an exception it raises is answered by the developer exception page rather than the
+> unified body. `Production` is unaffected: the `IExceptionHandler` covers those endpoints, and the
+> developer exception page is not registered there. Call `ProducesCommons()` on a hand-written
+> endpoint to put it on the same path as the mapped ones.
 
 **The status comes from the failure, never from the route.** `StatusCode` receives an
 `ErrorResponseContext` and nothing else:
 
 | Member | Type | What it carries |
 |---|---|---|
-| `Source` | `ErrorSource` | `Command` for a failed FluentResults handler, `Validation` for input FluentValidation refused. |
-| `Errors` | `IReadOnlyList<ErrorItem>` | `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry (`Command`) or the validation failure's `ErrorCode` (`Validation`); `Field` names the refused input member and is always `null` for a command failure. |
+| `Source` | `ErrorSource` | `Command` for a failed FluentResults handler, `Validation` for input FluentValidation refused, `Unhandled` for an exception. |
+| `Errors` | `IReadOnlyList<ErrorItem>` | `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry (`Command`) or the validation failure's `ErrorCode` (`Validation`); `Field` names the refused input member and is always `null` otherwise. An `Unhandled` context carries exactly one `ErrorItem` — a fixed message outside `Development`, the exception's own message inside it. |
+| `Exception` | `Exception?` | The exception that was raised, for `ErrorSource.Unhandled` only; always `null` for `Command` and `Validation`. |
 
 The context deliberately carries no `HttpContext`, request path or HTTP method, so the same failure
 maps to the same status wherever it is raised — two routes cannot disagree about what a
 `business-refusal` means. Returning `null` keeps the status that failure would have had anyway, which
-is how one callback can map two error codes and leave everything else alone.
+is how one callback can map several error codes (or exception types) and leave everything else alone.
 
-**`Customize` applies to both failure kinds.** It runs after the status is chosen, against the
-`ProblemDetails` about to be written, for `ErrorSource.Command` and `ErrorSource.Validation` alike —
-a member added there cannot appear on one failure kind only. Use `ctx.Source` if the *value* should
-differ; the member itself is always present on both.
+**`Customize` applies to every failure kind**, command, validation and unhandled alike. It runs after
+the status is chosen, against the `ProblemDetails` about to be written — a member added there cannot
+appear on one failure kind only. Use `ctx.Source` if the *value* should differ; the member itself is
+always present on all three.
+
+**`UnhandledError` replaces the built-in body for an unhandled exception only.** Leaving it `null`, or
+returning `null` from it, keeps the library's own body (the fixed/exception message shown above).
+`StatusCode` still wins over the status this callback sets when it also returns non-null, and
+`Customize` still runs afterwards:
+
+```csharp
+o.UnhandledError = ctx => new ProblemDetails
+{
+    Status = StatusCodes.Status503ServiceUnavailable,
+    Title = "Error",
+    Extensions = { ["retryDelaySeconds"] = 30 }
+};
+```
 
 > ⚠️ **The setting is host-wide.** It applies to every route in the host, so anything `Customize`
 > adds appears on every error response the API returns — including endpoints you were not thinking
@@ -507,13 +571,14 @@ differ; the member itself is always present on both.
 > and add only what every caller of every endpoint is allowed to see.
 
 **What a host that registers nothing still gets.** `AddErrorResponses` is optional. Without it — and,
-member by member, wherever it is called but left unset — the responses are exactly today's:
+member by member, wherever it is called but left unset — the responses are:
 
 | Failure | Status | Body |
 |---|---|---|
-| Command handler returns a failed result | `400` | `application/problem+json`, `errors` a flat list of the distinct failure messages. |
-| Validator refuses the input | `400` | `application/problem+json`, `errors` a field → messages map (FluentValidation auto-validation's default factory). |
+| Command handler returns a failed result | `400` | `application/problem+json`, the standard shape above (`errors` an `ErrorItem[]`) — `Response()`/`Response<T>()` answer this way whether or not a setting is registered. |
+| Validator refuses the input | `400` | `application/problem+json`, `errors` a field → messages map (FluentValidation auto-validation's own default factory — only replaced once `AddErrorResponses` is called). |
 | Failure carries a `NotFoundError` | `404` | `application/problem+json`. Needs no setting, and survives a `StatusCode` callback that returns `null` for it. |
+| An unhandled exception, `AddErrorResponses` never called | Framework default | Neither the standard body nor `UnhandledError` apply — nothing in this package handles the exception. |
 
 ### Generated CRUD endpoints — `CrudMapOptions` and `CrudOp`
 
@@ -683,13 +748,14 @@ combination is not an error.
 | `assemblies` | `params Assembly[]` | empty → `AppDomain.CurrentDomain.GetAssemblies()` | Assemblies scanned for `IEndpointConfig` implementations. |
 
 `ErrorResponseOptions` — via `AddErrorResponses(Action<ErrorResponseOptions>?)`. Registered once and
-host-wide: both knobs apply to every route, and to a failed command handler and refused validation
-input alike. See [One error-response setting](#one-error-response-setting--adderrorresponses):
+host-wide: every knob applies to every route, and to a failed command handler, refused validation
+input and an unhandled exception alike. See [One error-response setting](#one-error-response-setting--adderrorresponses):
 
 | Option | Type | Default | Effect |
 |---|---|---|---|
-| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status that failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
-| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike. Whatever it adds appears on every error response the host returns. |
+| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status that failure would have had anyway — `400`, `404` when it carries a `NotFoundError`, or `500` for an unhandled exception. Still wins over the status `UnhandledError` set, when both are configured and both return non-null. |
+| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command`, `ErrorSource.Validation` and `ErrorSource.Unhandled` alike. Whatever it adds appears on every error response the host returns. |
+| `UnhandledError` | `Func<ErrorResponseContext, ProblemDetails?>?` | `null` | Supplies the response body for an unhandled exception in place of the library's own body. Leaving it `null`, or returning `null` from it, keeps the library's own body. Has no effect on `ErrorSource.Command`/`Validation`. |
 
 `AddErrorResponses`'s own parameter:
 

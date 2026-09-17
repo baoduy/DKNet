@@ -6,7 +6,6 @@
 // never from the route: calls ToProblemDetails(IResultBase, ErrorResponseOptions) directly, with no HTTP
 // endpoint involved at all.
 
-using System.Net;
 using DKNet.AspCore.Extensions.Responses;
 using FluentResults;
 
@@ -51,7 +50,7 @@ public class ErrorResponseStatusCodeTests
     }
 
     [Fact]
-    public void ToProblemDetails_WithOptions_AllErrorMessagesBlank_FallsBackToStatusCodeText()
+    public void ToProblemDetails_WithOptions_AllErrorMessagesBlank_KeepsBlankMessageInErrorList()
     {
         var options = new ErrorResponseOptions();
         var result = Result.Fail(new Error(" "));
@@ -59,7 +58,9 @@ public class ErrorResponseStatusCodeTests
         var pd = result.ToProblemDetails(options);
 
         pd.ShouldNotBeNull();
-        pd.Detail.ShouldBe(HttpStatusCode.BadRequest.ToString());
+        var errors = (IReadOnlyList<ErrorItem>)pd.Extensions["errors"]!;
+        errors.ShouldHaveSingleItem();
+        errors[0].Message.ShouldBe(" ");
     }
 
     #endregion

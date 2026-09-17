@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using SlimMessageBus;
 
 namespace DKNet.AspCore.Extensions.Endpoints;
@@ -21,11 +22,17 @@ namespace DKNet.AspCore.Extensions.Endpoints;
 public static class FluentsEndpointMapperExtensions
 {
     /// <summary>
-    ///     Adds a set of common response metadata to the endpoint (standard error status codes and problem details).
+    ///     Adds a set of common response metadata to the endpoint (standard error status codes and problem details),
+    ///     and the one endpoint filter (DRK-1484) that converts an exception raised while dispatching into the
+    ///     standard unhandled-error body. Caught here, at the endpoint itself, rather than left only to ASP.NET
+    ///     Core's registered <c>IExceptionHandler</c> — an endpoint filter sits closer to the endpoint than
+    ///     ASP.NET Core's own Development-only exception page, so it wins for every mapper below (including the
+    ///     query mappers, which dispatch no command and so never named the setting either).
     /// </summary>
     /// <param name="routeBuilder">The route handler builder to add metadata to.</param>
     public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder) =>
         routeBuilder
+            .AddEndpointFilter(HandleUnhandledExceptionAsync)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
             .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -33,6 +40,31 @@ public static class FluentsEndpointMapperExtensions
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status429TooManyRequests);
+
+    /// <summary>
+    ///     R6: never answer, and never write, an abandoned request — <c>HttpResponse.HasStarted</c> and
+    ///     <see cref="HttpContext.RequestAborted" /> are checked in the <c>catch</c> filter below, the same guard
+    ///     <see cref="ErrorResponseExceptionHandler" /> applies for exceptions this filter does not see (e.g. a
+    ///     hand-written endpoint that does not call <see cref="ProducesCommons" />).
+    /// </summary>
+    private static async ValueTask<object?> HandleUnhandledExceptionAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        var httpContext = context.HttpContext;
+        try
+        {
+            return await next(context);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException &&
+                                    !httpContext.Response.HasStarted &&
+                                    !httpContext.RequestAborted.IsCancellationRequested)
+        {
+            var options = httpContext.RequestServices.GetService<ErrorResponseOptions>();
+            var pd = UnhandledErrorProblemFactory.Create(httpContext, ex, options);
+            return TypedResults.Problem(pd);
+        }
+    }
 
     /// <param name="app">The <see cref="RouteGroupBuilder" /> used to register the endpoint.</param>
     extension(RouteGroupBuilder app)
@@ -49,10 +81,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (IMessageBus bus, [FromBody] TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, [FromBody] TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -68,10 +100,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                 endpoint,
-                async (IMessageBus bus, [AsParameters] TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                async (IMessageBus bus, [AsParameters] TCommand request) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response(errorOptions);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -129,10 +161,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -148,10 +180,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                 endpoint,
-                async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                async (IMessageBus bus, TCommand request) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response(errorOptions);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -170,10 +202,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions, isCreating);
+                        return rs.Response(isCreating);
                     }).Produces<TResponse>(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -192,10 +224,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions, isCreating);
+                        return rs.Response(isCreating);
                     }).Produces(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -212,10 +244,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -231,10 +263,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                 endpoint,
-                async (IMessageBus bus, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                async (IMessageBus bus, TCommand request) =>
                 {
                     var rs = await bus.Send(request);
-                    return rs.Response(errorOptions);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -254,11 +286,11 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TKey id, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TKey id, TCommand request) =>
                     {
                         request.Id = id;
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -282,11 +314,11 @@ public static class FluentsEndpointMapperExtensions
             return app.MapMethods(
                     endpoint,
                     [httpMethod],
-                    async (IMessageBus bus, TKey id, TCommand request, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TKey id, TCommand request) =>
                     {
                         request.Id = id;
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -311,11 +343,11 @@ public static class FluentsEndpointMapperExtensions
             return app.MapMethods(
                     endpoint,
                     [httpMethod],
-                    async (IMessageBus bus, TKey id, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    async (IMessageBus bus, TKey id) =>
                     {
                         var request = new TCommand { Id = id };
                         var rs = await bus.Send(request);
-                        return rs.Response(errorOptions);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
