@@ -120,6 +120,10 @@ public class UnifiedErrorResponseEndpointTests
         var hasPreconditionCode = errors.Any(e =>
             e.TryGetProperty("code", out var c) && c.GetString() == LedgerErrorCodes.Precondition);
         hasPreconditionCode.ShouldBeTrue();
+
+        // R3: type is derived from the status the response FINALLY carries (409/Conflict), recomputed after
+        // options.StatusCode runs — never left at the status CreateProblemDetails picked before the callback.
+        body.GetProperty("type").GetString().ShouldBe(HttpStatusCode.Conflict.ToString());
     }
 
     // --- @4: one setting changes the status of an unexpected error (ownership refusal -> 403) ----------------
@@ -221,6 +225,26 @@ public class UnifiedErrorResponseEndpointTests
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         body.GetProperty("retryDelaySeconds").GetInt32().ShouldBe(30);
         body.TryGetProperty("traceId", out _).ShouldBeTrue("R8: every failure body carries a trace identifier, even a supplied one");
+    }
+
+    // --- §9 Q3: StatusCode still wins over UnhandledError's status, and Customize still runs afterwards --------
+
+    [Fact]
+    public async Task CustomUnhandledErrorResponder_StatusCodeAndCustomizeBothConfigured_StatusCodeWinsAndCustomizeStillRuns()
+    {
+        await using var host = await LedgerTestHost.CreateAsync(o =>
+        {
+            o.UnhandledError = _ => new Microsoft.AspNetCore.Mvc.ProblemDetails { Status = 503 };
+            o.StatusCode = ctx => ctx.Source == ErrorSource.Unhandled ? 599 : null;
+            o.Customize = (pd, _) => pd.Extensions["support-reference"] = "CAT-SUP";
+        });
+
+        var response = await host.Client.PostAsJsonAsync(
+            "/ledger/groups/explode", new ExplodeAccountGroupCommand());
+
+        response.StatusCode.ShouldBe((HttpStatusCode)599);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("support-reference").GetString().ShouldBe("CAT-SUP");
     }
 
     // --- @8: a setting that changes nothing keeps today's statuses ---------------------------------------------
