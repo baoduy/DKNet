@@ -1000,9 +1000,15 @@ internal static class Emitter
         }
 
         // An action never claims the plain "{id}" route, whatever verb it uses (spec §3.11 / R1).
+        // A parameterless action's route accepts a request with no body (DRK-1436 R1/R6): the
+        // discriminator is the member's compile-time parameter count, never the request's runtime shape.
         foreach (var action in entity.Actions)
-            AppendMapCall(builder, opType, "Action", action.MemberName,
-                $"group.MapActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");");
+        {
+            var mapCall = action.Params.Length == 0
+                ? $"group.MapParameterlessActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");"
+                : $"group.MapActionById<{action.RequestName}, {entity.KeyFullName}, {entity.DtoFullName}>(\"{{id}}/{action.RouteSegment}\", \"{action.HttpMethod}\");";
+            AppendMapCall(builder, opType, "Action", action.MemberName, mapCall);
+        }
 
         builder.AppendLine("        return group;");
         builder.AppendLine("    }");

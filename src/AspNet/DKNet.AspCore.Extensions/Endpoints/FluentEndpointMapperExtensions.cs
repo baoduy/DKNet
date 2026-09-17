@@ -308,15 +308,16 @@ public static class FluentsEndpointMapperExtensions
         public RouteHandlerBuilder MapParameterlessActionById<TCommand, TKey, TResponse>(string endpoint, string httpMethod)
             where TCommand : class, Fluents.Requests.IWitResponse<TResponse>, Fluents.Requests.IWithKey<TKey>, new()
         {
-            return app.MapMethods(endpoint, [httpMethod], Handler)
-                .Produces<TResponse>()
+            return app.MapMethods(
+                    endpoint,
+                    [httpMethod],
+                    async (IMessageBus bus, TKey id, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    {
+                        var request = new TCommand { Id = id };
+                        var rs = await bus.Send(request);
+                        return rs.Response(errorOptions);
+                    }).Produces<TResponse>()
                 .ProducesCommons();
-
-            // A named parameter is required so minimal-API route binding matches it to the endpoint's "{id}"
-            // segment by name — an anonymous Func<TKey, TResponse> would carry the delegate's own parameter
-            // name ("arg") instead and fail to bind, answering 400 for every request.
-            TResponse Handler(TKey id) =>
-                throw new NotImplementedException($"{nameof(MapParameterlessActionById)} dispatch is not implemented yet.");
         }
     }
 }
