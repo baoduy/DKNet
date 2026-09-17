@@ -317,6 +317,7 @@ same shape, so mixing them is seamless.
 | `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one — the member is emitted as neither. |
 | `DKCRUDGEN008` | Error | Two members on the entity resolve to the same route segment; give one an explicit distinct segment. |
 | `DKCRUDGEN009` | Error | Two routes of the entity resolve to the same route name; rename one of the members. |
+| `DKCRUDGEN010` | Info | A `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member already claims the name `Delete{Entity}Request`, so the generated delete request was skipped and the DELETE route falls back to the request-less `MapDeleteById<TEntity, TKey>()` — rename the member, or accept that no delete rule runs for that entity. The build still succeeds. |
 
 ## Cross-assembly discovery
 
