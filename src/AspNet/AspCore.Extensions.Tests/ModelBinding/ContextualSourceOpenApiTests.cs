@@ -115,5 +115,43 @@ public class ContextualSourceOpenApiTests
         }
     }
 
+    /// <summary>DRK-1524 §5 "The published operation declares the header": a member declared via
+    /// <see cref="DKNet.AspCore.Extensions.ModelBinding.FromRequestHeaderAttribute" /> is advertised as an
+    /// <c>in: header</c> operation parameter, unlike a claim-filled member which is hidden entirely, and is absent
+    /// from the published request body.</summary>
+    [Fact]
+    public async Task PublishedOperation_DeclaresHeaderParameter_AndOmitsMemberFromBody()
+    {
+        var app = await BuildHostAsync();
+        try
+        {
+            using var client = app.GetTestClient();
+            var response = await client.GetAsync("/openapi/v1.json");
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var operation = document.RootElement
+                .GetProperty("paths").GetProperty("/probe/by-header").GetProperty("post");
+
+            var headerParameter = operation.GetProperty("parameters").EnumerateArray()
+                .Single(p => string.Equals(
+                    p.GetProperty("name").GetString(), "Idempotency-Key", StringComparison.OrdinalIgnoreCase));
+            headerParameter.GetProperty("in").GetString().ShouldBe("header");
+
+            var rawSchema = operation
+                .GetProperty("requestBody").GetProperty("content").GetProperty("application/json")
+                .GetProperty("schema");
+            var schema = ResolveSchema(document.RootElement, rawSchema);
+            var propertyNames = schema.TryGetProperty("properties", out var properties)
+                ? properties.EnumerateObject().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                : [];
+            propertyNames.ShouldNotContain("idempotencyKey"); // declared via [FromRequestHeader] -> not body input
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
     #endregion
 }

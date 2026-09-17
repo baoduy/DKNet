@@ -19,6 +19,12 @@ dotnet add package DKNet.AspCore.Extensions
   a request property from the authenticated caller before validation and before the handler
   runs, so it can never be forged through the request body or querystring; automatically excluded
   from the published OpenAPI description.
+- **Header-sourced request members** — `[FromRequestHeader("Idempotency-Key")]` fills a request
+  property from a named HTTP request header through that same mechanism and the same
+  `AddContextualRequestPopulation()` registration. The header is published as an `in: header`
+  operation parameter (a claim-filled member is hidden instead), a missing header is never a
+  refusal, and — unlike a claim — a header is supplied by the caller, so it is a binding
+  convenience, never an authorization signal.
 - **Endpoint group discovery** — implement `IEndpointConfig` per feature area and let
   `UseEndpointConfigs()` discover, version, tag, and authorize every group across your assemblies.
 - **Fluent minimal-API mappers** — `MapPost`/`MapPut`/`MapPatch`/`MapDelete`/`MapGet`/`MapGetPage`
@@ -63,6 +69,9 @@ public sealed record CreateProductCommand : Fluents.Requests.IWitResponse<Produc
 
     [FromClaim(ClaimTypes.NameIdentifier)]
     public string? CreatedBy { get; set; } // always resolved from the caller's claim, never from the body
+
+    [FromRequestHeader("Idempotency-Key")]
+    public string? IdempotencyKey { get; set; } // always resolved from the request header, never from the body
 }
 
 public sealed class ProductsEndpointConfig : IEndpointConfig
@@ -78,6 +87,25 @@ public sealed class ProductsEndpointConfig : IEndpointConfig
 `CreatedBy` from the caller's claim before the handler runs, and returns 201 Created (the mapper
 infers "Created" from the command's type name) with a FluentResults-derived `ProblemDetails` body
 on failure.
+
+`IdempotencyKey` is filled the same way, from the `Idempotency-Key` request header — the same
+registration, no route-level code. Header-name matching is case-insensitive, and a header sent
+more than once fills the member with the first value sent. Three things to know before you rely
+on it:
+
+- **A missing header is not a refusal.** The member holds its type's default and the request is
+  still dispatched. Requiring a header stays the job of a filter or a validator.
+- **A header-filled member takes `SystemAccountFallback`** wherever a claim-filled one would — a
+  fallback is configured and the group's `RequireAuthorization` is `false`. There, an absent header
+  leaves a *constant* value rather than an empty one, which matters if you use the member as an
+  idempotency key.
+- **A header is never an authorization signal.** Unlike a claim, a header is supplied by the
+  caller. The declaration is a binding convenience; a service that treated it as proof of identity
+  would be trusting the caller.
+
+Unlike `[FromClaim]`, the header is advertised in the published OpenAPI operation as an
+`in: header` parameter — the caller has to know to send it — while the member itself stays absent
+from the published request body.
 
 `MapDeleteById<TEntity>` hard-deletes an `IEntity<Guid>` by id without a command or handler:
 
@@ -104,6 +132,9 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 | `PagedResponse<T>`, `ProblemDetailsExtensions`, `ResultResponseExtensions` | `DKNet.AspCore.Extensions` | `DKNet.AspCore.Extensions.Responses` |
 
 `IEndpointConfig` — the package's entry surface — stays at `DKNet.AspCore.Extensions`.
+
+`FromRequestHeaderAttribute` is new in this release rather than moved, and ships in
+`DKNet.AspCore.Extensions.ModelBinding` alongside `FromClaimAttribute`.
 
 ## Customisation reference
 
@@ -242,6 +273,7 @@ Attributes and other extension points:
 | Knob | Kind | Default | Effect |
 |---|---|---|---|
 | `[FromClaim(claimType)]` | property attribute, one required ctor argument | none | Populates the property from that claim before validation and before the handler; always overwrites the caller's value, and is removed from the published OpenAPI description. The property needs a `set` or `init` or startup throws. |
+| `[FromRequestHeader(headerName)]` | property attribute, one required ctor argument (`HeaderName`) | none | Populates the property from that HTTP request header before validation and before the handler; always overwrites the caller's body value. Header-name matching is case-insensitive, and a header sent more than once fills the member with the first value. A missing header is not a refusal — the member holds its type's default, or `SystemAccountFallback` where that applies. The header *is* published as an `in: header` operation parameter (the member stays out of the published body), and it is never an authorization signal — the caller supplies it. The property needs a `set` or `init` or startup throws. |
 | `IContextualSource` | marker interface on your own attribute | — | Opts a new source kind into the same mechanism. |
 | `IContextualValueResolver` | interface you register in DI | `ClaimValueResolver` for `[FromClaim]` | `CanResolve` selects the resolver; the mechanism never switches on a concrete attribute type. |
 | `CrudMapOptions.Exclude(params CrudOp[])` | builder method | nothing excluded | Skips operations in the generated `Map{Entity}Crud`. `CrudOp` is `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. |
