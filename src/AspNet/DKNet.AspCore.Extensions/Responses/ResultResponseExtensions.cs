@@ -1,11 +1,13 @@
-﻿// Copyright (c) https://drunkcoding.net. All rights reserved.
+// Copyright (c) https://drunkcoding.net. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // Author: DRUNK Coding Team
 // File: ResultResponseExtensions.cs
 // Description: Extension helpers to convert FluentResults IResult/IResultBase into ASP.NET Core minimal API IResult responses.
 
+using System.Diagnostics;
 using FluentResults;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DKNet.AspCore.Extensions.Responses;
 
@@ -18,8 +20,9 @@ public static class ResultResponseExtensions
     #region Methods
 
     /// <summary>
-    ///     Converts a typed Fluent result into an <see cref="IResult" />. On failure a ProblemDetails response is returned.
-    ///     On success the method returns:
+    ///     Converts a typed Fluent result into an <see cref="IResult" />. On failure, the registered
+    ///     <see cref="ErrorResponseOptions" /> (if any) is resolved and applied when the response executes — the
+    ///     caller does not need to name it. On success the method returns:
     ///     - Created(location, value) when <paramref name="isCreated" /> is <c>true</c>.
     ///     - Ok() when the value is null and success.
     ///     - JSON(value) when the value is non-null and success.
@@ -32,11 +35,7 @@ public static class ResultResponseExtensions
     {
         ArgumentNullException.ThrowIfNull(result);
 
-        if (!result.IsSuccess)
-        {
-            var pd = result.ToProblemDetails();
-            return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
-        }
+        if (!result.IsSuccess) return new ErrorResponseResult(result);
 
         if (isCreated)
             // Created requires a location; callers in this codebase usually provide "/" as placeholder.
@@ -46,37 +45,9 @@ public static class ResultResponseExtensions
     }
 
     /// <summary>
-    ///     Converts a typed Fluent result into an <see cref="IResult" />, applying <paramref name="options" /> to a
-    ///     failure the same way <see cref="ProblemDetailsExtensions.ToProblemDetails(FluentResults.IResultBase,ErrorResponseOptions)" />
-    ///     does. Success behaviour is unchanged from the parameterless overload.
-    /// </summary>
-    /// <typeparam name="TObject">The result value type.</typeparam>
-    /// <param name="result">The Fluent result to convert. Must not be null.</param>
-    /// <param name="options">
-    ///     The error-response setting to apply on failure; <see langword="null" /> keeps today's status and body.
-    /// </param>
-    /// <param name="isCreated">Indicates whether a successful response should be a 201 Created.</param>
-    /// <returns>An <see cref="IResult" /> representing the appropriate HTTP response.</returns>
-    public static IResult Response<TObject>(this IResult<TObject> result, ErrorResponseOptions? options,
-        bool isCreated = false)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        if (!result.IsSuccess)
-        {
-            var pd = result.ToProblemDetails(options);
-            return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
-        }
-
-        if (isCreated)
-            return TypedResults.Created("/", result.Value);
-
-        return result.ValueOrDefault is null ? TypedResults.Ok() : TypedResults.Json(result.Value);
-    }
-
-    /// <summary>
     ///     Converts a non-generic Fluent result into an <see cref="IResult" />. On success this returns Ok (or Created when
-    ///     <paramref name="isCreated" /> is true), and on failure a ProblemDetails response is returned.
+    ///     <paramref name="isCreated" /> is true). On failure, the registered <see cref="ErrorResponseOptions" /> (if any)
+    ///     is resolved and applied when the response executes — the caller does not need to name it.
     /// </summary>
     /// <param name="result">The Fluent result to convert. Must not be null.</param>
     /// <param name="isCreated">When <c>true</c> a successful response will be 201 Created.</param>
@@ -87,30 +58,28 @@ public static class ResultResponseExtensions
 
         if (result.IsSuccess) return isCreated ? TypedResults.Created() : TypedResults.Ok();
 
-        var pd = result.ToProblemDetails();
-        return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
-    }
-
-    /// <summary>
-    ///     Converts a failed <see cref="IResultBase" /> into an <see cref="IResult" />, applying
-    ///     <paramref name="options" /> the same way <see cref="ProblemDetailsExtensions.ToProblemDetails(IResultBase,ErrorResponseOptions)" />
-    ///     does. Success behaviour is unchanged from the parameterless overload.
-    /// </summary>
-    /// <param name="result">The Fluent result to convert. Must not be null.</param>
-    /// <param name="options">
-    ///     The error-response setting to apply on failure; <see langword="null" /> keeps today's status and body.
-    /// </param>
-    /// <param name="isCreated">When <c>true</c> a successful response will be 201 Created.</param>
-    /// <returns>An <see cref="IResult" /> representing the appropriate HTTP response.</returns>
-    public static IResult Response(this IResultBase result, ErrorResponseOptions? options, bool isCreated = false)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        if (result.IsSuccess) return isCreated ? TypedResults.Created() : TypedResults.Ok();
-
-        var pd = result.ToProblemDetails(options);
-        return pd is not null ? TypedResults.Problem(pd) : TypedResults.Problem();
+        return new ErrorResponseResult(result);
     }
 
     #endregion
+}
+
+/// <summary>
+///     Deferred failure response for <see cref="ResultResponseExtensions" />'s short-form <c>Response()</c>
+///     helpers (DRK-1484 row 9): resolves the registered <see cref="ErrorResponseOptions" /> from
+///     <see cref="HttpContext.RequestServices" /> at execution time, so an endpoint naming no setting still gets
+///     one applied when the host registered it via <see cref="ErrorResponseServiceCollectionExtensions.AddErrorResponses" />.
+/// </summary>
+/// <param name="result">The failed fluent result to convert once the response executes.</param>
+internal sealed class ErrorResponseResult(IResultBase result) : IResult
+{
+    /// <inheritdoc />
+    public Task ExecuteAsync(HttpContext httpContext)
+    {
+        var options = httpContext.RequestServices.GetService<ErrorResponseOptions>();
+        var pd = result.ToProblemDetails(options)!;
+        pd.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
+
+        return TypedResults.Problem(pd).ExecuteAsync(httpContext);
+    }
 }

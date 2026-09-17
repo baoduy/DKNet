@@ -67,6 +67,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FAQ and best practices section
 - `Base64StringExtensions`' five methods (`DKNet.Svc.Encryption`) are now `this string` extension methods;
   existing static-style call sites still compile.
+- `AddErrorResponses` (`DKNet.AspCore.Extensions`) now also shapes an unhandled exception's response, with no
+  second registration call: it registers an `IExceptionHandler` and wires `UseExceptionHandler()` for the host.
+  `ErrorResponseOptions.UnhandledError` supplies a custom body in place of the library's own (a fixed message
+  outside `Development`, the exception's own message inside it); `ErrorSource.Unhandled` and
+  `ErrorResponseContext.Exception` let `StatusCode`/`Customize` see and react to it the same way they already
+  react to a failed command or refused input. The call is idempotent — a second one registers nothing twice.
+  Endpoints the fluent mappers registered are covered by the endpoint filter `ProducesCommons()` adds; an endpoint
+  registered outside those mappers is covered in `Production` but still answers with the developer-exception page
+  in `Development`. See
+  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
 - Non-generic `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` (`DKNet.AspCore.Idempotency`) enables
   idempotency with no store named and no infrastructure at all — no database, cache, Redis, or connection string.
   It registers a new in-process store that reserves each key atomically within the process, adds no options
@@ -110,6 +120,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
+- **Breaking:** `DKNet.SlimBus.Extensions.RequestBase` — and its `[JsonIgnore] string? ByUser` property — has been
+  removed. The package never populated it, and with `UseEndpointConfigs()` no longer stamping `ByUser` either (see the
+  entry above), the base record carried nothing while still making the acting user look like a framework-supplied
+  value. A request type that derived from it no longer compiles. Migration: drop the `: RequestBase` base, declare the
+  acting-user property on the request itself, mark it with an `IContextualSource` attribute — for example
+  `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions` — and register
+  `services.AddContextualRequestPopulation()`, which stamps the property before validation and before the handler
+  runs. See [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
 - **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
   `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
   implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership
@@ -153,6 +171,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `services.AddListQueryOptions(o => o.DefaultActivityWindowMonths = 0)`, to switch the default window off and keep
   today's unbounded listing. See
   [Default recent-activity window](AspNetCore/DKNet.AspCore.Extensions.md#default-recent-activity-window).
+- **Breaking:** the standard error-response body (`DKNet.AspCore.Extensions`) no longer carries `Detail`, and its
+  `errors` extension is now an `ErrorItem[]` (`{ message, code?, field? }`) instead of a flat message-string list —
+  for every failure kind `Response()`/`Response<T>()` answer, whether or not `AddErrorResponses` is registered. `type` is now always the final response status'
+  `HttpStatusCode` name (recomputed after a `StatusCode` callback runs) for all three failure kinds, and every
+  body carries a `traceId`. A consumer parsing `errors` as strings, or `Detail` for the failure message, must read
+  `errors[].message` instead. See the
+  [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone) and
+  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
 
 ### Removed
 - **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`
@@ -186,6 +212,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   removed — it now registers the atomic in-process store described under [Added](#added).
 - **Breaking:** `EnumExtensions.GetEumInfos<T>()`/`GetEumInfo()` (`DKNet.Fw.Extensions`) renamed to
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
+- **Breaking:** `ToProblemDetails(this IResultBase, HttpStatusCode)`, `ToProblemDetails(this ModelStateDictionary)`,
+  and `Response(this IResultBase/IResult<T>, ErrorResponseOptions?, …)` (`DKNet.AspCore.Extensions`) — none of them
+  read a host's registered error-response setting. `ToProblemDetails(this IResultBase, ErrorResponseOptions?)` is
+  now `internal` for the same reason. Use `Response()`/`Response<T>()`, the only public path onto the standard
+  body: they resolve the registered `ErrorResponseOptions` from the container on their own, so an endpoint no
+  longer needs to name it. See the
+  [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone).
 
 ### Fixed
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a

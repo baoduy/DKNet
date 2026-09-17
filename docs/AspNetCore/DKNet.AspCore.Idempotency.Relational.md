@@ -188,12 +188,14 @@ The `IIdempotencyKeyStore` implementation itself:
 
 ```csharp
 internal sealed class IdempotencyMigrationHostedService<TContext>(IDbContextFactory<TContext> dbContextFactory)
-    : IHostedService
+    : IHostedLifecycleService
     where TContext : DbContext
 ```
 
-An `IHostedService` that applies any pending migrations for `TContext` once, in `StartAsync`, before the host
-begins serving requests. Both `AddIdempotencyMsSqlStore` and `AddIdempotencyNpgsqlStore` register it
+An `IHostedLifecycleService` that applies any pending migrations for `TContext` once, in `StartAsync`, before the
+host begins serving requests. The migration still runs in that single start moment — the other lifecycle moments
+(starting, started, stopping, stop, stopped) do no work. Both `AddIdempotencyMsSqlStore` and
+`AddIdempotencyNpgsqlStore` register it
 (`services.AddHostedService<IdempotencyMigrationHostedService<IdempotencyDbContext>>()`) as part of their DbContext
 registration — an app that calls either extension gets it automatically, with nothing further to wire up.
 

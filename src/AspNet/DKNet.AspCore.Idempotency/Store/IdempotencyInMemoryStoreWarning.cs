@@ -12,13 +12,18 @@ namespace DKNet.AspCore.Idempotency.Store;
 /// <summary>
 ///     Logs a single startup warning when the resolved <see cref="IIdempotencyKeyStore" /> is the process-local
 ///     <see cref="IdempotencyInMemoryStore" />, so operators are told that idempotency keys are not durable and
-///     not shared between instances. Resolving any named store instead emits no warning.
+///     not shared between instances. Resolving any named store instead emits no warning. Uses
+///     <see cref="IHostedLifecycleService" /> to be offered every host lifecycle moment; the added moments do no
+///     work.
 /// </summary>
 internal sealed class IdempotencyInMemoryStoreWarning(
     IServiceProvider serviceProvider,
-    ILogger<IdempotencyInMemoryStoreWarning> logger) : IHostedService
+    ILogger<IdempotencyInMemoryStoreWarning> logger) : IHostedLifecycleService
 {
     #region Methods
+
+    /// <inheritdoc />
+    public Task StartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
@@ -35,7 +40,16 @@ internal sealed class IdempotencyInMemoryStoreWarning(
     }
 
     /// <inheritdoc />
+    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     #endregion
 }

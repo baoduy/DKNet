@@ -330,50 +330,6 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task ConfigureGroup_ManualByUserStamping_RequestBaseBasedCommand_StampedByUserReachesHandler()
-    {
-        // Proves the OLD pre-DRK-565 pattern still works: RequestBase.ByUser stamped manually by a host's own
-        // ConfigureGroup filter, ahead of a host-added validation filter — exactly as ConfigureGroup's docs
-        // describe. [Obsolete] on RequestBase is advisory only; it does not break this existing consumer.
-        var builder = CreateBuilder();
-        builder.Services.AddValidatorsFromAssemblyContaining<LegacyByUserCommandValidator>();
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = "legacy.user@acme.com";
-        });
-        var app = builder.Build();
-        app.UseEndpointConfigs(
-            o => o.ConfigureGroup = (group, _) =>
-            {
-                group.AddEndpointFilter(async (context, next) =>
-                {
-                    var identity = context.HttpContext.User.Identity;
-                    var userName = identity is { IsAuthenticated: true } ? identity.Name : null;
-                    foreach (var argument in context.Arguments)
-#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — exercising the old manual pattern on purpose.
-                        if (argument is LegacyByUserCommand legacyByUserCommand)
-                            legacyByUserCommand.ByUser = userName;
-#pragma warning restore CS0618
-                    return await next(context);
-                });
-                group.AddFluentValidationAutoValidation();
-            },
-            typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync(
-            "/v1/probe/legacy-by-user", new LegacyByUserCommand { Name = "Acme Retail" });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("legacy.user@acme.com");
-        await app.StopAsync();
-    }
-
-    [Fact]
     public async Task AsParametersBinding_DeclaredByUser_CallerSuppliedQueryValueIsOverwrittenByResolvedClaim()
     {
         // ByUserQueryProbe.ByUser now carries [FromClaim(ClaimTypes.Name)] (DRK-565): once AddContextualRequestPopulation

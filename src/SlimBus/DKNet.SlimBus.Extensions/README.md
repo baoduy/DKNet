@@ -99,7 +99,6 @@ Auto-save behaviour is fixed, not switchable:
 | `SlimBusEventPublisher` | public class, both `PublishAsync` overloads `virtual` | Subclass to add headers or logging, then register the subclass. |
 | `NotFoundError` | public sealed class : `FluentResults.Error` | Return it from `Result.Fail` so the API layer maps one type to `404`. |
 | `ILazyMap<T>`, `LazyMapExtensions.LazyMap<T>` / `ResultOf<T>` | public interface / public static class | Defer a Mapster mapping until the value is read. |
-| `RequestBase` | public record, `[Obsolete]` | Nothing — never populated by this package. |
 
 The auto-save interceptor, its `DbContext` registry, and the `LazyMap`/`LazyResult` implementations are all
 `internal`: you opt in through the two registration methods, not by implementing those types.

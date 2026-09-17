@@ -22,7 +22,9 @@ public class NotFoundErrorResponseTests
 
         pd.ShouldNotBeNull();
         pd.Status.ShouldBe(StatusCodes.Status404NotFound);
-        pd.Detail.ShouldBe("Product abc not found");
+        var errors = (IReadOnlyList<ErrorItem>)pd.Extensions["errors"]!;
+        errors.ShouldHaveSingleItem();
+        errors[0].Message.ShouldBe("Product abc not found");
     }
 
     [Fact]

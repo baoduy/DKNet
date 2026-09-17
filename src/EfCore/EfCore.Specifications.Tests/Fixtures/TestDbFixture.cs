@@ -7,6 +7,13 @@ public class TestDbFixture : IAsyncLifetime
 {
     #region Fields
 
+    // Fixed per-Faker seeds (DRK-1460): pins Bogus's randomizer so every seeded field is
+    // reproducible run to run without touching the process-wide Randomizer.Seed, which
+    // would leak into unrelated fixtures/tests sharing the same test process.
+    private const int CategorySeed = 20260917;
+    private const int ProductSeed = 20260918;
+    private const int OrderSeed = 20260919;
+
     private readonly Faker<Category> _categoryFaker;
     private readonly Faker<Order> _orderFaker;
     private readonly Faker<Product> _productFaker;
@@ -20,7 +27,8 @@ public class TestDbFixture : IAsyncLifetime
     {
         _categoryFaker = new Faker<Category>()
             .RuleFor(c => c.Name, f => f.Commerce.Categories(1)[0])
-            .RuleFor(c => c.Description, f => f.Lorem.Sentence());
+            .RuleFor(c => c.Description, f => f.Lorem.Sentence())
+            .UseSeed(CategorySeed);
 
         _productFaker = new Faker<Product>()
             .RuleFor(p => p.Name, f => f.Commerce.ProductName())
@@ -28,14 +36,16 @@ public class TestDbFixture : IAsyncLifetime
             .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
             .RuleFor(p => p.StockQuantity, f => f.Random.Int(0, 100))
             .RuleFor(p => p.IsActive, f => f.Random.Bool(0.8f))
-            .RuleFor(p => p.CreatedDate, f => f.Date.Past());
+            .RuleFor(p => p.CreatedDate, f => f.Date.Past())
+            .UseSeed(ProductSeed);
 
         _orderFaker = new Faker<Order>()
             .RuleFor(o => o.OrderDate, f => f.Date.Past())
             .RuleFor(o => o.CustomerName, f => f.Name.FullName())
             .RuleFor(o => o.CustomerEmail, f => f.Internet.Email())
             .RuleFor(o => o.Status, f => f.PickRandom<OrderStatus>())
-            .RuleFor(o => o.TotalAmount, f => f.Random.Decimal(10, 5000));
+            .RuleFor(o => o.TotalAmount, f => f.Random.Decimal(10, 5000))
+            .UseSeed(OrderSeed);
     }
 
     #endregion
@@ -138,8 +148,11 @@ public class TestDbFixture : IAsyncLifetime
         // Create orders
         var orders = _orderFaker.Generate(15);
 
-        // Ensure first order has Pending status for enum tests
-        if (orders.Count > 0) orders[0].Status = OrderStatus.Pending;
+        // Guarantee every OrderStatus member is represented at least once, deterministically,
+        // regardless of how many members the enum has (DRK-1460). Pending is enum value 0, so
+        // this also keeps orders[0] pinned to Pending for the existing enum tests.
+        var statuses = Enum.GetValues<OrderStatus>();
+        for (var i = 0; i < orders.Count; i++) orders[i].Status = statuses[i % statuses.Length];
 
         await Db.Orders.AddRangeAsync(orders);
         await Db.SaveChangesAsync();
