@@ -27,12 +27,13 @@ dotnet add package DKNet.AspCore.Extensions
 - **`PagedResponse<T>`** — a shared paging envelope (`PageNumber`, `PageSize`, `PageCount`,
   `TotalItemCount`, `Items`, `HasNextPage`, `HasPreviousPage`) used by every paged endpoint.
 - **Result/ProblemDetails conversion** — `Response()`/`Response<T>()` turn a `FluentResults`
-  outcome into the right minimal-API `IResult`; `ToProblemDetails()` does the same for a
-  `ModelStateDictionary`.
+  outcome into the right minimal-API `IResult`; `ToProblemDetails()` builds the `ProblemDetails`
+  behind it. Both resolve the host's registered error-response setting themselves, so an endpoint
+  never has to name it.
 - **One error-response setting** — `AddErrorResponses()` registers a single `ErrorResponseOptions`
-  that shapes both a failed command handler and input a validator refused: choose the status from the
-  failure's own errors, and add body members that land on both failure kinds. Register nothing and
-  today's responses are unchanged.
+  that shapes all three ways a request can fail: a failed command handler, input a validator refused,
+  and an unhandled exception. One body shape for all three, one status rule set, and no second
+  registration — the call wires the exception handling for you.
 
 ## Quick Start
 
@@ -127,19 +128,59 @@ surface. Defaults are the ones the code applies when you pass nothing.
 | `assemblies` (method parameter) | `params Assembly[]` | empty → every currently loaded assembly | Assemblies scanned for `IEndpointConfig` implementations. |
 
 `ErrorResponseOptions` — `services.AddErrorResponses(Action<ErrorResponseOptions>?)`. The one place a
-host shapes error responses: it covers a failed command handler and refused validation input alike, so
-the validation path needs no second registration. Both knobs are host-wide — they apply to every route:
+host shapes error responses, covering all three failure kinds: a failed command handler, refused
+validation input, and an unhandled exception. It is the host's only step — do **not** add a
+`UseExceptionHandler()` line or an `AddProblemDetails()` call of your own; `AddErrorResponses` makes
+both for you. Every knob is host-wide, applying to every route:
 
 | Knob | Type | Default | Effect |
 |---|---|---|---|
-| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status the failure would have had anyway — `400`, or `404` when it carries a `NotFoundError`. |
-| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command` and `ErrorSource.Validation` alike — a member added here is never on one failure kind only, and appears on every error response the host returns. Name each member you add; nothing is added for you. |
-| `configure` (method parameter) | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep both knobs unset — each unset knob is a no-op, so the responses stay today's. Skipping the call entirely leaves the setting unregistered, which the mappers resolve as an optional service and fall back the same way. |
+| `StatusCode` | `Func<ErrorResponseContext, int?>?` | `null` | Chooses the status from the failure's own errors. The context carries no `HttpContext`, path or HTTP method, so the route cannot influence it. Returning `null`, or leaving this unset, keeps the status the failure would have had anyway — `400`, `404` when it carries a `NotFoundError`, or `500` for an unhandled exception. Wins over the status `UnhandledError` set when both return non-null. |
+| `Customize` | `Action<ProblemDetails, ErrorResponseContext>?` | `null` | Adds members to the `ProblemDetails` after its status is chosen, for `ErrorSource.Command`, `ErrorSource.Validation` and `ErrorSource.Unhandled` alike — a member added here is never on one failure kind only, and appears on every error response the host returns. Name each member you add; nothing is added for you. |
+| `UnhandledError` | `Func<ErrorResponseContext, ProblemDetails?>?` | `null` | Supplies the body for an unhandled exception in place of the library's own. Leaving it `null`, or returning `null` from it, keeps the library's body. Has no effect on a command or validation failure. |
+| `configure` (method parameter) | `Action<ErrorResponseOptions>?` | `null` | Leave `null` to keep every knob unset — each unset knob is a no-op, so the standard body and its default statuses apply as-is. Skipping the call entirely leaves the setting unregistered; the mappers resolve it as an optional service, and nothing then handles an unhandled exception. |
 
-Each callback receives an `ErrorResponseContext`: `Source` (`Command` or `Validation`) and `Errors`, a
-list of `ErrorItem(Message, Code?, Field?)`. `Code` is the FluentResults error's `"Code"` metadata entry
-for a command failure and the validation failure's `ErrorCode` for refused input; `Field` names the
-refused input member and is always `null` for a command failure.
+Each callback receives an `ErrorResponseContext`: `Source` (`Command`, `Validation` or `Unhandled`),
+`Errors` — a list of `ErrorItem(Message, Code?, Field?)` — and `Exception`, the raised exception for
+`Unhandled` only. `Code` is the FluentResults error's `"Code"` metadata entry for a command failure and
+the validation failure's `ErrorCode` for refused input; `Field` names the refused input member and is
+always `null` otherwise.
+
+All three failure kinds answer with the same body:
+
+```json
+{
+  "title": "Error",
+  "status": 409,
+  "type": "Conflict",
+  "traceId": "00-...-00",
+  "errors": [ { "message": "...", "code": "precondition", "field": null } ]
+}
+```
+
+`type` is always the final response status' name, recomputed after `StatusCode` runs — it never names
+an exception type. There is no `detail` member. Outside the `Development` environment an unhandled
+exception's `errors` carries one fixed message and nothing the exception itself carried; inside
+`Development` that entry carries the exception's own message.
+
+Mapping a failure code to a status, and supplying your own body for an unhandled exception:
+
+```csharp
+using DKNet.AspCore.Extensions.Responses;
+using Microsoft.AspNetCore.Mvc;
+
+builder.Services.AddErrorResponses(o =>
+{
+    o.StatusCode = ctx => ctx.Errors.Any(e => e.Code == "precondition") ? 409 : null;
+
+    o.UnhandledError = ctx => new ProblemDetails
+    {
+        Status = StatusCodes.Status503ServiceUnavailable,
+        Title = "Error",
+        Extensions = { ["retryDelaySeconds"] = 30 }
+    };
+});
+```
 
 `IEndpointConfig` — what each implementation supplies:
 

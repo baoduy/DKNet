@@ -15,6 +15,7 @@ This guide helps you migrate between different versions of DKNet Framework and p
   - [`DKNet.Fw.Extensions` — removed and renamed members](#dknetfwextensions--removed-and-renamed-members)
   - [`DKNet.AspCore.Idempotency` — no store needed for local development](#dknetaspcoreidempotency--no-store-needed-for-local-development)
   - [`DKNet.Svc.BlobStorage.Abstractions` — `IncludedExtensions` is now `IReadOnlyList<string>`](#dknetsvcblobstorageabstractions--includedextensions-is-now-ireadonlyliststring)
+  - [`DKNet.AspCore.Extensions` — one error-response body, and the helpers that bypassed it are gone](#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone)
 - [Architecture migration](#architecture-migration)
 - [CQRS migration](#cqrs-migration)
 - [Database migration](#database-migration)
@@ -482,6 +483,95 @@ var options = new BlobServiceOptions
 
 `IncludedExtensions` is now `IReadOnlyList<string>`; assigning an array or a `List<string>` still compiles. A
 lazy `IEnumerable<string>` query no longer compiles — materialize it first.
+
+### DKNet.AspCore.Extensions — one error-response body, and the helpers that bypassed it are gone
+
+`AddErrorResponses` now shapes all three ways a request can fail — a failed command handler, input a validator
+refused, and an unhandled exception — with one body and one status rule set. Two things change for you: four
+helpers are removed, and the response body a client reads is different.
+
+**Removed helpers.** Each of these answered without reading the host's registered `ErrorResponseOptions`, which is
+what let two endpoints in the same host disagree about the same failure:
+
+| Removed | Replace with |
+|---|---|
+| `ToProblemDetails(this IResultBase, HttpStatusCode)` | `ToProblemDetails(this IResultBase, ErrorResponseOptions? options = null)` — the status argument is gone; the status now comes from the failure (`400`, `404` for a `NotFoundError`) and from `options.StatusCode`. |
+| `ToProblemDetails(this ModelStateDictionary)` | Nothing in this package. `AddErrorResponses` swaps in the FluentValidation result factory, so refused input answers with the standard body without a call of your own. |
+| `Response(this IResultBase, ErrorResponseOptions?, bool isCreated = false)` | `Response(this IResultBase, bool isCreated = false)` — drop the options argument. |
+| `Response<T>(this IResult<T>, ErrorResponseOptions?, bool isCreated = false)` | `Response<T>(this IResult<T>, bool isCreated = false)` — drop the options argument. |
+
+**Before**
+```csharp
+app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd, ErrorResponseOptions options) =>
+{
+    var result = await bus.Send(cmd);
+    return result.Response(options, isCreated: true);
+});
+```
+
+**After**
+```csharp
+app.MapPost("/products", async (IMessageBus bus, CreateProductCommand cmd) =>
+{
+    var result = await bus.Send(cmd);
+    return result.Response(isCreated: true);
+});
+```
+
+The short-form `Response()`/`Response<T>()` resolve the registered `ErrorResponseOptions` from the container when
+the response executes, so passing it by hand is no longer possible and no longer needed. An endpoint that never
+named the setting keeps compiling unchanged.
+
+**A host now registers nothing else for unhandled exceptions.** `AddErrorResponses` registers the
+`IExceptionHandler` and inserts `UseExceptionHandler()` itself. Delete your own `app.UseExceptionHandler(...)` and
+`builder.Services.AddProblemDetails()` lines if they existed only to shape error bodies — leaving them in place
+means your handler answers first and the standard body never applies.
+
+That handler covers exceptions raised **outside** a mapped command endpoint. An exception raised while a fluent
+mapper dispatches a command is caught by the endpoint delegate itself, because ASP.NET Core's `Development`-only
+developer exception page sits closer to the endpoint than any `IExceptionHandler` and would otherwise answer with
+an HTML page. Both paths build the body through the same factory, so a caller cannot tell them apart.
+
+**The response body changed — this is what a client must update.**
+
+**Before**
+```json
+{
+  "title": "Error",
+  "status": 400,
+  "type": "BadRequest",
+  "detail": "Account group 'treasury-ops' still holds accounts.",
+  "errors": [ "Account group 'treasury-ops' still holds accounts." ]
+}
+```
+
+**After**
+```json
+{
+  "title": "Error",
+  "status": 400,
+  "type": "BadRequest",
+  "traceId": "00-...-00",
+  "errors": [ { "message": "Account group 'treasury-ops' still holds accounts.", "code": "precondition", "field": null } ]
+}
+```
+
+| Change | What a client reading the old shape must do |
+|---|---|
+| `detail` is removed | Read `errors[0].message` for the failure message. |
+| `errors` is a list of objects, not of strings | Read `errors[].message`. A client that rendered each entry as a string now renders `[object Object]`; a client that deserialized `string[]` now fails to parse. |
+| `errors` has the same shape for every failure kind | Refused input no longer answers with a field → messages map. The field a validator names is `errors[].field`; the failure's own code is `errors[].code`. Both are `null` when the failure carries none. |
+| `type` is the response status' name, for every failure kind | Unchanged for a command failure and refused input. For an unhandled exception it is `InternalServerError` by default, and it follows a `StatusCode` callback's status — it never names the exception type. |
+| `traceId` is on every error body | Ask callers to quote it; outside `Development` it is the only way to tie a reported `500` back to the exception in your logs. |
+
+An unhandled exception's body is deliberately thin: outside `Development` its single `errors` entry reads
+`"An unexpected error occurred. Quote the trace-id when reporting this."` and carries nothing the exception
+carried — no message, no type name, no stack trace. Inside `Development` that entry carries the exception's own
+message. Supply `ErrorResponseOptions.UnhandledError` to answer with a body of your own instead; `StatusCode`
+still wins over the status it sets, and `Customize` still runs afterwards.
+
+No ADR was written for this change — the decisions are recorded here and in
+[One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
 
 ---
 

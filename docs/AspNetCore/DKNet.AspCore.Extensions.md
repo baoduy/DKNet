@@ -478,7 +478,16 @@ builder.Services.AddErrorResponses(o =>
 
 A handler that fails with a `business-refusal` code and a validator that refuses the same rule with
 that `ErrorCode` now both answer `422 application/problem+json`, each carrying the `error-code`
-member. Every endpoint the fluent mappers registered picks the setting up on its own — they resolve
+member. One callback maps as many codes as you need — this one answers `409 Conflict` for anything
+carrying a `precondition` code and leaves every other failure at the status it would have had:
+
+```csharp
+builder.Services.AddErrorResponses(o =>
+    o.StatusCode = ctx => ctx.Errors.Any(e => e.Code == "precondition") ? 409 : null);
+```
+
+The body that answers then reads `"status": 409, "type": "Conflict"` — `type` follows the status the
+callback chose, not the `400` the failure started at. Every endpoint the fluent mappers registered picks the setting up on its own — they resolve
 it from the container when the response executes, so registering it is the whole wiring step and
 leaving it unregistered is not an error.
 
@@ -499,6 +508,22 @@ exception — answers with the same shape:
 runs, never left at the status the failure would have had before the callback. `traceId` is
 `Activity.Current?.Id`, falling back to `HttpContext.TraceIdentifier` wherever a request is available.
 There is no `Detail` member.
+
+**An unhandled exception's body says nothing about the exception.** Outside the `Development`
+environment the single `ErrorItem` carries one fixed message — `"An unexpected error occurred. Quote
+the trace-id when reporting this."` — and nothing the exception carried: no exception message, no
+type name, no stack trace. Inside `Development` that one entry carries the exception's own message
+instead, so a local run is still debuggable. `type` is the response status' name (`InternalServerError`
+for the default `500`) in every environment; it never names the exception type. `traceId` is the one
+member a caller quotes to get the real exception out of your logs.
+
+**Where an unhandled exception is caught.** An exception raised while a fluent mapper dispatches a
+command is caught by the endpoint delegate itself; every other unhandled exception in the host is
+caught by the `IExceptionHandler` that `AddErrorResponses` registers. Both build the body through the
+same factory, so the two paths are indistinguishable to a caller. The split exists because ASP.NET
+Core's `Development`-only developer exception page sits closer to the endpoint than any
+`IExceptionHandler` and would otherwise answer a mapped command's exception first, with an HTML page
+instead of the standard body.
 
 **The status comes from the failure, never from the route.** `StatusCode` receives an
 `ErrorResponseContext` and nothing else:

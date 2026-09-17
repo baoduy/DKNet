@@ -166,7 +166,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   answer, whether or not `AddErrorResponses` is registered. `type` is now always the final response status'
   `HttpStatusCode` name (recomputed after a `StatusCode` callback runs) for all three failure kinds, and every
   body carries a `traceId`. A consumer parsing `errors` as strings, or `Detail` for the failure message, must read
-  `errors[].message` instead. See
+  `errors[].message` instead. See the
+  [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone) and
   [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
 
 ### Removed
@@ -205,7 +206,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `Response(this IResultBase/IResult<T>, ErrorResponseOptions?, …)` (`DKNet.AspCore.Extensions`) — none of them
   read a host's registered error-response setting. Use `ToProblemDetails(this IResultBase, ErrorResponseOptions?)`
   or the short-form `Response()`/`Response<T>()`, which now resolve the registered `ErrorResponseOptions` from the
-  container on their own, so an endpoint no longer needs to name it.
+  container on their own, so an endpoint no longer needs to name it. See the
+  [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone).
 
 ### Fixed
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
