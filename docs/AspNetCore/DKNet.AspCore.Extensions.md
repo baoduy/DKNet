@@ -8,8 +8,9 @@ versioned endpoint groups, one-line verb-to-command mappers, generic list/read/d
 
 `DKNet.AspCore.Extensions` covers five distinct jobs that show up in almost every DKNet host:
 
-- populating request properties from the authenticated caller (claims today, anything else
-  tomorrow) so they can never be forged through the request body or querystring;
+- populating request properties from the request's context rather than its payload — the
+  authenticated caller's claims, or a named request header — so a caller can never set them
+  through the request body or querystring;
 - discovering and mapping versioned groups of endpoints (`IEndpointConfig`) without hand-wiring
   `MapGroup`/`WithApiVersionSet` boilerplate per feature;
 - mapping a minimal-API verb straight onto a SlimMessageBus fluent command/query in one line,
@@ -32,7 +33,7 @@ dotnet add package DKNet.AspCore.Extensions
 
 Minimum wiring in `Program.cs` — `AddApiVersioning()` is required because `UseEndpointConfigs`
 defaults to versioned routes, and `AddContextualRequestPopulation()` is required the moment any
-request declares a `[FromClaim]` (or other `IContextualSource`) member:
+request declares a `[FromClaim]`, `[FromRequestHeader]` (or other `IContextualSource`) member:
 
 ```csharp
 using DKNet.AspCore.Extensions.Endpoints;   // UseEndpointConfigs
@@ -60,13 +61,13 @@ Every sample below assumes the `using` that owns the type it shows:
 | Namespace | Types |
 |---|---|
 | `DKNet.AspCore.Extensions` | `IEndpointConfig` |
-| `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
+| `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `FromRequestHeaderAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
 | `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListQueryOptions`, `AddListQueryOptions()`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
 | `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions`, `ErrorResponseOptions`, `AddErrorResponses()`, `ErrorResponseContext`, `ErrorItem`, `ErrorSource` |
 
 ## 🧩 Features
 
-### Contextual request binding — `[FromClaim]` and `IContextualSource`
+### Contextual request binding — `[FromClaim]`, `[FromRequestHeader]` and `IContextualSource`
 
 A request DTO often needs a value the *caller* must never control — who created it, which tenant it
 belongs to. `IContextualSource` marks a property as populated by the host instead of the caller;
@@ -117,11 +118,64 @@ the two OpenAPI transformers through `ConfigureAll<OpenApiOptions>`. Endpoint gr
 runs** — for both JSON-body binding and `[AsParameters]`/query binding — and the declared members
 are removed from the published OpenAPI description (`ContextualSourceSchemaTransformer` for JSON
 bodies, `ContextualSourceOperationTransformer` for query/`[AsParameters]` parameters), since the
-caller can never actually supply them.
+caller can never actually supply them — with one exception, the header parameter a
+`[FromRequestHeader]` member publishes, described next.
+
+#### Filling a member from a request header — `[FromRequestHeader]`
+
+`FromRequestHeaderAttribute` is the second built-in source, and it takes the same shape as
+`FromClaimAttribute`: one required constructor argument — the header name, exposed as
+`HeaderName` — on a property that must have a `set` or `init`. It needs no registration of its
+own: the `AddContextualRequestPopulation()` call that already powers `[FromClaim]` powers it too,
+and no route-level code is involved.
+
+```csharp
+using DKNet.AspCore.Extensions.ModelBinding;
+using DKNet.SlimBus.Extensions;
+
+public sealed record TransferCommand : Fluents.Requests.IWitResponse<TransferModel>
+{
+    public decimal Amount { get; init; }
+
+    [FromRequestHeader("Idempotency-Key")]
+    public string? IdempotencyKey { get; set; } // filled from the header, never from the body
+}
+```
+
+| You declare | The handler receives |
+|---|---|
+| `[FromRequestHeader("Idempotency-Key")]`<br>`public string? IdempotencyKey { get; set; }`, caller sends `Idempotency-Key: k-77` | `IdempotencyKey = "k-77"` — whatever the request body said for that member |
+| same, caller sends `idempotency-key: k-77` | `IdempotencyKey = "k-77"` — header-name matching is case-insensitive |
+| same, header sent twice (`k-77`, then `k-88`) | `IdempotencyKey = "k-77"` — the first value sent, never a joined `"k-77,k-88"` |
+| same, header absent, no fallback configured | `IdempotencyKey = null` — the property's type default, and the request is still dispatched |
+| same, header absent, on an anonymous group (`RequireAuthorization = false`) with `SystemAccountFallback = "system-account"` | `IdempotencyKey = "system-account"` |
+
+Three points worth stating plainly before you build on it:
+
+- **A missing header is not a refusal.** The member holds its type's default and the request goes
+  on to validation and the handler as usual — population is not validation, here as everywhere
+  else in this mechanism. Making a header mandatory stays the job of a filter (or a validation
+  rule on the member).
+- **A header-filled member takes the configured `SystemAccountFallback`** when one applies — a
+  fallback is set and the group's `RequireAuthorization` is `false` — exactly as a claim-filled
+  member does. Where that fallback applies, an absent header leaves a **constant** value rather
+  than an empty one. A service using the member as an idempotency key needs to know that: every
+  caller who omits the header shares one key.
+- **A header is never an authorization signal.** Unlike a claim, which the host derives from an
+  authenticated identity, a header is supplied by the caller and can say anything. The declaration
+  is a binding convenience only; a service that treated a header-filled member as proof of
+  identity would be trusting the caller.
+
+The published API description also differs from `[FromClaim]`'s. A claim-filled member is hidden
+entirely, because the caller can never supply it. A header-filled member *can* only be supplied by
+the caller, so the operation declares the header as an `in: header` parameter — the caller has to
+know to send it. The member itself is still absent from the published request body, so it is
+advertised in exactly one place.
 
 A new source kind needs only its own attribute plus a matching resolver — no change to this
 package. The mechanism dispatches on `IContextualValueResolver.CanResolve`, never on a concrete
-attribute type:
+attribute type. A plain request header no longer needs one of these — `[FromRequestHeader]` covers
+it — so read the example below as the shape any *other* source kind takes:
 
 ```csharp
 public sealed class FromTenantHeaderAttribute : Attribute, IContextualSource;
@@ -942,6 +996,18 @@ built. Neither is a runtime surprise — both happen at startup.
   (e.g. a non-`Guid` string into a `Guid` property) silently becomes that type's default — it never
   rejects the request. Pair it with your own validator if a missing/unresolvable value must block
   the request.
+- **A `[FromRequestHeader]` member is not a required header.** An absent header leaves the
+  member's type default and the request is dispatched anyway — the mechanism never turns a missing
+  header into a `400`. Add a filter or a validation rule if the header must be present.
+- **A `[FromRequestHeader]` member is not an authorization signal.** A claim comes from an
+  authenticated identity; a header comes from the caller, who can send any value. Treat the
+  declaration as binding convenience, never as proof of who is calling.
+- **`SystemAccountFallback` fills an absent header with a constant.** On an anonymous group with a
+  fallback configured, every caller who omits the header gets the *same* value — which quietly
+  collapses a member used as an idempotency key into one shared key across callers.
+- **A header-declared member is published, a claim-declared one is not.** `[FromRequestHeader]`
+  adds an `in: header` parameter to the operation (the member is still absent from the request
+  body), because the caller does have to send it; `[FromClaim]` is hidden entirely.
 - **`orderBy` is validated against the entity as well as the model**, but the `400` message only
   names the model. A field that exists on `TModel` and not on `TEntity` is rejected with
   *"no such field on `TModel`"*, which reads as wrong until you check the entity.
