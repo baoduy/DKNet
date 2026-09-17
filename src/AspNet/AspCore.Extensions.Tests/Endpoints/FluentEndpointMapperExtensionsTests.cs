@@ -78,7 +78,8 @@ public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClass
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         problem.ShouldNotBeNull();
-        problem.Detail.ShouldBe("no-can-do");
+        var errorMessage = ((System.Text.Json.JsonElement)problem.Extensions["errors"]!)[0].GetProperty("message").GetString();
+        errorMessage.ShouldBe("no-can-do");
     }
 
     [Fact]
@@ -89,7 +90,8 @@ public class FluentEndpointMapperExtensionsTests(EndpointTestHost host) : IClass
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         problem.ShouldNotBeNull();
-        problem.Detail.ShouldBe("no-response-boom");
+        var errorMessage = ((System.Text.Json.JsonElement)problem.Extensions["errors"]!)[0].GetProperty("message").GetString();
+        errorMessage.ShouldBe("no-response-boom");
     }
 
     // --- DELETE (no-response overload; see MapDeleteWithResponseTests for the "with response" overload) ----

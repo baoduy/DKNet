@@ -31,11 +31,24 @@ public class ErrorResponseExceptionHandler : IExceptionHandler
     }
 
     /// <inheritdoc />
-    public ValueTask<bool> TryHandleAsync(
+    public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
-        CancellationToken cancellationToken) =>
-        throw new NotImplementedException();
+        CancellationToken cancellationToken)
+    {
+        // R6: an abandoned request is not answered and is not logged as an error. Never write once the
+        // response has already started, regardless of the reason we were called.
+        if (httpContext.Response.HasStarted) return true;
+
+        if (httpContext.RequestAborted.IsCancellationRequested) return true;
+
+        var pd = CreateProblemDetails(httpContext, exception);
+
+        httpContext.Response.StatusCode = pd.Status ?? StatusCodes.Status500InternalServerError;
+        await httpContext.Response.WriteAsJsonAsync(pd, options: null, contentType: "application/problem+json", cancellationToken);
+
+        return true;
+    }
 
     /// <summary>
     ///     Builds the <see cref="ProblemDetails" /> body for <paramref name="exception" />. The replaceable
@@ -46,5 +59,5 @@ public class ErrorResponseExceptionHandler : IExceptionHandler
     /// <param name="exception">The unhandled exception.</param>
     /// <returns>The <see cref="ProblemDetails" /> to write to the response.</returns>
     protected virtual ProblemDetails CreateProblemDetails(HttpContext httpContext, Exception exception) =>
-        throw new NotImplementedException();
+        UnhandledErrorProblemFactory.Create(httpContext, exception, _options);
 }
