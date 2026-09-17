@@ -232,34 +232,6 @@ internal sealed class ByUserQueryProbeWithNameHandler : Fluents.Queries.IHandler
         Task.FromResult<WidgetResult?>(new WidgetResult { Name = $"{request.Name}|{request.ByUser ?? "(null)"}" });
 }
 
-#pragma warning disable CS0618 // RequestBase is [Obsolete] (DRK-565) — this fixture intentionally exercises the
-                               // pre-existing manual-stamping pattern to prove it still works after the attribute
-                               // was added, not the new mechanism.
-/// <summary>
-///     Carries <see cref="RequestBase.ByUser" /> from the OLD pre-DRK-565 pattern — a host's own
-///     <see cref="EndpointRegistrationOptions.ConfigureGroup" /> filter stamps it manually, the way every
-///     <c>RequestBase</c> consumer did before <see cref="FromClaimAttribute" /> existed. Proves <c>[Obsolete]</c>
-///     on <see cref="RequestBase" /> is advisory only — the old manual pattern still compiles and still works.
-/// </summary>
-public record LegacyByUserCommand : RequestBase, Fluents.Requests.IWitResponse<WidgetResult>
-{
-    public string Name { get; init; } = string.Empty;
-}
-#pragma warning restore CS0618
-
-public sealed class LegacyByUserCommandValidator : AbstractValidator<LegacyByUserCommand>
-{
-    public LegacyByUserCommandValidator() => RuleFor(x => x.Name).NotEmpty();
-}
-
-internal sealed class LegacyByUserCommandHandler : Fluents.Requests.IHandler<LegacyByUserCommand, WidgetResult>
-{
-    public Task<IResult<WidgetResult>> OnHandle(LegacyByUserCommand request, CancellationToken cancellationToken) =>
-#pragma warning disable CS0618
-        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.ByUser ?? "(null)" }));
-#pragma warning restore CS0618
-}
-
 /// <summary>The single <see cref="IEndpointConfig" /> discovered by default (no explicit assemblies) in this test assembly.</summary>
 public sealed class ProbeEndpointConfig : IEndpointConfig
 {
@@ -283,7 +255,6 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<MultiClaimCommand, WidgetResult>("/multi-claim");
         group.MapPost<MixedSourceCommand, WidgetResult>("/mixed-source");
         group.MapGet<ByUserQueryProbeWithName, WidgetResult>("/by-user-query-with-name");
-        group.MapPost<LegacyByUserCommand, WidgetResult>("/legacy-by-user");
     }
 
     #endregion

@@ -110,6 +110,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caller-influenced. Supply both
   through the new `EndpointRegistrationOptions.ConfigureGroup` callback instead. Versioning is now a switch
   (`EnableVersioning`, default `true`) and `IEndpointConfig.Version` is optional (defaults to `1`).
+- **Breaking:** `DKNet.SlimBus.Extensions.RequestBase` — and its `[JsonIgnore] string? ByUser` property — has been
+  removed. The package never populated it, and with `UseEndpointConfigs()` no longer stamping `ByUser` either (see the
+  entry above), the base record carried nothing while still making the acting user look like a framework-supplied
+  value. A request type that derived from it no longer compiles. Migration: drop the `: RequestBase` base, declare the
+  acting-user property on the request itself, mark it with an `IContextualSource` attribute — for example
+  `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions` — and register
+  `services.AddContextualRequestPopulation()`, which stamps the property before validation and before the handler
+  runs. See [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
 - **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
   `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
   implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership
