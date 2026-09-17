@@ -17,6 +17,24 @@ public static class LedgerErrorCodes
 {
     public const string BusinessRefusal = "business-refusal";
     public const string IdempotencyConflict = "idempotency-conflict";
+
+    /// <summary>DRK-1484 §5 "One setting changes the status of a refused request" — mapped to 409.</summary>
+    public const string Precondition = "precondition";
+}
+
+/// <summary>Always refuses with <see cref="LedgerErrorCodes.Precondition" /> — stands in for "a group with this name already exists".</summary>
+public sealed record CreateDuplicateAccountGroupCommand : Fluents.Requests.INoResponse
+{
+    public string GroupName { get; init; } = string.Empty;
+}
+
+internal sealed class CreateDuplicateAccountGroupHandler
+    : Fluents.Requests.IHandler<CreateDuplicateAccountGroupCommand>
+{
+    public Task<IResultBase> OnHandle(CreateDuplicateAccountGroupCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResultBase>(Result.Fail(
+            new Error($"Account group '{request.GroupName}' already exists.")
+                .WithMetadata("Code", LedgerErrorCodes.Precondition)));
 }
 
 public sealed record AccountGroupResult
@@ -84,4 +102,38 @@ internal sealed class FindAccountGroupHandler : Fluents.Requests.IHandler<FindAc
         Task.FromResult<IResult<AccountGroupResult>>(request.Exists
             ? Result.Ok(new AccountGroupResult { Name = request.GroupName })
             : Result.Fail<AccountGroupResult>(new NotFoundError($"Account group '{request.GroupName}' was not found.")));
+}
+
+/// <summary>
+///     Raised by <see cref="RenameOwnedAccountGroupHandler" /> to stand in for "this group belongs to another
+///     team" — an unexpected error whose kind (not its route) must drive the configured status (DRK-1484 §5
+///     "One setting changes the status of an unexpected error").
+/// </summary>
+public sealed class OwnershipRefusalException(string message) : Exception(message);
+
+/// <summary>DRK-1484 — always throws, to exercise an unhandled error the setting maps to 403.</summary>
+public sealed record RenameOwnedAccountGroupCommand : Fluents.Requests.INoResponse
+{
+    public string GroupName { get; init; } = string.Empty;
+}
+
+internal sealed class RenameOwnedAccountGroupHandler : Fluents.Requests.IHandler<RenameOwnedAccountGroupCommand>
+{
+    public Task<IResultBase> OnHandle(RenameOwnedAccountGroupCommand request, CancellationToken cancellationToken) =>
+        throw new OwnershipRefusalException($"Account group '{request.GroupName}' belongs to another team.");
+}
+
+/// <summary>
+///     DRK-1484 — always throws a plain unexpected error. <see cref="SensitiveDetail" /> is the message text an
+///     outside-development body must never repeat (R4).
+/// </summary>
+public sealed record ExplodeAccountGroupCommand : Fluents.Requests.INoResponse
+{
+    public const string SensitiveDetail = "connection string: Server=internal-db;Password=hunter2";
+}
+
+internal sealed class ExplodeAccountGroupHandler : Fluents.Requests.IHandler<ExplodeAccountGroupCommand>
+{
+    public Task<IResultBase> OnHandle(ExplodeAccountGroupCommand request, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException(ExplodeAccountGroupCommand.SensitiveDetail);
 }

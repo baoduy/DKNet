@@ -19,7 +19,10 @@ public enum ErrorSource
     Command,
 
     /// <summary>FluentValidation refused the request input.</summary>
-    Validation
+    Validation,
+
+    /// <summary>An unhandled exception was raised while processing the request.</summary>
+    Unhandled
 }
 
 /// <summary>
@@ -46,6 +49,12 @@ public sealed class ErrorResponseContext
 
     /// <summary>The errors the failure carries.</summary>
     public required IReadOnlyList<ErrorItem> Errors { get; init; }
+
+    /// <summary>
+    ///     The exception that was raised, for <see cref="ErrorSource.Unhandled" /> only. Always
+    ///     <see langword="null" /> for <see cref="ErrorSource.Command" /> and <see cref="ErrorSource.Validation" />.
+    /// </summary>
+    public Exception? Exception { get; init; }
 }
 
 /// <summary>
@@ -64,9 +73,17 @@ public sealed class ErrorResponseOptions
     public Func<ErrorResponseContext, int?>? StatusCode { get; set; }
 
     /// <summary>
-    ///     Adds members to the <see cref="ProblemDetails" /> after its status is chosen. Runs for both
-    ///     <see cref="ErrorSource.Command" /> and <see cref="ErrorSource.Validation" /> failures, so a member added
-    ///     here never appears on one failure kind only.
+    ///     Adds members to the <see cref="ProblemDetails" /> after its status is chosen. Runs for all three
+    ///     <see cref="ErrorSource" /> kinds, so a member added here never appears on one failure kind only.
     /// </summary>
     public Action<ProblemDetails, ErrorResponseContext>? Customize { get; set; }
+
+    /// <summary>
+    ///     Supplies the response body for an unhandled exception (<see cref="ErrorSource.Unhandled" />) in place of
+    ///     the library's built-in body. Leaving this <see langword="null" /> keeps the built-in body. Returning
+    ///     <see langword="null" /> from the callback also keeps the built-in body. <see cref="StatusCode" /> still
+    ///     wins over the status this callback sets when it also returns non-null, and <see cref="Customize" /> still
+    ///     runs afterwards.
+    /// </summary>
+    public Func<ErrorResponseContext, ProblemDetails?>? UnhandledError { get; set; }
 }
