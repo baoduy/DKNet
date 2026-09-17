@@ -79,11 +79,56 @@ public class DeleteRequestCollisionTests
         message.ShouldContain("request name 'DeleteAccountRequest'");
 
         // Row 2: the collision's existing behaviour keeps holding alongside the new diagnostic — no
-        // Error-severity diagnostics, the 2-arg MapDeleteById fallback still emitted, and the update
-        // member's own DeleteAccountRequest record still the only one of that name.
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+        // Error-severity diagnostics beyond DKCRUDGEN009, the 2-arg MapDeleteById fallback still emitted,
+        // and the update member's own DeleteAccountRequest record still the only one of that name.
+        // DKCRUDGEN009 is inherent to this fixture: the member is literally named Delete, a reserved route
+        // name (CrudGenerator.cs:383-398). Frozen, pre-existing behaviour — DiagnosticTests.cs:311-361.
+        // Narrowed, not dropped: a DKCRUDGEN010 emitted at Error severity still fails here.
+        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != "DKCRUDGEN009").ShouldBeEmpty();
         var text = GeneratorTestHelper.GeneratedText(result);
         text.Split("record DeleteAccountRequest").Length.ShouldBe(2);
+        text.ShouldContain("group.MapDeleteById<global::MyDomain.Account, global::System.Guid>();");
+    }
+
+    private const string DomainWithOverriddenRequestNameTakingDeleteName = """
+        using System;
+        using DKNet.EfCore.Abstractions.Attributes;
+        using DKNet.EfCore.Abstractions.Entities;
+
+        namespace MyDomain
+        {
+            public class Account : IEntity<Guid>
+            {
+                [CrudCreate]
+                public Account(string name) => Name = name;
+
+                [CrudUpdate(Name = "DeleteAccountRequest")]
+                public void Retire(string reason) => Name = reason;
+
+                public Guid Id { get; private set; }
+                public string Name { get; private set; } = string.Empty;
+            }
+        }
+        """;
+
+    [Fact]
+    public void Run_WithOverriddenRequestNameTakingDeleteName_ReportsDKCRUDGEN010AndNoErrors()
+    {
+        // A non-reserved member name (Retire) whose [CrudUpdate(Name = ...)] override still resolves to
+        // Delete{Entity}Request reaches the DKCRUDGEN010 path without ever tripping DKCRUDGEN009 (that
+        // check is keyed on the member's own name, not its overridden RequestName) — proving R2: the build
+        // stays green (zero Error diagnostics, unqualified) while DKCRUDGEN010 still reports at Info.
+        var (_, diagnostics, result) = GeneratorTestHelper.Run(DomainWithOverriddenRequestNameTakingDeleteName, ApiWithAccountDto);
+
+        var diagnostic = diagnostics.Single(d => d.Id == "DKCRUDGEN010");
+        diagnostic.Severity.ShouldBe(DiagnosticSeverity.Info);
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        message.ShouldContain("Entity 'Account'");
+        message.ShouldContain("member 'Retire'");
+        message.ShouldContain("request name 'DeleteAccountRequest'");
+
+        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+        var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("group.MapDeleteById<global::MyDomain.Account, global::System.Guid>();");
     }
 
