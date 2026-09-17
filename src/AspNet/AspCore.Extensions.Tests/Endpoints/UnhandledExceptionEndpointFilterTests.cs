@@ -44,10 +44,10 @@ public class UnhandledExceptionEndpointFilterTests
 {
     #region Methods
 
-    private static async Task<(WebApplication App, HttpClient Client)> CreateHostAsync()
+    private static async Task<(WebApplication App, HttpClient Client)> CreateHostAsync(string environmentName = "Development")
     {
         var builder = WebApplication.CreateBuilder();
-        builder.Environment.EnvironmentName = "Development";
+        builder.Environment.EnvironmentName = environmentName;
         builder.WebHost.UseTestServer();
         builder.Services.AddErrorResponses();
         builder.Services.AddSlimMessageBus(mbb => mbb
@@ -107,6 +107,35 @@ public class UnhandledExceptionEndpointFilterTests
         var response = await client.PostAsJsonAsync("/x/command", new ExplodingCommand());
 
         await AssertStandardUnhandledShapeAsync(response);
+    }
+
+    [Fact]
+    public async Task UnhandledException_Development_MessageIsTheExceptionsOwnMessage()
+    {
+        // REWORK round 2 (DRK-1490): pins the message content per environment, built the same way
+        // Fixtures/LedgerTestHost.cs builds its host (builder.Environment.EnvironmentName, not a DI stub) — so
+        // deleting either environment argument here (or the sibling Production test) turns a test red.
+        var (app, client) = await CreateHostAsync("Development");
+        await using var _ = app;
+
+        var response = await client.GetAsync("/x/query");
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var message = body.GetProperty("errors")[0].GetProperty("message").GetString();
+        message.ShouldBe("query-boom");
+    }
+
+    [Fact]
+    public async Task UnhandledException_Production_MessageIsTheFixedMessage()
+    {
+        var (app, client) = await CreateHostAsync("Production");
+        await using var _ = app;
+
+        var response = await client.GetAsync("/x/query");
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var message = body.GetProperty("errors")[0].GetProperty("message").GetString();
+        message.ShouldBe("An unexpected error occurred. Quote the trace-id when reporting this.");
     }
 
     #endregion

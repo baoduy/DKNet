@@ -10,10 +10,10 @@
 
 using System.Diagnostics;
 using System.Net;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace DKNet.AspCore.Extensions.Responses;
 
@@ -34,7 +34,13 @@ internal static class UnhandledErrorProblemFactory
     /// <returns>The <see cref="ProblemDetails" /> to write to the response.</returns>
     public static ProblemDetails Create(HttpContext httpContext, Exception exception, ErrorResponseOptions? options)
     {
-        var isDevelopment = httpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
+        // IWebHostEnvironment, not IHostEnvironment: it is the type builder.Environment.EnvironmentName sets on
+        // WebApplicationBuilder, and the type ASP.NET Core's own developer-exception-page decision reads — the
+        // very check this design works around (DRK-1490 round 2). Fully qualified: Microsoft.AspNetCore.Hosting
+        // also declares an obsolete IHostingEnvironment.IsDevelopment() extension that would otherwise win
+        // overload resolution over Microsoft.Extensions.Hosting's IHostEnvironment.IsDevelopment().
+        var env = httpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+        var isDevelopment = Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsDevelopment(env);
 
         var message = isDevelopment
             ? exception.Message

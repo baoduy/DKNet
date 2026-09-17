@@ -10,11 +10,11 @@
 
 using System.Text.Json;
 using DKNet.AspCore.Extensions.Responses;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
 
 namespace AspCore.Extensions.Tests.Responses;
 
@@ -25,7 +25,9 @@ public class ErrorResponseExceptionHandlerTests
     private static DefaultHttpContext CreateHttpContext(string environmentName)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IHostEnvironment>(new StubHostEnvironment { EnvironmentName = environmentName });
+        // IWebHostEnvironment, not IHostEnvironment (DRK-1490 round 2): the production factory now resolves
+        // IWebHostEnvironment, matching what builder.Environment.EnvironmentName actually sets.
+        services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment { EnvironmentName = environmentName });
 
         return new DefaultHttpContext
         {
@@ -94,12 +96,14 @@ public class ErrorResponseExceptionHandlerTests
         errors[0].GetProperty("message").GetString().ShouldBe("dev-detail");
     }
 
-    private sealed class StubHostEnvironment : IHostEnvironment
+    private sealed class StubWebHostEnvironment : IWebHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Production";
         public string ApplicationName { get; set; } = "AspCore.Extensions.Tests";
         public string ContentRootPath { get; set; } = ".";
         public IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public string WebRootPath { get; set; } = ".";
+        public IFileProvider WebRootFileProvider { get; set; } = null!;
     }
 
     private sealed class AlreadyStartedResponseFeature : IHttpResponseFeature
