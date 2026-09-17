@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
+  member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
+  generated delete request and fall back to the request-less `MapDeleteById<TEntity, TKey>()`; the diagnostic names the
+  entity, the colliding member and the request name it took, so the fallback is no longer silent. Severity is `Info`:
+  the build still succeeds and the entity's DELETE route keeps working unchanged — only the delete request you could
+  hang a validation rule on is missing, which renaming the member restores. See
+  [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md).
+- `DKNet.EfCore.AuditLogs` can now stamp `CreatedBy`/`UpdatedBy` from the signed-in user. Implement the new
+  `ICurrentUserProvider` (one member, `string? GetCurrentUser()`, returning `null`/empty when there is no user) and
+  register it with `services.AddCurrentUserProvider<TDbContext, TProvider>()` — an application-wide, scoped,
+  first-caller-wins registration that attaches `EfCoreAuditHook` to `TDbContext` itself, so it needs no publisher
+  and no second registration call, and never overwrites an `AuditLogOptions` an earlier
+  `AddEfCoreAuditHook`/`AddEfCoreAuditLogs` registered, whichever order the two run in. The hook stamps
+  `CreatedBy`/`CreatedOn` on `Added` entries and `UpdatedBy`/`UpdatedOn` on `Modified` ones **before** it captures
+  the audit entries, so a published entry carries the same values the row was saved with; a value a domain method
+  recorded in the same change set is never replaced. `DKNet.EfCore.DataAuthorization`'s `DataOwnerHook` takes the
+  same provider and stamps `OwnedBy` alone for any save where it returns a non-empty user — with no provider
+  registered, or one that returns nothing for that save, the ownership key keeps filling the audit fields exactly
+  as before, so existing applications need no change. Both providers are optional and each works without the
+  other. The returned value reaches every registered `IAuditLogPublisher` **unmasked**, so an application under a
+  personal-data rule should return a stable non-personal identifier (for example a subject id) rather than an email
+  address. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
 - Generated CRUD endpoints can now be excluded per route, not only per operation kind.
   `CrudMapOptions.Exclude(params string[] routeNames)` withdraws the one route carrying each name and leaves
   the entity's other routes of the same kind published at their existing addresses — so a single

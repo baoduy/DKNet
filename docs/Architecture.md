@@ -51,6 +51,7 @@ and no package exists only to aggregate others.
 | Dispatching domain events | [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md) | a hook, registered by `AddEventPublisher<TDbContext, TImpl>()` |
 | Field-level change history | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) | a hook, registered by `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
 | Row-level ownership | [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) | a global query filter plus a hook, registered by `AddDataOwnerProvider<TDbContext, TProvider>()` |
+| Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
 | Column encryption | [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) | a `ValueConverter` on the model |
 | DTO shapes | [`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) | compile time only |
 | Command/query dispatch and automatic save | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor<TDbContext>()` |
@@ -303,7 +304,8 @@ Audit, encryption, and authorization attach as opt-in interceptors on the same `
 into domain or application code:
 
 - [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity changes, with
-  `[SensitiveData]`-aware redaction.
+  `[SensitiveData]`-aware redaction, and stamps `CreatedBy`/`UpdatedBy` from an optional `ICurrentUserProvider`
+  before it captures them.
 - [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) — row-level, ownership-based
   filtering via EF Core global query filters.
 - [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF

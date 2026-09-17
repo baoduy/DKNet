@@ -75,6 +75,9 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 - **The filter is registered process-wide.** `AddDataOwnerProvider` adds it to a **static** model-builder list, so
   every `DbContext` that calls `UseAutoConfigModel()` applies it. A second context holding `IOwnedBy` entities
   must also implement `IDataOwnerDbContext`, or keep those entities out of its model.
+- **The ownership key is not an identity.** `OwnedBy` says which tenant a row belongs to, never who touched it.
+  Register an `ICurrentUserProvider` (see *Audit trails* below) when `CreatedBy`/`UpdatedBy` must answer the second
+  question; without one they are filled from the ownership key, which answers only the first.
 - **Dropping `UseAutoConfigModel<TContext>()` removes the filter.** This matters most in tests: without it a
   query returns rows it never would in production. See [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md).
 
@@ -87,6 +90,16 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 - **`[AuditLog]` on a property forces plaintext capture.** Do not put it on a secret. `[SensitiveData]` always
   redacts and cannot be overridden by `[AuditLog]`; `[IgnoreAuditLog]` removes the property from the trail
   entirely. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+- **The audit identity can be a person, and it is published unmasked.** Registering an `ICurrentUserProvider` via
+  `AddCurrentUserProvider<TDbContext, TProvider>()` fills `CreatedBy`/`UpdatedBy` from
+  `ICurrentUserProvider.GetCurrentUser()` instead of from the tenant ownership key. Whatever that method returns
+  reaches **every registered `IAuditLogPublisher` in full** — the redaction rules above cover entity property
+  values, not the audit identity. An application subject to a personal-data rule (GDPR, PDPA) must therefore
+  return a stable, non-personal identifier such as the token subject id, not an email address or any other
+  directly identifying value.
+- **Dropping the provider does not blank the audit fields — it changes what they mean.** With no current-user
+  value for a save, `DKNet.EfCore.DataAuthorization` fills `CreatedBy`/`UpdatedBy` from the ownership key, so the
+  trail silently records a tenant instead of a person. Check which one your reports assume.
 
 ### File storage
 

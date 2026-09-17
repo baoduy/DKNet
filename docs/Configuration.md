@@ -31,7 +31,7 @@ configuration comes from without reading its page.
 | **Bound from a config section** | pass `IConfiguration`; the package binds its own named section | the three blob adapters — `AddAzureStorageAdapter`, `AddS3BlobService`, `AddLocalDirectoryBlobService` |
 | **Configured by a delegate** | pass `Action<TOptions>` | `AddIdempotentKey` (`IdempotencyOptions`), `AddTransformerService` (`TransformOptions`), `AddContextualRequestPopulation` (`ContextualPopulationOptions`), `AddPdfGenerator`, and the `Action<AzureStorageOptions>` overload of `AddAzureStorageAdapter` |
 | **Configured by a required argument** | pass the value itself | `AddAesGcmEncryption(base64Key)`, `AddRsaEncryption(privateKeyBase64)`, `AddIdempotencyWithMsSqlStore(connectionString)` and its Npgsql/Redis siblings |
-| **Configured by a type you supply** | pass a type parameter DKNet resolves from DI | `AddEfCoreEncryption<TKeyProvider>`, `AddDataOwnerProvider<TDbContext, TProvider>`, `AddEventPublisher<TDbContext, TImpl>`, `AddEfCoreAuditLogs<TDbContext, TPublisher>`, `AddIdempotentKey<TStore>`, `AddBackgroundJob<TJob>` |
+| **Configured by a type you supply** | pass a type parameter DKNet resolves from DI | `AddEfCoreEncryption<TKeyProvider>`, `AddDataOwnerProvider<TDbContext, TProvider>`, `AddCurrentUserProvider<TDbContext, TProvider>`, `AddEventPublisher<TDbContext, TImpl>`, `AddEfCoreAuditLogs<TDbContext, TPublisher>`, `AddIdempotentKey<TStore>`, `AddBackgroundJob<TJob>` |
 
 Three packages need no configuration at all — `AddSpecRepo<TDbContext>()`, `AddEncryptionServices()` (which
 registers only `IShaHashing` and `IHmacHashing`), and the two `AddSlimBus*` calls take nothing but a type
@@ -56,7 +56,7 @@ project already has; others need their own. This is the single most common "why 
 | `AddDbContextWithHook<T>()`, `AddHook<...>()` | `DKNet.EfCore.Hooks` |
 | `AddSpecRepo<TDbContext>()` | `DKNet.EfCore.Specifications` |
 | `AddDataOwnerProvider<TDbContext, TProvider>()` | `DKNet.EfCore.DataAuthorization` |
-| `AddEfCoreAuditLogs<TDbContext, TPublisher>()` | `DKNet.EfCore.AuditLogs` |
+| `AddEfCoreAuditLogs<TDbContext, TPublisher>()`, `AddCurrentUserProvider<TDbContext, TProvider>()` | `DKNet.EfCore.AuditLogs` |
 | `AddIdempotentKey(...)`, `.RequiredIdempotentKey()` | `DKNet.AspCore.Idempotency` |
 | `AddIdempotencyWith*Store(...)`, `AddIdempotency*Store(...)` | `DKNet.AspCore.Idempotency.MsSqlStore` / `.NpgsqlStore` / `.RedisStore` — the store's own namespace, not the base package's |
 | `AddS3BlobService(...)` | `DKNet.Svc.BlobStorage.AwsS3` |
@@ -155,6 +155,13 @@ Most DKNet registrations are order-independent. These are the exceptions, and ea
   not just the one passed as `TDbContext`. A second context whose model contains `IOwnedBy` entities must also
   implement `IDataOwnerDbContext`, or keep those entities out of its model. See the
   [Migration Guide](Migration-Guide.md#upgrading-dknetefcoredataauthorization-idataownerdbcontext-is-now-required).
+- **`AddCurrentUserProvider` is application-wide, and the first registration wins.** It registers
+  `ICurrentUserProvider` un-keyed behind an `IsRegistered<ICurrentUserProvider>()` guard, so a second call with a
+  different provider type silently keeps the first — only the audit-hook attachment to the new `TDbContext` takes
+  effect. It also attaches the audit hook itself, so it needs no `AddEfCoreAuditLogs` call alongside it, and it
+  never overwrites an `AuditLogOptions` an earlier `AddEfCoreAuditHook`/`AddEfCoreAuditLogs` registered. Once one
+  is registered, `CreatedBy`/`UpdatedBy` come from the signed-in user for every save where `GetCurrentUser()`
+  returns a value, and from `AddDataOwnerProvider`'s ownership key for every save where it does not.
 - **An `IMapper` registration is required before `AddEvent<TEvent>()` or `[RaisesEvent]` can work.** Both map the
   entity onto the event type; without a mapper the save throws `EventException`. `AddEvent(instance)` needs none.
 
@@ -270,7 +277,7 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
 | [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
 | [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
-| [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) | `AddEfCoreAuditLogs`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
+| [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
 | [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
 | [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
 | [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |

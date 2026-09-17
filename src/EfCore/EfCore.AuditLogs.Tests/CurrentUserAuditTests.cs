@@ -187,13 +187,14 @@ public class CurrentUserAuditTests
     public async Task PublishedAuditEntry_CarriesSignedInUser()
     {
         // Given the current user is "steven.hoang@transwap.com" and the current tenant is "acme-sg"
-        TestPublisher.Clear();
         var (root, scope, db) = await BuildAsync(s => s
             .AddDataOwnerProvider<CustomerAuditDbContext, MutableTenantProvider>()
             .AddCurrentUserProvider<CustomerAuditDbContext, MutableCurrentUserProvider>()
             .AddEfCoreAuditLogs<CustomerAuditDbContext, TestPublisher>());
         await using var _ = root;
         using var __ = scope;
+        var publisher = scope.ServiceProvider.GetAuditLogPublishers<CustomerAuditDbContext>()
+            .OfType<TestPublisher>().First();
         ((MutableTenantProvider)scope.ServiceProvider.GetRequiredService<IDataOwnerProvider>()).OwnershipKey =
             "acme-sg";
         ((MutableCurrentUserProvider)scope.ServiceProvider.GetRequiredService<ICurrentUserProvider>()).CurrentUser =
@@ -205,7 +206,7 @@ public class CurrentUserAuditTests
         await db.SaveChangesAsync();
 
         // Then the published audit entry shows "created by" as "steven.hoang@transwap.com"
-        var published = TestPublisher.Received.SingleOrDefault(e => e.Keys.Values.Contains(entity.Id));
+        var published = publisher.Received.SingleOrDefault(e => e.Keys.Values.Contains(entity.Id));
         published.ShouldNotBeNull();
         published.CreatedBy.ShouldBe("steven.hoang@transwap.com");
     }
