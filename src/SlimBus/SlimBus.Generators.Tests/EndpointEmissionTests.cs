@@ -155,6 +155,19 @@ public class EndpointEmissionTests
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
 
+    /// <summary>DRK-1453 R2 (row 3, KEEP): an action WITH parameters is unaffected — it still emits <c>MapActionById</c>.</summary>
+    [Fact]
+    public void EndpointEmission_ActionWithParameters_StillEmitsMapActionById()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithCreateUpdateAndExplicitRouteAction, ApiWithOrderDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain(
+            "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approval\", \"POST\");");
+        text.ShouldNotContain("MapParameterlessActionById");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
     private const string DomainWithActionDefaultingSegment = """
         using System;
         using DKNet.EfCore.Abstractions.Attributes;
@@ -213,11 +226,14 @@ public class EndpointEmissionTests
     [Fact]
     public void Run_WithActionVerbOverriddenToPatch_RegistersPatchAtDefaultSegment()
     {
+        // DRK-1453 R1: Archive() takes no parameters, so this now emits MapParameterlessActionById, not
+        // MapActionById — this pins the verb-override behaviour, MapParameterlessActionById-vs-MapActionById
+        // selection is pinned separately by EndpointEmission_ParameterlessAction_EmitsMapParameterlessActionById.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPatchAction, ApiWithOrderDto);
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
-            "group.MapActionById<ArchiveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/archive\", \"PATCH\");");
+            "group.MapParameterlessActionById<ArchiveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/archive\", \"PATCH\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
 
@@ -249,11 +265,12 @@ public class EndpointEmissionTests
     [Fact]
     public void Run_WithPutActionAndUpdateMember_ActionNeverClaimsThePlainByIdRoute()
     {
+        // DRK-1453 R1: Reinstate() here takes no parameters, so this now emits MapParameterlessActionById.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithPutActionAndUpdateMember, ApiWithOrderDto);
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
-            "group.MapActionById<ReinstateOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reinstate\", \"PUT\");");
+            "group.MapParameterlessActionById<ReinstateOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/reinstate\", \"PUT\");");
         text.ShouldContain(
             "group.MapPutById<ChangeStatusOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -284,12 +301,26 @@ public class EndpointEmissionTests
     [Fact]
     public void Run_WithSoleActionAndNoUpdateMembers_NeverRegistersThePlainByIdRoute()
     {
+        // DRK-1453 R1: Approve() here takes no parameters, so this now emits MapParameterlessActionById.
         var (output, _, result) = GeneratorTestHelper.Run(DomainWithSoleAction, ApiWithOrderDto);
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
-            "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
+            "group.MapParameterlessActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldNotContain("MapPutById");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    /// <summary>DRK-1453 R1 (row 2, MODIFY): a parameterless [CrudAction] member emits MapParameterlessActionById, not MapActionById.</summary>
+    [Fact]
+    public void EndpointEmission_ParameterlessAction_EmitsMapParameterlessActionById()
+    {
+        var (output, _, result) = GeneratorTestHelper.Run(DomainWithSoleAction, ApiWithOrderDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain(
+            "group.MapParameterlessActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
+        text.ShouldNotContain("group.MapActionById<ApproveOrderRequest");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
 
@@ -348,13 +379,14 @@ public class EndpointEmissionTests
     [InlineData(false)]
     public void Run_WithActionAndUpdateDeclaredInEitherOrder_RouteResolutionIsOrderIndependent(bool actionDeclaredFirst)
     {
+        // DRK-1453 R1: Approve() here takes no parameters, so this now emits MapParameterlessActionById.
         var domain = actionDeclaredFirst ? DomainWithActionThenUpdate : DomainWithUpdateThenAction;
 
         var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithOrderDto);
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain(
-            "group.MapActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
+            "group.MapParameterlessActionById<ApproveOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}/approve\", \"POST\");");
         text.ShouldContain(
             "group.MapPutById<ChangeStatusOrderRequest, global::System.Guid, global::MyApi.OrderDto>(\"{id}\");");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();

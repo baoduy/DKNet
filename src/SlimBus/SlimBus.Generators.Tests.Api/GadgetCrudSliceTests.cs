@@ -148,6 +148,20 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
     }
 
     [Fact]
+    public async Task PostGadgetApprove_WithNoBody_Returns400()
+    {
+        // DRK-1453 R2 guard: Approve(string? approvalNote) takes a parameter, so it still requires a body even
+        // though that parameter is itself optional — the 400 comes from the missing body, not from the
+        // parameter's own nullability. This must hold both before and after this cycle's change.
+        var created = await host.Client.PostAsJsonAsync("/gadgets", new { name = "approve-guard", price = 7m });
+        var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
+
+        var response = await host.Client.PostAsync($"/gadgets/{createdDto!.Id}/approve", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task PostGadgetApprove_AgainstGroupWithActionsExcluded_ServesUpdatesButNotTheActionRoute()
     {
         var created = await host.Client.PostAsJsonAsync("/gadgets-no-actions", new { name = "excluded-actions", price = 8m });
@@ -170,6 +184,22 @@ public sealed class GadgetCrudSliceTests(GadgetTestHost host) : IClassFixture<Ga
         var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
 
         var response = await host.Client.PostAsJsonAsync($"/gadgets/{createdDto!.Id}/discontinue", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
+        dto.ShouldNotBeNull();
+        dto.IsDiscontinued.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task PostGadgetDiscontinue_WithNoBodyAndNoContentType_Returns200()
+    {
+        // DRK-1453 R1 end-to-end: Discontinue() takes no parameters, so its generated route must accept a
+        // request with no body at all and no Content-Type header, not just an empty JSON object.
+        var created = await host.Client.PostAsJsonAsync("/gadgets", new { name = "discontinue-no-body", price = 4m });
+        var createdDto = await created.Content.ReadFromJsonAsync<GadgetDto>();
+
+        var response = await host.Client.PostAsync($"/gadgets/{createdDto!.Id}/discontinue", null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var dto = await response.Content.ReadFromJsonAsync<GadgetDto>();
