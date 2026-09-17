@@ -130,6 +130,61 @@ internal sealed class ByUserQueryProbeHandler : Fluents.Queries.IHandler<ByUserQ
 }
 
 /// <summary>
+///     Carries a member declared via <see cref="FromRequestHeaderAttribute" /> (DRK-1524) — proves a header-filled
+///     member is populated the same way a claim-filled member is, echoed into the response so tests can observe
+///     what the host resolved it to. Mirrors <see cref="ByUserProbeCommand" />'s claim-source shape.
+/// </summary>
+public record ByHeaderProbeCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromRequestHeader("Idempotency-Key")]
+    public string? IdempotencyKey { get; set; }
+}
+
+internal sealed class ByHeaderProbeHandler : Fluents.Requests.IHandler<ByHeaderProbeCommand, WidgetResult>
+{
+    #region Methods
+
+    public Task<IResult<WidgetResult>> OnHandle(ByHeaderProbeCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.IdempotencyKey ?? "(null)" }));
+
+    #endregion
+}
+
+/// <summary>
+///     Same header declaration as <see cref="ByHeaderProbeCommand" /> plus a FluentValidation rule rejecting an
+///     empty value — proves the header-filled member is populated BEFORE validation runs (DRK-1524 §5 "The member
+///     is filled before the request is validated"), mirroring <see cref="AttributedValidatedCommand" />'s
+///     claim-source proof of the same ordering guarantee.
+/// </summary>
+public record ValidatedByHeaderCommand : Fluents.Requests.IWitResponse<WidgetResult>
+{
+    [FromRequestHeader("Idempotency-Key")]
+    public string? IdempotencyKey { get; set; }
+}
+
+public sealed class ValidatedByHeaderCommandValidator : AbstractValidator<ValidatedByHeaderCommand>
+{
+    #region Constructors
+
+    public ValidatedByHeaderCommandValidator() => RuleFor(x => x.IdempotencyKey).NotEmpty();
+
+    #endregion
+}
+
+internal sealed class ValidatedByHeaderCommandHandler
+    : Fluents.Requests.IHandler<ValidatedByHeaderCommand, WidgetResult>
+{
+    #region Methods
+
+    public Task<IResult<WidgetResult>> OnHandle(
+        ValidatedByHeaderCommand request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<WidgetResult>>(Result.Ok(new WidgetResult { Name = request.IdempotencyKey ?? "(null)" }));
+
+    #endregion
+}
+
+/// <summary>
 ///     Declares a non-string-typed member — proves a claim value that fails to convert to the property's own
 ///     type (e.g. a non-Guid string) leaves it at its type's default rather than throwing or rejecting the
 ///     request (DRK-565 population is never validation).
@@ -255,6 +310,8 @@ public sealed class ProbeEndpointConfig : IEndpointConfig
         group.MapPost<MultiClaimCommand, WidgetResult>("/multi-claim");
         group.MapPost<MixedSourceCommand, WidgetResult>("/mixed-source");
         group.MapGet<ByUserQueryProbeWithName, WidgetResult>("/by-user-query-with-name");
+        group.MapPost<ByHeaderProbeCommand, WidgetResult>("/by-header");
+        group.MapPost<ValidatedByHeaderCommand, WidgetResult>("/validated-by-header");
     }
 
     #endregion
