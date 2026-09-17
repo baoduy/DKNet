@@ -336,6 +336,28 @@ builder.Services.AddIdempotentKey(options =>
 });
 ```
 
+### In-process store startup warning
+
+`AddIdempotentKey()` also registers an internal startup service (`IdempotencyInMemoryStoreWarning`, an
+`IHostedLifecycleService`) that logs exactly one warning per application start — and only while the resolved
+`IIdempotencyKeyStore` is the in-process default store:
+
+```text
+warn: DKNet.AspCore.Idempotency.Store.IdempotencyInMemoryStoreWarning[0]
+      Idempotency keys are stored in the process's memory (IdempotencyInMemoryStore): they are lost on restart
+      and are not shared between instances. ...
+```
+
+The warning exists because those keys live in one process's memory: they are lost on restart and never reach a
+second instance, so an accidental multi-instance deployment on the default store is visible in the logs on the
+first start instead of only when a duplicate slips through. Registering any other store —
+`AddIdempotentKey<TStore>()` or a provider package's `AddIdempotencyWithXxxStore(...)` — silences it, because the
+resolved store is then no longer `IdempotencyInMemoryStore`.
+
+The service checks the store in the start moment only; the remaining lifecycle moments (starting, started,
+stopping, stop, stopped) do no work. It is `internal`, so there is nothing to register, configure, or suppress from
+application code — pick a durable store and the warning is gone.
+
 ## ⚙️ Configuration reference
 
 All options live on `IdempotencyOptions`, configured via the `Action<IdempotencyOptions>` passed to
