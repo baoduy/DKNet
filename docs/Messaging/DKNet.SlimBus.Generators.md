@@ -404,7 +404,7 @@ public static class ProductCrudEndpointExtensions
         }
         if (!options.IsExcluded(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action) && !options.IsExcluded("Archive"))
         {
-            var routeBuilder = group.MapActionById<ArchiveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/archive", "PATCH");
+            var routeBuilder = group.MapParameterlessActionById<ArchiveProductRequest, global::System.Guid, global::Api.ProductDto>("{id}/archive", "PATCH");
             options.Apply(global::DKNet.AspCore.Extensions.Endpoints.CrudOp.Action, "Archive", routeBuilder);
         }
         return group;
@@ -415,7 +415,8 @@ public static class ProductCrudEndpointExtensions
 Read the last four registrations as the routing rules in action: `UpdatePrice` was declared first so it keeps
 the plain `{id}` PUT; `Rename` came second so it landed on `{id}/rename`; `Approve` used the attribute's
 explicit `"approval"` segment; `Archive` fell back to its kebab-cased method name and to `PATCH` because of
-`Verb`.
+`Verb`, and — taking no parameters — was registered with `MapParameterlessActionById` rather than
+`MapActionById`, so its route needs no request body.
 
 Two things in that method are the exclusion and configuration surface. `ValidateRouteNames` is emitted with
 every name the entity has and runs before anything is mapped, so a name `Exclude`/`Configure` passed that the
@@ -670,6 +671,25 @@ is always a named segment and never positional. `Verb = Patch` only changes the 
 partial-update or merge semantics behind it. Marking one member with both `[CrudUpdate]` and `[CrudAction]` is
 `DKCRUDGEN007`, and that member is emitted as neither.
 
+#### An action with no parameters takes no request body
+
+The generator picks the mapper by the action method's compile-time parameter count. `Archive()` above takes
+none, so its route is registered with `MapParameterlessActionById` and dispatches on a call that carries no
+body and no `Content-Type` header at all:
+
+```http
+PATCH /v1/products/8f0c5a62-5f1f-4a1e-9f8f-0f4a2d3b7c10/archive HTTP/1.1
+Host: localhost
+```
+
+Posting a body anyway is still accepted and ignored, so an existing caller sending `{}` keeps working
+unchanged, and the target id is always the one in the route — never an `Id` read out of a posted body. The
+published OpenAPI operation for such a route declares no `requestBody`, so a generated client does not send
+one either.
+
+`Approve(string approver)` takes a parameter, so it is unaffected: it still maps through `MapActionById` and
+its request body still carries the action's arguments.
+
 ### Endpoint emission is opt-in
 
 `{Entity}CrudEndpoints.g.cs` is generated only when the compiling project references `DKNet.AspCore.Extensions`. A
@@ -752,7 +772,8 @@ handler, and writes at most three files per entity:
 - **[DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions.md)** — the request/handler contracts, `NotFoundError`, the
   lazy mapper, and the auto-save interceptor that persists what the generated handlers change.
 - **[DKNet.AspCore.Extensions](../AspNetCore/DKNet.AspCore.Extensions.md)** — the endpoint mappers (`MapGetById`,
-  `MapGetList`, `MapDeleteById`, `MapPost`, `MapPutById`, `MapActionById`) that `Map{Entity}Crud` composes, plus
+  `MapGetList`, `MapDeleteById`, `MapPost`, `MapPutById`, `MapActionById`, `MapParameterlessActionById`) that
+  `Map{Entity}Crud` composes, plus
   `CrudMapOptions`.
 
 ## ⚠️ Gotchas & limits

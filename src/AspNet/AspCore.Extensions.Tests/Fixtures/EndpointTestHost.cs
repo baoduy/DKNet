@@ -57,6 +57,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
 
+        builder.Services.AddOpenApi();
         builder.Services.AddSingleton<IMapper>(new Mapper(new TypeAdapterConfig()));
         // Capture the name once — AddDbContext's options delegate re-runs on every scope resolution, so a fresh
         // Guid generated inline here would hand each HTTP request its own empty in-memory database.
@@ -97,6 +98,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
+        app.MapOpenApi();
         MapAllTestEndpoints(app);
 
         await app.StartAsync();
@@ -141,6 +143,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
         group.MapPut<RenameWidgetCommand, WidgetResult>("/put-with-response");
         group.MapPutById<RenameThingRequest, Guid, string>("/things/{id}");
         group.MapActionById<ArchiveThingRequest, Guid, string>("/things/{id}/archive", "PATCH");
+        group.MapParameterlessActionById<BodylessActionRequest, Guid, string>("/things/{id}/bodyless-action", "POST");
     }
 
     #endregion
