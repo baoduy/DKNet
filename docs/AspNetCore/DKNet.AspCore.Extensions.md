@@ -214,6 +214,7 @@ request/query (from `DKNet.SlimBus.Extensions`), dispatching through `IMessageBu
 | `MapDelete<TCommand>(endpoint)` | `INoResponse` | `[AsParameters]` | `200` |
 | `MapPutById<TCommand, TKey, TResponse>(endpoint = "{id}")` | `IWitResponse<TResponse>` **and** `Fluents.Requests.IWithKey<TKey>` | route `id` + inferred body | `200` |
 | `MapActionById<TCommand, TKey, TResponse>(endpoint, httpMethod)` | `IWitResponse<TResponse>` **and** `IWithKey<TKey>` | route `id` + inferred body | `200` |
+| `MapParameterlessActionById<TCommand, TKey, TResponse>(endpoint, httpMethod)` | `IWitResponse<TResponse>` **and** `IWithKey<TKey>`, plus `new()` | route `id` only — nothing is bound from the body | `200` |
 
 ```csharp
 group.MapPost<CreateProductCommand, ProductModel>("/");    // 201 Created — type name contains "Create"
@@ -221,11 +222,22 @@ group.MapPost<RenameProductCommand, ProductModel>("/{id:guid}/rename"); // 200 O
 group.MapPut<UpdateProductCommand, ProductModel>("/{id:guid}");
 group.MapPutById<UpdateProductCommand, Guid, ProductModel>();           // binds route {id} into request.Id
 group.MapActionById<ApproveOrderCommand, Guid, OrderModel>("{id}/approval", "POST");
+group.MapParameterlessActionById<ArchiveOrderCommand, Guid, OrderModel>("{id}/archive", "PATCH"); // no body required
 group.MapPatch<AdjustStockCommand>("/{id:guid}/stock");    // INoResponse overload — 200/no body
 group.MapDelete<DeactivateProductCommand>("/{id:guid}");   // INoResponse — [AsParameters] binding
 group.MapGet<FindProductQuery, ProductModel>("/find");     // Fluents.Queries.IWitResponse<T> -> 200 or 404
 group.MapGetPage<ListProductsPageQuery, ProductModel>("/page"); // Fluents.Queries.IWitPageResponse<T>
 ```
+
+Both action mappers register exactly the one verb they are handed, and both take the target id from the
+route. They differ only in what the request body is for:
+
+- `MapActionById` binds `TCommand` from the body, which ASP.NET Core treats as required — a call with no body
+  is answered `400` before the handler runs. Use it whenever the command carries anything besides `Id`.
+- `MapParameterlessActionById` binds nothing from the body and constructs `TCommand` itself, which is why it
+  adds the `new()` constraint. The route dispatches on a call with no body and no `Content-Type` at all, still
+  accepts (and ignores) a body if one is sent, and its OpenAPI operation declares no `requestBody`. Use it when
+  the command's only member is `Id` — a command with other members would never have them populated.
 
 `MapPutById`/`MapActionById` assign the route key onto the command before dispatch
 (`request.Id = id`), so the command never has to re-read it from the route:

@@ -160,6 +160,11 @@ public void Archive() { ... }
 | `[CrudAction(Verb = Put)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
 | `[CrudAction(Verb = Patch)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
 
+An action that takes no parameters (`Archive()` above) is registered with `MapParameterlessActionById`, so its
+route dispatches on a call with no request body and no `Content-Type` at all; a body sent anyway is accepted
+and ignored, and the target id always comes from the route. An action that takes parameters still maps through
+`MapActionById` and still carries its arguments in the body.
+
 `[CrudAction]` vs. `[CrudUpdate]` with `Verb = Put`: an update replaces state and, positionally, may claim the
 plain `{id}` route; an action is always a named operation at its own segment and is never positional — it
 never lands on `{id}` regardless of declaration order or verb. `Verb = Patch` only changes the advertised HTTP
