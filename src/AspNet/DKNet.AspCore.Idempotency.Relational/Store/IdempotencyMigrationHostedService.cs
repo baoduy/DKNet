@@ -9,7 +9,9 @@ using Microsoft.Extensions.Hosting;
 namespace DKNet.AspCore.Idempotency.Relational.Store;
 
 /// <summary>
-///     Applies any pending idempotency schema migrations once, before the host starts serving requests.
+///     Applies any pending idempotency schema migrations once, before the host starts serving requests. Uses
+///     <see cref="IHostedLifecycleService" /> to be offered every host lifecycle moment; the added moments do no
+///     work.
 /// </summary>
 /// <typeparam name="TContext">The provider's own concrete <see cref="Data.IdempotencyDbContext" />.</typeparam>
 /// <param name="dbContextFactory">Factory used to create a short-lived context for the migration.</param>
@@ -22,10 +24,13 @@ namespace DKNet.AspCore.Idempotency.Relational.Store;
 ///     primary mechanism.
 /// </remarks>
 internal sealed class IdempotencyMigrationHostedService<TContext>(IDbContextFactory<TContext> dbContextFactory)
-    : IHostedService
+    : IHostedLifecycleService
     where TContext : DbContext
 {
     #region Methods
+
+    /// <inheritdoc />
+    public Task StartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -38,7 +43,16 @@ internal sealed class IdempotencyMigrationHostedService<TContext>(IDbContextFact
     }
 
     /// <inheritdoc />
+    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     #endregion
 }
