@@ -146,8 +146,9 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
 {
     /// <summary>
     ///     Registers the contextual request population mechanism: <see cref="IContextualSource" />-declared
-    ///     request members (e.g. <see cref="FromClaimAttribute" />) are populated before validation and before
-    ///     the handler runs, and excluded from the published OpenAPI description. Endpoint groups mapped by
+    ///     request members (e.g. <see cref="FromClaimAttribute" />, <see cref="FromRequestHeaderAttribute" />)
+    ///     are populated before validation and before the handler runs, and excluded from the published OpenAPI
+    ///     description. Endpoint groups mapped by
     ///     <see cref="EndpointConfigExtensions.UseEndpointConfigs" /> apply this automatically once registered —
     ///     no per-group wiring is required. Requests with no declared members are unaffected.
     /// </summary>
@@ -167,6 +168,7 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
         // capturing it would throw under scope validation or captive-dependency it in production.
         // ClaimValueResolver itself is stateless either way.
         services.AddScoped<IContextualValueResolver, ClaimValueResolver>();
+        services.AddScoped<IContextualValueResolver, RequestHeaderValueResolver>();
         services.AddScoped<IContextualRequestPopulationService, ContextualRequestPopulationService>();
 
         services.ConfigureAll<OpenApiOptions>(o =>
