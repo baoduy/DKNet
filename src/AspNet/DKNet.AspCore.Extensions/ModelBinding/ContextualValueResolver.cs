@@ -22,7 +22,7 @@ public interface IContextualValueResolver
 
     /// <summary>
     ///     Resolves <paramref name="source" /> against <paramref name="httpContext" />, or <see langword="null" />
-    ///     when no value is available (e.g. the claim is missing).
+    ///     when no value is available (e.g. the claim or header is missing).
     /// </summary>
     /// <param name="source">The declaration attribute instance found on the request property.</param>
     /// <param name="httpContext">The current request's <see cref="HttpContext" />.</param>
@@ -39,4 +39,18 @@ internal sealed class ClaimValueResolver : IContextualValueResolver
 
     public string? Resolve(IContextualSource source, HttpContext httpContext) =>
         httpContext.User.FindFirst(((FromClaimAttribute)source).ClaimType)?.Value;
+}
+
+/// <summary>
+///     Built-in <see cref="IContextualValueResolver" /> that resolves <see cref="FromRequestHeaderAttribute" />
+///     declarations from the current request's HTTP headers.
+/// </summary>
+internal sealed class RequestHeaderValueResolver : IContextualValueResolver
+{
+    public bool CanResolve(IContextualSource source) => source is FromRequestHeaderAttribute;
+
+    public string? Resolve(IContextualSource source, HttpContext httpContext) =>
+        httpContext.Request.Headers.TryGetValue(((FromRequestHeaderAttribute)source).HeaderName, out var values)
+            ? values[0]
+            : null;
 }

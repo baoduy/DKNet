@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `DKNet.AspCore.Extensions` can now fill a request member from a named HTTP request header.
+  `[FromRequestHeader("Idempotency-Key")]` on a request property — one required constructor argument, the
+  header name, exposed as `HeaderName` — is populated before validation and before the handler runs by the
+  same `AddContextualRequestPopulation()` registration that already powers `[FromClaim]`, so it needs no
+  second registration and no route-level code. Header-name matching is case-insensitive, a header sent more
+  than once fills the member with the first value sent, a caller-supplied body value for the member is always
+  overwritten, and the property needs a `set` or `init` or startup throws — the same rules `[FromClaim]`
+  follows. Three differences are worth knowing before you build on it. A **missing header is not a refusal**:
+  the member holds its type's default and the request is still dispatched, so requiring a header stays the job
+  of a filter. A header-filled member **takes the configured `SystemAccountFallback`** wherever a claim-filled
+  one would (a fallback is set and the group's `RequireAuthorization` is `false`), which means an absent header
+  leaves a *constant* value there rather than an empty one — something a service using the member as an
+  idempotency key needs to account for. And a **header is never an authorization signal**: unlike a claim it is
+  supplied by the caller, so the declaration is a binding convenience only, never proof of identity. The
+  published OpenAPI operation declares the header as an `in: header` parameter — unlike `[FromClaim]`, which is
+  hidden entirely, the caller has to know to send it — while the member itself stays absent from the published
+  request body. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 - The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
   member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
   generated delete request and fall back to the request-less `MapDeleteById<TEntity, TKey>()`; the diagnostic names the
