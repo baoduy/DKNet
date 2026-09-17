@@ -490,15 +490,17 @@ lazy `IEnumerable<string>` query no longer compiles — materialize it first.
 refused, and an unhandled exception — with one body and one status rule set. Two things change for you: four
 helpers are removed, and the response body a client reads is different.
 
-**Removed helpers.** Each of these answered without reading the host's registered `ErrorResponseOptions`, which is
-what let two endpoints in the same host disagree about the same failure:
+**Helpers you can no longer call.** Each of these answered without reading the host's registered
+`ErrorResponseOptions`, which is what let two endpoints in the same host disagree about the same failure.
+`Response()`/`Response<T>()` are now the only public path onto the standard body:
 
-| Removed | Replace with |
+| Gone | Replace with |
 |---|---|
-| `ToProblemDetails(this IResultBase, HttpStatusCode)` | `ToProblemDetails(this IResultBase, ErrorResponseOptions? options = null)` — the status argument is gone; the status now comes from the failure (`400`, `404` for a `NotFoundError`) and from `options.StatusCode`. |
-| `ToProblemDetails(this ModelStateDictionary)` | Nothing in this package. `AddErrorResponses` swaps in the FluentValidation result factory, so refused input answers with the standard body without a call of your own. |
-| `Response(this IResultBase, ErrorResponseOptions?, bool isCreated = false)` | `Response(this IResultBase, bool isCreated = false)` — drop the options argument. |
-| `Response<T>(this IResult<T>, ErrorResponseOptions?, bool isCreated = false)` | `Response<T>(this IResult<T>, bool isCreated = false)` — drop the options argument. |
+| `ToProblemDetails(this IResultBase, HttpStatusCode)` — removed | `Response()` / `Response<T>()`. The status comes from the failure (`400`, `404` for a `NotFoundError`) and from `ErrorResponseOptions.StatusCode`; you no longer pass one. |
+| `ToProblemDetails(this IResultBase, ErrorResponseOptions?)` — now `internal` | `Response()` / `Response<T>()`. Same body, and they resolve the registered setting themselves. |
+| `ToProblemDetails(this ModelStateDictionary)` — removed | Nothing in this package. `AddErrorResponses` swaps in the FluentValidation result factory, so refused input answers with the standard body without a call of your own. |
+| `Response(this IResultBase, ErrorResponseOptions?, bool isCreated = false)` — removed | `Response(this IResultBase, bool isCreated = false)` — drop the options argument. |
+| `Response<T>(this IResult<T>, ErrorResponseOptions?, bool isCreated = false)` — removed | `Response<T>(this IResult<T>, bool isCreated = false)` — drop the options argument. |
 
 **Before**
 ```csharp
@@ -527,10 +529,21 @@ named the setting keeps compiling unchanged.
 `builder.Services.AddProblemDetails()` lines if they existed only to shape error bodies — leaving them in place
 means your handler answers first and the standard body never applies.
 
-That handler covers exceptions raised **outside** a mapped command endpoint. An exception raised while a fluent
-mapper dispatches a command is caught by the endpoint delegate itself, because ASP.NET Core's `Development`-only
+That handler covers exceptions raised **outside** an endpoint the fluent mappers registered. Those endpoints are
+covered by a single `IEndpointFilter` that `ProducesCommons()` adds, because ASP.NET Core's `Development`-only
 developer exception page sits closer to the endpoint than any `IExceptionHandler` and would otherwise answer with
-an HTML page. Both paths build the body through the same factory, so a caller cannot tell them apart.
+an HTML page — a filter sits closer still. Both paths build the body through the same factory, so a caller cannot
+tell them apart.
+
+**Known boundary — an endpoint you wrote by hand.** A raw `app.MapGet(...)`, or anything else registered outside
+the fluent mappers, never calls `ProducesCommons()` and so has no filter. In `Development` an exception it raises
+is answered by the developer exception page, not the unified body. `Production` is unaffected: the
+`IExceptionHandler` covers those endpoints there, and the developer exception page is not registered. Chain
+`.ProducesCommons()` onto a hand-written endpoint to put it on the same path as the mapped ones.
+
+**`AddErrorResponses` is idempotent.** Calling it from two composition roots registers one `ErrorResponseOptions`
+and inserts `UseExceptionHandler()` once. The first call's `configure` wins; a later call's setting is built and
+discarded. If you added a guard to stop calling it twice, you can delete it.
 
 **The response body changed — this is what a client must update.**
 

@@ -27,9 +27,9 @@ dotnet add package DKNet.AspCore.Extensions
 - **`PagedResponse<T>`** — a shared paging envelope (`PageNumber`, `PageSize`, `PageCount`,
   `TotalItemCount`, `Items`, `HasNextPage`, `HasPreviousPage`) used by every paged endpoint.
 - **Result/ProblemDetails conversion** — `Response()`/`Response<T>()` turn a `FluentResults`
-  outcome into the right minimal-API `IResult`; `ToProblemDetails()` builds the `ProblemDetails`
-  behind it. Both resolve the host's registered error-response setting themselves, so an endpoint
-  never has to name it.
+  outcome into the right minimal-API `IResult`, and are the only public path onto the standard error
+  body. They resolve the host's registered error-response setting themselves, so an endpoint never
+  has to name it — and cannot skip it.
 - **One error-response setting** — `AddErrorResponses()` registers a single `ErrorResponseOptions`
   that shapes all three ways a request can fail: a failed command handler, input a validator refused,
   and an unhandled exception. One body shape for all three, one status rule set, and no second
@@ -131,7 +131,8 @@ surface. Defaults are the ones the code applies when you pass nothing.
 host shapes error responses, covering all three failure kinds: a failed command handler, refused
 validation input, and an unhandled exception. It is the host's only step — do **not** add a
 `UseExceptionHandler()` line or an `AddProblemDetails()` call of your own; `AddErrorResponses` makes
-both for you. Every knob is host-wide, applying to every route:
+both for you, and calling it twice is a no-op (the first call's `configure` wins). Every knob is
+host-wide, applying to every route:
 
 | Knob | Type | Default | Effect |
 |---|---|---|---|
@@ -162,6 +163,12 @@ All three failure kinds answer with the same body:
 an exception type. There is no `detail` member. Outside the `Development` environment an unhandled
 exception's `errors` carries one fixed message and nothing the exception itself carried; inside
 `Development` that entry carries the exception's own message.
+
+An exception raised inside an endpoint one of the fluent mappers registered is caught by the endpoint
+filter `ProducesCommons()` adds; every other unhandled exception is caught by the `IExceptionHandler`
+`AddErrorResponses` registers. An endpoint registered without `ProducesCommons()` is covered in
+`Production`, but in `Development` still answers with ASP.NET Core's developer exception page — chain
+`.ProducesCommons()` onto it to put it on the same path.
 
 Mapping a failure code to a status, and supplying your own body for an unhandled exception:
 
