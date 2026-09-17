@@ -96,6 +96,12 @@ internal static class CrudDiagnostics
         "Two CRUD routes resolve to the same name",
         "Entity '{0}' has more than one route named '{1}'; a [CrudUpdate]/[CrudAction] member must not reuse a reserved name (GetById, GetList, Create, Delete) or another route's name",
         Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor DeleteRequestNameTaken = new(
+        "DKCRUDGEN010",
+        "Generated delete request skipped: request name already taken",
+        "Entity '{0}' member '{1}' already claims the request name '{2}'; the generated delete request was skipped and the delete route falls back to the request-less MapDeleteById, so a delete rule registered for '{2}' never runs",
+        Category, DiagnosticSeverity.Info, isEnabledByDefault: true);
 }
 
 /// <summary>
@@ -322,7 +328,7 @@ internal static class CrudModelBuilder
         }
 
         var dto = dtos[0];
-        return new CrudEntityModel(
+        var entityModel = new CrudEntityModel(
             entityKey,
             type.Name,
             keyFullName,
@@ -331,6 +337,14 @@ internal static class CrudModelBuilder
             createMember,
             updateMembers.ToImmutable(),
             actionMembers.ToImmutable());
+
+        if (Emitter.HasDeleteRequestNameCollision(entityModel, out var deleteRequestName, out var collidingMemberName))
+        {
+            diagnostics.Add(Diagnostic.Create(
+                CrudDiagnostics.DeleteRequestNameTaken, Location.None, type.Name, collidingMemberName, deleteRequestName));
+        }
+
+        return entityModel;
     }
 
     private static bool EnsurePublic(ISymbol member, INamedTypeSymbol type, ImmutableArray<Diagnostic>.Builder diagnostics)
@@ -745,12 +759,34 @@ internal static class Emitter
     // Every entity in the generated set gets a delete request unconditionally (spec R5) — unless a
     // create/update/action member already claims the same name, in which case row 6's guard skips both
     // the record (here) and the 3-arg map call (BuildEndpointsSource) rather than emit a duplicate type.
-    private static bool HasDeleteRequestNameCollision(CrudEntityModel entity, out string deleteRequestName)
+    private static bool HasDeleteRequestNameCollision(CrudEntityModel entity, out string deleteRequestName) =>
+        HasDeleteRequestNameCollision(entity, out deleteRequestName, out _);
+
+    // Single source of truth (R5) for the collision predicate — also used by CrudModelBuilder to report
+    // DKCRUDGEN010, which needs to name the member that took the delete request's name.
+    internal static bool HasDeleteRequestNameCollision(CrudEntityModel entity, out string deleteRequestName, out string? collidingMemberName)
     {
         var name = deleteRequestName = $"Delete{entity.EntityName}Request";
-        if (entity.Create is not null && entity.Create.RequestName == name) return true;
-        if (entity.Updates.Any(u => u.RequestName == name)) return true;
-        return entity.Actions.Any(a => a.RequestName == name);
+        collidingMemberName = null;
+
+        if (entity.Create is not null && entity.Create.RequestName == name)
+        {
+            collidingMemberName = entity.Create.MemberName;
+            return true;
+        }
+
+        var update = entity.Updates.FirstOrDefault(u => u.RequestName == name);
+        if (update is not null)
+        {
+            collidingMemberName = update.MemberName;
+            return true;
+        }
+
+        var action = entity.Actions.FirstOrDefault(a => a.RequestName == name);
+        if (action is null) return false;
+
+        collidingMemberName = action.MemberName;
+        return true;
     }
 
     private static void AppendDeleteRequest(StringBuilder builder, CrudEntityModel entity, string requestName)
