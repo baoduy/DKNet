@@ -648,6 +648,10 @@ record nor the three-argument map call, and falls back to `MapDeleteById<{Entity
 DELETE route keeps working unchanged, but there is no delete request to guard — rename the member if you need
 the rule.
 
+The generator reports that skip as `DKCRUDGEN010` (Info), naming the entity, the colliding member and the
+request name it took, so the fallback is visible in the build log instead of silent. Info never fails a build:
+the compilation succeeds and the DELETE route keeps answering as before.
+
 ### Domain actions — `[CrudAction]`
 
 A `[CrudAction]` method is a named operation on the entity at its own `{id}/{segment}` route — it never claims the plain
@@ -695,6 +699,7 @@ Exclusion at *mapping* time — by operation kind or by route name — is a sepa
 | `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one. |
 | `DKCRUDGEN008` | Error | Two members resolve to the same route segment; give one an explicit distinct segment. |
 | `DKCRUDGEN009` | Error | Two routes of the entity resolve to the same route name; rename one of the members. |
+| `DKCRUDGEN010` | Info | A CRUD-attributed member already claims the name `Delete{Entity}Request`; the generated delete request was skipped and the DELETE route fell back to `MapDeleteById<TEntity, TKey>()`. Rename the member if that entity needs a delete rule. |
 
 ## ⚙️ Configuration reference
 

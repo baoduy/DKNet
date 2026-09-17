@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
+  member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
+  generated delete request and fall back to the request-less `MapDeleteById<TEntity, TKey>()`; the diagnostic names the
+  entity, the colliding member and the request name it took, so the fallback is no longer silent. Severity is `Info`:
+  the build still succeeds and the entity's DELETE route keeps working unchanged — only the delete request you could
+  hang a validation rule on is missing, which renaming the member restores. See
+  [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md).
 - `DKNet.EfCore.AuditLogs` can now stamp `CreatedBy`/`UpdatedBy` from the signed-in user. Implement the new
   `ICurrentUserProvider` (one member, `string? GetCurrentUser()`, returning `null`/empty when there is no user) and
   register it with `services.AddCurrentUserProvider<TDbContext, TProvider>()` — an application-wide, scoped,
