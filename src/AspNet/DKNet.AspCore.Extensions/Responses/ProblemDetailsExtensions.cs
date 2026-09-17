@@ -24,7 +24,12 @@ public static class ProblemDetailsExtensions
     ///     Converts a failed <see cref="IResultBase" /> into the standard <see cref="ProblemDetails" /> body
     ///     (DRK-1484 §3), choosing the status code from the failure's own errors via <paramref name="options" /> —
     ///     never from the route that produced it — and applying <see cref="ErrorResponseOptions.Customize" />
-    ///     afterwards. Returns <see langword="null" /> for success results.
+    ///     afterwards. Returns <see langword="null" /> for success results. Internal: a caller with an
+    ///     <see cref="Microsoft.AspNetCore.Http.HttpContext" /> available must go through
+    ///     <see cref="ResultResponseExtensions.Response(IResultBase, bool)" />/<c>Response&lt;T&gt;</c> instead —
+    ///     the only public path — which resolves the registered <see cref="ErrorResponseOptions" /> from the
+    ///     container on its own and repairs <c>traceId</c> from the request afterwards. A no-argument public
+    ///     overload here would let a caller answer a failure while silently skipping the host's registration.
     /// </summary>
     /// <param name="result">The fluent result to convert.</param>
     /// <param name="options">
@@ -32,7 +37,7 @@ public static class ProblemDetailsExtensions
     ///     result, or a <see langword="null" /> <paramref name="options" /> itself, keeps today's status code.
     /// </param>
     /// <returns>A <see cref="ProblemDetails" /> when the result is a failure; otherwise <c>null</c>.</returns>
-    public static ProblemDetails? ToProblemDetails(this IResultBase result, ErrorResponseOptions? options = null)
+    internal static ProblemDetails? ToProblemDetails(this IResultBase result, ErrorResponseOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(result);
 

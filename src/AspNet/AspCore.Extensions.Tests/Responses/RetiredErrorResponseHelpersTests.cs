@@ -41,6 +41,23 @@ public class RetiredErrorResponseHelpersTests
     }
 
     [Fact]
+    public void ToProblemDetails_NoPublicOverloadAnswersWithoutReadingTheRegisteredSetting()
+    {
+        // REWORK round 1 (DRK-1490, important finding): a public `ToProblemDetails(IResultBase,
+        // ErrorResponseOptions? = null)` let `result.ToProblemDetails()` compile and answer a failure while
+        // skipping the host's registration. The only public path onto the standard body is now
+        // Response()/Response<T>(), which resolve ErrorResponseOptions from the container themselves.
+        var publicOverloads = typeof(ProblemDetailsExtensions)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.Name == nameof(ProblemDetailsExtensions.ToProblemDetails))
+            .ToList();
+
+        publicOverloads.ShouldBeEmpty(
+            "a public ToProblemDetails(...) lets a caller answer a failure without reading the registered " +
+            "setting; use Response()/Response<T>() instead, which resolve it from the container on their own");
+    }
+
+    [Fact]
     public void Response_NoOverloadTakesErrorResponseOptionsDirectly()
     {
         var overloadsTakingOptions = typeof(ResultResponseExtensions)

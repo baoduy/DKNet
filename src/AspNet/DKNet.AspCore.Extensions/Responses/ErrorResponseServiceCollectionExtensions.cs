@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace DKNet.AspCore.Extensions.Responses;
@@ -29,20 +30,27 @@ public static class ErrorResponseServiceCollectionExtensions
     /// <param name="services">The service collection to register the setting into.</param>
     /// <param name="configure">Sets the setting's members; leave <see langword="null" /> to keep every default.</param>
     /// <returns>The same <see cref="IServiceCollection" />, for chaining.</returns>
+    /// <remarks>
+    ///     Idempotent: a second call is a no-op — the <see cref="ErrorResponseOptions" /> and startup filter this
+    ///     method registers use <c>TryAddSingleton</c>/<c>TryAddEnumerable</c>, so a host that calls this more than
+    ///     once (e.g. from two composition roots) does not end up with a second <see cref="ErrorResponseOptions" />
+    ///     instance registered, or <c>UseExceptionHandler()</c> inserted twice. The first call's
+    ///     <paramref name="configure" /> wins; a later call's setting is built then discarded unregistered.
+    /// </remarks>
     public static IServiceCollection AddErrorResponses(
         this IServiceCollection services,
         Action<ErrorResponseOptions>? configure = null)
     {
         var options = new ErrorResponseOptions();
         configure?.Invoke(options);
+        services.TryAddSingleton(options);
 
-        services.AddSingleton(options);
         services.AddFluentValidationAutoValidation(cfg =>
             cfg.OverrideDefaultResultFactoryWith<ErrorResponseValidationResultFactory>());
 
         services.AddProblemDetails();
         services.AddExceptionHandler<ErrorResponseExceptionHandler>();
-        services.AddSingleton<IStartupFilter, UseErrorResponseExceptionHandlerStartupFilter>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, UseErrorResponseExceptionHandlerStartupFilter>());
 
         return services;
     }

@@ -22,11 +22,17 @@ namespace DKNet.AspCore.Extensions.Endpoints;
 public static class FluentsEndpointMapperExtensions
 {
     /// <summary>
-    ///     Adds a set of common response metadata to the endpoint (standard error status codes and problem details).
+    ///     Adds a set of common response metadata to the endpoint (standard error status codes and problem details),
+    ///     and the one endpoint filter (DRK-1484) that converts an exception raised while dispatching into the
+    ///     standard unhandled-error body. Caught here, at the endpoint itself, rather than left only to ASP.NET
+    ///     Core's registered <c>IExceptionHandler</c> — an endpoint filter sits closer to the endpoint than
+    ///     ASP.NET Core's own Development-only exception page, so it wins for every mapper below (including the
+    ///     query mappers, which dispatch no command and so never named the setting either).
     /// </summary>
     /// <param name="routeBuilder">The route handler builder to add metadata to.</param>
     public static RouteHandlerBuilder ProducesCommons(this RouteHandlerBuilder routeBuilder) =>
         routeBuilder
+            .AddEndpointFilter(HandleUnhandledExceptionAsync)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
             .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -36,16 +42,28 @@ public static class FluentsEndpointMapperExtensions
             .Produces(StatusCodes.Status429TooManyRequests);
 
     /// <summary>
-    ///     Converts an exception raised while dispatching a command into the standard unhandled-error body
-    ///     (DRK-1484). Caught here, at the endpoint delegate, rather than left to ASP.NET Core's registered
-    ///     <c>IExceptionHandler</c> pipeline — ASP.NET Core's own Development-only exception page sits closer to
-    ///     the endpoint than any <c>IExceptionHandler</c> and would otherwise answer first.
+    ///     R6: never answer, and never write, an abandoned request — <c>HttpResponse.HasStarted</c> and
+    ///     <see cref="HttpContext.RequestAborted" /> are checked in the <c>catch</c> filter below, the same guard
+    ///     <see cref="ErrorResponseExceptionHandler" /> applies for exceptions this filter does not see (e.g. a
+    ///     hand-written endpoint that does not call <see cref="ProducesCommons" />).
     /// </summary>
-    private static IResult HandleUnhandledException(HttpContext httpContext, Exception exception)
+    private static async ValueTask<object?> HandleUnhandledExceptionAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
     {
-        var options = httpContext.RequestServices.GetService<ErrorResponseOptions>();
-        var pd = UnhandledErrorProblemFactory.Create(httpContext, exception, options);
-        return TypedResults.Problem(pd);
+        var httpContext = context.HttpContext;
+        try
+        {
+            return await next(context);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException &&
+                                    !httpContext.Response.HasStarted &&
+                                    !httpContext.RequestAborted.IsCancellationRequested)
+        {
+            var options = httpContext.RequestServices.GetService<ErrorResponseOptions>();
+            var pd = UnhandledErrorProblemFactory.Create(httpContext, ex, options);
+            return TypedResults.Problem(pd);
+        }
     }
 
     /// <param name="app">The <see cref="RouteGroupBuilder" /> used to register the endpoint.</param>
@@ -63,17 +81,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                     endpoint,
-                    async (IMessageBus bus, [FromBody] TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, [FromBody] TCommand request) =>
                     {
-                        try
-                        {
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -89,17 +100,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapDelete(
                 endpoint,
-                async (IMessageBus bus, [AsParameters] TCommand request, HttpContext httpContext) =>
+                async (IMessageBus bus, [AsParameters] TCommand request) =>
                 {
-                    try
-                    {
-                        var rs = await bus.Send(request);
-                        return rs.Response();
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        return HandleUnhandledException(httpContext, ex);
-                    }
+                    var rs = await bus.Send(request);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -157,17 +161,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
-                        try
-                        {
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -183,17 +180,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPatch(
                 endpoint,
-                async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                async (IMessageBus bus, TCommand request) =>
                 {
-                    try
-                    {
-                        var rs = await bus.Send(request);
-                        return rs.Response();
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        return HandleUnhandledException(httpContext, ex);
-                    }
+                    var rs = await bus.Send(request);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -212,17 +202,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
-                        try
-                        {
-                            var rs = await bus.Send(request);
-                            return rs.Response(isCreating);
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var rs = await bus.Send(request);
+                        return rs.Response(isCreating);
                     }).Produces<TResponse>(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -241,17 +224,10 @@ public static class FluentsEndpointMapperExtensions
             var isCreating = typeof(TCommand).Name.Contains("Create", StringComparison.OrdinalIgnoreCase);
             return app.MapPost(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
-                        try
-                        {
-                            var rs = await bus.Send(request);
-                            return rs.Response(isCreating);
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var rs = await bus.Send(request);
+                        return rs.Response(isCreating);
                     }).Produces(isCreating ? StatusCodes.Status201Created : StatusCodes.Status200OK)
                 .ProducesCommons();
         }
@@ -268,17 +244,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TCommand request) =>
                     {
-                        try
-                        {
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -294,17 +263,10 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                 endpoint,
-                async (IMessageBus bus, TCommand request, HttpContext httpContext) =>
+                async (IMessageBus bus, TCommand request) =>
                 {
-                    try
-                    {
-                        var rs = await bus.Send(request);
-                        return rs.Response();
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        return HandleUnhandledException(httpContext, ex);
-                    }
+                    var rs = await bus.Send(request);
+                    return rs.Response();
                 }).ProducesCommons();
         }
 
@@ -324,18 +286,11 @@ public static class FluentsEndpointMapperExtensions
         {
             return app.MapPut(
                     endpoint,
-                    async (IMessageBus bus, TKey id, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TKey id, TCommand request) =>
                     {
-                        try
-                        {
-                            request.Id = id;
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        request.Id = id;
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -359,18 +314,11 @@ public static class FluentsEndpointMapperExtensions
             return app.MapMethods(
                     endpoint,
                     [httpMethod],
-                    async (IMessageBus bus, TKey id, TCommand request, HttpContext httpContext) =>
+                    async (IMessageBus bus, TKey id, TCommand request) =>
                     {
-                        try
-                        {
-                            request.Id = id;
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        request.Id = id;
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
@@ -395,18 +343,11 @@ public static class FluentsEndpointMapperExtensions
             return app.MapMethods(
                     endpoint,
                     [httpMethod],
-                    async (IMessageBus bus, TKey id, HttpContext httpContext) =>
+                    async (IMessageBus bus, TKey id) =>
                     {
-                        try
-                        {
-                            var request = new TCommand { Id = id };
-                            var rs = await bus.Send(request);
-                            return rs.Response();
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            return HandleUnhandledException(httpContext, ex);
-                        }
+                        var request = new TCommand { Id = id };
+                        var rs = await bus.Send(request);
+                        return rs.Response();
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }

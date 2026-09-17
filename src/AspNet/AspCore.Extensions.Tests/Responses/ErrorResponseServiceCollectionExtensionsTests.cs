@@ -14,13 +14,34 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using DKNet.AspCore.Extensions.Responses;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AspCore.Extensions.Tests.Responses;
 
 public class ErrorResponseServiceCollectionExtensionsTests
 {
     #region Methods
+
+    [Fact]
+    public void AddErrorResponses_CalledTwice_SecondCallIsANoOp()
+    {
+        // REWORK round 1 (DRK-1490, nit): AddSingleton let a second call register a second ErrorResponseOptions
+        // and a second IStartupFilter, inserting UseExceptionHandler() twice. TryAddSingleton/TryAddEnumerable
+        // make the second call a no-op: exactly one of each survives, and the first call's setting wins.
+        var services = new ServiceCollection();
+
+        services.AddErrorResponses(o => o.StatusCode = _ => 422);
+        services.AddErrorResponses(o => o.StatusCode = _ => 599);
+
+        services.Count(d => d.ServiceType == typeof(ErrorResponseOptions)).ShouldBe(1);
+        services.Count(d => d.ServiceType == typeof(IStartupFilter)).ShouldBe(1);
+
+        using var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<ErrorResponseOptions>();
+        options.StatusCode!.Invoke(null!).ShouldBe(422);
+    }
 
     [Fact]
     public async Task AddErrorResponses_RawEndpointThrows_HostCallsOnlyAddErrorResponses_AnswersStandardBody()
