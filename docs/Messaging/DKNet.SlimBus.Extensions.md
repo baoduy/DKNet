@@ -281,12 +281,12 @@ hand-written handlers so an API layer can map one error type to `404`:
 return Result.Fail<ProductDto>(new NotFoundError($"Product '{request.Id}' was not found."));
 ```
 
-### Legacy: `RequestBase.ByUser`
+### Carrying the acting user
 
-`RequestBase` is an `[Obsolete]` base record with a `[JsonIgnore] string? ByUser` property. It is **never populated by
-this package** and is retained only for existing consumers. The supported way to carry the acting user is an
-`IContextualSource` attribute (e.g. `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions`) on the request's own
-property, populated by `AddContextualRequestPopulation()`.
+This package supplies no base record and no acting-user property. Declare the property on the request itself and mark
+it with an `IContextualSource` attribute — e.g. `[FromClaim(ClaimTypes.Name)]` from
+[DKNet.AspCore.Extensions](../AspNetCore/DKNet.AspCore.Extensions.md) — then register
+`AddContextualRequestPopulation()` so the value is stamped before validation and before the handler runs.
 
 ## ⚙️ Configuration reference
 
@@ -330,7 +330,6 @@ None of these are switchable; they are the contract the interceptor implements.
 | `SlimBusEventPublisher` | `public class`, both `PublishAsync` overloads `virtual` | Subclass to add headers or logging, then register the subclass. |
 | `NotFoundError` | `public sealed class : FluentResults.Error` | Return it from `Result.Fail` so the API layer can map one type to `404`. |
 | `ILazyMap<T>`, `LazyMapExtensions.LazyMap<T>` / `ResultOf<T>` | `public interface` / `public static class` | Defer a Mapster mapping until the value is read. |
-| `RequestBase` | `public record`, `[Obsolete]` | Nothing — retained for existing consumers and never populated by this package. |
 
 The auto-save interceptor (`EfAutoSavePostInterceptor<,>`), its `DbContext` registry, and the `LazyMap`/`LazyResult`
 implementations are all `internal` — you opt in through the two registration methods, not by implementing or

@@ -151,7 +151,7 @@ Behaviour that matters:
 - `ContextualPopulationOptions.SystemAccountFallback` supplies a value only when the host's `EndpointRegistrationOptions.RequireAuthorization` is `false`.
 - To add another source, implement `IContextualSource` + `IContextualValueResolver` — the mechanism needs no change.
 
-It supersedes the obsolete member on `RequestBase` in `DKNet.SlimBus.Extensions`.
+`[FromClaim]` on the request's own property is the way to carry the acting user; it replaced an obsolete base record that `DKNet.SlimBus.Extensions` removed in the breaking release.
 
 ---
 
