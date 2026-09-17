@@ -188,6 +188,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GetEnumInfos<T>()`/`GetEnumInfo()` — the old names were a typo.
 
 ### Fixed
+- A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
+  request body (DRK-1436). `DKNet.SlimBus.Generators` now picks the mapper by the action method's parameter
+  count: a parameterless action is registered with the new
+  `DKNet.AspCore.Extensions` mapper `MapParameterlessActionById<TCommand, TKey, TResponse>(endpoint, httpMethod)`,
+  which binds the target id from the route and nothing from the body, so a caller that sends no body and no
+  `Content-Type` at all is dispatched instead of rejected with `400`. A body sent anyway is still accepted and
+  ignored — an existing caller posting `{}` keeps working — and the published OpenAPI operation for such a
+  route declares no `requestBody`. An action that takes parameters is unchanged: it still maps through
+  `MapActionById` and still requires its body.
 - The EF Core auto-save `DbContext` type registry (`DKNet.SlimBus.Extensions`) was a static set shared by every
   service provider in the process, so providers built concurrently could throw
   `InvalidOperationException: Operations that change non-concurrent collections must have exclusive access` out of

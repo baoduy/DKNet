@@ -93,6 +93,19 @@ public sealed record ArchiveThingRequest : Fluents.Requests.IWitResponse<string>
     #endregion
 }
 
+/// <summary>
+///     Command bound via MapParameterlessActionById — carries no member besides <see cref="Id" />, the shape
+///     a generated request takes for a <c>[CrudAction]</c> member with zero parameters.
+/// </summary>
+public sealed record BodylessActionRequest : Fluents.Requests.IWitResponse<string>, Fluents.Requests.IWithKey<Guid>
+{
+    #region Properties
+
+    public Guid Id { get; set; }
+
+    #endregion
+}
+
 internal sealed class CreateWidgetHandler : Fluents.Requests.IHandler<CreateWidgetCommand, WidgetResult>
 {
     #region Methods
@@ -196,6 +209,16 @@ internal sealed class ArchiveThingHandler : Fluents.Requests.IHandler<ArchiveThi
 
     public Task<IResult<string>> OnHandle(ArchiveThingRequest request, CancellationToken cancellationToken) =>
         Task.FromResult<IResult<string>>(Result.Ok($"archived:{request.Id}"));
+
+    #endregion
+}
+
+internal sealed class BodylessActionHandler : Fluents.Requests.IHandler<BodylessActionRequest, string>
+{
+    #region Methods
+
+    public Task<IResult<string>> OnHandle(BodylessActionRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<IResult<string>>(Result.Ok($"bodyless:{request.Id}"));
 
     #endregion
 }

@@ -290,5 +290,34 @@ public static class FluentsEndpointMapperExtensions
                     }).Produces<TResponse>()
                 .ProducesCommons();
         }
+
+        /// <summary>
+        ///     Maps an HTTP endpoint for a given method whose command carries no member besides the route key —
+        ///     the target id is bound from the route and nothing is bound from the request body, so a caller
+        ///     that sends no body at all (and no <c>Content-Type</c>) still dispatches successfully.
+        /// </summary>
+        /// <typeparam name="TCommand">
+        ///     Command type implementing <see cref="Fluents.Requests.IWitResponse{TResponse}" /> and
+        ///     <see cref="Fluents.Requests.IWithKey{TKey}" />, with a public parameterless constructor.
+        /// </typeparam>
+        /// <typeparam name="TKey">The entity key type bound from the route.</typeparam>
+        /// <typeparam name="TResponse">Response type returned by the command.</typeparam>
+        /// <param name="endpoint">The URL template for the endpoint.</param>
+        /// <param name="httpMethod">The HTTP method to register (e.g. <c>"POST"</c>, <c>"PUT"</c>, <c>"PATCH"</c>).</param>
+        /// <returns>A configured <see cref="RouteHandlerBuilder" />.</returns>
+        public RouteHandlerBuilder MapParameterlessActionById<TCommand, TKey, TResponse>(string endpoint, string httpMethod)
+            where TCommand : class, Fluents.Requests.IWitResponse<TResponse>, Fluents.Requests.IWithKey<TKey>, new()
+        {
+            return app.MapMethods(
+                    endpoint,
+                    [httpMethod],
+                    async (IMessageBus bus, TKey id, [FromServices] ErrorResponseOptions? errorOptions) =>
+                    {
+                        var request = new TCommand { Id = id };
+                        var rs = await bus.Send(request);
+                        return rs.Response(errorOptions);
+                    }).Produces<TResponse>()
+                .ProducesCommons();
+        }
     }
 }
