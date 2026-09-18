@@ -29,13 +29,15 @@ configuration comes from without reading its page.
 | Convention | How you configure it | Packages |
 |---|---|---|
 | **Bound from a config section** | pass `IConfiguration`; the package binds its own named section | the three blob adapters — `AddAzureStorageAdapter`, `AddS3BlobService`, `AddLocalDirectoryBlobService` |
-| **Configured by a delegate** | pass `Action<TOptions>` | `AddIdempotentKey` (`IdempotencyOptions`), `AddTransformerService` (`TransformOptions`), `AddContextualRequestPopulation` (`ContextualPopulationOptions`), `AddPdfGenerator`, and the `Action<AzureStorageOptions>` overload of `AddAzureStorageAdapter` |
+| **Configured by a delegate** | pass `Action<TOptions>` | `AddIdempotentKey` (`IdempotencyOptions`), `AddTransformerService` (`TransformOptions`), `AddPdfGenerator`, and the `Action<AzureStorageOptions>` overload of `AddAzureStorageAdapter` |
 | **Configured by a required argument** | pass the value itself | `AddAesGcmEncryption(base64Key)`, `AddRsaEncryption(privateKeyBase64)`, `AddIdempotencyWithMsSqlStore(connectionString)` and its Npgsql/Redis siblings |
 | **Configured by a type you supply** | pass a type parameter DKNet resolves from DI | `AddEfCoreEncryption<TKeyProvider>`, `AddDataOwnerProvider<TDbContext, TProvider>`, `AddCurrentUserProvider<TDbContext, TProvider>`, `AddEventPublisher<TDbContext, TImpl>`, `AddEfCoreAuditLogs<TDbContext, TPublisher>`, `AddIdempotentKey<TStore>`, `AddBackgroundJob<TJob>` |
 
-Three packages need no configuration at all — `AddSpecRepo<TDbContext>()`, `AddEncryptionServices()` (which
-registers only `IShaHashing` and `IHmacHashing`), and the two `AddSlimBus*` calls take nothing but a type
-parameter.
+Four calls need no configuration at all — `AddSpecRepo<TDbContext>()`, `AddEncryptionServices()` (which
+registers only `IShaHashing` and `IHmacHashing`), the two `AddSlimBus*` calls (nothing but a type parameter),
+and `AddContextualRequestPopulation()`: an unresolved declared member always holds its type's default, and a
+host that wants a value of its own registers a custom `IContextualValueResolver` ahead of the built-in ones
+instead of configuring an options type.
 
 One extension is deliberately not on `IServiceCollection`: **`UseAutoConfigModel<TContext>()` is a
 `DbContextOptionsBuilder<TContext>` extension.** It configures the model, so it belongs inside the

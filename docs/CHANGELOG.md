@@ -236,6 +236,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   body: they resolve the registered `ErrorResponseOptions` from the container on their own, so an endpoint no
   longer needs to name it. See the
   [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone).
+- **Breaking:** `ContextualPopulationOptions` and its `SystemAccountFallback` knob (`DKNet.AspCore.Extensions`)
+  are gone, and `AddContextualRequestPopulation()` no longer takes a configure delegate. A declared contextual
+  member the registered resolvers cannot resolve now always holds its type's default — there is no built-in
+  substitute value. Migrate by registering your own `IContextualValueResolver` **before**
+  `AddContextualRequestPopulation()`: the first resolver whose `CanResolve` matches a member's source wins, so a
+  resolver you add ahead of the built-in `ClaimValueResolver`/`RequestHeaderValueResolver` takes precedence over
+  them. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
