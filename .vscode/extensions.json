@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "streetsidesoftware.code-spell-checker",
-    "ms-dotnettools.vscode-dotnet-runtime",
-    "ms-dotnettools.csharp",
-    "yzhang.markdown-all-in-one",
-    "jetbrains.resharper-code"
-  ]
-}
