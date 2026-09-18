@@ -1,0 +1,402 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Security.Claims;
+using AspCore.Extensions.Tests.Fixtures;
+using DKNet.AspCore.Extensions.Endpoints;
+using DKNet.AspCore.Extensions.ModelBinding;
+using DKNet.SlimBus.Extensions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+using SlimMessageBus.Host.Serialization.SystemTextJson;
+
+namespace AspCore.Extensions.Tests.Endpoints;
+
+/// <summary>
+///     DRK-1542 §5 — an endpoint group declares its required scopes above the group, one HTTP method at a time.
+///     Acceptance tests for <see cref="DKNet.AspCore.Extensions.Endpoints.EndpointGroupScopeAttribute" />, driven
+///     through <c>WebApplication.UseEndpointConfigs</c> and real HTTP dispatch on a fresh per-test host — mirrors
+///     <see cref="EndpointConfigExtensionsTests" />'s own per-test-host convention (registration is a startup-time
+///     concern), duplicated here rather than shared because that class's builder helpers are private to it.
+/// </summary>
+public class EndpointGroupScopeTests
+{
+    private static WebApplicationBuilder CreateBuilder(Action<TestAuthSchemeOptions> configureAuth)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        // UseEndpointConfigs discovers every IEndpointConfig in this test assembly, including the pre-existing
+        // ProbeEndpointConfig group (its [FromClaim]-declared ByUserProbeCommand needs the bus + population
+        // services below) — every host built from this helper needs the same baseline EndpointConfigExtensionsTests
+        // .CreateBuilder() registers, or an unrelated fixture's registration fails this test's app.StartAsync().
+        builder.Services.AddSlimMessageBus(mbb => mbb
+            .AddJsonSerializer()
+            .AddServicesFromAssembly(typeof(EndpointGroupScopeTests).Assembly)
+            .AddChildBus(
+                "Memory",
+                mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(EndpointGroupScopeTests).Assembly)));
+        builder.Services.AddContextualRequestPopulation();
+        builder.Services.AddAuthorization();
+        builder.Services.AddApiVersioning();
+        builder.Services
+            .AddAuthentication(TestAuthHandler.SchemeName)
+            .AddScheme<TestAuthSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, configureAuth);
+        return builder;
+    }
+
+    // --- Scenario: The caller's scope decides each method of one group -----------------------------------------
+    // NOTE: the GET example (below) is green from the start — a caller merely signed in already reaches a GET
+    // route the group's default RequireAuthorization() lets through today; the outline's only red example is PUT.
+
+    [Theory]
+    [InlineData("GET", HttpStatusCode.OK)]
+    [InlineData("PUT", HttpStatusCode.Forbidden)]
+    public async Task Scenario1_CallersScopeDecidesEachMethod_TreasuryOpsHoldingOnlyAccountsRead(
+        string method,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", "accounts.read")];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"));
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ScopedReadWriteEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(
+            new HttpRequestMessage(new HttpMethod(method), "/v1/scoped-read-write/item"));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: One declaration covers several methods -------------------------------------------------------
+    // The discriminating Given is the caller's claim set (brief §7): a caller lacking "accounts.write" must be
+    // refused on all three methods, or the scenario could pass on blanket sign-in alone without enforcing anything.
+
+    [Theory]
+    [InlineData("POST", "/v1/scoped-multi-method/item", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("PUT", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("DELETE", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("POST", "/v1/scoped-multi-method/item", "accounts.read", HttpStatusCode.Forbidden)]
+    [InlineData("PUT", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.read", HttpStatusCode.Forbidden)]
+    [InlineData("DELETE", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.read", HttpStatusCode.Forbidden)]
+    public async Task Scenario2_OneDeclarationCoversSeveralMethods_TreasuryOpsScopeDecidesOutcome(
+        string method,
+        string url,
+        string callerScope,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", callerScope)];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"))
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"));
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ScopedMultiMethodEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A route that requires its own scope keeps it -------------------------------------------------
+
+    [Fact]
+    public async Task Scenario4_RouteRequiringItsOwnScope_TreasuryOpsHoldingOnlyPostingsReadSucceeds()
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", "postings.read")];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("postings.read", p => p.RequireClaim("scope", "postings.read"));
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(RouteOwnScopeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/scoped-route-own-scope/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A route opened to anonymous callers needs no token -------------------------------------------
+
+    [Fact]
+    public async Task Scenario5_RouteOpenedToAnonymousCallers_UnknownCallerSucceeds()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        builder.Services.AddAuthorizationBuilder().AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"));
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(AnonymousRouteEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/scoped-anonymous/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A group that declares nothing is unchanged ----------------------------------------------------
+    // NOTE: green from the start by design (R2) — this scenario guards that adding the feature never changes a
+    // group with no EndpointGroupScopeAttribute, so it is expected to already pass, not evidence of a wrong AT.
+
+    [Fact]
+    public async Task Scenario9_GroupDeclaringNoScope_IsUnchanged_TreasuryOpsSignedInWithNoScopeSucceeds()
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync("/v1/probe/by-user", new ByUserProbeCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A host with authorization switched off serves every route ------------------------------------
+    // NOTE: green from the start by design (R3) — RequireAuthorization = false skips reading the attribute
+    // entirely (§3 row 4), so this scenario is expected to already pass.
+
+    [Fact]
+    public async Task Scenario10_AuthorizationSwitchedOff_UnknownCallerOnDeclaringGroupSucceeds()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        var app = builder.Build();
+        app.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ScopedReadWriteEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/scoped-read-write/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A method with no declared scope stops the host at startup ------------------------------------
+    // ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete is an AsyncLocal set only around this test's own
+    // synchronous UseEndpointConfigs call (Map runs inside it, before any await) and reset in a finally — every
+    // other test in this assembly discovers the same fixture fully covered (see the fixture's own remarks).
+
+    [Fact]
+    public async Task Scenario6_MethodWithNoDeclaredScope_StopsHostAtStartup_NamingRouteAndDelete()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = true);
+        var app = builder.Build();
+        ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ConditionallyUncoveredEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete.Value = false;
+        }
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => app.StartAsync());
+
+        exception.Message.ShouldContain("scoped-conditionally-uncovered/item");
+        exception.Message.ShouldContain("DELETE");
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S1: A declaration naming no method covers every method ------------------------------------
+
+    [Theory]
+    [InlineData("GET", "accounts.read", HttpStatusCode.OK)]
+    [InlineData("DELETE", "accounts.read", HttpStatusCode.OK)]
+    [InlineData("GET", "postings.read", HttpStatusCode.Forbidden)]
+    [InlineData("DELETE", "postings.read", HttpStatusCode.Forbidden)]
+    public async Task S1_DeclarationNamingNoMethod_CoversEveryMethod_TreasuryOpsScopeDecidesOutcome(
+        string method,
+        string heldScope,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", heldScope)];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("postings.read", p => p.RequireClaim("scope", "postings.read"));
+        var app = builder.Build();
+        ScopedDefaultEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(
+            new HttpRequestMessage(new HttpMethod(method), "/v1/scoped-default/item"));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S2: A per-method declaration wins over the group's default --------------------------------
+
+    [Theory]
+    [InlineData("GET", HttpStatusCode.OK)]
+    [InlineData("PUT", HttpStatusCode.Forbidden)]
+    public async Task S2_PerMethodDeclaration_WinsOverGroupDefault_TreasuryOpsHoldingOnlyAccountsRead(
+        string method,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", "accounts.read")];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"));
+        var app = builder.Build();
+        ScopedDefaultWithOverrideEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultWithOverrideEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultWithOverrideEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(
+            new HttpRequestMessage(new HttpMethod(method), "/v1/scoped-default-override/item"));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S3 (@unit): A group with a default declaration never stops the host at startup ------------
+
+    [Fact]
+    public async Task S3_GroupWithDefaultDeclaration_NeverStopsHostAtStartup()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = true);
+        var app = builder.Build();
+        ScopedDefaultPutDeleteEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultPutDeleteEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultPutDeleteEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await Should.NotThrowAsync(() => app.StartAsync());
+
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S5: A group that declares nothing still requires plain sign-in -----------------------------
+    // NOTE: green from the start by design (R9) — a group with no EndpointGroupScopeAttribute keeps plain
+    // RequireAuthorization() today via AuthPolicy defaulting to null, exactly the behaviour R9 preserves once
+    // AuthPolicy is gone. Mirrors Scenario9/Scenario10's own "green from the start by design" NOTEs above.
+
+    [Fact]
+    public async Task S5_GroupDeclaringNothing_SignedInCallerWithNoScopeSucceeds()
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(UnscopedGroupEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/unscoped-group/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task S5_GroupDeclaringNothing_UnknownCallerWithNoTokenIsRefusedAsUnauthorized()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(UnscopedGroupEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/unscoped-group/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S6: Authorization switched off ignores a group-wide declaration too ------------------------
+    // NOTE: green from the start by design (R3/R9) — RequireAuthorization = false skips reading every
+    // EndpointGroupScopeAttribute, scope-only or per-method alike; mirrors Scenario10's own NOTE for the
+    // per-method case.
+
+    [Fact]
+    public async Task S6_AuthorizationSwitchedOff_UnknownCallerOnDefaultDeclaringGroupSucceeds()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        var app = builder.Build();
+        ScopedDefaultEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ScopedDefaultEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/scoped-default/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+}

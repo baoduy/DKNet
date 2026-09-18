@@ -201,7 +201,6 @@ implementations you override when the default is wrong:
 |---|---|---|
 | `string GroupEndpoint { get; }` | none — you must supply it | Route segment appended after the version prefix, e.g. `"/products"`. |
 | `void Map(RouteGroupBuilder group)` | none — you must supply it | Where the group's endpoints are registered. Runs last, after tags, filters and authorization. |
-| `string? AuthPolicy { get; }` | `null` | Authorization policy name for the group. `null`/empty means `RequireAuthorization()` with no policy. Ignored entirely when `RequireAuthorization` is `false`. |
 | `string Tag { get; }` | `GroupEndpoint` with `/` replaced by `-` and leading `-` trimmed — so `"/products"` becomes `"products"` | The OpenAPI tag. Resolving to an empty string falls back to `EndpointRegistrationOptions.DefaultTag`. |
 | `int Version { get; }` | `1` | API version the group is mapped to, and the `v{n}` in the route and group name. |
 
@@ -212,7 +211,6 @@ public sealed class ProductsEndpointConfig : IEndpointConfig
 {
     public string GroupEndpoint => "/products";          // Tag defaults to "products"
     public int Version => 1;                             // optional; defaults to 1
-    public string? AuthPolicy => "products:write";       // optional; defaults to null
 
     public void Map(RouteGroupBuilder group)
     {
@@ -248,6 +246,111 @@ request validation (e.g. `AddFluentValidationAutoValidation()`), custom filters,
 always runs after the contextual-population filter and before `RequireAuthorization`, so population
 can never be bypassed by a host filter, while real ASP.NET Core authorization middleware still runs
 ahead of every endpoint filter at request time.
+
+#### Requiring a scope per HTTP method — `[EndpointGroupScope]`
+
+`[EndpointGroupScope]` declares which authorization scope an `IEndpointConfig` group requires,
+above the class. It is the only way a package user requires a scope on a group — there is no
+group-wide policy member; the interface has never grown one back after `AuthPolicy` was removed
+(see [Migrating off `AuthPolicy`](#migrating-off-authpolicy) below).
+
+Two forms, both the same attribute:
+
+- **Scope-only** — `[EndpointGroupScope("accounts.read")]`, naming no HTTP method, requires that
+  scope on **every** method the group serves. This is the group-wide declaration.
+- **Per-method** — `[EndpointGroupScope("accounts.write", EndpointHttpMethods.Post, EndpointHttpMethods.Put, EndpointHttpMethods.Delete)]`
+  requires the scope only for the named methods. Stack one attribute per scope, and let a single
+  declaration cover several methods with `EndpointHttpMethods`' constants.
+
+A **mixed** group — a scope-only default plus one or more per-method declarations — is the common
+shape once you have more than one scope:
+
+```csharp
+using DKNet.AspCore.Extensions;
+using DKNet.AspCore.Extensions.Endpoints;
+
+[EndpointGroupScope("accounts.read")]                                        // default: every method
+[EndpointGroupScope("accounts.write", EndpointHttpMethods.Post, EndpointHttpMethods.Put, EndpointHttpMethods.Delete)] // wins for these methods
+public sealed class AccountsEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/accounts";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        group.MapGet("/{id:guid}", (Guid id) => Results.Ok());   // needs accounts.read (the default)
+        group.MapPost("/", () => Results.Ok());                  // needs accounts.write
+        group.MapPut("/{id:guid}", (Guid id) => Results.Ok());   // needs accounts.write
+        group.MapDelete("/{id:guid}", (Guid id) => Results.Ok()); // needs accounts.write
+    }
+}
+```
+
+`GET /accounts/{id}` falls through to the `accounts.read` default; `POST`, `PUT` and `DELETE` each
+have their own declaration, so they need `accounts.write` instead. A group carrying no
+`[EndpointGroupScope]` at all is unchanged — no attribute read, no policy applied beyond the plain
+`RequireAuthorization()` every group already gets.
+
+One route inside the group can ask for its own scope instead of the group's, with
+`RequireAuthorization` on that route:
+
+```csharp
+group.MapGet("/{id:guid}/audit-trail", (Guid id) => Results.Ok())
+    .RequireAuthorization("postings.read"); // wins over the group's declared "accounts.read"
+```
+
+Or open it to anonymous callers with `AllowAnonymous`:
+
+```csharp
+group.MapGet("/health", () => Results.Ok())
+    .AllowAnonymous(); // no token required, regardless of the group's declared scopes
+```
+
+Precedence when more than one rule could apply, most specific first:
+
+1. The route's own `RequireAuthorization(...)` or `AllowAnonymous()` — always wins, for that
+   method only.
+2. A per-method `[EndpointGroupScope]` declaration naming that method.
+3. A scope-only `[EndpointGroupScope]` declaration on the same group — the default.
+
+A method the group serves but that no per-method declaration, no scope-only default, and no
+route-level rule covers fails the host at startup — `app.StartAsync()` throws an
+`InvalidOperationException` naming the route pattern and the served, undeclared HTTP method. A
+group carrying a scope-only default is never refused this way: the default covers every method the
+group serves, the verb-less case included (a route with no `IHttpMethodMetadata`, named `*` in the
+refusal message, is covered by the default exactly like a named method). Clear the refusal on a
+group with no default by adding an `[EndpointGroupScope]` declaration covering the missing method,
+by giving the route its own `RequireAuthorization(...)` or `AllowAnonymous()`, or by no longer
+serving the method.
+
+##### Migrating off `AuthPolicy`
+
+`IEndpointConfig.AuthPolicy` — one policy name for the whole group — is **removed**; this is a
+breaking change for any `IEndpointConfig` implementation that set it. Its replacement is the
+scope-only `[EndpointGroupScope]` form above the class:
+
+```csharp
+// Before
+public sealed class ProductsEndpointConfig : IEndpointConfig
+{
+    public string? AuthPolicy => "products:write";
+    // ...
+}
+
+// After
+[EndpointGroupScope("products:write")]
+public sealed class ProductsEndpointConfig : IEndpointConfig
+{
+    // ...
+}
+```
+
+A group that set `AuthPolicy => null` (the default) needs no replacement — a group carrying no
+`[EndpointGroupScope]` already keeps plain `RequireAuthorization()` with no policy, exactly what
+`AuthPolicy == null` gave before.
+
+The whole mechanism is inert on a host running with `EndpointRegistrationOptions.RequireAuthorization`
+set to `false`: no attribute is read, no scope is enforced, and a method with no declared scope never
+triggers the startup refusal.
 
 ### Fluent minimal-API mappers — verb to SlimMessageBus command
 
@@ -790,7 +893,7 @@ combination is not an error.
 |---|---|---|---|
 | `RouteTemplate` | `Func<IEndpointConfig, string>?` | `null` | `null` uses `/v{version:apiVersion}{GroupEndpoint}` when versioning is enabled, or `{GroupEndpoint}` otherwise. |
 | `DefaultTag` | `string` | `"Root"` | Used when an `IEndpointConfig.Tag` resolves to an empty string. |
-| `RequireAuthorization` | `bool` | `true` | When `true`, applies `RequireAuthorization(config.AuthPolicy)`, or `RequireAuthorization()` when the policy is null/empty. Disabling it is an explicit per-host opt-out, and it is also what enables `SystemAccountFallback`. |
+| `RequireAuthorization` | `bool` | `true` | When `true`, applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` to add per-method (or group-default) scopes. Disabling it is an explicit per-host opt-out — it is also what enables `SystemAccountFallback`, and makes `[EndpointGroupScope]` inert (no attribute read, no scope enforced, no startup refusal). |
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()` to be registered, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Runs after mapping/tags/version metadata, before authorization is applied and before `IEndpointConfig.Map`. |
 
@@ -1037,6 +1140,27 @@ built. Neither is a runtime surprise — both happen at startup.
 - Registration order is deliberate: the contextual-population filter is added *before*
   `ConfigureGroup` runs, so it can never be defeated by a host filter's registration order — but it
   still executes after ASP.NET Core's authorization middleware at request time.
+- **A route with no declared scope, that the group also has no coverage for, fails startup, not the
+  request.** `[EndpointGroupScope]` checks coverage while endpoints are being built, so a gap surfaces
+  as `app.StartAsync()` throwing, never as a runtime `403` on the first call.
+- **A group carrying a scope-only default (`[EndpointGroupScope("scope")]`, no HTTP methods named)
+  never hits that startup refusal.** The default covers every method the group serves, including a
+  route with no `IHttpMethodMetadata` at all — the same route the refusal would otherwise name as
+  `*`. Only a group with no default, and a served method no per-method declaration covers, can be
+  refused.
+- **A route serving several HTTP methods ends up requiring all of the scopes those methods
+  declare.** A `MapMethods(["GET", "POST"])` route (or any route naming more than one HTTP method)
+  still carries one `IHttpMethodMetadata` entry per method, and picks up one `Authorize` policy per
+  declared method it serves — ASP.NET Core requires every policy on an endpoint, so a caller
+  holding only one of the scopes is refused. Declare a multi-method route under a single scope
+  unless every caller is meant to hold all of them. The `*` placeholder in the startup refusal is
+  reserved for a route that carries **no** `IHttpMethodMetadata` at all — such a route serves every
+  method and can never be covered — never for a `MapMethods` route, which always names its methods
+  explicitly.
+- **`[EndpointGroupScope]` and `RequireAuthorization = false` (§`EndpointRegistrationOptions`) don't
+  combine.** Turning host authorization off makes the attribute inert rather than optional-but-checked
+  — no scope is enforced and no startup refusal fires, on any group, declared or not, default or
+  per-method.
 
 ## 🔗 Related Packages
 

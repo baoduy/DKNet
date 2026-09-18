@@ -17,12 +17,6 @@ namespace DKNet.AspCore.Extensions;
 public interface IEndpointConfig
 {
     /// <summary>
-    ///     The authorization policy required for this group, or <see langword="null" /> to require plain
-    ///     authentication (no specific policy) when authorization is enabled.
-    /// </summary>
-    string? AuthPolicy => null;
-
-    /// <summary>
     ///     The route segment appended after the version prefix, for example <c>"/products"</c>.
     /// </summary>
     string GroupEndpoint { get; }
