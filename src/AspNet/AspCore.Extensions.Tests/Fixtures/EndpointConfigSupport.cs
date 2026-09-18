@@ -363,14 +363,24 @@ public sealed class UnversionedProbeEndpointConfig : IEndpointConfig
     #endregion
 }
 
-/// <summary>A second config with a custom <see cref="AuthPolicy" />, used by the per-policy authorization tests.</summary>
+/// <summary>
+///     A second config declaring its required scope via <see cref="EndpointGroupScopeAttribute" /> naming no HTTP
+///     method — the scope-only form that replaces the removed <c>AuthPolicy</c> member (DRK-1548 §3 row 5), used
+///     by the per-scope authorization tests migrated off it. Until the default-scope semantics land (DRK-1548
+///     R7/R8), a scope-only declaration with any served method throws at startup (see
+///     <see cref="ConditionallyUncoveredEndpointConfig" />'s own remarks) — every host built from this shared
+///     assembly discovers this group, so <see cref="ServeRoute" /> keeps it un-served (and so un-built) except for
+///     the two tests that exercise it, exactly as <see cref="ConditionallyUncoveredEndpointConfig" /> does.
+/// </summary>
+[EndpointGroupScopeAttribute(PolicyName)]
 public sealed class PolicyGuardedEndpointConfig : IEndpointConfig
 {
     public const string PolicyName = "CanConfigure";
 
-    #region Properties
+    /// <summary>Set (and reset) only by the two tests exercising the guarded route.</summary>
+    public static readonly AsyncLocal<bool> ServeRoute = new();
 
-    public string? AuthPolicy => PolicyName;
+    #region Properties
 
     public string GroupEndpoint => "/guarded";
 
@@ -380,7 +390,11 @@ public sealed class PolicyGuardedEndpointConfig : IEndpointConfig
 
     #region Methods
 
-    public void Map(RouteGroupBuilder group) => group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
+    public void Map(RouteGroupBuilder group)
+    {
+        if (ServeRoute.Value)
+            group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
+    }
 
     #endregion
 }
@@ -493,6 +507,89 @@ public sealed class ConditionallyUncoveredEndpointConfig : IEndpointConfig
         if (ServeUndeclaredDelete.Value)
             group.MapDelete("/item", () => Results.Ok());
     }
+}
+
+/// <summary>
+///     Declares "accounts.read" above the group naming no HTTP method — the group's default scope for every
+///     method it serves (DRK-1548 §7 "A declaration naming no method covers every method"). Reused with
+///     <c>RequireAuthorization = false</c> for "Authorization switched off ignores a group-wide declaration too".
+///     Until the default-scope semantics land, this declaration refuses every served method at startup (see
+///     <see cref="ConditionallyUncoveredEndpointConfig" />'s own remarks) — every host built from this shared
+///     assembly discovers this group, so <see cref="ServeRoutes" /> keeps it un-served (and so un-built) except
+///     for the tests that exercise it.
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read")]
+public sealed class ScopedDefaultEndpointConfig : IEndpointConfig
+{
+    /// <summary>Set (and reset) only by the tests exercising this group's routes.</summary>
+    public static readonly AsyncLocal<bool> ServeRoutes = new();
+
+    public string GroupEndpoint => "/scoped-default";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        if (!ServeRoutes.Value) return;
+        group.MapGet("/item", () => Results.Ok());
+        group.MapDelete("/item", () => Results.Ok());
+    }
+}
+
+/// <summary>
+///     Declares "accounts.read" above the group naming no HTTP method, plus a per-method "accounts.write" for PUT
+///     — the per-method declaration must win over the default for its own method (DRK-1548 §7 "A per-method
+///     declaration wins over the group's default"). Gated the same way as <see cref="ScopedDefaultEndpointConfig" />
+///     — see its remarks.
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read")]
+[EndpointGroupScopeAttribute("accounts.write", EndpointHttpMethods.Put)]
+public sealed class ScopedDefaultWithOverrideEndpointConfig : IEndpointConfig
+{
+    /// <summary>Set (and reset) only by the test exercising this group's routes.</summary>
+    public static readonly AsyncLocal<bool> ServeRoutes = new();
+
+    public string GroupEndpoint => "/scoped-default-override";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        if (!ServeRoutes.Value) return;
+        group.MapGet("/item", () => Results.Ok());
+        group.MapPut("/item", () => Results.Ok());
+    }
+}
+
+/// <summary>
+///     Declares "accounts.read" above the group naming no HTTP method, serving a PUT route and a DELETE route —
+///     proves a group carrying a default declaration never stops the host at startup (DRK-1548 §7 "A group with a
+///     default declaration never stops the host at startup"). Gated the same way as
+///     <see cref="ScopedDefaultEndpointConfig" /> — see its remarks.
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read")]
+public sealed class ScopedDefaultPutDeleteEndpointConfig : IEndpointConfig
+{
+    /// <summary>Set (and reset) only by the test exercising this group's routes.</summary>
+    public static readonly AsyncLocal<bool> ServeRoutes = new();
+
+    public string GroupEndpoint => "/scoped-default-put-delete";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        if (!ServeRoutes.Value) return;
+        group.MapPut("/item", () => Results.Ok());
+        group.MapDelete("/item", () => Results.Ok());
+    }
+}
+
+/// <summary>
+///     Declares no <see cref="EndpointGroupScopeAttribute" /> at all (DRK-1548 §7 "A group that declares nothing
+///     still requires plain sign-in") — its own fixture rather than reusing <see cref="ProbeEndpointConfig" /> so
+///     the unauthorized-with-no-token half of the scenario is not tangled with that shared fixture's many other
+///     routes.
+/// </summary>
+public sealed class UnscopedGroupEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/unscoped-group";
+
+    public void Map(RouteGroupBuilder group) => group.MapGet("/item", () => Results.Ok());
 }
 
 /// <summary>Options for <see cref="TestAuthHandler" /> — set per-test, no shared/static state.</summary>

@@ -228,4 +228,175 @@ public class EndpointGroupScopeTests
         exception.Message.ShouldContain("DELETE");
         await app.StopAsync();
     }
+
+    // --- DRK-1548 §7 S1: A declaration naming no method covers every method ------------------------------------
+
+    [Theory]
+    [InlineData("GET", "accounts.read", HttpStatusCode.OK)]
+    [InlineData("DELETE", "accounts.read", HttpStatusCode.OK)]
+    [InlineData("GET", "postings.read", HttpStatusCode.Forbidden)]
+    [InlineData("DELETE", "postings.read", HttpStatusCode.Forbidden)]
+    public async Task S1_DeclarationNamingNoMethod_CoversEveryMethod_TreasuryOpsScopeDecidesOutcome(
+        string method,
+        string heldScope,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", heldScope)];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("postings.read", p => p.RequireClaim("scope", "postings.read"));
+        var app = builder.Build();
+        ScopedDefaultEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(
+            new HttpRequestMessage(new HttpMethod(method), "/v1/scoped-default/item"));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S2: A per-method declaration wins over the group's default --------------------------------
+
+    [Theory]
+    [InlineData("GET", HttpStatusCode.OK)]
+    [InlineData("PUT", HttpStatusCode.Forbidden)]
+    public async Task S2_PerMethodDeclaration_WinsOverGroupDefault_TreasuryOpsHoldingOnlyAccountsRead(
+        string method,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", "accounts.read")];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"))
+            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"));
+        var app = builder.Build();
+        ScopedDefaultWithOverrideEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultWithOverrideEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultWithOverrideEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.SendAsync(
+            new HttpRequestMessage(new HttpMethod(method), "/v1/scoped-default-override/item"));
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S3 (@unit): A group with a default declaration never stops the host at startup ------------
+
+    [Fact]
+    public async Task S3_GroupWithDefaultDeclaration_NeverStopsHostAtStartup()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = true);
+        var app = builder.Build();
+        ScopedDefaultPutDeleteEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ScopedDefaultPutDeleteEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultPutDeleteEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await Should.NotThrowAsync(() => app.StartAsync());
+
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S5: A group that declares nothing still requires plain sign-in -----------------------------
+    // NOTE: green from the start by design (R9) — a group with no EndpointGroupScopeAttribute keeps plain
+    // RequireAuthorization() today via AuthPolicy defaulting to null, exactly the behaviour R9 preserves once
+    // AuthPolicy is gone. Mirrors Scenario9/Scenario10's own "green from the start by design" NOTEs above.
+
+    [Fact]
+    public async Task S5_GroupDeclaringNothing_SignedInCallerWithNoScopeSucceeds()
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+        });
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(UnscopedGroupEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/unscoped-group/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task S5_GroupDeclaringNothing_UnknownCallerWithNoTokenIsRefusedAsUnauthorized()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        var app = builder.Build();
+        app.UseEndpointConfigs(assemblies: typeof(UnscopedGroupEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/unscoped-group/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        await app.StopAsync();
+    }
+
+    // --- DRK-1548 §7 S6: Authorization switched off ignores a group-wide declaration too ------------------------
+    // NOTE: green from the start by design (R3/R9) — RequireAuthorization = false skips reading every
+    // EndpointGroupScopeAttribute, scope-only or per-method alike; mirrors Scenario10's own NOTE for the
+    // per-method case.
+
+    [Fact]
+    public async Task S6_AuthorizationSwitchedOff_UnknownCallerOnDefaultDeclaringGroupSucceeds()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = false);
+        var app = builder.Build();
+        ScopedDefaultEndpointConfig.ServeRoutes.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(o => o.RequireAuthorization = false, typeof(ScopedDefaultEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ScopedDefaultEndpointConfig.ServeRoutes.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/scoped-default/item");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
 }

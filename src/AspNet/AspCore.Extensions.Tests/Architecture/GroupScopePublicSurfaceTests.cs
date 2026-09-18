@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Reflection;
+using DKNet.AspCore.Extensions;
 using DKNet.AspCore.Extensions.Endpoints;
 
 namespace AspCore.Extensions.Tests.Architecture;
@@ -33,5 +35,20 @@ public sealed class GroupScopePublicSurfaceTests
             field.IsLiteral.ShouldBeTrue($"{field.Name} must be a compile-time constant (const), not just static");
             field.IsInitOnly.ShouldBeFalse($"{field.Name} must not be a readonly field");
         }
+    }
+
+    /// <summary>DRK-1548 §7 S4 — the group-wide policy member is gone.</summary>
+    [Fact]
+    public void IEndpointConfig_HasNoAuthPolicyMember()
+    {
+        var memberNames = typeof(IEndpointConfig)
+            .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .ToArray();
+
+        // Checked by string, not nameof(IEndpointConfig.AuthPolicy): this test stays compilable once the Build
+        // stage removes the member it is proving the absence of.
+        memberNames.ShouldNotContain("AuthPolicy");
+        memberNames.ShouldNotContain("get_AuthPolicy");
     }
 }

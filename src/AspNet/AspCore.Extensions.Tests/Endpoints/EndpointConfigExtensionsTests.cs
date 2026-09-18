@@ -507,14 +507,23 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task Authorization_PerConfigAuthPolicy_AuthenticatedWithoutRequiredClaim_Returns403()
+    public async Task Authorization_GroupScopeDeclaration_AuthenticatedWithoutRequiredClaim_Returns403()
     {
         var builder = CreateBuilder();
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(PolicyGuardedEndpointConfig.PolicyName, p => p.RequireClaim("can-configure"));
         AddTestAuth(builder, o => o.Authenticated = true); // authenticated, but lacks the "can-configure" claim
         var app = builder.Build();
-        app.UseEndpointConfigs(assemblies: typeof(PolicyGuardedEndpointConfig).Assembly);
+        PolicyGuardedEndpointConfig.ServeRoute.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(PolicyGuardedEndpointConfig).Assembly);
+        }
+        finally
+        {
+            PolicyGuardedEndpointConfig.ServeRoute.Value = false;
+        }
+
         await app.StartAsync();
         using var client = app.GetTestClient();
 
@@ -525,7 +534,7 @@ public class EndpointConfigExtensionsTests
     }
 
     [Fact]
-    public async Task Authorization_PerConfigAuthPolicy_AuthenticatedWithRequiredClaim_Returns200()
+    public async Task Authorization_GroupScopeDeclaration_AuthenticatedWithRequiredClaim_Returns200()
     {
         var builder = CreateBuilder();
         builder.Services.AddAuthorizationBuilder()
@@ -538,7 +547,16 @@ public class EndpointConfigExtensionsTests
                 o.Claims = [new Claim("can-configure", "true")];
             });
         var app = builder.Build();
-        app.UseEndpointConfigs(assemblies: typeof(PolicyGuardedEndpointConfig).Assembly);
+        PolicyGuardedEndpointConfig.ServeRoute.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(PolicyGuardedEndpointConfig).Assembly);
+        }
+        finally
+        {
+            PolicyGuardedEndpointConfig.ServeRoute.Value = false;
+        }
+
         await app.StartAsync();
         using var client = app.GetTestClient();
 
