@@ -118,7 +118,7 @@ status-code window outside 100–599 or with min above max, a null `JsonSerializ
 | Knob | Type | Default | Effect |
 |---|---|---|---|
 | `IdempotencyHeaderKey` | `string` | `"X-Idempotency-Key"` | Request header the filter reads the key from. |
-| `IdempotencyKeyPattern` | `string` | `^[a-zA-Z0-9\-_]+$` | Regex a key must match; a mismatch is `400 Bad Request`. |
+| `IdempotencyKeyPattern` | `string` | `^[a-zA-Z0-9\-_]+$` | Regex a key must match; matched under a fixed 100 ms timeout — a pattern that times out is treated as a mismatch (`400`). |
 | `MaxIdempotencyKeyLength` | `int` | `255` | Longer keys are rejected with `400`. |
 | `ConflictHandling` | `IdempotentConflictHandling` | `ConflictResponse` | `ConflictResponse` answers a duplicate with `409`; `CachedResult` replays the original status, body and content type. |
 | `Expiration` | `TimeSpan` | `4 hours` | Absolute lifetime of a cached result before the key is treated as new again. |

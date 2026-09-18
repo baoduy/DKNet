@@ -31,8 +31,18 @@ public sealed class IdempotencyOptions
 {
     #region Fields
 
-    private string _idempotencyKeyPattern = @"^[a-zA-Z0-9\-_]+$";
-    private Regex _idempotencyKeyRegex = new(@"^[a-zA-Z0-9\-_]+$");
+    private const string DefaultIdempotencyKeyPattern = @"^[a-zA-Z0-9\-_]+$";
+
+    /// <summary>
+    ///     Bounds how long a match against <see cref="IdempotencyKeyPatternRegex" /> may run before it is
+    ///     aborted with a <see cref="RegexMatchTimeoutException" />. Fixed, not exposed as an option: a
+    ///     pathological pattern (default or operator-supplied) must never be able to hang the request thread
+    ///     via catastrophic backtracking on an attacker-controlled key.
+    /// </summary>
+    private static readonly TimeSpan KeyPatternMatchTimeout = TimeSpan.FromMilliseconds(100);
+
+    private string _idempotencyKeyPattern = DefaultIdempotencyKeyPattern;
+    private Regex _idempotencyKeyRegex = new(DefaultIdempotencyKeyPattern, RegexOptions.None, KeyPatternMatchTimeout);
     private string? _scopeHmacSecret;
     private byte[]? _scopeHmacSecretBytes;
 
@@ -90,7 +100,7 @@ public sealed class IdempotencyOptions
         get => _idempotencyKeyPattern;
         set
         {
-            _idempotencyKeyRegex = new Regex(value);
+            _idempotencyKeyRegex = new Regex(value, RegexOptions.None, KeyPatternMatchTimeout);
             _idempotencyKeyPattern = value;
         }
     }
