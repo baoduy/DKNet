@@ -153,7 +153,7 @@ surface. Defaults are the ones the code applies when you pass nothing.
 |---|---|---|---|
 | `RouteTemplate` | `Func<IEndpointConfig, string>?` | `null` | `null` uses `/v{version:apiVersion}{GroupEndpoint}` with versioning on, or `{GroupEndpoint}` with it off. |
 | `DefaultTag` | `string` | `"Root"` | OpenAPI tag used when a config's `Tag` resolves to an empty string. |
-| `RequireAuthorization` | `bool` | `true` | Applies `RequireAuthorization(config.AuthPolicy)` to every group. Turning it off is also what enables `SystemAccountFallback`. |
+| `RequireAuthorization` | `bool` | `true` | Applies `RequireAuthorization(config.AuthPolicy)` to every group. Turning it off is also what enables `SystemAccountFallback`, and makes `[EndpointGroupScope]` (below) inert — no attribute read, no scope enforced, no startup refusal. |
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()`, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Host setup per group. Runs after tags/version metadata, before authorization and before `IEndpointConfig.Map`. |
 | `assemblies` (method parameter) | `params Assembly[]` | empty → every currently loaded assembly | Assemblies scanned for `IEndpointConfig` implementations. |
@@ -272,6 +272,7 @@ Attributes and other extension points:
 
 | Knob | Kind | Default | Effect |
 |---|---|---|---|
+| `[EndpointGroupScope(scope, params httpMethods)]` | class attribute above an `IEndpointConfig`, `AllowMultiple` | none | Requires `scope` as the authorization policy for every route the group serves under `httpMethods` (constants on `EndpointHttpMethods`, e.g. `EndpointHttpMethods.Get`). Stack one attribute per scope. A route's own `RequireAuthorization(...)` or `AllowAnonymous()` wins over the group's declaration. A served method with no declaration and no route-level rule fails the host at startup, naming the route and the method. No effect when `RequireAuthorization` is `false`. |
 | `[FromClaim(claimType)]` | property attribute, one required ctor argument | none | Populates the property from that claim before validation and before the handler; always overwrites the caller's value, and is removed from the published OpenAPI description. The property needs a `set` or `init` or startup throws. |
 | `[FromRequestHeader(headerName)]` | property attribute, one required ctor argument (`HeaderName`) | none | Populates the property from that HTTP request header before validation and before the handler; always overwrites the caller's body value. Header-name matching is case-insensitive, and a header sent more than once fills the member with the first value. A missing header is not a refusal — the member holds its type's default, or `SystemAccountFallback` where that applies. The header *is* published as an `in: header` operation parameter (the member stays out of the published body), and it is never an authorization signal — the caller supplies it. The property needs a `set` or `init` or startup throws. |
 | `IContextualSource` | marker interface on your own attribute | — | Opts a new source kind into the same mechanism. |
