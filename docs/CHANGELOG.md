@@ -108,6 +108,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
+- **Breaking for audit-sink consumers:** `DKNet.EfCore.AuditLogs` now redacts a property carrying `[Encrypted]`
+  (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`) in the same way as `[SensitiveData]` — unconditionally,
+  even alongside `[AuditLog]` on the same property — so a value encrypted at rest no longer reaches an audit
+  publisher as plaintext. Matching is by attribute type name, not type identity, so any attribute of your own
+  named `EncryptedAttribute` is redacted too. Separately, the error log written when an `IAuditLogPublisher`
+  throws no longer serializes the failed batch's entries; it now names the publisher, the entity name(s), and the
+  entry count instead. A consumer parsing entry values out of that publisher-failure log line must switch to the
+  publisher's own retry/outbox path. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
 - Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
   `DtoGeneratorExclusions` MSBuild list (the same list `[GenerateDto]` DTOs already respect), so composed
   event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.

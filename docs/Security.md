@@ -90,6 +90,11 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 - **`[AuditLog]` on a property forces plaintext capture.** Do not put it on a secret. `[SensitiveData]` always
   redacts and cannot be overridden by `[AuditLog]`; `[IgnoreAuditLog]` removes the property from the trail
   entirely. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+- **A column encrypted via `DKNet.EfCore.Encryption` is redacted in audit entries.** `[Encrypted]` uses a
+  `ColumnEncryptionConverter`, a `ValueConverter` — so the change tracker holds the **decrypted** model value, and
+  without this redaction that plaintext would reach every registered `IAuditLogPublisher`. `DKNet.EfCore.AuditLogs`
+  treats `[Encrypted]` as unconditionally sensitive, the same as `[SensitiveData]`. See
+  [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md).
 - **The audit identity can be a person, and it is published unmasked.** Registering an `ICurrentUserProvider` via
   `AddCurrentUserProvider<TDbContext, TProvider>()` fills `CreatedBy`/`UpdatedBy` from
   `ICurrentUserProvider.GetCurrentUser()` instead of from the tenant ownership key. Whatever that method returns

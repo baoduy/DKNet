@@ -40,6 +40,7 @@
     <ItemGroup>
         <ProjectReference Include="..\DKNet.EfCore.AuditLogs\DKNet.EfCore.AuditLogs.csproj"/>
         <ProjectReference Include="..\DKNet.EfCore.DataAuthorization\DKNet.EfCore.DataAuthorization.csproj"/>
+        <ProjectReference Include="..\DKNet.EfCore.Encryption\DKNet.EfCore.Encryption.csproj"/>
     </ItemGroup>
 
 </Project>
