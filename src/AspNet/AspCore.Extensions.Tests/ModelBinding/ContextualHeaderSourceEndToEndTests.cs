@@ -19,8 +19,8 @@ namespace AspCore.Extensions.Tests.ModelBinding;
 ///     End-to-end HTTP-level proof of DRK-1524 §5: a request member declared via
 ///     <see cref="FromRequestHeaderAttribute" /> is populated from a named HTTP request header, before validation
 ///     and before the handler, case-insensitively, the caller's body can never override it, a duplicate header
-///     fills the member with the first value sent, and a missing header is not a refusal — with or without a
-///     configured fallback. Claim-filled members' unaffected behaviour is already covered by
+///     fills the member with the first value sent, and a missing header is not a refusal. Claim-filled members'
+///     unaffected behaviour is already covered by
 ///     <see cref="ContextualRequestPopulationEndToEndTests" />; the published-description proof for a header
 ///     parameter lives in <see cref="ContextualSourceOpenApiTests" />.
 /// </summary>
@@ -171,25 +171,6 @@ public class ContextualHeaderSourceEndToEndTests
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
         body.Name.ShouldBe("(null)"); // handler's stand-in for the property's type default
-        await app.StopAsync();
-    }
-
-    // --- DRK-1524 §5 "A missing header takes the configured fallback on an anonymous group" ---------------------
-
-    [Fact]
-    public async Task HeaderAbsent_FallbackConfigured_RequireAuthorizationFalse_HandlerObservesFallback()
-    {
-        var builder = CreateBuilder();
-        builder.Services.AddContextualRequestPopulation(o => o.SystemAccountFallback = "system-account");
-        var app = await StartAppAsync(builder);
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/probe/by-header", new ByHeaderProbeCommand());
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("system-account");
         await app.StopAsync();
     }
 

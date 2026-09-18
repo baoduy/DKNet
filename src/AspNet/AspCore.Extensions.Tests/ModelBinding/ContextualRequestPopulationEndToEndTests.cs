@@ -20,9 +20,8 @@ namespace AspCore.Extensions.Tests.ModelBinding;
 ///     End-to-end HTTP-level proof that <c>AddContextualRequestPopulation</c> is actually wired into
 ///     <c>UseEndpointConfigs</c> request dispatch (DRK-565): declared members are populated before the handler
 ///     runs for both JSON-body and <c>[AsParameters]</c>/query binding, a caller-supplied value can never forge
-///     the resolved claim, the system-account fallback only applies within its documented boundary, and a
-///     request with no declared members is entirely unaffected. Unit-level branch coverage of the population
-///     service itself lives in <see cref="ContextualRequestPopulationTests" />.
+///     the resolved claim, and a request with no declared members is entirely unaffected. Unit-level branch
+///     coverage of the population service itself lives in <see cref="ContextualRequestPopulationTests" />.
 /// </summary>
 public class ContextualRequestPopulationEndToEndTests
 {
@@ -200,58 +199,6 @@ public class ContextualRequestPopulationEndToEndTests
         var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
         body.ShouldNotBeNull();
         body.Name.ShouldBe(Guid.Empty.ToString());
-        await app.StopAsync();
-    }
-
-    // --- Item 7 + 8: system-account fallback, and its auth-required boundary -----------------------------------
-
-    [Fact]
-    public async Task RequireAuthorizationFalse_NoClaimResolvable_FallbackConfigured_HandlerObservesFallback()
-    {
-        var builder = CreateBuilder();
-        builder.Services.AddContextualRequestPopulation(o => o.SystemAccountFallback = "system-account");
-        var app = builder.Build();
-        app.UseEndpointConfigs(
-            o =>
-            {
-                o.EnableVersioning = false;
-                o.RequireAuthorization = false;
-            },
-            typeof(ProbeEndpointConfig).Assembly);
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/probe/by-user", new ByUserProbeCommand());
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("system-account");
-        await app.StopAsync();
-    }
-
-    [Fact]
-    public async Task RequireAuthorizationTrue_AuthenticatedWithoutTheClaim_FallbackNeverLeaks()
-    {
-        var builder = CreateBuilder();
-        builder.Services.AddContextualRequestPopulation(o => o.SystemAccountFallback = "system-account");
-        AddTestAuth(builder, o =>
-        {
-            o.Authenticated = true;
-            o.UserName = null; // authenticated, but carries no ClaimTypes.Name claim
-        });
-        var app = builder.Build();
-        var groups = app.UseEndpointConfigs(o => o.EnableVersioning = false, typeof(ProbeEndpointConfig).Assembly);
-        groups.ShouldNotBeEmpty(); // default RequireAuthorization stays true (not overridden above)
-        await app.StartAsync();
-        using var client = app.GetTestClient();
-
-        var response = await client.PostAsJsonAsync("/probe/by-user", new ByUserProbeCommand());
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
-        body.ShouldNotBeNull();
-        body.Name.ShouldBe("(null)"); // fallback never leaks across the RequireAuthorization=true boundary
         await app.StopAsync();
     }
 

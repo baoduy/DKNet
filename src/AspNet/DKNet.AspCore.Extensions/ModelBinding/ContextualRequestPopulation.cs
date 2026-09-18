@@ -16,20 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DKNet.AspCore.Extensions.ModelBinding;
 
 /// <summary>
-///     Options for <see cref="ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation" />.
-/// </summary>
-public sealed class ContextualPopulationOptions
-{
-    /// <summary>
-    ///     Value substituted for a declared member the registered resolver could not resolve, but only when the
-    ///     host's <see cref="EndpointRegistrationOptions.RequireAuthorization" /> is <see langword="false" />.
-    ///     An authenticated-but-unresolved member (e.g. authorization on, claim missing) never receives this
-    ///     value — it holds its type's default instead. <see langword="null" /> disables the fallback.
-    /// </summary>
-    public string? SystemAccountFallback { get; set; }
-}
-
-/// <summary>
 ///     Populates a bound request's <see cref="IContextualSource" />-declared members. Registered by
 ///     <see cref="ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation" /> and
 ///     applied automatically by <see cref="EndpointConfigExtensions.UseEndpointConfigs" />.
@@ -42,20 +28,14 @@ internal interface IContextualRequestPopulationService
     /// </summary>
     /// <param name="request">The bound request instance (a method argument of a mapped endpoint).</param>
     /// <param name="httpContext">The current request's <see cref="HttpContext" />.</param>
-    /// <param name="requireAuthorization">
-    ///     The host's <see cref="EndpointRegistrationOptions.RequireAuthorization" /> setting for the group this
-    ///     request was bound on — drives whether an unresolved member falls back to
-    ///     <see cref="ContextualPopulationOptions.SystemAccountFallback" />.
-    /// </param>
-    void Populate(object request, HttpContext httpContext, bool requireAuthorization);
+    void Populate(object request, HttpContext httpContext);
 }
 
 /// <inheritdoc cref="IContextualRequestPopulationService" />
 internal sealed class ContextualRequestPopulationService(
-    IEnumerable<IContextualValueResolver> resolvers,
-    ContextualPopulationOptions options) : IContextualRequestPopulationService
+    IEnumerable<IContextualValueResolver> resolvers) : IContextualRequestPopulationService
 {
-    public void Populate(object request, HttpContext httpContext, bool requireAuthorization)
+    public void Populate(object request, HttpContext httpContext)
     {
         var members = ContextualMemberScanner.GetDeclaredMembers(request.GetType());
         if (members.Length == 0) return;
@@ -63,9 +43,6 @@ internal sealed class ContextualRequestPopulationService(
         foreach (var member in members)
         {
             var raw = resolvers.FirstOrDefault(r => r.CanResolve(member.Source))?.Resolve(member.Source, httpContext);
-
-            if (raw is null && !requireAuthorization && options.SystemAccountFallback is not null)
-                raw = options.SystemAccountFallback;
 
             member.Property.SetValue(request, ConvertOrDefault(raw, member.Property.PropertyType));
         }
@@ -153,16 +130,9 @@ public static class ContextualRequestPopulationServiceCollectionExtensions
     ///     no per-group wiring is required. Requests with no declared members are unaffected.
     /// </summary>
     /// <param name="services">The service collection to register against.</param>
-    /// <param name="configure">Configures <see cref="ContextualPopulationOptions" />; leave <see langword="null" /> for defaults.</param>
     /// <returns><paramref name="services" />, for chaining.</returns>
-    public static IServiceCollection AddContextualRequestPopulation(
-        this IServiceCollection services,
-        Action<ContextualPopulationOptions>? configure = null)
+    public static IServiceCollection AddContextualRequestPopulation(this IServiceCollection services)
     {
-        var options = new ContextualPopulationOptions();
-        configure?.Invoke(options);
-
-        services.AddSingleton(options);
         // Scoped, not singleton: a host may register its own IContextualValueResolver that depends on a scoped
         // service (e.g. a tenant resolver over a DbContext) — a singleton ContextualRequestPopulationService
         // capturing it would throw under scope validation or captive-dependency it in production.

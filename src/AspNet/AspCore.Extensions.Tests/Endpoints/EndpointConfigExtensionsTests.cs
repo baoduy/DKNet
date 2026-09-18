@@ -652,7 +652,7 @@ public class EndpointConfigExtensionsTests
     {
         public int CallCount { get; private set; }
 
-        public void Populate(object request, HttpContext httpContext, bool requireAuthorization) => CallCount++;
+        public void Populate(object request, HttpContext httpContext) => CallCount++;
     }
 
     // --- Startup diagnostics reach the host log, not the console ------------------------------------------------

@@ -183,7 +183,7 @@ public static class EndpointConfigExtensions
                     if (population is not null)
                         foreach (var argument in invocationContext.Arguments)
                             if (argument is not null)
-                                population.Populate(argument, invocationContext.HttpContext, options.RequireAuthorization);
+                                population.Populate(argument, invocationContext.HttpContext);
 
                     return await next(invocationContext);
                 };
