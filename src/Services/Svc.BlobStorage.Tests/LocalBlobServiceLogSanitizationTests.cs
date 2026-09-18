@@ -64,6 +64,36 @@ public class LocalBlobServiceLogSanitizationTests : IDisposable
         ((string)record.FolderLocation!).ShouldNotContain('\r');
     }
 
+    [Fact]
+    public async Task DeleteAsync_MissingFolderNameContainsEscAndLineSeparators_StripsThemFromRecord()
+    {
+        // Arrange: ESC (U+001B) and the Unicode line separators U+2028/U+2029 are not touched by
+        // the CR/LF Replace calls, so this exercises the char.IsControl / U+2028 / U+2029 strip
+        // clause specifically, not the CR/LF normalization already covered above. Composed via
+        // (char) casts so the source file stays ASCII - a literal U+2028 is a line terminator
+        // inside a C# string literal.
+        var capturingLogger = new CapturingLogger();
+        var options = Options.Create(new LocalDirectoryOptions { RootFolder = _root });
+        var service = new LocalBlobService(options, capturingLogger);
+        var forgedSegment = $"missing{(char)0x1b}[31mFAKE{(char)0x2028}LINE{(char)0x2029}END";
+
+        // Act
+        var result = await service.DeleteAsync(new BlobRequest(forgedSegment) { Type = BlobTypes.Directory });
+
+        // Assert
+        result.ShouldBeFalse();
+        capturingLogger.Records.Count.ShouldBe(1);
+        var record = capturingLogger.Records[0];
+        record.Level.ShouldBe(LogLevel.Error);
+        record.Message.ShouldNotContain((char)0x1b);
+        record.Message.ShouldNotContain((char)0x2028);
+        record.Message.ShouldNotContain((char)0x2029);
+        var folderLocation = (string)record.FolderLocation!;
+        folderLocation.ShouldNotContain((char)0x1b);
+        folderLocation.ShouldNotContain((char)0x2028);
+        folderLocation.ShouldNotContain((char)0x2029);
+    }
+
     #endregion
 
     #region Nested Types
