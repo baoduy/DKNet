@@ -200,6 +200,22 @@ public class ContextualRequestPopulationTests
     public void ContextualPopulationOptions_SystemAccountFallbackSet_ExposesConfiguredValue() =>
         new ContextualPopulationOptions { SystemAccountFallback = "system" }.SystemAccountFallback.ShouldBe("system");
 
+    // DRK-1580: the fallback-substitution mechanism (and the type that configured it) is being removed. Named by
+    // string rather than by type, so this test still compiles once ContextualPopulationOptions is gone.
+    [Fact]
+    public void ContextualPopulationOptions_TypeIsGoneFromTheAssembly()
+    {
+        const string optionsTypeFullName = "DKNet.AspCore.Extensions.ModelBinding.ContextualPopulationOptions";
+        var assembly = typeof(ContextualRequestPopulationServiceCollectionExtensions).Assembly;
+
+        assembly.GetType(optionsTypeFullName).ShouldBeNull();
+
+        var services = new ServiceCollection();
+        services.AddContextualRequestPopulation();
+
+        services.ShouldNotContain(d => d.ServiceType.FullName == optionsTypeFullName);
+    }
+
     // --- AddContextualRequestPopulation (DI registration) ------------------------------------------------------
 
     [Fact]
@@ -245,6 +261,20 @@ public class ContextualRequestPopulationTests
         var services = new ServiceCollection();
 
         services.AddContextualRequestPopulation().ShouldBeSameAs(services);
+    }
+
+    // DRK-1580: the `configure` callback (and the options type it configures) is being removed — the method
+    // becomes a plain, parameterless-beyond-`this` registration extension.
+    [Fact]
+    public void AddContextualRequestPopulation_ExposesNoConfigureParameter()
+    {
+        var method = typeof(ContextualRequestPopulationServiceCollectionExtensions)
+            .GetMethod(nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation));
+
+        method.ShouldNotBeNull();
+        var parameters = method.GetParameters();
+        parameters.Length.ShouldBe(1);
+        parameters[0].ParameterType.ShouldBe(typeof(IServiceCollection));
     }
 
     #endregion

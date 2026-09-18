@@ -255,6 +255,33 @@ public class ContextualRequestPopulationEndToEndTests
         await app.StopAsync();
     }
 
+    // DRK-1580 regression guard: with RequireAuthorization off and no fallback mechanism configured, an
+    // unresolved member holds its type default — the removal of the fallback substitution must not change this.
+    [Fact]
+    public async Task RequireAuthorizationFalse_NoClaimResolvable_NoFallbackConfigured_HandlerObservesTypeDefault()
+    {
+        var builder = CreateBuilder();
+        builder.Services.AddContextualRequestPopulation();
+        var app = builder.Build();
+        app.UseEndpointConfigs(
+            o =>
+            {
+                o.EnableVersioning = false;
+                o.RequireAuthorization = false;
+            },
+            typeof(ProbeEndpointConfig).Assembly);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.PostAsJsonAsync("/probe/by-user", new ByUserProbeCommand());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<WidgetResult>();
+        body.ShouldNotBeNull();
+        body.Name.ShouldBe("(null)"); // unresolved member holds its default; RequireAuthorization has no say (R1)
+        await app.StopAsync();
+    }
+
     // --- Item 9: multiple declared members, each from its own claim -------------------------------------------
 
     [Fact]
