@@ -81,27 +81,31 @@ public class EndpointGroupScopeTests
     }
 
     // --- Scenario: One declaration covers several methods -------------------------------------------------------
-    // NOTE: green from the start for all three examples — the spec's outline only exercises the caller who HOLDS
-    // "accounts.write", and the group's blanket RequireAuthorization() already lets any signed-in caller through
-    // today, so this scenario as written cannot yet distinguish "scope enforced" from "not enforced". It stays a
-    // real regression guard (it must still pass once enforcement exists) but proves nothing new on its own.
+    // The discriminating Given is the caller's claim set (brief §7): a caller lacking "accounts.write" must be
+    // refused on all three methods, or the scenario could pass on blanket sign-in alone without enforcing anything.
 
     [Theory]
-    [InlineData("POST", "/v1/scoped-multi-method/item")]
-    [InlineData("PUT", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111")]
-    [InlineData("DELETE", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111")]
-    public async Task Scenario2_OneDeclarationCoversSeveralMethods_TreasuryOpsHoldingAccountsWriteSucceeds(
+    [InlineData("POST", "/v1/scoped-multi-method/item", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("PUT", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("DELETE", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.write", HttpStatusCode.OK)]
+    [InlineData("POST", "/v1/scoped-multi-method/item", "accounts.read", HttpStatusCode.Forbidden)]
+    [InlineData("PUT", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.read", HttpStatusCode.Forbidden)]
+    [InlineData("DELETE", "/v1/scoped-multi-method/item/11111111-1111-1111-1111-111111111111", "accounts.read", HttpStatusCode.Forbidden)]
+    public async Task Scenario2_OneDeclarationCoversSeveralMethods_TreasuryOpsScopeDecidesOutcome(
         string method,
-        string url)
+        string url,
+        string callerScope,
+        HttpStatusCode expectedStatus)
     {
         var builder = CreateBuilder(o =>
         {
             o.Authenticated = true;
             o.UserName = "treasury-ops";
-            o.Claims = [new Claim("scope", "accounts.write")];
+            o.Claims = [new Claim("scope", callerScope)];
         });
         builder.Services.AddAuthorizationBuilder()
-            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"));
+            .AddPolicy("accounts.write", p => p.RequireClaim("scope", "accounts.write"))
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"));
         var app = builder.Build();
         app.UseEndpointConfigs(assemblies: typeof(ScopedMultiMethodEndpointConfig).Assembly);
         await app.StartAsync();
@@ -109,7 +113,7 @@ public class EndpointGroupScopeTests
 
         var response = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(expectedStatus);
         await app.StopAsync();
     }
 
@@ -195,6 +199,33 @@ public class EndpointGroupScopeTests
         var response = await client.GetAsync("/v1/scoped-read-write/item");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await app.StopAsync();
+    }
+
+    // --- Scenario: A method with no declared scope stops the host at startup ------------------------------------
+    // ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete is an AsyncLocal set only around this test's own
+    // synchronous UseEndpointConfigs call (Map runs inside it, before any await) and reset in a finally — every
+    // other test in this assembly discovers the same fixture fully covered (see the fixture's own remarks).
+
+    [Fact]
+    public async Task Scenario6_MethodWithNoDeclaredScope_StopsHostAtStartup_NamingRouteAndDelete()
+    {
+        var builder = CreateBuilder(o => o.Authenticated = true);
+        var app = builder.Build();
+        ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(ConditionallyUncoveredEndpointConfig).Assembly);
+        }
+        finally
+        {
+            ConditionallyUncoveredEndpointConfig.ServeUndeclaredDelete.Value = false;
+        }
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => app.StartAsync());
+
+        exception.Message.ShouldContain("scoped-conditionally-uncovered/item");
+        exception.Message.ShouldContain("DELETE");
         await app.StopAsync();
     }
 }

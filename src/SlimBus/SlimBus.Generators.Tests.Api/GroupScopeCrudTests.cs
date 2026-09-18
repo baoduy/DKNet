@@ -133,4 +133,21 @@ public sealed class GroupScopeCrudTests(GroupScopeCrudTestHost host) : IClassFix
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
+
+    // The discriminating Given is the caller's claim set (brief §7): a caller lacking "accounts.write" must be
+    // refused, or this scenario could pass on blanket sign-in alone without enforcing anything.
+    [Fact]
+    public async Task Scenario3_GeneratedCreateRouteCoveredByGroupDeclaration_TreasuryOpsLackingAccountsWriteIsForbidden()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/scoped-gadgets")
+        {
+            Content = JsonContent.Create(new { name = "g", price = 1m })
+        };
+        request.Headers.Add(ScopedTestAuthHandler.UserHeader, "treasury-ops");
+        request.Headers.Add(ScopedTestAuthHandler.ScopesHeader, "accounts.read");
+
+        var response = await host.Client.SendAsync(request);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
 }

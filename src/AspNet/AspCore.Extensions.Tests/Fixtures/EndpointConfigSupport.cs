@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading;
 using DKNet.AspCore.Extensions;
 using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.AspCore.Extensions.ModelBinding;
@@ -466,6 +467,32 @@ public sealed class AnonymousRouteEndpointConfig : IEndpointConfig
 
     public void Map(RouteGroupBuilder group) =>
         group.MapGet("/item", () => Results.Ok()).AllowAnonymous();
+}
+
+/// <summary>
+///     Declares "ops.manage" for GET and PUT above the group; serves an undeclared DELETE only when
+///     <see cref="ServeUndeclaredDelete" /> is set for the calling flow (DRK-1542 §5 "A method with no declared
+///     scope stops the host at startup"). <c>Map</c> runs synchronously inside the caller's own
+///     <c>UseEndpointConfigs</c> call (<c>EndpointConfigExtensions.cs</c>'s materialized
+///     <c>configs.Select(config =&gt; app.MapEndpointConfig(...))</c>), so an <see cref="AsyncLocal{T}" /> set and
+///     reset around ONE test's call is invisible to every other host built from this shared assembly — only that
+///     one test serves the uncovered DELETE; every other discovery of this fixture stays fully covered.
+/// </summary>
+[EndpointGroupScopeAttribute("ops.manage", EndpointHttpMethods.Get, EndpointHttpMethods.Put)]
+public sealed class ConditionallyUncoveredEndpointConfig : IEndpointConfig
+{
+    /// <summary>Set (and reset) only by the test exercising the uncovered-DELETE startup refusal.</summary>
+    public static readonly AsyncLocal<bool> ServeUndeclaredDelete = new();
+
+    public string GroupEndpoint => "/scoped-conditionally-uncovered";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        group.MapGet("/item", () => Results.Ok());
+        group.MapPut("/item", () => Results.Ok());
+        if (ServeUndeclaredDelete.Value)
+            group.MapDelete("/item", () => Results.Ok());
+    }
 }
 
 /// <summary>Options for <see cref="TestAuthHandler" /> — set per-test, no shared/static state.</summary>
