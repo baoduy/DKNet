@@ -115,13 +115,26 @@ caller can never actually supply them — with one exception, the header paramet
 `[FromRequestHeader]` member publishes, described next.
 
 A declared member the registered resolvers cannot resolve always holds its type's default —
-there is no built-in substitute value. A host that wants a value of its own, for example a
-system-account identity on an anonymous group, supplies it by registering its own
-`IContextualValueResolver` **before** `AddContextualRequestPopulation()`: the first resolver whose
-`CanResolve` matches a member's source wins, so a resolver registered ahead of the built-in
-`ClaimValueResolver`/`RequestHeaderValueResolver` takes precedence over them.
+there is no built-in substitute value. `CanResolve` keys on the declaration's **attribute type**,
+not on the individual member and not on whether a value is actually available, and population
+consults exactly the *first* resolver whose `CanResolve` matches — it never chains to a second one.
+Registering a resolver ahead of `AddContextualRequestPopulation()` therefore **replaces** the
+built-in resolver for that attribute type outright, for every member declaring it — including an
+authenticated caller who has the real claim. A host that wants a value of its own, for example a
+system-account identity on an anonymous group, must perform the built-in lookup itself before
+substituting, or its resolver silently displaces `ClaimValueResolver` for every `[FromClaim]`
+member on every request:
 
 ```csharp
+public sealed class SystemAccountValueResolver : IContextualValueResolver
+{
+    public bool CanResolve(IContextualSource source) => source is FromClaimAttribute;
+
+    public string? Resolve(IContextualSource source, HttpContext httpContext) =>
+        httpContext.User.FindFirst(((FromClaimAttribute)source).ClaimType)?.Value
+        ?? "system-account"; // only the caller who truly has no claim gets the substitute
+}
+
 builder.Services.AddScoped<IContextualValueResolver, SystemAccountValueResolver>();
 builder.Services.AddContextualRequestPopulation();
 ```

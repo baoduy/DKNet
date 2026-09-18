@@ -96,10 +96,14 @@ on it:
 - **A missing header is not a refusal.** The member holds its type's default and the request is
   still dispatched. Requiring a header stays the job of a filter or a validator.
 - **There is no built-in fallback value.** An absent header always leaves the member's type
-  default. A host that wants a value of its own instead — a system-account identity, say — supplies
-  it by registering its own `IContextualValueResolver` before `AddContextualRequestPopulation()`;
-  the first resolver whose `CanResolve` matches wins. If that resolver returns the same constant for
-  every caller who omits the header, that matters if you use the member as an idempotency key.
+  default. `CanResolve` keys on the attribute type, and population consults only the first matching
+  resolver — never more than one. A host that wants a value of its own instead must register a
+  resolver that performs the header lookup itself and substitutes only when it comes back empty
+  (`httpContext.Request.Headers.TryGetValue(...) ... ?? "system-account"`); registering one ahead of
+  `AddContextualRequestPopulation()` **replaces** the built-in resolver for that attribute entirely,
+  for every request declaring it, not only the ones missing the header. If the constant it
+  substitutes is the same for every caller who omits the header, that matters if you use the member
+  as an idempotency key.
 - **A header is never an authorization signal.** Unlike a claim, a header is supplied by the
   caller. The declaration is a binding convenience; a service that treated it as proof of identity
   would be trusting the caller.

@@ -20,10 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of a filter. A header-filled member **takes the configured `SystemAccountFallback`** wherever a claim-filled
   one would (a fallback is set and the group's `RequireAuthorization` is `false`), which means an absent header
   leaves a *constant* value there rather than an empty one — something a service using the member as an
-  idempotency key needs to account for. And a **header is never an authorization signal**: unlike a claim it is
-  supplied by the caller, so the declaration is a binding convenience only, never proof of identity. The
-  published OpenAPI operation declares the header as an `in: header` parameter — unlike `[FromClaim]`, which is
-  hidden entirely, the caller has to know to send it — while the member itself stays absent from the published
+  idempotency key needs to account for (this describes the mechanism as it stood when this note was written;
+  that knob is removed later in this same `[Unreleased]` cycle, see [Removed](#removed) below). And a **header
+  is never an authorization signal**: unlike a claim it is supplied by the caller, so the declaration is a
+  binding convenience only, never proof of identity. The published OpenAPI operation declares the header as an
+  `in: header` parameter — unlike `[FromClaim]`, which is hidden entirely, the caller has to know to send it —
+  while the member itself stays absent from the published
   request body. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 - The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
   member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
@@ -240,9 +242,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are gone, and `AddContextualRequestPopulation()` no longer takes a configure delegate. A declared contextual
   member the registered resolvers cannot resolve now always holds its type's default — there is no built-in
   substitute value. Migrate by registering your own `IContextualValueResolver` **before**
-  `AddContextualRequestPopulation()`: the first resolver whose `CanResolve` matches a member's source wins, so a
-  resolver you add ahead of the built-in `ClaimValueResolver`/`RequestHeaderValueResolver` takes precedence over
-  them. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
+  `AddContextualRequestPopulation()` — but note that `CanResolve` keys on the declaration's attribute type, and
+  population consults only the first matching resolver, so registering one ahead of the built-in
+  `ClaimValueResolver`/`RequestHeaderValueResolver` **replaces** it entirely for every member declaring that
+  attribute, not only the ones missing a value. Your resolver must perform the built-in lookup itself
+  (`httpContext.User.FindFirst(claimType)?.Value ?? "system-account"`, or the header equivalent) before
+  substituting, or it silently overrides every caller who *does* have the claim or header. See
+  [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
