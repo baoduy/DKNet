@@ -195,9 +195,12 @@ public static class EndpointConfigExtensions
             options.ConfigureGroup?.Invoke(group, config);
 
             if (options.RequireAuthorization)
-                group = string.IsNullOrEmpty(config.AuthPolicy)
-                    ? group.RequireAuthorization()
-                    : group.RequireAuthorization(config.AuthPolicy);
+            {
+                group = group.RequireAuthorization();
+
+                foreach (var scopeAttribute in config.GetType().GetCustomAttributes<EndpointGroupScopeAttribute>())
+                    GroupScopeAuthorization.DeclareGroupScope(group, scopeAttribute.Scope, scopeAttribute.HttpMethods);
+            }
 
             config.Map(group);
             return group;

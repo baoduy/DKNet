@@ -153,7 +153,7 @@ surface. Defaults are the ones the code applies when you pass nothing.
 |---|---|---|---|
 | `RouteTemplate` | `Func<IEndpointConfig, string>?` | `null` | `null` uses `/v{version:apiVersion}{GroupEndpoint}` with versioning on, or `{GroupEndpoint}` with it off. |
 | `DefaultTag` | `string` | `"Root"` | OpenAPI tag used when a config's `Tag` resolves to an empty string. |
-| `RequireAuthorization` | `bool` | `true` | Applies `RequireAuthorization(config.AuthPolicy)` to every group. Turning it off is also what enables `SystemAccountFallback`. |
+| `RequireAuthorization` | `bool` | `true` | Applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` (below) to add per-method or group-default scopes. Turning it off is also what enables `SystemAccountFallback`, and makes `[EndpointGroupScope]` inert — no attribute read, no scope enforced, no startup refusal. |
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()`, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Host setup per group. Runs after tags/version metadata, before authorization and before `IEndpointConfig.Map`. |
 | `assemblies` (method parameter) | `params Assembly[]` | empty → every currently loaded assembly | Assemblies scanned for `IEndpointConfig` implementations. |
@@ -226,7 +226,6 @@ builder.Services.AddErrorResponses(o =>
 |---|---|---|
 | `GroupEndpoint` | none — required | Route segment after the version prefix, e.g. `"/products"`. |
 | `Map(RouteGroupBuilder)` | none — required | Where the group's endpoints are registered. |
-| `AuthPolicy` | `null` | Policy name for the group; null/empty means authentication with no policy. Ignored when `RequireAuthorization` is `false`. |
 | `Tag` | `GroupEndpoint` with `/` → `-`, leading `-` trimmed | OpenAPI tag. Empty falls back to `DefaultTag`. |
 | `Version` | `1` | API version, and the `v{n}` in the route. |
 
@@ -272,6 +271,7 @@ Attributes and other extension points:
 
 | Knob | Kind | Default | Effect |
 |---|---|---|---|
+| `[EndpointGroupScope(scope, params httpMethods)]` | class attribute above an `IEndpointConfig`, `AllowMultiple` | none | Requires `scope` as the authorization policy for the routes the group serves. Naming no `httpMethods` (constants on `EndpointHttpMethods`, e.g. `EndpointHttpMethods.Get`) makes `scope` the group's **default** — required for every method it serves; naming one or more methods requires `scope` only for those, winning over the default for its own methods. Stack one attribute per scope. A route's own `RequireAuthorization(...)` or `AllowAnonymous()` wins over both forms. A served method with no per-method declaration, no group default, and no route-level rule fails the host at startup, naming the route and the method — a group carrying a default is never refused this way. **Replaces the removed `IEndpointConfig.AuthPolicy`** (breaking change): `public string? AuthPolicy => "products:write";` becomes `[EndpointGroupScope("products:write")]` above the class; a group that had `AuthPolicy => null` needs no replacement. No effect when `RequireAuthorization` is `false`. |
 | `[FromClaim(claimType)]` | property attribute, one required ctor argument | none | Populates the property from that claim before validation and before the handler; always overwrites the caller's value, and is removed from the published OpenAPI description. The property needs a `set` or `init` or startup throws. |
 | `[FromRequestHeader(headerName)]` | property attribute, one required ctor argument (`HeaderName`) | none | Populates the property from that HTTP request header before validation and before the handler; always overwrites the caller's body value. Header-name matching is case-insensitive, and a header sent more than once fills the member with the first value. A missing header is not a refusal — the member holds its type's default, or `SystemAccountFallback` where that applies. The header *is* published as an `in: header` operation parameter (the member stays out of the published body), and it is never an authorization signal — the caller supplies it. The property needs a `set` or `init` or startup throws. |
 | `IContextualSource` | marker interface on your own attribute | — | Opts a new source kind into the same mechanism. |
