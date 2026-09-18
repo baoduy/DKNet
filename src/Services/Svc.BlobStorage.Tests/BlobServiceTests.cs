@@ -287,6 +287,41 @@ public class BlobServiceTests
         exception.Message.ShouldBe("File size is invalid.");
     }
 
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableWrapped_UnsupportedMembersShouldThrowNotSupportedException()
+    {
+        // Arrange — the wrapper is read-only and non-seekable; every member outside Read/ReadAsync/Flush
+        // must refuse rather than silently no-op.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new NonSeekableStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act & Assert
+        Should.Throw<NotSupportedException>(() => wrapped.Length);
+        Should.Throw<NotSupportedException>(() => wrapped.Position);
+        Should.Throw<NotSupportedException>(() => wrapped.Position = 0);
+        Should.Throw<NotSupportedException>(() => wrapped.Seek(0, SeekOrigin.Begin));
+        Should.Throw<NotSupportedException>(() => wrapped.SetLength(1));
+        Should.Throw<NotSupportedException>(() => wrapped.Write([1], 0, 1));
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableWrapped_CanWriteIsFalseAndFlushIsNoOp()
+    {
+        // Arrange
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new NonSeekableStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act & Assert
+        wrapped.CanWrite.ShouldBeFalse();
+        Should.NotThrow(wrapped.Flush);
+    }
+
     /// <summary>
     ///     A stream that reports <see cref="CanSeek" /> as <c>false</c> and throws on <see cref="Length" />, to
     ///     exercise the non-seekable branch of <c>BlobService.ValidateFile(BlobDetails.BlobStreamData)</c> the way
