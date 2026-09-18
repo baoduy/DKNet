@@ -4,6 +4,7 @@
 // </copyright>
 
 using DKNet.Svc.BlobStorage.Local;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -178,6 +179,55 @@ public class LocalBlobServiceEdgeCaseTests : IDisposable
 
         saved.ShouldBe(fileName);
         File.Exists(Path.Combine(_root, "nested", "deep", "created.txt")).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MissingFolder_LogsResolvedFolderPath()
+    {
+        // Arrange: a capturing logger attached to a service rooted at _root, no "missing-folder" under it.
+        var capturingLogger = new CapturingLogger();
+        var options = Options.Create(new LocalDirectoryOptions { RootFolder = _root });
+        var service = new LocalBlobService(options, capturingLogger);
+        var expectedPath = Path.Combine(_root, "missing-folder");
+
+        // Act
+        var result = await service.DeleteAsync(new BlobRequest("missing-folder") { Type = BlobTypes.Directory });
+
+        // Assert: returns false, exactly one Error record, message carries the resolved path,
+        // not the literal parameter name it currently logs instead.
+        result.ShouldBeFalse();
+        capturingLogger.Records.Count.ShouldBe(1);
+        var record = capturingLogger.Records[0];
+        record.Level.ShouldBe(LogLevel.Error);
+        record.Message.ShouldContain(expectedPath);
+        record.Message.ShouldNotBe("The directory folderLocation was not found");
+        record.FolderLocation.ShouldBe(expectedPath);
+    }
+
+    #endregion
+
+    #region Nested Types
+
+    /// <summary>
+    ///     Minimal capturing <see cref="ILogger{TCategoryName}" /> that records the log level, formatted
+    ///     message, and structured "FolderLocation" value of every emitted record, for assertion.
+    /// </summary>
+    private sealed class CapturingLogger : ILogger<LocalBlobService>
+    {
+        public List<(LogLevel Level, string Message, object? FolderLocation)> Records { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            var folderLocation = state is IEnumerable<KeyValuePair<string, object>> pairs
+                ? pairs.FirstOrDefault(p => p.Key == "FolderLocation").Value
+                : null;
+            Records.Add((logLevel, formatter(state, exception), folderLocation));
+        }
     }
 
     #endregion
