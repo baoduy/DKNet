@@ -5,6 +5,7 @@
 // Description: Local file-system based implementation of the BlobService abstraction for development and testing.
 
 using System.Runtime.CompilerServices;
+using System.Text;
 using DKNet.Svc.BlobStorage.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -100,7 +101,7 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
         if (!Directory.Exists(folderLocation))
         {
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError("The directory {FolderLocation} was not found", nameof(folderLocation));
+                logger.LogError("The directory {FolderLocation} was not found", SanitizeForLog(folderLocation));
             return Task.FromResult(false);
         }
 
@@ -108,6 +109,30 @@ public class LocalBlobService(IOptions<LocalDirectoryOptions> options, ILogger<L
 
         Directory.Delete(folderLocation, true);
         return Task.FromResult(true);
+    }
+
+    /// <summary>
+    ///     Produces a log/display-safe projection of <paramref name="value" /> with all line-breaking and
+    ///     other control characters removed, so caller-controlled path segments cannot forge extra log
+    ///     records (CWE-117). Mirrors <c>IdempotentKeyInfo.ComputeSafeKey</c>.
+    /// </summary>
+    /// <param name="value">The raw value to sanitize before it reaches a log call.</param>
+    /// <returns><paramref name="value" /> with CR, LF, U+2028, U+2029, and every other control character stripped.</returns>
+    private static string SanitizeForLog(string value)
+    {
+        var noNewLines = value
+            .Replace("\r\n", " ", StringComparison.Ordinal)
+            .Replace("\r", " ", StringComparison.Ordinal)
+            .Replace("\n", " ", StringComparison.Ordinal);
+
+        var builder = new StringBuilder(noNewLines.Length);
+        foreach (var c in noNewLines)
+        {
+            if (char.IsControl(c) || c == (char)0x2028 || c == (char)0x2029) continue;
+            builder.Append(c);
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>
