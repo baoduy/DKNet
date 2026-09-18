@@ -16,7 +16,8 @@ hashing, and Base64/Base64URL helpers, all string-in/string-out.
 - **Authenticated encryption without the ceremony.** `IAesGcmEncryption` handles nonce generation, tag handling, and
   packaging into a single Base64 string, so call sites never assemble a cipher envelope by hand.
 - **Correct-by-default primitives.** Fresh random nonce per call, OAEP-SHA256 for RSA, constant-time comparison on every
-  `Verify*` — the choices that are easy to get wrong are already made.
+  `Verify*` and on the AES-GCM `base64Key` overloads' key check — the choices that are easy to get wrong are already
+  made.
 - **UTF-8 strings in, Base64 strings out.** Values fit straight into JSON payloads, configuration, headers, or a
   `varchar` column with no byte-array plumbing.
 - **Nothing else comes with it.** No EF Core, no hosting, no storage dependency — usable from a domain service, a console
@@ -87,7 +88,10 @@ var plain = aes.DecryptString(package);
 The returned package is Base64 of `nonce:tag:cipher` (each part itself Base64) — treat it as opaque and pass it around
 whole. Pass `associatedData` (AAD) when tamper detection should cover context outside the ciphertext; decrypting with
 different AAD throws `CryptographicException`. The `Encrypt`/`Decrypt` overloads that take a `base64Key` throw
-`InvalidOperationException` when it does not match the instance's own key — they never silently re-key.
+`InvalidOperationException` when it does not match the instance's own key — they never silently re-key. The
+comparison decodes both keys and runs `CryptographicOperations.FixedTimeEquals` on the resulting bytes, so a wrong
+key takes the same time to reject no matter how much of it happened to be right, and a base64 string that decodes
+to the same bytes as the instance's own key is accepted even if the two strings differ textually.
 
 ### RSA (`IRsaEncryption`) — asymmetric encrypt and sign
 
@@ -226,7 +230,7 @@ These are not configurable and are worth knowing before you design around them:
 | RSA encryption padding | OAEP-SHA256 |
 | RSA signature | SHA-256 with PKCS#1 v1.5 |
 | Key export format | Raw PKCS#1 DER, Base64 — not PEM |
-| Verification comparison | `CryptographicOperations.FixedTimeEquals` |
+| Verification comparison | `CryptographicOperations.FixedTimeEquals` — also used for the AES-GCM `base64Key` overloads' key check |
 
 ## 🧱 Where it fits
 

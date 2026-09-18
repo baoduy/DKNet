@@ -83,7 +83,8 @@ application uses. The two cipher methods throw `ArgumentException` for a null, e
 Fixed, non-configurable choices: AES-GCM uses a fresh 12-byte nonce and a 16-byte tag per call and packages
 the result as Base64 of `base64(nonce):base64(tag):base64(cipher)`; RSA uses OAEP-SHA256 for encryption and
 SHA-256 with PKCS#1 v1.5 for signatures; keys are exported as raw PKCS#1 DER in Base64, not PEM; every
-`Verify*` compares with `CryptographicOperations.FixedTimeEquals`.
+`Verify*` compares with `CryptographicOperations.FixedTimeEquals`; so does the `base64Key` overload key check, so a
+wrong key is rejected in constant time and a byte-identical but textually different base64 key is accepted.
 
 ## Documentation
 

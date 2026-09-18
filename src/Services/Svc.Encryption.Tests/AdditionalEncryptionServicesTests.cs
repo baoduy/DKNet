@@ -94,6 +94,66 @@ public class AdditionalEncryptionServicesTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Encrypt_ByteIdenticalKey_Succeeds()
+    {
+        using var gcm = new AesGcmEncryption();
+        var byteIdenticalKey = gcm.Key.Insert(4, "\n");
+        var cipher = gcm.Encrypt("byte-identical", byteIdenticalKey);
+        gcm.DecryptString(cipher).ShouldBe("byte-identical");
+    }
+
+    [Fact]
+    public void Decrypt_ByteIdenticalKey_Succeeds()
+    {
+        using var gcm = new AesGcmEncryption();
+        var byteIdenticalKey = gcm.Key.Insert(4, "\n");
+        var cipher = gcm.EncryptString("byte-identical");
+        gcm.Decrypt(cipher, byteIdenticalKey).ShouldBe("byte-identical");
+    }
+
+    [Fact]
+    public void Decrypt_WrongKey_Throws()
+    {
+        using var g1 = new AesGcmEncryption();
+        using var g2 = new AesGcmEncryption();
+        var cipher = g1.EncryptString("x");
+        var ex = Should.Throw<InvalidOperationException>(() => g1.Decrypt(cipher, g2.Key));
+        ex.Message.ShouldContain("DecryptString()");
+    }
+
+    [Fact]
+    public void MalformedBase64Key_Throws_InvalidOperation()
+    {
+        using var gcm = new AesGcmEncryption();
+        var cipher = gcm.EncryptString("x");
+        const string malformedKey = "***notbase64***";
+        Should.Throw<InvalidOperationException>(() => gcm.Encrypt("x", malformedKey));
+        Should.Throw<InvalidOperationException>(() => gcm.Decrypt(cipher, malformedKey));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void NullOrBlankKey_Throws_InvalidOperation(string? key)
+    {
+        using var gcm = new AesGcmEncryption();
+        var cipher = gcm.EncryptString("x");
+        Should.Throw<InvalidOperationException>(() => gcm.Encrypt("x", key!));
+        Should.Throw<InvalidOperationException>(() => gcm.Decrypt(cipher, key!));
+    }
+
+    [Fact]
+    public void WrongLengthKey_Throws_InvalidOperation()
+    {
+        var shortKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(10));
+        using var gcm = new AesGcmEncryption();
+        var cipher = gcm.EncryptString("x");
+        Should.Throw<InvalidOperationException>(() => gcm.Encrypt("x", shortKey));
+        Should.Throw<InvalidOperationException>(() => gcm.Decrypt(cipher, shortKey));
+    }
+
+    [Fact]
     public void Hmac256Hashing_Computes_And_Verifies()
     {
         IHmacHashing hmac = new HmacHashing();
