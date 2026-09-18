@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
@@ -98,7 +97,7 @@ internal sealed class EfCoreAuditHook(
     ///     <see cref="BeforeSaveAsync" /> inside the same save transaction, and drain that table with a
     ///     separate dispatcher.
     /// </remarks>
-    private async Task PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken)
+    private async Task PublishLogsAsync(DbContext context, IReadOnlyCollection<AuditLogEntry> logs, CancellationToken cancellationToken)
     {
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
         foreach (var publisher in publishers)
@@ -111,20 +110,9 @@ internal sealed class EfCoreAuditHook(
             {
                 if (!logger.IsEnabled(LogLevel.Error)) continue;
 
-                string? payload = null;
-                try
-                {
-                    payload = JsonSerializer.Serialize(logs);
-                }
-                catch
-                {
-                    // Serialization failure must not escape the catch block.
-                }
-
-                if (payload is not null)
-                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries: {AuditLogEntries}", publisher.GetType().Name, payload);
-                else
-                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries count: {AuditLogEntriesCount}", publisher.GetType().Name, logs.Count());
+                var entityNames = string.Join(", ", logs.Select(l => l.EntityName).Distinct());
+                logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entity names: {EntityNames}. Entries count: {AuditLogEntriesCount}",
+                    publisher.GetType().Name, entityNames, logs.Count);
             }
         }
     }

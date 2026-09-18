@@ -56,13 +56,18 @@ internal sealed class SizeLimitedStream(Stream source, long maxLength) : Stream
 
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count) =>
-        ReadAsync(buffer.AsMemory(offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
+        Account(source.Read(buffer, offset, count));
 
     /// <inheritdoc />
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
         var read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+        return Account(read);
+    }
+
+    private int Account(int read)
+    {
         _totalRead += read;
         if (_totalRead > maxLength) throw new FileLoadException("File size is invalid.");
         return read;

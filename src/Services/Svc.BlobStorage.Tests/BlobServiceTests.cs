@@ -250,6 +250,78 @@ public class BlobServiceTests
         exception.Message.ShouldBe("File size is invalid.");
     }
 
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableSyncRead_ShouldCallSourceSyncReadNotAsync()
+    {
+        // Arrange — S1: the synchronous Read override must delegate to the source's synchronous Read
+        // directly, never bridge through ReadAsync().GetAwaiter().GetResult().
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new RecordingNonSeekableStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act
+        var buffer = new byte[64];
+        wrapped.Read(buffer, 0, buffer.Length);
+
+        // Assert
+        source.SyncReadCalls.ShouldBe(1);
+        source.AsyncReadCalls.ShouldBe(0);
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableSyncReadOversized_ShouldThrowFileLoadException()
+    {
+        // Arrange — S2: the synchronous Read path still enforces the ceiling, pinning behaviour
+        // preservation across the sync-over-async removal.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new RecordingNonSeekableStream(new byte[2_000_000]);
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act & Assert
+        using var destination = new MemoryStream();
+        var exception = Should.Throw<FileLoadException>(() => wrapped.CopyTo(destination));
+        exception.Message.ShouldBe("File size is invalid.");
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableWrapped_UnsupportedMembersShouldThrowNotSupportedException()
+    {
+        // Arrange — the wrapper is read-only and non-seekable; every member outside Read/ReadAsync/Flush
+        // must refuse rather than silently no-op.
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new NonSeekableStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act & Assert
+        Should.Throw<NotSupportedException>(() => wrapped.Length);
+        Should.Throw<NotSupportedException>(() => wrapped.Position);
+        Should.Throw<NotSupportedException>(() => wrapped.Position = 0);
+        Should.Throw<NotSupportedException>(() => wrapped.Seek(0, SeekOrigin.Begin));
+        Should.Throw<NotSupportedException>(() => wrapped.SetLength(1));
+        Should.Throw<NotSupportedException>(() => wrapped.Write([1], 0, 1));
+    }
+
+    [Fact]
+    public void ValidateFile_Stream_NonSeekableWrapped_CanWriteIsFalseAndFlushIsNoOp()
+    {
+        // Arrange
+        var options = new BlobServiceOptions { MaxFileSizeInMb = 1 };
+        var service = new TestBlobService(options);
+        var source = new NonSeekableStream("test content"u8.ToArray());
+        var blobData = new BlobDetails.BlobStreamData("test.txt", source);
+        var wrapped = service.TestValidateFile(blobData);
+
+        // Act & Assert
+        wrapped.CanWrite.ShouldBeFalse();
+        Should.NotThrow(wrapped.Flush);
+    }
+
     /// <summary>
     ///     A stream that reports <see cref="CanSeek" /> as <c>false</c> and throws on <see cref="Length" />, to
     ///     exercise the non-seekable branch of <c>BlobService.ValidateFile(BlobDetails.BlobStreamData)</c> the way
@@ -272,6 +344,51 @@ public class BlobServiceTests
 
         public override void Flush() => _inner.Flush();
         public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    ///     A non-seekable stream that counts sync <see cref="Read(byte[],int,int)" /> calls and async
+    ///     <see cref="ReadAsync(Memory{byte},CancellationToken)" /> calls separately, to prove S1: the
+    ///     synchronous <c>SizeLimitedStream.Read</c> must not bridge to the async path. Overrides both members
+    ///     explicitly — the base <see cref="Stream" /> class routes one into the other when only one is
+    ///     overridden, which would make the counters lie.
+    /// </summary>
+    private sealed class RecordingNonSeekableStream(byte[] data) : Stream
+    {
+        private readonly MemoryStream _inner = new(data);
+
+        public int SyncReadCalls { get; private set; }
+
+        public int AsyncReadCalls { get; private set; }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => _inner.Flush();
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            SyncReadCalls++;
+            return _inner.Read(buffer, offset, count);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            AsyncReadCalls++;
+            return _inner.ReadAsync(buffer, cancellationToken);
+        }
+
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();

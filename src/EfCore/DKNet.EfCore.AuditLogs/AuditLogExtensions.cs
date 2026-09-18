@@ -140,7 +140,7 @@ internal static class AuditLogExtensions
             var clrProp = prop.Metadata.PropertyInfo;
             var propIgnore = clrProp.HasAttribute<IgnoreAuditLogAttribute>();
             var attributed = clrProp.HasAttribute<AuditLogAttribute>();
-            var declaredSensitive = clrProp.HasAttribute<SensitiveDataAttribute>();
+            var declaredSensitive = clrProp.HasAttribute<SensitiveDataAttribute>() || SensitiveDataPatterns.IsEncrypted(clrProp);
             var sensitive = declaredSensitive || (!attributed && SensitiveDataPatterns.IsSensitive(clrProp));
 
             properties[prop.Metadata.Name] = new PropertyAuditPlan(propIgnore, sensitive);

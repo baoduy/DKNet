@@ -9,7 +9,8 @@ deleted entity, and hands the batch to publishers you register.
   mapped scalar properties for you, instead of that loop being copy-pasted into each `DbContext`.
 - **Sensitive values are redacted by default** — property names matching a built-in deny-list (`password`, `token`,
   `apikey`, `ssn`, `creditcard`, …) and any `SecureString` property are captured as `"***REDACTED***"`, so an audit
-  trail cannot silently become a credential leak.
+  trail cannot silently become a credential leak. A property carrying an `[Encrypted]`
+  (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`) attribute is redacted the same way, unconditionally.
 - **Declarative opt-in and opt-out** — `[AuditLog]`, `[IgnoreAuditLog]`, and `[SensitiveData]` on the entity decide
   what is captured, so the policy lives next to the model rather than in audit plumbing.
 - **The audit identity is your application's, not the tenant's** — register an `ICurrentUserProvider` and the same
@@ -171,6 +172,11 @@ rules above cover entity property values, not the audit identity itself. An appl
 rule (GDPR, PDPA) should therefore return a stable, non-personal identifier such as the token subject id
 (`"sub-8f21c0"`), rather than an email address or any other directly identifying value.
 
+This does not apply to the error log written when a publisher throws (see
+[Gotchas & limits](#-gotchas--limits)): that log names the publisher, the entity name(s), and the entry count —
+it no longer serializes the failed batch's entry values, so a publisher failure cannot itself leak a redacted or
+unredacted value into the application log.
+
 ### `IAuditLogPublisher` — where the entries go
 
 ```csharp
@@ -215,11 +221,20 @@ var publishers = serviceProvider.GetAuditLogPublishers<AppDbContext>();
 
 `SensitiveDataPatterns` (internal to this package) is a hardcoded deny-list of name fragments — `password`, `secret`, `token`, `apikey`, `api_key`, `ssn`, `socialsecuritynumber`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`, `passphrase`, `accesskey`, `salt` — matched case-insensitively against the property name, plus any property of CLR type `System.Security.SecureString`. A match causes the field's `OldValue`/`NewValue` to be replaced with the sentinel string `"***REDACTED***"` in the captured `AuditFieldChange` — the field still appears in `Changes` (so you can see it changed) but never its value.
 
-This interacts with three attributes defined in `DKNet.EfCore.Abstractions.Attributes`:
+This interacts with three attributes defined in `DKNet.EfCore.Abstractions.Attributes`, plus `[Encrypted]` from `DKNet.EfCore.Encryption`:
 
 - **`[IgnoreAuditLog]`** (class or property) — excludes the entity or property from audit capture entirely; an ignored property never appears in `Changes` at all, redacted or not. An entity type marked at class level produces no `AuditLogEntry` regardless of `AuditLogBehaviour`.
-- **`[AuditLog]`** (class or property) — at class level, required for the entity to be audited under `AuditLogBehaviour.OnlyAttributedAuditedEntities` (see [Configuration reference](#-configuration-reference)). At property level, it forces plaintext capture of that property under `AuditPropertyPolicy.RedactSensitive` even if its name matches a sensitive pattern — but it does **not** override `[SensitiveData]` on the same property.
+- **`[AuditLog]`** (class or property) — at class level, required for the entity to be audited under `AuditLogBehaviour.OnlyAttributedAuditedEntities` (see [Configuration reference](#-configuration-reference)). At property level, it forces plaintext capture of that property under `AuditPropertyPolicy.RedactSensitive` even if its name matches a sensitive pattern — but it does **not** override `[SensitiveData]` or `[Encrypted]` on the same property.
 - **`[SensitiveData]`** (property only) — always redacts the property's value, unconditionally, even if the same property also carries `[AuditLog]`. Use it for values that don't match the built-in name patterns but must never appear in an audit trail (e.g. a `Notes` field that happens to hold PII).
+- **`[Encrypted]`** (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`, property only) — a property encrypted at rest via [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) is redacted unconditionally, exactly like `[SensitiveData]`, winning over `[AuditLog]` on the same property. This package matches by attribute **type name**, not type identity — it takes no project reference on `DKNet.EfCore.Encryption` — so any attribute of your own named `EncryptedAttribute` also triggers redaction here.
+
+```csharp
+public sealed class Customer : AuditedEntity<Guid>
+{
+    [Encrypted] // encrypted at rest, and always redacted in the audit trail
+    public string? TaxId { get; set; }
+}
+```
 
 Redaction here is unchanged by role-gated API filtering. `[SensitiveData]` now accepts optional role names, but this package ignores them: a declared-sensitive value is redacted in every audit entry, for every reader, exactly as before. What the roles do — withhold the property from an API response for callers who don't hold one — is `DKNet.EfCore.Extensions`' opt-in and never touches audit capture; see [Withhold sensitive properties from unauthorised callers](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers). The reverse is also worth stating plainly: **the built-in name deny-list is an audit-log default only.** A property redacted because its name contains `token` or `apikey`, with no attribute on it, is still returned in full by the API — the response filter acts on an explicit `[SensitiveData]` declaration and nothing else. That gap is a deliberate, accepted decision rather than an oversight; close it for a given property by declaring it `[SensitiveData]`.
 
@@ -294,7 +309,7 @@ gate driven by `AuditPropertyPolicy` and the redactor:
 - **Redaction hides values, not the fact of a change.** A redacted field still appears in `Changes` with both `OldValue` and `NewValue` set to `"***REDACTED***"`, so the entry tells you a sensitive field changed but never what it changed to — and it can no longer tell you whether the new value actually differs from the old one.
 - **Creates carry no field diff.** `Action == AuditLogAction.Created` entries always have an empty `Changes` list by design — if you need a full snapshot of a newly created entity, a publisher must fetch it separately using `Keys`.
 - **Publishing is awaited, not fire-and-forget.** `AfterSaveAsync` awaits every registered publisher in turn, so a slow or blocking `IAuditLogPublisher` adds directly to `SaveChangesAsync` latency for every save that produced audit entries. Keep publishers fast, or hand off to a background queue from inside your publisher.
-- **Publisher exceptions are swallowed, not surfaced.** A throwing `PublishAsync` is caught, optionally logged (if an `ILogger<EfCoreAuditHook>` is configured, at `Error` level, best-effort including a JSON dump of the failed batch), and does not fail the save — other registered publishers still run. This is an accepted trade-off, not a bug: `PublishLogsAsync` runs from `AfterSaveAsync`, after the write has already committed, so there is no recovery path for a dropped audit entry — a failure here cannot roll back the save, and by the time it happens the one chance to persist the audit entry atomically with the write is already gone. Retrying or queuing *inside* `IAuditLogPublisher` doesn't close that gap, since the entry it would retry was never durably recorded in the first place. If you need at-least-once delivery of audit logs, don't rely on this hook for it — write the entries to an outbox table from a `BeforeSaveHookAsync` inside the *same* save transaction as the entity write, and drain that table with a separate dispatcher.
+- **Publisher exceptions are swallowed, not surfaced.** A throwing `PublishAsync` is caught, optionally logged (if an `ILogger<EfCoreAuditHook>` is configured, at `Error` level — naming the publisher, the entity name(s), and the entry count, never the entries' values), and does not fail the save — other registered publishers still run. This is an accepted trade-off, not a bug: `PublishLogsAsync` runs from `AfterSaveAsync`, after the write has already committed, so there is no recovery path for a dropped audit entry — a failure here cannot roll back the save, and by the time it happens the one chance to persist the audit entry atomically with the write is already gone. Retrying or queuing *inside* `IAuditLogPublisher` doesn't close that gap, since the entry it would retry was never durably recorded in the first place. If you need at-least-once delivery of audit logs, don't rely on this hook for it — write the entries to an outbox table from a `BeforeSaveHookAsync` inside the *same* save transaction as the entity write, and drain that table with a separate dispatcher.
 - **Performance cost scales with tracked entities and properties per `SaveChangesAsync` call.** `BeforeSaveAsync` walks every tracked `Added`/`Modified`/`Deleted` entry and every one of its mapped scalar properties (with a reflection-based attribute check per property) on every save. Narrowing scope with `AuditLogBehaviour.OnlyAttributedAuditedEntities` and/or `AuditPropertyPolicy.OnlyAttributedProperties` reduces that cost for hot paths.
 - **Navigation properties and collections are not diffed.** Only the scalar/mapped properties on `entry.Properties` are captured; related-entity changes are audited independently, on their own `AuditLogEntry`, if the related entity itself implements `IAuditedProperties`.
 - **`ICurrentUserProvider` is application-wide, and the first registration wins.** `AddCurrentUserProvider<TDbContext, TProvider>()` registers the provider un-keyed behind an `IsRegistered<ICurrentUserProvider>()` guard, so a second call with a *different* `TProvider` silently keeps the first one — only the hook attachment to the new `TDbContext` takes effect. There is no per-`DbContext` current-user provider.

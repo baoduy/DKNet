@@ -87,7 +87,7 @@ public class EfCoreAuditHookPublishingTests
     }
 
     [Fact]
-    public async Task FailingPublisher_LogsError_ContainingSerializedEntries()
+    public async Task FailingPublisher_LogsError_WithEntityNameAndCount()
     {
         var logProvider = new CapturingLoggerProvider();
         await using var provider = BuildProvider(s =>
@@ -105,10 +105,11 @@ public class EfCoreAuditHookPublishingTests
 
         await ctx.SaveChangesAsync(); // must not throw
 
+        // The failure log must name the entity type, but never a field value (LOG-002 / R5) — "payload-creator"
+        // is the CreatedBy value that today's full JSON serialization still leaks into the message.
         logProvider.Messages.ShouldContain(m =>
-            m.Level == LogLevel.Error &&
-            m.Message.Contains("TestAuditEntity") &&
-            m.Message.Contains("payload-creator"));
+            m.Level == LogLevel.Error && m.Message.Contains("TestAuditEntity"));
+        logProvider.Messages.ShouldNotContain(m => m.Message.Contains("payload-creator"));
     }
 
     [Fact]

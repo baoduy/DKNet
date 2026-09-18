@@ -73,8 +73,9 @@ Attribute-level control comes from `DKNet.EfCore.Abstractions`:
 |---|---|---|
 | `[IgnoreAuditLog]` | class or property | Excluded unconditionally, whatever the behaviour and policy. |
 | `[AuditLog]` | class | Opts the entity in under `OnlyAttributedAuditedEntities`. |
-| `[AuditLog]` | property | Forces plaintext past the sensitive-name patterns, and allow-lists it under `OnlyAttributedProperties`. |
+| `[AuditLog]` | property | Forces plaintext past the sensitive-name patterns, and allow-lists it under `OnlyAttributedProperties` — but never overrides `[SensitiveData]` or `[Encrypted]` on the same property. |
 | `[SensitiveData]` | property | Always redacted, even alongside `[AuditLog]`. |
+| `[Encrypted]` (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`) | property | Always redacted, even alongside `[AuditLog]` — matched by attribute type name, so this package needs no reference to `DKNet.EfCore.Encryption`. |
 
 The built-in sensitive-name fragments are `password`, `secret`, `token`, `apikey`, `api_key`, `ssn`,
 `socialsecuritynumber`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`, `passphrase`, `accesskey`
