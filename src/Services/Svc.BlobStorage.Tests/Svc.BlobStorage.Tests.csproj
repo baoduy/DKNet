@@ -36,6 +36,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Core\DKNet.Fw.Extensions\DKNet.Fw.Extensions.csproj"/>
+        <ProjectReference Include="..\DKNet.Svc.BlobStorage.Abstractions\DKNet.Svc.BlobStorage.Abstractions.csproj"/>
         <ProjectReference Include="..\DKNet.Svc.BlobStorage.AwsS3\DKNet.Svc.BlobStorage.AwsS3.csproj"/>
         <ProjectReference Include="..\DKNet.Svc.BlobStorage.AzureStorage\DKNet.Svc.BlobStorage.AzureStorage.csproj"/>
         <ProjectReference Include="..\DKNet.Svc.BlobStorage.Local\DKNet.Svc.BlobStorage.Local.csproj"/>
