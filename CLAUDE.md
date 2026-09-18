@@ -104,7 +104,7 @@ gh run view <run-id> --log-failed          # inline failed-step logs
 gh run download <run-id> -n test-results   # pull trx + logs locally to fix code
 ```
 
-The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. Do **not** rely on `.github/workflows/build-test-coverage.yml` for a pass/fail signal — its test step is `continue-on-error`, so it goes green even when tests fail.
+The workflow must exist on the branch you dispatch (`--ref`); it lives on the default branch `dev`, so feature branches need it merged/rebased in. `.github/workflows/build-test-coverage.yml`'s `Test` step is a real pass/fail signal — it does not carry `continue-on-error` (only the later `Install ReportGenerator` step does), so a red run there means tests failed.
 
 `Svc.PdfGenerators.Tests` is the other case worth naming, and it has the same x64 story as SQL Server. PuppeteerSharp fetches an **x64 Chromium**, so on a non-Apple ARM64 host the download succeeds and the *launch* fails:
 
