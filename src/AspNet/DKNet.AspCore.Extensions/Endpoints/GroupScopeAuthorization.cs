@@ -79,7 +79,8 @@ internal static class GroupScopeAuthorization
 
         if (servedMethods.Count == 0)
         {
-            RequireCoverage(routePattern, "*", state, out _);
+            RequireCoverage(routePattern, "*", state, out var wildcardScope);
+            endpointBuilder.Metadata.Add(new AuthorizeAttribute(wildcardScope));
             return;
         }
 

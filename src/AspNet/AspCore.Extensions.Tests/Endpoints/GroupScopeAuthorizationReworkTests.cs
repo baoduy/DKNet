@@ -1,9 +1,12 @@
+using System.Net;
+using System.Security.Claims;
 using AspCore.Extensions.Tests.Fixtures;
 using DKNet.AspCore.Extensions;
 using DKNet.AspCore.Extensions.Endpoints;
 using DKNet.AspCore.Extensions.ModelBinding;
 using DKNet.SlimBus.Extensions;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -99,6 +102,47 @@ public class GroupScopeAuthorizationReworkTests
         exception.Message.ShouldContain("*");
         await app.StopAsync();
     }
+
+    // --- Round 2 finding 1: a verb-less route in a group carrying a default scope must be served under that
+    // default (DRK-1547 review round 2, GroupScopeAuthorization.cs:80-84) — not left with the blanket
+    // empty-policy Authorize the "*" lookup used to leave behind once a default satisfied RequireCoverage.
+    //
+    // DefaultScopeVerblessRoute is gated the same way as the fixtures above, for the same reason.
+
+    [Theory]
+    [InlineData("accounts.read", HttpStatusCode.OK)]
+    [InlineData("postings.read", HttpStatusCode.Forbidden)]
+    public async Task VerblessRoute_InGroupCarryingDefaultScope_RequiresThatScope(
+        string heldScope,
+        HttpStatusCode expectedStatus)
+    {
+        var builder = CreateBuilder(o =>
+        {
+            o.Authenticated = true;
+            o.UserName = "treasury-ops";
+            o.Claims = [new Claim("scope", heldScope)];
+        });
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("accounts.read", p => p.RequireClaim("scope", "accounts.read"));
+        var app = builder.Build();
+        DefaultScopeVerblessRouteEndpointConfig.ServeVerblessRoute.Value = true;
+        try
+        {
+            app.UseEndpointConfigs(assemblies: typeof(DefaultScopeVerblessRouteEndpointConfig).Assembly);
+        }
+        finally
+        {
+            DefaultScopeVerblessRouteEndpointConfig.ServeVerblessRoute.Value = false;
+        }
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/v1/gate-default-verbless/item");
+
+        response.StatusCode.ShouldBe(expectedStatus);
+        await app.StopAsync();
+    }
 }
 
 /// <summary>
@@ -136,6 +180,26 @@ public sealed class VerblessRouteEndpointConfig : IEndpointConfig
     public void Map(RouteGroupBuilder group)
     {
         group.MapGet("/other", () => Results.Ok());
+        if (ServeVerblessRoute.Value) group.Map("/item", () => Results.Ok());
+    }
+}
+
+/// <summary>
+///     Declares "accounts.read" above the group naming no HTTP method (the default-scope form); serves one
+///     verb-less route no per-method declaration ever covers — proves the default is applied to a verb-less
+///     route rather than left uncovered by the blanket empty-policy Authorize (DRK-1547 review round 2). Gated
+///     the same way as <see cref="VerblessRouteEndpointConfig" />.
+/// </summary>
+[EndpointGroupScope("accounts.read")]
+public sealed class DefaultScopeVerblessRouteEndpointConfig : IEndpointConfig
+{
+    /// <summary>Set (and reset) only by the test exercising this group's verb-less route.</summary>
+    public static readonly AsyncLocal<bool> ServeVerblessRoute = new();
+
+    public string GroupEndpoint => "/gate-default-verbless";
+
+    public void Map(RouteGroupBuilder group)
+    {
         if (ServeVerblessRoute.Value) group.Map("/item", () => Results.Ok());
     }
 }
