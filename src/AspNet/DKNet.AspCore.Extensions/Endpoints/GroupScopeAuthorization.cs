@@ -17,35 +17,47 @@ namespace DKNet.AspCore.Extensions.Endpoints;
 /// </summary>
 internal static class GroupScopeAuthorization
 {
-    /// <summary>Per-group accumulation of the method-to-scope map built up across every declaration on that group.</summary>
-    private static readonly ConditionalWeakTable<RouteGroupBuilder, Dictionary<string, string>> MethodScopes = new();
+    /// <summary>Per-group accumulated state built up across every declaration on that group.</summary>
+    private static readonly ConditionalWeakTable<RouteGroupBuilder, GroupScopeState> States = new();
 
-    /// <summary>
-    ///     Records that <paramref name="httpMethods" /> on <paramref name="group" /> require <paramref name="scope" />.
-    ///     The first call for a given <paramref name="group" /> registers the single <c>Finally</c> convention that
-    ///     applies the accumulated map — and refuses an uncovered method — when the group's endpoints are built.
-    /// </summary>
-    internal static void DeclareGroupScope(RouteGroupBuilder group, string scope, params string[] httpMethods)
+    /// <summary>A group's per-method scope map plus its default scope (R7), if any.</summary>
+    private sealed class GroupScopeState
     {
-        var isFirstDeclaration = !MethodScopes.TryGetValue(group, out var methodToScope);
-        if (isFirstDeclaration)
-        {
-            methodToScope = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            MethodScopes.Add(group, methodToScope);
-        }
-
-        foreach (var httpMethod in httpMethods) methodToScope![httpMethod] = scope;
-
-        if (isFirstDeclaration)
-            ((IEndpointConventionBuilder)group).Finally(endpointBuilder => Apply(endpointBuilder, methodToScope!));
+        internal readonly Dictionary<string, string> MethodToScope = new(StringComparer.OrdinalIgnoreCase);
+        internal string? DefaultScope;
     }
 
     /// <summary>
-    ///     Applies <paramref name="methodToScope" /> to one built endpoint (R1, R4, R5): skips a route that already
-    ///     names its own policy or allows anonymous access, refuses an endpoint serving a method with no declared
-    ///     scope, else adds an <see cref="AuthorizeAttribute" /> per distinct scope its served methods require.
+    ///     Records that <paramref name="httpMethods" /> on <paramref name="group" /> require <paramref name="scope" />
+    ///     — or, when <paramref name="httpMethods" /> is empty, that <paramref name="scope" /> is the group's default
+    ///     (R7). The first call for a given <paramref name="group" /> registers the single <c>Finally</c> convention
+    ///     that applies the accumulated state — and refuses an uncovered method — when the group's endpoints are built.
     /// </summary>
-    private static void Apply(EndpointBuilder endpointBuilder, Dictionary<string, string> methodToScope)
+    internal static void DeclareGroupScope(RouteGroupBuilder group, string scope, params string[] httpMethods)
+    {
+        var isFirstDeclaration = !States.TryGetValue(group, out var state);
+        if (isFirstDeclaration)
+        {
+            state = new GroupScopeState();
+            States.Add(group, state);
+        }
+
+        if (httpMethods.Length == 0)
+            state!.DefaultScope = scope;
+        else
+            foreach (var httpMethod in httpMethods) state!.MethodToScope[httpMethod] = scope;
+
+        if (isFirstDeclaration)
+            ((IEndpointConventionBuilder)group).Finally(endpointBuilder => Apply(endpointBuilder, state!));
+    }
+
+    /// <summary>
+    ///     Applies <paramref name="state" /> to one built endpoint (R1, R4, R5): skips a route that already
+    ///     names its own policy or allows anonymous access, refuses an endpoint serving a method with no declared
+    ///     scope and no group default (R8), else adds an <see cref="AuthorizeAttribute" /> per distinct scope its
+    ///     served methods require.
+    /// </summary>
+    private static void Apply(EndpointBuilder endpointBuilder, GroupScopeState state)
     {
         var hasOwnPolicy = endpointBuilder.Metadata
             .OfType<IAuthorizeData>()
@@ -67,14 +79,14 @@ internal static class GroupScopeAuthorization
 
         if (servedMethods.Count == 0)
         {
-            RequireCoverage(routePattern, "*", methodToScope, out _);
+            RequireCoverage(routePattern, "*", state, out _);
             return;
         }
 
         var scopesToApply = new HashSet<string>(StringComparer.Ordinal);
         foreach (var method in servedMethods)
         {
-            RequireCoverage(routePattern, method, methodToScope, out var scope);
+            RequireCoverage(routePattern, method, state, out var scope);
             scopesToApply.Add(scope);
         }
 
@@ -84,10 +96,16 @@ internal static class GroupScopeAuthorization
     private static void RequireCoverage(
         string? routePattern,
         string method,
-        Dictionary<string, string> methodToScope,
+        GroupScopeState state,
         out string scope)
     {
-        if (methodToScope.TryGetValue(method, out scope!)) return;
+        if (state.MethodToScope.TryGetValue(method, out scope!)) return;
+
+        if (state.DefaultScope is not null)
+        {
+            scope = state.DefaultScope;
+            return;
+        }
 
         throw new InvalidOperationException(
             $"Route '{routePattern}' serves HTTP method '{method}' with no scope declared by an " +
