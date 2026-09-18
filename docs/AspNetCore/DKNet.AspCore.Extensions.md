@@ -299,10 +299,11 @@ Precedence when more than one rule could apply: a route's own `RequireAuthorizat
 declaration only fills in a route that decided nothing for itself.
 
 A method the group serves but never declares a scope for fails the host at startup —
-`app.StartAsync()` throws an `InvalidOperationException` naming the route pattern and the uncovered
-HTTP method. Add a `[EndpointGroupScope]` declaration covering that method (or stop serving it) to
-clear the refusal; there is no way to opt a covered-but-undeclared method out other than declaring or
-removing it.
+`app.StartAsync()` throws an `InvalidOperationException` naming the route pattern and the served,
+undeclared HTTP method. Clear the refusal by adding a `[EndpointGroupScope]` declaration covering
+that method, by giving the route its own `RequireAuthorization(...)` or `AllowAnonymous()` (the
+route-level escape from the paragraph above — the coverage check never runs against a route that
+already decided its own rule), or by no longer serving the method.
 
 The whole mechanism is inert on a host running with `EndpointRegistrationOptions.RequireAuthorization`
 set to `false`: no attribute is read, no scope is enforced, and a method with no declared scope never
@@ -1099,10 +1100,12 @@ built. Neither is a runtime surprise — both happen at startup.
 - **A route with no declared scope, that the group also has no coverage for, fails startup, not the
   request.** `[EndpointGroupScope]` checks coverage while endpoints are being built, so a gap surfaces
   as `app.StartAsync()` throwing, never as a runtime `403` on the first call.
-- **A route serving several HTTP methods needs every one of them declared.** `MapMethods` (or any
-  route with no single, unambiguous HTTP method) is covered only when each method it serves has a
-  matching `[EndpointGroupScope]` declaration; the startup refusal names the uncovered method as `*`
-  when the route itself carries no method metadata to name.
+- **A route serving several HTTP methods ends up requiring all of the scopes those methods
+  declare.** `MapMethods` (or any route with no single, unambiguous HTTP method) picks up one
+  `Authorize` policy per declared method it serves, and ASP.NET Core requires every policy on an
+  endpoint — so a caller holding only one of the scopes is refused. Declare a multi-method route
+  under a single scope unless every caller is meant to hold all of them. The startup refusal still
+  names the uncovered method as `*` when the route itself carries no method metadata to name.
 - **`[EndpointGroupScope]` and `RequireAuthorization = false` (§`EndpointRegistrationOptions`) don't
   combine.** Turning host authorization off makes the attribute inert rather than optional-but-checked
   — no scope is enforced and no startup refusal fires, on any group, declared or not.
