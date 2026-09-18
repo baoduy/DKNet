@@ -9,9 +9,9 @@ namespace AspCore.Extensions.Tests.ModelBinding;
 
 /// <summary>
 ///     Unit-level coverage for <c>ContextualMemberScanner</c>, the internal <c>ContextualRequestPopulationService</c>,
-///     <see cref="ContextualPopulationOptions" />, and <see cref="ContextualRequestPopulationServiceCollectionExtensions" />
+///     and <see cref="ContextualRequestPopulationServiceCollectionExtensions" />
 ///     (DRK-565) — exercised directly against a real <see cref="HttpContext" />/<see cref="ClaimsPrincipal" />
-///     rather than through a full HTTP round trip, so every branch (fallback on/off, conversion success/failure,
+///     rather than through a full HTTP round trip, so every branch (conversion success/failure,
 ///     no-declared-members early return) is provable without standing up a host per case.
 ///     End-to-end HTTP-level proof that the mechanism is actually wired into request dispatch lives in
 ///     <see cref="ContextualRequestPopulationEndToEndTests" />.
@@ -28,8 +28,8 @@ public class ContextualRequestPopulationTests
         return context;
     }
 
-    private static ContextualRequestPopulationService CreateService(ContextualPopulationOptions? options = null) =>
-        new([new ClaimValueResolver()], options ?? new ContextualPopulationOptions());
+    private static ContextualRequestPopulationService CreateService() =>
+        new([new ClaimValueResolver()]);
 
     // --- ContextualMemberScanner -------------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ public class ContextualRequestPopulationTests
         var service = CreateService();
         var request = new ValidatedCommand { Name = "untouched" };
 
-        service.Populate(request, CreateHttpContext(), requireAuthorization: true);
+        service.Populate(request, CreateHttpContext());
 
         request.Name.ShouldBe("untouched");
     }
@@ -91,42 +91,20 @@ public class ContextualRequestPopulationTests
         var service = CreateService();
         var request = new ByUserProbeCommand { ByUser = "forged-by-caller" };
 
-        service.Populate(request, CreateHttpContext(new Claim(ClaimTypes.Name, "alice")), requireAuthorization: true);
+        service.Populate(request, CreateHttpContext(new Claim(ClaimTypes.Name, "alice")));
 
         request.ByUser.ShouldBe("alice");
     }
 
     [Fact]
-    public void Populate_ClaimMissing_RequireAuthorizationTrue_SetsTypeDefaultRegardlessOfFallback()
+    public void Populate_ClaimMissing_SetsTypeDefault()
     {
-        var service = CreateService(new ContextualPopulationOptions { SystemAccountFallback = "system-account" });
+        var service = CreateService();
         var request = new ByUserProbeCommand { ByUser = "forged-by-caller" };
 
-        service.Populate(request, CreateHttpContext(), requireAuthorization: true);
+        service.Populate(request, CreateHttpContext());
 
-        // requireAuthorization: true -> the fallback must never leak across the auth-required boundary.
-        request.ByUser.ShouldBeNull();
-    }
-
-    [Fact]
-    public void Populate_ClaimMissing_RequireAuthorizationFalse_FallbackConfigured_UsesFallbackValue()
-    {
-        var service = CreateService(new ContextualPopulationOptions { SystemAccountFallback = "system-account" });
-        var request = new ByUserProbeCommand();
-
-        service.Populate(request, CreateHttpContext(), requireAuthorization: false);
-
-        request.ByUser.ShouldBe("system-account");
-    }
-
-    [Fact]
-    public void Populate_ClaimMissing_RequireAuthorizationFalse_NoFallbackConfigured_SetsTypeDefault()
-    {
-        var service = CreateService(); // SystemAccountFallback left null (default)
-        var request = new ByUserProbeCommand();
-
-        service.Populate(request, CreateHttpContext(), requireAuthorization: false);
-
+        // no resolver could resolve the member -> its type default, never the caller-supplied value (R1).
         request.ByUser.ShouldBeNull();
     }
 
@@ -136,8 +114,7 @@ public class ContextualRequestPopulationTests
         var service = CreateService();
         var request = new GuidClaimCommand { TenantId = Guid.NewGuid() };
 
-        service.Populate(
-            request, CreateHttpContext(new Claim("tenant-id", "not-a-guid")), requireAuthorization: true);
+        service.Populate(request, CreateHttpContext(new Claim("tenant-id", "not-a-guid")));
 
         request.TenantId.ShouldBe(Guid.Empty);
     }
@@ -149,10 +126,7 @@ public class ContextualRequestPopulationTests
         var request = new GuidClaimCommand();
         var tenantId = Guid.NewGuid();
 
-        service.Populate(
-            request,
-            CreateHttpContext(new Claim("tenant-id", tenantId.ToString())),
-            requireAuthorization: true);
+        service.Populate(request, CreateHttpContext(new Claim("tenant-id", tenantId.ToString())));
 
         request.TenantId.ShouldBe(tenantId);
     }
@@ -164,9 +138,7 @@ public class ContextualRequestPopulationTests
         var request = new MultiClaimCommand();
 
         service.Populate(
-            request,
-            CreateHttpContext(new Claim(ClaimTypes.Name, "alice"), new Claim("tenant-id", "acme")),
-            requireAuthorization: true);
+            request, CreateHttpContext(new Claim(ClaimTypes.Name, "alice"), new Claim("tenant-id", "acme")));
 
         request.ByUser.ShouldBe("alice");
         request.TenantId.ShouldBe("acme");
@@ -182,47 +154,30 @@ public class ContextualRequestPopulationTests
         var succeeded = new GuidClaimCommand();
         var tenantId = Guid.NewGuid();
 
-        service.Populate(failed, CreateHttpContext(new Claim("tenant-id", "not-a-guid")), requireAuthorization: true);
-        service.Populate(
-            succeeded, CreateHttpContext(new Claim("tenant-id", tenantId.ToString())), requireAuthorization: true);
+        service.Populate(failed, CreateHttpContext(new Claim("tenant-id", "not-a-guid")));
+        service.Populate(succeeded, CreateHttpContext(new Claim("tenant-id", tenantId.ToString())));
 
         failed.TenantId.ShouldBe(Guid.Empty);
         succeeded.TenantId.ShouldBe(tenantId);
     }
 
-    // --- ContextualPopulationOptions ---------------------------------------------------------------------------
-
+    // DRK-1580: the fallback-substitution mechanism (and the type that configured it) is being removed. Named by
+    // string rather than by type, so this test still compiles once ContextualPopulationOptions is gone.
     [Fact]
-    public void ContextualPopulationOptions_Defaults_SystemAccountFallbackIsNull() =>
-        new ContextualPopulationOptions().SystemAccountFallback.ShouldBeNull();
+    public void ContextualPopulationOptions_TypeIsGoneFromTheAssembly()
+    {
+        const string optionsTypeFullName = "DKNet.AspCore.Extensions.ModelBinding.ContextualPopulationOptions";
+        var assembly = typeof(ContextualRequestPopulationServiceCollectionExtensions).Assembly;
 
-    [Fact]
-    public void ContextualPopulationOptions_SystemAccountFallbackSet_ExposesConfiguredValue() =>
-        new ContextualPopulationOptions { SystemAccountFallback = "system" }.SystemAccountFallback.ShouldBe("system");
+        assembly.GetType(optionsTypeFullName).ShouldBeNull();
+
+        var services = new ServiceCollection();
+        services.AddContextualRequestPopulation();
+
+        services.ShouldNotContain(d => d.ServiceType.FullName == optionsTypeFullName);
+    }
 
     // --- AddContextualRequestPopulation (DI registration) ------------------------------------------------------
-
-    [Fact]
-    public void AddContextualRequestPopulation_NoConfigure_RegistersOptionsWithNullFallback()
-    {
-        var services = new ServiceCollection();
-
-        services.AddContextualRequestPopulation();
-        var provider = services.BuildServiceProvider();
-
-        provider.GetRequiredService<ContextualPopulationOptions>().SystemAccountFallback.ShouldBeNull();
-    }
-
-    [Fact]
-    public void AddContextualRequestPopulation_WithConfigure_AppliesCallbackToRegisteredOptions()
-    {
-        var services = new ServiceCollection();
-
-        services.AddContextualRequestPopulation(o => o.SystemAccountFallback = "system-account");
-        var provider = services.BuildServiceProvider();
-
-        provider.GetRequiredService<ContextualPopulationOptions>().SystemAccountFallback.ShouldBe("system-account");
-    }
 
     [Fact]
     public void AddContextualRequestPopulation_RegistersAClaimValueResolver()
@@ -245,6 +200,20 @@ public class ContextualRequestPopulationTests
         var services = new ServiceCollection();
 
         services.AddContextualRequestPopulation().ShouldBeSameAs(services);
+    }
+
+    // DRK-1580: the `configure` callback (and the options type it configures) is being removed — the method
+    // becomes a plain, parameterless-beyond-`this` registration extension.
+    [Fact]
+    public void AddContextualRequestPopulation_ExposesNoConfigureParameter()
+    {
+        var method = typeof(ContextualRequestPopulationServiceCollectionExtensions)
+            .GetMethod(nameof(ContextualRequestPopulationServiceCollectionExtensions.AddContextualRequestPopulation));
+
+        method.ShouldNotBeNull();
+        var parameters = method.GetParameters();
+        parameters.Length.ShouldBe(1);
+        parameters[0].ParameterType.ShouldBe(typeof(IServiceCollection));
     }
 
     #endregion

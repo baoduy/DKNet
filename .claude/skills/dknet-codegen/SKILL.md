@@ -146,9 +146,9 @@ public sealed record CreateOrderRequest
 Behaviour that matters:
 
 - The property is **always overwritten** before validation and before the handler runs — including with `default` when the claim is absent or the caller is unauthenticated. A client cannot forge it through the payload. Do not add a "only set if empty" guard.
-- Inert unless `services.AddContextualRequestPopulation(...)` is registered; applied by `UseEndpointConfigs`.
+- Inert unless `services.AddContextualRequestPopulation()` is registered; applied by `UseEndpointConfigs`.
 - Stripped from the OpenAPI schema automatically.
-- `ContextualPopulationOptions.SystemAccountFallback` supplies a value only when the host's `EndpointRegistrationOptions.RequireAuthorization` is `false`.
+- No built-in fallback: an unresolved member always holds its type's default. A host that wants a value of its own registers a custom `IContextualValueResolver` ahead of the built-in ones.
 - To add another source, implement `IContextualSource` + `IContextualValueResolver` — the mechanism needs no change.
 
 `[FromClaim]` on the request's own property is the way to carry the acting user; it replaced an obsolete base record that `DKNet.SlimBus.Extensions` removed in the breaking release.

@@ -95,10 +95,15 @@ on it:
 
 - **A missing header is not a refusal.** The member holds its type's default and the request is
   still dispatched. Requiring a header stays the job of a filter or a validator.
-- **A header-filled member takes `SystemAccountFallback`** wherever a claim-filled one would — a
-  fallback is configured and the group's `RequireAuthorization` is `false`. There, an absent header
-  leaves a *constant* value rather than an empty one, which matters if you use the member as an
-  idempotency key.
+- **There is no built-in fallback value.** An absent header always leaves the member's type
+  default. `CanResolve` keys on the attribute type, and population consults only the first matching
+  resolver — never more than one. A host that wants a value of its own instead must register a
+  resolver that performs the header lookup itself and substitutes only when it comes back empty
+  (`httpContext.Request.Headers.TryGetValue(...) ... ?? "system-account"`); registering one ahead of
+  `AddContextualRequestPopulation()` **replaces** the built-in resolver for that attribute entirely,
+  for every request declaring it, not only the ones missing the header. If the constant it
+  substitutes is the same for every caller who omits the header, that matters if you use the member
+  as an idempotency key.
 - **A header is never an authorization signal.** Unlike a claim, a header is supplied by the
   caller. The declaration is a binding convenience; a service that treated it as proof of identity
   would be trusting the caller.
@@ -138,14 +143,13 @@ resignatured, or had its behaviour changed — update the `using` line and you'r
 
 ## Customisation reference
 
-Four options types, plus the type parameters and attributes that make up the rest of the public
+Three options types, plus the type parameters and attributes that make up the rest of the public
 surface. Defaults are the ones the code applies when you pass nothing.
 
-`ContextualPopulationOptions` — `AddContextualRequestPopulation(Action<ContextualPopulationOptions>?)`:
-
-| Knob | Type | Default | Effect |
-|---|---|---|---|
-| `SystemAccountFallback` | `string?` | `null` | Value substituted for a declared member the resolver could not resolve, and only when the group's `RequireAuthorization` is `false`. An authenticated caller missing the claim gets the property's type default instead. `null` disables the fallback. |
+`AddContextualRequestPopulation()` takes no configure delegate and has no options of its own — a
+declared member the registered resolvers cannot resolve always holds its type's default. Supply a
+value of your own by registering a custom `IContextualValueResolver` before
+`AddContextualRequestPopulation()` (see [Quick Start](#quick-start) above).
 
 `EndpointRegistrationOptions` — `app.UseEndpointConfigs(Action<EndpointRegistrationOptions>?, params Assembly[])`:
 
@@ -153,7 +157,7 @@ surface. Defaults are the ones the code applies when you pass nothing.
 |---|---|---|---|
 | `RouteTemplate` | `Func<IEndpointConfig, string>?` | `null` | `null` uses `/v{version:apiVersion}{GroupEndpoint}` with versioning on, or `{GroupEndpoint}` with it off. |
 | `DefaultTag` | `string` | `"Root"` | OpenAPI tag used when a config's `Tag` resolves to an empty string. |
-| `RequireAuthorization` | `bool` | `true` | Applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` (below) to add per-method or group-default scopes. Turning it off is also what enables `SystemAccountFallback`, and makes `[EndpointGroupScope]` inert — no attribute read, no scope enforced, no startup refusal. |
+| `RequireAuthorization` | `bool` | `true` | Applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` (below) to add per-method or group-default scopes. Turning it off makes `[EndpointGroupScope]` inert — no attribute read, no scope enforced, no startup refusal. |
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()`, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Host setup per group. Runs after tags/version metadata, before authorization and before `IEndpointConfig.Map`. |
 | `assemblies` (method parameter) | `params Assembly[]` | empty → every currently loaded assembly | Assemblies scanned for `IEndpointConfig` implementations. |
@@ -273,7 +277,7 @@ Attributes and other extension points:
 |---|---|---|---|
 | `[EndpointGroupScope(scope, params httpMethods)]` | class attribute above an `IEndpointConfig`, `AllowMultiple` | none | Requires `scope` as the authorization policy for the routes the group serves. Naming no `httpMethods` (constants on `EndpointHttpMethods`, e.g. `EndpointHttpMethods.Get`) makes `scope` the group's **default** — required for every method it serves; naming one or more methods requires `scope` only for those, winning over the default for its own methods. Stack one attribute per scope. A route's own `RequireAuthorization(...)` or `AllowAnonymous()` wins over both forms. A served method with no per-method declaration, no group default, and no route-level rule fails the host at startup, naming the route and the method — a group carrying a default is never refused this way. **Replaces the removed `IEndpointConfig.AuthPolicy`** (breaking change): `public string? AuthPolicy => "products:write";` becomes `[EndpointGroupScope("products:write")]` above the class; a group that had `AuthPolicy => null` needs no replacement. No effect when `RequireAuthorization` is `false`. |
 | `[FromClaim(claimType)]` | property attribute, one required ctor argument | none | Populates the property from that claim before validation and before the handler; always overwrites the caller's value, and is removed from the published OpenAPI description. The property needs a `set` or `init` or startup throws. |
-| `[FromRequestHeader(headerName)]` | property attribute, one required ctor argument (`HeaderName`) | none | Populates the property from that HTTP request header before validation and before the handler; always overwrites the caller's body value. Header-name matching is case-insensitive, and a header sent more than once fills the member with the first value. A missing header is not a refusal — the member holds its type's default, or `SystemAccountFallback` where that applies. The header *is* published as an `in: header` operation parameter (the member stays out of the published body), and it is never an authorization signal — the caller supplies it. The property needs a `set` or `init` or startup throws. |
+| `[FromRequestHeader(headerName)]` | property attribute, one required ctor argument (`HeaderName`) | none | Populates the property from that HTTP request header before validation and before the handler; always overwrites the caller's body value. Header-name matching is case-insensitive, and a header sent more than once fills the member with the first value. A missing header is not a refusal — the member holds its type's default. The header *is* published as an `in: header` operation parameter (the member stays out of the published body), and it is never an authorization signal — the caller supplies it. The property needs a `set` or `init` or startup throws. |
 | `IContextualSource` | marker interface on your own attribute | — | Opts a new source kind into the same mechanism. |
 | `IContextualValueResolver` | interface you register in DI | `ClaimValueResolver` for `[FromClaim]` | `CanResolve` selects the resolver; the mechanism never switches on a concrete attribute type. |
 | `CrudMapOptions.Exclude(params CrudOp[])` | builder method | nothing excluded | Skips operations in the generated `Map{Entity}Crud`. `CrudOp` is `GetById`, `GetList`, `Create`, `Update`, `Delete`, `Action`. |
