@@ -194,5 +194,27 @@ public class IdempotentKeyInfoTests
         text.ShouldNotContain('\n');
     }
 
+    [Fact]
+    public void IsValid_WhenPatternCausesCatastrophicBacktracking_CompletesWithinBudgetAndReturnsInvalidFormat()
+    {
+        // "^([a-zA-Z0-9]+)+$" is classic catastrophic-backtracking shape: nested-quantifier group repeated,
+        // fed a run of 27 matching characters followed by one non-matching character. Measured locally,
+        // an unbounded match on this input takes ~6.6s - comfortably past the 5s budget below, while still
+        // finishing within seconds once orphaned, so this test can't itself hang the run.
+        var options = new IdempotencyOptions { IdempotencyKeyPattern = "^([a-zA-Z0-9]+)+$" };
+        var info = new IdempotentKeyInfo
+        {
+            IdempotentKey = new string('a', 27) + "!", Endpoint = "/api/test", Method = "POST"
+        };
+
+        var task = Task.Run(() => info.IsValid(options));
+        var completedInBudget = task.Wait(TimeSpan.FromSeconds(5));
+
+        completedInBudget.ShouldBeTrue();
+        var result = task.Result;
+        result.IsFailed.ShouldBeTrue();
+        result.Errors[0].Message.ShouldContain("format is invalid");
+    }
+
     #endregion
 }

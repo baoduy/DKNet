@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using FluentResults;
 
 namespace DKNet.AspCore.Idempotency.Filtering;
@@ -139,9 +140,17 @@ public sealed record IdempotentKeyInfo
                 $"Idempotency key must not exceed {options.MaxIdempotencyKeyLength} characters.");
 
         // Validate key format
-        if (!options.IdempotencyKeyPatternRegex.IsMatch(IdempotentKey))
+        try
+        {
+            if (!options.IdempotencyKeyPatternRegex.IsMatch(IdempotentKey))
+                return Result.Fail(
+                    "Idempotency key format is invalid. Allowed characters: alphanumeric, hyphens, underscores.");
+        }
+        catch (RegexMatchTimeoutException)
+        {
             return Result.Fail(
                 "Idempotency key format is invalid. Allowed characters: alphanumeric, hyphens, underscores.");
+        }
 
         return Result.Ok();
     }

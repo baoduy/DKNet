@@ -333,6 +333,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `IOwnedBy` entity was left with no ownership filter and every caller could read every owner's rows — a complete
   row-level isolation bypass. It now throws `InvalidOperationException` at model-build time, and the tightened
   `AddDataOwnerProvider` constraint (see **Changed**) stops the mistake at compile time.
+- `IAesGcmEncryption`'s `Encrypt`/`Decrypt` overloads that take a `base64Key` now compare it against the instance's
+  own key with `CryptographicOperations.FixedTimeEquals` instead of a plain equality check, so a wrong key is
+  rejected in constant time regardless of how much of it was right. One behaviour consequence: a base64 string that
+  decodes to the same bytes as the instance's key is now accepted even if the two strings differ textually.
 
 ## [2024.12.0] - 2024-12-XX
 

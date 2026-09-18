@@ -149,9 +149,15 @@ Before touching the store, the filter validates the incoming key against `Idempo
 
 - **Presence** – the header (`X-Idempotency-Key` by default) must be present and non-blank.
 - **Length** – must not exceed `MaxIdempotencyKeyLength` (default 255).
-- **Format** – must match `IdempotencyKeyPattern` (default `^[a-zA-Z0-9\-_]+$`, i.e. UUID-v4 compatible).
+- **Format** – must match `IdempotencyKeyPattern` (default `^[a-zA-Z0-9\-_]+$`, i.e. UUID-v4 compatible). The
+  match runs under a fixed 100 ms timeout; a pattern that exceeds it is treated the same as a mismatch — the
+  same `400`, not a hang or a `500`.
 
 Any failure short-circuits the pipeline with a `400 Bad Request` problem response — the handler never runs.
+
+> A custom `IdempotencyKeyPattern` with nested quantifiers (`^([a-zA-Z0-9]+)+$` is the classic accident) can
+> still burn CPU on a long key before it times out. The 100 ms timeout is a backstop against a hang, not a fix
+> for a pathological pattern — write the pattern to be linear in the first place.
 
 ```csharp
 app.MapPost("/orders", CreateOrder)
@@ -368,7 +374,7 @@ holds no key past its `Expiration`.
 | Option | Default | Purpose |
 |---|---|---|
 | `IdempotencyHeaderKey` | `"X-Idempotency-Key"` | Header the filter reads the key from. |
-| `IdempotencyKeyPattern` | `^[a-zA-Z0-9\-_]+$` | Regex a key must match to be accepted. |
+| `IdempotencyKeyPattern` | `^[a-zA-Z0-9\-_]+$` | Regex a key must match to be accepted; matched under a fixed 100 ms timeout — a pattern that times out is treated as a mismatch (`400`). |
 | `MaxIdempotencyKeyLength` | `255` | Maximum accepted key length. |
 | `ConflictHandling` | `ConflictResponse` | `ConflictResponse` (409) or `CachedResult` (replay). |
 | `Expiration` | `4 hours` | Absolute lifetime of a cached result. |
