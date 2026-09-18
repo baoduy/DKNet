@@ -97,23 +97,22 @@ internal sealed class EfCoreAuditHook(
     ///     <see cref="BeforeSaveAsync" /> inside the same save transaction, and drain that table with a
     ///     separate dispatcher.
     /// </remarks>
-    private async Task PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken)
+    private async Task PublishLogsAsync(DbContext context, IReadOnlyCollection<AuditLogEntry> logs, CancellationToken cancellationToken)
     {
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
-        var logList = logs as IReadOnlyCollection<AuditLogEntry> ?? logs.ToList();
         foreach (var publisher in publishers)
         {
             try
             {
-                await publisher.PublishAsync(logList, cancellationToken);
+                await publisher.PublishAsync(logs, cancellationToken);
             }
             catch (Exception ex)
             {
                 if (!logger.IsEnabled(LogLevel.Error)) continue;
 
-                var entityNames = string.Join(", ", logList.Select(l => l.EntityName).Distinct());
+                var entityNames = string.Join(", ", logs.Select(l => l.EntityName).Distinct());
                 logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entity names: {EntityNames}. Entries count: {AuditLogEntriesCount}",
-                    publisher.GetType().Name, entityNames, logList.Count);
+                    publisher.GetType().Name, entityNames, logs.Count);
             }
         }
     }
