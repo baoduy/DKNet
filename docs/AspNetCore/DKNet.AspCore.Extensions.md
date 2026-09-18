@@ -61,7 +61,7 @@ Every sample below assumes the `using` that owns the type it shows:
 | Namespace | Types |
 |---|---|
 | `DKNet.AspCore.Extensions` | `IEndpointConfig` |
-| `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `FromRequestHeaderAttribute`, `IContextualSource`, `IContextualValueResolver`, `ContextualPopulationOptions`, `AddContextualRequestPopulation()` |
+| `DKNet.AspCore.Extensions.ModelBinding` | `FromClaimAttribute`, `FromRequestHeaderAttribute`, `IContextualSource`, `IContextualValueResolver`, `AddContextualRequestPopulation()` |
 | `DKNet.AspCore.Extensions.Endpoints` | `EndpointRegistrationOptions`, `UseEndpointConfigs()`, the `Map*` mappers, `ListQueryRequest`, `ListQueryOptions`, `AddListQueryOptions()`, `ListFilter`, `ListFilterJsonConverter`, `CrudMapOptions`, `CrudOp` |
 | `DKNet.AspCore.Extensions.Responses` | `PagedResponse<T>`, `ResultResponseExtensions`, `ProblemDetailsExtensions`, `ErrorResponseOptions`, `AddErrorResponses()`, `ErrorResponseContext`, `ErrorItem`, `ErrorSource` |
 
@@ -82,7 +82,6 @@ write, and what the request instance actually carries by the time your handler s
 |---|---|
 | `[FromClaim(ClaimTypes.NameIdentifier)]`<br>`public string? CreatedBy { get; set; }` | `CreatedBy = "8f0c…"` — the value of the caller's `nameidentifier` claim, whatever the request body said |
 | same, caller authenticated but the claim is absent | `CreatedBy = null` — the property's type default, **never** the caller's value |
-| same, on an anonymous group (`RequireAuthorization = false`) with `SystemAccountFallback = "system-account"` | `CreatedBy = "system-account"` |
 | `[FromClaim("tenant_id")]`<br>`public Guid TenantId { get; set; }` | `TenantId = Guid.Parse(claim)` via `TypeDescriptor` conversion; an unconvertible claim yields `Guid.Empty`, not a 400 |
 | `[FromClaim("tenant_id")]`<br>`public Guid TenantId { get; }` *(no setter)* | Nothing — `InvalidOperationException` at startup naming `'{Type}.{Property}' declares a contextual source but has no setter` |
 
@@ -103,13 +102,7 @@ public sealed record CreateProductCommand : Fluents.Requests.IWitResponse<Produc
 Register the mechanism once:
 
 ```csharp
-builder.Services.AddContextualRequestPopulation(o =>
-{
-    // Only applied when the group's RequireAuthorization is false AND the value could not be
-    // resolved — an authenticated caller missing the claim gets the property's type default
-    // instead, never this fallback.
-    o.SystemAccountFallback = "system-account";
-});
+builder.Services.AddContextualRequestPopulation();
 ```
 
 That single call registers `ClaimValueResolver` and the population service as **scoped**, and adds
@@ -120,6 +113,31 @@ are removed from the published OpenAPI description (`ContextualSourceSchemaTrans
 bodies, `ContextualSourceOperationTransformer` for query/`[AsParameters]` parameters), since the
 caller can never actually supply them — with one exception, the header parameter a
 `[FromRequestHeader]` member publishes, described next.
+
+A declared member the registered resolvers cannot resolve always holds its type's default —
+there is no built-in substitute value. `CanResolve` keys on the declaration's **attribute type**,
+not on the individual member and not on whether a value is actually available, and population
+consults exactly the *first* resolver whose `CanResolve` matches — it never chains to a second one.
+Registering a resolver ahead of `AddContextualRequestPopulation()` therefore **replaces** the
+built-in resolver for that attribute type outright, for every member declaring it — including an
+authenticated caller who has the real claim. A host that wants a value of its own, for example a
+system-account identity on an anonymous group, must perform the built-in lookup itself before
+substituting, or its resolver silently displaces `ClaimValueResolver` for every `[FromClaim]`
+member on every request:
+
+```csharp
+public sealed class SystemAccountValueResolver : IContextualValueResolver
+{
+    public bool CanResolve(IContextualSource source) => source is FromClaimAttribute;
+
+    public string? Resolve(IContextualSource source, HttpContext httpContext) =>
+        httpContext.User.FindFirst(((FromClaimAttribute)source).ClaimType)?.Value
+        ?? "system-account"; // only the caller who truly has no claim gets the substitute
+}
+
+builder.Services.AddScoped<IContextualValueResolver, SystemAccountValueResolver>();
+builder.Services.AddContextualRequestPopulation();
+```
 
 #### Filling a member from a request header — `[FromRequestHeader]`
 
@@ -147,8 +165,7 @@ public sealed record TransferCommand : Fluents.Requests.IWitResponse<TransferMod
 | `[FromRequestHeader("Idempotency-Key")]`<br>`public string? IdempotencyKey { get; set; }`, caller sends `Idempotency-Key: k-77` | `IdempotencyKey = "k-77"` — whatever the request body said for that member |
 | same, caller sends `idempotency-key: k-77` | `IdempotencyKey = "k-77"` — header-name matching is case-insensitive |
 | same, header sent twice (`k-77`, then `k-88`) | `IdempotencyKey = "k-77"` — the first value sent, never a joined `"k-77,k-88"` |
-| same, header absent, no fallback configured | `IdempotencyKey = null` — the property's type default, and the request is still dispatched |
-| same, header absent, on an anonymous group (`RequireAuthorization = false`) with `SystemAccountFallback = "system-account"` | `IdempotencyKey = "system-account"` |
+| same, header absent | `IdempotencyKey = null` — the property's type default, and the request is still dispatched |
 
 Three points worth stating plainly before you build on it:
 
@@ -156,11 +173,12 @@ Three points worth stating plainly before you build on it:
   on to validation and the handler as usual — population is not validation, here as everywhere
   else in this mechanism. Making a header mandatory stays the job of a filter (or a validation
   rule on the member).
-- **A header-filled member takes the configured `SystemAccountFallback`** when one applies — a
-  fallback is set and the group's `RequireAuthorization` is `false` — exactly as a claim-filled
-  member does. Where that fallback applies, an absent header leaves a **constant** value rather
-  than an empty one. A service using the member as an idempotency key needs to know that: every
-  caller who omits the header shares one key.
+- **A header-filled member holds its type default when the header is absent** — there is no
+  built-in substitute value, on an anonymous group or otherwise. A host that supplies its own
+  `IContextualValueResolver` (see [Contextual request binding](#contextual-request-binding---fromclaim-fromrequestheader-and-icontextualsource)
+  above) to fill that gap should account for the same implication a claim-filled member has: if
+  every omitted-header caller resolves to one shared value, a service using the member as an
+  idempotency key ends up sharing one key across those callers.
 - **A header is never an authorization signal.** Unlike a claim, which the host derives from an
   authenticated identity, a header is supplied by the caller and can say anything. The declaration
   is a binding convenience only; a service that treated a header-filled member as proof of
@@ -881,11 +899,10 @@ combination is not an error.
 
 ## ⚙️ Configuration reference
 
-`ContextualPopulationOptions` — via `AddContextualRequestPopulation(Action<ContextualPopulationOptions>?)`:
-
-| Option | Type | Default | Effect |
-|---|---|---|---|
-| `SystemAccountFallback` | `string?` | `null` | Substituted only when a declared member cannot be resolved **and** the mapped group's `RequireAuthorization` is `false`. `null` disables the fallback entirely. An authenticated-but-unresolved member never receives it — it holds its type's default instead. |
+`AddContextualRequestPopulation()` takes no configure delegate and has no options of its own — a
+declared member the registered resolvers cannot resolve always holds its type's default. See
+[Contextual request binding](#contextual-request-binding---fromclaim-fromrequestheader-and-icontextualsource)
+above for supplying a value of your own via a custom `IContextualValueResolver`.
 
 `EndpointRegistrationOptions` — via `UseEndpointConfigs(Action<EndpointRegistrationOptions>?, params Assembly[])`:
 
@@ -893,7 +910,7 @@ combination is not an error.
 |---|---|---|---|
 | `RouteTemplate` | `Func<IEndpointConfig, string>?` | `null` | `null` uses `/v{version:apiVersion}{GroupEndpoint}` when versioning is enabled, or `{GroupEndpoint}` otherwise. |
 | `DefaultTag` | `string` | `"Root"` | Used when an `IEndpointConfig.Tag` resolves to an empty string. |
-| `RequireAuthorization` | `bool` | `true` | When `true`, applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` to add per-method (or group-default) scopes. Disabling it is an explicit per-host opt-out — it is also what enables `SystemAccountFallback`, and makes `[EndpointGroupScope]` inert (no attribute read, no scope enforced, no startup refusal). |
+| `RequireAuthorization` | `bool` | `true` | When `true`, applies plain `RequireAuthorization()` to every group, then reads any `[EndpointGroupScope]` declared above the `IEndpointConfig` to add per-method (or group-default) scopes. Disabling it is an explicit per-host opt-out — it makes `[EndpointGroupScope]` inert (no attribute read, no scope enforced, no startup refusal). |
 | `EnableVersioning` | `bool` | `true` | Adds the version prefix and API-version metadata. Requires `AddApiVersioning()` to be registered, or `UseEndpointConfigs` throws at startup — even with zero discovered configs. |
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | `null` | Runs after mapping/tags/version metadata, before authorization is applied and before `IEndpointConfig.Map`. |
 
@@ -1092,9 +1109,6 @@ built. Neither is a runtime surprise — both happen at startup.
 - **Population only runs on groups mapped by `UseEndpointConfigs`.** A hand-written
   `app.MapPost(...)` outside a discovered group never gets the filter, so a `[FromClaim]` property
   there keeps whatever the caller sent.
-- **`SystemAccountFallback` never crosses the `RequireAuthorization` boundary** — it only fires when
-  the group allows anonymous access; an authenticated caller missing the claim always gets the
-  property's type default, never the fallback.
 - **Population is not validation.** A claim value that fails to convert to the property's type
   (e.g. a non-`Guid` string into a `Guid` property) silently becomes that type's default — it never
   rejects the request. Pair it with your own validator if a missing/unresolvable value must block
@@ -1105,9 +1119,11 @@ built. Neither is a runtime surprise — both happen at startup.
 - **A `[FromRequestHeader]` member is not an authorization signal.** A claim comes from an
   authenticated identity; a header comes from the caller, who can send any value. Treat the
   declaration as binding convenience, never as proof of who is calling.
-- **`SystemAccountFallback` fills an absent header with a constant.** On an anonymous group with a
-  fallback configured, every caller who omits the header gets the *same* value — which quietly
-  collapses a member used as an idempotency key into one shared key across callers.
+- **A custom resolver used as a fallback can quietly collapse an idempotency key.** There is no
+  built-in fallback — an absent header simply leaves the member's type default. If a host registers
+  its own `IContextualValueResolver` ahead of the built-in ones to supply a shared value instead,
+  every caller who omits the header gets that *same* value, which collapses a member used as an
+  idempotency key into one shared key across callers.
 - **A header-declared member is published, a claim-declared one is not.** `[FromRequestHeader]`
   adds an `in: header` parameter to the operation (the member is still absent from the request
   body), because the caller does have to send it; `[FromClaim]` is hidden entirely.

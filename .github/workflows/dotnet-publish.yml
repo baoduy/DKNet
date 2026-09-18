@@ -65,8 +65,14 @@ jobs:
         uses: paulhatch/semantic-version@v6.0.2
         with:
           tag_prefix: "v"
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
+          # Major is never bumped by this pipeline. It is the repository owner's
+          # decision, taken by hand: tag `main` with `v<N>.0.0`, then re-run this
+          # workflow. This sentinel matches no commit, so `!:`, `BREAKING CHANGE:`
+          # and the retired `(MAJOR)` marker all bump nothing.
+          major_pattern: "DKNET_MAJOR_IS_TAGGED_BY_HAND_NEVER_BY_CI"
+          # minor_pattern is deliberately absent — the action's own default is
+          # /feat(\(.+\))?:/, which is the Conventional Commit style already used
+          # on dev. Do not re-add an override.
           version_format: "${major}.${minor}.${patch}"
           bump_each_commit: false
           search_commit_body: false
