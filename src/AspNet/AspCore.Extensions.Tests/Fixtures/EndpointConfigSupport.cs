@@ -6,6 +6,7 @@ using DKNet.SlimBus.Extensions;
 using FluentResults;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
@@ -407,6 +408,64 @@ public sealed class EmptyTagEndpointConfig : IEndpointConfig
     public void Map(RouteGroupBuilder group) => group.MapPost<ByUserProbeCommand, WidgetResult>("/by-user");
 
     #endregion
+}
+
+/// <summary>
+///     Declares "accounts.read" for GET and "accounts.write" for PUT above the group (DRK-1542 §5 "The caller's
+///     scope decides each method of one group", reused with <c>RequireAuthorization = false</c> for "A host with
+///     authorization switched off serves every route").
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read", EndpointHttpMethods.Get)]
+[EndpointGroupScopeAttribute("accounts.write", EndpointHttpMethods.Put)]
+public sealed class ScopedReadWriteEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/scoped-read-write";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        group.MapGet("/item", () => Results.Ok());
+        group.MapPut("/item", () => Results.Ok());
+    }
+}
+
+/// <summary>Declares "accounts.write" for POST, PUT and DELETE above the group (DRK-1542 §5 "One declaration covers several methods").</summary>
+[EndpointGroupScopeAttribute("accounts.write", EndpointHttpMethods.Post, EndpointHttpMethods.Put, EndpointHttpMethods.Delete)]
+public sealed class ScopedMultiMethodEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/scoped-multi-method";
+
+    public void Map(RouteGroupBuilder group)
+    {
+        group.MapPost("/item", () => Results.Ok());
+        group.MapPut("/item/{id:guid}", (Guid id) => Results.Ok());
+        group.MapDelete("/item/{id:guid}", (Guid id) => Results.Ok());
+    }
+}
+
+/// <summary>
+///     Declares "accounts.read" for GET above the group; its one GET route requires its own "postings.read" scope
+///     instead (DRK-1542 §5 "A route that requires its own scope keeps it").
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read", EndpointHttpMethods.Get)]
+public sealed class RouteOwnScopeEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/scoped-route-own-scope";
+
+    public void Map(RouteGroupBuilder group) =>
+        group.MapGet("/item", () => Results.Ok()).RequireAuthorization("postings.read");
+}
+
+/// <summary>
+///     Declares "accounts.read" for GET above the group; its one GET route is opened to anonymous callers
+///     (DRK-1542 §5 "A route opened to anonymous callers needs no token").
+/// </summary>
+[EndpointGroupScopeAttribute("accounts.read", EndpointHttpMethods.Get)]
+public sealed class AnonymousRouteEndpointConfig : IEndpointConfig
+{
+    public string GroupEndpoint => "/scoped-anonymous";
+
+    public void Map(RouteGroupBuilder group) =>
+        group.MapGet("/item", () => Results.Ok()).AllowAnonymous();
 }
 
 /// <summary>Options for <see cref="TestAuthHandler" /> — set per-test, no shared/static state.</summary>
