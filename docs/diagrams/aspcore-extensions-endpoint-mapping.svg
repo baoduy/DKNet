@@ -404,15 +404,15 @@ rect.c-bg-rect { fill: var(--bg); }
           <text data-detail="context" x="924.1" y="258" class="t-muted" font-size="8" text-anchor="middle">host filters, e.g. validation</text>
         </g>
 
-        <g id="node-authmap" data-node-id="authmap" data-node-label="RequireAuthorization, Map" tabindex="0" role="button" aria-label="Focus RequireAuthorization, Map, AuthPolicy, or no policy, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="backend" data-node-sublabel="AuthPolicy, or no policy" data-node-context="Per-config route group › Filters, authorization, Map">
-          <title>RequireAuthorization, Map · AuthPolicy, or no policy · Per-config route group › Filters, authorization, Map</title>
+        <g id="node-authmap" data-node-id="authmap" data-node-label="RequireAuthorization, Map" tabindex="0" role="button" aria-label="Focus RequireAuthorization, Map, sign-in, plus scopes, Per-config route group › Filters, authorization, Map" aria-pressed="false" data-node-kind="backend" data-node-sublabel="sign-in, plus scopes" data-node-context="Per-config route group › Filters, authorization, Map">
+          <title>RequireAuthorization, Map · sign-in, plus scopes · Per-config route group › Filters, authorization, Map</title>
           <rect x="1048.1" y="220" width="164" height="52" rx="6" class="c-mask"/>
           <rect x="1048.1" y="220" width="164" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1054.1 226) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="1130.1" y="241" class="t-primary" font-size="10.4" font-weight="600" text-anchor="middle">RequireAuthorization, Map</text>
-          <text data-detail="context" x="1130.1" y="258" class="t-muted" font-size="8" text-anchor="middle">AuthPolicy, or no policy</text>
+          <text data-detail="context" x="1130.1" y="258" class="t-muted" font-size="8" text-anchor="middle">sign-in, plus scopes</text>
         </g>
 
         <g id="node-noversioning" data-node-id="noversioning" data-node-label="InvalidOperationException" tabindex="0" role="button" aria-label="Focus InvalidOperationException, EnableVersioning on, no AddApiVersioning, Early exits › Guard, then discover" aria-pressed="false" data-node-kind="security" data-node-sublabel="EnableVersioning on, no AddApiVersioning" data-node-tag="thrown before discovery" data-node-context="Early exits › Guard, then discover">

@@ -156,7 +156,7 @@
       "col": 5,
       "type": "backend",
       "label": "RequireAuthorization, Map",
-      "sublabel": "AuthPolicy, or no policy",
+      "sublabel": "sign-in, plus scopes",
       "width": 164
     }
   ],
