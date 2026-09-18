@@ -23,7 +23,9 @@ public interface IAesGcmEncryption : IDisposable
     ///     Decrypts the specified cipher package using the provided base64 key and optional associated data.
     /// </summary>
     /// <param name="cipherPackage">The base64-encoded cipher package to decrypt.</param>
-    /// <param name="base64Key">The base64-encoded key to use for decryption.</param>
+    /// <param name="base64Key">
+    ///     The base64-encoded key to use for decryption. Compared against the instance key in constant time.
+    /// </param>
     /// <param name="associatedData">Optional additional data to authenticate.</param>
     /// <returns>The decrypted plain text string.</returns>
     string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null);
@@ -40,7 +42,9 @@ public interface IAesGcmEncryption : IDisposable
     ///     Encrypts the specified plain text using the provided base64 key and optional associated data.
     /// </summary>
     /// <param name="plainText">The plain text to encrypt.</param>
-    /// <param name="base64Key">The base64-encoded key to use for encryption.</param>
+    /// <param name="base64Key">
+    ///     The base64-encoded key to use for encryption. Compared against the instance key in constant time.
+    /// </param>
     /// <param name="associatedData">Optional additional data to authenticate.</param>
     /// <returns>The encrypted cipher package as a base64-encoded string.</returns>
     string Encrypt(string plainText, string base64Key, byte[]? associatedData = null);
@@ -123,7 +127,7 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     /// </summary>
     public string Decrypt(string cipherPackage, string base64Key, byte[]? associatedData = null)
     {
-        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
+        if (!KeyMatches(base64Key))
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use DecryptString().");
 
@@ -172,11 +176,31 @@ public sealed class AesGcmEncryption : IAesGcmEncryption
     /// </summary>
     public string Encrypt(string plainText, string base64Key, byte[]? associatedData = null)
     {
-        if (!string.Equals(base64Key, Key, StringComparison.Ordinal))
+        if (!KeyMatches(base64Key))
             throw new InvalidOperationException(
                 "Provided key does not match instance key. Create a new instance with the desired key or use EncryptString().");
 
         return EncryptString(plainText, associatedData);
+    }
+
+    /// <summary>
+    ///     Compares <paramref name="base64Key" /> against the instance key in constant time, decoded to bytes so a
+    ///     textually different but byte-identical key still matches.
+    /// </summary>
+    private bool KeyMatches(string? base64Key)
+    {
+        if (string.IsNullOrWhiteSpace(base64Key)) return false;
+
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(
+                Convert.FromBase64String(base64Key),
+                Convert.FromBase64String(Key));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
