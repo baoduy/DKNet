@@ -52,12 +52,20 @@ internal static class GroupScopeAuthorization
             .Any(authorizeData => !string.IsNullOrEmpty(authorizeData.Policy));
         if (hasOwnPolicy || endpointBuilder.Metadata.OfType<IAllowAnonymous>().Any()) return;
 
-        var servedMethods = endpointBuilder.Metadata.OfType<IHttpMethodMetadata>().FirstOrDefault()?.HttpMethods;
+        // Union of every IHttpMethodMetadata entry, not just one: EndpointMetadataCollection.GetMetadata<T>()
+        // (what HttpMethodMatcherPolicy dispatches on) returns the LAST match, so reading only the first or last
+        // entry can miss a method a route actually serves when more than one entry is stacked on it (e.g. a
+        // second WithMetadata(new HttpMethodMetadata(...)) call). Same shape as
+        // DKNet.AspCore.Idempotency.IdempotencySetup.RequiredIdempotentKey.
+        var servedMethods = endpointBuilder.Metadata
+            .OfType<IHttpMethodMetadata>()
+            .SelectMany(metadata => metadata.HttpMethods)
+            .ToList();
         var routePattern = endpointBuilder is RouteEndpointBuilder routeEndpointBuilder
             ? routeEndpointBuilder.RoutePattern.RawText
             : endpointBuilder.DisplayName;
 
-        if (servedMethods is null || servedMethods.Count == 0)
+        if (servedMethods.Count == 0)
         {
             RequireCoverage(routePattern, "*", methodToScope, out _);
             return;
