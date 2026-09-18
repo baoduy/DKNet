@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using Microsoft.EntityFrameworkCore;
@@ -101,30 +100,20 @@ internal sealed class EfCoreAuditHook(
     private async Task PublishLogsAsync(DbContext context, IEnumerable<AuditLogEntry> logs, CancellationToken cancellationToken)
     {
         var publishers = serviceProvider.GetKeyedServices<IAuditLogPublisher>(context.GetType().FullName).ToList();
+        var logList = logs as IReadOnlyCollection<AuditLogEntry> ?? logs.ToList();
         foreach (var publisher in publishers)
         {
             try
             {
-                await publisher.PublishAsync(logs, cancellationToken);
+                await publisher.PublishAsync(logList, cancellationToken);
             }
             catch (Exception ex)
             {
                 if (!logger.IsEnabled(LogLevel.Error)) continue;
 
-                string? payload = null;
-                try
-                {
-                    payload = JsonSerializer.Serialize(logs);
-                }
-                catch
-                {
-                    // Serialization failure must not escape the catch block.
-                }
-
-                if (payload is not null)
-                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries: {AuditLogEntries}", publisher.GetType().Name, payload);
-                else
-                    logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entries count: {AuditLogEntriesCount}", publisher.GetType().Name, logs.Count());
+                var entityNames = string.Join(", ", logList.Select(l => l.EntityName).Distinct());
+                logger.LogError(ex, "Audit log publishing failed for {Publisher}. Entity names: {EntityNames}. Entries count: {AuditLogEntriesCount}",
+                    publisher.GetType().Name, entityNames, logList.Count);
             }
         }
     }
