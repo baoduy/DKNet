@@ -139,13 +139,9 @@ jobs:
   # plugins/dknet-skills/package.json and .claude-plugin/plugin.json; the version is injected here, exactly
   # like -p:PackageVersion for the NuGet packages.
   #
-  # Branches:
-  #   main — release version (e.g. 9.5.10), npm dist-tag "latest". Runs after the NuGet publish above.
-  #   dev  — test channel: `gh workflow run dotnet-publish.yml --ref dev`. The build job still runs (it computes
-  #          the version and packs) but Enable_Nuget_Release/Enable_Release are false there, so nothing goes to
-  #          NuGet and no GitHub release is created; this job publishes <version>-dev.<run_number> under the npm
-  #          dist-tag "dev" (install with `npm i -D @drunkcoding/dknet-skills@dev`), so it can never take a
-  #          version number a main release will need.
+  # Releases from `main` only, on the same condition as Enable_Nuget_Release above: a dispatch on any other
+  # branch still runs the build job (it computes the version and packs) but publishes nothing, to npm or NuGet.
+  # A version already on npm is skipped, so a re-run of the same commit is a no-op rather than a failure.
   # Auth: npm Trusted Publishing (OIDC) — https://docs.npmjs.com/trusted-publishers. No NPM_TOKEN secret and
   # nothing to rotate; the job mints a short-lived credential from the `id-token: write` permission below.
   # One-time setup on npmjs.com → package @drunkcoding/dknet-skills → Settings → Trusted Publisher →
@@ -156,15 +152,13 @@ jobs:
   publish-npm:
     name: Publish dknet-skills (npm)
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write   # npm trusted publishing (OIDC) + automatic provenance
     env:
-      IS_RELEASE: ${{ github.ref == 'refs/heads/main' }}
-      VERSION: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.version || format('{0}-dev.{1}', needs.build.outputs.version, github.run_number) }}
-      NPM_DIST_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
+      VERSION: ${{ needs.build.outputs.version }}
     defaults:
       run:
         working-directory: plugins/dknet-skills
@@ -215,5 +209,5 @@ jobs:
       - name: Publish to npmjs.com
         if: ${{ steps.exists.outputs.exists == 'false' }}
         run: |
-          echo "Publishing ${VERSION} (dist-tag ${NPM_DIST_TAG}, release=${IS_RELEASE})"
-          npm publish --access public --tag "${NPM_DIST_TAG}"
+          echo "Publishing ${VERSION} to the 'latest' dist-tag"
+          npm publish --access public

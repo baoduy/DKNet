@@ -104,14 +104,14 @@ npm attaches the provenance attestation automatically. The trusted publisher is 
 `dotnet-publish.yml`, no environment); npm matches the workflow filename exactly, so renaming the workflow means
 updating that setting too.
 
-To test the npm path without releasing anything, dispatch the workflow on `dev`:
+The npm job publishes from `main` only, on the same condition as the NuGet packages. A dispatch on any other
+branch runs the build but publishes nothing:
 
 ```bash
-gh workflow run dotnet-publish.yml --ref dev
+gh workflow run dotnet-publish.yml --ref dev     # builds, publishes nothing
 ```
 
-On `dev` the NuGet publish and the GitHub release stay off; the npm job publishes `<version>-dev.<run>` under the
-`dev` dist-tag (`npm i -D @drunkcoding/dknet-skills@dev`), which never collides with a `main` release.
+A version already on npm is skipped, so re-running the workflow on an unchanged `main` is a no-op.
 
 ## Keeping skills true
 
