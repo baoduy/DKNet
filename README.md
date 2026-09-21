@@ -35,6 +35,16 @@ Full documentation — architecture, every package's API reference, configuratio
 
 ![The DKNet onion: presentation packages on top, the application ring below, the EF Core infrastructure ring in the middle, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages at the centre. Every arrow is a project reference pointing inward.](docs/diagrams/dknet-layers.svg)
 
+## AI coding agents
+
+The [`dknet-skills`](plugins/dknet-skills/README.md) plugin teaches Claude Code, Cursor, Codex, Copilot and other
+agents every DKNet package — verified against `src/`, with compiled examples:
+
+```bash
+npx skills add baoduy/DKNet                                    # any agent (Agent Skills standard)
+claude plugin marketplace add baoduy/DKNet && claude plugin install dknet-skills@dknet   # Claude Code
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the pull request process, and

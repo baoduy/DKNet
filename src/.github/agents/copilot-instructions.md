@@ -14,9 +14,10 @@ successors, both live:
 
 - **`docs/<Area>/<Package>.md`** — the per-package reference (API, DI setup, options).
   Areas: `Core/`, `EfCore/`, `AspNetCore/`, `Services/`, `Messaging/`, `Aspire/`.
-- **`.claude/skills/dknet-packages/`** — scenario-based routing from a need to the
-  right package and its doc page. Companion skills: `dknet-codegen` (source
-  generators), `dknet-testing` (TestContainers, coverage).
+- **`plugins/dknet-skills/skills/dknet-packages/`** — scenario-based routing from a need
+  to the right package and to the skill that owns it. The `dknet-skills` plugin holds one
+  skill per package family plus `dknet-codegen` (source generators) and `dknet-testing`
+  (TestContainers, coverage).
 
 ## Usage
 Before API code generation tasks:

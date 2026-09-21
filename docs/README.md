@@ -17,6 +17,7 @@ if you are upgrading off them.
 - **[Getting Started Guide](Getting-Started.md)** — prerequisites, installation, and a first working setup
 - **[Configuration & Setup](Configuration.md)** — how configuration composes across packages
 - **[Architecture Guide](Architecture.md)** — the rings, what depends on what, and the two end-to-end paths
+- **[Agent skills (`dknet-skills`)](https://github.com/baoduy/DKNet/tree/dev/plugins/dknet-skills)** — install with `npx skills add baoduy/DKNet` or `claude plugin install dknet-skills@dknet` so your coding agent knows every package
 
 ### Core Documentation
 - **[API Reference](API-Reference.md)** — index into the per-package API documentation

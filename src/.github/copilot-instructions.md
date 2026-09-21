@@ -152,7 +152,7 @@ public void MethodName_WhenScenarioOccurs_ThenExpectedOutcome()
 #### When Asked to Implement a Feature
 1. **Check** `docs/<Area>/<Package>.md` - Does a package already do this?
 2. **Review** `CLAUDE.md` - What pattern should be used?
-3. **Reference** `.claude/skills/dknet-packages` - Which package fits the scenario?
+3. **Reference** `plugins/dknet-skills/skills/dknet-packages` - Which package fits the scenario, and which skill owns it?
 4. **Generate** code following established patterns
 5. **Include** comprehensive tests (arrange-act-assert)
 6. **Document** with XML comments
@@ -269,7 +269,7 @@ When the user asks about:
 2. `/src/AGENTS.md` - Coding, testing and PR conventions
 3. `/docs/<Area>/README.md` - Area index
 4. `/docs/<Area>/<Package>.md` - Per-package API reference
-5. `/.claude/skills/` - `dknet-packages`, `dknet-codegen`, `dknet-testing`
+5. `/plugins/dknet-skills/skills/` - the `dknet-skills` plugin (`dknet-packages` router, one skill per package family, `dknet-codegen`, `dknet-testing`)
 
 ### Critical Patterns
 - **Specification Pattern**: Reusable query specifications

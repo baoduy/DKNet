@@ -8,7 +8,7 @@ Repo-wide context, architecture and pitfalls live in the repo-root **`CLAUDE.md`
 
 1. **`docs/<Area>/README.md`** — index of packages in the area you're touching.
 2. **`docs/<Area>/<Package>.md`** — the package's API, DI setup, options and examples.
-3. **`.claude/skills/`** — `dknet-packages` (scenario → package routing), `dknet-codegen` (`[CrudAction]` / `[GenerateDto]`), `dknet-testing` (TestContainers, SQL assertions).
+3. **`plugins/dknet-skills/skills/`** — the `dknet-skills` plugin: `dknet-packages` (scenario → package routing, start here), one skill per package family (`dknet-efcore-*`, `dknet-slimbus-cqrs`, `dknet-aspcore-api`, `dknet-idempotency`, `dknet-blob-storage`, `dknet-services`, `dknet-core-utilities`), `dknet-codegen` (`[CrudAction]` / `[GenerateDto]`), `dknet-testing` (TestContainers, SQL assertions). Load with `claude --plugin-dir plugins/dknet-skills`; the table in `CLAUDE.md` maps needs to skills.
 4. **`docs/Architecture.md`**, **`docs/Testing-Strategy.md`** — cross-cutting reference.
 
 ## Layout
@@ -56,7 +56,7 @@ var results = await _db.Products.AsNoTracking().AsExpandable()
 
 **Specifications** inherit `Specification<TEntity>` and expose `Criteria`, `Includes`, `OrderBy`; the spec repository (`AddSpecRepo<TDbContext>()`) consumes them rather than raw LINQ. `DKNet.EfCore.Repos` / `Repos.Abstractions` have been **removed** — the packages no longer exist (`docs/EfCore/Migrating-Repos-To-Specifications.md`).
 
-**Aggregates** derive from `AggregateRoot` (`DKNet.EfCore.Abstractions`), mutate through methods that call `AddEvent(...)`, and let `DKNet.EfCore.Events` dispatch during `SaveChanges`.
+**Aggregates** derive from `Entity<TKey>` / `Entity` (`DKNet.EfCore.Abstractions` — there is no `AggregateRoot` type), mutate through methods that call `AddEvent(...)`, and let `DKNet.EfCore.Events` dispatch during `SaveChanges`.
 
 **Generated code**: `[CrudAction]` and `[GenerateDto]` drive Roslyn generators. Never hand-write a type the generator emits — it produces duplicate-type build errors. Use the `dknet-codegen` skill.
 
