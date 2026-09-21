@@ -31,12 +31,18 @@ npx skills add baoduy/DKNet --all                # every skill, every detected a
 npx skills add baoduy/DKNet -s dknet-efcore-specifications -a claude-code -g
 ```
 
-**Claude Code from npm** (no marketplace; pins the version with your project):
+**From npm** (no marketplace; pins the version with your project):
 
 ```bash
 npm i -D @drunkcoding/dknet-skills
-claude --plugin-dir node_modules/@drunkcoding/dknet-skills
+claude --plugin-dir node_modules/@drunkcoding/dknet-skills   # Claude Code
+npx skills experimental_sync -a '*'                          # any agent: node_modules -> .agents/skills/ etc.
 ```
+
+> `@drunkcoding/dknet-skills` is an **npm package name, not a `skills add` argument**. `skills add` reads its
+> argument as a GitHub `owner/repo`, so `npx skills add @drunkcoding/dknet-skills` tries to clone
+> `github.com/@drunkcoding/dknet-skills.git` and fails with an authentication error. Use `npx skills add
+> baoduy/DKNet` to install from GitHub, or the two npm commands above.
 
 **Working on DKNet itself** (this repository): `claude --plugin-dir plugins/dknet-skills`.
 
