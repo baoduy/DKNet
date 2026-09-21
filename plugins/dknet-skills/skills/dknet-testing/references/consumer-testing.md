@@ -267,7 +267,9 @@ public sealed class NpgsqlIdempotencyTests : IAsyncLifetime
     public async Task PostOrders_WithNpgsqlStore_ReturnsCachedResponseOnDuplicate()
     {
         var factory = new WebApplicationFactory<NpgsqlIdempotencyTestProgram>().WithWebHostBuilder(builder =>
-            builder.ConfigureServices((_, services) => services.AddIdempotencyWithNpgsqlStore(_container.GetConnectionString())));
+            builder.ConfigureServices((_, services) => services.AddIdempotencyWithNpgsqlStore(
+                _container.GetConnectionString(),
+                o => o.ConflictHandling = IdempotentConflictHandling.CachedResult)));
         var client = factory.CreateClient();
 
         var request1 = new HttpRequestMessage(HttpMethod.Post, "/orders");
@@ -283,7 +285,7 @@ public sealed class NpgsqlIdempotencyTests : IAsyncLifetime
 }
 ```
 
-Assert the concurrent-duplicate case by firing several requests with the same key through `Task.WhenAll` and counting successes vs. conflicts (or, for `ConflictHandling.CachedResult`, asserting every response body is identical) — not by sending one request twice sequentially, which never exercises the reservation race.
+`IdempotencyOptions.ConflictHandling` defaults to `ConflictResponse` (a plain duplicate gets a 409 `ProblemDetails` body, not the first response); the `CachedResult` override above is what makes the two bodies equal. Assert the concurrent-duplicate case by firing several requests with the same key through `Task.WhenAll` and counting successes vs. conflicts (or, under `ConflictHandling.CachedResult` as configured above, asserting every response body is identical) — not by sending one request twice sequentially, which never exercises the reservation race.
 
 **RedisStore** — `IdempotencyRedisStore` itself is `internal`, reached only through `InternalsVisibleTo` inside its own test project (that's how its suite mocks `IConnectionMultiplexer`/`IDatabase` with Moq to drive concurrency scenarios directly against it). Consumer code has no such grant, so assert on the DI registration shape instead of resolving the provider — resolving a real one with a connection string like `"localhost:6379"` opens an actual socket the moment `IConnectionMultiplexer` is *resolved*, not registered:
 
@@ -310,7 +312,53 @@ For an end-to-end assertion against the Redis store's actual behavior, run a rea
 
 ## Blob storage: Azurite, MinIO, and Local
 
-Azurite (Azure Blob emulator, from `SKILL.md`'s recipe) and MinIO (S3-compatible) follow the identical `IAsyncLifetime` + Testcontainers shape; only the adapter registration call and its options differ. MinIO, through `AddS3BlobService(IConfiguration)` — that method takes configuration only, so build a small in-memory one:
+Azurite (Azure Blob emulator) and MinIO (S3-compatible) follow the identical `IAsyncLifetime` + Testcontainers shape; only the adapter registration call and its options differ.
+
+**Azurite**, through `AddAzureStorageAdapter(IConfiguration)` — the same shape DKNet's own `Svc.BlobStorage.Tests` fixture (`AzureStorageBlobServiceFixture`) uses:
+
+```csharp
+using DKNet.Svc.BlobStorage.Abstractions;
+using DKNet.Svc.BlobStorage.AzureStorage;
+using Shouldly;
+using Testcontainers.Azurite;
+using Xunit;
+
+public sealed class AzuriteBlobStorageTests : IAsyncLifetime
+{
+    private readonly AzuriteContainer _container = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.28.0")
+        .WithCommand("--skipApiVersionCheck")
+        .Build();
+    private IBlobService _blobs = null!;
+
+    public async Task InitializeAsync()
+    {
+        await _container.StartAsync();
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["BlobService:AzureStorage:ConnectionString"] = _container.GetConnectionString(),
+            ["BlobService:AzureStorage:ContainerName"] = "test-container"
+        }).Build();
+
+        var services = new ServiceCollection().AddLogging();
+        services.AddAzureStorageAdapter(config);
+        _blobs = services.BuildServiceProvider().GetRequiredService<IBlobService>();
+    }
+
+    public async Task DisposeAsync() => await _container.DisposeAsync();
+
+    [Fact]
+    public async Task SaveAsync_ThenCheckExistsAsync_ReturnsTrue()
+    {
+        var saved = new BlobDetails.BlobData("greeting.txt", new BinaryData("hello"u8.ToArray()));
+        await _blobs.SaveAsync(saved);
+
+        (await _blobs.CheckExistsAsync(new BlobRequest("greeting.txt"))).ShouldBeTrue();
+    }
+}
+```
+
+**MinIO**, through `AddS3BlobService(IConfiguration)` — that method takes configuration only, so build a small in-memory one:
 
 ```csharp
 using DKNet.Svc.BlobStorage.Abstractions;

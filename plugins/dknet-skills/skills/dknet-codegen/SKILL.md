@@ -33,7 +33,9 @@ using DKNet.EfCore.Abstractions.Entities;
 
 namespace Catalog;
 
-public sealed class Product : Entity
+// `partial` so the fuller vertical-slice example in references/DKNet.SlimBus.Generators.md can
+// extend this same Product with two more [CrudAction] members without repeating the ctor/UpdatePrice.
+public sealed partial class Product : Entity
 {
     private Product()
     {

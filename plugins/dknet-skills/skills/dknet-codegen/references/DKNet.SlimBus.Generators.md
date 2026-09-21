@@ -77,34 +77,20 @@ There is no options object for the generator itself — configuration is the thr
 
 ### A full create + update + action vertical slice, with zero hand-written request/handler/endpoint code
 
+Builds on the Quick start's `Product`/`ProductDto`/`AppDbContext` in `SKILL.md` (declared `partial` there for exactly
+this reason) — the same entity, extended with two named actions instead of restated from scratch:
+
 ```csharp
-// Domain project
+// Domain project — extends the Quick start's Product (SKILL.md) with two named actions.
 using System.ComponentModel.DataAnnotations;
 using DKNet.EfCore.Abstractions.Attributes;
-using DKNet.EfCore.Abstractions.Entities;
 
 namespace Catalog;
 
-public sealed class Product : Entity
+public sealed partial class Product
 {
-    private Product()
-    {
-    } // EF
-
-    [CrudCreate]
-    public Product([Required, MaxLength(100)] string name, decimal price) : base(Guid.NewGuid())
-    {
-        Name = name;
-        Price = price;
-    }
-
-    public string Name { get; private set; } = string.Empty;
-    public decimal Price { get; private set; }
     public bool IsApproved { get; private set; }
     public bool IsArchived { get; private set; }
-
-    [CrudUpdate]
-    public void UpdatePrice([Range(0, 1_000_000)] decimal price) => Price = price;
 
     [CrudAction("approval")]
     public void Approve([Required] string approvedBy) => IsApproved = true;
@@ -114,22 +100,8 @@ public sealed class Product : Entity
 }
 ```
 
-```csharp
-// API project
-using Catalog;
-using DKNet.EfCore.DtoGenerator;
-
-namespace Api;
-
-[GenerateDto(typeof(Product))]
-public partial record ProductDto;
-
-public sealed class AppDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext> options)
-    : Microsoft.EntityFrameworkCore.DbContext(options)
-{
-    public Microsoft.EntityFrameworkCore.DbSet<Product> Products => Set<Product>();
-}
-```
+The API project and `Program.cs` are unchanged from the Quick start — `ProductDto`/`AppDbContext` already cover
+`Product`, and `MapProductCrud()` now also exposes the two new actions alongside create/update/delete:
 
 ```csharp
 // Program.cs
@@ -188,44 +160,9 @@ A route name passed to `Exclude(string[])`/`Configure(string, ...)` that the ent
 
 ### Overriding a generated handler with hand-written logic
 
-```csharp
-// Same namespace the generator emits requests/handlers into for this project: {AssemblyName}.Crud
-// (Generated.Crud here because this sample project has no assembly name — use your own project's
-// assembly name followed by ".Crud" in a real app).
-namespace Generated.Crud;
-
-using System.Threading;
-using Api;
-using Catalog;
-using DKNet.EfCore.Specifications.Definitions;
-using DKNet.EfCore.Specifications.Extensions;
-using DKNet.EfCore.Specifications.Repositories;
-using DKNet.SlimBus.Extensions;
-using FluentResults;
-using MapsterMapper;
-
-internal sealed class ProductByIdSpec : Specification<Product>
-{
-    public ProductByIdSpec(Guid id) => WithFilter(x => x.Id == id);
-}
-
-internal sealed class UpdatePriceProductHandler(IRepositorySpec repository, IMapper mapper)
-    : Fluents.Requests.IHandler<UpdatePriceProductRequest, ProductDto>
-{
-    public async Task<IResult<ProductDto>> OnHandle(UpdatePriceProductRequest request, CancellationToken cancellationToken)
-    {
-        // Custom logic replaces the generated fetch-by-id + UpdatePrice(...) call; the request
-        // record itself is still generated, only this handler is skipped by the generator.
-        var entity = await repository.FirstOrDefaultAsync(new ProductByIdSpec(request.Id), cancellationToken);
-        if (entity is null)
-            return Result.Fail<ProductDto>(new NotFoundError($"Product '{request.Id}' was not found."));
-
-        entity.UpdatePrice(request.Price);
-        await repository.UpdateAsync(entity, cancellationToken);
-        return Result.Ok(mapper.Map<ProductDto>(entity));
-    }
-}
-```
+See `SKILL.md`'s "Override one generated handler, keep the rest generated" — same `UpdatePriceProductRequest`,
+same `ProductByIdSpec`/`UpdatePriceProductHandler` pair, living in `Generated.Crud` (the fallback namespace for
+this sample project, which has no assembly name — substitute `{YourAssemblyName}.Crud` in a real app).
 
 Matching is by the **request type's simple name only** (found via a syntax scan of base lists, since the generated type doesn't exist yet as a symbol) — the hand-written handler's DTO type argument is never cross-checked against the generated one, so getting it wrong compiles but fails at dispatch. The request record itself is still generated regardless of the override; only the handler is skipped (`DKCRUDGEN005`, Info).
 

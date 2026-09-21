@@ -370,7 +370,7 @@ public sealed class IdempotencyTestProgram
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        builder.Services.AddIdempotentKey();
+        builder.Services.AddIdempotentKey(o => o.ConflictHandling = IdempotentConflictHandling.CachedResult);
 
         var app = builder.Build();
         app.MapPost("/orders", () => Results.Ok(new { Id = Guid.NewGuid() })).RequiredIdempotentKey();
@@ -396,13 +396,14 @@ public sealed class IdempotencyEndpointTests
         var response2 = await client.SendAsync(request2);
         var body2 = await response2.Content.ReadAsStringAsync();
 
-        body1.ShouldBe(body2); // same generated Id — the handler ran once, the second call served the cache
+        body1.ShouldBe(body2); // ConflictHandling.CachedResult replays response1 — the handler ran once
     }
 }
 ```
 
 **Notes**:
 - `AddIdempotentKey()` (no store) is the in-process, infra-free default — right for this kind of test, wrong for production. Its second call is a complete no-op, config included; the first caller always wins.
+- `IdempotencyOptions.ConflictHandling` defaults to `ConflictResponse` — a duplicate key gets a 409 `ProblemDetails` body by default, **not** the first response replayed. The recipe above opts into `IdempotentConflictHandling.CachedResult` explicitly so `body1.ShouldBe(body2)` holds; drop that line and the second call's body is the 409 problem text instead.
 - Testing `AddIdempotencyWithMsSqlStore`/`AddIdempotencyWithNpgsqlStore` swaps in the TestContainers pattern above; testing `AddIdempotencyWithRedisStore` mocks `IConnectionMultiplexer`/`IDatabase` with Moq instead — see `references/consumer-testing.md`.
 
 ## Working inside the DKNet repository
