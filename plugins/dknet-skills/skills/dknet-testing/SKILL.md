@@ -220,6 +220,7 @@ public sealed class DynamicPredicateTests : IAsyncLifetime
 **When**: an aggregate method calls `AddEvent(...)`, and you need proof the before/after-save hook and the event publisher actually fired, not just that the property changed in memory.
 
 ```csharp
+using DKNet.EfCore.Abstractions.Events;
 using DKNet.EfCore.Extensions.Snapshots;
 using DKNet.EfCore.Hooks;
 using Microsoft.Data.Sqlite;
@@ -315,7 +316,7 @@ public sealed class ProductApiProgram
         builder.Services.AddSpecRepo<AppDbContext>();
 
         var app = builder.Build();
-        using var scope = app.Services.CreateScope();
+        var scope = app.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
 
         app.MapGet("/products/{id:guid}", async (Guid id, IRepositorySpec repo) =>
@@ -333,15 +334,15 @@ public sealed class ProductApiTests
     [Fact]
     public async Task GetProduct_WithSeededId_ReturnsOkAndName()
     {
-        using var factory = new WebApplicationFactory<ProductApiProgram>();
-        using var scope = factory.Services.CreateScope();
+        var factory = new WebApplicationFactory<ProductApiProgram>();
+        var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var product = new Product { Name = "Widget", Price = 150m };
         db.Products.Add(product);
         await db.SaveChangesAsync();
 
-        using var client = factory.CreateClient();
-        using var response = await client.GetAsync($"/products/{product.Id}");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync($"/products/{product.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).ShouldBe("\"Widget\"");
@@ -382,17 +383,17 @@ public sealed class IdempotencyEndpointTests
     [Fact]
     public async Task PostOrders_SameIdempotencyKeyTwice_ReturnsCachedResponseOnce()
     {
-        using var factory = new WebApplicationFactory<IdempotencyTestProgram>();
-        using var client = factory.CreateClient();
+        var factory = new WebApplicationFactory<IdempotencyTestProgram>();
+        var client = factory.CreateClient();
 
-        using var request1 = new HttpRequestMessage(HttpMethod.Post, "/orders");
+        var request1 = new HttpRequestMessage(HttpMethod.Post, "/orders");
         request1.Headers.Add("X-Idempotency-Key", "order-1");
-        using var response1 = await client.SendAsync(request1);
+        var response1 = await client.SendAsync(request1);
         var body1 = await response1.Content.ReadAsStringAsync();
 
-        using var request2 = new HttpRequestMessage(HttpMethod.Post, "/orders");
+        var request2 = new HttpRequestMessage(HttpMethod.Post, "/orders");
         request2.Headers.Add("X-Idempotency-Key", "order-1");
-        using var response2 = await client.SendAsync(request2);
+        var response2 = await client.SendAsync(request2);
         var body2 = await response2.Content.ReadAsStringAsync();
 
         body1.ShouldBe(body2); // same generated Id — the handler ran once, the second call served the cache

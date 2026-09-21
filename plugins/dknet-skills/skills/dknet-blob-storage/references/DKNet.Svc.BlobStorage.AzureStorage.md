@@ -95,20 +95,24 @@ app.Run();
 **When**: no connection string / account key is allowed; auth via Azure AD / managed identity.
 
 ```csharp
-using Azure.Identity;
+using Azure.Core;
 using Azure.Storage.Blobs;
 using DKNet.Svc.BlobStorage.AzureStorage;
 
-var builder = WebApplication.CreateBuilder();
-builder.Services.AddAzureStorageAdapter(builder.Configuration); // still binds ContainerName etc.
-builder.Services.Configure<AzureStorageOptions>(options =>
+// credential: pass in `new Azure.Identity.DefaultAzureCredential()` from the composition root.
+public sealed class ManagedIdentityBlobStartup(TokenCredential credential)
 {
-    options.ContainerName = "documents";
-    options.BlobServiceClientFactory = _ => Task.FromResult(
-        new BlobServiceClient(
-            new Uri("https://myaccount.blob.core.windows.net"),
-            new DefaultAzureCredential()));
-});
+    public void Configure(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddAzureStorageAdapter(configuration); // still binds ContainerName etc.
+        services.Configure<AzureStorageOptions>(options =>
+        {
+            options.ContainerName = "documents";
+            options.BlobServiceClientFactory = _ => Task.FromResult(
+                new BlobServiceClient(new Uri("https://myaccount.blob.core.windows.net"), credential));
+        });
+    }
+}
 ```
 
 **Notes**: `BlobServiceClientFactory` takes priority over `ConnectionString` whenever it is set. It runs at most
@@ -120,7 +124,9 @@ once per `AzureStorageBlobService` instance — the built `BlobContainerClient` 
 package's own dependency list does not include `Azure.Identity`, but do not add that package yourself: the
 `Azure.Storage.Blobs` dependency already pulls in an `Azure.Core` version that re-exports the whole
 `Azure.Identity` credential surface (`DefaultAzureCredential` included) under the same namespace, so
-`using Azure.Identity;` alone already resolves it (see Gotchas for what goes wrong if you add the package anyway).
+`using Azure.Identity;` plus `new DefaultAzureCredential()` at the call site (the `TokenCredential credential`
+passed into `ManagedIdentityBlobStartup` above) already resolves it — see Gotchas for what goes wrong if you add
+the package anyway.
 
 ### Save with explicit overwrite
 

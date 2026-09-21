@@ -5,8 +5,8 @@
 | Area | EfCore |
 | Install | `dotnet add package DKNet.EfCore.Extensions` |
 | NuGet | https://www.nuget.org/packages/DKNet.EfCore.Extensions |
-| Docs | https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Extensions.md |
-| Source | https://github.com/baoduy/DKNet/tree/dev/src/EfCore/DKNet.EfCore.Extensions |
+| Docs | https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md |
+| Source | https://github.com/baoduy/DKNet/tree/main/src/EfCore/DKNet.EfCore.Extensions |
 | Depends on (DKNet) | `DKNet.Fw.Extensions` (Core), `DKNet.EfCore.Abstractions` |
 | Depends on (3rd party) | `Microsoft.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.Relational`, `System.ComponentModel.Annotations` |
 | Target framework | `net10.0` |
@@ -29,7 +29,7 @@ configuration classes you already wrote.
 
 | Call | Exact signature | Called on | Notes (lifetime, ordering, prerequisites) |
 |---|---|---|---|
-| `UseAutoConfigModel<TContext>` | `DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies) where TContext : DbContext` | `DbContextOptionsBuilder<TContext>` | No/empty `assemblies` defaults to `[typeof(TContext).Assembly]`. Must be called inside `options =>` when configuring `AddDbContext`, before the options are built. |
+| `UseAutoConfigModel<TContext>` | `DbContextOptionsBuilder<TContext> UseAutoConfigModel<TContext>(this DbContextOptionsBuilder<TContext> @this, params Assembly[]? assemblies) where TContext : DbContext` | `DbContextOptionsBuilder<TContext>` | No/empty `assemblies` defaults to `[typeof(TContext).Assembly]`. Needs a `DbContextOptionsBuilder<TContext>` receiver — reachable from a directly-constructed `new DbContextOptionsBuilder<TContext>()`, **not** from `AddDbContext`'s own `options =>` lambda, whose parameter is always the non-generic `DbContextOptionsBuilder` below. |
 | `UseAutoConfigModel` (non-generic) | `DbContextOptionsBuilder UseAutoConfigModel(this DbContextOptionsBuilder @this, Assembly[] assemblies)` | `DbContextOptionsBuilder` | Throws `ArgumentNullException` if `@this` is null. Stores assemblies via `IDbContextOptionsExtension`; does not itself scan anything until model build. |
 | `UseAutoDataSeeding` | `DbContextOptionsBuilder UseAutoDataSeeding(this DbContextOptionsBuilder @this, Assembly[] assemblies)` | `DbContextOptionsBuilder` | Separate opt-in from `UseAutoConfigModel` — the customizer's own seeding call is commented out. Wires EF Core's native `UseSeeding`/`UseAsyncSeeding`. Throws `ArgumentNullException` on a null `@this` or `assemblies`. |
 | `AddGlobalModelBuilder<TImplementation>` | `IServiceCollection AddGlobalModelBuilder<TImplementation>() where TImplementation : class, IGlobalModelBuilder` | `IServiceCollection` (extension member) | Adds to a static registry, merged+deduped with assembly-scanned filters at model build. Escape hatch for a filter *outside* the scanned assemblies — it is still instantiated via `Activator.CreateInstance`, so it does **not** solve the constructor-argument problem either (see Gotchas). |
@@ -122,6 +122,7 @@ There is no options class — every knob is a registration argument, an attribut
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.DependencyInjection;
 using DKNet.EfCore.Extensions.Configurations;
 
 public class Product
@@ -151,15 +152,21 @@ public static class Registration
     {
         var services = new ServiceCollection();
         services.AddDbContext<AppDbContext>(o =>
+            // AddDbContext's lambda hands you the non-generic DbContextOptionsBuilder, so pass the
+            // assembly explicitly here rather than reaching for the zero-arg UseAutoConfigModel<TContext>().
             o.UseSqlServer("Server=.;Database=App;Trusted_Connection=True;")
-             .UseAutoConfigModel<AppDbContext>()); // no args -> scans typeof(AppDbContext).Assembly
+             .UseAutoConfigModel([typeof(AppDbContext).Assembly]));
     }
 }
 ```
 
 **Notes**: an entity with no `IEntityTypeConfiguration<T>` and no `DbSet<T>` is simply not in the model — this
-package never fabricates entities. Multi-assembly (modular) apps pass explicit assemblies:
-`UseAutoConfigModel<AppDbContext>(typeof(Product).Assembly, typeof(Customer).Assembly)`.
+package never fabricates entities. Inside `AddDbContext`'s own `options =>` lambda the parameter is always the
+non-generic `DbContextOptionsBuilder` — the zero-arg convenience `UseAutoConfigModel<TContext>()` needs a
+`DbContextOptionsBuilder<TContext>` receiver, which only a directly-constructed `new DbContextOptionsBuilder<TContext>()`
+gives you (see the "Auto-discover" recipe in the `dknet-efcore-domain-model` SKILL.md), so call the array-of-assemblies
+overload there instead. Multi-assembly (modular) apps pass every assembly explicitly the same way:
+`o.UseAutoConfigModel([typeof(Product).Assembly, typeof(Customer).Assembly])`.
 
 ### Cross-cutting query filter (soft delete)
 
@@ -457,7 +464,12 @@ No analyzer `DiagnosticDescriptor`s exist in this package — it has no Roslyn a
   // WRONG: UseAutoConfigModel does not exist on IServiceCollection
   services.AddDbContext<AppDbContext>().UseAutoConfigModel<AppDbContext>();
   ```
-  Correct form: `services.AddDbContext<AppDbContext>(o => o.UseSqlServer(cs).UseAutoConfigModel<AppDbContext>());`
+  Correct form: `services.AddDbContext<AppDbContext>(o => o.UseSqlServer(cs).UseAutoConfigModel([typeof(AppDbContext).Assembly]));`
+  — note the array-of-assemblies overload, not `UseAutoConfigModel<AppDbContext>()`. Inside `AddDbContext`'s
+  lambda, `o` is the non-generic `DbContextOptionsBuilder`, so the zero-arg generic overload (which needs a
+  `DbContextOptionsBuilder<TContext>` receiver) does not resolve there — the compiler error reads "does not
+  contain a definition for 'UseAutoConfigModel'" if you try it. That convenience form only works on a directly
+  constructed `new DbContextOptionsBuilder<TContext>()`, as in the Quick start / "Auto-discover" recipes.
 - **Calling `UseAutoConfigModel<TContext>()` expecting it to also seed data.** It does not — seeding requires
   the separate `UseAutoDataSeeding(assemblies)` call; the customizer's seeding line is deliberately commented
   out.

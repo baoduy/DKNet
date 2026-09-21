@@ -1,6 +1,6 @@
 ---
 name: dknet-blob-storage
-description: Covers DKNet.Svc.BlobStorage.Abstractions, the .NET blob storage abstraction (IBlobService, BlobService, BlobRequest, BlobDetails.BlobData/BlobStreamData/BlobResult/BlobDataResult, BlobServiceOptions), plus its three providers: DKNet.Svc.BlobStorage.Local (AddLocalDirectoryBlobService, path-traversal-safe filesystem storage), DKNet.Svc.BlobStorage.AwsS3 (AddS3BlobService, AWS S3 and S3-compatible endpoints like MinIO and Cloudflare R2), and DKNet.Svc.BlobStorage.AzureStorage (AddAzureStorageAdapter, managed identity, SAS URLs). Use to upload, download, list, or delete files; wire DI/IConfiguration binding; generate a public or SAS URL; stream a large upload without buffering; test with Azurite or MinIO containers; or debug FileLoadException, InvalidOperationException, UnauthorizedAccessException path-traversal, or a GetAsync miss that throws on Local but returns null on S3/Azure.
+description: "Covers DKNet.Svc.BlobStorage.Abstractions, the .NET blob storage abstraction (IBlobService, BlobService, BlobRequest, BlobDetails.BlobData/BlobStreamData/BlobResult/BlobDataResult, BlobServiceOptions), plus its three providers: DKNet.Svc.BlobStorage.Local (AddLocalDirectoryBlobService, path-traversal-safe filesystem storage), DKNet.Svc.BlobStorage.AwsS3 (AddS3BlobService, AWS S3 and S3-compatible endpoints like MinIO and Cloudflare R2), and DKNet.Svc.BlobStorage.AzureStorage (AddAzureStorageAdapter, managed identity, SAS URLs). Use to upload, download, list, or delete files; wire DI/IConfiguration binding; generate a public or SAS URL; stream a large upload without buffering; test with Azurite or MinIO containers; or debug FileLoadException, InvalidOperationException, UnauthorizedAccessException path-traversal, or a GetAsync miss that throws on Local but returns null on S3/Azure."
 license: MIT
 metadata:
   author: baoduy
@@ -241,20 +241,27 @@ Notes: `ForcePathStyle = true` is required for MinIO and most S3-compatible serv
 **When**: no account key/connection string is allowed.
 
 ```csharp
-using Azure.Identity;
+using Azure.Core;
 using Azure.Storage.Blobs;
 using DKNet.Svc.BlobStorage.Abstractions;
 using DKNet.Svc.BlobStorage.AzureStorage;
 
-var services = new ServiceCollection();
-services.AddAzureStorageAdapter(new ConfigurationBuilder().Build()); // binds ContainerName, etc.
-services.Configure<AzureStorageOptions>(o =>
+// credential: pass in `new Azure.Identity.DefaultAzureCredential()` from the composition root.
+public sealed class ManagedIdentityBlobSetup(TokenCredential credential)
 {
-    o.ContainerName = "documents";
-    o.BlobServiceClientFactory = _ => Task.FromResult(
-        new BlobServiceClient(new Uri("https://myaccount.blob.core.windows.net"), new DefaultAzureCredential()));
-});
-var blobService = services.BuildServiceProvider().GetRequiredService<IBlobService>();
+    public IBlobService Build()
+    {
+        var services = new ServiceCollection();
+        services.AddAzureStorageAdapter(new ConfigurationBuilder().Build()); // binds ContainerName, etc.
+        services.Configure<AzureStorageOptions>(o =>
+        {
+            o.ContainerName = "documents";
+            o.BlobServiceClientFactory = _ => Task.FromResult(
+                new BlobServiceClient(new Uri("https://myaccount.blob.core.windows.net"), credential));
+        });
+        return services.BuildServiceProvider().GetRequiredService<IBlobService>();
+    }
+}
 ```
 
 Notes: use the `IConfiguration` overload of `AddAzureStorageAdapter` plus `Configure<AzureStorageOptions>`, not
@@ -262,9 +269,11 @@ the `Action<AzureStorageOptions>` overload — that overload's values never reac
 managed-identity client generally cannot sign SAS URLs. `DKNet.Svc.BlobStorage.AzureStorage`'s own `.csproj` does
 not reference `Azure.Identity` — but don't add it yourself either: `Azure.Storage.Blobs` already pulls in an
 `Azure.Core` version that re-exports the whole `Azure.Identity` credential surface (`DefaultAzureCredential`
-included) under that same namespace, so `using Azure.Identity;` alone is enough. Explicitly adding the standalone
-`Azure.Identity` package on top gives you two same-named `DefaultAzureCredential` types and fails the build with
-`error CS0433: The type 'DefaultAzureCredential' exists in both 'Azure.Core...' and 'Azure.Identity...'`.
+included) under that same namespace, so `using Azure.Identity;` plus `new DefaultAzureCredential()` at the call
+site (the `TokenCredential credential` passed into `ManagedIdentityBlobSetup` above) already resolves it, no
+extra package needed. Explicitly adding the standalone `Azure.Identity` package on top gives you two same-named
+`DefaultAzureCredential` types and fails the build with `error CS0433: The type 'DefaultAzureCredential' exists
+in both 'Azure.Core...' and 'Azure.Identity...'`.
 
 ### Test code that depends on IBlobService without Docker
 

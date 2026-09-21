@@ -27,15 +27,16 @@ the current DKNet source tree and confirmed to return zero matches, not just cop
 | `BlobServiceOptions.IncludedExtensions` as `IEnumerable<string>` | Unreleased | `IReadOnlyList<string>` — materialize a lazy query with `.ToList()` first | yes |
 | `IdempotencyDistributedCacheStore` (the old `IDistributedCache`-backed store) | Unreleased | `AddIdempotentKey()` (in-process store) or a named store package. It was `internal`, so nothing that compiled before stops compiling. | yes — the type itself no longer exists, not merely made inaccessible |
 | `ContextualPopulationOptions` / `SystemAccountFallback` configure delegate | Unreleased | Register your own `IContextualValueResolver` before `AddContextualRequestPopulation()` — that method now takes no configure delegate at all | yes |
-| Legacy N-Layer / generic-repository era architecture | 2024.12.0 | Full DDD/Onion rewrite — see `docs/Architecture.md` | historical; not independently re-checked against current source |
+| Legacy N-Layer / generic-repository era architecture | 2024.12.0 | Full DDD/Onion rewrite — see https://github.com/baoduy/DKNet/blob/dev/docs/Architecture.md | historical; not independently re-checked against current source |
 
 ## Never existed (not a removal)
 
 - **`AggregateRoot`** — no version of DKNet ever shipped a public `AggregateRoot` type. An aggregate
   root is an `Entity<TKey>`/`Entity`/`AuditedEntity<TKey>`/`AuditedEntity` you choose to treat as a
-  consistency boundary. A few `*.Tests` projects inside the DKNet repository declare their own
-  private `AggregateRoot` test-fixture classes for unrelated purposes — those are not, and never
-  were, part of any public package surface, and a consuming application cannot reference them.
+  consistency boundary. A few `*.Tests` projects, plus the internal `EfCore.DtoGenerator.TestEntities`
+  fixture library, declare their own private `AggregateRoot` test-fixture classes for unrelated
+  purposes — none of those projects is packed or published, so those types are not, and never were,
+  part of any public package surface, and a consuming application cannot reference them.
 - **`DKNet.EfCore.DtoEntities`** — never a published package name. The one place this name is
   documented is as the *old* name of what is now `EfCore.DtoGenerator.TestEntities`, an internal
   test-fixture project inside the DKNet repository, never published to NuGet. No external consumer

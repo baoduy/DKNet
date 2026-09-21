@@ -32,6 +32,9 @@ jobs:
       contents: write
       packages: write
       id-token: write
+    outputs:
+      # Consumed by publish-npm so the dknet-skills package carries the same version as the NuGet packages.
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v7.0.0
@@ -129,3 +132,83 @@ jobs:
         if: ${{ env.Enable_Nuget_Release == 'true' }}
         continue-on-error: true
         run: dotnet nuget push ${{ runner.WORKSPACE }}/nupkgs/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+
+  # The dknet-skills agent-skills plugin (plugins/dknet-skills) goes to npmjs.com as @drunkcoding/dknet-skills
+  # AFTER the NuGet packages, stamped with the SAME version number. No tag and no GitHub release of its own —
+  # the v<version> release above already marks the commit. The repo keeps the placeholder 0.0.0 in
+  # plugins/dknet-skills/package.json and .claude-plugin/plugin.json; the version is injected here, exactly
+  # like -p:PackageVersion for the NuGet packages.
+  #
+  # Branches:
+  #   main — release version (e.g. 9.5.10), npm dist-tag "latest". Runs after the NuGet publish above.
+  #   dev  — test channel: `gh workflow run dotnet-publish.yml --ref dev`. The build job still runs (it computes
+  #          the version and packs) but Enable_Nuget_Release/Enable_Release are false there, so nothing goes to
+  #          NuGet and no GitHub release is created; this job publishes <version>-dev.<run_number> under the npm
+  #          dist-tag "dev" (install with `npm i -D @drunkcoding/dknet-skills@dev`), so it can never take a
+  #          version number a main release will need.
+  # Secret required once: NPM_TOKEN — npmjs.com granular access token with publish rights on @drunkcoding.
+  publish-npm:
+    name: Publish dknet-skills (npm)
+    needs: build
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # npm provenance attestation
+    env:
+      IS_RELEASE: ${{ github.ref == 'refs/heads/main' }}
+      VERSION: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.version || format('{0}-dev.{1}', needs.build.outputs.version, github.run_number) }}
+      NPM_DIST_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
+    defaults:
+      run:
+        working-directory: plugins/dknet-skills
+
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      - name: Stamp the release version into package.json and .claude-plugin/plugin.json
+        # `npm version` updates package.json and runs the "version" script, which syncs plugin.json.
+        run: npm version "${VERSION}" --no-git-tag-version --allow-same-version
+
+      - name: Validate every skill against the Agent Skills spec
+        run: |
+          set -euo pipefail
+          for d in skills/*/; do
+            uvx --from skills-ref agentskills validate "$d"
+            lines=$(wc -l < "$d/SKILL.md")
+            [ "$lines" -le 500 ] || { echo "$d/SKILL.md has $lines lines (> 500)"; exit 1; }
+          done
+
+      - name: Validate the Claude Code plugin and the marketplace manifest
+        run: |
+          npx -y @anthropic-ai/claude-code@latest plugin validate . --strict
+          npx -y @anthropic-ai/claude-code@latest plugin validate ../.. --strict
+
+      - name: Skills are discoverable by `npx skills add`
+        run: npx -y skills@latest add ./ --list
+
+      - name: Already on npm?
+        id: exists
+        run: |
+          name=$(node -p "require('./package.json').name")
+          if npm view "${name}@${VERSION}" version >/dev/null 2>&1; then
+            echo "${name}@${VERSION} is already published — skipping"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npmjs.com
+        if: ${{ steps.exists.outputs.exists == 'false' }}
+        run: |
+          echo "Publishing ${VERSION} (dist-tag ${NPM_DIST_TAG}, release=${IS_RELEASE})"
+          npm publish --access public --provenance --tag "${NPM_DIST_TAG}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

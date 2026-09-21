@@ -1,6 +1,6 @@
 ---
 name: dknet-efcore-domain-model
-description: Covers DKNet.EfCore.Abstractions, DKNet.EfCore.Extensions and DKNet.EfCore.Relational.Helpers: Entity<TKey>/Entity/AuditedEntity base classes, IConcurrencyEntity/ISoftDeletableEntity, GUID v7 keys, and the [RaisesEvent] declaration, [Sequence]/[SqlSequence], [AuditLog]/[SensitiveData] attributes; UseAutoConfigModel, IEntityTypeConfiguration discovery via DefaultEntityTypeConfiguration, global query filter (GlobalQueryFilter), data seeding, SQL sequences (NextSeqValue), SnapshotContext, SaveChangesWithConcurrencyHandlingAsync, role-aware [SensitiveData] JSON, and CreateTableAsync/TableExistsAsync for schema work outside migrations. Use when modeling an entity or aggregate, wiring DbContext model discovery, adding a concurrency token or soft delete, seeding reference data, generating sequence-backed codes, or provisioning a table without a migration.
+description: "Covers DKNet.EfCore.Abstractions, DKNet.EfCore.Extensions and DKNet.EfCore.Relational.Helpers: Entity<TKey>/Entity/AuditedEntity base classes, IConcurrencyEntity/ISoftDeletableEntity, GUID v7 keys, and the [RaisesEvent] declaration, [Sequence]/[SqlSequence], [AuditLog]/[SensitiveData] attributes; UseAutoConfigModel, IEntityTypeConfiguration discovery via DefaultEntityTypeConfiguration, global query filter (GlobalQueryFilter), data seeding, SQL sequences (NextSeqValue), SnapshotContext, SaveChangesWithConcurrencyHandlingAsync, role-aware [SensitiveData] JSON, and CreateTableAsync/TableExistsAsync for schema work outside migrations. Use when modeling an entity or aggregate, wiring DbContext model discovery, adding a concurrency token or soft delete, seeding reference data, generating sequence-backed codes, or provisioning a table without a migration."
 license: MIT
 metadata:
   author: baoduy
@@ -25,6 +25,7 @@ This skill teaches the entity/audit/concurrency/soft-delete/event contracts a DK
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.DependencyInjection;
 using DKNet.EfCore.Abstractions.Entities;
 using DKNet.EfCore.Extensions.Configurations;
 
@@ -57,8 +58,10 @@ public static class QuickStartApp
     {
         var services = new ServiceCollection();
         services.AddDbContext<AppDbContext>(o =>
+            // AddDbContext's lambda hands you the non-generic DbContextOptionsBuilder, so pass the assembly
+            // explicitly — the zero-arg UseAutoConfigModel<AppDbContext>() needs a generic receiver you don't have here.
             o.UseSqlServer("Server=.;Database=App;Trusted_Connection=True;")
-             .UseAutoConfigModel<AppDbContext>()); // no args -> scans typeof(AppDbContext).Assembly
+             .UseAutoConfigModel([typeof(AppDbContext).Assembly]));
 
         await using var provider = services.BuildServiceProvider();
         var db = provider.GetRequiredService<AppDbContext>();
@@ -74,7 +77,7 @@ public static class QuickStartApp
 ## Rules
 
 1. Derive aggregates/entities from `Entity<TKey>`/`Entity` or `AuditedEntity<TKey>`/`AuditedEntity` — never `AggregateRoot`. It does not exist anywhere in this codebase, no matter what an older doc or memory says.
-2. Call `UseAutoConfigModel<TContext>()` inside the `options =>` lambda passed to `AddDbContext`/`UseSqlServer`, never chained onto the `IServiceCollection` result — it is a `DbContextOptionsBuilder` extension.
+2. `UseAutoConfigModel` is a `DbContextOptionsBuilder` extension, called inside the `options =>` lambda passed to `AddDbContext`/`UseSqlServer` — never chained onto the `IServiceCollection` result. That lambda's parameter is always the non-generic `DbContextOptionsBuilder`, so only the array-of-assemblies overload resolves there (`options.UseAutoConfigModel([typeof(TContext).Assembly])`); the zero-arg generic convenience `UseAutoConfigModel<TContext>()` needs a `DbContextOptionsBuilder<TContext>` receiver, which only a directly-constructed `new DbContextOptionsBuilder<TContext>()` gives you.
 3. An entity needs a `DbSet<T>` property or an `IEntityTypeConfiguration<T>` to enter the model. Auto-configuration discovers *configurations*, not entities, and `[IgnoreEntity]` excludes nothing here.
 4. Always call `base.Configure(builder)` first inside a `DefaultEntityTypeConfiguration<TEntity>` override — it wires the key's value generator, the audit columns, and the concurrency token before your own mapping runs.
 5. `AddEvent`/`[RaisesEvent]` only queue an event on the entity. Dispatch is `DKNet.EfCore.Events`' job (see `dknet-efcore-save-pipeline`) — referencing only the packages this skill owns compiles and runs, but publishes nothing.
@@ -257,7 +260,7 @@ public sealed class CountrySeed : DataSeedingConfiguration<Country>
         ValueTask.FromResult<ICollection<Country>>([new Country { Code = "VN" }, new Country { Code = "US" }]);
 }
 
-public class SeedDbContext(DbContextOptions<SeedDbContext> options) : DbContext(options)
+public class SeedDbContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<Country> Countries => Set<Country>();
 }
@@ -277,7 +280,7 @@ public static class SeedApp
 }
 ```
 
-Notes: `UseAutoDataSeeding` is a separate opt-in from `UseAutoConfigModel` — neither implies the other. `DataSeedingConfiguration<T>` dedupes candidates against the database **by primary key**, not by `TEntity` equality, so re-running the seeder never re-inserts rows even without an `Equals` override. `Order` exists on the interface but is never read; seeders run in assembly-scan order.
+Notes: `UseAutoDataSeeding` is a separate opt-in from `UseAutoConfigModel` — neither implies the other. `DataSeedingConfiguration<T>` dedupes candidates against the database **by primary key**, not by `TEntity` equality, so re-running the seeder never re-inserts rows even without an `Equals` override. `Order` exists on the interface but is never read; seeders run in assembly-scan order. `SeedDbContext` takes the non-generic `DbContextOptions`, not `DbContextOptions<SeedDbContext>`: `UseAutoDataSeeding` only has a `DbContextOptionsBuilder` (non-generic) overload, so chaining it after `UseAutoConfigModel<SeedDbContext>()` collapses the expression's static type back to non-generic — `optionsBuilder.Options` below is a plain `DbContextOptions`.
 
 ### Generate sequence-backed codes
 
@@ -442,5 +445,5 @@ Domain-event queueing is decoupled from all of the above: `AddEvent`/`[RaisesEve
 - [references/DKNet.EfCore.Abstractions.md](references/DKNet.EfCore.Abstractions.md) — entity/event/audit/concurrency/soft-delete contracts and attributes: full member tables, diagnostics IDs, gotchas.
 - [references/DKNet.EfCore.Extensions.md](references/DKNet.EfCore.Extensions.md) — `UseAutoConfigModel`/`UseAutoDataSeeding`, `DefaultEntityTypeConfiguration`, `GlobalQueryFilter`, sequences, `SnapshotContext`, concurrency retry, sensitive-data JSON: full member tables, diagnostics, gotchas.
 - [references/DKNet.EfCore.Relational.Helpers.md](references/DKNet.EfCore.Relational.Helpers.md) — the four `DbContextHelpers` methods: signatures, runtime behaviour, diagnostics.
-- Docs site: https://baoduy.github.io/DKNet/ · package pages: https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Abstractions.md, https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Extensions.md, https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Relational.Helpers.md.
+- Docs site: https://baoduy.github.io/DKNet/ · package pages: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Abstractions.md, https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md, https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Relational.Helpers.md.
 - NuGet: https://www.nuget.org/packages/DKNet.EfCore.Abstractions, https://www.nuget.org/packages/DKNet.EfCore.Extensions, https://www.nuget.org/packages/DKNet.EfCore.Relational.Helpers.

@@ -131,7 +131,7 @@ services.AddPdfGenerator(new PdfGeneratorOptions
 
 var provider = services.BuildServiceProvider();
 var exporter = new ReportExporter(provider.GetRequiredService<IPdfGenerator>());
-var exported = await exporter.ExportAsync("docs/notes.md");
+var exported = await exporter.ExportAsync("notes.md");
 ```
 
 `ReportExporter` wraps the resolved generator:
@@ -174,8 +174,8 @@ await generator.DisposeAsync();
 using DKNet.Svc.PdfGenerators;
 
 var generator = new PdfGenerator();
-var markdownPath = "docs/notes.md";
-var pdfPath = await generator.ConvertMarkdownFileAsync(markdownPath); // writes docs/notes.pdf
+var markdownPath = "notes.md";
+var pdfPath = await generator.ConvertMarkdownFileAsync(markdownPath); // writes notes.pdf
 ```
 
 **Notes**: both input and (if supplied) output paths are resolved to full paths, and the output directory is

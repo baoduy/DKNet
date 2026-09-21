@@ -5,8 +5,8 @@
 | Area | EfCore |
 | Install | `dotnet add package DKNet.EfCore.Abstractions` |
 | NuGet | https://www.nuget.org/packages/DKNet.EfCore.Abstractions |
-| Docs | https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Abstractions.md |
-| Source | https://github.com/baoduy/DKNet/tree/dev/src/EfCore/DKNet.EfCore.Abstractions |
+| Docs | https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Abstractions.md |
+| Source | https://github.com/baoduy/DKNet/tree/main/src/EfCore/DKNet.EfCore.Abstractions |
 | Depends on (DKNet) | none |
 | Depends on (3rd party) | `Microsoft.EntityFrameworkCore.Abstractions`, `System.ComponentModel.Annotations`, `FluentResults` |
 | Target framework | `net10.0` |

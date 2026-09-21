@@ -72,6 +72,7 @@ registry `mcr.microsoft.com`, tag `latest`, `ACCEPT_EULA=Y`, endpoint `tcp` on p
 
 ```csharp
 // AppHost/Program.cs
+using Aspire.Hosting;
 using Aspire.Hosting.ServiceBus;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -99,6 +100,7 @@ configuration key.
 setups), or just to make the dashboard name match your domain.
 
 ```csharp
+using Aspire.Hosting;
 using Aspire.Hosting.ServiceBus;
 
 public static class CustomNameExample
@@ -125,6 +127,7 @@ regardless of `name`.
 without touching handler code, using Aspire's own redirection annotation.
 
 ```csharp
+using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.ServiceBus;
 
@@ -156,6 +159,7 @@ package supplies no helper to attach it, only the resource's willingness to hono
 no health check itself.
 
 ```csharp
+using Aspire.Hosting;
 using Aspire.Hosting.ServiceBus;
 
 public static class PrimaryEndpointExample

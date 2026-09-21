@@ -31,6 +31,13 @@ npx skills add baoduy/DKNet --all                # every skill, every detected a
 npx skills add baoduy/DKNet -s dknet-efcore-specifications -a claude-code -g
 ```
 
+**Claude Code from npm** (no marketplace; pins the version with your project):
+
+```bash
+npm i -D @drunkcoding/dknet-skills
+claude --plugin-dir node_modules/@drunkcoding/dknet-skills
+```
+
 **Working on DKNet itself** (this repository): `claude --plugin-dir plugins/dknet-skills`.
 
 ## Skills
@@ -59,10 +66,12 @@ behaviour, gotchas) in `references/<PackageId>.md`, loaded only when needed.
 ## Layout
 
 ```text
-.claude-plugin/marketplace.json        # marketplace "dknet" (repo root)
-plugins/dknet-skills/
-├── .claude-plugin/plugin.json         # plugin manifest
-├── README.md
+.claude-plugin/marketplace.json        # marketplace "dknet" (repo root) → ./plugins/dknet-skills
+plugins/dknet-skills/                  # = the npm package @drunkcoding/dknet-skills
+├── .claude-plugin/plugin.json         # plugin manifest (version stamped at release)
+├── package.json                       # npm metadata (placeholder version 0.0.0)
+├── scripts/sync-version.mjs           # copies package.json version into plugin.json (npm "version" hook)
+├── README.md, LICENSE
 └── skills/<skill-name>/
     ├── SKILL.md                       # Agent Skills frontmatter + instructions (<= 500 lines)
     └── references/<PackageId>.md      # verified per-package reference
@@ -71,11 +80,33 @@ plugins/dknet-skills/
 ## Validate
 
 ```bash
-claude plugin validate . --strict                       # marketplace + plugin manifests
+claude plugin validate . --strict                       # marketplace + plugin manifests (repo root)
 claude plugin validate plugins/dknet-skills --strict    # plugin + skills
 uvx --from skills-ref agentskills validate plugins/dknet-skills/skills/<skill-name>
 npx skills add ./ --list                                # what the skills CLI will discover
+(cd plugins/dknet-skills && npm pack --dry-run)         # what the npm package will ship
 ```
+
+## Release
+
+The plugin is versioned **with DKNet**: every NuGet release of the framework also publishes
+[`@drunkcoding/dknet-skills`](https://www.npmjs.com/package/@drunkcoding/dknet-skills) to npmjs.com with the same
+version number. The `publish-npm` job in `.github/workflows/dotnet-publish.yml` runs after the NuGet job on `main`,
+stamps that job's version into `package.json` and `.claude-plugin/plugin.json` (`npm version <version>` →
+`scripts/sync-version.mjs`), validates the skills, and publishes with provenance. A version already on npm is
+skipped. There is no separate tag or GitHub release: DKNet's `v<version>` release marks the commit.
+
+The repository therefore carries the placeholder `0.0.0` and nothing is bumped by hand. The job needs one
+repository secret, `NPM_TOKEN` (an npmjs.com granular access token with publish rights on `@drunkcoding`).
+
+To test the npm path without releasing anything, dispatch the workflow on `dev`:
+
+```bash
+gh workflow run dotnet-publish.yml --ref dev
+```
+
+On `dev` the NuGet publish and the GitHub release stay off; the npm job publishes `<version>-dev.<run>` under the
+`dev` dist-tag (`npm i -D @drunkcoding/dknet-skills@dev`), which never collides with a `main` release.
 
 ## Keeping skills true
 

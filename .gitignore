@@ -31,3 +31,7 @@ packages/
 
 # Claude Code agent worktrees — transient, never committed
 .claude/worktrees/
+
+# npm (dknet-skills plugin packaging)
+node_modules/
+*.tgz

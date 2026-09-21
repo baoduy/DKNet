@@ -363,8 +363,13 @@ per-package split):
   Testcontainers-backed MinIO and Azurite fixtures plus a plain filesystem fixture (Local) — including a private
   non-seekable `Stream` test double (`CanSeek => false`) to exercise the `SizeLimitedStream`-wrapping path against a
   real provider.
-- Fixtures are `IDisposable`, constructed with `using var fixture = new XxxBlobServiceFixture()` per test (not
-  shared `IClassFixture` state).
+- Fixtures are `IDisposable`, but the two sharing styles both appear, on different test classes, for the *same*
+  fixture types: the cross-provider validation and stream tests (`BlobServiceSaveAsyncTests`,
+  `BlobServiceStreamTests`) construct a fresh `using var fixture = new XxxBlobServiceFixture()` per test method,
+  while the per-provider happy-path classes (`LocalBlobStorageTest`, `S3BlobServiceTest`,
+  `AzureStorageBlobServiceTest`) instead take the same fixture type through `IClassFixture<XxxBlobServiceFixture>`,
+  sharing one instance across every `[Fact]` in that class. Don't assume every test in this project gets an
+  isolated fixture instance — check which base pattern the specific test class uses.
 - No test project references this Abstractions package standalone without also referencing the three provider
   packages — a consumer testing only against the abstraction would typically write its own fake `IBlobService` or
   `BlobService` subclass (see the `InMemoryBlobService` pattern above) rather than reuse anything from this test

@@ -22,7 +22,8 @@ implicit usings. Every row marked **(ambient)** below sits inside one of those n
 | `IRepositorySpec`, `IRepositorySpecFactory`, `RepositorySpec<TDbContext>` | `DKNet.EfCore.Specifications.Repositories` | |
 | `Specification<TEntity>`, `ISpecification<TEntity>` | `DKNet.EfCore.Specifications.Definitions` | Not `DKNet.EfCore.Specifications`, which holds only `AddSpecRepo`. |
 | `ToListAsync(spec, ct)`, `FirstAsync`, `FirstOrDefaultAsync`, `ToPagedListAsync`, `ToPageEnumerable`, `ToKeysetPageAsync`, `AnyAsync`, `CountAsync` (all extend `IRepositorySpec`) | `DKNet.EfCore.Specifications.Extensions` | |
-| `Ops`, `DynamicAnd`, `DynamicOr`, `TryBuildPredicate` | `DKNet.EfCore.Specifications.Dynamics` | Deliberately ambient to LinqKit (extends `ExpressionStarter<T>`), by the same "ambient namespace" convention as the DI extension methods below. |
+| `Ops` | `DKNet.EfCore.Specifications.Dynamics` | The operation enum `DynamicAnd`/`DynamicOr`/`TryBuildPredicate` take as their second argument. |
+| `DynamicAnd`, `DynamicOr`, `TryBuildPredicate` | `LinqKit` (ambient — the file is declared `namespace LinqKit;`, extending `ExpressionStarter<T>`/`Expression<Func<T,bool>>`) | No `using DKNet.EfCore.Specifications.Dynamics;` needed for these three specifically — only the `using LinqKit;` that `PredicateBuilder` itself already requires, the same "ambient namespace" convention as the DI extension methods below. |
 | `Entity<TKey>`, `Entity`, `AuditedEntity<TKey>`, `AuditedEntity`, `IEntity<TKey>`, `IAuditedProperties` | `DKNet.EfCore.Abstractions.Entities` | |
 | `IEventPublisher`, `DefaultEventPublisher` | `DKNet.EfCore.Abstractions.Events` | |
 | `AddEventPublisher<TDbContext,TImplementation>()` | `Microsoft.Extensions.DependencyInjection` (ambient) | Needs no `using DKNet.EfCore.Events;` at all. |

@@ -5,8 +5,8 @@
 | Area | EfCore |
 | Install | `dotnet add package DKNet.EfCore.Relational.Helpers` |
 | NuGet | https://www.nuget.org/packages/DKNet.EfCore.Relational.Helpers |
-| Docs | https://github.com/baoduy/DKNet/blob/dev/docs/EfCore/DKNet.EfCore.Relational.Helpers.md |
-| Source | https://github.com/baoduy/DKNet/tree/dev/src/EfCore/DKNet.EfCore.Relational.Helpers |
+| Docs | https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Relational.Helpers.md |
+| Source | https://github.com/baoduy/DKNet/tree/main/src/EfCore/DKNet.EfCore.Relational.Helpers |
 | Depends on (DKNet) | `DKNet.EfCore.Extensions` (used only for the ambient `DbContext.IsSqlServer()` extension) |
 | Depends on (3rd party) | `Microsoft.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.Relational` |
 | Target framework | `net10.0` |

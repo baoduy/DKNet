@@ -21,7 +21,7 @@ Persistent, PostgreSQL-backed implementation of `IIdempotencyKeyStore` for `DKNe
 
 | Call | Exact signature | Called on | Notes |
 |---|---|---|---|
-| `AddIdempotencyNpgsqlStore` | `public static IServiceCollection AddIdempotencyNpgsqlStore(this IServiceCollection services, string connectionString)` | `IServiceCollection` | Registers `IdempotencyDbContext` (scoped, `optionsLifetime: ServiceLifetime.Singleton`), `IDbContextFactory<IdempotencyDbContext>`, and `IdempotencyMigrationHostedService<IdempotencyDbContext>`. Does **not** register `IIdempotencyKeyStore`. First-wins: no-ops once `IdempotencyDbContext` is registered. Throws `ArgumentNullException` (null `services`) / `ArgumentException` (null/empty/whitespace `connectionString`). |
+| `AddIdempotencyNpgsqlStore` | `public static IServiceCollection AddIdempotencyNpgsqlStore(this IServiceCollection services, string connectionString)` | `IServiceCollection` | Registers `IdempotencyDbContext` (scoped, `optionsLifetime: ServiceLifetime.Singleton`), `IDbContextFactory<IdempotencyDbContext>`, and `IdempotencyMigrationHostedService<IdempotencyDbContext>`. Does **not** register `IIdempotencyKeyStore`. First-wins: no-ops once `IdempotencyDbContext` is registered. Throws `ArgumentNullException` on a null `services` or a null `connectionString`; `ArgumentException` on an empty/whitespace-only `connectionString`. |
 | `AddIdempotencyWithNpgsqlStore` | `public static IServiceCollection AddIdempotencyWithNpgsqlStore(this IServiceCollection services, string connectionString, Action<IdempotencyOptions>? config = null)` | `IServiceCollection` | Calls `AddIdempotencyNpgsqlStore` then `AddIdempotentKey<IdempotencyPostgresStore>(config)`. This is the call an application makes; it wires the store into `IIdempotencyKeyStore` and validates `IdempotencyOptions` eagerly with `ValidateOnStart()`. Call before any `RequiredIdempotentKey()` mapping. |
 | `DbContextFactory.CreateDbContext` | `internal sealed class : IDesignTimeDbContextFactory<IdempotencyDbContext>` | `dotnet ef` tooling only | Reads `IDEMPOTENCY_NPGSQL_CONNECTION` from the **environment**, not app config; throws `InvalidOperationException` if unset. Not something app code calls. |
 
@@ -146,8 +146,8 @@ dotnet ef migrations add MyChange \
 
 | Type | Severity | When | Fix |
 |---|---|---|---|
-| `ArgumentNullException` | Error | `AddIdempotencyNpgsqlStore`/`AddIdempotencyWithNpgsqlStore` called with `services == null` | Pass a real `IServiceCollection` |
-| `ArgumentException` | Error | `connectionString` is null, empty, or whitespace | Supply a real Npgsql connection string |
+| `ArgumentNullException` | Error | `AddIdempotencyNpgsqlStore`/`AddIdempotencyWithNpgsqlStore` called with `services == null`; also thrown (not `ArgumentException`) for a null `connectionString` | Pass a real `IServiceCollection` and a non-null connection string |
+| `ArgumentException` | Error | `connectionString` is empty or whitespace-only (not null — see row above) | Supply a real Npgsql connection string |
 | `InvalidOperationException` | Error | `DbContextFactory.CreateDbContext` (design-time `dotnet ef`) runs with `IDEMPOTENCY_NPGSQL_CONNECTION` unset | Export that environment variable before running EF Core tooling |
 | `DbUpdateException` wrapping `PostgresException { SqlState: "23505" }` | Handled internally | Two callers race the same `CompositeKey` | Not caller-visible — the Relational base catches and resolves it; do not add your own catch around the store |
 | `OptionsValidationException` | Error, at startup (`ValidateOnStart()`) | Invalid `IdempotencyOptions` passed to `config` (e.g. non-positive `Expiration`, empty `IdempotencyHeaderKey`) | Fix the `config` delegate; see the core package's reference for the full validator list |

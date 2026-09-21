@@ -42,7 +42,7 @@ Scriban, or Handlebars instead if a template needs logic.
 |---|---|---|---|
 | `IToken` | interface | A single extracted token occurrence | `int Index { get; }`; `ITokenDefinition Definition { get; }`; `string Key { get; }` (tag-stripped name); `string OriginalString { get; }`; `string Token { get; }` (raw text incl. tags) |
 | `ITokenDefinition` | interface | Bracket-pair contract | `string BeginTag { get; }`; `string EndTag { get; }`; `bool IsToken(string value);` |
-| `TokenDefinition` | sealed class (implements `ITokenDefinition`) | Concrete begin/end tag pair | `public TokenDefinition(string begin, string end)` — throws `ArgumentException` if either tag is null/whitespace; `bool IsToken(string value)` — true only when `value` starts with `BeginTag`, ends with `EndTag` (both ordinal-ignore-case), and the inner payload is non-empty and contains no character from either tag |
+| `TokenDefinition` | sealed class (implements `ITokenDefinition`) | Concrete begin/end tag pair | `public TokenDefinition(string begin, string end)` — throws `ArgumentException` if either tag is empty/whitespace, `ArgumentNullException` if either tag is `null` (both via `ArgumentException.ThrowIfNullOrWhiteSpace`); `bool IsToken(string value)` — true only when `value` starts with `BeginTag`, ends with `EndTag` (both ordinal-ignore-case), and the inner payload is non-empty and contains no character from either tag |
 | `ITokenExtractor` | interface | Extraction contract — **no public implementation exists**; the only implementation is `internal sealed` | `IReadOnlyCollection<IToken> Extract(string templateString);` `Task<IReadOnlyCollection<IToken>> ExtractAsync(string templateString);` |
 | `ITokenResolver` | interface | Resolution contract — **no public implementation exists**; the only implementation is `internal sealed` | `object? Resolve(IToken token, params object?[] data);` `Task<object?> ResolveAsync(IToken token, params object?[] data);` |
 
@@ -233,7 +233,8 @@ var rs = transformer.Transform("Hello @(name)!", new Dictionary<string, string> 
 // "Hello John Doe!"
 ```
 
-**Notes**: `new TokenDefinition(begin, end)` throws `ArgumentException` for a null/whitespace tag. A candidate only
+**Notes**: `new TokenDefinition(begin, end)` throws `ArgumentException` for an empty/whitespace tag, `ArgumentNullException`
+for a `null` one. A candidate only
 counts as a token when its inner text is non-empty and contains no character from either tag.
 
 ## Runtime behaviour
@@ -268,8 +269,8 @@ For `Transform`/`TransformAsync`, in order:
 |---|---|---|---|
 | `UnResolvedTokenException` | Runtime exception | `TokenNotFoundBehavior.ThrowError` (default) and a token's resolved value is `null` (missing property or a property that itself holds `null` — the two cannot be distinguished) | Ensure every token has a non-null value in `parameters`/`GlobalParameters`, or switch `TokenNotFoundBehavior` to `LeaveAsIs`/`Remove` |
 | `InvalidTokenException` | Runtime exception | A token is built from text its `ITokenDefinition.IsToken` returns false for — only reachable if a custom `ITokenExtractor` builds one from unvalidated text (the built-in extractor always validates first) | Validate with `ITokenDefinition.IsToken` before constructing a token |
-| `ArgumentException` | Runtime exception | A dictionary parameter is not `IDictionary<string, string>` (e.g. `Dictionary<string, object>`); or `TokenDefinition(begin, end)` is given a null/whitespace tag | Pass `IDictionary<string, string>`; use non-empty tag strings |
-| `ArgumentNullException` | Runtime exception | `TransformerService(IOptions<TransformOptions> options)` with `options.Value == null`; resolving with a `null` token; constructing an extractor with a `null` definition | Pass non-null arguments (mainly reachable only through direct, non-DI construction) |
+| `ArgumentException` | Runtime exception | A dictionary parameter is not `IDictionary<string, string>` (e.g. `Dictionary<string, object>`); or `TokenDefinition(begin, end)` is given an empty/whitespace (non-null) tag | Pass `IDictionary<string, string>`; use non-empty tag strings |
+| `ArgumentNullException` | Runtime exception | `TransformerService(IOptions<TransformOptions> options)` with `options.Value == null`; resolving with a `null` token; constructing an extractor with a `null` definition; `TokenDefinition(begin, end)` with a `null` `begin`/`end` tag | Pass non-null arguments (mainly reachable only through direct, non-DI construction) |
 | `ArgumentOutOfRangeException` | Runtime exception | A token constructed with an out-of-range index | Only reachable via a custom `ITokenExtractor`; keep indices within the template's bounds |
 
 No analyzer `DiagnosticDescriptor`s exist in this package — it is runtime-only, no Roslyn analyzer/generator.

@@ -132,7 +132,7 @@ var package = aes.EncryptString("secret value");
 var roundTripped = aes.DecryptString(package);
 
 // later, in a new process, reconstruct from the persisted key:
-using var aes2 = new AesGcmEncryption(keyToPersist);  // reconstructed from the persisted key
+using var aes2 = new AesGcmEncryption(keyToPersist);  // same key, new instance
 var stillWorks = aes2.DecryptString(package);
 ```
 
@@ -258,7 +258,7 @@ has no effect since comparison happens on decoded bytes, not on the hex strings.
 
 | Exception type | Severity | When | Fix |
 |---|---|---|---|
-| `ArgumentException` | Error | `AddAesGcmEncryption`/`AddRsaEncryption` called with an empty/whitespace (non-null) key; `new AesGcmEncryption(key)` with a key containing `:`, or one that doesn't decode to 16/24/32 bytes; `DecryptString` given a non-blank cipher package that doesn't split into exactly 3 `:`-separated parts; `HmacHashing`/`ShaHashing` compute/verify called with an empty/whitespace (non-null) `message`/`secretKey`/`expectedSignature`/`expectedHex`. A `null` in any of these same slots throws `ArgumentNullException` instead — see below | Supply a non-blank key/message/signature; regenerate the AES key without `:`; don't hand-edit a cipher package |
+| `ArgumentException` | Error | `AddAesGcmEncryption`/`AddRsaEncryption` called with an empty/whitespace (non-null) key; `new AesGcmEncryption(key)` with a key containing `:`, or one that doesn't decode to 16/24/32 bytes; `DecryptString` given an empty/whitespace (non-null) `cipherPackage`, or a non-blank one that doesn't split into exactly 3 `:`-separated parts; `HmacHashing`/`ShaHashing` compute/verify called with an empty/whitespace (non-null) `message`/`secretKey`/`expectedSignature`/`expectedHex`. A `null` in any of these same slots throws `ArgumentNullException` instead — see below | Supply a non-blank key/message/signature/cipher package; regenerate the AES key without `:`; don't hand-edit a cipher package |
 | `FormatException` | Error | Any Base64 decode call on invalid Base64 — `AesGcmEncryption(key)` with a non-Base64 key; `RsaEncryption(privateKeyBase64)` with non-Base64 input | Pass a value that is actually Base64 |
 | `InvalidOperationException` | Error | `AesGcmEncryption.Encrypt`/`Decrypt(base64Key)` overload called with a key that doesn't match the instance's own `Key`; `RsaEncryption.Decrypt`/`Sign` called on a `FromPublicKey` instance | Use `EncryptString`/`DecryptString` (no key argument) or construct with the matching key; keep the private key on the side that needs to decrypt/sign |
 | `CryptographicException` | Error | `AesGcm.Decrypt` tag verification fails — wrong key, tampered ciphertext, or mismatched `associatedData` between encrypt and decrypt | Decrypt with the same key and the same `associatedData` used to encrypt |

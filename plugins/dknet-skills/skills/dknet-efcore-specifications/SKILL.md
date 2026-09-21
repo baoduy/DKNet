@@ -1,6 +1,6 @@
 ---
 name: dknet-efcore-specifications
-description: Covers DKNet.EfCore.Specifications -- Specification<TEntity>/ModelSpecification<TEntity,TModel> (WithFilter, AddInclude, AddOrderBy/AddOrderByDescending, Skip/Take, AsNoTracking, IgnoreQueryFilters), the non-generic IRepositorySpec (Query, ToPagedListAsync, ToPageEnumerable, BulkDeleteAsync, SaveChangesAsync) via AddSpecRepo<TDbContext>(), IRepositorySpecFactory for background jobs, and the Dynamic Predicate Builder: PredicateBuilder.New<T>().DynamicAnd/DynamicOr(propertyName, Ops, value), AsExpandable, LinqKit, TryBuildPredicate, the Ops enum (Equal..IsNotNull), plus keyset pagination (AfterKeyset/BeforeKeyset, ToKeysetPageAsync). Use for a runtime search/filter endpoint from a query string, paging/streaming a list, replacing a removed IRepository<T>/generic repository from DKNet.EfCore.Repos, or ModelSpecification projection with Mapster's IMapper.
+description: "Covers DKNet.EfCore.Specifications -- Specification<TEntity>/ModelSpecification<TEntity,TModel> (WithFilter, AddInclude, AddOrderBy/AddOrderByDescending, Skip/Take, AsNoTracking, IgnoreQueryFilters), the non-generic IRepositorySpec (Query, ToPagedListAsync, ToPageEnumerable, BulkDeleteAsync, SaveChangesAsync) via AddSpecRepo<TDbContext>(), IRepositorySpecFactory for background jobs, and the Dynamic Predicate Builder: PredicateBuilder.New<T>().DynamicAnd/DynamicOr(propertyName, Ops, value), AsExpandable, LinqKit, TryBuildPredicate, the Ops enum (Equal..IsNotNull), plus keyset pagination (AfterKeyset/BeforeKeyset, ToKeysetPageAsync). Use for a runtime search/filter endpoint from a query string, paging/streaming a list, replacing a removed IRepository<T>/generic repository from DKNet.EfCore.Repos, or ModelSpecification projection with Mapster's IMapper."
 license: MIT
 metadata:
   author: baoduy
@@ -397,14 +397,15 @@ Notes:
 - `services.AddSpecifications<TDbContext>()`, `services.AddRepositorySpec<TDbContext>()` -- wrong name; it is `services.AddSpecRepo<TDbContext>()`.
 - `spec.OrderBy(...)`, `spec.Where(...)`, `spec.Include(...)` -- wrong names. The protected builders are `AddOrderBy`/`AddOrderByDescending`, `WithFilter`, `AddInclude`.
 - Calling a specification's builder methods (`WithFilter`, `AddInclude`, `AddOrderBy*`, `Skip`, `Take`, `AsNoTracking`, `IgnoreQueryFilters`, `CreatePredicate`) from outside its own constructor -- they are all `protected`; there is no public mutation API on a built specification.
-- ```csharp
+- Run a `DynamicAnd`/`DynamicOr` predicate against a raw `DbSet`/`IQueryable` without `.AsExpandable()` -- fails or silently mistranslates. Only needed when bypassing `IRepositorySpec`; the repository already applies it:
+
+  ```csharp
   // no-compile
   var predicate = PredicateBuilder.New<Product>()
       .And(p => p.IsActive)
       .DynamicAnd("Price", Ops.GreaterThan, 100m);
   var results = await _db.Products.Where(predicate).ToListAsync(); // missing .AsExpandable()
   ```
-  Running a `DynamicAnd`/`DynamicOr` predicate against a raw `DbSet`/`IQueryable` without `.AsExpandable()` fails or silently mistranslates. Only needed when bypassing `IRepositorySpec` -- the repository already applies it.
 - `if (value != null) predicate.DynamicAnd(...)` guards before every dynamic filter -- unnecessary, and it risks dropping a legitimate `null`-equality filter (`Equal`/`NotEqual` against `null` already compile to `IS NULL`/`IS NOT NULL`).
 - `await factory.CreateAsync<TDbContext>()` -- `CreateAsync` is synchronous; awaiting its return value is a compile error, not a race (Rules #9).
 - `services.AddSpecRepo<Db1>(); services.AddSpecRepo<Db2>();` expecting both to work -- the second call is a silent no-op; `IRepositorySpec` in that process only ever serves `Db1` (Rules #3).

@@ -1,6 +1,6 @@
 ---
 name: dknet-slimbus-cqrs
-description: Covers DKNet.SlimBus.Extensions: the Fluents.Requests/Fluents.Queries/Fluents.EventsConsumers contracts (INoResponse, IWitResponse<T>, IWitPageResponse<T>, IHandler<,>, IWithKey<T>), NotFoundError, and FluentResults Result/IResultBase conventions inside a CQRS handler. Explains AddSlimBusEfCoreInterceptor's auto-SaveChanges-after-handler rule (why a CQRS handler calling SaveChangesAsync twice is wrong), AddSlimBusEventPublisher forwarding domain events onto the bus, and wiring SlimMessageBus itself (AddSlimMessageBus, the memory provider) since DKNet ships no transport or validation pipeline. Also covers Aspire.Hosting.ServiceBus's AddServiceBus Azure Service Bus emulator resource for an AppHost. Use for SlimMessageBus with EF Core, IRequestHandler-shaped handlers, ICommand/IQuery/IEvent handler DKNet, or a write that silently never gets persisted.
+description: "Covers DKNet.SlimBus.Extensions: the Fluents.Requests/Fluents.Queries/Fluents.EventsConsumers contracts (INoResponse, IWitResponse<T>, IWitPageResponse<T>, IHandler<,>, IWithKey<T>), NotFoundError, and FluentResults Result/IResultBase conventions inside a CQRS handler. Explains AddSlimBusEfCoreInterceptor's auto-SaveChanges-after-handler rule (why a CQRS handler calling SaveChangesAsync twice is wrong), AddSlimBusEventPublisher forwarding domain events onto the bus, and wiring SlimMessageBus itself (AddSlimMessageBus, the memory provider) since DKNet ships no transport or validation pipeline. Also covers Aspire.Hosting.ServiceBus's AddServiceBus Azure Service Bus emulator resource for an AppHost. Use for SlimMessageBus with EF Core, IRequestHandler-shaped handlers, ICommand/IQuery/IEvent handler DKNet, or a write that silently never gets persisted."
 license: MIT
 metadata:
   author: baoduy
@@ -21,7 +21,7 @@ dev. This skill teaches both. Depth lives in `references/DKNet.SlimBus.Extension
 
 | Package | Install | What it gives you | Depends on | Reference |
 |---|---|---|---|---|
-| `DKNet.SlimBus.Extensions` | `dotnet add package DKNet.SlimBus.Extensions` | `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` handler contracts, the auto-save interceptor, the domain-event-to-bus bridge | `DKNet.EfCore.Events` (→ `DKNet.EfCore.Abstractions`, `DKNet.EfCore.Extensions`); `FluentResults`, `Mapster`, `SlimMessageBus`/`.Host`/`.Host.Interceptor`, `X.PagedList.EF` | `references/DKNet.SlimBus.Extensions.md` |
+| `DKNet.SlimBus.Extensions` | `dotnet add package DKNet.SlimBus.Extensions` | `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` handler contracts, the auto-save interceptor, the domain-event-to-bus bridge | `DKNet.EfCore.Events` (→ `DKNet.EfCore.Abstractions`, `DKNet.EfCore.Extensions`); `FluentResults`, `Mapster`, `Microsoft.Extensions.Hosting.Abstractions`, `SlimMessageBus`/`.Host`/`.Host.Interceptor`, `X.PagedList.EF` | `references/DKNet.SlimBus.Extensions.md` |
 | `Aspire.Hosting.ServiceBus` | ProjectReference only — `IsPackable=false`, not published to NuGet | `AddServiceBus`: registers the Azure Service Bus emulator as a `ContainerResource` in an Aspire AppHost | `Aspire.Hosting`, `Aspire.Hosting.SqlServer` (a SQL Server resource is mandatory) | `references/Aspire.Hosting.ServiceBus.md` |
 
 Neither package brings a SlimMessageBus transport or a validation pipeline — add `SlimMessageBus.Host.Memory`
@@ -48,8 +48,8 @@ builder.Services
     .AddSlimBusEfCoreInterceptor<AppDbContext>() // register before any custom IRequestHandlerInterceptor<,>
     .AddSlimMessageBus(mbb => mbb
         .AddJsonSerializer()
-        .AddServicesFromAssembly(typeof(Program).Assembly)
-        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
+        .AddServicesFromAssembly(typeof(CreateProductHandler).Assembly)
+        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 
 var app = builder.Build();
 
@@ -326,6 +326,7 @@ When an AppHost needs a local Azure Service Bus for the API project above to sen
 without a real Azure namespace.
 
 ```csharp
+using Aspire.Hosting;
 using Aspire.Hosting.ServiceBus;
 
 public static class AppHostSetup

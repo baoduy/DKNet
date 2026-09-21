@@ -36,8 +36,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 │                      one page per package under Core/, EfCore/, AspNetCore/,
 │                      Services/, Messaging/, Aspire/
 ├── .claude-plugin/    marketplace.json — Claude Code marketplace "dknet"
-├── plugins/           dknet-skills/ — the DKNet agent-skills plugin (see Repo Skills)
-├── package.json       npm metadata for `npx skills add baoduy/DKNet`
+├── plugins/           dknet-skills/ — the DKNet agent-skills plugin, also the npm package @drunkcoding/dknet-skills (see Repo Skills)
 ├── specs/             Spec-Kit feature specifications (historical)
 ├── issues/            Pending issue notes
 ├── .github/           CI workflows + `copilot-instructions.md`
