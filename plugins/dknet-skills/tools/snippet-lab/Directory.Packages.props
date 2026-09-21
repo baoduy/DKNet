@@ -1,0 +1,85 @@
+<Project>
+  <!-- The snippet lab pins its own versions on purpose. It compiles the skills' examples against the DKNet
+       packages AS PUBLISHED ON NUGET.ORG - the surface a reader actually installs - not against src/**/bin.
+       So it must NOT inherit src/Directory.Packages.props: that file describes what the framework is built
+       from, which can be ahead of the last release. Bump $(DKNetVersion) when a new DKNet version ships. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <DKNetVersion Condition="'$(DKNetVersion)' == ''">13.1.2</DKNetVersion>
+  </PropertyGroup>
+  <ItemGroup Label="DKNet, from nuget.org">
+    <PackageVersion Include="DKNet.AspCore.Extensions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Idempotency" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Idempotency.MsSqlStore" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Idempotency.NpgsqlStore" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Idempotency.RedisStore" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Idempotency.Relational" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.AspCore.Tasks" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Abstractions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.AuditLogs" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.DataAuthorization" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.DtoGenerator" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Encryption" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Events" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Extensions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Hooks" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Relational.Helpers" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.EfCore.Specifications" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Fw.Extensions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.RandomCreator" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.SlimBus.Extensions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.SlimBus.Generators" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.BlobStorage.Abstractions" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.BlobStorage.AwsS3" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.BlobStorage.AzureStorage" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.BlobStorage.Local" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.Encryption" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.PdfGenerators" Version="$(DKNetVersion)" />
+    <PackageVersion Include="DKNet.Svc.Transformation" Version="$(DKNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Label="Third-party packages the examples use directly">
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.102.5" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.103.2" />
+    <PackageVersion Include="Asp.Versioning.Http" Version="10.2.3" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.2" />
+    <PackageVersion Include="Bogus" Version="35.6.5" />
+    <PackageVersion Include="FluentResults" Version="4.0.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="MR.EntityFrameworkCore.KeysetPagination" Version="1.6.0" />
+    <PackageVersion Include="Mapster" Version="10.0.12" />
+    <PackageVersion Include="Mapster.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Markdig" Version="1.3.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.12" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="PuppeteerSharp" Version="25.10.0" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+    <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="2.0.0" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="SlimMessageBus" Version="3.0.0" />
+    <PackageVersion Include="SlimMessageBus.Host" Version="3.5.0" />
+    <PackageVersion Include="SlimMessageBus.Host.Interceptor" Version="3.0.0" />
+    <PackageVersion Include="SlimMessageBus.Host.Memory" Version="3.5.0" />
+    <PackageVersion Include="SlimMessageBus.Host.Serialization.SystemTextJson" Version="3.5.0" />
+    <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.4" />
+    <PackageVersion Include="System.Memory.Data" Version="10.0.12" />
+    <PackageVersion Include="Testcontainers.Azurite" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.Minio" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+    <PackageVersion Include="X.PagedList.EF" Version="10.6.0" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+  </ItemGroup>
+</Project>

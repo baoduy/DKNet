@@ -118,6 +118,17 @@ On `dev` the NuGet publish and the GitHub release stay off; the npm job publishe
 Skills are derived from `docs/<Area>/<Package>.md` and `src/`. When a package's public API or behaviour changes,
 update the owning skill (`SKILL.md` and `references/<PackageId>.md`) in the same pull request as `docs/`.
 
+Every C# example in every skill is compiled against the DKNet packages published on nuget.org by the snippet
+lab in `tools/snippet-lab/` — see its [README](tools/snippet-lab/README.md). Examples are therefore checked
+against the surface a reader installs, not against a local build of `src/`. After editing a skill:
+
+```bash
+tools/snippet-lab/check.sh skills/<skill-name>        # or: for d in skills/*/; do tools/snippet-lab/check.sh "$d"; done
+```
+
+The lab is a development tool only: `package.json`'s `files` list ships `.claude-plugin/`, `skills/`, `README.md`
+and `LICENSE`, so `tools/` never reaches the npm package.
+
 ## License
 
 MIT

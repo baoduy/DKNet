@@ -1,0 +1,125 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Only Aspire.Hosting.ServiceBus still comes from a local build (see below); check.sh passes this
+         absolutely because the project is copied into a per-run directory. -->
+    <AspireServiceBusDll Condition="'$(AspireServiceBusDll)' == ''">$(MSBuildThisFileDirectory)../../../../src/Aspire/Aspire.Hosting.ServiceBus/bin/Debug/net10.0/Aspire.Hosting.ServiceBus.dll</AspireServiceBusDll>
+    <!-- DKNet.SlimBus.Generators emits CRUD types into $(AssemblyName).Crud, and the skills' examples import
+         Generated.Crud. Renaming this assembly puts the generated types where no published example can name
+         them. Parallel runs are isolated by their own run directory, not by the assembly name. -->
+    <AssemblyName>Generated</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <AnalysisMode>None</AnalysisMode>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+    <NoWarn>$(NoWarn);NU1510;CS1591;CS8618;CS1998;CS0219;CS8321;CS0168;CS8019;CS0105;NU1603;NU1608;NU1900;NU1902;NU1903</NoWarn>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+    <DtoGeneratorExclusions></DtoGeneratorExclusions>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Hosting" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.AspNetCore.Routing" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+  <ItemGroup Label="DKNet, referenced as published NuGet packages (versions in Directory.Packages.props)">
+    <PackageReference Include="DKNet.AspCore.Extensions" />
+    <PackageReference Include="DKNet.AspCore.Idempotency" />
+    <PackageReference Include="DKNet.AspCore.Idempotency.MsSqlStore" />
+    <PackageReference Include="DKNet.AspCore.Idempotency.NpgsqlStore" />
+    <PackageReference Include="DKNet.AspCore.Idempotency.RedisStore" />
+    <PackageReference Include="DKNet.AspCore.Idempotency.Relational" />
+    <PackageReference Include="DKNet.AspCore.Tasks" />
+    <PackageReference Include="DKNet.EfCore.Abstractions" />
+    <PackageReference Include="DKNet.EfCore.AuditLogs" />
+    <PackageReference Include="DKNet.EfCore.DataAuthorization" />
+    <PackageReference Include="DKNet.EfCore.DtoGenerator" />
+    <PackageReference Include="DKNet.EfCore.Encryption" />
+    <PackageReference Include="DKNet.EfCore.Events" />
+    <PackageReference Include="DKNet.EfCore.Extensions" />
+    <PackageReference Include="DKNet.EfCore.Hooks" />
+    <PackageReference Include="DKNet.EfCore.Relational.Helpers" />
+    <PackageReference Include="DKNet.EfCore.Specifications" />
+    <PackageReference Include="DKNet.Fw.Extensions" />
+    <PackageReference Include="DKNet.RandomCreator" />
+    <PackageReference Include="DKNet.SlimBus.Extensions" />
+    <PackageReference Include="DKNet.SlimBus.Generators" />
+    <PackageReference Include="DKNet.Svc.BlobStorage.Abstractions" />
+    <PackageReference Include="DKNet.Svc.BlobStorage.AwsS3" />
+    <PackageReference Include="DKNet.Svc.BlobStorage.AzureStorage" />
+    <PackageReference Include="DKNet.Svc.BlobStorage.Local" />
+    <PackageReference Include="DKNet.Svc.Encryption" />
+    <PackageReference Include="DKNet.Svc.PdfGenerators" />
+    <PackageReference Include="DKNet.Svc.Transformation" />
+  </ItemGroup>
+  <ItemGroup Label="DKNet source generators">
+    <!-- DKNet.EfCore.DtoGenerator and DKNet.SlimBus.Generators are referenced above like any other package:
+         their .nupkg wires the analyzer and ships GenerateDtoAttribute.cs as contentFiles, exactly as a
+         consumer gets it. Nothing to wire by hand. These two properties stay because the generators read
+         them, and MSBuild only passes a property to a generator when it is declared CompilerVisible. -->
+    <CompilerVisibleProperty Include="DtoGeneratorExclusions" />
+    <CompilerVisibleProperty Include="DtoGeneratorIgnoreComplexType" />
+  </ItemGroup>
+  <ItemGroup Label="Aspire.Hosting.ServiceBus - the one DKNet project that is IsPackable=false">
+    <!-- Not on nuget.org, so it can only come from a local build. Conditional: without it the other 12
+         skills still check, and only dknet-slimbus-cqrs' AddServiceBus fences fail. check.sh warns. -->
+    <Reference Condition="Exists('$(AspireServiceBusDll)')" Include="$(AspireServiceBusDll)" />
+  </ItemGroup>
+  <ItemGroup Label="Third-party packages the DKNet assemblies and typical consumer code need">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="FluentResults" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="Mapster.DependencyInjection" />
+    <PackageReference Include="X.PagedList.EF" />
+    <PackageReference Include="MR.EntityFrameworkCore.KeysetPagination" />
+    <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="SlimMessageBus" />
+    <PackageReference Include="SlimMessageBus.Host" />
+    <PackageReference Include="SlimMessageBus.Host.Interceptor" />
+    <PackageReference Include="SlimMessageBus.Host.Memory" />
+    <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson" />
+    <PackageReference Include="Aspire.Hosting" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Asp.Versioning.Http" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.Core" />
+    <PackageReference Include="PuppeteerSharp" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="System.Memory.Data" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.Azurite" />
+    <PackageReference Include="Testcontainers.Minio" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Bogus" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+</Project>
