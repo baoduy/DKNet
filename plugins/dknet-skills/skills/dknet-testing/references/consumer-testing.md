@@ -31,7 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
 ## Real databases with TestContainers
 
-**MsSql + the ARM64 fallback.** `mcr.microsoft.com/mssql/server` ships x64-only images. DKNet's own `AspCore.Idempotency.MsSqlStore.Tests` fixture (`Fixtures/ApiFixture.cs`) picks the image off `RuntimeInformation.ProcessArchitecture` and falls back to `mcr.microsoft.com/azure-sql-edge:latest` on ARM64 — that fallback runs on Apple Silicon (via Rosetta) but fails to launch on other ARM64 hosts outright (Linux/ARM boxes included). The container's own "ready for client connections" log line can print a moment before the `sa` password is actually usable, so a fixture that opens a real connection right after `StartAsync()` retries the *login*, not the container start:
+**MsSql + the ARM64 fallback.** `mcr.microsoft.com/mssql/server` ships x64-only images. DKNet's own `AspCore.Idempotency.MsSqlStore.Tests` project has an `ApiFixture` that picks the image off `RuntimeInformation.ProcessArchitecture` and falls back to `mcr.microsoft.com/azure-sql-edge:latest` on ARM64 — that fallback runs on Apple Silicon (via Rosetta) but fails to launch on other ARM64 hosts outright (Linux/ARM boxes included). The container's own "ready for client connections" log line can print a moment before the `sa` password is actually usable, so a fixture that opens a real connection right after `StartAsync()` retries the *login*, not the container start:
 
 ```csharp
 using System.Runtime.InteropServices;
@@ -221,13 +221,13 @@ public sealed class HooksEventsAuditTests : IAsyncLifetime
 }
 ```
 
-`AddEfCoreAuditLogs`'s default `AuditLogBehaviour.IncludeAllAuditedEntities` captures every tracked entity change, not only ones carrying `[AuditLog]` — you don't need an attribute or an `AuditedEntity` base class for the hook to fire; `AuditLogBehaviour.OnlyAttributedAuditedEntities` is the opt-in that narrows it. Domain events collect during the *before*-save pass (so `[RaisesEvent]`/`AddEvent` narrowing can still read `IsModified`) but dispatch only in the *after*-save hook, once the write commits — assert on a publisher only after `await SaveChangesAsync()` has returned, never mid-flight.
+`AddEfCoreAuditLogs`'s default `AuditLogBehaviour.IncludeAllAuditedEntities` captures every tracked entity change, not only ones carrying `[AuditLog]` — you don't need an attribute or an `AuditedEntity` base class for the hook to fire; `AuditLogBehaviour.OnlyAttributedAuditedEntities` is the opt-in that narrows it. Domain events dispatch only in the *after*-save hook, once the write commits — assert on a publisher only after `await SaveChangesAsync()` has returned, never mid-flight. (`[RaisesEvent]`'s own update-property narrowing runs during the *before*-save pass, since it needs `EntityEntry.Property(...).IsModified` before the save clears it; a plain `AddEvent(...)` call has no such narrowing.)
 
 ## Testing generated (and hand-mapped) HTTP endpoints
 
 A `[CrudCreate]`/`[CrudAction]`-generated slice maps its routes through the same `DKNet.AspCore.Extensions` fluent mappers a hand-written vertical slice would call directly — `group.MapGetById<TEntity,TKey,TDto>()`, `MapGetList<...>()`, `MapPost<TRequest,TDto>("/")`, `MapPutById<...>()`, `MapDeleteById<...>()`. That means the *test* is identical either way: a `WebApplicationFactory<TEntryPoint>` over the app, an `HttpClient`, and an assertion on status code and body — never a unit test that constructs the generated request/handler/DTO types directly (see `dknet-codegen` for what those look like).
 
-`DKNet.AspCore.Extensions`' own test fixture (`Fixtures/EndpointTestHost.cs`) builds a real `WebApplication` with `UseTestServer()`, a real in-memory `IMessageBus` (`AddSlimMessageBus` + `WithProviderMemory()`), and a real `IRepositorySpec` over `UseInMemoryDatabase`, then maps every fluent mapper once under a shared route prefix and exercises it via `app.GetTestClient()` — copy that shape once you're testing more than one or two generated endpoints, rather than spinning up a fresh `WebApplicationFactory` per test.
+`DKNet.AspCore.Extensions`' own `EndpointTestHost` test fixture builds a real `WebApplication` with `UseTestServer()`, a real in-memory `IMessageBus` (`AddSlimMessageBus` + `WithProviderMemory()`), and a real `IRepositorySpec` over `UseInMemoryDatabase`, then maps every fluent mapper once under a shared route prefix and exercises it via `app.GetTestClient()` — copy that shape once you're testing more than one or two generated endpoints, rather than spinning up a fresh `WebApplicationFactory` per test.
 
 ## Testing idempotency stores
 
@@ -480,12 +480,12 @@ public sealed class ArchitectureBoundaryTests
 }
 ```
 
-`DKNet.Svc.Encryption`'s own `Architecture/WeakCryptoDependencyTests.cs` uses the same shape to assert the package never depends on `MD5`/`SHA1`/`DES`/`System.Random`, plus a deliberately-broken canary fixture (a test-only type that *does* depend on `MD5`) to prove the rule still fires — copy the canary pattern whenever you add a architecture guard, so a future refactor that silently breaks the rule doesn't go unnoticed.
+`DKNet.Svc.Encryption`'s own `WeakCryptoDependencyTests` uses the same shape to assert the package never depends on `MD5`/`SHA1`/`DES`/`System.Random`, plus a deliberately-broken canary fixture (a test-only type that *does* depend on `MD5`) to prove the rule still fires — copy the canary pattern whenever you add a architecture guard, so a future refactor that silently breaks the rule doesn't go unnoticed.
 
 ## xUnit + Shouldly + Bogus conventions
 
 - **Naming**: `MethodName_Scenario_ExpectedBehavior` — e.g. `DynamicAnd_WithMultipleConditions_CombinesCorrectly`, `TryBuildPredicate_UnknownProperty_ReturnsFalse`.
-- **Never mock `DbContext` or `DbSet<T>`.** No DKNet package test does this, for any package, anywhere in the suite — build a real one (SQLite or a container) instead.
+- **Never mock `DbContext` or `DbSet<T>` to assert persistence, filtering, or SQL-translation behavior** — build a real one (SQLite or a container) instead. `RepositorySpecExceptionHandlerMockTests` (in `EfCore.Specifications.Tests`) is the one source-verified exception in the whole suite: it mocks a plain `DbContext`/`DbSet<T>` purely to force a deterministic `DbUpdateConcurrencyException` and assert `IEfCoreExceptionHandler` wiring, never to test real query/SQL behavior.
 - **`IAsyncLifetime` over shared `IClassFixture` state** whenever a test can leave the `DbContext`/connection poisoned (a thrown exception, a failed save) — a plain `IClassFixture<T>` is fine for read-only, side-effect-free shared setup (e.g. `EfCore.Extensions.Tests`' snapshot tests).
 - **`InternalsVisibleTo` reaches internals only from that package's *own* test project.** DKNet's own tests use it to reach `EfCoreAuditHook`, `IdempotencyInMemoryStore`, `HookRunnerInterceptor`, and similar — a consumer's test project has no such grant and must go through the public DI surface (`IRepositorySpec`, `IIdempotencyKeyStore`, `IBlobService`, ...) instead.
-- **Moq is for infrastructure clients, never for `DbContext`.** The only source-verified use across the whole suite is mocking `IConnectionMultiplexer`/`IDatabase` for the Redis idempotency store.
+- **Moq is mainly for infrastructure clients.** The Redis idempotency store's own suite mocks `IConnectionMultiplexer`/`IDatabase` to drive concurrency scenarios directly. The one place DKNet's own suite mocks a plain `DbContext`/`DbSet<T>` with Moq is `RepositorySpecExceptionHandlerMockTests` (in `EfCore.Specifications.Tests`) — and only to force a deterministic `DbUpdateConcurrencyException`, never to assert real query/SQL behavior.

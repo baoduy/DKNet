@@ -5,7 +5,7 @@ license: MIT
 metadata:
   author: baoduy
   version: "0.1.0"
-  packages: ""
+  packages: "all"
 ---
 
 # Testing code built on DKNet, and testing inside the DKNet repo
@@ -26,7 +26,7 @@ This skill owns no DKNet package. Route to `dknet-packages` for which DKNet pack
 | `Shouldly` | `dotnet add package Shouldly` | Fluent assertions (`ShouldBe`, `ShouldContain`, `ShouldThrowAsync<T>`, ...) | none | throughout |
 | `Bogus` | `dotnet add package Bogus` | Seeded, fluent fake-data generation (`Faker<T>`) | none | How to: TestContainers |
 
-The recipes' notes also reach for `Testcontainers.PostgreSql`, `Testcontainers.Minio`, `NetArchTest.Rules` (architecture guards), and `Moq` (only for the Redis idempotency store, never for `DbContext`) — see `references/consumer-testing.md`.
+The recipes' notes also reach for `Testcontainers.PostgreSql`, `Testcontainers.Minio`, `NetArchTest.Rules` (architecture guards), and `Moq` (mainly for the Redis idempotency store's `IConnectionMultiplexer`/`IDatabase`; DKNet's own suite mocks a plain `DbContext`/`DbSet<T>` in exactly one place, see Gotchas) — see `references/consumer-testing.md`.
 
 ## Quick start
 
@@ -114,7 +114,7 @@ public sealed class ProductSpecTests : IAsyncLifetime
 
 1. Never use the `Microsoft.EntityFrameworkCore.InMemory` provider to assert real persistence, filtering, or SQL-translation behavior — it doesn't translate global query filters, generated SQL, or sequences. It's the right call only for pure DI/registration/value-converter tests with zero SQL semantics at stake, e.g. `DKNet.EfCore.Encryption`'s own suite.
 2. Default to `Microsoft.Data.Sqlite` in-memory, not a container, for anything that only needs real relational `SaveChanges`/model-build mechanics (hooks, events, audit capture, query filters). Reach for `Testcontainers.MsSql`/`.PostgreSql` only when the behavior is genuinely SQL-Server- or PostgreSQL-specific.
-3. Never mock `DbContext` or `DbSet<T>`. Build a real `DbContext` — SQLite in-memory or a container — and assert against it.
+3. Never mock `DbContext` or `DbSet<T>` to assert persistence, filtering, or SQL-translation behavior. Build a real `DbContext` — SQLite in-memory or a container — and assert against it. The one narrow exception is forcing a deterministic `DbUpdateConcurrencyException` to test exception-handler *wiring* (`RepositorySpecExceptionHandlerMockTests` in `EfCore.Specifications.Tests`), never persistence/query behavior.
 4. Name tests `MethodName_Scenario_ExpectedBehavior`, e.g. `DynamicAnd_WithMultipleConditions_CombinesCorrectly`.
 5. Prefer `IAsyncLifetime` over shared `IClassFixture` state whenever a test can leave the `DbContext`/connection poisoned in a way that would leak into the next test in the class.
 6. Assert a `Specification`/dynamic-predicate query with `query.ToQueryString()` alongside the materialized rows — it proves the filter reached SQL, not just that it matched in memory.
@@ -432,7 +432,7 @@ Coverage targets (CI gate is 80% overall; the rest are aspirational, not separat
 
 ## Runtime behaviour
 
-- Domain events collect during the before-save pass but dispatch only in the after-save hook, once the write commits. A test that inspects a publisher before `await SaveChangesAsync()` returns is racing it.
+- Domain events dispatch only in the after-save hook, once the write commits — a test that inspects a publisher before `await SaveChangesAsync()` returns is racing it. (`[RaisesEvent]`'s update-property narrowing is the one piece that runs during the before-save pass — it reads `EntityEntry.Property(...).IsModified`, which is meaningless once the save completes; a plain `AddEvent(...)` call has no such narrowing.)
 - Hooks, event dispatch, and audit-log capture are independent registrations sharing one interceptor per `DbContext` type — wiring one does not wire another.
 - `WebApplicationFactory<TEntryPoint>` builds and starts the host the moment `Services`/`CreateClient()` is first touched. Seed data through `factory.Services.CreateScope()` on the same, already-created factory you call `CreateClient()` on.
 - A TestContainers container is not necessarily ready for logins the instant its readiness log line prints — a flaky first-login failure right after `StartAsync()` is an environment race; retry the login, not the assertion.
@@ -441,6 +441,7 @@ Coverage targets (CI gate is 80% overall; the rest are aspirational, not separat
 
 - **DataAuthorization's, Hooks', and Events' own suites use SQLite, not TestContainers — that is not a violation of "never use InMemory."** The repo-wide rule targets `Microsoft.EntityFrameworkCore.InMemory`, which doesn't translate query filters at all; SQLite is a real relational engine.
 - **`DKNet.EfCore.Encryption`'s own tests genuinely do use `Microsoft.EntityFrameworkCore.InMemory`.** Value conversion happens in the converter, not translated SQL, so the provider is irrelevant there — the one source-verified exception, not a precedent to copy elsewhere.
+- **`RepositorySpecExceptionHandlerMockTests` (in `EfCore.Specifications.Tests`) genuinely does mock `DbContext` and `DbSet<T>` with Moq.** It exists only to force a deterministic `DbUpdateConcurrencyException` out of `SaveChangesAsync` and assert that `IEfCoreExceptionHandler` gets invoked — a handler-wiring test, not a persistence or SQL one. The one source-verified exception to Rule 3, not a precedent to copy elsewhere.
 - **A top-level-statements `Program` is `internal` by default.** `WebApplicationFactory<Program>` from a separate test project can't see it without `InternalsVisibleTo` — give the test host an explicit `public` entry-point type instead.
 - **`AddIdempotentKey()`'s second call is a complete no-op, including its config.** A test calling it twice with two different options and expecting the second to win silently gets the first.
 - **Bogus's `Faker<T>.Generate()` needs an accessible parameterless constructor and settable properties.** A "rich" domain entity with only a business constructor and private setters can't be `Faker<T>`'d directly.
@@ -449,7 +450,7 @@ Coverage targets (CI gate is 80% overall; the rest are aspirational, not separat
 ## Do not
 
 - `DKNet.Testing`, `DKNet.TestKit`, `DKNet.EfCore.Testing` — none of these packages exist. DKNet ships zero test-helper NuGet packages.
-- `new Mock<AppDbContext>()` / a mocked `DbSet<T>` — no DKNet package test works this way. Build a real `DbContext` instead.
+- `new Mock<AppDbContext>()` / a mocked `DbSet<T>` to assert persistence, filtering, or SQL-translation behavior — build a real `DbContext` instead (see Rule 3 and Gotchas for the one narrow, handler-wiring-only exception).
 - `services.AddDbContext<T>(o => o.UseInMemoryDatabase(...))` as a stand-in for "a real integration test" — this is exactly the provider Rule 1 forbids for SQL-behavior assertions.
 - `IRepository<T>`, `IReadRepository<T>`, `IWriteRepository<T>`, `RepositoryFactory<TDbContext>` — removed; nothing left to construct or mock. Use `IRepositorySpec` via `AddSpecRepo<TDbContext>()`.
 - `IRepositorySpec.DeleteRange<TEntity>(...)` — removed; the replacement is `BulkDeleteAsync<TEntity>(predicate, ct)`.

@@ -96,8 +96,13 @@ stamps that job's version into `package.json` and `.claude-plugin/plugin.json` (
 `scripts/sync-version.mjs`), validates the skills, and publishes with provenance. A version already on npm is
 skipped. There is no separate tag or GitHub release: DKNet's `v<version>` release marks the commit.
 
-The repository therefore carries the placeholder `0.0.0` and nothing is bumped by hand. The job needs one
-repository secret, `NPM_TOKEN` (an npmjs.com granular access token with publish rights on `@drunkcoding`).
+The repository therefore carries the placeholder `0.0.0` and nothing is bumped by hand. The job authenticates
+with [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers), so there is no `NPM_TOKEN` secret and
+nothing to rotate — it mints a short-lived OIDC credential from the workflow's `id-token: write` permission, and
+npm attaches the provenance attestation automatically. The trusted publisher is configured once on npmjs.com
+(package → Settings → Trusted Publisher → GitHub Actions, repository `baoduy/DKNet`, workflow filename
+`dotnet-publish.yml`, no environment); npm matches the workflow filename exactly, so renaming the workflow means
+updating that setting too.
 
 To test the npm path without releasing anything, dispatch the workflow on `dev`:
 

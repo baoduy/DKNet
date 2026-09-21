@@ -47,7 +47,7 @@ Everything else in the assembly (`CrudDiagnostics`, `CrudModelBuilder`, `Emitter
 | `CrudActionAttribute` | sealed attribute | ctor `CrudActionAttribute(string? route = null)`; `string? Route { get; }`; `CrudActionVerb Verb { get; set; } = Post`; `string? Name { get; set; }` |
 | `CrudActionVerb` | enum | `Post = 0` (default), `Put = 1`, `Patch = 2` — no `Delete` |
 
-### Generated, per entity, into `{AssemblyName}.Crud` (or `Generated.Crud` when the compiling project has no assembly name)
+### Generated, per entity, into `{AssemblyName}.Crud` (the examples below assume an assembly named `Generated`)
 
 | Type | Kind | Key members |
 |---|---|---|
@@ -126,15 +126,15 @@ builder.Services
     .AddSlimBusEfCoreInterceptor<AppDbContext>()
     .AddSlimMessageBus(mbb => mbb
         .AddJsonSerializer()
-        .AddServicesFromAssembly(typeof(Program).Assembly)
-        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
+        .AddServicesFromAssembly(typeof(AppDbContext).Assembly)
+        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(AppDbContext).Assembly)));
 
 var app = builder.Build();
 app.MapGroup("/products").MapProductCrud();
 app.Run();
 ```
 
-`CreateProductRequest` gets `Name` (`required string`) and `Price` (`required decimal`). `UpdatePriceProductRequest` gets `Id` (route-bound) and `Price`; it maps `PUT {id}` because it is the first `[CrudUpdate]` member. `ApproveProductRequest` maps `POST {id}/approval` with a body (`ApprovedBy`); `Archive` takes no parameters, so `ArchiveProductRequest` maps via `MapParameterlessActionById` at `PATCH {id}/archive` and accepts a request with **no** body and no `Content-Type` at all — a body sent anyway is accepted and ignored. `DeleteProductRequest` is also emitted automatically, with no handler. All of this lands in namespace `{AssemblyName}.Crud` — substitute your own compiled assembly's name for `{AssemblyName}` (it falls back to `Generated.Crud` only when the project has none).
+`CreateProductRequest` gets `Name` (`required string`) and `Price` (`required decimal`). `UpdatePriceProductRequest` gets `Id` (route-bound) and `Price`; it maps `PUT {id}` because it is the first `[CrudUpdate]` member. `ApproveProductRequest` maps `POST {id}/approval` with a body (`ApprovedBy`); `Archive` takes no parameters, so `ArchiveProductRequest` maps via `MapParameterlessActionById` at `PATCH {id}/archive` and accepts a request with **no** body and no `Content-Type` at all — a body sent anyway is accepted and ignored. `DeleteProductRequest` is also emitted automatically, with no handler. All of this lands in namespace `{AssemblyName}.Crud` — substitute your own compiled assembly's name for `{AssemblyName}`. These examples assume it is `Generated`, hence `Generated.Crud`. (`CrudGenerator` falls back to the literal `Generated.Crud` only when `Compilation.AssemblyName` is empty, which an ordinary MSBuild project never is — the SDK defaults it to the project file name.)
 
 ### Excluding and configuring routes at mapping time
 
@@ -161,8 +161,8 @@ A route name passed to `Exclude(string[])`/`Configure(string, ...)` that the ent
 ### Overriding a generated handler with hand-written logic
 
 See `SKILL.md`'s "Override one generated handler, keep the rest generated" — same `UpdatePriceProductRequest`,
-same `ProductByIdSpec`/`UpdatePriceProductHandler` pair, living in `Generated.Crud` (the fallback namespace for
-this sample project, which has no assembly name — substitute `{YourAssemblyName}.Crud` in a real app).
+same `ProductByIdSpec`/`UpdatePriceProductHandler` pair, living in `Generated.Crud` because this sample project's
+assembly name is `Generated` — substitute `{YourAssemblyName}.Crud` in a real app.
 
 Matching is by the **request type's simple name only** (found via a syntax scan of base lists, since the generated type doesn't exist yet as a symbol) — the hand-written handler's DTO type argument is never cross-checked against the generated one, so getting it wrong compiles but fails at dispatch. The request record itself is still generated regardless of the override; only the handler is skipped (`DKCRUDGEN005`, Info).
 

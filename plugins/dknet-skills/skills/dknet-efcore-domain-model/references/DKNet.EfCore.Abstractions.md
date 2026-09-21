@@ -276,6 +276,9 @@ by `DKNet.EfCore.DtoGenerator` at build time against the attributes declared her
 |---|---|---|---|
 | `NotSupportedException` | Runtime (attribute construction) | `[Sequence(typeof(T))]` where `T` is not `byte`/`short`/`int`/`long` | Use one of the four supported numeric types, or omit the argument for the `int` default. |
 | `ArgumentNullException` (null) / `ArgumentException` (empty or whitespace) — both via `ArgumentException.ThrowIfNullOrWhiteSpace` | Runtime | `SetCreatedBy`/`SetUpdatedBy` called with a null/empty/whitespace `userName`; on `SetUpdatedBy` only reached when its timestamp guard doesn't already no-op first | Pass a non-blank user name. |
+| `DKRAISEVT001` (build error) | Build | A `[RaisesEvent]` narrowing property (the trailing `params string[]`) is a nested path (contains `.`) or isn't a property of the entity | Name a direct, non-nested property of the entity. |
+| `DKRAISEVT002` (build error) | Build | The type-naming form `[RaisesEvent(typeof(Payload), ...)]` names a type that carries no `[GenerateDto]`, or whose `[GenerateDto]` was generated from a different entity | Point it at a `[GenerateDto(typeof(SameEntity))]` record. |
+| `DKRAISEVT004` (build error) | Build | The convention-form composed name already resolves to an existing, incompatible type | Change or add the label, or switch to the type-naming form naming that type. |
 | `DKRAISEVT005` (build error) | Build | Either the `[RaisesEvent]` label isn't a compile-time constant string, or the composed name isn't a single valid C# identifier | Pass a literal string label; use a label that is a valid identifier fragment. |
 | `DKRAISEVT006` (build error) | Build | Two `[RaisesEvent]` declarations on different entities in the same namespace compose to the same name | Rename via a distinguishing label. |
 | `DKRAISEVT007` (build error) | Build | `[RaisesEvent]` declared with `Operations == 0` | Name at least one of `Created`/`Updated`/`Deleted`. |

@@ -146,7 +146,13 @@ jobs:
   #          NuGet and no GitHub release is created; this job publishes <version>-dev.<run_number> under the npm
   #          dist-tag "dev" (install with `npm i -D @drunkcoding/dknet-skills@dev`), so it can never take a
   #          version number a main release will need.
-  # Secret required once: NPM_TOKEN — npmjs.com granular access token with publish rights on @drunkcoding.
+  # Auth: npm Trusted Publishing (OIDC) — https://docs.npmjs.com/trusted-publishers. No NPM_TOKEN secret and
+  # nothing to rotate; the job mints a short-lived credential from the `id-token: write` permission below.
+  # One-time setup on npmjs.com → package @drunkcoding/dknet-skills → Settings → Trusted Publisher →
+  # GitHub Actions, owner/repo `baoduy/DKNet`, workflow filename `dotnet-publish.yml` (exact, case-sensitive,
+  # with the extension), environment left blank. Afterwards set publishing access to "Require two-factor
+  # authentication and disallow tokens" — that blocks token publishes without affecting OIDC.
+  # npm generates the provenance attestation automatically here, so no --provenance flag.
   publish-npm:
     name: Publish dknet-skills (npm)
     needs: build
@@ -154,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # npm provenance attestation
+      id-token: write   # npm trusted publishing (OIDC) + automatic provenance
     env:
       IS_RELEASE: ${{ github.ref == 'refs/heads/main' }}
       VERSION: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.version || format('{0}-dev.{1}', needs.build.outputs.version, github.run_number) }}
@@ -166,10 +172,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
+      # Trusted publishing needs npm >= 11.5.1 / node >= 22.14; node 24 ships it. No registry-url: that only
+      # writes an .npmrc `_authToken` line, and an empty one is exactly what made this job fail with ENEEDAUTH.
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
 
       - uses: astral-sh/setup-uv@v10.1.0
 
@@ -209,6 +216,4 @@ jobs:
         if: ${{ steps.exists.outputs.exists == 'false' }}
         run: |
           echo "Publishing ${VERSION} (dist-tag ${NPM_DIST_TAG}, release=${IS_RELEASE})"
-          npm publish --access public --provenance --tag "${NPM_DIST_TAG}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --tag "${NPM_DIST_TAG}"

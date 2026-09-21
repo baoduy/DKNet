@@ -17,7 +17,7 @@ Two Roslyn generators, both compile-time only, both zero runtime footprint. `DKN
 | Package | Install | What it gives you | Depends on | Reference |
 |---|---|---|---|---|
 | `DKNet.EfCore.DtoGenerator` | `dotnet add package DKNet.EfCore.DtoGenerator` — add `PrivateAssets="all" OutputItemType="Analyzer"` | `[GenerateDto(typeof(Entity))]` → flat DTO properties; `[RaisesEvent]` build-time validation, and payload generation for its convention forms | None at the DKNet level (source-links `EventNameComposer` instead of referencing `DKNet.EfCore.Abstractions`) | [references/DKNet.EfCore.DtoGenerator.md](references/DKNet.EfCore.DtoGenerator.md) |
-| `DKNet.SlimBus.Generators` | `dotnet add package DKNet.SlimBus.Generators` — add `PrivateAssets="all" OutputItemType="Analyzer"` | `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` → request records + `IHandler<,>` handlers + (optionally) `Map{Entity}Crud` | Zero project references of its own; its **emitted code** needs the consuming project to also reference `DKNet.EfCore.Abstractions`, `DKNet.EfCore.DtoGenerator`, `DKNet.EfCore.Specifications`, `DKNet.SlimBus.Extensions`, and optionally `DKNet.AspCore.Extensions` | [references/DKNet.SlimBus.Generators.md](references/DKNet.SlimBus.Generators.md) |
+| `DKNet.SlimBus.Generators` | `dotnet add package DKNet.SlimBus.Generators` — add `PrivateAssets="all" OutputItemType="Analyzer"` | `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` → request records + `IHandler<,>` handlers + (optionally) `Map{Entity}Crud` | Zero project references of its own. Its **emitted code** references `DKNet.EfCore.Specifications`, `DKNet.SlimBus.Extensions`, and optionally `DKNet.AspCore.Extensions` — the consuming project must reference those. `DKNet.EfCore.Abstractions` (for `[CrudCreate]`/`IEntity<TKey>`) and `DKNet.EfCore.DtoGenerator` (for `[GenerateDto]`) are needed too, but only because the consumer's *own* domain/DTO code uses them — the generator resolves those two by fully-qualified string name and never emits a reference to either | [references/DKNet.SlimBus.Generators.md](references/DKNet.SlimBus.Generators.md) |
 
 Both are analyzer-only packages: no `IServiceCollection` extension, no runtime DLL a consumer loads. `PrivateAssets="all"` keeps them from flowing to anyone who references your project; `OutputItemType="Analyzer"` is what makes MSBuild run them as generators instead of compiling them as ordinary references.
 
@@ -96,15 +96,15 @@ builder.Services
     .AddSlimBusEfCoreInterceptor<AppDbContext>()
     .AddSlimMessageBus(mbb => mbb
         .AddJsonSerializer()
-        .AddServicesFromAssembly(typeof(Program).Assembly)
-        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
+        .AddServicesFromAssembly(typeof(AppDbContext).Assembly)
+        .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(AppDbContext).Assembly)));
 
 var app = builder.Build();
 app.MapGroup("/products").MapProductCrud();
 app.Run();
 ```
 
-`ProductDto` gets `Id`, `required string Name`, `Price` — mirrored from `Product` at compile time. `[CrudCreate]` + `[CrudUpdate]` generate `CreateProductRequest`, `UpdatePriceProductRequest`, `Create`/`UpdatePriceProductHandler`, a `DeleteProductRequest` (no handler needed for delete), and — because `DKNet.AspCore.Extensions` is referenced — `MapProductCrud`, all in namespace `{AssemblyName}.Crud` (here `Generated.Crud`, the fallback for a project with no assembly name — use your own project's assembly name in a real app). Nothing above is hand-written except the entity and the empty DTO shell.
+`ProductDto` gets `Id`, `required string Name`, `Price` — mirrored from `Product` at compile time. `[CrudCreate]` + `[CrudUpdate]` generate `CreateProductRequest`, `UpdatePriceProductRequest`, `Create`/`UpdatePriceProductHandler`, a `DeleteProductRequest` (no handler needed for delete), and — because `DKNet.AspCore.Extensions` is referenced — `MapProductCrud`, all in namespace `{AssemblyName}.Crud` — the *compiling* project's assembly name. The examples here assume a project whose assembly name is `Generated`, so they say `Generated.Crud`; substitute your own. Nothing above is hand-written except the entity and the empty DTO shell.
 
 ## Rules
 
