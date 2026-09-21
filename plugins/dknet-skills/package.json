@@ -1,0 +1,33 @@
+{
+  "name": "@drunkcoding/dknet-skills",
+  "version": "0.0.0",
+  "description": "Agent skills (Claude Code plugin + Agent Skills standard) that teach coding agents the DKNet NuGet packages. Versioned with DKNet; install with `npx skills add baoduy/DKNet`.",
+  "keywords": ["dknet", "dotnet", "csharp", "efcore", "ddd", "cqrs", "claude-code", "claude-code-plugin", "agent-skills", "skills", "npx-skills"],
+  "author": "Steven Hoang",
+  "license": "MIT",
+  "homepage": "https://github.com/baoduy/DKNet/tree/dev/plugins/dknet-skills",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baoduy/DKNet.git",
+    "directory": "plugins/dknet-skills"
+  },
+  "bugs": {
+    "url": "https://github.com/baoduy/DKNet/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    ".claude-plugin/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "version": "node scripts/sync-version.mjs"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -160,7 +160,7 @@ All work MUST pass explicit gates before merge.
 
 **Documentation Gate**:
 - XML docs and file headers present for new public surface
-- Relevant `docs/` pages and agent guidance (`CLAUDE.md`, `src/AGENTS.md`, `.claude/skills/`) updated when standards or focus shift
+- Relevant `docs/` pages and agent guidance (`CLAUDE.md`, `src/AGENTS.md`, `plugins/dknet-skills/skills/`) updated when standards or focus shift
 
 **Review Gate**:
 - At least one maintainer/module-owner approval for affected area
@@ -192,7 +192,7 @@ Where guidance conflicts, this document takes precedence.
 - `CLAUDE.md` (repo root) — architecture, conventions, pitfalls
 - `src/AGENTS.md` — coding, testing and PR conventions
 - `docs/<Area>/README.md` and `docs/<Area>/<Package>.md` — per-package reference
-- `.claude/skills/` — `dknet-packages`, `dknet-codegen`, `dknet-testing`
+- `plugins/dknet-skills/skills/` — the `dknet-skills` plugin (`dknet-packages` router, per-family skills, `dknet-codegen`, `dknet-testing`)
 
 *(`memory-bank/` was removed; `docs/` replaced it.)*
 

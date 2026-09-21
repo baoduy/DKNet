@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin",
+  "name": "dknet-skills",
+  "description": "Agent skills that teach coding agents the DKNet NuGet packages: which package solves which problem, the exact DI and EF Core wiring, specifications and dynamic predicates, domain events, the SaveChanges interceptor family, CQRS with SlimBus, source generators, idempotency, blob storage and the service utilities.",
+  "version": "0.0.0",
+  "author": {
+    "name": "baoduy",
+    "email": "baoduy2412@gmail.com",
+    "url": "https://drunkcoding.net"
+  },
+  "homepage": "https://github.com/baoduy/DKNet/tree/dev/plugins/dknet-skills",
+  "repository": "https://github.com/baoduy/DKNet",
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "csharp",
+    "dknet",
+    "efcore",
+    "ddd",
+    "cqrs",
+    "onion-architecture",
+    "slimmessagebus",
+    "nuget",
+    "agent-skills"
+  ]
+}

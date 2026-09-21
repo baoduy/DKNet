@@ -7,7 +7,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 **DKNet Framework** — a .NET 10 library suite of NuGet packages for building enterprise applications around **Domain-Driven Design (DDD)** and **Onion Architecture**. Published packages include EF Core extensions, ASP.NET Core utilities (Idempotency, Tasks), CQRS/messaging (SlimBus), blob storage adapters, encryption, PDF generation, and Aspire integrations.
 
 - **Solution file**: `src/DKNet.FW.sln`
-- **SDK**: pinned by `src/global.json` to `10.0.100` (`rollForward: latestMinor`).
+- **SDK**: `src/global.json` asks for `10.0.0` with `rollForward: latestMajor`, so any installed .NET 10+ SDK is used.
 - **Default branch**: `dev` (integration). `main` is release. Push feature work to a topic branch.
 - **CI**: `.github/workflows/build-test-coverage.yml` runs build → test → coverage → SonarCloud on every PR to `main`/`dev`. Coverage gate: 80% (per-area targets below are stricter).
 
@@ -35,7 +35,8 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 ├── docs/              GitHub Pages site AND the reference knowledge base:
 │                      one page per package under Core/, EfCore/, AspNetCore/,
 │                      Services/, Messaging/, Aspire/
-├── .claude/           settings.json + skills/ (DKNet agent skills)
+├── .claude-plugin/    marketplace.json — Claude Code marketplace "dknet"
+├── plugins/           dknet-skills/ — the DKNet agent-skills plugin, also the npm package @drunkcoding/dknet-skills (see Repo Skills)
 ├── specs/             Spec-Kit feature specifications (historical)
 ├── issues/            Pending issue notes
 ├── .github/           CI workflows + `copilot-instructions.md`
@@ -125,8 +126,8 @@ On Apple Silicon the x64 Chromium runs under Rosetta, so the suite passes locall
 
 DKNet expresses DDD + Onion Architecture at the package boundaries:
 
-- **Aggregate roots** (`AggregateRoot` in `DKNet.EfCore.Abstractions`) carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
-- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects whose `Criteria`, `Includes` and `OrderBy` compose with LinqKit (`.And()`, `.Or()`), served by the spec repository registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` have been removed** — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
+- **Aggregate roots** derive from `Entity<TKey>` / `Entity` in `DKNet.EfCore.Abstractions` (there is no `AggregateRoot` type) and carry domain events. Rich entities mutate via methods (e.g. `Product.UpdatePrice`) that call `AddEvent(...)`. Events are dispatched by `DKNet.EfCore.Events` during `SaveChanges`.
+- **Specifications** (`DKNet.EfCore.Specifications`) are the persistence entry point — composable query objects (`Specification<TEntity>` in `DKNet.EfCore.Specifications.Definitions`) whose filter, includes and ordering are declared in the constructor via `WithFilter`, `AddInclude`, `AddOrderBy`, with LinqKit predicates (`.And()`, `.Or()`, `DynamicAnd`) feeding `WithFilter`; executed through the single non-generic `IRepositorySpec` registered via `AddSpecRepo<TDbContext>()`. **`DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` have been removed** — the packages no longer exist; see `docs/EfCore/Migrating-Repos-To-Specifications.md`.
 - **Dynamic Predicate Builder** is the signature feature of `DKNet.EfCore.Specifications`. Builds runtime EF Core predicates from `(propertyName, Ops, value)` triples with type/enum-safe conversion. Required call shape:
   ```csharp
   var predicate = PredicateBuilder.New<Product>()
@@ -134,7 +135,7 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
       .DynamicAnd("Price", Ops.GreaterThan, 100m);
   var results = await _db.Products.AsExpandable().Where(predicate).ToListAsync();
   ```
-  `.AsExpandable()` is mandatory — LinqKit cannot translate the predicate without it. `DynamicAnd`/`DynamicOr` already null-handle internally; do not reintroduce manual null checks.
+  `.AsExpandable()` is mandatory on a raw `DbSet`/`IQueryable` — LinqKit cannot translate the predicate without it. `IRepositorySpec.Query` applies it for you, so specifications executed through the repository need nothing extra. `DynamicAnd`/`DynamicOr` already null-handle internally; do not reintroduce manual null checks.
 - **CQRS via SlimBus** — handlers (`IRequestHandler<TCommand, TResult>`) receive commands, fetch via repos, mutate aggregates, and persist; domain events emit automatically from the aggregate.
 - **Source generators** are a first-class surface. `DKNet.SlimBus.Generators` reads `[CrudAction]` on aggregate methods and emits the request + handler + minimal-API endpoint vertical slice; `DKNet.EfCore.DtoGenerator` reads `[GenerateDto]` and emits DTOs. CRUD attributes live in `DKNet.EfCore.Abstractions.Attributes`; `[GenerateDto]` lives in `DKNet.EfCore.DtoGenerator`. **Never hand-write what a generator emits** — see the `dknet-codegen` skill and `docs/Messaging/DKNet.SlimBus.Generators.md`.
 - **Hooks + AuditLogs + Encryption + DataAuthorization** are EF Core SaveChanges interceptors layered on the same `DbContext`. Independent and opt-in via DI extensions on the consuming app. `DataAuthorization` **fails closed**: a `DbContext` that does not implement `IDataOwnerDbContext` throws rather than silently skipping the filter.
@@ -188,10 +189,25 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 
 ## Repo Skills
 
-`.claude/skills/` holds DKNet-specific skills that load on demand — use them instead of re-deriving:
+DKNet-specific agent skills ship as the **`dknet-skills` plugin** under `plugins/dknet-skills/` — a Claude Code plugin that is also a plain [Agent Skills](https://agentskills.io) set, so other agents can use it too. The marketplace manifest is `.claude-plugin/marketplace.json` (marketplace name `dknet`). Load the skills instead of re-deriving:
+
+- In this repo: `claude --plugin-dir plugins/dknet-skills` (skills appear as `dknet-skills:<name>`), or `claude plugin marketplace add baoduy/DKNet` then `claude plugin install dknet-skills@dknet`.
+- Any other agent: `npx skills add baoduy/DKNet`.
 
 | Skill | Use when |
 |---|---|
-| `dknet-packages` | Choosing which DKNet package solves a scenario, and which `docs/` page to read. |
-| `dknet-codegen` | Working with `[CrudAction]`, `[GenerateDto]`, or `[FromClaim]` and the generators behind them. |
-| `dknet-testing` | Writing or debugging tests — TestContainers fixtures, ARM64 image fallback, SQL assertions. |
+| `dknet-packages` | Choosing which DKNet package solves a scenario, the wiring order for a new project, removed/renamed APIs. Start here. |
+| `dknet-efcore-domain-model` | Entity base classes, `UseAutoConfigModel`, global filters, seeding, sequences, relational helpers. |
+| `dknet-efcore-specifications` | Specifications, `IRepositorySpec`, dynamic predicates, paging. |
+| `dknet-efcore-save-pipeline` | Hooks, domain-event dispatch, audit logs. |
+| `dknet-efcore-data-security` | Row-level data authorization, column encryption. |
+| `dknet-codegen` | `[GenerateDto]`, `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`, generator diagnostics, why `[FromClaim]` is not a generator. |
+| `dknet-slimbus-cqrs` | SlimMessageBus handlers, auto-save, events onto the bus, the Aspire Service Bus emulator. |
+| `dknet-aspcore-api` | Endpoint groups, `Result` → `ProblemDetails`, `[FromClaim]`, start-up tasks. |
+| `dknet-idempotency` | Idempotent endpoints and the MsSql / Npgsql / Redis stores. |
+| `dknet-blob-storage` | `IBlobService` and the Azure / S3 / Local adapters. |
+| `dknet-services` | `Svc.Encryption`, PDF generation, template transformation. |
+| `dknet-core-utilities` | `Fw.Extensions`, `RandomCreator`. |
+| `dknet-testing` | Testing DKNet-based code and running this repo's tests (TestContainers, ARM64 fallback, remote x64 workflow). |
+
+The skills are written from `docs/` and `src/` and every C# example in them is compiled by `plugins/dknet-skills/tools/snippet-lab/check.sh <skill-dir>` against the DKNet packages published on nuget.org, so they track the released surface rather than a local build. **When a package's public API or behaviour changes, update the owning skill (`SKILL.md` + `references/<Package>.md`) in the same PR as `docs/`.** Validate with `claude plugin validate . --strict` and `npx skills add ./ --list` (see `plugins/dknet-skills/README.md`).
