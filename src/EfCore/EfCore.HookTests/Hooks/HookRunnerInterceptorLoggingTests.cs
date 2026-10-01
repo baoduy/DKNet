@@ -62,6 +62,36 @@ public class HookRunnerInterceptorLoggingTests : IAsyncLifetime
         entries.ShouldAllBe(e => e.LogLevel == LogLevel.Information);
     }
 
+    [Fact]
+    public async Task SaveChangesAsync_Cancelled_LogsCanceledMessage()
+    {
+        var db = _provider.GetRequiredService<HookContext>();
+        db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Cancelled Logging" });
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => db.SaveChangesAsync(cancelled.Token));
+
+        _capturingProvider.Entries
+            .Where(e => e.Message.StartsWith("HookRunnerInterceptor:SaveChangesCanceledAsync ", StringComparison.Ordinal))
+            .ShouldHaveSingleItem().LogLevel.ShouldBe(LogLevel.Information);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_ConcurrencyFailure_LogsUnsuppressedConcurrencyMessage()
+    {
+        var db = _provider.GetRequiredService<HookContext>();
+        db.Set<CustomerProfile>().Update(new CustomerProfile { Id = Guid.NewGuid(), Name = "Conflict Logging" });
+
+        await Should.ThrowAsync<DbUpdateConcurrencyException>(() => db.SaveChangesAsync());
+
+        var entry = _capturingProvider.Entries
+            .Where(e => e.Message.StartsWith("HookRunnerInterceptor:ThrowingConcurrencyExceptionAsync ", StringComparison.Ordinal))
+            .ShouldHaveSingleItem();
+        entry.Message.ShouldEndWith(", suppressed: False");
+        entry.LogLevel.ShouldBe(LogLevel.Information);
+    }
+
     #endregion
 
     private sealed class CapturingLoggerProvider : ILoggerProvider
