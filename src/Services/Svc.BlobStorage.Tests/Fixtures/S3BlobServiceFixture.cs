@@ -16,11 +16,14 @@ public sealed class S3BlobServiceFixture : IDisposable
     public S3BlobServiceFixture()
     {
         // minio/minio was withdrawn from Docker Hub, then quay.io/minio/minio withdrew anonymous
-        // pulls too (401 on both the pinned digest and latest, 2026-10-01). pgsty/minio is a
-        // community-maintained Docker Hub mirror of the same MinIO server image, pulled here
-        // anonymously and pinned by the manifest-list digest so a future re-tag can't silently
-        // change what this suite runs against; the digest resolves to a multi-arch index covering
-        // linux/amd64 and linux/arm64.
+        // pulls too (401 on both the pinned digest and latest, 2026-10-01). pgsty/minio is
+        // Pigsty's independent "Silo" fork of MinIO (RELEASE.2026-08-04T00-00-00Z, built on
+        // upstream MinIO RELEASE.2025-12-03T12-00-00Z), not a mirror of the withdrawing publisher
+        // — Pigsty ships and controls its own release line, so MinIO Inc.'s access decisions on
+        // Docker Hub/quay.io can't pull this source out from under us the same way again. Pulled
+        // here anonymously and pinned by the manifest-list digest so a future re-tag can't
+        // silently change what this suite runs against; the digest resolves to a multi-arch index
+        // covering linux/amd64 and linux/arm64.
         _minioContainer = new MinioBuilder(
                 "pgsty/minio@sha256:b6bfe7239bfc83fb90d31612d9704d86039dd714f7904b3f1ad68f211e602372")
             .Build();
