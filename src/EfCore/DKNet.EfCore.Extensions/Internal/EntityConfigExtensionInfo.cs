@@ -28,9 +28,9 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister configR
         hash.Add(assembliesHash);
 
         // GlobalModelBuilders is a distinct set, so duplicate registrations cannot cancel out in the XOR.
+        // Type hash matches the Type equality ShouldUseSameServiceProvider compares with.
         var buildersHash = 0;
-        foreach (var builder in configRegister.GlobalModelBuilders)
-            buildersHash ^= (builder.AssemblyQualifiedName ?? builder.Name).GetHashCode(StringComparison.Ordinal);
+        foreach (var builder in configRegister.GlobalModelBuilders) buildersHash ^= builder.GetHashCode();
         hash.Add(buildersHash);
 
         return hash.ToHashCode();
