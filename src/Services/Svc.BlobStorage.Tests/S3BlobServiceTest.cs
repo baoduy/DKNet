@@ -205,6 +205,57 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     }
 
     [Fact]
+    public async Task DeleteAsync_Folder_DoesNotDeleteSiblingWithSharedPrefix()
+    {
+        // DRK-1898: S3 prefix matching is a plain string test, so deleting folder "f" must not also
+        // delete keys that merely start with "f" ("f.pdf", "f-archive/...").
+        var folder = $"shared-prefix-delete-{Guid.NewGuid()}";
+        await SaveTextAsync($"{folder}/a.txt");
+        await SaveTextAsync($"{folder}.pdf");
+        await SaveTextAsync($"{folder}-archive/b.txt");
+
+        await _service.DeleteAsync(new BlobRequest(folder) { Type = BlobTypes.Directory });
+
+        (await _service.CheckExistsAsync(new BlobRequest($"{folder}/a.txt") { Type = BlobTypes.File }))
+            .ShouldBeFalse();
+        (await _service.CheckExistsAsync(new BlobRequest($"{folder}.pdf") { Type = BlobTypes.File }))
+            .ShouldBeTrue();
+        (await _service.CheckExistsAsync(new BlobRequest($"{folder}-archive/b.txt") { Type = BlobTypes.File }))
+            .ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ListItemsAsync_Folder_DoesNotReturnSiblingWithSharedPrefix()
+    {
+        // DRK-1898: listing folder "f" must return only keys under "f/".
+        var folder = $"shared-prefix-list-{Guid.NewGuid()}";
+        await SaveTextAsync($"{folder}/a.txt");
+        await SaveTextAsync($"{folder}.pdf");
+        await SaveTextAsync($"{folder}-archive/b.txt");
+
+        var items = await _service.ListItemsAsync(new BlobRequest(folder) { Type = BlobTypes.Directory })
+            .ToListAsync();
+
+        items.Select(i => i.Name).ShouldBe([$"{folder}/a.txt"]);
+    }
+
+    [Fact]
+    public async Task GetItemAsync_Folder_DoesNotReturnSiblingWithSharedPrefix()
+    {
+        // DRK-1898: GetItemAsync returns the first listed item; S3 lists in byte order, where
+        // "f-archive/..." and "f.pdf" sort before "f/...", so the listing boundary decides the result.
+        var folder = $"shared-prefix-get-{Guid.NewGuid()}";
+        await SaveTextAsync($"{folder}/a.txt");
+        await SaveTextAsync($"{folder}.pdf");
+        await SaveTextAsync($"{folder}-archive/b.txt");
+
+        var item = await _service.GetItemAsync(new BlobRequest(folder) { Type = BlobTypes.Directory });
+
+        item.ShouldNotBeNull();
+        item.Name.ShouldBe($"{folder}/a.txt");
+    }
+
+    [Fact]
     public async Task ListItemsAsync_ZeroByteAndOneByteFiles_AreClassifiedAsFileNotDirectory()
     {
         // Regression for C8: `obj.Size > 1` used to classify a 0- or 1-byte file as a directory.
@@ -280,6 +331,10 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
 
         logger.InformationCount.ShouldBe(1);
     }
+
+    private Task<string> SaveTextAsync(string name) =>
+        _service.SaveAsync(new BlobDetails.BlobData(name, new BinaryData("data"u8.ToArray()))
+            { Overwrite = true, Type = BlobTypes.File });
 
     /// <summary>
     ///     Minimal <see cref="ILogger{TCategoryName}" /> test double that counts Information-level log calls,

@@ -106,6 +106,23 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
     }
 
     [Fact]
+    public async Task ListItemsAsync_Folder_DoesNotReturnSiblingWithSharedPrefix()
+    {
+        // DRK-1898: listing folder "f" must return only blobs under "f/", not "f.pdf" or "f-archive/...".
+        var folder = $"shared-prefix-list-{Guid.NewGuid()}";
+        var file = BinaryData.FromString("test");
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}/a.txt", file) { ContentType = "text/plain" });
+        await _adapter.SaveAsync(new BlobDetails.BlobData($"{folder}.pdf", file) { ContentType = "text/plain" });
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData($"{folder}-archive/b.txt", file) { ContentType = "text/plain" });
+
+        var items = await _adapter.ListItemsAsync(new BlobRequest(folder) { Type = BlobTypes.Directory })
+            .ToListAsync();
+
+        items.Select(i => i.Name).ShouldBe([$"{folder}/a.txt"]);
+    }
+
+    [Fact]
     public async Task ListItemsAsyncShouldReturnEmptyWhenNoItems()
     {
         var items = await _adapter.ListItemsAsync(new BlobRequest("empty-folder") { Type = BlobTypes.Directory })
