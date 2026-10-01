@@ -8,8 +8,9 @@ internal sealed class HookContext : IDisposable, IAsyncDisposable
 {
     #region Constructors
 
-    public HookContext(IServiceProvider provider, DbContext db)
+    public HookContext(IServiceProvider provider, DbContext db, HookContext? outer = null)
     {
+        Outer = outer;
         var factory = provider.GetRequiredService<HookFactory>();
         var (before, afters) = factory.LoadHooks(db);
         BeforeSaveHooks = before;
@@ -24,6 +25,18 @@ internal sealed class HookContext : IDisposable, IAsyncDisposable
     public IReadOnlyCollection<IAfterSaveHookAsync> AfterSaveHooks { get; }
 
     public IReadOnlyCollection<IBeforeSaveHookAsync> BeforeSaveHooks { get; }
+
+    /// <summary>
+    ///     True while this context's hooks run. A hook may save the same DbContext again; that nested save must
+    ///     leave this context alone instead of treating it as a leftover.
+    /// </summary>
+    public bool IsRunningHooks { get; set; }
+
+    /// <summary>
+    ///     The context below this one on its DbContext's stack: the save whose hook started this nested save, or a
+    ///     leftover the next save discards. <c>null</c> at the bottom.
+    /// </summary>
+    public HookContext? Outer { get; }
 
     public SnapshotContext Snapshot { get; }
 

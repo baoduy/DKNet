@@ -35,6 +35,8 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
     // Keyed by the DbContext instance, so an entry left by an exit EF never signals (a later interceptor
     // throwing in SavingChangesAsync) dies with its DbContext instead of living on in this singleton.
+    // The value is the top of a stack linked through HookContext.Outer: a hook that saves the same DbContext
+    // pushes the nested save's context above its own.
     private readonly ConditionalWeakTable<DbContext, HookContext> _cache = new();
 
     #endregion
@@ -43,21 +45,46 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
     public void Dispose()
     {
-        var contexts = _cache.Select(e => e.Value).ToList();
-        _cache.Clear();
-        foreach (var context in contexts) context.Dispose();
+        foreach (var context in TakeAllContexts()) context.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        var contexts = _cache.Select(e => e.Value).ToList();
+        foreach (var context in TakeAllContexts()) await context.DisposeAsync();
+    }
+
+    private List<HookContext> TakeAllContexts()
+    {
+        var contexts = new List<HookContext>();
+        foreach (var (_, top) in _cache)
+            for (var context = top; context != null; context = context.Outer)
+                contexts.Add(context);
+
         _cache.Clear();
-        foreach (var context in contexts) await context.DisposeAsync();
+        return contexts;
     }
 
     private static HookContext CreateContext(DbContext db) => new(GetApplicationServiceProvider(db), db);
 
     private HookContext GetContext(DbContextEventData eventData) => _cache.GetOrAdd(eventData.Context!, CreateContext);
+
+    /// <summary>
+    ///     Starts a save with a fresh hook context on top of its DbContext's stack. Contexts on top whose hooks
+    ///     are not running are leftovers of saves EF never signalled the end of (a later interceptor threw), so
+    ///     they are discarded. A context whose hooks are running belongs to the save that started this nested
+    ///     save, so it stays below the new one.
+    /// </summary>
+    /// <param name="eventData"></param>
+    private async Task PushContextAsync(DbContextEventData eventData)
+    {
+        var db = eventData.Context!;
+        while (_cache.TryGetValue(db, out var top) && !top.IsRunningHooks)
+            await RemoveContextAsync(eventData);
+
+        // Unlink the live outer context (the new one keeps it as Outer), then create the new top.
+        if (_cache.TryGetValue(db, out var outer)) _cache.Remove(db);
+        _cache.GetOrAdd(db, d => new HookContext(GetApplicationServiceProvider(d), d, outer));
+    }
 
     /// <summary>
     ///     Resolves the DbContext's own application service provider, so hooks are loaded from the same DI
@@ -74,17 +101,27 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
             $"The DbContext '{db.GetType().Name}' has no application service provider. " +
             "It must be registered via AddDbContextWithHook or AddDbContext.");
 
+    /// <summary>
+    ///     Pops the top hook context of the DbContext's stack, leaving the outer one (if any) on top.
+    /// </summary>
+    /// <param name="db"></param>
+    /// <returns>the popped context, for the caller to dispose; <c>null</c> when the stack is empty.</returns>
+    private HookContext? PopContext(DbContext db)
+    {
+        if (!_cache.TryGetValue(db, out var context)) return null;
+
+        if (context.Outer is null) _cache.Remove(db);
+        else _cache.AddOrUpdate(db, context.Outer);
+        return context;
+    }
+
     private async Task RemoveContextAsync(DbContextEventData eventData)
     {
-        if (_cache.Remove(eventData.Context!, out var context))
+        if (PopContext(eventData.Context!) is { } context)
             await context.DisposeAsync();
     }
 
-    private void RemoveContext(DbContextEventData eventData)
-    {
-        if (_cache.Remove(eventData.Context!, out var context))
-            context.Dispose();
-    }
+    private void RemoveContext(DbContextEventData eventData) => PopContext(eventData.Context!)?.Dispose();
 
     /// <summary>
     ///     Runs hooks before and after save operations.
@@ -117,12 +154,20 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
         if (context.Snapshot.Entities.Count == 0) return;
 
-        if (type == RunningTypes.BeforeSave)
-            foreach (var hook in context.BeforeSaveHooks)
-                await hook.BeforeSaveAsync(context.Snapshot, cancellationToken);
-        else
-            foreach (var hook in context.AfterSaveHooks)
-                await hook.AfterSaveAsync(context.Snapshot, cancellationToken);
+        context.IsRunningHooks = true;
+        try
+        {
+            if (type == RunningTypes.BeforeSave)
+                foreach (var hook in context.BeforeSaveHooks)
+                    await hook.BeforeSaveAsync(context.Snapshot, cancellationToken);
+            else
+                foreach (var hook in context.AfterSaveHooks)
+                    await hook.AfterSaveAsync(context.Snapshot, cancellationToken);
+        }
+        finally
+        {
+            context.IsRunningHooks = false;
+        }
     }
 
     public override async Task SaveChangesFailedAsync(
@@ -203,9 +248,10 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     {
         LogSavingChangesCalled(eventData.EventId, eventData.EventIdCode);
 
-        // Replace, never reuse: an earlier save on this DbContext that EF never signalled the end of (a later
-        // interceptor threw) left its context behind, and its snapshot would hand those entries to the hooks again.
-        await RemoveContextAsync(eventData);
+        // Never reuse a leftover: its snapshot would hand an earlier save's entries to the hooks again.
+        // ponytail: every exit pops the top, which assumes a nested save left nothing above its outer save. A hook
+        // that swallows a nested save's later-interceptor failure breaks that; trim above the outer if it matters.
+        await PushContextAsync(eventData);
         var context = GetContext(eventData);
         try
         {
