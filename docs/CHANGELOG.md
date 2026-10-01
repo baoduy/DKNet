@@ -286,6 +286,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile, or that silently binds a
+  property to the wrong type, when a property type's simple name does not resolve to it in the generated file
+  (DRK-1905). That happened for a nested type (an enum declared inside the entity, `Order.Priority` — CS0246);
+  for a name two property types share (`Billing.Status` and `Shipping.Status` — CS0104); for a name that
+  another namespace in scope also declares, whether imported for another property or by one of the project's
+  own `global using` directives such as the ImplicitUsings `System` (`Domain.Action` next to `System.Action`
+  — CS0104); and for a name that the DTO's enclosing namespace declares as a different type, which the
+  property used to bind to silently. A nested type is now written with its containing type
+  (`Order.Priority`), and any of these names is written fully qualified (`global::Domain.Action`), at every
+  depth — array element, `Nullable<T>` and generic argument. The same rule applies to the payload records
+  `[RaisesEvent]` generates, which share this emission path. Output is unchanged for every DTO and payload
+  record whose property types already resolved to the right type.
 - Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
   out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
   enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early
