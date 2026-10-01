@@ -43,6 +43,10 @@ public static class DynamicPredicateExtensions
     private static Expression<Func<T, bool>>? BuildDynamicExpression<T>(string propertyName,
         Ops operation, object? value)
     {
+        // An integer cast to Ops has no clause to build; it is one more unusable condition, not an exception.
+        if (!Enum.IsDefined(operation))
+            return null;
+
         // Validate property name contains only safe characters and normalize it (PascalCase each segment)
         // in one pass - avoids re-running ToPascalCase a second time just to get the value back.
         if (!DynamicPredicateBuilderExtensions.TryNormalizePropertyName(propertyName, out var normalizedPath))

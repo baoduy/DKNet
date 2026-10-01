@@ -136,6 +136,16 @@ public class MapGetListFilteringTests(PagingTestHost host) : IClassFixture<Pagin
     }
 
     [Fact]
+    public async Task MapGetList_FilterWithUndefinedNumericOperation_Returns400()
+    {
+        // "999" is an integer, not an operation name: it must be rejected at binding like any unknown operation,
+        // not reach the predicate builder as (Ops)999 and surface as a 500.
+        var response = await host.Client.GetAsync("/p/widgets?filter=name:999:x");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task MapGetList_MalformedFilter_Returns400()
     {
         // Not three colon-separated parts: also a binding-level rejection.
