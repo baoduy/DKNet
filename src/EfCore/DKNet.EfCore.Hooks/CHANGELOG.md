@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- N/A
+- **Breaking:** synchronous `SaveChanges()` on a context registered with `AddDbContextWithHook` now throws
+  `NotSupportedException` instead of saving with no hooks run. Replacement: call `SaveChangesAsync()`, or wrap the
+  synchronous call in `DisableHooks()` (for migration or seeding) to save without hooks.
 
 ### Deprecated
 

@@ -23,7 +23,9 @@ public enum RunningTypes
 }
 
 /// <summary>
-///     Runs hooks before and after save operations.
+///     Runs hooks before and after save operations. Hooks run only on <c>SaveChangesAsync</c>; a synchronous
+///     <c>SaveChanges()</c> throws <see cref="NotSupportedException" /> unless hooks are disabled for the context
+///     via <c>DisableHooks()</c>.
 /// </summary>
 /// <param name="logger">the logger of HookRunner</param>
 internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerInterceptor> logger)
@@ -71,10 +73,16 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
             $"The DbContext '{db.GetType().Name}' has no application service provider. " +
             "It must be registered via AddDbContextWithHook or AddDbContext.");
 
-    private async Task RemoveContext(DbContextEventData eventData)
+    private async Task RemoveContextAsync(DbContextEventData eventData)
     {
         if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
             await context.DisposeAsync();
+    }
+
+    private void RemoveContext(DbContextEventData eventData)
+    {
+        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
+            context.Dispose();
     }
 
     /// <summary>
@@ -114,7 +122,7 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     {
         LogSaveChangesFailed(eventData.EventId, eventData.EventIdCode);
 
-        await RemoveContext(eventData);
+        await RemoveContextAsync(eventData);
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
@@ -132,7 +140,7 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         }
         finally
         {
-            await RemoveContext(eventData);
+            await RemoveContextAsync(eventData);
             LogSavedChangesContextRemoved(eventData.EventId, eventData.EventIdCode);
         }
 
@@ -158,16 +166,53 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    public override void SaveChangesFailed(DbContextErrorEventData eventData) =>
-        throw new NotImplementedException();
+    /// <summary>
+    ///     Synchronous failure path: runs no hooks, only removes and disposes any cached hook context.
+    /// </summary>
+    /// <param name="eventData"></param>
+    public override void SaveChangesFailed(DbContextErrorEventData eventData)
+    {
+        LogSyncSaveChangesFailed(eventData.EventId, eventData.EventIdCode);
 
-    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result) =>
-        throw new NotImplementedException();
+        RemoveContext(eventData);
+        base.SaveChangesFailed(eventData);
+    }
 
+    /// <summary>
+    ///     Synchronous completion path: runs no hooks, only removes and disposes any cached hook context.
+    /// </summary>
+    /// <param name="eventData"></param>
+    /// <param name="result"></param>
+    /// <returns></returns>
+    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
+    {
+        LogSyncSavedChangesCalled(eventData.EventId, eventData.EventIdCode);
+
+        RemoveContext(eventData);
+        return base.SavedChanges(eventData, result);
+    }
+
+    /// <summary>
+    ///     Hooks run only on <c>SaveChangesAsync</c>, so a synchronous save on a hook-enabled context fails closed
+    ///     rather than saving with no hooks run. Inside a <c>DisableHooks()</c> scope it passes through.
+    /// </summary>
+    /// <param name="eventData"></param>
+    /// <param name="result"></param>
+    /// <returns></returns>
+    /// <exception cref="NotSupportedException">thrown when hooks are enabled for the DbContext.</exception>
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
-        InterceptionResult<int> result) =>
-        throw new NotImplementedException();
+        InterceptionResult<int> result)
+    {
+        var db = eventData.Context!;
+        if (!HookDisablingContext.IsHookDisabled(db))
+            throw new NotSupportedException(
+                "DKNet.EfCore.Hooks runs hooks only on SaveChangesAsync. " +
+                $"Synchronous SaveChanges() on '{db.GetType().Name}' is not supported; " +
+                "use SaveChangesAsync() or wrap the call in DisableHooks().");
+
+        return base.SavingChanges(eventData, result);
+    }
 
     #endregion
 
@@ -199,6 +244,14 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     [LoggerMessage(Level = LogLevel.Information,
         Message = "HookRunnerInterceptor:SavingChangesAsync called with result: {EventId}, {EventIdCode}")]
     private partial void LogSavingChangesCalled(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SaveChangesFailed {EventId}, {EventIdCode}")]
+    private partial void LogSyncSaveChangesFailed(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SavedChanges called with result: {EventId}, {EventIdCode}")]
+    private partial void LogSyncSavedChangesCalled(EventId eventId, string? eventIdCode);
 
     #endregion
 }
