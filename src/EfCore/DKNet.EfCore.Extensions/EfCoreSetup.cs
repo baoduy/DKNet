@@ -88,23 +88,44 @@ public static class EfCoreSetup
         /// <summary>
         ///     Register the GlobalModelBuilderRegister to the service collection.
         /// </summary>
-        /// <remarks>
-        ///     The registration applies to <see cref="DbContextOptions" /> built after this call: each options instance
-        ///     captures the builders registered so far when <c>UseAutoConfigModel</c> runs, and keys its model by them.
-        /// </remarks>
         /// <typeparam name="TImplementation"></typeparam>
         /// <returns></returns>
+        /// <remarks>
+        ///     <c>UseAutoConfigModel</c> wraps EF Core's <see cref="IModelCacheKeyFactory" /> so a builder registered
+        ///     here after a model was cached makes the next context build a new model. A consumer's
+        ///     <c>ReplaceService&lt;IModelCacheKeyFactory, TFactory&gt;()</c> replaces that wrapper, so its cache key
+        ///     must also change when a global model builder is registered.
+        /// </remarks>
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            // No Contains guard: EntityAutoConfigRegister snapshots the bag as a distinct set and
-            // RegisterGlobalModelBuilders dedupes via .Union on the no-register fallback, so a Contains/Add
-            // check-then-act here would only add a non-atomic race for no behavioural gain.
-            GlobalModelBuilders.Add(typeof(TImplementation));
+            // One lock covers the add and the version bump, so no call returns before the version includes the type,
+            // even while another thread registers the same type. The bag is filled before the version moves: EF reads
+            // the version into the model cache key before it builds the model from the bag, so a build racing a
+            // registration can only apply more builders than its key names.
+            lock (GlobalModelBuildersLock)
+            {
+                GlobalModelBuilders.Add(typeof(TImplementation));
+                if (DistinctGlobalModelBuilders.Add(typeof(TImplementation)))
+                    Interlocked.Increment(ref _globalModelBuildersVersion);
+            }
 
             return serviceCollection;
         }
     }
 
     internal static readonly ConcurrentBag<Type> GlobalModelBuilders = [];
+
+    private static readonly Lock GlobalModelBuildersLock = new();
+
+    // Read and written only under GlobalModelBuildersLock.
+    private static readonly HashSet<Type> DistinctGlobalModelBuilders = [];
+
+    private static int _globalModelBuildersVersion;
+
+    /// <summary>
+    ///     Grows by one for each distinct type added to <see cref="GlobalModelBuilders" />. The set is append-only, so
+    ///     the version identifies the distinct set; re-registering a type leaves it unchanged.
+    /// </summary>
+    internal static int GlobalModelBuildersVersion => Volatile.Read(ref _globalModelBuildersVersion);
 }

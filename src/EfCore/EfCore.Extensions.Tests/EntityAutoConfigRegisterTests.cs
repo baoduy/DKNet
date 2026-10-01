@@ -20,7 +20,7 @@ public sealed class EntityAutoConfigRegisterTests
     {
         var services = new ServiceCollection();
 
-        new EntityAutoConfigRegister([typeof(User).Assembly], []).ApplyServices(services);
+        new EntityAutoConfigRegister([typeof(User).Assembly]).ApplyServices(services);
 
         var original = services.Single(s => s.ServiceType == typeof(ModelCustomizer));
         original.ImplementationType.ShouldBe(typeof(RelationalModelCustomizer));
@@ -30,21 +30,9 @@ public sealed class EntityAutoConfigRegisterTests
         customizer.Lifetime.ShouldBe(ServiceLifetime.Scoped);
     }
 
-    [Fact]
-    public void Constructor_WithAssembliesOnly_SnapshotsRegisteredBuilders()
-    {
-        new ServiceCollection().AddGlobalModelBuilder<TestGlobalQueryFilter>();
-
-        var register = new EntityAutoConfigRegister([typeof(User).Assembly]);
-        new ServiceCollection().AddGlobalModelBuilder<SnapshotProbeFilter>();
-
-        register.GlobalModelBuilders.ShouldContain(typeof(TestGlobalQueryFilter));
-        register.GlobalModelBuilders.ShouldNotContain(typeof(SnapshotProbeFilter));
-    }
-
     /// <summary>
     ///     A model built through the auto-config customizer for options that carry no register (an internal service
-    ///     provider supplied by the host) keeps the pre-DRK-1969 behaviour: the live registry is applied. A plain
+    ///     provider supplied by the host) applies the live registry, as every auto-configured model does. A plain
     ///     <see cref="DbContext" /> makes the scanned fallback assembly EF Core's own, so the probe builder can reach
     ///     the model only through the registry.
     /// </summary>
@@ -54,7 +42,7 @@ public sealed class EntityAutoConfigRegisterTests
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
         var services = new ServiceCollection().AddEntityFrameworkSqlite();
-        new EntityAutoConfigRegister([typeof(IEntity<>).Assembly], []).ApplyServices(services);
+        new EntityAutoConfigRegister([typeof(IEntity<>).Assembly]).ApplyServices(services);
         using var internalProvider = services.BuildServiceProvider();
         var options = new DbContextOptionsBuilder()
             .UseSqlite(connection)
@@ -66,17 +54,6 @@ public sealed class EntityAutoConfigRegisterTests
         using var context = new DbContext(options);
 
         context.Model.FindEntityType(typeof(RegisterlessProbe)).ShouldNotBeNull();
-    }
-
-    #endregion
-}
-
-internal sealed class SnapshotProbeFilter : IGlobalModelBuilder
-{
-    #region Methods
-
-    public void Apply(ModelBuilder modelBuilder, DbContext context)
-    {
     }
 
     #endregion

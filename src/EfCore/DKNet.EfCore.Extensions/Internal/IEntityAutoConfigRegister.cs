@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.EfCore.Extensions.Internal;
@@ -7,24 +6,8 @@ namespace DKNet.EfCore.Extensions.Internal;
 /// <summary>
 ///     The Entity Mapping Register
 /// </summary>
-/// <param name="assemblies">The assemblies to scan.</param>
-/// <param name="globalModelBuilders">The global model builder types captured for this options instance.</param>
-internal sealed class EntityAutoConfigRegister(Assembly[] assemblies, IEnumerable<Type> globalModelBuilders)
-    : IDbContextOptionsExtension
+internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbContextOptionsExtension
 {
-    #region Constructors
-
-    /// <summary>
-    ///     Creates the register with a snapshot of the global model builders registered so far
-    ///     (<see cref="EfCoreSetup.GlobalModelBuilders" />). Builders registered later do not apply to this instance.
-    /// </summary>
-    /// <param name="assemblies">The assemblies to scan.</param>
-    public EntityAutoConfigRegister(Assembly[] assemblies) : this(assemblies, EfCoreSetup.GlobalModelBuilders)
-    {
-    }
-
-    #endregion
-
     #region Fields
 
     private DbContextOptionsExtensionInfo? _info;
@@ -34,11 +17,6 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies, IEnumerabl
     #region Properties
 
     public Assembly[] Assemblies { get; } = assemblies;
-
-    /// <summary>
-    ///     The distinct global model builder types this options instance is identified by and builds its model with.
-    /// </summary>
-    public FrozenSet<Type> GlobalModelBuilders { get; } = globalModelBuilders.ToFrozenSet();
 
     public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
 
@@ -75,7 +53,22 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies, IEnumerabl
                     typeof(AutoConfigModelCustomizer),
                     originalDescriptor.Lifetime));
         }
+
+        //Wrap the IModelCacheKeyFactory so the model cache key changes when a global model builder is registered.
+        var originalKeyFactory = services.FirstOrDefault(s => s.ServiceType == typeof(IModelCacheKeyFactory));
+        services.Replace(
+            new ServiceDescriptor(
+                typeof(IModelCacheKeyFactory),
+                sp => new GlobalModelBuilderCacheKeyFactory(CreateKeyFactory(sp, originalKeyFactory)),
+                originalKeyFactory?.Lifetime ?? ServiceLifetime.Singleton));
     }
+
+    private static IModelCacheKeyFactory CreateKeyFactory(IServiceProvider provider, ServiceDescriptor? descriptor) =>
+        (IModelCacheKeyFactory)(descriptor?.ImplementationInstance
+                                ?? descriptor?.ImplementationFactory?.Invoke(provider)
+                                ?? ActivatorUtilities.CreateInstance(
+                                    provider,
+                                    descriptor?.ImplementationType ?? typeof(ModelCacheKeyFactory)));
 
     public void Validate(IDbContextOptions options)
     {
