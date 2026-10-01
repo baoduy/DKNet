@@ -265,16 +265,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
-- `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile when the entity has a property
-  of a nested type (an enum declared inside the entity, `Order.Priority` — CS0246) or a property type whose
-  simple name is ambiguous in the generated file (CS0104) (DRK-1905). A name is ambiguous when two property
-  types share it (`Billing.Status` and `Shipping.Status`), or when a namespace the generated file imports for
-  another property also declares a different accessible type with that name — for example a
-  `Shipping.Status` property next to a `Billing.Currency` property whose namespace also has a `Status`. A
-  nested type is now written with its containing type (`Order.Priority`), and an ambiguous name is written
-  fully qualified (`global::Shipping.Status`, `global::Entities.Order.Priority`), at every depth — array
-  element, `Nullable<T>` and generic argument. Output is unchanged for every DTO whose property types already
-  resolved to the right type.
+- `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile, or that silently binds a
+  property to the wrong type, when a property type's simple name does not resolve to it in the generated file
+  (DRK-1905). That happened for a nested type (an enum declared inside the entity, `Order.Priority` — CS0246);
+  for a name two property types share (`Billing.Status` and `Shipping.Status` — CS0104); for a name that
+  another namespace in scope also declares, whether imported for another property or by one of the project's
+  own `global using` directives such as the ImplicitUsings `System` (`Domain.Action` next to `System.Action`
+  — CS0104); and for a name that the DTO's enclosing namespace declares as a different type, which the
+  property used to bind to silently. A nested type is now written with its containing type
+  (`Order.Priority`), and any of these names is written fully qualified (`global::Domain.Action`), at every
+  depth — array element, `Nullable<T>` and generic argument. Output is unchanged for every DTO whose property
+  types already resolved to the right type.
 - Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
   out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
   enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early

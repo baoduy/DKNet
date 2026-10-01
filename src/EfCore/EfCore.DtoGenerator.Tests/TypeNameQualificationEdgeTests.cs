@@ -15,7 +15,9 @@ namespace EfCore.DtoGenerator.Tests;
 ///     the generic branch runs, and a nested type inside a generic containing type renders fully qualified. A
 ///     bare name also qualifies when a namespace the generated file imports declares a different accessible type
 ///     with the same (name, arity), but not when that type is inaccessible or the DTO's enclosing namespace
-///     chain declares the name first.
+///     chain declares the name first. A consumer <c>global using</c> joins the imported scope; an alias,
+///     <c>using static</c> or file-level <c>using</c> does not. An enclosing namespace that declares a
+///     different type with the name forces qualification.
 /// </summary>
 public class TypeNameQualificationEdgeTests
 {
@@ -428,6 +430,96 @@ public class TypeNameQualificationEdgeTests
         }
         """;
 
+    private const string AuditLogActionEntitySource = """
+        namespace Probe.Domain
+        {
+            public enum Action { Create, Update, Delete }
+
+            public class AuditLog
+            {
+                public int Id { get; set; }
+
+                public Action Action { get; set; }
+            }
+        }
+        """;
+
+    private const string FileUsingAuditLogActionEntitySource = """
+        using System;
+
+        namespace Probe.Domain
+        {
+            public enum Action { Create, Update, Delete }
+
+            public class AuditLog
+            {
+                public int Id { get; set; }
+
+                public Probe.Domain.Action Action { get; set; }
+            }
+        }
+        """;
+
+    private const string EnclosingNamespaceShadowEntitySource = """
+        namespace Probe.Billing
+        {
+            public enum Status { Unpaid, Paid }
+        }
+
+        namespace Probe.Dtos
+        {
+            public enum Status { X, Y }
+        }
+
+        namespace Probe.Domain
+        {
+            public class AuditLog
+            {
+                public int Id { get; set; }
+
+                public Probe.Billing.Status State { get; set; }
+            }
+        }
+        """;
+
+    private const string InnermostEnclosingMatchEntitySource = """
+        namespace Probe
+        {
+            public enum Status { Draft, Final }
+        }
+
+        namespace Probe.Dtos
+        {
+            public enum Status { X, Y }
+        }
+
+        namespace Probe.Domain
+        {
+            public class AuditLog
+            {
+                public int Id { get; set; }
+
+                public Probe.Dtos.Status State { get; set; }
+            }
+        }
+        """;
+
+    private const string AuditLogDtoSource = """
+        using DKNet.EfCore.DtoGenerator;
+
+        namespace Probe.Dtos
+        {
+            [GenerateDto(typeof(Probe.Domain.AuditLog))]
+            public partial record AuditLogDto;
+        }
+        """;
+
+    private const string GlobalUsingSystemSource = "global using global::System;";
+
+    private const string GlobalUsingAliasSource = "global using Sys = global::System;";
+
+    private const string GlobalUsingStaticSource = "global using static global::System.Math;";
+
     private const string OrderDtoSource = """
         using DKNet.EfCore.DtoGenerator;
 
@@ -690,6 +782,79 @@ public class TypeNameQualificationEdgeTests
         source.ShouldContain("public global::Probe.Billing.Index Position { get; init; }");
     }
 
+    [Fact]
+    public void SimpleNameAConsumerGlobalUsingAlsoDeclares_GeneratedSource_QualifiesFully()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(
+            AuditLogActionEntitySource, AuditLogDtoSource, GlobalUsingSystemSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public global::Probe.Domain.Action Action { get; init; }");
+    }
+
+    [Fact]
+    public void SimpleNameTheEnclosingNamespaceDeclaresAsDifferentType_GeneratedSource_QualifiesFully()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(EnclosingNamespaceShadowEntitySource, AuditLogDtoSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public global::Probe.Billing.Status State { get; init; }");
+    }
+
+    [Fact]
+    public void SimpleNameTheInnermostEnclosingNamespaceDeclares_GeneratedSource_KeepsBareName()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(InnermostEnclosingMatchEntitySource, AuditLogDtoSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public Status State { get; init; }");
+        source.ShouldNotContain("global::");
+    }
+
+    [Fact]
+    public void GlobalUsingAliasNamingACollidingNamespace_GeneratedSource_KeepsBareName()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(
+            AuditLogActionEntitySource, AuditLogDtoSource, GlobalUsingAliasSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public Action Action { get; init; }");
+        source.ShouldNotContain("global::");
+    }
+
+    [Fact]
+    public void GlobalUsingStaticDirective_GeneratedSource_KeepsBareName()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(
+            AuditLogActionEntitySource, AuditLogDtoSource, GlobalUsingStaticSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public Action Action { get; init; }");
+        source.ShouldNotContain("global::");
+    }
+
+    [Fact]
+    public void FileLevelUsingOfACollidingNamespace_GeneratedSource_KeepsBareName()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(FileUsingAuditLogActionEntitySource, AuditLogDtoSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public Action Action { get; init; }");
+        source.ShouldNotContain("global::");
+    }
+
     #endregion
 
     #region Internals
@@ -699,11 +864,14 @@ public class TypeNameQualificationEdgeTests
     /// (<see cref="OrderDtoSource"/> when omitted) and
     /// returns the generated source with the error diagnostics located in the generator's own output trees.
     /// The hand-authored input trees are asserted error-free first, so a probe typo cannot surface as an
-    /// error type the generator renders silently. <paramref name="extraReferences"/> are added to
-    /// <see cref="References"/>.
+    /// error type the generator renders silently. <paramref name="globalUsingsSource"/>, when given, is
+    /// added as its own tree, and <paramref name="extraReferences"/> are added to <see cref="References"/>.
     /// </summary>
     private static (string Source, List<Diagnostic> Errors) CompileAndCaptureSource(
-        string entitySource, string dtoSource = OrderDtoSource, params MetadataReference[] extraReferences)
+        string entitySource,
+        string dtoSource = OrderDtoSource,
+        string? globalUsingsSource = null,
+        params MetadataReference[] extraReferences)
     {
         var compilation = CSharpCompilation.Create(
             "ProbeCompilation",
@@ -711,6 +879,7 @@ public class TypeNameQualificationEdgeTests
                 CSharpSyntaxTree.ParseText(GenerateDtoAttributeSource),
                 CSharpSyntaxTree.ParseText(entitySource),
                 CSharpSyntaxTree.ParseText(dtoSource),
+                .. globalUsingsSource is null ? [] : new[] { CSharpSyntaxTree.ParseText(globalUsingsSource) },
             ],
             [.. References, .. extraReferences],
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)

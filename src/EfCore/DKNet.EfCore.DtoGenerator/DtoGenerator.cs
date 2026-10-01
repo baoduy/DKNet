@@ -48,7 +48,27 @@ public sealed class DtoGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var targets = CreateSyntaxProvider(context);
-        RegisterSourceGeneration(context, targets.Collect());
+        RegisterSourceGeneration(context, targets.Collect(), CreateGlobalUsingsProvider(context));
+    }
+
+    /// <summary>
+    /// Creates a provider of the namespaces the consumer imports with <c>global using</c> directives. They apply
+    /// to the generated file too, so a bare type name must stay unambiguous against them. Alias directives are
+    /// skipped, and a <c>global using static</c> drops out because it names a type, not a namespace.
+    /// </summary>
+    /// <param name="context">The generator initialization context.</param>
+    /// <returns>An incremental value provider of the imported namespace names.</returns>
+    private static IncrementalValueProvider<ImmutableArray<string>> CreateGlobalUsingsProvider(
+        IncrementalGeneratorInitializationContext context)
+    {
+        return context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is UsingDirectiveSyntax { Alias: null } directive &&
+                                    directive.GlobalKeyword.IsKind(SyntaxKind.GlobalKeyword),
+                static (ctx, _) => ctx.SemanticModel.GetSymbolInfo(((UsingDirectiveSyntax)ctx.Node).Name!).Symbol
+                    is INamespaceSymbol ns ? ns.ToDisplayString() : null)
+            .Where(static ns => ns is not null)
+            .Select(static (ns, _) => ns!)
+            .Collect();
     }
 
     /// <summary>
@@ -69,19 +89,23 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="context">The generator initialization context.</param>
     /// <param name="targets">The collected DTO generation targets.</param>
+    /// <param name="globalUsings">The namespaces the consumer imports with <c>global using</c>.</param>
     private static void RegisterSourceGeneration(
         IncrementalGeneratorInitializationContext context,
-        IncrementalValueProvider<ImmutableArray<Target>> targets)
+        IncrementalValueProvider<ImmutableArray<Target>> targets,
+        IncrementalValueProvider<ImmutableArray<string>> globalUsings)
     {
-        // Combine targets with analyzer config options to access global exclusions. No Compilation is
+        // Combine targets with analyzer config options to access global exclusions, and with the consumer's
+        // global using namespaces so bare type names stay unambiguous against them. No Compilation is
         // combined here: generation only ever needs the per-target symbols already resolved at extraction
         // time, and Compilation's identity changes on every edit to any file in the project, which would
         // force this whole step to re-run regardless of whether any DTO target actually changed.
-        var targetsWithOptions = targets.Combine(context.AnalyzerConfigOptionsProvider);
+        var targetsWithOptions = targets.Combine(context.AnalyzerConfigOptionsProvider).Combine(globalUsings);
 
         context.RegisterSourceOutput(targetsWithOptions, static (spc, pair) =>
         {
-            var (targets, optionsProvider) = pair;
+            var ((targets, optionsProvider), globalUsingNamespaces) = pair;
+            var globalUsingSet = new HashSet<string>(globalUsingNamespaces);
 
             // Extract global exclusions from analyzer config
             var globalExclusions = ExtractGlobalExclusionsFromConfig(optionsProvider);
@@ -95,7 +119,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
                 try
                 {
-                    GenerateDtoSource(spc, target, globalExclusions, projectWideIgnoreComplexType);
+                    GenerateDtoSource(spc, target, globalExclusions, projectWideIgnoreComplexType, globalUsingSet);
                 }
                 catch (Exception ex)
                 {
@@ -498,7 +522,13 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="projectWideIgnoreComplexType">
     /// The project-wide <c>DtoGeneratorIgnoreComplexType</c> MSBuild property value, or <see langword="null"/> if unset.
     /// </param>
-    private static void GenerateDtoSource(SourceProductionContext context, Target target, HashSet<string> globalExclusions, bool? projectWideIgnoreComplexType)
+    /// <param name="globalUsingNamespaces">The namespaces the consumer imports with <c>global using</c>.</param>
+    private static void GenerateDtoSource(
+        SourceProductionContext context,
+        Target target,
+        HashSet<string> globalExclusions,
+        bool? projectWideIgnoreComplexType,
+        HashSet<string> globalUsingNamespaces)
     {
         var dtoMetadata = ExtractDtoMetadata(target);
         var entityProperties = GetEntityProperties(target.EntitySymbol);
@@ -582,7 +612,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
         var typeDisplayFormat = CreateTypeDisplayFormat();
         var sourceCode = BuildDtoSourceCode(
-            dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat, target.DtoSymbol.ContainingAssembly);
+            dtoMetadata,
+            includedProperties,
+            requiredNamespaces,
+            typeDisplayFormat,
+            target.DtoSymbol.ContainingAssembly,
+            globalUsingNamespaces);
         
         // Create a unique, stable filename using the full qualified name of the DTO
         var fileName = CreateUniqueFileName(target.DtoSymbol);
@@ -1208,7 +1243,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
         var metadata = new DtoMetadata(recordName, recordNamespace, "partial record", entityDisplayName, new HashSet<string>());
         return BuildDtoSourceCode(
-            metadata, filteredProperties, requiredNamespaces, typeDisplayFormat, entitySymbol.ContainingAssembly);
+            metadata,
+            filteredProperties,
+            requiredNamespaces,
+            typeDisplayFormat,
+            entitySymbol.ContainingAssembly,
+            new HashSet<string>());
     }
 
     #endregion
@@ -1298,22 +1338,25 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Collects the (simple name, arity) keys a bare rendering cannot resolve uniquely, so
-    /// <see cref="BuildCleanTypeName"/> can qualify them: keys that two or more distinct property types share,
-    /// and keys that a namespace in <paramref name="importedNamespaces"/> also declares as a different accessible
-    /// top-level type (both CS0104). A key that the DTO's enclosing namespace chain declares is left alone, since
-    /// that chain outranks every <c>using</c>. A nested type is keyed by its top-level containing type, which is
-    /// the name its rendering starts with. Nullable underlying types, generic arguments and array elements are
-    /// walked; special types are skipped.
+    /// Collects the (simple name, arity) keys a bare rendering would not bind to the intended type, so
+    /// <see cref="BuildCleanTypeName"/> can qualify them. A key two or more distinct property types share is
+    /// ambiguous. Otherwise the key follows C# simple-name lookup: the first scope that declares an accessible
+    /// type with that key must declare only the intended type. The scopes are the DTO's enclosing namespaces,
+    /// innermost first and the global namespace last, then the generated <c>using</c>s and the consumer's
+    /// <c>global using</c>s together as one scope. A nested type is keyed by its top-level containing type,
+    /// which is the name its rendering starts with. Nullable underlying types, generic arguments and array
+    /// elements are walked; special types are skipped.
     /// </summary>
     /// <param name="properties">The list of property symbols.</param>
     /// <param name="importedNamespaces">The namespaces the generated file imports with <c>using</c>.</param>
+    /// <param name="globalUsingNamespaces">The namespaces the consumer imports with <c>global using</c>.</param>
     /// <param name="dtoNamespace">The DTO's namespace, or <see langword="null"/> for the global namespace.</param>
     /// <param name="compilationAssembly">The assembly the generated source compiles into.</param>
     /// <returns>The ambiguous (simple name, arity) keys.</returns>
     internal static HashSet<(string Name, int Arity)> CollectAmbiguousSimpleNames(
         List<IPropertySymbol> properties,
         HashSet<string> importedNamespaces,
+        HashSet<string> globalUsingNamespaces,
         string? dtoNamespace,
         IAssemblySymbol compilationAssembly)
     {
@@ -1328,18 +1371,19 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var assemblies = new List<IAssemblySymbol> { compilationAssembly };
         assemblies.AddRange(compilationAssembly.Modules.SelectMany(m => m.ReferencedAssemblySymbols));
 
-        var enclosingNamespaces = new List<string> { string.Empty };
         var dtoNamespaceParts = string.IsNullOrEmpty(dtoNamespace) ? [] : dtoNamespace!.Split('.');
-        for (var depth = 1; depth <= dtoNamespaceParts.Length; depth++)
-            enclosingNamespaces.Add(string.Join(".", dtoNamespaceParts, 0, depth));
+        var scopes = new List<IEnumerable<string>>();
+        for (var depth = dtoNamespaceParts.Length; depth >= 0; depth--)
+            scopes.Add([string.Join(".", dtoNamespaceParts, 0, depth)]);
+        scopes.Add(importedNamespaces.Concat(globalUsingNamespaces));
 
         foreach (var entry in seen)
         {
-            if (enclosingNamespaces.Any(ns => FindAccessibleTypes(assemblies, ns, entry.Key, compilationAssembly).Any()))
-                continue;
+            var matches = scopes
+                .Select(scope => scope.SelectMany(ns => FindAccessibleTypes(assemblies, ns, entry.Key, compilationAssembly)).ToList())
+                .FirstOrDefault(found => found.Count > 0);
 
-            if (importedNamespaces.Any(ns => FindAccessibleTypes(assemblies, ns, entry.Key, compilationAssembly)
-                    .Any(t => !SymbolEqualityComparer.Default.Equals(t, entry.Value))))
+            if (matches?.Any(t => !SymbolEqualityComparer.Default.Equals(t, entry.Value)) == true)
                 ambiguous.Add(entry.Key);
         }
 
@@ -1440,13 +1484,15 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="namespaces">The set of required namespaces.</param>
     /// <param name="typeFormat">The symbol display format.</param>
     /// <param name="compilationAssembly">The assembly the generated source compiles into.</param>
+    /// <param name="globalUsingNamespaces">The namespaces the consumer imports with <c>global using</c>.</param>
     /// <returns>The generated source code.</returns>
     private static string BuildDtoSourceCode(
         DtoMetadata metadata,
         List<IPropertySymbol> properties,
         HashSet<string> namespaces,
         SymbolDisplayFormat typeFormat,
-        IAssemblySymbol compilationAssembly)
+        IAssemblySymbol compilationAssembly,
+        HashSet<string> globalUsingNamespaces)
     {
         var builder = new StringBuilder();
         
@@ -1459,7 +1505,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
             properties,
             metadata.ExistingProperties,
             typeFormat,
-            CollectAmbiguousSimpleNames(properties, namespaces, metadata.Namespace, compilationAssembly));
+            CollectAmbiguousSimpleNames(
+                properties, namespaces, globalUsingNamespaces, metadata.Namespace, compilationAssembly));
         AppendClassClosing(builder);
         
         return builder.ToString();
