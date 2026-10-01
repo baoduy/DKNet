@@ -78,8 +78,8 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     private async Task PushContextAsync(DbContextEventData eventData)
     {
         var db = eventData.Context!;
-        while (_cache.TryGetValue(db, out var top) && !top.IsRunningHooks)
-            await RemoveContextAsync(eventData);
+        while (PopContext(db) is { } leftover)
+            await leftover.DisposeAsync();
 
         // Unlink the live outer context (the new one keeps it as Outer), then create the new top.
         if (_cache.TryGetValue(db, out var outer)) _cache.Remove(db);
@@ -102,13 +102,19 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
             "It must be registered via AddDbContextWithHook or AddDbContext.");
 
     /// <summary>
-    ///     Pops the top hook context of the DbContext's stack, leaving the outer one (if any) on top.
+    ///     Pops the top hook context of the DbContext's stack, leaving the outer one (if any) on top. A top whose
+    ///     hooks are running is never popped: it belongs to the save whose hook started the exiting one. That
+    ///     covers a sync save inside <c>DisableHooks()</c>, which never pushes, and a nested save whose AfterSave
+    ///     failed, which EF signals a second time after <see cref="SavedChangesAsync" /> already popped it.
     /// </summary>
     /// <param name="db"></param>
-    /// <returns>the popped context, for the caller to dispose; <c>null</c> when the stack is empty.</returns>
+    /// <returns>
+    ///     the popped context, for the caller to dispose; <c>null</c> when the stack is empty or its top is running
+    ///     hooks.
+    /// </returns>
     private HookContext? PopContext(DbContext db)
     {
-        if (!_cache.TryGetValue(db, out var context)) return null;
+        if (!_cache.TryGetValue(db, out var context) || context.IsRunningHooks) return null;
 
         if (context.Outer is null) _cache.Remove(db);
         else _cache.AddOrUpdate(db, context.Outer);
@@ -121,17 +127,7 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
             await context.DisposeAsync();
     }
 
-    /// <summary>
-    ///     Sync exits pop too, but the sync path never pushes: a sync save inside <c>DisableHooks()</c> run from a
-    ///     hook would otherwise pop and dispose the live context of the async save that hook belongs to.
-    /// </summary>
-    /// <param name="eventData"></param>
-    private void RemoveContext(DbContextEventData eventData)
-    {
-        if (_cache.TryGetValue(eventData.Context!, out var top) && top.IsRunningHooks) return;
-
-        PopContext(eventData.Context!)?.Dispose();
-    }
+    private void RemoveContext(DbContextEventData eventData) => PopContext(eventData.Context!)?.Dispose();
 
     /// <summary>
     ///     Runs hooks before and after save operations.
@@ -177,6 +173,12 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         finally
         {
             context.IsRunningHooks = false;
+
+            // A nested save that a later interceptor failed got no end signal, so its context still sits above this
+            // one. Drop it, so this save's exits pop this context and not the leftover.
+            var db = context.Snapshot.DbContext;
+            while (_cache.TryGetValue(db, out var top) && !ReferenceEquals(top, context) && PopContext(db) is { } leftover)
+                await leftover.DisposeAsync();
         }
     }
 
@@ -259,8 +261,6 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         LogSavingChangesCalled(eventData.EventId, eventData.EventIdCode);
 
         // Never reuse a leftover: its snapshot would hand an earlier save's entries to the hooks again.
-        // ponytail: every exit pops the top, which assumes a nested save left nothing above its outer save. A hook
-        // that swallows a nested save's later-interceptor failure breaks that; trim above the outer if it matters.
         await PushContextAsync(eventData);
         var context = GetContext(eventData);
         try
