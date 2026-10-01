@@ -17,7 +17,8 @@ namespace EfCore.DtoGenerator.Tests;
 ///     with the same (name, arity), but not when that type is inaccessible or the DTO's enclosing namespace
 ///     chain declares the name first. A consumer <c>global using</c> joins the imported scope; an alias,
 ///     <c>using static</c> or file-level <c>using</c> does not. An enclosing namespace that declares a
-///     different type with the name forces qualification.
+///     different type with the name forces qualification. A <c>[RaisesEvent]</c> payload record follows the
+///     same rule, consumer <c>global using</c>s included.
 /// </summary>
 public class TypeNameQualificationEdgeTests
 {
@@ -504,6 +505,47 @@ public class TypeNameQualificationEdgeTests
         }
         """;
 
+    private const string RaisesEventAuditLogEntitySource = """
+        using System;
+
+        namespace DKNet.EfCore.Abstractions.Events
+        {
+            [Flags]
+            public enum EventOperations { Created = 1, Updated = 2, Deleted = 4 }
+
+            [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+            public sealed class RaisesEventAttribute : Attribute
+            {
+                public RaisesEventAttribute(EventOperations operations, params string[] properties)
+                {
+                    Operations = operations;
+                    Properties = properties;
+                }
+
+                public EventOperations Operations { get; }
+                public string[] Properties { get; }
+            }
+        }
+
+        namespace Probe.Shared
+        {
+            public enum Action { Create, Update, Delete }
+        }
+
+        namespace Probe.Domain
+        {
+            using DKNet.EfCore.Abstractions.Events;
+
+            [RaisesEvent(EventOperations.Created)]
+            public sealed class AuditLog
+            {
+                public Guid Id { get; set; }
+
+                public Probe.Shared.Action Action { get; set; }
+            }
+        }
+        """;
+
     private const string AuditLogDtoSource = """
         using DKNet.EfCore.DtoGenerator;
 
@@ -795,6 +837,20 @@ public class TypeNameQualificationEdgeTests
     }
 
     [Fact]
+    public void RaisesEventPayloadNameAConsumerGlobalUsingAlsoDeclares_GeneratedSource_QualifiesFully()
+    {
+        // Arrange + Act
+        var (source, errors) = CompileAndCaptureSource(
+            RaisesEventAuditLogEntitySource, dtoSource: string.Empty, globalUsingsSource: GlobalUsingSystemSource);
+
+        // Assert
+        errors.ShouldBeEmpty(string.Join('\n', errors.Select(d => d.ToString())));
+        source.ShouldContain("public partial record AuditLogCreatedEvent");
+        source.ShouldContain("public global::Probe.Shared.Action Action { get; init; }");
+        source.ShouldContain("public Guid Id { get; init; }");
+    }
+
+    [Fact]
     public void SimpleNameTheEnclosingNamespaceDeclaresAsDifferentType_GeneratedSource_QualifiesFully()
     {
         // Arrange + Act
@@ -860,7 +916,7 @@ public class TypeNameQualificationEdgeTests
     #region Internals
 
     /// <summary>
-    /// Runs <c>DtoGenerator</c> over <paramref name="entitySource"/> plus <paramref name="dtoSource"/>
+    /// Runs <c>DtoGenerator</c> and <c>RaisesEventValidator</c> over <paramref name="entitySource"/> plus <paramref name="dtoSource"/>
     /// (<see cref="OrderDtoSource"/> when omitted) and
     /// returns the generated source with the error diagnostics located in the generator's own output trees.
     /// The hand-authored input trees are asserted error-free first, so a probe typo cannot surface as an
@@ -890,9 +946,12 @@ public class TypeNameQualificationEdgeTests
             .ToList();
         inputErrors.ShouldBeEmpty(string.Join('\n', inputErrors.Select(d => d.ToString())));
 
-        var generator = new DKNet.EfCore.DtoGenerator.DtoGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            [generator], optionsProvider: new TestAnalyzerConfigOptionsProvider());
+            [
+                new DKNet.EfCore.DtoGenerator.DtoGenerator().AsSourceGenerator(),
+                new DKNet.EfCore.DtoGenerator.RaisesEventValidator().AsSourceGenerator(),
+            ],
+            optionsProvider: new TestAnalyzerConfigOptionsProvider());
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var updatedCompilation, out _);
         var runResult = ((CSharpGeneratorDriver)driver).GetRunResult();
 

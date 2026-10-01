@@ -48,13 +48,15 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             .SelectMany(static (list, _) => list);
 
         var compilationAndDeclarations = context.CompilationProvider.Combine(declarations.Collect());
-        var withOptions = compilationAndDeclarations.Combine(context.AnalyzerConfigOptionsProvider);
+        var withOptions = compilationAndDeclarations
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Combine(DtoGenerator.CreateGlobalUsingsProvider(context));
 
         context.RegisterSourceOutput(withOptions, static (spc, pair) =>
         {
-            var ((compilation, targets), optionsProvider) = pair;
+            var (((compilation, targets), optionsProvider), globalUsingNamespaces) = pair;
             var globalExclusions = DtoGenerator.ExtractGlobalExclusionsFromConfig(optionsProvider);
-            ValidateAndGenerate(spc, compilation, targets, globalExclusions);
+            ValidateAndGenerate(spc, compilation, targets, globalExclusions, new HashSet<string>(globalUsingNamespaces));
         });
     }
 
@@ -269,7 +271,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// </summary>
     private static void ValidateAndGenerate(
         SourceProductionContext context, Compilation compilation, IReadOnlyList<RaisesEventDeclaration> targets,
-        HashSet<string> globalExclusions)
+        HashSet<string> globalExclusions, HashSet<string> globalUsingNamespaces)
     {
         var validConventionFormDeclarations = new List<RaisesEventDeclaration>();
 
@@ -299,7 +301,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             }
         }
 
-        GenerateStringFormRecords(context, validConventionFormDeclarations, globalExclusions);
+        GenerateStringFormRecords(context, validConventionFormDeclarations, globalExclusions, globalUsingNamespaces);
     }
 
     /// <summary>
@@ -558,7 +560,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
     /// </summary>
     private static void GenerateStringFormRecords(
         SourceProductionContext context, List<RaisesEventDeclaration> declarations,
-        HashSet<string> globalExclusions)
+        HashSet<string> globalExclusions, HashSet<string> globalUsingNamespaces)
     {
         var groups = declarations.GroupBy(d => (Namespace: GetEntityNamespace(d.EntitySymbol), d.ComposedName));
 
@@ -603,7 +605,7 @@ public sealed class RaisesEventValidator : IIncrementalGenerator
             var declaration = groupList[0];
             var source = DtoGenerator.BuildRaisesEventRecordSource(
                 declaration.EntitySymbol, declaration.ComposedName!, group.Key.Namespace,
-                declaration.ExcludeFilter, declaration.IncludeFilter, globalExclusions);
+                declaration.ExcludeFilter, declaration.IncludeFilter, globalExclusions, globalUsingNamespaces);
 
             var hintName = $"{(group.Key.Namespace ?? "global")}.{declaration.ComposedName}.RaisesEvent.g.cs";
             context.AddSource(hintName, source);

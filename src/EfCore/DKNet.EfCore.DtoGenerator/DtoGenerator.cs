@@ -58,7 +58,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="context">The generator initialization context.</param>
     /// <returns>An incremental value provider of the imported namespace names.</returns>
-    private static IncrementalValueProvider<ImmutableArray<string>> CreateGlobalUsingsProvider(
+    internal static IncrementalValueProvider<ImmutableArray<string>> CreateGlobalUsingsProvider(
         IncrementalGeneratorInitializationContext context)
     {
         return context.SyntaxProvider.CreateSyntaxProvider(
@@ -1221,10 +1221,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="excludedProperties">The declaration's <c>Exclude</c> filter, or empty for none.</param>
     /// <param name="includedProperties">The declaration's <c>Include</c> filter, or empty for none.</param>
     /// <param name="globalExclusions">The project-wide <c>DtoGeneratorExclusions</c> set.</param>
+    /// <param name="globalUsingNamespaces">The namespaces the consumer imports with <c>global using</c>.</param>
     /// <returns>The generated C# source for the payload record.</returns>
     internal static string BuildRaisesEventRecordSource(
         INamedTypeSymbol entitySymbol, string recordName, string? recordNamespace,
-        HashSet<string> excludedProperties, HashSet<string> includedProperties, HashSet<string> globalExclusions)
+        HashSet<string> excludedProperties, HashSet<string> includedProperties, HashSet<string> globalExclusions,
+        HashSet<string> globalUsingNamespaces)
     {
         var entityProperties = GetEntityProperties(entitySymbol);
         var filteredProperties = FilterIncludedProperties(
@@ -1248,7 +1250,7 @@ public sealed class DtoGenerator : IIncrementalGenerator
             requiredNamespaces,
             typeDisplayFormat,
             entitySymbol.ContainingAssembly,
-            new HashSet<string>());
+            globalUsingNamespaces);
     }
 
     #endregion

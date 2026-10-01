@@ -274,8 +274,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   — CS0104); and for a name that the DTO's enclosing namespace declares as a different type, which the
   property used to bind to silently. A nested type is now written with its containing type
   (`Order.Priority`), and any of these names is written fully qualified (`global::Domain.Action`), at every
-  depth — array element, `Nullable<T>` and generic argument. Output is unchanged for every DTO whose property
-  types already resolved to the right type.
+  depth — array element, `Nullable<T>` and generic argument. The same rule applies to the payload records
+  `[RaisesEvent]` generates, which share this emission path. Output is unchanged for every DTO and payload
+  record whose property types already resolved to the right type.
 - Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
   out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
   enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early
