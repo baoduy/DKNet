@@ -918,9 +918,18 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return $"{underlyingTypeName}?";
         }
 
-        if (type is not INamedTypeSymbol namedType)
-            return type.Name;
+        return type is INamedTypeSymbol namedType ? BuildNamedTypeName(namedType, ambiguousNames) : type.Name;
+    }
 
+    /// <summary>
+    /// Builds the C# type name for a named type that is neither a special type nor <c>Nullable&lt;T&gt;</c>.
+    /// </summary>
+    /// <param name="namedType">The named type symbol.</param>
+    /// <param name="ambiguousNames">The (simple name, arity) keys shared by distinct types in this DTO.</param>
+    /// <returns>The C# type name.</returns>
+    private static string BuildNamedTypeName(
+        INamedTypeSymbol namedType, HashSet<(string Name, int Arity)> ambiguousNames)
+    {
         // A simple name shared by two distinct types is ambiguous across the emitted usings (CS0104)
         var outermost = GetOutermostType(namedType);
         if (ambiguousNames.Contains((outermost.Name, outermost.Arity)))
