@@ -41,6 +41,28 @@ public class PageAsyncEnumeratorTests : IClassFixture<TestDbFixture>
     #region Methods
 
     /// <summary>
+    ///     DRK-1906: enumerating the same repository result twice returns the full set on both passes.
+    /// </summary>
+    [Fact]
+    public async Task RepositoryToPageEnumerable_EnumeratedTwice_ShouldReturnAllItemsBothTimes()
+    {
+        // Arrange
+        var total = await _context.Products.CountAsync();
+        var enumerable = _repository.ToPageEnumerable(new OrderedProductsSpec());
+
+        // Act
+        var firstPass = new List<int>();
+        await foreach (var p in enumerable) firstPass.Add(p.Id);
+        var secondPass = new List<int>();
+        await foreach (var p in enumerable) secondPass.Add(p.Id);
+
+        // Assert
+        total.ShouldBeGreaterThan(0);
+        firstPass.Count.ShouldBe(total);
+        secondPass.ShouldBe(firstPass);
+    }
+
+    /// <summary>
     ///     Verifies cancellation during repository enumeration stops iteration and throws.
     /// </summary>
     [Fact]
@@ -127,6 +149,29 @@ public class PageAsyncEnumeratorTests : IClassFixture<TestDbFixture>
     }
 
     /// <summary>
+    ///     DRK-1906: enumerating the same multi-page result twice returns the full ordered set on both passes.
+    /// </summary>
+    [Fact]
+    public async Task ToPageEnumerable_EnumeratedTwice_ShouldReturnAllItemsBothTimes()
+    {
+        // Arrange
+        const int pageSize = 5; // Force multiple pages (total seeded = 20)
+        var expectedIds = await _context.Products.OrderBy(p => p.Id).Select(p => p.Id).ToListAsync();
+        var enumerable = _context.Products.OrderBy(p => p.Id).ToPageEnumerable(pageSize);
+
+        // Act
+        var firstPass = new List<int>();
+        await foreach (var p in enumerable) firstPass.Add(p.Id);
+        var secondPass = new List<int>();
+        await foreach (var p in enumerable) secondPass.Add(p.Id);
+
+        // Assert
+        expectedIds.Count.ShouldBeGreaterThan(pageSize);
+        firstPass.ShouldBe(expectedIds);
+        secondPass.ShouldBe(expectedIds);
+    }
+
+    /// <summary>
     ///     Cancels enumeration after a few items mid-stream ensuring partial collection and proper exception.
     /// </summary>
     [Fact]
@@ -148,6 +193,35 @@ public class PageAsyncEnumeratorTests : IClassFixture<TestDbFixture>
         });
 
         collected.Count.ShouldBe(10);
+    }
+
+    /// <summary>
+    ///     DRK-1906: breaking out mid-page and enumerating the same result again starts from the first row.
+    /// </summary>
+    [Fact]
+    public async Task ToPageEnumerable_ReEnumeratedAfterBreak_ShouldStartFromFirstRow()
+    {
+        // Arrange
+        const int pageSize = 5;
+        const int itemsBeforeBreak = 3; // Inside the first page
+        var expectedIds = await _context.Products.OrderBy(p => p.Id).Select(p => p.Id).ToListAsync();
+        var enumerable = _context.Products.OrderBy(p => p.Id).ToPageEnumerable(pageSize);
+
+        // Act
+        var partialPass = new List<int>();
+        await foreach (var p in enumerable)
+        {
+            partialPass.Add(p.Id);
+            if (partialPass.Count == itemsBeforeBreak) break;
+        }
+
+        var secondPass = new List<int>();
+        await foreach (var p in enumerable) secondPass.Add(p.Id);
+
+        // Assert
+        expectedIds.Count.ShouldBeGreaterThan(pageSize);
+        partialPass.ShouldBe(expectedIds.Take(itemsBeforeBreak).ToList());
+        secondPass.ShouldBe(expectedIds);
     }
 
     /// <summary>
