@@ -237,7 +237,7 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator, 
     ///     A decision that throws aborts the request, so the guard fails closed.
     /// </summary>
     /// <param name="request">The intercepted request.</param>
-    private async Task GuardRequestAsync(IRequest request)
+    internal async Task GuardRequestAsync(IRequest request)
     {
         bool allowed;
         try
@@ -254,9 +254,11 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator, 
             if (allowed) await request.ContinueAsync();
             else await request.AbortAsync();
         }
-        catch (PuppeteerException)
+        catch (Exception)
         {
-            // The page closed while the request was in flight; there is nothing left to continue or abort.
+            // The page closed while the request was in flight, or the protocol call timed out. Neither can be
+            // retried here, and this runs from an async void event handler, where an escaping exception would
+            // terminate the process.
         }
     }
 
