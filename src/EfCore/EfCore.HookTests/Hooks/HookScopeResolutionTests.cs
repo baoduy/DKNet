@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using DKNet.EfCore.Extensions.Snapshots;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -236,12 +236,48 @@ public class HookScopeResolutionTests : IAsyncLifetime
                 .Options);
 
         var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
-        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
-        cache[Guid.NewGuid()] = new DKNet.EfCore.Hooks.Internals.HookContext(hooksProvider, db);
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        cache.Add(db, new DKNet.EfCore.Hooks.Internals.HookContext(hooksProvider, db));
 
         interceptor.Dispose();
 
         cache.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void HookRunnerInterceptor_Dispose_DisposesEachCachedHookContext()
+    {
+        var interceptor = new HookRunnerInterceptor(NullLogger<HookRunnerInterceptor>.Instance);
+
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
+        cache.Add(db, cached);
+
+        interceptor.Dispose();
+
+        cache.ShouldBeEmpty();
+        Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
+    }
+
+    [Fact]
+    public async Task HookRunnerInterceptor_DisposeAsync_ClearsAndDisposesCachedHookContexts()
+    {
+        var interceptor = new HookRunnerInterceptor(NullLogger<HookRunnerInterceptor>.Instance);
+
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
+        cache.Add(db, cached);
+
+        await interceptor.DisposeAsync();
+
+        cache.ShouldBeEmpty();
+        Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
     }
 
     [Fact]
@@ -252,9 +288,9 @@ public class HookScopeResolutionTests : IAsyncLifetime
         using var scope = _provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HookContext>();
         var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
-        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
         var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
-        cache[db.ContextId.InstanceId] = cached;
+        cache.Add(db, cached);
 
         await interceptor.SaveChangesFailedAsync(
             new DbContextErrorEventData(
@@ -280,9 +316,9 @@ public class HookScopeResolutionTests : IAsyncLifetime
         using var scope = _provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HookContext>();
         var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
-        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
         var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
-        cache[db.ContextId.InstanceId] = cached;
+        cache.Add(db, cached);
 
         interceptor.SaveChangesCanceled(
             new DbContextEventData(
@@ -306,7 +342,7 @@ public class HookScopeResolutionTests : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<HookContext>();
         var interceptor = _provider.GetRequiredKeyedService<HookRunnerInterceptor>(typeof(HookContext).FullName);
         var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
-        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cache = (ConditionalWeakTable<DbContext, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
         await db.Set<CustomerProfile>().AddAsync(new CustomerProfile { Name = "Saved" });
 
         await db.SaveChangesAsync();
