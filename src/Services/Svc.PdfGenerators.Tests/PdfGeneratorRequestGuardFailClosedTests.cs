@@ -5,7 +5,8 @@ using Shouldly;
 namespace Svc.PdfGenerators.Tests;
 
 /// <summary>
-///     DRK-1902 rule R3: a request whose allow/abort decision throws is aborted, and the render still completes.
+///     DRK-1902 rule R3: a request whose allow/abort decision throws neither crashes the process nor hangs the
+///     render. The abort itself is not observable here: no resolver accepts the host name that makes it throw.
 /// </summary>
 [Collection("PdfGeneratorChrome")]
 public class PdfGeneratorRequestGuardFailClosedTests
@@ -15,7 +16,7 @@ public class PdfGeneratorRequestGuardFailClosedTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ConvertHtmlAsync_RequestWhoseDecisionThrows_AbortsItAndStillProducesThePdf(
+    public async Task ConvertHtmlAsync_RequestWhoseDecisionThrows_StillProducesThePdf(
         bool allowPrivateNetworkRequests)
     {
         // Arrange: a 308-character host name is a valid URL but longer than Dns.GetHostAddressesAsync accepts,
