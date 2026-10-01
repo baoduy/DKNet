@@ -158,6 +158,17 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
+    public override void SaveChangesFailed(DbContextErrorEventData eventData) =>
+        throw new NotImplementedException();
+
+    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result) =>
+        throw new NotImplementedException();
+
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData,
+        InterceptionResult<int> result) =>
+        throw new NotImplementedException();
+
     #endregion
 
     #region Logging
