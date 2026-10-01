@@ -11,8 +11,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        var register = dbContext.GetService<IDbContextOptions>().FindExtension<EntityAutoConfigRegister>();
-        var assemblies = GetAssemblies(dbContext, register);
+        var assemblies = GetAssemblies(dbContext);
 
         //Register Entities
         foreach (var assembly in assemblies) modelBuilder.ApplyConfigurationsFromAssembly(assembly);
@@ -21,11 +20,7 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         //modelBuilder.RegisterDataSeeding(assemblies);
 
         //Register Global Filter
-        // Build with the builder set the register was identified by (what is hashed is what is built).
-        modelBuilder.RegisterGlobalModelBuilders(
-            assemblies,
-            register?.GlobalModelBuilders ?? (IEnumerable<Type>)EfCoreSetup.GlobalModelBuilders,
-            dbContext);
+        modelBuilder.RegisterGlobalModelBuilders(assemblies, dbContext);
 
         //Register Sequence
         if (dbContext.IsSqlServer() || dbContext.IsNpgsql()) modelBuilder.RegisterSequences(assemblies);
@@ -37,8 +32,10 @@ internal sealed class AutoConfigModelCustomizer(ModelCustomizer original) : IMod
         original.Customize(modelBuilder, context);
     }
 
-    private static Assembly[] GetAssemblies(DbContext dbContext, EntityAutoConfigRegister? register)
+    private static Assembly[] GetAssemblies(DbContext dbContext)
     {
+        var options = dbContext.GetService<IDbContextOptions>();
+        var register = options.FindExtension<EntityAutoConfigRegister>();
         var assemblies = register?.Assemblies ?? [];
 
         if (assemblies.Length <= 0) assemblies = [dbContext.GetType().Assembly];

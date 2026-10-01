@@ -76,11 +76,11 @@ public sealed class GlobalModelBuilderModelCacheTests
             second.Probes.Count(p => p.Owner == ForeignOwner).ShouldBe(0);
         }
 
-        // And (R3, Q1) options built before the registration build their model from the builder set they were
-        // identified by, not the live registry: the model is first built after registration, yet stays unfiltered.
+        // And (DRK-1970) options built before the registration also get the builder: the model is built from the
+        // builders registered when the context resolves it, not when its options were built.
         using var uncached = new OwnerProbeDbContext(uncachedOptionsBeforeRegistration);
         uncached.Probes.Count(p => p.Owner == Owner).ShouldBe(1);
-        uncached.Probes.Count(p => p.Owner == ForeignOwner).ShouldBe(1);
+        uncached.Probes.Count(p => p.Owner == ForeignOwner).ShouldBe(0);
     }
 
     #endregion
