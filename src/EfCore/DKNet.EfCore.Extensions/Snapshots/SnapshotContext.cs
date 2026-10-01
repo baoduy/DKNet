@@ -39,8 +39,8 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
     }
 
     /// <summary>
-    ///     The snapshot of changed entities captured at construction time. Only entities that were Added or Modified
-    ///     at the time of snapshot are included.
+    ///     The snapshot of changed entities. Only entities that were Added, Modified or Deleted when
+    ///     <see cref="Initialize" /> ran are included.
     /// </summary>
     public IReadOnlyCollection<SnapshotEntityEntry> Entities
     {
@@ -81,7 +81,8 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
 
 
     /// <summary>
-    ///     Ensure the snapshot is initialized. This method is called automatically during construction,
+    ///     Captures the change tracker's pending Added/Modified/Deleted entries. Call before reading
+    ///     <see cref="Entities" />.
     /// </summary>
     public void Initialize()
     {
