@@ -234,6 +234,8 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
 
     /// <summary>
     ///     Lists items in the configured container under the provided request path.
+    ///     A <see cref="BlobTypes.Directory" /> request for folder <c>f</c> lists only blobs under <c>f/</c>, never
+    ///     siblings such as <c>f.pdf</c> or <c>f-archive/…</c>; an empty or <c>"/"</c> name lists the whole container.
     /// </summary>
     /// <param name="blob">The blob request describing the target listing path.</param>
     /// <param name="cancellationToken">Cancellation token for the async enumeration.</param>
@@ -244,6 +246,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     {
         var client = await GetClient();
         var location = GetBlobLocation(blob).RemoveHeadingSlash();
+        if (blob.Type == BlobTypes.Directory && location.Length > 0) location = location.EnsureTrailingSlash();
         var resultSegment = client.GetBlobsAsync(BlobTraits.None, BlobStates.All, location, cancellationToken);
 
         await foreach (var b in resultSegment)
