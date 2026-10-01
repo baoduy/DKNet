@@ -280,6 +280,16 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     }
 
     /// <summary>
+    ///     Synchronous cancellation path: runs no hooks, only removes and disposes any cached hook context.
+    /// </summary>
+    /// <param name="eventData"></param>
+    public override void SaveChangesCanceled(DbContextEventData eventData)
+    {
+        RemoveContext(eventData);
+        base.SaveChangesCanceled(eventData);
+    }
+
+    /// <summary>
     ///     Synchronous completion path: runs no hooks, only removes and disposes any cached hook context.
     /// </summary>
     /// <param name="eventData"></param>

@@ -79,17 +79,26 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     /// <summary>
     ///     Deletes a blob or folder represented by the provided <paramref name="blob" /> request.
-    ///     For folders this implementation enumerates and deletes contained objects recursively.
+    ///     For folders this implementation enumerates and deletes every object under <c>&lt;folder&gt;/</c> —
+    ///     a key that merely shares the folder name as a string prefix (<c>&lt;folder&gt;.pdf</c>,
+    ///     <c>&lt;folder&gt;-archive/…</c>) is never touched.
     /// </summary>
     /// <param name="blob">Blob request describing the target to delete.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns><c>true</c> when deletion completed (or object did not exist); otherwise <c>false</c>.</returns>
+    /// <exception cref="ArgumentException">
+    ///     A folder delete whose name resolves to the bucket root (<c>""</c> or <c>"/"</c>); nothing is deleted.
+    /// </exception>
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
         var location = GetBlobLocation(blob).TrimStart('/');
-        return blob.Type == BlobTypes.File
-            ? DeleteFileAsync(location, cancellationToken)
-            : DeleteFolderAsync(location, cancellationToken);
+        if (blob.Type == BlobTypes.File) return DeleteFileAsync(location, cancellationToken);
+
+        // Fail closed: an empty folder prefix would match, and so delete, every object in the bucket.
+        if (location.Length == 0)
+            throw new ArgumentException("A folder delete cannot target the bucket root.", nameof(blob));
+
+        return DeleteFolderAsync(location.TrimEnd('/') + "/", cancellationToken);
     }
 
     /// <summary>
@@ -110,7 +119,10 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
     /// <summary>
     ///     Deletes all objects under the given prefix (folder-like behavior) and then attempts to delete the prefix object.
     /// </summary>
-    /// <param name="folderLocation">The prefix used to list and delete contained objects.</param>
+    /// <param name="folderLocation">
+    ///     The non-empty folder prefix, ending with <c>/</c>, used to list and delete contained objects; the final
+    ///     delete removes the <c>&lt;folder&gt;/</c> directory marker.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns><c>true</c> when deletion completes; otherwise may throw.</returns>
     private async Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
@@ -309,6 +321,8 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
 
     /// <summary>
     ///     Lists objects under the provided prefix and yields blob metadata results.
+    ///     A <see cref="BlobTypes.Directory" /> request for folder <c>f</c> lists only keys under <c>f/</c>, never
+    ///     siblings such as <c>f.pdf</c> or <c>f-archive/…</c>; an empty or <c>"/"</c> name lists the whole bucket.
     /// </summary>
     /// <param name="blob">Blob request describing the prefix to list.</param>
     /// <param name="cancellationToken">Cancellation token for the async enumeration.</param>
@@ -318,6 +332,7 @@ public sealed class S3BlobService(IOptions<S3Options> options, ILogger<S3BlobSer
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var location = GetBlobLocation(blob).TrimStart('/');
+        if (blob.Type == BlobTypes.Directory && location.Length > 0) location = location.TrimEnd('/') + "/";
         var client = await GetS3ClientAsync(cancellationToken);
 
         string? continuationToken = null;
