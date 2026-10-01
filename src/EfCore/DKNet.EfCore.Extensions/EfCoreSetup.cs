@@ -97,8 +97,9 @@ public static class EfCoreSetup
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            // No Contains guard: EntityAutoConfigRegister snapshots the bag as a distinct set,
-            // so a Contains/Add check-then-act here would only add a non-atomic race for no behavioural gain.
+            // No Contains guard: EntityAutoConfigRegister snapshots the bag as a distinct set and
+            // RegisterGlobalModelBuilders dedupes via .Union on the no-register fallback, so a Contains/Add
+            // check-then-act here would only add a non-atomic race for no behavioural gain.
             GlobalModelBuilders.Add(typeof(TImplementation));
 
             return serviceCollection;
