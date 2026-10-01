@@ -46,6 +46,8 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
         await _adapter.SaveAsync(new BlobDetails.BlobData("folder1/file1.txt", file) { ContentType = "text/plain" });
         var result = await _adapter.DeleteAsync(new BlobRequest("folder1") { Type = BlobTypes.Directory });
         result.ShouldBeTrue();
+        (await _adapter.CheckExistsAsync(new BlobRequest("folder1/file1.txt") { Type = BlobTypes.File }))
+            .ShouldBeFalse();
     }
 
     [Fact]

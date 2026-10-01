@@ -52,17 +52,28 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
 
     /// <summary>
     ///     Deletes a blob or folder identified by the provided <paramref name="blob" /> request.
-    ///     If the blob request represents a folder, the implementation will enumerate and delete contained items.
+    ///     If the blob request represents a folder, the implementation deletes every blob under <c>&lt;folder&gt;/</c>,
+    ///     nested ones included — a blob that merely shares the folder name as a string prefix
+    ///     (<c>&lt;folder&gt;.pdf</c>, <c>&lt;folder&gt;-archive/…</c>) is never touched.
     /// </summary>
     /// <param name="blob">The blob request describing the blob or folder to delete.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>True when to delete completed successfully; otherwise false.</returns>
+    /// <exception cref="ArgumentException">
+    ///     A folder delete whose name resolves to the container root (<c>""</c> or <c>"/"</c>); nothing is deleted.
+    /// </exception>
     public override Task<bool> DeleteAsync(BlobRequest blob, CancellationToken cancellationToken = default)
     {
         var location = GetBlobLocation(blob);
-        return blob.Type == BlobTypes.File
-            ? DeleteFileAsync(location, cancellationToken)
-            : DeleteFolderAsync(location, cancellationToken);
+        if (blob.Type == BlobTypes.File) return DeleteFileAsync(location, cancellationToken);
+
+        location = location.RemoveHeadingSlash();
+
+        // Fail closed: an empty folder prefix would match, and so delete, every blob in the container.
+        if (location.Length == 0)
+            throw new ArgumentException("A folder delete cannot target the container root.", nameof(blob));
+
+        return DeleteFolderAsync(location.EnsureTrailingSlash(), cancellationToken);
     }
 
     /// <summary>
@@ -81,7 +92,7 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     /// <summary>
     ///     Deletes a folder and all contained blobs by enumerating child items recursively.
     /// </summary>
-    /// <param name="folderLocation">The folder path (with trailing slash) to delete.</param>
+    /// <param name="folderLocation">The non-empty folder path, without a leading slash, to delete.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>True when deletion succeeds; otherwise may throw an exception.</returns>
     private async Task<bool> DeleteFolderAsync(string folderLocation, CancellationToken cancellationToken = default)
@@ -99,7 +110,11 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
             //Delete Files
             await foreach (var blob in resultSegment)
                 if (blob.IsDirectory())
-                    queue.Enqueue(blob.Name.EnsureTrailingSlash());
+                {
+                    // A directory marker named exactly like the prefix lists itself; re-queueing it never ends.
+                    var subFolder = blob.Name.EnsureTrailingSlash();
+                    if (subFolder != tbDelete) queue.Enqueue(subFolder);
+                }
                 else
                     await DeleteFileAsync(blob.Name, cancellationToken);
 

@@ -256,6 +256,26 @@ public class S3BlobServiceTest(S3BlobServiceFixture fixture) : IClassFixture<S3B
     }
 
     [Fact]
+    public async Task DeleteAndList_FolderWithTrailingSlash_BehaveAsFolderWithoutSlash()
+    {
+        // DRK-1898 R3: "<f>/" is the same folder as "<f>" — the boundary slash is never doubled.
+        var folder = $"trailing-slash-{Guid.NewGuid()}";
+        await SaveTextAsync($"{folder}/a.txt");
+        await SaveTextAsync($"{folder}.pdf");
+
+        var items = await _service.ListItemsAsync(new BlobRequest($"{folder}/") { Type = BlobTypes.Directory })
+            .ToListAsync();
+        items.Select(i => i.Name).ShouldBe([$"{folder}/a.txt"]);
+
+        await _service.DeleteAsync(new BlobRequest($"{folder}/") { Type = BlobTypes.Directory });
+
+        (await _service.CheckExistsAsync(new BlobRequest($"{folder}/a.txt") { Type = BlobTypes.File }))
+            .ShouldBeFalse();
+        (await _service.CheckExistsAsync(new BlobRequest($"{folder}.pdf") { Type = BlobTypes.File }))
+            .ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task ListItemsAsync_ZeroByteAndOneByteFiles_AreClassifiedAsFileNotDirectory()
     {
         // Regression for C8: `obj.Size > 1` used to classify a 0- or 1-byte file as a directory.
