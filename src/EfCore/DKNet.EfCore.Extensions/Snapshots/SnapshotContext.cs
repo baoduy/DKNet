@@ -91,7 +91,7 @@ public sealed class SnapshotContext(DbContext context) : IAsyncDisposable, IDisp
         // Ensure the change tracker is up to date before capturing state
         DbContext.ChangeTracker.DetectChanges();
 
-        // Capture only entities that are Added or Modified
+        // Capture only entities that are Added, Modified or Deleted
         var entities = DbContext.ChangeTracker
             .Entries()
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
