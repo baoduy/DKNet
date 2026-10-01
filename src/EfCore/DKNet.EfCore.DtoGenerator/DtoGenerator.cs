@@ -821,10 +821,12 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <param name="typeFormat">The symbol display format.</param>
+    /// <param name="ambiguousNames">The (simple name, arity) keys shared by distinct types in this DTO.</param>
     /// <returns>The property info.</returns>
-    private static PropertyInfo AnalyzeProperty(IPropertySymbol property, SymbolDisplayFormat typeFormat)
+    private static PropertyInfo AnalyzeProperty(
+        IPropertySymbol property, SymbolDisplayFormat typeFormat, HashSet<(string Name, int Arity)> ambiguousNames)
     {
-        var typeName = GetPropertyTypeName(property, typeFormat);
+        var typeName = GetPropertyTypeName(property, typeFormat, ambiguousNames);
         var isNonNullableString = IsNonNullableString(property);
         var isCollection = IsCollectionType(property);
         var isComplexReferenceType = IsComplexReferenceType(property);
@@ -845,13 +847,15 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="property">The property symbol.</param>
     /// <param name="typeFormat">The symbol display format.</param>
+    /// <param name="ambiguousNames">The (simple name, arity) keys shared by distinct types in this DTO.</param>
     /// <returns>The C# type name.</returns>
-    internal static string GetPropertyTypeName(IPropertySymbol property, SymbolDisplayFormat typeFormat)
+    internal static string GetPropertyTypeName(
+        IPropertySymbol property, SymbolDisplayFormat typeFormat, HashSet<(string Name, int Arity)> ambiguousNames)
     {
         var type = property.Type;
 
-        // Build the complete type name manually to avoid any global:: prefixes
-        var typeName = BuildCleanTypeName(type);
+        // Build the type name manually: bare where it resolves, qualified only where it would not
+        var typeName = BuildCleanTypeName(type, ambiguousNames);
 
         // Ensure nullable reference types have the ? suffix
         if (type.IsReferenceType &&
@@ -866,10 +870,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Builds a clean C# type name for a symbol, using keywords for primitives and handling generics.
+    /// A named type whose outermost (simple name, arity) is in <paramref name="ambiguousNames"/> renders
+    /// fully qualified with <c>global::</c>; a nested type renders with its containing-type chain
+    /// (<c>Order.Priority</c>); every other type renders by its bare simple name.
     /// </summary>
     /// <param name="type">The type symbol.</param>
+    /// <param name="ambiguousNames">The (simple name, arity) keys shared by distinct types in this DTO.</param>
     /// <returns>The C# type name.</returns>
-    internal static string BuildCleanTypeName(ITypeSymbol type)
+    internal static string BuildCleanTypeName(ITypeSymbol type, HashSet<(string Name, int Arity)> ambiguousNames)
     {
         // Handle special types (int, string, etc.) using C# keywords
         if (type.SpecialType != SpecialType.None)
@@ -899,27 +907,56 @@ public sealed class DtoGenerator : IIncrementalGenerator
         // Handle array types
         if (type is IArrayTypeSymbol arrayType)
         {
-            var elementTypeName = BuildCleanTypeName(arrayType.ElementType);
+            var elementTypeName = BuildCleanTypeName(arrayType.ElementType, ambiguousNames);
             return $"{elementTypeName}[]";
         }
 
         // Handle nullable value types
         if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
         {
-            var underlyingTypeName = BuildCleanTypeName(nullable.TypeArguments[0]);
+            var underlyingTypeName = BuildCleanTypeName(nullable.TypeArguments[0], ambiguousNames);
             return $"{underlyingTypeName}?";
         }
 
-        // Handle generic types (like List<T>, IEnumerable<T>, etc.)
-        if (type is INamedTypeSymbol namedType && namedType.TypeArguments.Length > 0)
+        if (type is not INamedTypeSymbol namedType)
+            return type.Name;
+
+        // A simple name shared by two distinct types is ambiguous across the emitted usings (CS0104)
+        var outermost = GetOutermostType(namedType);
+        if (ambiguousNames.Contains((outermost.Name, outermost.Arity)))
+            return namedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+        // A nested type is not in scope by its simple name (CS0246): prefix the containing-type chain. A
+        // generic containing type has no short spelling, so that type renders fully qualified instead
+        var name = namedType.Name;
+        for (var containing = namedType.ContainingType; containing is not null; containing = containing.ContainingType)
         {
-            var genericName = namedType.Name;
-            var typeArgs = string.Join(", ", namedType.TypeArguments.Select(BuildCleanTypeName));
-            return $"{genericName}<{typeArgs}>";
+            if (containing.Arity > 0)
+                return namedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            name = $"{containing.Name}.{name}";
         }
 
-        // For non-generic types, just use the simple name (no namespace, no global::)
-        return type.Name;
+        // Handle generic types (like List<T>, IEnumerable<T>, etc.)
+        if (namedType.TypeArguments.Length > 0)
+        {
+            var typeArgs = string.Join(", ", namedType.TypeArguments.Select(t => BuildCleanTypeName(t, ambiguousNames)));
+            return $"{name}<{typeArgs}>";
+        }
+
+        // Everything else keeps its bare simple name (no namespace, no global::); the usings resolve it
+        return name;
+    }
+
+    /// <summary>
+    /// Returns the top-level type that (transitively) contains <paramref name="type"/>, or the type itself
+    /// when it is not nested.
+    /// </summary>
+    private static INamedTypeSymbol GetOutermostType(INamedTypeSymbol type)
+    {
+        while (type.ContainingType is not null)
+            type = type.ContainingType;
+        return type;
     }
 
     /// <summary>
@@ -1248,6 +1285,62 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Collects the (simple name, arity) keys that two or more distinct property types share, so
+    /// <see cref="BuildCleanTypeName"/> can qualify them. A nested type is keyed by its top-level containing
+    /// type, which is the name its rendering starts with. Nullable underlying types, generic arguments and
+    /// array elements are walked; special types are skipped.
+    /// </summary>
+    /// <param name="properties">The list of property symbols.</param>
+    /// <returns>The ambiguous (simple name, arity) keys.</returns>
+    internal static HashSet<(string Name, int Arity)> CollectAmbiguousSimpleNames(List<IPropertySymbol> properties)
+    {
+        var seen = new Dictionary<(string Name, int Arity), INamedTypeSymbol>();
+        var ambiguous = new HashSet<(string Name, int Arity)>();
+
+        foreach (var property in properties)
+            CollectSimpleNamesFromType(property.Type, seen, ambiguous);
+
+        return ambiguous;
+    }
+
+    /// <summary>
+    /// Recursively records the outermost (simple name, arity) of a type and its nested type arguments.
+    /// </summary>
+    /// <param name="type">The type symbol.</param>
+    /// <param name="seen">The first distinct definition seen per key.</param>
+    /// <param name="ambiguous">The keys seen with more than one distinct definition.</param>
+    private static void CollectSimpleNamesFromType(
+        ITypeSymbol type,
+        Dictionary<(string Name, int Arity), INamedTypeSymbol> seen,
+        HashSet<(string Name, int Arity)> ambiguous)
+    {
+        if (type.SpecialType != SpecialType.None)
+            return;
+
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            CollectSimpleNamesFromType(arrayType.ElementType, seen, ambiguous);
+            return;
+        }
+
+        if (type is not INamedTypeSymbol namedType)
+            return;
+
+        if (namedType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+        {
+            var outermost = GetOutermostType(namedType).OriginalDefinition;
+            var key = (outermost.Name, outermost.Arity);
+            if (!seen.TryGetValue(key, out var first))
+                seen[key] = outermost;
+            else if (!SymbolEqualityComparer.Default.Equals(first, outermost))
+                ambiguous.Add(key);
+        }
+
+        foreach (var typeArg in namedType.TypeArguments)
+            CollectSimpleNamesFromType(typeArg, seen, ambiguous);
+    }
+
+    /// <summary>
     /// Creates a symbol display format for type names (name only, with generics).
     /// </summary>
     /// <returns>The symbol display format.</returns>
@@ -1283,7 +1376,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
         AppendUsingDirectives(builder, namespaces);
         AppendNamespaceDeclaration(builder, metadata.Namespace);
         AppendDtoClassDeclaration(builder, metadata);
-        AppendDtoProperties(builder, properties, metadata.ExistingProperties, typeFormat);
+        AppendDtoProperties(
+            builder, properties, metadata.ExistingProperties, typeFormat, CollectAmbiguousSimpleNames(properties));
         AppendClassClosing(builder);
         
         return builder.ToString();
@@ -1352,18 +1446,20 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="properties">The list of property symbols.</param>
     /// <param name="existingProperties">The set of existing property names.</param>
     /// <param name="typeFormat">The symbol display format.</param>
+    /// <param name="ambiguousNames">The (simple name, arity) keys shared by distinct types in this DTO.</param>
     private static void AppendDtoProperties(
         StringBuilder builder,
         List<IPropertySymbol> properties,
         HashSet<string> existingProperties,
-        SymbolDisplayFormat typeFormat)
+        SymbolDisplayFormat typeFormat,
+        HashSet<(string Name, int Arity)> ambiguousNames)
     {
         foreach (var property in properties)
         {
             if (existingProperties.Contains(property.Name))
                 continue;
                 
-            var propertyInfo = AnalyzeProperty(property, typeFormat);
+            var propertyInfo = AnalyzeProperty(property, typeFormat, ambiguousNames);
             AppendPropertyDeclaration(builder, propertyInfo);
         }
     }

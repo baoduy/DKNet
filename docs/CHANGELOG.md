@@ -265,6 +265,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile when the entity has a property
+  of a nested type (an enum declared inside the entity, `Order.Priority` — CS0246) or two property types that
+  share a simple name from different namespaces (`Billing.Status` and `Shipping.Status` — CS0104) (DRK-1905).
+  A nested type is now written with its containing type (`Order.Priority`), and a simple name shared by two
+  distinct property types is written fully qualified (`global::Billing.Status`), at every depth — array
+  element, `Nullable<T>` and generic argument. Output for every DTO that compiled before is unchanged.
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
   request body (DRK-1436). `DKNet.SlimBus.Generators` now picks the mapper by the action method's parameter
   count: a parameterless action is registered with the new
