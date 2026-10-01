@@ -34,6 +34,8 @@ internal sealed class EfCoreAuditHook(
 
     public override Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
     {
+        // Drop a pending entry left by an earlier save on this DbContext that never reached AfterSaveAsync.
+        _cache.Remove(context.DbContext.ContextId.InstanceId);
         StampCurrentUser(context);
 
         var logs = context.Entities
