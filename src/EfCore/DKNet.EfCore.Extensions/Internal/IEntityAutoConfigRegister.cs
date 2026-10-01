@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Collections.Frozen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.EfCore.Extensions.Internal;
@@ -6,8 +7,24 @@ namespace DKNet.EfCore.Extensions.Internal;
 /// <summary>
 ///     The Entity Mapping Register
 /// </summary>
-internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbContextOptionsExtension
+/// <param name="assemblies">The assemblies to scan.</param>
+/// <param name="globalModelBuilders">The global model builder types captured for this options instance.</param>
+internal sealed class EntityAutoConfigRegister(Assembly[] assemblies, IEnumerable<Type> globalModelBuilders)
+    : IDbContextOptionsExtension
 {
+    #region Constructors
+
+    /// <summary>
+    ///     Creates the register with a snapshot of the global model builders registered so far
+    ///     (<see cref="EfCoreSetup.GlobalModelBuilders" />). Builders registered later do not apply to this instance.
+    /// </summary>
+    /// <param name="assemblies">The assemblies to scan.</param>
+    public EntityAutoConfigRegister(Assembly[] assemblies) : this(assemblies, EfCoreSetup.GlobalModelBuilders)
+    {
+    }
+
+    #endregion
+
     #region Fields
 
     private DbContextOptionsExtensionInfo? _info;
@@ -17,6 +34,11 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
     #region Properties
 
     public Assembly[] Assemblies { get; } = assemblies;
+
+    /// <summary>
+    ///     The distinct global model builder types this options instance is identified by and builds its model with.
+    /// </summary>
+    public FrozenSet<Type> GlobalModelBuilders { get; } = globalModelBuilders.ToFrozenSet();
 
     public DbContextOptionsExtensionInfo Info => _info ??= new EntityConfigExtensionInfo(this);
 

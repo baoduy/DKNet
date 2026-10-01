@@ -88,13 +88,18 @@ public static class EfCoreSetup
         /// <summary>
         ///     Register the GlobalModelBuilderRegister to the service collection.
         /// </summary>
+        /// <remarks>
+        ///     The registration applies to <see cref="DbContextOptions" /> built after this call: each options instance
+        ///     captures the builders registered so far when <c>UseAutoConfigModel</c> runs, and keys its model by them.
+        /// </remarks>
         /// <typeparam name="TImplementation"></typeparam>
         /// <returns></returns>
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            // No Contains guard: RegisterGlobalModelBuilders already dedupes via .Union(GlobalModelBuilders),
-            // so a Contains/Add check-then-act here would only add a non-atomic race for no behavioural gain.
+            // No Contains guard: EntityAutoConfigRegister snapshots the bag as a distinct set and
+            // RegisterGlobalModelBuilders dedupes via .Union on the no-register fallback, so a Contains/Add
+            // check-then-act here would only add a non-atomic race for no behavioural gain.
             GlobalModelBuilders.Add(typeof(TImplementation));
 
             return serviceCollection;

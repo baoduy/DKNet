@@ -23,16 +23,17 @@ internal static class EntityAutoConfigExtensions
     ///     Register GlobalFilter from RegistrationInfo <see />
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
-    /// <param name="assemblies"></param>
+    /// <param name="assemblies">The assemblies to scan for global model builders.</param>
+    /// <param name="globalModelBuilders">The registered global model builder types to apply as well.</param>
     /// <param name="dbContext">The database context.</param>
     internal static void RegisterGlobalModelBuilders(
         this ModelBuilder modelBuilder,
         Assembly[] assemblies,
+        IEnumerable<Type> globalModelBuilders,
         DbContext dbContext)
     {
         var globalFilters = assemblies.GetGlobalFilters()
-            .Union(EfCoreSetup.GlobalModelBuilders)
-            .Distinct();
+            .Union(globalModelBuilders);
 
         foreach (var filter in globalFilters)
         {
