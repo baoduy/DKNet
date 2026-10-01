@@ -15,14 +15,14 @@ public sealed class S3BlobServiceFixture : IDisposable
 
     public S3BlobServiceFixture()
     {
-        // minio/minio was withdrawn from Docker Hub (anonymous pulls now get "pull access denied
-        // ... repository does not exist"); quay.io/minio/minio is MinIO's own registry and still
-        // serves the RELEASE.2023-01-31T02-24-19Z tag. Pinned by the manifest-list digest, not the
-        // tag, so a future re-tag or removal on quay.io can't silently change what this suite runs
-        // against; the digest resolves to a multi-arch index covering linux/amd64 and linux/arm64
-        // (plus ppc64le/s390x), so Docker still picks the right platform image on either runner.
+        // minio/minio was withdrawn from Docker Hub, then quay.io/minio/minio withdrew anonymous
+        // pulls too (401 on both the pinned digest and latest, 2026-10-01). pgsty/minio is a
+        // community-maintained Docker Hub mirror of the same MinIO server image, pulled here
+        // anonymously and pinned by the manifest-list digest so a future re-tag can't silently
+        // change what this suite runs against; the digest resolves to a multi-arch index covering
+        // linux/amd64 and linux/arm64.
         _minioContainer = new MinioBuilder(
-                "quay.io/minio/minio@sha256:c5cf013c67de7854d445afed42c07810c402ce5afb441af02877f8f3dc045ec4")
+                "pgsty/minio@sha256:b6bfe7239bfc83fb90d31612d9704d86039dd714f7904b3f1ad68f211e602372")
             .Build();
 
         _minioContainer.StartAsync().GetAwaiter().GetResult();
