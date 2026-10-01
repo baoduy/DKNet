@@ -121,7 +121,17 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
             await context.DisposeAsync();
     }
 
-    private void RemoveContext(DbContextEventData eventData) => PopContext(eventData.Context!)?.Dispose();
+    /// <summary>
+    ///     Sync exits pop too, but the sync path never pushes: a sync save inside <c>DisableHooks()</c> run from a
+    ///     hook would otherwise pop and dispose the live context of the async save that hook belongs to.
+    /// </summary>
+    /// <param name="eventData"></param>
+    private void RemoveContext(DbContextEventData eventData)
+    {
+        if (_cache.TryGetValue(eventData.Context!, out var top) && top.IsRunningHooks) return;
+
+        PopContext(eventData.Context!)?.Dispose();
+    }
 
     /// <summary>
     ///     Runs hooks before and after save operations.

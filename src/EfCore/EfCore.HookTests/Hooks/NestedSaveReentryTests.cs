@@ -54,6 +54,26 @@ public class NestedSaveReentryTests(NestedSaveFixture fixture) : IClassFixture<N
         HookCacheProbe.HasEntryFor(fixture.Provider, db).ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task SaveChangesAsync_AfterSaveHookSavesSyncWithHooksDisabled_LaterHookSeesOuterEntries()
+    {
+        // Arrange
+        await using var scope = fixture.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var nesting = scope.ServiceProvider.GetRequiredKeyedService<NestingSaveHook>(typeof(HookContext).FullName);
+        var recorder = scope.ServiceProvider.GetRequiredKeyedService<PassRecordingHook>(typeof(HookContext).FullName);
+        nesting.NestSyncWithHooksDisabledInAfterSave = true;
+        db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Outer" });
+
+        // Act
+        await db.SaveChangesAsync();
+
+        // Assert: the nested sync save runs no hooks, and its exit must not pop the outer save's live context.
+        recorder.BeforeSavePasses.ShouldBe(["Outer"]);
+        recorder.AfterSavePasses.ShouldBe(["Outer"]);
+        HookCacheProbe.HasEntryFor(fixture.Provider, db).ShouldBeFalse();
+    }
+
     #endregion
 }
 
@@ -131,7 +151,8 @@ public sealed class NestedSaveFixture : IAsyncLifetime
 }
 
 /// <summary>
-///     Adds an "Inner" profile and saves the same DbContext from inside its hook pass, once.
+///     Adds an "Inner" profile and saves the same DbContext from inside its hook pass, once: async with hooks
+///     running, or sync inside <c>DisableHooks()</c>.
 /// </summary>
 public sealed class NestingSaveHook : IHookAsync
 {
@@ -147,12 +168,17 @@ public sealed class NestingSaveHook : IHookAsync
 
     public bool NestInBeforeSave { get; set; }
 
+    public bool NestSyncWithHooksDisabledInAfterSave { get; set; }
+
     #endregion
 
     #region Methods
 
-    public Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
-        NestInAfterSave ? SaveInnerAsync(context, cancellationToken) : Task.CompletedTask;
+    public Task AfterSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default)
+    {
+        if (NestSyncWithHooksDisabledInAfterSave) SaveInnerSyncWithHooksDisabled(context);
+        return NestInAfterSave ? SaveInnerAsync(context, cancellationToken) : Task.CompletedTask;
+    }
 
     public Task BeforeSaveAsync(SnapshotContext context, CancellationToken cancellationToken = default) =>
         NestInBeforeSave ? SaveInnerAsync(context, cancellationToken) : Task.CompletedTask;
@@ -164,6 +190,18 @@ public sealed class NestingSaveHook : IHookAsync
         _nested = true;
         context.DbContext.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Inner" });
         await context.DbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private void SaveInnerSyncWithHooksDisabled(SnapshotContext context)
+    {
+        if (_nested) return;
+
+        _nested = true;
+        using (context.DbContext.DisableHooks())
+        {
+            context.DbContext.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Inner" });
+            context.DbContext.SaveChanges();
+        }
     }
 
     #endregion
