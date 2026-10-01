@@ -53,7 +53,22 @@ internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbConte
                     typeof(AutoConfigModelCustomizer),
                     originalDescriptor.Lifetime));
         }
+
+        //Wrap the IModelCacheKeyFactory so the model cache key changes when a global model builder is registered.
+        var originalKeyFactory = services.FirstOrDefault(s => s.ServiceType == typeof(IModelCacheKeyFactory));
+        services.Replace(
+            new ServiceDescriptor(
+                typeof(IModelCacheKeyFactory),
+                sp => new GlobalModelBuilderCacheKeyFactory(CreateKeyFactory(sp, originalKeyFactory)),
+                originalKeyFactory?.Lifetime ?? ServiceLifetime.Singleton));
     }
+
+    private static IModelCacheKeyFactory CreateKeyFactory(IServiceProvider provider, ServiceDescriptor? descriptor) =>
+        (IModelCacheKeyFactory)(descriptor?.ImplementationInstance
+                                ?? descriptor?.ImplementationFactory?.Invoke(provider)
+                                ?? ActivatorUtilities.CreateInstance(
+                                    provider,
+                                    descriptor?.ImplementationType ?? typeof(ModelCacheKeyFactory)));
 
     public void Validate(IDbContextOptions options)
     {

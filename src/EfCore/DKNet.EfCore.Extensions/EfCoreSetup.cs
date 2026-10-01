@@ -93,13 +93,25 @@ public static class EfCoreSetup
         public IServiceCollection AddGlobalModelBuilder<TImplementation>()
             where TImplementation : class, IGlobalModelBuilder
         {
-            // No Contains guard: RegisterGlobalModelBuilders already dedupes via .Union(GlobalModelBuilders),
-            // so a Contains/Add check-then-act here would only add a non-atomic race for no behavioural gain.
+            // Add to the bag before bumping the version: EF reads the version into the model cache key before it
+            // builds the model from the bag, so a racing build can only apply more builders than its key names.
             GlobalModelBuilders.Add(typeof(TImplementation));
+            if (DistinctGlobalModelBuilders.TryAdd(typeof(TImplementation), 0))
+                Interlocked.Increment(ref _globalModelBuildersVersion);
 
             return serviceCollection;
         }
     }
 
     internal static readonly ConcurrentBag<Type> GlobalModelBuilders = [];
+
+    private static readonly ConcurrentDictionary<Type, byte> DistinctGlobalModelBuilders = new();
+
+    private static int _globalModelBuildersVersion;
+
+    /// <summary>
+    ///     Grows by one for each distinct type added to <see cref="GlobalModelBuilders" />. The set is append-only, so
+    ///     the version identifies the distinct set; re-registering a type leaves it unchanged.
+    /// </summary>
+    internal static int GlobalModelBuildersVersion => Volatile.Read(ref _globalModelBuildersVersion);
 }
