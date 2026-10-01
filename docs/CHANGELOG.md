@@ -295,6 +295,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registered so far, keys the provider (and its model) by that set, and builds the model from that same set, so a
   context always gets the builders its options were created with. Builders registered after an options instance
   was built do not apply to it; register them before building options, as every DI registration path already does.
+- `DKNet.EfCore.AuditLogs` no longer publishes audit entries for a save that never completed (DRK-1964). When a
+  `SaveChangesAsync` was cancelled, failed with a `DbUpdateException`, or a later hook threw, the entries it had
+  captured stayed pending and were published by the next successful save on the same `DbContext`. Each save now
+  starts by dropping any pending entry of its own `DbContext`, so a save publishes only its own entries.
 - `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile, or that silently binds a
   property to the wrong type, when a property type's simple name does not resolve to it in the generated file
   (DRK-1905). That happened for a nested type (an enum declared inside the entity, `Order.Priority` — CS0246);
