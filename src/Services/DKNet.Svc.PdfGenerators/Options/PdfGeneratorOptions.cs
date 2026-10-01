@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using PuppeteerSharp.Media;
+﻿using PuppeteerSharp.Media;
 
 namespace DKNet.Svc.PdfGenerators.Options;
 
@@ -14,26 +13,22 @@ public class PdfGeneratorOptions
     #region Properties
 
     /// <summary>
-    ///     Allows rendered content to request loopback, link-local and private-network hosts.
+    ///     Allows rendered content to make the server request loopback, unspecified, link-local, private
+    ///     (RFC 1918), CGNAT and unique-local hosts. Off by default so caller-supplied HTML or Markdown cannot use
+    ///     the renderer to reach internal services or cloud metadata endpoints (SSRF). Enable it only for
+    ///     content you fully trust. Requests with a scheme other than <c>http</c>, <c>https</c> or <c>data</c>
+    ///     are blocked whatever this value is.
     ///     <value>Default: <see langword="false" />.</value>
     /// </summary>
-    [SuppressMessage("Design", "CA1065", Justification = "DRK-1935 acceptance-test stub; Build replaces it.")]
-    public bool AllowPrivateNetworkRequests
-    {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
-    }
+    public bool AllowPrivateNetworkRequests { get; set; }
 
     /// <summary>
-    ///     Runs JavaScript in the rendered content.
+    ///     Runs JavaScript in the rendered content. Off by default so caller-supplied content cannot run scripts
+    ///     on the server. Enable it only for content you fully trust: WebSocket and WebRTC connections a script
+    ///     opens are not covered by the request guard that <see cref="AllowPrivateNetworkRequests" /> controls.
     ///     <value>Default: <see langword="false" />.</value>
     /// </summary>
-    [SuppressMessage("Design", "CA1065", Justification = "DRK-1935 acceptance-test stub; Build replaces it.")]
-    public bool EnableJavaScript
-    {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
-    }
+    public bool EnableJavaScript { get; set; }
 
     /// <summary>
     ///     Auto detect the language for code blocks without specfied language.
