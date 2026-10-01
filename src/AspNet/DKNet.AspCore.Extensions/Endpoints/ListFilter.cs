@@ -76,7 +76,9 @@ public readonly record struct ListFilter(string Field, Ops Operation, string Val
         // timestamp being the case that matters.
         var parts = s.Split(PartSeparator, PartCount);
         if (parts.Length < 2 || parts[0].Length == 0) return false;
-        if (!Enum.TryParse<Ops>(parts[1], ignoreCase: true, out var operation)) return false;
+        // Enum.TryParse accepts any integer ("999"), so an undefined value is rejected like an unknown name.
+        if (!Enum.TryParse<Ops>(parts[1], ignoreCase: true, out var operation) || !Enum.IsDefined(operation))
+            return false;
 
         // IsNull/IsNotNull take no value, so the two-part form ("field:IsNull") is accepted alongside the
         // three-part one; every value-carrying operation still requires its third segment.

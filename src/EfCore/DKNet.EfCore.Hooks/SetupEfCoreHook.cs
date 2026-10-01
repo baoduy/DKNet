@@ -38,8 +38,9 @@ public static class SetupEfCoreHook
     {
         /// <summary>
         ///     Add Hook Runner to <see cref="IServiceCollection" /> and register the Hook Interceptor to
+        ///     <see cref="DbContextOptionsBuilder" />. Hooks run only on <c>SaveChangesAsync</c>; a synchronous
+        ///     <c>SaveChanges()</c> throws <see cref="NotSupportedException" /> unless wrapped in <c>DisableHooks()</c>.
         /// </summary>
-        /// <see cref="DbContextOptionsBuilder" />
         /// <param name="builder"></param>
         /// <param name="contextLifetime"></param>
         /// <param name="optionLifetime"></param>
@@ -65,8 +66,9 @@ public static class SetupEfCoreHook
 
         /// <summary>
         ///     Add Hook Runner to <see cref="IServiceCollection" /> and register the Hook Interceptor to
+        ///     <see cref="DbContextOptionsBuilder" />. Hooks run only on <c>SaveChangesAsync</c>; a synchronous
+        ///     <c>SaveChanges()</c> throws <see cref="NotSupportedException" /> unless wrapped in <c>DisableHooks()</c>.
         /// </summary>
-        /// <see cref="DbContextOptionsBuilder" />
         /// <param name="builder"></param>
         /// <param name="contextLifetime"></param>
         /// <param name="optionLifetime"></param>

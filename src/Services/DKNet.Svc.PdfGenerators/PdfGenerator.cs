@@ -1,4 +1,5 @@
 ﻿using DKNet.Svc.PdfGenerators.Options;
+using DKNet.Svc.PdfGenerators.Services;
 using Markdig;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
@@ -204,6 +205,9 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator, 
     {
         var browser = await GetBrowserAsync();
         await using var page = await browser.NewPageAsync();
+        await page.SetJavaScriptEnabledAsync(Options.EnableJavaScript);
+        page.Request += async (_, e) => await GuardRequestAsync(e.Request);
+        await page.SetRequestInterceptionAsync(true);
         await page.SetContentAsync(htmlContent);
         var pdfOptions = new PdfOptions
         {
@@ -226,6 +230,36 @@ public class PdfGenerator(PdfGeneratorOptions? options = null) : IPdfGenerator, 
         };
         await page.EmulateMediaTypeAsync(MediaType.Screen);
         await page.PdfAsync(outputFilePath, pdfOptions);
+    }
+
+    /// <summary>
+    ///     Continues or aborts an intercepted request, exactly once, by the <see cref="RequestGuard" /> decision.
+    ///     A decision that throws aborts the request, so the guard fails closed.
+    /// </summary>
+    /// <param name="request">The intercepted request.</param>
+    internal async Task GuardRequestAsync(IRequest request)
+    {
+        bool allowed;
+        try
+        {
+            allowed = await RequestGuard.IsAllowedAsync(request.Url, Options.AllowPrivateNetworkRequests);
+        }
+        catch (Exception)
+        {
+            allowed = false;
+        }
+
+        try
+        {
+            if (allowed) await request.ContinueAsync();
+            else await request.AbortAsync();
+        }
+        catch (Exception)
+        {
+            // The page closed while the request was in flight, or the protocol call timed out. Neither can be
+            // retried here, and this runs from an async void event handler, where an escaping exception would
+            // terminate the process.
+        }
     }
 
     /// <summary>

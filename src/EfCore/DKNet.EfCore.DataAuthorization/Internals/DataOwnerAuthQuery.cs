@@ -13,7 +13,10 @@ namespace DKNet.EfCore.DataAuthorization.Internals;
 ///     This register automatically applies data authorization filters by:
 ///     - Detecting entities that implement IOwnedBy
 ///     - Applying appropriate query filters based on current context
-///     - Handling inheritance scenarios correctly
+///     - Registering the filter on inheritance hierarchy roots only (TPH/TPT/TPC); EF Core applies a root's
+///       filter to every derived type, so derived types get no registration of their own
+///     - Throwing at model build when an IOwnedBy type sits below a hierarchy root that is not IOwnedBy,
+///       because EF Core cannot filter that derived type on its own and it would otherwise leak every owner's rows
 ///     - Ensuring proper data visibility based on ownership rules
 /// </remarks>
 [SuppressMessage(
@@ -32,10 +35,27 @@ internal sealed class DataOwnerAuthQuery : GlobalQueryFilter
 
     #region Methods
 
-    protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder) =>
-        modelBuilder.Model.GetEntityTypes()
+    protected override IEnumerable<IMutableEntityType> GetEntityTypes(ModelBuilder modelBuilder)
+    {
+        var ownedTypes = modelBuilder.Model.GetEntityTypes()
             .Where(t => typeof(IOwnedBy).IsAssignableFrom(t.ClrType))
-            .Where(t => t.GetDiscriminatorValue() == null);
+            .ToList();
+
+        // Fail closed: EF Core only accepts a query filter on a hierarchy root, so an IOwnedBy type below a
+        // non-owned root can never be filtered and would expose every owner's rows.
+        var unfilterable = ownedTypes.FirstOrDefault(t => !typeof(IOwnedBy).IsAssignableFrom(t.GetRootType().ClrType));
+        if (unfilterable is not null)
+        {
+            var rootName = unfilterable.GetRootType().ClrType.Name;
+            throw new InvalidOperationException(
+                $"Entity type '{unfilterable.ClrType.Name}' implements IOwnedBy but its inheritance hierarchy root " +
+                $"'{rootName}' does not. The data-owner query filter can only be applied to a hierarchy root; " +
+                $"implement IOwnedBy on '{rootName}'.");
+        }
+
+        // Derived types inherit the root's filter.
+        return ownedTypes.Where(t => t.BaseType is null);
+    }
 
     /// <remarks>
     ///     The returned predicate ORs <see cref="IDataOwnerDbContext.IsUnrestrictedAccess" /> against a

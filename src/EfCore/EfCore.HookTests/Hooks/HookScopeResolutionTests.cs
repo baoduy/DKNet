@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using DKNet.EfCore.Extensions.Snapshots;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using HookContext = EfCore.HookTests.Data.HookContext;
@@ -238,6 +240,76 @@ public class HookScopeResolutionTests : IAsyncLifetime
         cache[Guid.NewGuid()] = new DKNet.EfCore.Hooks.Internals.HookContext(hooksProvider, db);
 
         interceptor.Dispose();
+
+        cache.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task HookRunnerInterceptor_SaveChangesFailedAsync_RemovesAndDisposesCachedHookContext()
+    {
+        var interceptor = new HookRunnerInterceptor(NullLogger<HookRunnerInterceptor>.Instance);
+
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
+        cache[db.ContextId.InstanceId] = cached;
+
+        await interceptor.SaveChangesFailedAsync(
+            new DbContextErrorEventData(
+                new EventDefinition(
+                    db.GetService<ILoggingOptions>(),
+                    CoreEventId.SaveChangesFailed,
+                    LogLevel.Debug,
+                    "CoreEventId.SaveChangesFailed",
+                    level => LoggerMessage.Define(level, CoreEventId.SaveChangesFailed, "SaveChanges failed")),
+                (_, _) => string.Empty,
+                db,
+                new DbUpdateException("save failed")));
+
+        cache.ShouldBeEmpty();
+        Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
+    }
+
+    [Fact]
+    public void HookRunnerInterceptor_SaveChangesCanceled_RemovesAndDisposesCachedHookContext()
+    {
+        var interceptor = new HookRunnerInterceptor(NullLogger<HookRunnerInterceptor>.Instance);
+
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
+        cache[db.ContextId.InstanceId] = cached;
+
+        interceptor.SaveChangesCanceled(
+            new DbContextEventData(
+                new EventDefinition(
+                    db.GetService<ILoggingOptions>(),
+                    CoreEventId.SaveChangesCanceled,
+                    LogLevel.Debug,
+                    "CoreEventId.SaveChangesCanceled",
+                    level => LoggerMessage.Define(level, CoreEventId.SaveChangesCanceled, "SaveChanges canceled")),
+                (_, _) => string.Empty,
+                db));
+
+        cache.ShouldBeEmpty();
+        Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_Succeeded_LeavesNoCachedHookContext()
+    {
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var interceptor = _provider.GetRequiredKeyedService<HookRunnerInterceptor>(typeof(HookContext).FullName);
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        await db.Set<CustomerProfile>().AddAsync(new CustomerProfile { Name = "Saved" });
+
+        await db.SaveChangesAsync();
 
         cache.ShouldBeEmpty();
     }

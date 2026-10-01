@@ -108,6 +108,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
+- **Breaking, security-motivated:** `DKNet.Svc.PdfGenerators` no longer lets rendered HTML or Markdown make the
+  server request internal hosts. Every request the page issues while rendering is now checked: a request to a
+  loopback, unspecified, link-local (including `169.254.169.254` cloud metadata), private (RFC 1918), CGNAT or
+  unique-local address — directly, through a host name that resolves to one, or in IPv4-mapped IPv6 form — is
+  aborted, as is a host name that does not resolve. A scheme other than `http`, `https` or `data` is always
+  aborted. Page JavaScript is now off by default. Previously an `<img>`, `<iframe>`, `<link>` or script in
+  caller-supplied content made the PDF process fetch any URL it named, and an iframe could print the response into
+  the PDF (SSRF). Migration: for content you fully trust, set `PdfGeneratorOptions.AllowPrivateNetworkRequests`
+  to reach private hosts and `PdfGeneratorOptions.EnableJavaScript` to run scripts. With JavaScript on, WebSocket
+  and WebRTC connections a script opens are not covered by the request check. Both options are code-only and
+  cannot be set from Markdown front matter.
+- **Breaking, security-motivated:** `DKNet.Svc.BlobStorage.AwsS3` and `DKNet.Svc.BlobStorage.AzureStorage` folder
+  operations now stop at the `/` boundary. An S3 folder `DeleteAsync` whose name is empty or `"/"` now throws
+  `ArgumentException` (`ParamName` `blob`) and deletes nothing — previously it deleted every object in the bucket.
+  An S3 folder `DeleteAsync`, and an S3 or Azure folder `ListItemsAsync` (and so `GetItemAsync`), for `reports` now
+  match only `reports/…` — previously they also matched `reports.pdf`, `reports-archive/…` and the extension-less
+  key `reports`. An empty or `"/"` folder list still lists the whole bucket/container. An Azure folder `DeleteAsync`
+  now actually deletes the blobs under `reports/`, nested ones included — previously it returned `true` and kept
+  every blob — and an Azure folder delete whose name is empty or `"/"` throws `ArgumentException` (`ParamName`
+  `blob`) and deletes nothing. Migration: an extension-less file key (`README`, `reports`) defaults to `Directory`;
+  delete, list or get it with `Type = BlobTypes.File`.
+- **Breaking, security-motivated:** `DKNet.EfCore.DataAuthorization` now applies the data-owner query filter to
+  EF Core inheritance hierarchies (TPH/TPT/TPC) whose root implements `IOwnedBy`: the filter is registered on the
+  root and EF Core applies it to every derived type. Previously no type in such a hierarchy was filtered, so every
+  caller could read every owner's rows. A hierarchy where `IOwnedBy` is implemented only below a root that does not
+  implement it now throws `InvalidOperationException` at model build instead of silently leaving those rows
+  unfiltered. Migration: implement `IOwnedBy` on the hierarchy root.
 - **Breaking for audit-sink consumers:** `DKNet.EfCore.AuditLogs` now redacts a property carrying `[Encrypted]`
   (`DKNet.EfCore.Encryption.Attributes.EncryptedAttribute`) in the same way as `[SensitiveData]` — unconditionally,
   even alongside `[AuditLog]` on the same property — so a value encrypted at rest no longer reaches an audit
@@ -259,6 +286,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile, or that silently binds a
+  property to the wrong type, when a property type's simple name does not resolve to it in the generated file
+  (DRK-1905). That happened for a nested type (an enum declared inside the entity, `Order.Priority` — CS0246);
+  for a name two property types share (`Billing.Status` and `Shipping.Status` — CS0104); for a name that
+  another namespace in scope also declares, whether imported for another property or by one of the project's
+  own `global using` directives such as the ImplicitUsings `System` (`Domain.Action` next to `System.Action`
+  — CS0104); and for a name that the DTO's enclosing namespace declares as a different type, which the
+  property used to bind to silently. A nested type is now written with its containing type
+  (`Order.Priority`), and any of these names is written fully qualified (`global::Domain.Action`), at every
+  depth — array element, `Nullable<T>` and generic argument. The same rule applies to the payload records
+  `[RaisesEvent]` generates, which share this emission path. Output is unchanged for every DTO and payload
+  record whose property types already resolved to the right type.
+- Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
+  out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
+  enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early
+  `break` resumed at the next page, skipping the rest of the interrupted page. Single-pass enumeration and
+  cancellation are unchanged. No public API change.
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
   request body (DRK-1436). `DKNet.SlimBus.Generators` now picks the mapper by the action method's parameter
   count: a parameterless action is registered with the new
@@ -331,6 +375,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
+- List-endpoint `filter`/`orderBy` field names no longer grow process-wide caches without bound (CWE-400)
+  (`DKNet.EfCore.Specifications`, `DKNet.AspCore.Extensions`). `ToPascalCase` memoized every raw input it saw, and
+  `ResolvePropertyType` stored every miss and every casing of a real property as its own entry, so any caller could
+  grow both with unique field names. `ToPascalCase` now keeps no cache; `ResolvePropertyType` caches only resolved
+  properties, one entry per case-insensitive path. An undefined numeric filter operation (`?filter=name:999:x`) is
+  now rejected too: `ListFilter.TryParse` returns `false` (a 400 at the list endpoint, instead of a 500), and
+  `TryBuildPredicate` returns `false` and `DynamicAnd`/`DynamicOr` skip the condition instead of throwing
+  `NotSupportedException`.
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
 - Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
