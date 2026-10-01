@@ -379,6 +379,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
+- A model cached before a global model builder was registered is no longer reused (DRK-1970)
+  (`DKNet.EfCore.Extensions`, `DKNet.EfCore.DataAuthorization`). EF Core cached one model per options shape and ran
+  the builders added through `AddGlobalModelBuilder<T>()` only when it built that model, so a context created before
+  `AddDataOwnerProvider` ran could leave every later context of the same shape without the data-owner filter.
+  `UseAutoConfigModel` now adds the set of registered global model builders to EF's model cache key, so the next
+  context builds a model that applies the new builder; registering the same type again keeps the cached model. A
+  consumer `ReplaceService<IModelCacheKeyFactory, …>()` replaces this key, so its own key must also change when a
+  global model builder is registered.
 - List-endpoint `filter`/`orderBy` field names no longer grow process-wide caches without bound (CWE-400)
   (`DKNet.EfCore.Specifications`, `DKNet.AspCore.Extensions`). `ToPascalCase` memoized every raw input it saw, and
   `ResolvePropertyType` stored every miss and every casing of a real property as its own entry, so any caller could
