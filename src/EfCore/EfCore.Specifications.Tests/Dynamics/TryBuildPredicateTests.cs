@@ -64,6 +64,39 @@ public class TryBuildPredicateTests
         predicate.ShouldBeNull();
     }
 
+    [Theory]
+    [InlineData(999)]
+    [InlineData(-1)]
+    public void TryBuildPredicate_UndefinedOperation_ReturnsFalseInsteadOfThrowing(int operation)
+    {
+        // An integer cast to Ops has no clause to build. That is one more unusable input: false, never a throw.
+        var ok = DynamicPredicateExtensions.TryBuildPredicate<Product>(
+            "Name", (Ops)operation, "x", out var predicate);
+
+        ok.ShouldBeFalse();
+        predicate.ShouldBeNull();
+    }
+
+    [Fact]
+    public void DynamicAnd_UndefinedOperation_SkipsTheCondition()
+    {
+        Expression<Func<Product, bool>> start = p => p.Price > 0;
+
+        var result = start.DynamicAnd("Name", (Ops)999, "x");
+
+        result.ShouldBeSameAs(start);
+    }
+
+    [Fact]
+    public void DynamicOr_UndefinedOperation_SkipsTheCondition()
+    {
+        Expression<Func<Product, bool>> start = p => p.Price > 0;
+
+        var result = start.DynamicOr("Name", (Ops)999, "x");
+
+        result.ShouldBeSameAs(start);
+    }
+
     [Fact]
     public void TryBuildPredicate_IsNullIgnoresTheValue_ReturnsThePredicate()
     {

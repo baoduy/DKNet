@@ -108,6 +108,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
+- **Breaking, security-motivated:** `DKNet.Svc.PdfGenerators` no longer lets rendered HTML or Markdown make the
+  server request internal hosts. Every request the page issues while rendering is now checked: a request to a
+  loopback, unspecified, link-local (including `169.254.169.254` cloud metadata), private (RFC 1918), CGNAT or
+  unique-local address — directly, through a host name that resolves to one, or in IPv4-mapped IPv6 form — is
+  aborted, as is a host name that does not resolve. A scheme other than `http`, `https` or `data` is always
+  aborted. Page JavaScript is now off by default. Previously an `<img>`, `<iframe>`, `<link>` or script in
+  caller-supplied content made the PDF process fetch any URL it named, and an iframe could print the response into
+  the PDF (SSRF). Migration: for content you fully trust, set `PdfGeneratorOptions.AllowPrivateNetworkRequests`
+  to reach private hosts and `PdfGeneratorOptions.EnableJavaScript` to run scripts. With JavaScript on, WebSocket
+  and WebRTC connections a script opens are not covered by the request check. Both options are code-only and
+  cannot be set from Markdown front matter.
 - **Breaking, security-motivated:** `DKNet.Svc.BlobStorage.AwsS3` and `DKNet.Svc.BlobStorage.AzureStorage` folder
   operations now stop at the `/` boundary. An S3 folder `DeleteAsync` whose name is empty or `"/"` now throws
   `ArgumentException` (`ParamName` `blob`) and deletes nothing — previously it deleted every object in the bucket.
@@ -275,6 +286,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
+  out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
+  enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early
+  `break` resumed at the next page, skipping the rest of the interrupted page. Single-pass enumeration and
+  cancellation are unchanged. No public API change.
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
   request body (DRK-1436). `DKNet.SlimBus.Generators` now picks the mapper by the action method's parameter
   count: a parameterless action is registered with the new
@@ -347,6 +363,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
+- List-endpoint `filter`/`orderBy` field names no longer grow process-wide caches without bound (CWE-400)
+  (`DKNet.EfCore.Specifications`, `DKNet.AspCore.Extensions`). `ToPascalCase` memoized every raw input it saw, and
+  `ResolvePropertyType` stored every miss and every casing of a real property as its own entry, so any caller could
+  grow both with unique field names. `ToPascalCase` now keeps no cache; `ResolvePropertyType` caches only resolved
+  properties, one entry per case-insensitive path. An undefined numeric filter operation (`?filter=name:999:x`) is
+  now rejected too: `ListFilter.TryParse` returns `false` (a 400 at the list endpoint, instead of a 500), and
+  `TryBuildPredicate` returns `false` and `DynamicAnd`/`DynamicOr` skip the condition instead of throwing
+  `NotSupportedException`.
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
 - Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
