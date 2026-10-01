@@ -119,6 +119,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to reach private hosts and `PdfGeneratorOptions.EnableJavaScript` to run scripts. With JavaScript on, WebSocket
   and WebRTC connections a script opens are not covered by the request check. Both options are code-only and
   cannot be set from Markdown front matter.
+- **Breaking, security-motivated:** `DKNet.Svc.BlobStorage.AwsS3` and `DKNet.Svc.BlobStorage.AzureStorage` folder
+  operations now stop at the `/` boundary. An S3 folder `DeleteAsync` whose name is empty or `"/"` now throws
+  `ArgumentException` (`ParamName` `blob`) and deletes nothing — previously it deleted every object in the bucket.
+  An S3 folder `DeleteAsync`, and an S3 or Azure folder `ListItemsAsync` (and so `GetItemAsync`), for `reports` now
+  match only `reports/…` — previously they also matched `reports.pdf`, `reports-archive/…` and the extension-less
+  key `reports`. An empty or `"/"` folder list still lists the whole bucket/container. An Azure folder `DeleteAsync`
+  now actually deletes the blobs under `reports/`, nested ones included — previously it returned `true` and kept
+  every blob — and an Azure folder delete whose name is empty or `"/"` throws `ArgumentException` (`ParamName`
+  `blob`) and deletes nothing. Migration: an extension-less file key (`README`, `reports`) defaults to `Directory`;
+  delete, list or get it with `Type = BlobTypes.File`.
 - **Breaking, security-motivated:** `DKNet.EfCore.DataAuthorization` now applies the data-owner query filter to
   EF Core inheritance hierarchies (TPH/TPT/TPC) whose root implements `IOwnedBy`: the filter is registered on the
   root and EF Core applies it to every derived type. Previously no type in such a hierarchy was filtered, so every
