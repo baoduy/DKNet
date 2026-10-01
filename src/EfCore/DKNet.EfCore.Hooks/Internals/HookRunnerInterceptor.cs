@@ -105,7 +105,15 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
         LogRunningHooks(type, context.BeforeSaveHooks.Count, context.AfterSaveHooks.Count);
 
-        context.Snapshot.Initialize();
+        // Every BeforeSave pass captures. AfterSave captures only when BeforeSave did not: with
+        // acceptAllChangesOnSuccess: false the entries are still pending, so a second capture would
+        // hand every entity to the AfterSave hooks twice.
+        if (type == RunningTypes.BeforeSave || !context.SnapshotCaptured)
+        {
+            context.Snapshot.Initialize();
+            context.SnapshotCaptured = true;
+        }
+
         if (context.Snapshot.Entities.Count == 0) return;
 
         if (type == RunningTypes.BeforeSave)

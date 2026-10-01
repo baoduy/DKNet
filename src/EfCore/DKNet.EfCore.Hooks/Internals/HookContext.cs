@@ -27,6 +27,12 @@ internal sealed class HookContext : IDisposable, IAsyncDisposable
 
     public SnapshotContext Snapshot { get; }
 
+    /// <summary>
+    ///     Set once the BeforeSave pass captured <see cref="Snapshot" /> for this save, so the AfterSave pass
+    ///     reuses that capture instead of appending the still-pending entries again.
+    /// </summary>
+    public bool SnapshotCaptured { get; set; }
+
     #endregion
 
     #region Methods
