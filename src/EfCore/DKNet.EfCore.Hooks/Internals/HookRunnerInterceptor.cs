@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -33,7 +33,9 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 {
     #region Fields
 
-    private readonly ConcurrentDictionary<Guid, HookContext> _cache = new();
+    // Keyed by the DbContext instance, so an entry left by an exit EF never signals (a later interceptor
+    // throwing in SavingChangesAsync) dies with its DbContext instead of living on in this singleton.
+    private readonly ConditionalWeakTable<DbContext, HookContext> _cache = new();
 
     #endregion
 
@@ -41,22 +43,21 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
     public void Dispose()
     {
-        var contexts = _cache.Values;
+        var contexts = _cache.Select(e => e.Value).ToList();
         _cache.Clear();
         foreach (var context in contexts) context.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        var contexts = _cache.Values;
+        var contexts = _cache.Select(e => e.Value).ToList();
         _cache.Clear();
         foreach (var context in contexts) await context.DisposeAsync();
     }
 
-    private HookContext GetContext(DbContextEventData eventData) =>
-        _cache.GetOrAdd(
-            eventData.Context!.ContextId.InstanceId,
-            _ => new HookContext(GetApplicationServiceProvider(eventData.Context!), eventData.Context!));
+    private static HookContext CreateContext(DbContext db) => new(GetApplicationServiceProvider(db), db);
+
+    private HookContext GetContext(DbContextEventData eventData) => _cache.GetOrAdd(eventData.Context!, CreateContext);
 
     /// <summary>
     ///     Resolves the DbContext's own application service provider, so hooks are loaded from the same DI
@@ -75,13 +76,13 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
 
     private async Task RemoveContextAsync(DbContextEventData eventData)
     {
-        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
+        if (_cache.Remove(eventData.Context!, out var context))
             await context.DisposeAsync();
     }
 
     private void RemoveContext(DbContextEventData eventData)
     {
-        if (_cache.TryRemove(eventData.Context!.ContextId.InstanceId, out var context))
+        if (_cache.Remove(eventData.Context!, out var context))
             context.Dispose();
     }
 
@@ -134,6 +135,39 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
         await base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
+    public override async Task SaveChangesCanceledAsync(
+        DbContextEventData eventData,
+        CancellationToken cancellationToken = default)
+    {
+        LogSaveChangesCanceled(eventData.EventId, eventData.EventIdCode);
+
+        await RemoveContextAsync(eventData);
+        await base.SaveChangesCanceledAsync(eventData, cancellationToken);
+    }
+
+    /// <summary>
+    ///     A concurrency failure that no earlier interceptor suppressed ends the save, so its hook context is
+    ///     evicted. A suppressed one lets the save continue to <see cref="SavedChangesAsync" />, which still needs
+    ///     the BeforeSave snapshot.
+    /// </summary>
+    /// <param name="eventData"></param>
+    /// <param name="result"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public override async ValueTask<InterceptionResult> ThrowingConcurrencyExceptionAsync(
+        ConcurrencyExceptionEventData eventData,
+        InterceptionResult result,
+        CancellationToken cancellationToken = default)
+    {
+        LogThrowingConcurrencyException(eventData.EventId, eventData.EventIdCode, result.IsSuppressed);
+
+        // ponytail: an interceptor registered after this one that suppresses the exception finds the context
+        // already evicted, so AfterSave gets a fresh context with an empty capture. Accepted as rare (DRK-1951
+        // Q1); move eviction to the end callbacks if suppressing interceptors after this one become a real case.
+        if (!result.IsSuppressed) await RemoveContextAsync(eventData);
+        return await base.ThrowingConcurrencyExceptionAsync(eventData, result, cancellationToken);
+    }
+
     public override async ValueTask<int> SavedChangesAsync(
         SaveChangesCompletedEventData eventData,
         int result,
@@ -169,8 +203,21 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     {
         LogSavingChangesCalled(eventData.EventId, eventData.EventIdCode);
 
+        // Replace, never reuse: an earlier save on this DbContext that EF never signalled the end of (a later
+        // interceptor threw) left its context behind, and its snapshot would hand those entries to the hooks again.
+        await RemoveContextAsync(eventData);
         var context = GetContext(eventData);
-        await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
+        try
+        {
+            await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
+        }
+        catch
+        {
+            // A hook throwing here ends the save before EF's own try, so no end callback will evict for us.
+            await RemoveContextAsync(eventData);
+            throw;
+        }
+
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -240,6 +287,14 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     [LoggerMessage(Level = LogLevel.Information,
         Message = "HookRunnerInterceptor:SaveChangesFailedAsync {EventId}, {EventIdCode}")]
     private partial void LogSaveChangesFailed(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:SaveChangesCanceledAsync {EventId}, {EventIdCode}")]
+    private partial void LogSaveChangesCanceled(EventId eventId, string? eventIdCode);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "HookRunnerInterceptor:ThrowingConcurrencyExceptionAsync {EventId}, {EventIdCode}, suppressed: {IsSuppressed}")]
+    private partial void LogThrowingConcurrencyException(EventId eventId, string? eventIdCode, bool isSuppressed);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "HookRunnerInterceptor:SavedChangesAsync called with result: {EventId}, {EventIdCode}")]
