@@ -286,6 +286,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- `DKNet.EfCore.Extensions` no longer reuses a cached model built without a global model builder (DRK-1969).
+  EF Core caches one model per internal service provider, and the builders registered with
+  `AddGlobalModelBuilder<T>()` (for example `DataOwnerAuthQuery`, registered by `AddDataOwnerProvider`) were not
+  part of that provider's identity. A context built before the registration therefore left a model without the
+  builder in the cache, and every later context with the same options reused it — the data-owner filter failed
+  open and rows of other owners were visible. The model cache key now includes the registered builders, so a
+  context gets every builder registered when it resolves its model — also when its options instance was built
+  before the registration (see the DRK-1970 entry under **Security**).
 - `DKNet.EfCore.AuditLogs` no longer publishes audit entries for a save that never completed (DRK-1964). When a
   `SaveChangesAsync` was cancelled, failed with a `DbUpdateException`, or a later hook threw, the entries it had
   captured stayed pending and were published by the next successful save on the same `DbContext`. Each save now

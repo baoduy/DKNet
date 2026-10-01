@@ -5,6 +5,7 @@ namespace EfCore.HookTests.Hooks;
 /// <summary>
 ///     DRK-1904 R3: every BeforeSave pass captures the change tracker, even when a cancelled save left the
 ///     interceptor's cached hook context (and its already-initialized snapshot) behind for the retry.
+///     DRK-1951 R1: the retry hands its hooks only its own pending entries, never the cancelled save's again.
 /// </summary>
 public class SnapshotRecaptureOnRetryTests(SnapshotCaptureOnceFixture fixture)
     : IClassFixture<SnapshotCaptureOnceFixture>
@@ -24,15 +25,19 @@ public class SnapshotRecaptureOnRetryTests(SnapshotCaptureOnceFixture fixture)
         await cancelled.CancelAsync();
         await Should.ThrowAsync<OperationCanceledException>(() => db.SaveChangesAsync(cancelled.Token));
         hook.BeforeSaveEntities.Count.ShouldBe(1);
+        hook.AfterSaveEntities.Count.ShouldBe(0);
+        hook.BeforeSaveEntities.Clear();
 
-        var retried = new CustomerProfile { Name = "Retried" };
-        db.Set<CustomerProfile>().Add(retried);
+        db.Set<CustomerProfile>().Add(new CustomerProfile { Name = "Retried" });
 
         // Act
         await db.SaveChangesAsync();
 
-        // Assert
-        hook.BeforeSaveEntities.ShouldContain(retried);
+        // Assert: the cancelled entity is still pending, so the retry saves it too, but only once.
+        hook.BeforeSaveEntities.Cast<CustomerProfile>().Select(p => p.Name)
+            .ShouldBe(["Cancelled", "Retried"], ignoreOrder: true);
+        hook.AfterSaveEntities.Cast<CustomerProfile>().Select(p => p.Name)
+            .ShouldBe(["Cancelled", "Retried"], ignoreOrder: true);
     }
 
     #endregion

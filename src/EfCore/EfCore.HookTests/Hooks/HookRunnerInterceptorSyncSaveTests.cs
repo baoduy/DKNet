@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -128,7 +128,7 @@ public class HookRunnerInterceptorSyncSaveTests : IAsyncLifetime
         using var scope = _provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HookContext>();
         var cached = new InternalHookContext(scope.ServiceProvider, db);
-        cache[db.ContextId.InstanceId] = cached;
+        cache.Add(db, cached);
 
         var result = interceptor.SavedChanges(
             new SaveChangesCompletedEventData(CreateEventDefinition(db), (_, _) => string.Empty, db, 1),
@@ -150,7 +150,7 @@ public class HookRunnerInterceptorSyncSaveTests : IAsyncLifetime
         using var scope = _provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HookContext>();
         var cached = new InternalHookContext(scope.ServiceProvider, db);
-        cache[db.ContextId.InstanceId] = cached;
+        cache.Add(db, cached);
 
         Should.NotThrow(() => interceptor.SaveChangesFailed(
             new DbContextErrorEventData(
@@ -169,10 +169,10 @@ public class HookRunnerInterceptorSyncSaveTests : IAsyncLifetime
 
     #region Test helpers
 
-    private static ConcurrentDictionary<Guid, InternalHookContext> GetCache(HookRunnerInterceptor interceptor)
+    private static ConditionalWeakTable<DbContext, InternalHookContext> GetCache(HookRunnerInterceptor interceptor)
     {
         var field = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
-        return (ConcurrentDictionary<Guid, InternalHookContext>)field!.GetValue(interceptor)!;
+        return (ConditionalWeakTable<DbContext, InternalHookContext>)field!.GetValue(interceptor)!;
     }
 
     private static EventDefinition CreateEventDefinition(DbContext db) =>
