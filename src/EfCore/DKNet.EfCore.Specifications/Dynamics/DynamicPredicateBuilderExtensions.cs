@@ -58,7 +58,7 @@ internal static class DynamicPredicateBuilderExtensions
     ///     dynamic filter resolves against are drawn from a bounded, request-independent set, so caching
     ///     avoids repeating the per-segment reflection walk on every condition of every request.
     /// </summary>
-    private static readonly ConcurrentDictionary<(Type EntityType, string PropertyPath), Type?> PropertyTypeCache =
+    internal static readonly ConcurrentDictionary<(Type EntityType, string PropertyPath), Type?> PropertyTypeCache =
         new();
 
     #endregion
