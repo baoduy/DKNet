@@ -286,6 +286,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
 
 ### Fixed
+- `DKNet.EfCore.Extensions` no longer reuses a cached model built without a global model builder (DRK-1969).
+  EF Core caches one model per internal service provider, and the builders registered with
+  `AddGlobalModelBuilder<T>()` (for example `DataOwnerAuthQuery`, registered by `AddDataOwnerProvider`) were not
+  part of that provider's identity. A context built before the registration therefore left a model without the
+  builder in the cache, and every later context with the same options reused it — the data-owner filter failed
+  open and rows of other owners were visible. Each `UseAutoConfigModel` options instance now captures the builders
+  registered so far, keys the provider (and its model) by that set, and builds the model from that same set, so a
+  context always gets the builders its options were created with. Builders registered after an options instance
+  was built do not apply to it; register them before building options, as every DI registration path already does.
 - `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile, or that silently binds a
   property to the wrong type, when a property type's simple name does not resolve to it in the generated file
   (DRK-1905). That happened for a nested type (an enum declared inside the entity, `Order.Priority` — CS0246);

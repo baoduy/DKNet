@@ -18,14 +18,20 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister configR
         var hash = new HashCode();
         hash.Add(nameof(EntityAutoConfigRegister), StringComparer.Ordinal);
 
-        // Order-independent: two registrations with the same assembly set, listed in any order,
-        // must hash the same. The assembly list drives the built model, so it must vary the hash -
-        // otherwise EF Core can cache/reuse a model built from a different assembly set.
+        // Order-independent: two registrations with the same assembly set and the same global model
+        // builder set, listed in any order, must hash the same. Both drive the built model, so both must
+        // vary the hash - otherwise EF Core can cache/reuse a model built from a different set.
         var assembliesHash = 0;
         foreach (var assembly in configRegister.Assemblies)
             assembliesHash ^= (assembly.FullName ?? assembly.GetName().Name ?? string.Empty)
                 .GetHashCode(StringComparison.Ordinal);
         hash.Add(assembliesHash);
+
+        // GlobalModelBuilders is a distinct set, so duplicate registrations cannot cancel out in the XOR.
+        var buildersHash = 0;
+        foreach (var builder in configRegister.GlobalModelBuilders)
+            buildersHash ^= (builder.AssemblyQualifiedName ?? builder.Name).GetHashCode(StringComparison.Ordinal);
+        hash.Add(buildersHash);
 
         return hash.ToHashCode();
     }
@@ -39,7 +45,8 @@ internal sealed class EntityConfigExtensionInfo(EntityAutoConfigRegister configR
 
     public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other) =>
         other is EntityConfigExtensionInfo { Extension: EntityAutoConfigRegister otherExtension } &&
-        configRegister.Assemblies.ToHashSet().SetEquals(otherExtension.Assemblies);
+        configRegister.Assemblies.ToHashSet().SetEquals(otherExtension.Assemblies) &&
+        configRegister.GlobalModelBuilders.SetEquals(otherExtension.GlobalModelBuilders);
 
     #endregion
 }
