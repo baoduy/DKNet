@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // </copyright>
 
+using System.Reflection;
 using DKNet.EfCore.Extensions.Internal;
 
 namespace EfCore.Extensions.Tests;
@@ -52,6 +53,40 @@ public class EntityConfigExtensionInfoTests
         var register1 = new EntityAutoConfigRegister(assemblies);
         var register2 = new EntityAutoConfigRegister(assemblies.Reverse().ToArray());
 
+        register1.Info.ShouldUseSameServiceProvider(register2.Info).ShouldBeTrue();
+    }
+
+    /// <summary>
+    ///     DRK-1969 R1: the global model builder set drives the built model, so two registers with the same
+    ///     assemblies but different builder sets must never share an internal service provider (and its model).
+    /// </summary>
+    [Fact]
+    public void DifferentBuilderSets_DoNotShareProvider()
+    {
+        Assembly[] assemblies = [typeof(User).Assembly];
+        var withoutBuilders = new EntityAutoConfigRegister(assemblies, []);
+        var withBuilder = new EntityAutoConfigRegister(assemblies, [typeof(TestGlobalQueryFilter)]);
+
+        withoutBuilders.Info.GetServiceProviderHashCode().ShouldNotBe(withBuilder.Info.GetServiceProviderHashCode());
+        withoutBuilders.Info.ShouldUseSameServiceProvider(withBuilder.Info).ShouldBeFalse();
+    }
+
+    /// <summary>
+    ///     DRK-1969 R2: the builder set is compared as a set - order and duplicates (repeated
+    ///     <c>AddDataOwnerProvider</c> calls) must not split the provider.
+    /// </summary>
+    [Fact]
+    public void SameBuilderSetAnyOrderOrDuplicates_SharesProvider()
+    {
+        Assembly[] assemblies = [typeof(User).Assembly];
+        var register1 = new EntityAutoConfigRegister(
+            assemblies,
+            [typeof(TestGlobalQueryFilter), typeof(PassingFilter)]);
+        var register2 = new EntityAutoConfigRegister(
+            assemblies,
+            [typeof(PassingFilter), typeof(TestGlobalQueryFilter), typeof(TestGlobalQueryFilter)]);
+
+        register1.Info.GetServiceProviderHashCode().ShouldBe(register2.Info.GetServiceProviderHashCode());
         register1.Info.ShouldUseSameServiceProvider(register2.Info).ShouldBeTrue();
     }
 
