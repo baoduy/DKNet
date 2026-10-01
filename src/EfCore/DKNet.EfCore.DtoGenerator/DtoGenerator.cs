@@ -581,7 +581,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
         
         var requiredNamespaces = CollectRequiredNamespaces(includedProperties, dtoMetadata.Namespace);
         var typeDisplayFormat = CreateTypeDisplayFormat();
-        var sourceCode = BuildDtoSourceCode(dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat);
+        var sourceCode = BuildDtoSourceCode(
+            dtoMetadata, includedProperties, requiredNamespaces, typeDisplayFormat, target.DtoSymbol.ContainingAssembly);
         
         // Create a unique, stable filename using the full qualified name of the DTO
         var fileName = CreateUniqueFileName(target.DtoSymbol);
@@ -961,6 +962,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// Returns the top-level type that (transitively) contains <paramref name="type"/>, or the type itself
     /// when it is not nested.
     /// </summary>
+    /// <param name="type">The type symbol.</param>
+    /// <returns>The top-level containing type, or <paramref name="type"/> itself.</returns>
     private static INamedTypeSymbol GetOutermostType(INamedTypeSymbol type)
     {
         while (type.ContainingType is not null)
@@ -1204,7 +1207,8 @@ public sealed class DtoGenerator : IIncrementalGenerator
         var entityDisplayName = entitySymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
         var metadata = new DtoMetadata(recordName, recordNamespace, "partial record", entityDisplayName, new HashSet<string>());
-        return BuildDtoSourceCode(metadata, filteredProperties, requiredNamespaces, typeDisplayFormat);
+        return BuildDtoSourceCode(
+            metadata, filteredProperties, requiredNamespaces, typeDisplayFormat, entitySymbol.ContainingAssembly);
     }
 
     #endregion
@@ -1294,14 +1298,24 @@ public sealed class DtoGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Collects the (simple name, arity) keys that two or more distinct property types share, so
-    /// <see cref="BuildCleanTypeName"/> can qualify them. A nested type is keyed by its top-level containing
-    /// type, which is the name its rendering starts with. Nullable underlying types, generic arguments and
-    /// array elements are walked; special types are skipped.
+    /// Collects the (simple name, arity) keys a bare rendering cannot resolve uniquely, so
+    /// <see cref="BuildCleanTypeName"/> can qualify them: keys that two or more distinct property types share,
+    /// and keys that a namespace in <paramref name="importedNamespaces"/> also declares as a different accessible
+    /// top-level type (both CS0104). A key that the DTO's enclosing namespace chain declares is left alone, since
+    /// that chain outranks every <c>using</c>. A nested type is keyed by its top-level containing type, which is
+    /// the name its rendering starts with. Nullable underlying types, generic arguments and array elements are
+    /// walked; special types are skipped.
     /// </summary>
     /// <param name="properties">The list of property symbols.</param>
+    /// <param name="importedNamespaces">The namespaces the generated file imports with <c>using</c>.</param>
+    /// <param name="dtoNamespace">The DTO's namespace, or <see langword="null"/> for the global namespace.</param>
+    /// <param name="compilationAssembly">The assembly the generated source compiles into.</param>
     /// <returns>The ambiguous (simple name, arity) keys.</returns>
-    internal static HashSet<(string Name, int Arity)> CollectAmbiguousSimpleNames(List<IPropertySymbol> properties)
+    internal static HashSet<(string Name, int Arity)> CollectAmbiguousSimpleNames(
+        List<IPropertySymbol> properties,
+        HashSet<string> importedNamespaces,
+        string? dtoNamespace,
+        IAssemblySymbol compilationAssembly)
     {
         var seen = new Dictionary<(string Name, int Arity), INamedTypeSymbol>();
         var ambiguous = new HashSet<(string Name, int Arity)>();
@@ -1309,7 +1323,60 @@ public sealed class DtoGenerator : IIncrementalGenerator
         foreach (var property in properties)
             CollectSimpleNamesFromType(property.Type, seen, ambiguous);
 
+        // The pipeline carries no Compilation (see RegisterSourceGeneration), so the namespaces are looked up
+        // in the compilation's own assembly and every assembly it references
+        var assemblies = new List<IAssemblySymbol> { compilationAssembly };
+        assemblies.AddRange(compilationAssembly.Modules.SelectMany(m => m.ReferencedAssemblySymbols));
+
+        var enclosingNamespaces = new List<string> { string.Empty };
+        var dtoNamespaceParts = string.IsNullOrEmpty(dtoNamespace) ? [] : dtoNamespace!.Split('.');
+        for (var depth = 1; depth <= dtoNamespaceParts.Length; depth++)
+            enclosingNamespaces.Add(string.Join(".", dtoNamespaceParts, 0, depth));
+
+        foreach (var entry in seen)
+        {
+            if (enclosingNamespaces.Any(ns => FindAccessibleTypes(assemblies, ns, entry.Key, compilationAssembly).Any()))
+                continue;
+
+            if (importedNamespaces.Any(ns => FindAccessibleTypes(assemblies, ns, entry.Key, compilationAssembly)
+                    .Any(t => !SymbolEqualityComparer.Default.Equals(t, entry.Value))))
+                ambiguous.Add(entry.Key);
+        }
+
         return ambiguous;
+    }
+
+    /// <summary>
+    /// Finds the top-level types with the given (simple name, arity) that <paramref name="namespaceName"/>
+    /// declares in any of <paramref name="assemblies"/> and that <paramref name="compilationAssembly"/> can see.
+    /// </summary>
+    /// <param name="assemblies">The assemblies to search.</param>
+    /// <param name="namespaceName">The dotted namespace name, or empty for the global namespace.</param>
+    /// <param name="key">The (simple name, arity) to match.</param>
+    /// <param name="compilationAssembly">The assembly the generated source compiles into.</param>
+    /// <returns>The matching accessible type definitions.</returns>
+    private static IEnumerable<INamedTypeSymbol> FindAccessibleTypes(
+        List<IAssemblySymbol> assemblies,
+        string namespaceName,
+        (string Name, int Arity) key,
+        IAssemblySymbol compilationAssembly)
+    {
+        var parts = namespaceName.Length == 0 ? [] : namespaceName.Split('.');
+        foreach (var assembly in assemblies)
+        {
+            INamespaceSymbol? ns = assembly.GlobalNamespace;
+            foreach (var part in parts)
+                ns = ns?.GetMembers(part).OfType<INamespaceSymbol>().FirstOrDefault();
+
+            if (ns is null)
+                continue;
+
+            foreach (var type in ns.GetTypeMembers(key.Name, key.Arity))
+            {
+                if (type.DeclaredAccessibility == Accessibility.Public || assembly.GivesAccessTo(compilationAssembly))
+                    yield return type;
+            }
+        }
     }
 
     /// <summary>
@@ -1372,12 +1439,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
     /// <param name="properties">The list of property symbols.</param>
     /// <param name="namespaces">The set of required namespaces.</param>
     /// <param name="typeFormat">The symbol display format.</param>
+    /// <param name="compilationAssembly">The assembly the generated source compiles into.</param>
     /// <returns>The generated source code.</returns>
     private static string BuildDtoSourceCode(
         DtoMetadata metadata,
         List<IPropertySymbol> properties,
         HashSet<string> namespaces,
-        SymbolDisplayFormat typeFormat)
+        SymbolDisplayFormat typeFormat,
+        IAssemblySymbol compilationAssembly)
     {
         var builder = new StringBuilder();
         
@@ -1386,7 +1455,11 @@ public sealed class DtoGenerator : IIncrementalGenerator
         AppendNamespaceDeclaration(builder, metadata.Namespace);
         AppendDtoClassDeclaration(builder, metadata);
         AppendDtoProperties(
-            builder, properties, metadata.ExistingProperties, typeFormat, CollectAmbiguousSimpleNames(properties));
+            builder,
+            properties,
+            metadata.ExistingProperties,
+            typeFormat,
+            CollectAmbiguousSimpleNames(properties, namespaces, metadata.Namespace, compilationAssembly));
         AppendClassClosing(builder);
         
         return builder.ToString();

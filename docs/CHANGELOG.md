@@ -266,10 +266,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `DKNet.EfCore.DtoGenerator` no longer generates a DTO that fails to compile when the entity has a property
-  of a nested type (an enum declared inside the entity, `Order.Priority` — CS0246) or two property types that
-  share a simple name from different namespaces (`Billing.Status` and `Shipping.Status` — CS0104) (DRK-1905).
-  A nested type is now written with its containing type (`Order.Priority`), and a simple name shared by two
-  distinct property types is written fully qualified (`global::Billing.Status`), at every depth — array
+  of a nested type (an enum declared inside the entity, `Order.Priority` — CS0246) or a property type whose
+  simple name is ambiguous in the generated file (CS0104) (DRK-1905). A name is ambiguous when two property
+  types share it (`Billing.Status` and `Shipping.Status`), or when a namespace the generated file imports for
+  another property also declares a different accessible type with that name — for example a
+  `Shipping.Status` property next to a `Billing.Currency` property whose namespace also has a `Status`. A
+  nested type is now written with its containing type (`Order.Priority`), and an ambiguous name is written
+  fully qualified (`global::Shipping.Status`, `global::Entities.Order.Priority`), at every depth — array
   element, `Nullable<T>` and generic argument. Output is unchanged for every DTO whose property types already
   resolved to the right type.
 - Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
