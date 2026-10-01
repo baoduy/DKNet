@@ -303,6 +303,17 @@ public class DynamicPredicateBuilderExtensionsTests(TestDbFixture fixture) : ICl
     }
 
     [Fact]
+    public void ResolvePropertyType_CacheKey_MatchesPathCaseInsensitivelyWithinOneTypeOnly()
+    {
+        // Hashes rarely collide, so the cache alone cannot show the key comparer requiring both parts to match.
+        var comparer = DynamicPredicateBuilderExtensions.PropertyTypeCache.Comparer;
+
+        comparer.Equals((typeof(Product), "name"), (typeof(Product), "NAME")).ShouldBeTrue();
+        comparer.Equals((typeof(Product), "Name"), (typeof(Category), "Name")).ShouldBeFalse();
+        comparer.Equals((typeof(Product), "Name"), (typeof(Product), "Price")).ShouldBeFalse();
+    }
+
+    [Fact]
     public void ResolvePropertyType_InvalidNestedProperty_ReturnsNull()
     {
         // Arrange

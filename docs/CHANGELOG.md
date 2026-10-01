@@ -337,6 +337,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
+- List-endpoint `filter`/`orderBy` field names no longer grow process-wide caches without bound (CWE-400)
+  (`DKNet.EfCore.Specifications`, `DKNet.AspCore.Extensions`). `ToPascalCase` memoized every raw input it saw, and
+  `ResolvePropertyType` stored every miss and every casing of a real property as its own entry, so any caller could
+  grow both with unique field names. `ToPascalCase` now keeps no cache; `ResolvePropertyType` caches only resolved
+  properties, one entry per case-insensitive path.
+- An undefined numeric filter operation (`?filter=name:999:x`) is now rejected: `ListFilter.TryParse` returns `false`
+  (a 400 at the list endpoint, instead of a 500), and `TryBuildPredicate` returns `false` and
+  `DynamicAnd`/`DynamicOr` skip the condition instead of throwing `NotSupportedException`.
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
 - Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which
