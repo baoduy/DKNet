@@ -1,4 +1,5 @@
-﻿using PuppeteerSharp.Media;
+﻿using System.Diagnostics.CodeAnalysis;
+using PuppeteerSharp.Media;
 
 namespace DKNet.Svc.PdfGenerators.Options;
 
@@ -11,6 +12,28 @@ namespace DKNet.Svc.PdfGenerators.Options;
 public class PdfGeneratorOptions
 {
     #region Properties
+
+    /// <summary>
+    ///     Allows rendered content to request loopback, link-local and private-network hosts.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    [SuppressMessage("Design", "CA1065", Justification = "DRK-1935 acceptance-test stub; Build replaces it.")]
+    public bool AllowPrivateNetworkRequests
+    {
+        get => throw new NotImplementedException();
+        set => throw new NotImplementedException();
+    }
+
+    /// <summary>
+    ///     Runs JavaScript in the rendered content.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    [SuppressMessage("Design", "CA1065", Justification = "DRK-1935 acceptance-test stub; Build replaces it.")]
+    public bool EnableJavaScript
+    {
+        get => throw new NotImplementedException();
+        set => throw new NotImplementedException();
+    }
 
     /// <summary>
     ///     Auto detect the language for code blocks without specfied language.
