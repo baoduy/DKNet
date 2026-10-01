@@ -13,7 +13,6 @@ namespace Svc.PdfGenerators.Tests;
 ///     A local HTTP listener on loopback records every request Chromium sends while rendering.
 ///     Each test awaits the PDF before it asserts on the listener, so a zero is never a timing artefact.
 /// </summary>
-[Collection("PdfGeneratorChrome")]
 public class PdfGeneratorSsrfGuardTests
 {
     #region Methods
@@ -209,11 +208,22 @@ public class PdfGeneratorSsrfGuardTests
 
         public static ProbeListener Start()
         {
-            var probe = new TcpListener(IPAddress.Loopback, 0);
-            probe.Start();
-            var port = ((IPEndPoint)probe.LocalEndpoint).Port;
-            probe.Stop();
-            return new ProbeListener(port);
+            // HttpListener cannot bind port 0, so a free port is probed then re-bound — another process or a
+            // parallel test (e.g. a Chrome instance) can take it in between, so retry with a fresh port.
+            for (var attempt = 1;; attempt++)
+            {
+                var probe = new TcpListener(IPAddress.Loopback, 0);
+                probe.Start();
+                var port = ((IPEndPoint)probe.LocalEndpoint).Port;
+                probe.Stop();
+                try
+                {
+                    return new ProbeListener(port);
+                }
+                catch (HttpListenerException) when (attempt < 10)
+                {
+                }
+            }
         }
 
         private async Task AcceptLoopAsync()

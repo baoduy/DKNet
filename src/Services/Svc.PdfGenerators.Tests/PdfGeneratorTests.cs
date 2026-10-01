@@ -3,7 +3,6 @@ using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 
-[Collection("PdfGeneratorChrome")]
 public class PdfGeneratorTests(ITestOutputHelper testOutputHelper)
 {
     #region Methods

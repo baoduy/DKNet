@@ -8,7 +8,6 @@ namespace Svc.PdfGenerators.Tests;
 ///     DRK-1902 rule R3: a request whose allow/abort decision throws neither crashes the process nor hangs the
 ///     render. The abort itself is not observable here: no resolver accepts the host name that makes it throw.
 /// </summary>
-[Collection("PdfGeneratorChrome")]
 public class PdfGeneratorRequestGuardFailClosedTests
 {
     #region Methods

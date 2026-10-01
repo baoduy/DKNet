@@ -3,8 +3,9 @@ using DKNet.Svc.PdfGenerators;
 namespace Svc.PdfGenerators.Tests;
 
 /// <summary>
-///     Collection definition that ensures Chrome is downloaded once before any PDF generation tests run.
-///     Tests in this collection run sequentially to avoid concurrent Chrome download race conditions.
+///     Collection definition that ensures Chrome is downloaded before the download-reuse tests run, which
+///     assert on the binary's write time. Other conversion tests run in parallel: the download itself is
+///     serialized in production by <see cref="PdfGenerator" />'s <c>EnsureChromeAsync</c> lock (DRK-363).
 /// </summary>
 [CollectionDefinition("PdfGeneratorChrome")]
 public class PdfGeneratorChromeCollection : ICollectionFixture<ChromeDownloadFixture>;

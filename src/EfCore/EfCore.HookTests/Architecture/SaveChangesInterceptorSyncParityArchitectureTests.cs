@@ -32,12 +32,7 @@ public sealed class SaveChangesInterceptorSyncParityArchitectureTests
     ///     Today's offenders as <c>{FullTypeName}.{AsyncMember}</c>. Only ever remove entries (fix tracked in
     ///     DRK-1899); never add one to make a new interceptor pass.
     /// </summary>
-    private static readonly HashSet<string> KnownViolations =
-    [
-        "DKNet.EfCore.Hooks.Internals.HookRunnerInterceptor.SavingChangesAsync",
-        "DKNet.EfCore.Hooks.Internals.HookRunnerInterceptor.SavedChangesAsync",
-        "DKNet.EfCore.Hooks.Internals.HookRunnerInterceptor.SaveChangesFailedAsync"
-    ];
+    private static readonly HashSet<string> KnownViolations = [];
 
     /// <summary>Async member → the sync member EF Core calls for <c>SaveChanges()</c> instead.</summary>
     private static readonly (string Async, string Sync)[] MemberPairs =
