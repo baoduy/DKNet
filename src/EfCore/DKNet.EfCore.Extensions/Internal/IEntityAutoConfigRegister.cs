@@ -8,6 +8,18 @@ namespace DKNet.EfCore.Extensions.Internal;
 /// </summary>
 internal sealed class EntityAutoConfigRegister(Assembly[] assemblies) : IDbContextOptionsExtension
 {
+    #region Constructors
+
+    /// <summary>
+    ///     Creates the register with an explicit snapshot of the global model builder types.
+    /// </summary>
+    /// <param name="assemblies">The assemblies to scan.</param>
+    /// <param name="globalModelBuilders">The global model builder types captured for this options instance.</param>
+    public EntityAutoConfigRegister(Assembly[] assemblies, IEnumerable<Type> globalModelBuilders) : this(assemblies) =>
+        throw new NotImplementedException();
+
+    #endregion
+
     #region Fields
 
     private DbContextOptionsExtensionInfo? _info;
