@@ -272,6 +272,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distinct property types is written fully qualified (`global::Billing.Status`), at every depth — array
   element, `Nullable<T>` and generic argument. Output is unchanged for every DTO whose property types already
   resolved to the right type.
+- Enumerating a `ToPageEnumerable` result (`DKNet.EfCore.Specifications`) a second time, or again after breaking
+  out of an `await foreach` early, now starts from the first row (DRK-1906). The paging cursor was stored on the
+  enumerable instead of per enumeration, so a second full pass returned zero rows and a pass after an early
+  `break` resumed at the next page, skipping the rest of the interrupted page. Single-pass enumeration and
+  cancellation are unchanged. No public API change.
 - A generated CRUD action route for a `[CrudAction]` member that takes no parameters no longer requires a
   request body (DRK-1436). `DKNet.SlimBus.Generators` now picks the mapper by the action method's parameter
   count: a parameterless action is registered with the new
@@ -344,6 +349,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosted service instead of on the first incoming request; the per-request check remains as a defensive fallback.
 
 ### Security
+- List-endpoint `filter`/`orderBy` field names no longer grow process-wide caches without bound (CWE-400)
+  (`DKNet.EfCore.Specifications`, `DKNet.AspCore.Extensions`). `ToPascalCase` memoized every raw input it saw, and
+  `ResolvePropertyType` stored every miss and every casing of a real property as its own entry, so any caller could
+  grow both with unique field names. `ToPascalCase` now keeps no cache; `ResolvePropertyType` caches only resolved
+  properties, one entry per case-insensitive path. An undefined numeric filter operation (`?filter=name:999:x`) is
+  now rejected too: `ListFilter.TryParse` returns `false` (a 400 at the list endpoint, instead of a 500), and
+  `TryBuildPredicate` returns `false` and `DynamicAnd`/`DynamicOr` skip the condition instead of throwing
+  `NotSupportedException`.
 - Fixed `IRsaEncryption` resolving to an unmanaged, silently discarded random key pair per resolution
   (DKNet.Svc.Encryption).
 - Fixed `IAesGcmEncryption` and `IAesEncryption` resolving to a random, never-persisted key per resolution, which

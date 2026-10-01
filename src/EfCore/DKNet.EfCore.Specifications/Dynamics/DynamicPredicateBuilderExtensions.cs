@@ -54,12 +54,12 @@ internal static class DynamicPredicateBuilderExtensions
     ];
 
     /// <summary>
-    ///     Memoizes <see cref="ResolvePropertyType" /> lookups. The (entity type, property path) pairs a
-    ///     dynamic filter resolves against are drawn from a bounded, request-independent set, so caching
-    ///     avoids repeating the per-segment reflection walk on every condition of every request.
+    ///     Memoizes successful <see cref="ResolvePropertyType" /> lookups. Property paths come from caller input,
+    ///     so only resolved paths are stored, keyed case-insensitively like the reflection lookup itself: the
+    ///     cache is bounded by the real (entity type, property path) pairs, whatever the caller sends.
     /// </summary>
-    private static readonly ConcurrentDictionary<(Type EntityType, string PropertyPath), Type?> PropertyTypeCache =
-        new();
+    internal static readonly ConcurrentDictionary<(Type EntityType, string PropertyPath), Type> PropertyTypeCache =
+        new(PropertyPathKeyComparer.Instance);
 
     #endregion
 
@@ -194,20 +194,21 @@ internal static class DynamicPredicateBuilderExtensions
     /// <param name="entityType">The root entity type.</param>
     /// <param name="propertyPath">The property path (can include dots for nested properties).</param>
     /// <returns>The resolved property type, or null if the property path is invalid.</returns>
-    internal static Type? ResolvePropertyType(this Type entityType, string propertyPath) =>
-        PropertyTypeCache.GetOrAdd((entityType, propertyPath), static key =>
-        {
-            var currentType = key.EntityType;
-            foreach (var segment in key.PropertyPath.Split('.'))
-            {
-                var pi = currentType.GetProperty(segment,
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (pi == null) return null;
-                currentType = pi.PropertyType;
-            }
+    internal static Type? ResolvePropertyType(this Type entityType, string propertyPath)
+    {
+        if (PropertyTypeCache.TryGetValue((entityType, propertyPath), out var cached)) return cached;
 
-            return currentType;
-        });
+        var currentType = entityType;
+        foreach (var segment in propertyPath.Split('.'))
+        {
+            var pi = currentType.GetProperty(segment,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (pi == null) return null;
+            currentType = pi.PropertyType;
+        }
+
+        return PropertyTypeCache.GetOrAdd((entityType, propertyPath), currentType);
+    }
 
     /// <summary>
     ///     Validates if a value is a valid array/collection for In/NotIn operations.
@@ -407,4 +408,27 @@ internal static class DynamicPredicateBuilderExtensions
     }
 
     #endregion
+
+    /// <summary>
+    ///     Compares <see cref="PropertyTypeCache" /> keys by entity type and case-insensitive property path,
+    ///     matching the <see cref="BindingFlags.IgnoreCase" /> lookup that resolves them.
+    /// </summary>
+    private sealed class PropertyPathKeyComparer : IEqualityComparer<(Type EntityType, string PropertyPath)>
+    {
+        #region Fields
+
+        public static readonly PropertyPathKeyComparer Instance = new();
+
+        #endregion
+
+        #region Methods
+
+        public bool Equals((Type EntityType, string PropertyPath) x, (Type EntityType, string PropertyPath) y) =>
+            x.EntityType == y.EntityType && StringComparer.OrdinalIgnoreCase.Equals(x.PropertyPath, y.PropertyPath);
+
+        public int GetHashCode((Type EntityType, string PropertyPath) obj) =>
+            HashCode.Combine(obj.EntityType, StringComparer.OrdinalIgnoreCase.GetHashCode(obj.PropertyPath));
+
+        #endregion
+    }
 }

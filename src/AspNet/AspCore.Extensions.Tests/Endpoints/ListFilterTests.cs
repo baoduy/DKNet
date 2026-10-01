@@ -77,6 +77,24 @@ public class ListFilterTests
         filter.ShouldBe(default(ListFilter));
     }
 
+    [Theory]
+    [InlineData("name:999:x")]
+    [InlineData("name:-1:x")]
+    public void TryParse_UndefinedNumericOperation_Fails(string text)
+    {
+        // Enum.TryParse accepts any integer, so "999" would otherwise bind as (Ops)999 and reach the predicate
+        // builder as an operation it has no clause for. An undefined operation is as unusable as an unknown name.
+        ListFilter.TryParse(text, null, out var filter).ShouldBeFalse();
+
+        filter.ShouldBe(default(ListFilter));
+    }
+
+    [Fact]
+    public void Parse_UndefinedNumericOperation_Throws()
+    {
+        Should.Throw<FormatException>(() => ListFilter.Parse("name:999:x", null));
+    }
+
     [Fact]
     public void Parse_UnusableFilter_ThrowsWithTheValidOperations()
     {

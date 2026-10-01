@@ -21,8 +21,6 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
     private readonly int _pageSize;
 
     private readonly IQueryable<TEntity> _query;
-    private int _currentPage;
-    private bool _hasMorePages = true;
 
     #endregion
 
@@ -47,15 +45,24 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
 
     /// <summary>
     ///     Asynchronously enumerates the query, yielding items page-by-page.
+    ///     Each call starts from the first row, so the enumerable can be enumerated more than once.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token to cancel the enumeration.</param>
     /// <returns>An async enumerator that streams items.</returns>
     public async IAsyncEnumerator<TEntity> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
+        var currentPage = 0;
+
         while (true)
         {
-            var page = await GetNextPageAsync(cancellationToken).ConfigureAwait(false);
-            if (page.Count == 0) yield break;
+            var page = await _query
+                .Skip(currentPage * _pageSize)
+                .Take(_pageSize)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            currentPage++;
+            var hasMorePages = page.Count == _pageSize;
 
             foreach (var item in page)
             {
@@ -64,29 +71,8 @@ internal sealed class EfCorePageAsyncEnumerator<TEntity> : IAsyncEnumerable<TEnt
                 yield return item;
             }
 
-            if (!_hasMorePages) yield break;
+            if (!hasMorePages) yield break;
         }
-    }
-
-    /// <summary>
-    ///     Retrieves the next page of results from the underlying query.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token for the async DB call.</param>
-    /// <returns>A read-only list representing the next page (maybe empty).</returns>
-    private async Task<IReadOnlyList<TEntity>> GetNextPageAsync(CancellationToken cancellationToken = default)
-    {
-        if (!_hasMorePages) return [];
-
-        var page = await _query
-            .Skip(_currentPage * _pageSize)
-            .Take(_pageSize)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        _currentPage++;
-        _hasMorePages = page.Count == _pageSize;
-
-        return page;
     }
 
     #endregion
