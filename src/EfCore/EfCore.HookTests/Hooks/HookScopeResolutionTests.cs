@@ -272,6 +272,48 @@ public class HookScopeResolutionTests : IAsyncLifetime
         Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
     }
 
+    [Fact]
+    public void HookRunnerInterceptor_SaveChangesCanceled_RemovesAndDisposesCachedHookContext()
+    {
+        var interceptor = new HookRunnerInterceptor(NullLogger<HookRunnerInterceptor>.Instance);
+
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        var cached = new DKNet.EfCore.Hooks.Internals.HookContext(scope.ServiceProvider, db);
+        cache[db.ContextId.InstanceId] = cached;
+
+        interceptor.SaveChangesCanceled(
+            new DbContextEventData(
+                new EventDefinition(
+                    db.GetService<ILoggingOptions>(),
+                    CoreEventId.SaveChangesCanceled,
+                    LogLevel.Debug,
+                    "CoreEventId.SaveChangesCanceled",
+                    level => LoggerMessage.Define(level, CoreEventId.SaveChangesCanceled, "SaveChanges canceled")),
+                (_, _) => string.Empty,
+                db));
+
+        cache.ShouldBeEmpty();
+        Should.Throw<ObjectDisposedException>(() => _ = cached.Snapshot.Entities);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_Succeeded_LeavesNoCachedHookContext()
+    {
+        using var scope = _provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HookContext>();
+        var interceptor = _provider.GetRequiredKeyedService<HookRunnerInterceptor>(typeof(HookContext).FullName);
+        var cacheField = typeof(HookRunnerInterceptor).GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic);
+        var cache = (ConcurrentDictionary<Guid, DKNet.EfCore.Hooks.Internals.HookContext>)cacheField!.GetValue(interceptor)!;
+        await db.Set<CustomerProfile>().AddAsync(new CustomerProfile { Name = "Saved" });
+
+        await db.SaveChangesAsync();
+
+        cache.ShouldBeEmpty();
+    }
+
     #endregion
 
     #region Test helpers

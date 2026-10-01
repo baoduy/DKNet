@@ -169,9 +169,47 @@ internal sealed partial class HookRunnerInterceptor(ILogger<HookRunnerIntercepto
     {
         LogSavingChangesCalled(eventData.EventId, eventData.EventIdCode);
 
-        var context = GetContext(eventData);
-        await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
-        return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        // Each attempt starts from a fresh hook context: an earlier attempt on this DbContext that ended in a
+        // concurrency conflict or a change-detection throw reaches no interceptor member that evicts it.
+        await RemoveContextAsync(eventData);
+
+        try
+        {
+            var context = GetContext(eventData);
+            await RunHooksAsync(context, RunningTypes.BeforeSave, cancellationToken);
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+        catch
+        {
+            // EF Core calls no failure interceptor for a throw raised here, so evict before rethrowing.
+            await RemoveContextAsync(eventData);
+            throw;
+        }
+    }
+
+    /// <summary>
+    ///     Cancelled save: removes and disposes the cached hook context, so a retry starts fresh and a save
+    ///     never retried leaves nothing behind.
+    /// </summary>
+    /// <param name="eventData"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public override async Task SaveChangesCanceledAsync(
+        DbContextEventData eventData,
+        CancellationToken cancellationToken = default)
+    {
+        await RemoveContextAsync(eventData);
+        await base.SaveChangesCanceledAsync(eventData, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Synchronous cancellation path: runs no hooks, only removes and disposes any cached hook context.
+    /// </summary>
+    /// <param name="eventData"></param>
+    public override void SaveChangesCanceled(DbContextEventData eventData)
+    {
+        RemoveContext(eventData);
+        base.SaveChangesCanceled(eventData);
     }
 
     /// <summary>
