@@ -13,6 +13,24 @@ public class PdfGeneratorOptions
     #region Properties
 
     /// <summary>
+    ///     Allows rendered content to make the server request loopback, unspecified, link-local, private
+    ///     (RFC 1918), CGNAT and unique-local hosts. Off by default so caller-supplied HTML or Markdown cannot use
+    ///     the renderer to reach internal services or cloud metadata endpoints (SSRF). Enable it only for
+    ///     content you fully trust. Requests with a scheme other than <c>http</c>, <c>https</c> or <c>data</c>
+    ///     are blocked whatever this value is.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    public bool AllowPrivateNetworkRequests { get; set; }
+
+    /// <summary>
+    ///     Runs JavaScript in the rendered content. Off by default so caller-supplied content cannot run scripts
+    ///     on the server. Enable it only for content you fully trust: WebSocket and WebRTC connections a script
+    ///     opens are not covered by the request guard that <see cref="AllowPrivateNetworkRequests" /> controls.
+    ///     <value>Default: <see langword="false" />.</value>
+    /// </summary>
+    public bool EnableJavaScript { get; set; }
+
+    /// <summary>
     ///     Auto detect the language for code blocks without specfied language.
     ///     <value>Default: <see langword="false" />.</value>
     /// </summary>

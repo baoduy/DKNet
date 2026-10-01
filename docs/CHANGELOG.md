@@ -108,6 +108,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
+- **Breaking, security-motivated:** `DKNet.Svc.PdfGenerators` no longer lets rendered HTML or Markdown make the
+  server request internal hosts. Every request the page issues while rendering is now checked: a request to a
+  loopback, unspecified, link-local (including `169.254.169.254` cloud metadata), private (RFC 1918), CGNAT or
+  unique-local address — directly, through a host name that resolves to one, or in IPv4-mapped IPv6 form — is
+  aborted, as is a host name that does not resolve. A scheme other than `http`, `https` or `data` is always
+  aborted. Page JavaScript is now off by default. Previously an `<img>`, `<iframe>`, `<link>` or script in
+  caller-supplied content made the PDF process fetch any URL it named, and an iframe could print the response into
+  the PDF (SSRF). Migration: for content you fully trust, set `PdfGeneratorOptions.AllowPrivateNetworkRequests`
+  to reach private hosts and `PdfGeneratorOptions.EnableJavaScript` to run scripts. With JavaScript on, WebSocket
+  and WebRTC connections a script opens are not covered by the request check. Both options are code-only and
+  cannot be set from Markdown front matter.
 - **Breaking, security-motivated:** `DKNet.EfCore.DataAuthorization` now applies the data-owner query filter to
   EF Core inheritance hierarchies (TPH/TPT/TPC) whose root implements `IOwnedBy`: the filter is registered on the
   root and EF Core applies it to every derived type. Previously no type in such a hierarchy was filtered, so every
