@@ -14,7 +14,8 @@ using DKNet.Svc.BlobStorage.AzureStorage;
 
 namespace Svc.BlobStorage.Tests;
 
-public class BlobServiceSaveAsyncTests
+public class BlobServiceSaveAsyncTests(S3BlobServiceFixture s3, AzureStorageBlobServiceFixture azure)
+    : IClassFixture<S3BlobServiceFixture>, IClassFixture<AzureStorageBlobServiceFixture>
 {
     #region LocalBlobService Tests
 
@@ -74,7 +75,6 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_SaveAsync_DisallowedExtension_ShouldThrowFileLoadException()
     {
-        using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
             ConnectionString = "https://fake-test-account.example.com",
@@ -94,7 +94,6 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_SaveAsync_OversizedFile_ShouldThrowFileLoadException()
     {
-        using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
             ConnectionString = "https://fake-test-account.example.com",
@@ -115,7 +114,6 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_SaveAsync_FileNameTooLong_ShouldThrowFileLoadException()
     {
-        using var fixture = new S3BlobServiceFixture();
         var options = new S3Options 
         { 
             ConnectionString = "https://fake-test-account.example.com",
@@ -137,8 +135,7 @@ public class BlobServiceSaveAsyncTests
     {
         // Unlike the validation-rejection tests above, this one actually saves — it needs a live
         // backend, so it goes through the Minio-backed fixture instead of a placeholder S3Options.
-        using var fixture = new S3BlobServiceFixture();
-        var service = fixture.Service;
+        var service = s3.Service;
         var blobData = new BlobDetails.BlobData("test.txt", BinaryData.FromString("test")) { Overwrite = true };
 
         var result = await service.SaveAsync(blobData);
@@ -148,8 +145,7 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_FullCycle_ShouldWork()
     {
-        using var fixture = new S3BlobServiceFixture();
-        var service = fixture.Service;
+        var service = s3.Service;
         var blobName = $"fullcycle-{Guid.NewGuid()}.txt";
         var blobData = new BlobDetails.BlobData(blobName, BinaryData.FromString("S3 Cycle Test")) { Overwrite = true };
 
@@ -181,8 +177,7 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_DeleteFolder_ShouldWork()
     {
-        using var fixture = new S3BlobServiceFixture();
-        var service = fixture.Service;
+        var service = s3.Service;
         
         // Create a folder with a file
         var folderName = $"testfolder-{Guid.NewGuid()}";
@@ -203,8 +198,7 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task S3_GetItemAsync_ShouldWork()
     {
-        using var fixture = new S3BlobServiceFixture();
-        var service = fixture.Service;
+        var service = s3.Service;
         var blobName = $"getitem-{Guid.NewGuid()}.txt";
         var blobData = new BlobDetails.BlobData(blobName, BinaryData.FromString("GetItem Test")) { Overwrite = true };
 
@@ -227,10 +221,9 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task Azure_SaveAsync_DisallowedExtension_ShouldThrowFileLoadException()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = fixture.Options.ConnectionString, 
+            ConnectionString = azure.Options.ConnectionString, 
             ContainerName = "test", 
             IncludedExtensions = [".txt"] 
         };
@@ -244,10 +237,9 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task Azure_SaveAsync_OversizedFile_ShouldThrowFileLoadException()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = fixture.Options.ConnectionString, 
+            ConnectionString = azure.Options.ConnectionString, 
             ContainerName = "test", 
             MaxFileSizeInMb = 1 
         };
@@ -262,10 +254,9 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task Azure_SaveAsync_FileNameTooLong_ShouldThrowFileLoadException()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = fixture.Options.ConnectionString, 
+            ConnectionString = azure.Options.ConnectionString, 
             ContainerName = "test", 
             MaxFileNameLength = 5 
         };
@@ -279,10 +270,9 @@ public class BlobServiceSaveAsyncTests
     [Fact]
     public async Task Azure_SaveAsync_DefaultOptions_ShouldSucceed()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
         var options = new AzureStorageOptions 
         { 
-            ConnectionString = fixture.Options.ConnectionString, 
+            ConnectionString = azure.Options.ConnectionString, 
             ContainerName = "test" 
         };
         var service = new AzureStorageBlobService(Options.Create(options));

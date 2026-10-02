@@ -11,7 +11,8 @@ using DKNet.Svc.BlobStorage.Local;
 
 namespace Svc.BlobStorage.Tests;
 
-public class BlobServiceStreamTests
+public class BlobServiceStreamTests(S3BlobServiceFixture s3, AzureStorageBlobServiceFixture azure)
+    : IClassFixture<S3BlobServiceFixture>, IClassFixture<AzureStorageBlobServiceFixture>
 {
     #region LocalBlobService Tests
 
@@ -84,14 +85,13 @@ public class BlobServiceStreamTests
     [Fact]
     public async Task S3_SaveAsync_Stream_RoundTrip_ShouldMatchContent()
     {
-        using var fixture = new S3BlobServiceFixture();
         var content = "S3 stream round trip"u8.ToArray();
         var name = $"stream-{Guid.NewGuid()}.txt";
 
-        await fixture.Service.SaveAsync(
+        await s3.Service.SaveAsync(
             new BlobDetails.BlobStreamData(name, new MemoryStream(content)) { Overwrite = true });
 
-        await using var read = await fixture.Service.OpenReadAsync(new BlobRequest(name));
+        await using var read = await s3.Service.OpenReadAsync(new BlobRequest(name));
         read.ShouldNotBeNull();
         using var buffer = new MemoryStream();
         await read.CopyToAsync(buffer);
@@ -103,14 +103,13 @@ public class BlobServiceStreamTests
     {
         // The AWS SDK's GetObjectResponse.ResponseStream is the live HTTP response body — asserting it is
         // not a MemoryStream shows the object was not fully materialized before being handed back.
-        using var fixture = new S3BlobServiceFixture();
         var content = new byte[512 * 1024];
         Random.Shared.NextBytes(content);
         var name = $"stream-{Guid.NewGuid()}.txt";
-        await fixture.Service.SaveAsync(
+        await s3.Service.SaveAsync(
             new BlobDetails.BlobStreamData(name, new MemoryStream(content)) { Overwrite = true });
 
-        await using var read = await fixture.Service.OpenReadAsync(new BlobRequest(name));
+        await using var read = await s3.Service.OpenReadAsync(new BlobRequest(name));
 
         read.ShouldNotBeNull();
         read.ShouldNotBeOfType<MemoryStream>();
@@ -119,9 +118,8 @@ public class BlobServiceStreamTests
     [Fact]
     public async Task S3_OpenReadAsync_NonExistentBlob_ShouldReturnNull()
     {
-        using var fixture = new S3BlobServiceFixture();
 
-        var result = await fixture.Service.OpenReadAsync(new BlobRequest($"missing-{Guid.NewGuid()}.txt"));
+        var result = await s3.Service.OpenReadAsync(new BlobRequest($"missing-{Guid.NewGuid()}.txt"));
 
         result.ShouldBeNull();
     }
@@ -133,14 +131,13 @@ public class BlobServiceStreamTests
     [Fact]
     public async Task Azure_SaveAsync_Stream_RoundTrip_ShouldMatchContent()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
         var content = "Azure stream round trip"u8.ToArray();
         var name = $"stream-{Guid.NewGuid()}.txt";
 
-        await fixture.Service.SaveAsync(
+        await azure.Service.SaveAsync(
             new BlobDetails.BlobStreamData(name, new MemoryStream(content)) { Overwrite = true });
 
-        await using var read = await fixture.Service.OpenReadAsync(new BlobRequest(name));
+        await using var read = await azure.Service.OpenReadAsync(new BlobRequest(name));
         read.ShouldNotBeNull();
         using var buffer = new MemoryStream();
         await read.CopyToAsync(buffer);
@@ -153,14 +150,13 @@ public class BlobServiceStreamTests
         // BlobClient.OpenReadAsync returns Azure's internal lazily-chunked download stream, not a fully
         // buffered one — asserting it is not a MemoryStream is the honest signal available without
         // instrumenting the SDK's internal HTTP chunking.
-        using var fixture = new AzureStorageBlobServiceFixture();
         var content = new byte[512 * 1024];
         Random.Shared.NextBytes(content);
         var name = $"stream-{Guid.NewGuid()}.txt";
-        await fixture.Service.SaveAsync(
+        await azure.Service.SaveAsync(
             new BlobDetails.BlobStreamData(name, new MemoryStream(content)) { Overwrite = true });
 
-        await using var read = await fixture.Service.OpenReadAsync(new BlobRequest(name));
+        await using var read = await azure.Service.OpenReadAsync(new BlobRequest(name));
 
         read.ShouldNotBeNull();
         read.ShouldNotBeOfType<MemoryStream>();
@@ -174,9 +170,8 @@ public class BlobServiceStreamTests
     [Fact]
     public async Task Azure_OpenReadAsync_NonExistentBlob_ShouldReturnNull()
     {
-        using var fixture = new AzureStorageBlobServiceFixture();
 
-        var result = await fixture.Service.OpenReadAsync(new BlobRequest($"missing-{Guid.NewGuid()}.txt"));
+        var result = await azure.Service.OpenReadAsync(new BlobRequest($"missing-{Guid.NewGuid()}.txt"));
 
         result.ShouldBeNull();
     }
