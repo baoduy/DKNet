@@ -347,8 +347,9 @@ configurations, seeders, and global model builders without you registering each 
 - `DKNet.AspCore.Idempotency` — uses `IServiceCollection.IsRegistered<T>()` as a duplicate-setup
   guard in its DI registration extension, plus `PropertyExtensions.GetProperty(...)`.
 
-`DKNet.SlimBus.Extensions` does not reference this package directly; it picks it up transitively
-through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`.
+`DKNet.SlimBus.Extensions.EfCore` does not reference this package directly; it picks it up transitively
+through `DKNet.EfCore.Events` → `DKNet.EfCore.Hooks`. The EF-free `DKNet.SlimBus.Extensions` core does not depend
+on it at all.
 
 ## ⚠️ Gotchas & limits
 

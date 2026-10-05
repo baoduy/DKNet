@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `DKNet.SlimBus.Extensions` can replace MediatR in one call, following SlimMessageBus's
+  [Replace MediatR](https://github.com/zarusz/SlimMessageBus/blob/master/docs/UseCases/ReplaceMediatR.md) use case.
+  `AddSlimBusForMediator(params Assembly[] handlerAssemblies)` registers SlimMessageBus with the memory provider and
+  discovers the handlers in those assemblies, both in DI and on the bus. It registers no serializer, and passing no
+  assemblies throws `ArgumentException`. A new `DKNet.SlimBus.Extensions.EfCore` package adds
+  `AddSlimBusForEfCore<TDbContext>(params Assembly[] handlerAssemblies)`. That call is the same setup plus
+  `AddSlimBusEfCoreInterceptor<TDbContext>()` and `AddSlimBusEventPublisher<TDbContext>()`. Both are memory-only;
+  a host on a real transport keeps calling `AddSlimMessageBus` itself. See
+  [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) and
+  [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md).
 - `DKNet.AspCore.Extensions` can now fill a request member from a named HTTP request header.
   `[FromRequestHeader("Idempotency-Key")]` on a request property — one required constructor argument, the
   header name, exposed as `HeaderName` — is populated before validation and before the handler runs by the
@@ -108,6 +118,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
+- **Breaking:** `DKNet.SlimBus.Extensions` no longer depends on EF Core. The auto-save interceptor,
+  `SlimBusEventPublisher`, `AddSlimBusEfCoreInterceptor<TDbContext>()` and `AddSlimBusEventPublisher<TDbContext>()`
+  moved to the new `DKNet.SlimBus.Extensions.EfCore` package, which references the core and `DKNet.EfCore.Events`.
+  Namespaces are unchanged, so code needs no new `using`. A host that calls either method, including any host running
+  `DKNet.SlimBus.Generators` slices, which rely on auto-save, must add a `DKNet.SlimBus.Extensions.EfCore`
+  package reference. The core now depends on the EF-free `X.PagedList` instead of `X.PagedList.EF`. If you call
+  `ToPagedListAsync` on an `IQueryable` inside a paged-query handler, reference `X.PagedList.EF` yourself; it also
+  comes through `DKNet.EfCore.Specifications`. The core also gains a dependency on `SlimMessageBus.Host.Memory`.
 - **Breaking, security-motivated:** `DKNet.Svc.PdfGenerators` no longer lets rendered HTML or Markdown make the
   server request internal hosts. Every request the page issues while rendering is now checked: a request to a
   loopback, unspecified, link-local (including `169.254.169.254` cloud metadata), private (RFC 1918), CGNAT or

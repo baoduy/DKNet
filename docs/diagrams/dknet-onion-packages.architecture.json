@@ -27,7 +27,7 @@
     },
     "quality_profile": "showcase",
     "viewBox": [
-      1395,
+      1240,
       760
     ]
   },
@@ -35,12 +35,12 @@
     "mode": "grid",
     "cols": 4,
     "origin": [
-      60,
+      20,
       150
     ],
-    "gapX": 150,
+    "gapX": 166,
     "gapY": 140,
-    "cellW": 210,
+    "cellW": 175,
     "cellH": 78
   },
   "components": [
@@ -53,7 +53,7 @@
       "row": 1,
       "col": 0,
       "size": [
-        210,
+        175,
         78
       ]
     },
@@ -61,12 +61,25 @@
       "id": "slimbus",
       "type": "backend",
       "label": "DKNet.SlimBus.Extensions",
-      "sublabel": "CQRS handlers",
+      "sublabel": "CQRS contracts, no EF Core",
       "tag": "Application",
       "row": 0,
       "col": 1,
       "size": [
-        210,
+        175,
+        78
+      ]
+    },
+    {
+      "id": "slimbusEf",
+      "type": "backend",
+      "label": "DKNet.SlimBus.Extensions.EfCore",
+      "sublabel": "auto-save, events onto the bus",
+      "tag": "Application",
+      "row": 1,
+      "col": 1,
+      "size": [
+        215,
         78
       ]
     },
@@ -79,7 +92,7 @@
       "row": 2,
       "col": 1,
       "size": [
-        210,
+        175,
         78
       ]
     },
@@ -92,7 +105,7 @@
       "row": 0,
       "col": 2,
       "size": [
-        210,
+        175,
         78
       ]
     },
@@ -105,7 +118,7 @@
       "row": 1,
       "col": 2,
       "size": [
-        210,
+        175,
         78
       ]
     },
@@ -118,7 +131,7 @@
       "row": 2,
       "col": 2,
       "size": [
-        210,
+        200,
         78
       ]
     },
@@ -131,7 +144,7 @@
       "row": 0,
       "col": 3,
       "size": [
-        210,
+        175,
         78
       ]
     },
@@ -143,7 +156,7 @@
       "row": 2,
       "col": 3,
       "size": [
-        210,
+        175,
         78
       ]
     }
@@ -157,6 +170,12 @@
       "variant": "emphasis"
     },
     {
+      "id": "efcore-extends-core",
+      "from": "slimbusEf",
+      "to": "slimbus",
+      "label": "references core"
+    },
+    {
       "id": "endpoints-to-specs",
       "from": "aspcore",
       "to": "specs",
@@ -164,7 +183,7 @@
     },
     {
       "id": "handlers-publish",
-      "from": "slimbus",
+      "from": "slimbusEf",
       "to": "events",
       "label": "publishes domain events"
     },

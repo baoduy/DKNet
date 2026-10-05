@@ -79,10 +79,9 @@
       "id": "slimbus",
       "type": "backend",
       "label": "DKNet.SlimBus.Extensions",
-      "sublabel": "CQRS handlers, auto-save",
-      "tag": "Application",
+      "sublabel": "CQRS contracts, no EF Core",
       "pos": [
-        60,
+        350,
         230
       ],
       "size": [
@@ -91,12 +90,27 @@
       ]
     },
     {
+      "id": "slimbusEf",
+      "type": "backend",
+      "label": "DKNet.SlimBus.Extensions.EfCore",
+      "sublabel": "auto-save, domain events onto the bus",
+      "pos": [
+        60,
+        230
+      ],
+      "size": [
+        220,
+        72
+      ],
+      "tag": "Application"
+    },
+    {
       "id": "svc",
       "type": "backend",
       "label": "DKNet.Svc.*",
       "sublabel": "blob, encryption, PDF, transformation",
       "pos": [
-        350,
+        640,
         230
       ],
       "size": [
@@ -221,6 +235,7 @@
       "label": "Application ring",
       "wraps": [
         "slimbus",
+        "slimbusEf",
         "svc"
       ]
     },
@@ -248,8 +263,16 @@
       "labelDy": 24
     },
     {
+      "id": "efToCore",
+      "from": "slimbusEf",
+      "to": "slimbus",
+      "label": "references",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
       "id": "handlerToEvents",
-      "from": "slimbus",
+      "from": "slimbusEf",
       "to": "events",
       "label": "forwards domain events",
       "variant": "emphasis",

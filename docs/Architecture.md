@@ -26,7 +26,7 @@ DKNet Framework is a suite of independent .NET NuGet packages built around **Dom
 only what it needs and can swap an implementation (a blob provider, an idempotency store) without touching domain
 code.
 
-![The DKNet onion: the presentation ring holds the DKNet.AspCore packages, the application ring holds SlimBus.Extensions and the Svc adapters, the infrastructure ring holds the EF Core packages, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages sit at the centre. Every arrow is a project reference pointing inward.](./diagrams/dknet-layers.svg)
+![The DKNet onion: the presentation ring holds the DKNet.AspCore packages, the application ring holds the EF-free SlimBus.Extensions core, its SlimBus.Extensions.EfCore add-on and the Svc adapters, the infrastructure ring holds the EF Core packages, and DKNet.EfCore.Abstractions plus the dependency-free foundation packages sit at the centre. Every arrow is a project reference pointing inward.](./diagrams/dknet-layers.svg)
 
 Three packages sit deliberately outside those rings:
 
@@ -54,8 +54,8 @@ and no package exists only to aggregate others.
 | Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
 | Column encryption | [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) | a `ValueConverter` on the model |
 | DTO shapes | [`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) | compile time only |
-| Command/query dispatch and automatic save | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor<TDbContext>()` |
-| Forwarding domain events onto the bus | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEventPublisher<TDbContext>()` |
+| Command/query dispatch (MediatR replacement, no EF Core) | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator(assemblies)` |
+| Dispatch plus automatic save and domain events onto the bus | [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore<TDbContext>(assemblies)`, or `AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually |
 | HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](./AspNetCore/DKNet.AspCore.Extensions.md) | `UseEndpointConfigs()` and `.Response()` |
 | Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
 | Start-up work | [`DKNet.AspCore.Tasks`](./AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob<TJob>()` |
@@ -69,12 +69,13 @@ registration conventions these methods fall into.
 
 ## Package dependencies
 
-![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks.](./diagrams/dknet-onion-packages.svg)
+![Package dependency map of the DKNet onion: presentation, application and infrastructure packages all depend inward toward DKNet.EfCore.Abstractions, with Events, AuditLogs and DataAuthorization attaching through DKNet.EfCore.Hooks, and only the SlimBus.Extensions.EfCore add-on reaching into DKNet.EfCore.Events.](./diagrams/dknet-onion-packages.svg)
 
 Every arrow is a real project reference in `src/`: dependencies only ever point inward, toward
 `DKNet.EfCore.Abstractions`. `DKNet.Svc.*` (blob storage, encryption, PDF, transformation) sits in the
-application ring alongside `DKNet.SlimBus.Extensions` but has no dependency on the EF Core rings at all, which is
-why it carries no arrow here. `DKNet.EfCore.Encryption` is likewise absent: it attaches to the `DbContext` as a
+application ring alongside `DKNet.SlimBus.Extensions` and, like that EF-free core, has no dependency on the EF Core
+rings at all, which is why it carries no arrow here. The arrow into `DKNet.EfCore.Events` belongs to the
+`DKNet.SlimBus.Extensions.EfCore` add-on. `DKNet.EfCore.Encryption` is likewise absent: it attaches to the `DbContext` as a
 value converter rather than through the hook pipeline.
 
 ---
@@ -133,7 +134,8 @@ Within a solution, models are organized into bounded contexts, each with its own
 Persistence is reached only through [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md)'s
 `IRepositorySpec`, so domain code never depends on EF Core directly, and application orchestration runs through
 [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) handlers that load entities, invoke their
-behavior, and let the auto-save interceptor persist the result.
+behavior, and let the auto-save interceptor from
+[`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) persist the result.
 
 ---
 
@@ -165,8 +167,9 @@ application code.
 
 [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) is DKNet's CQRS pipeline, built on
 [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) rather than MediatR — it is lighter (no reflection-heavy
-pipeline behaviors) and result-based (`FluentResults`) for expected business failures. It also auto-saves the
-`DbContext` after a successful write, so handlers don't call `SaveChangesAsync` themselves.
+pipeline behaviors) and result-based (`FluentResults`) for expected business failures. The core package has no EF Core
+dependency; the [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) add-on auto-saves
+the `DbContext` after a successful write, so handlers don't call `SaveChangesAsync` themselves.
 
 ```csharp
 using DKNet.SlimBus.Extensions;
@@ -189,9 +192,12 @@ internal sealed class DeactivateProductHandler(AppDbContext db)
 }
 ```
 
-Registration wires two things: `AddSlimBusEfCoreInterceptor<TDbContext>()` for auto-save, and plain SlimMessageBus
-setup (`AddSlimMessageBus`, a transport provider) for dispatch. See the package page for the full fluent interface
-surface (`INoResponse`, `IHandler<TRequest>`, request/response variants) and query-side handlers.
+Registration is one call. Without EF Core, `AddSlimBusForMediator(assemblies)` sets up SlimMessageBus's memory
+provider and discovers the handlers. With EF Core, `AddSlimBusForEfCore<TDbContext>(assemblies)` does the same and adds
+auto-save plus domain-event publishing. Hosts on a real transport call `AddSlimMessageBus` themselves and add
+`AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually. See the package
+pages for the full fluent interface surface (`INoResponse`, `IHandler<TRequest>`, request/response variants) and
+query-side handlers.
 
 ---
 
@@ -214,7 +220,7 @@ Three properties follow from that ordering, and they are the reason the packages
 
 For the SlimBus interceptor chain in isolation (including where your own `IRequestHandlerInterceptor`
 implementations sit relative to auto-save), see the sequence diagram on the
-[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) page.
+[`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) page.
 
 ---
 
@@ -240,8 +246,8 @@ The parts worth knowing before you rely on it:
   committed and that event is lost. Treat in-process publishing as best-effort, and use a durable transport if a
   consumer must not miss an event.
 - **In-process by default, on the bus by opt-in.** `AddEventPublisher<TDbContext, TImpl>()` registers your own
-  publisher; `AddSlimBusEventPublisher<TDbContext>()` adds one that forwards each event onto SlimMessageBus, copying
-  an `IEventItem`'s `AdditionalData` onto the message as case-insensitive headers.
+  publisher; `AddSlimBusEventPublisher<TDbContext>()` (from `DKNet.SlimBus.Extensions.EfCore`) adds one that
+  forwards each event onto SlimMessageBus, copying an `IEventItem`'s `AdditionalData` onto the message as case-insensitive headers.
 
 ---
 
