@@ -77,5 +77,25 @@ public sealed class IdempotencyNpgsqlSetupTests
             sd.ImplementationType == typeof(IdempotencyPostgresStore));
     }
 
+    [Fact]
+    public void AddIdempotencyNpgsqlStore_IdempotentKeyMapping_IsUnboundedNonUnicodeRequiredAndMigrated()
+    {
+        // DRK-2214: the column must hold any key the filter accepts, so the mapping carries no max length
+        // and the shipped migrations already match the model.
+        var services = new ServiceCollection();
+        services.AddIdempotencyNpgsqlStore("Host=localhost;Database=idempotency;");
+
+        using var provider = services.BuildServiceProvider();
+        using var context = provider.GetRequiredService<IDbContextFactory<IdempotencyDbContext>>().CreateDbContext();
+        var property = context.Model.FindEntityType(typeof(IdempotencyKeyEntity))!
+            .FindProperty(nameof(IdempotencyKeyEntity.IdempotentKey))!;
+
+        property.GetMaxLength().ShouldBeNull();
+        property.GetColumnType().ShouldBe("text");
+        property.IsUnicode().ShouldBe(false);
+        property.IsNullable.ShouldBeFalse();
+        context.Database.HasPendingModelChanges().ShouldBeFalse();
+    }
+
     #endregion
 }

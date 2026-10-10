@@ -17,7 +17,7 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -58,9 +58,8 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
 
                     b.Property<string>("IdempotentKey")
                         .IsRequired()
-                        .HasMaxLength(150)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(150)");
+                        .HasColumnType("varchar(max)");
 
                     b.Property<string>("Method")
                         .IsRequired()

@@ -44,9 +44,10 @@ internal abstract class IdempotencyKeyConfiguration : IEntityTypeConfiguration<I
         builder.Property(k => k.Id);
 
         // Idempotency key fields
+        // No max length: the column must hold every key the filter accepts, whatever
+        // MaxIdempotencyKeyLength is configured to (varchar(max) on SQL Server, text on PostgreSQL).
         builder.Property(k => k.IdempotentKey)
             .IsRequired()
-            .HasMaxLength(150)
             .IsUnicode(false);
 
         builder.Property(k => k.Endpoint)
