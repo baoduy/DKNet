@@ -24,6 +24,11 @@ The committed `.svg` is the diagram `<svg>` element extracted from that HTML, wi
 inlined as its first child and explicit `width`/`height` attributes taken from the `viewBox` — the same output the
 viewer's *Export SVG* button produces.
 
+**archify 3.x:** `render`/`finalize` require `meta.output`, which the committed sources omit — add it to a scratch
+copy, not the committed JSON. Its *Export SVG* output starts with an XML declaration and embeds the JetBrains Mono
+subset, so a 3.x export is larger than the older assets. `dknet-layers`, `dknet-onion-packages` and
+`dknet-request-lifecycle` were last exported with 3.0.1 after passing `finalize --quality showcase`.
+
 ## Conventions
 
 - **`meta.quality_profile` is `"showcase"`** on every diagram here.

@@ -33,8 +33,8 @@ dotnet add package DKNet.EfCore.Extensions
 # Querying and persistence through IRepositorySpec
 dotnet add package DKNet.EfCore.Specifications
 
-# CQRS handlers with automatic SaveChanges
-dotnet add package DKNet.SlimBus.Extensions
+# CQRS handlers with automatic SaveChanges (brings DKNet.SlimBus.Extensions with it)
+dotnet add package DKNet.SlimBus.Extensions.EfCore
 ```
 
 Add more as the need appears — nothing above depends on the others being present, and no package needs a

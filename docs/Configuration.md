@@ -34,8 +34,8 @@ configuration comes from without reading its page.
 | **Configured by a type you supply** | pass a type parameter DKNet resolves from DI | `AddEfCoreEncryption<TKeyProvider>`, `AddDataOwnerProvider<TDbContext, TProvider>`, `AddCurrentUserProvider<TDbContext, TProvider>`, `AddEventPublisher<TDbContext, TImpl>`, `AddEfCoreAuditLogs<TDbContext, TPublisher>`, `AddIdempotentKey<TStore>`, `AddBackgroundJob<TJob>` |
 
 Four calls need no configuration at all — `AddSpecRepo<TDbContext>()`, `AddEncryptionServices()` (which
-registers only `IShaHashing` and `IHmacHashing`), the two `AddSlimBus*` calls (nothing but a type parameter),
-and `AddContextualRequestPopulation()`: an unresolved declared member always holds its type's default, and a
+registers only `IShaHashing` and `IHmacHashing`), `AddSlimBusEfCoreInterceptor<T>()` /
+`AddSlimBusEventPublisher<T>()` (nothing but a type parameter), and `AddContextualRequestPopulation()`: an unresolved declared member always holds its type's default, and a
 host that wants a value of its own registers a custom `IContextualValueResolver` ahead of the built-in ones
 instead of configuring an options type.
 
@@ -53,7 +53,7 @@ project already has; others need their own. This is the single most common "why 
 |---|---|
 | `UseAutoConfigModel<TContext>()` | `Microsoft.EntityFrameworkCore` |
 | `AddEventPublisher<TDbContext, TImpl>()` | `Microsoft.Extensions.DependencyInjection` |
-| `AddSlimBusEfCoreInterceptor<T>()`, `AddSlimBusEventPublisher<T>()` | `Microsoft.Extensions.DependencyInjection` |
+| `AddSlimBusForMediator(...)`, `AddSlimBusForEfCore<T>(...)`, `AddSlimBusEfCoreInterceptor<T>()`, `AddSlimBusEventPublisher<T>()` | `Microsoft.Extensions.DependencyInjection` |
 | `AddAzureStorageAdapter(...)`, `AddLocalDirectoryBlobService(...)` | `Microsoft.Extensions.DependencyInjection` |
 | `AddDbContextWithHook<T>()`, `AddHook<...>()` | `DKNet.EfCore.Hooks` |
 | `AddSpecRepo<TDbContext>()` | `DKNet.EfCore.Specifications` |
@@ -179,9 +179,6 @@ using DKNet.EfCore.Hooks;                    // AddDbContextWithHook
 using DKNet.EfCore.Specifications;           // AddSpecRepo
 using Microsoft.EntityFrameworkCore;         // UseAutoConfigModel, UseSqlServer
 using SlimMessageBus;                        // IMessageBus
-using SlimMessageBus.Host;                   // AddSlimMessageBus, AddChildBus, AddServicesFromAssembly
-using SlimMessageBus.Host.Memory;            // WithProviderMemory, AutoDeclareFrom
-using SlimMessageBus.Host.Serialization.SystemTextJson;  // AddJsonSerializer
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -196,17 +193,9 @@ builder.Services.AddSpecRepo<AppDbContext>();
 // Field-level change history, handed to a publisher you write.
 builder.Services.AddEfCoreAuditLogs<AppDbContext, ConsoleAuditLogPublisher>();
 
-// Domain events forwarded onto the bus, plus SaveChanges after a successful write.
-builder.Services.AddSlimBusEventPublisher<AppDbContext>();
-builder.Services.AddSlimBusEfCoreInterceptor<AppDbContext>();
-
-// Plain SlimMessageBus: bus, provider, serializer, handler discovery.
-builder.Services.AddSlimMessageBus(mbb => mbb
-    .AddJsonSerializer()
-    .AddServicesFromAssembly(typeof(Program).Assembly)   // discovers your Fluents handlers
-    .AddChildBus("Memory", bus => bus
-        .WithProviderMemory()
-        .AutoDeclareFrom(typeof(Program).Assembly)));
+// In-memory SlimMessageBus + handler discovery, SaveChanges after a successful write, and domain events
+// forwarded onto the bus (DKNet.SlimBus.Extensions.EfCore). Without EF Core: AddSlimBusForMediator(...).
+builder.Services.AddSlimBusForEfCore<AppDbContext>(typeof(Program).Assembly);
 
 // Retry protection, backed by Redis. The service call must come before the route call.
 builder.Services.AddIdempotencyWithRedisStore(
@@ -224,10 +213,11 @@ app.MapPost("/products", (IMessageBus bus, CreateProduct command) => bus.Send(co
 app.Run();
 ```
 
-`AddServicesFromAssembly`, `AutoDeclareFrom`, `AddJsonSerializer` and `WithProviderMemory` are SlimMessageBus's
-own API, not DKNet's — DKNet brings no transport provider, so pick one (`SlimMessageBus.Host.Memory`, an Azure
-Service Bus provider, or another) yourself. Handler discovery is SlimMessageBus's job too: there is no
-per-handler DKNet registration, and no validation pipeline — request validation is bring-your-own.
+`AddSlimBusForEfCore` wires SlimMessageBus's in-memory provider and discovers handlers from the assemblies you pass —
+the MediatR-style setup. For an out-of-process transport (an Azure Service Bus provider, Kafka, …) call
+SlimMessageBus's own `AddSlimMessageBus(...)` instead and add `AddSlimBusEfCoreInterceptor<AppDbContext>()` /
+`AddSlimBusEventPublisher<AppDbContext>()` individually. There is no per-handler DKNet registration, and no
+validation pipeline — request validation is bring-your-own.
 
 ## Environment and secrets
 
@@ -284,7 +274,8 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
 | [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
 | [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
-| [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
+| [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator` |
+| [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
 | [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
 | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) | `IdempotencyOptions` in full |
 | [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |

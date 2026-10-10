@@ -93,5 +93,25 @@ public sealed class IdempotencyMsSqlSetupTests
             sd.ImplementationType == typeof(IdempotencySqlServerStore));
     }
 
+    [Fact]
+    public void AddIdempotencyMsSqlStore_IdempotentKeyMapping_IsUnboundedNonUnicodeRequiredAndMigrated()
+    {
+        // DRK-2214: the column must hold any key the filter accepts, so the mapping carries no max length
+        // and the shipped migrations already match the model.
+        var services = new ServiceCollection();
+        services.AddIdempotencyMsSqlStore("Server=.;Database=Idempotency;TrustServerCertificate=True;");
+
+        using var provider = services.BuildServiceProvider();
+        using var context = provider.GetRequiredService<IDbContextFactory<IdempotencyDbContext>>().CreateDbContext();
+        var property = context.Model.FindEntityType(typeof(IdempotencyKeyEntity))!
+            .FindProperty(nameof(IdempotencyKeyEntity.IdempotentKey))!;
+
+        property.GetMaxLength().ShouldBeNull();
+        property.GetColumnType().ShouldBe("varchar(max)");
+        property.IsUnicode().ShouldBe(false);
+        property.IsNullable.ShouldBeFalse();
+        context.Database.HasPendingModelChanges().ShouldBeFalse();
+    }
+
     #endregion
 }

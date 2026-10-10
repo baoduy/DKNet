@@ -17,7 +17,7 @@ namespace DKNet.AspCore.Idempotency.NpgsqlStore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -58,9 +58,8 @@ namespace DKNet.AspCore.Idempotency.NpgsqlStore.Migrations
 
                     b.Property<string>("IdempotentKey")
                         .IsRequired()
-                        .HasMaxLength(150)
                         .IsUnicode(false)
-                        .HasColumnType("character varying(150)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Method")
                         .IsRequired()

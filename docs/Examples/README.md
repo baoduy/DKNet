@@ -63,8 +63,8 @@ public class Product : AuditedEntity
 
 ### Commands and queries
 
-Handlers talk to the `DbContext` directly and let `AddSlimBusEfCoreInterceptor<AppDbContext>()` save on success —
-see [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md).
+Handlers talk to the `DbContext` directly and let `AddSlimBusForEfCore<AppDbContext>(...)` save on success —
+see [DKNet.SlimBus.Extensions.EfCore](../Messaging/DKNet.SlimBus.Extensions.EfCore.md).
 
 ```csharp
 using DKNet.SlimBus.Extensions;
@@ -144,7 +144,7 @@ public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : Even
 
 Events are queued on the entity by `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched by
 `DKNet.EfCore.Events` to every registered `IEventPublisher` **after** a successful `SaveChangesAsync`.
-`AddSlimBusEventPublisher<AppDbContext>()` adds a publisher that forwards each one onto SlimMessageBus, where the
+`AddSlimBusForEfCore<AppDbContext>(...)` adds a publisher that forwards each one onto SlimMessageBus, where the
 consumers below pick it up. The whole path is traced in
 [A domain event end to end](../Architecture.md#a-domain-event-end-to-end).
 

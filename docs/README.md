@@ -48,7 +48,8 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) |
 | Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) |
 | Check for or create a table at runtime, whatever the relational provider | [DKNet.EfCore.Relational.Helpers](./EfCore/DKNet.EfCore.Relational.Helpers.md) |
-| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
+| Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
+| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) |
 | Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) |
 | Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) |
 | Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) on its own for local development, plus one store package for deployed traffic |
@@ -86,7 +87,8 @@ Entity base classes, the specification pattern, and the `SaveChanges` intercepto
 ### [Messaging & CQRS](./Messaging/README.md)
 SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source generator.
 
-- [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) — fluent command/query/event interfaces, automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
+- [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) — EF-free fluent command/query/event interfaces and a one-call MediatR-replacement setup
+- [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) — automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
 - [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) — emits a whole CRUD vertical slice (request records, handlers, endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
 ### [Service Layer](./Services/README.md)

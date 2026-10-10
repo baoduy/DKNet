@@ -444,5 +444,5 @@ or the save pipeline — it only consumes contracts `DKNet.EfCore.Abstractions` 
   records for `[RaisesEvent]`. Reach for it when a declared event will not resolve or a payload shape is wrong.
 - [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – records changes on the same pipeline. Reach for it when the
   requirement is a change trail rather than a reaction.
-- [DKNet.SlimBus.Extensions](../Messaging/DKNet.SlimBus.Extensions.md) – a ready-made transport to publish the
+- [DKNet.SlimBus.Extensions.EfCore](../Messaging/DKNet.SlimBus.Extensions.EfCore.md) – a ready-made transport to publish the
   dispatched events onto. Reach for it when your `IEventPublisher` should hand off to SlimMessageBus.
