@@ -63,7 +63,7 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
         await using var dbContext = provider.GetRequiredService<IdempotencyDbContext>();
         var migrator = dbContext.GetService<IMigrator>();
         await migrator.MigrateAsync("20260202041209_Initial");
-        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:150");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:150:NO");
 
         var existingKey = RandomKey(150);
         dbContext.IdempotencyKeys.Add(new IdempotencyKeyEntity(
@@ -77,23 +77,23 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
 
         // Act & Assert - Up widens the column and keeps the row
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:-1");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:-1:NO");
         (await StoredKeysAsync(dbContext)).ShouldBe([existingKey]);
 
         // Down restores the shipped width and keeps the row
         await migrator.MigrateAsync("20260202041209_Initial");
-        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:150");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:150:NO");
         (await StoredKeysAsync(dbContext)).ShouldBe([existingKey]);
 
         // Up again leaves nothing pending
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:-1");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("varchar:-1:NO");
         (await dbContext.Database.GetPendingMigrationsAsync()).ShouldBeEmpty();
     }
 
     private static async Task<string> ColumnTypeAsync(IdempotencyDbContext dbContext) =>
         await dbContext.Database.SqlQueryRaw<string>(
-                "SELECT DATA_TYPE + ':' + CAST(CHARACTER_MAXIMUM_LENGTH AS varchar(10)) AS Value " +
+                "SELECT DATA_TYPE + ':' + CAST(CHARACTER_MAXIMUM_LENGTH AS varchar(10)) + ':' + IS_NULLABLE AS Value " +
                 "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'IdempotencyKeys' AND COLUMN_NAME = 'IdempotentKey'")
             .SingleAsync();
 

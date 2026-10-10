@@ -65,7 +65,7 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
         await using var dbContext = provider.GetRequiredService<IdempotencyDbContext>();
         var migrator = dbContext.GetService<IMigrator>();
         await migrator.MigrateAsync("20260804081005_Initial");
-        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:150");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:150:NO");
 
         var existingKey = RandomKey(150);
         dbContext.IdempotencyKeys.Add(new IdempotencyKeyEntity(
@@ -79,23 +79,23 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
 
         // Act & Assert - Up widens the column and keeps the row
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("text:");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("text::NO");
         (await StoredKeysAsync(dbContext)).ShouldBe([existingKey]);
 
         // Down restores the shipped width and keeps the row
         await migrator.MigrateAsync("20260804081005_Initial");
-        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:150");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:150:NO");
         (await StoredKeysAsync(dbContext)).ShouldBe([existingKey]);
 
         // Up again leaves nothing pending
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("text:");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("text::NO");
         (await dbContext.Database.GetPendingMigrationsAsync()).ShouldBeEmpty();
     }
 
     private static async Task<string> ColumnTypeAsync(IdempotencyDbContext dbContext) =>
         await dbContext.Database.SqlQueryRaw<string>(
-                "SELECT data_type || ':' || COALESCE(character_maximum_length::text, '') AS \"Value\" " +
+                "SELECT data_type || ':' || COALESCE(character_maximum_length::text, '') || ':' || is_nullable AS \"Value\" " +
                 "FROM information_schema.columns WHERE table_name = 'IdempotencyKeys' AND column_name = 'IdempotentKey'")
             .SingleAsync();
 
