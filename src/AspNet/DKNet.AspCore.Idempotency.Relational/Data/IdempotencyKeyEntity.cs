@@ -84,7 +84,7 @@ internal sealed class IdempotencyKeyEntity
     /// </summary>
     public Guid Id { get; private set; }
 
-    [MaxLength(150)] public string IdempotentKey { get; private set; }
+    public string IdempotentKey { get; private set; }
 
     /// <summary>
     ///     Gets a value indicating whether this idempotency key has expired.
