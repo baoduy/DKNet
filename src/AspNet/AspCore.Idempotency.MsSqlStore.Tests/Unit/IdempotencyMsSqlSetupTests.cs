@@ -94,10 +94,10 @@ public sealed class IdempotencyMsSqlSetupTests
     }
 
     [Fact]
-    public void AddIdempotencyMsSqlStore_IdempotentKeyMapping_IsUnboundedNonUnicodeRequiredAndMigrated()
+    public void AddIdempotencyMsSqlStore_IdempotentKeyMapping_IsCappedAt500NonUnicodeRequiredAndMigrated()
     {
-        // DRK-2214: the column must hold any key the filter accepts, so the mapping carries no max length
-        // and the shipped migrations already match the model.
+        // DRK-2221: the column is exactly as wide as the 500-character key cap, and the shipped
+        // migrations already match the model.
         var services = new ServiceCollection();
         services.AddIdempotencyMsSqlStore("Server=.;Database=Idempotency;TrustServerCertificate=True;");
 
@@ -106,8 +106,8 @@ public sealed class IdempotencyMsSqlSetupTests
         var property = context.Model.FindEntityType(typeof(IdempotencyKeyEntity))!
             .FindProperty(nameof(IdempotencyKeyEntity.IdempotentKey))!;
 
-        property.GetMaxLength().ShouldBeNull();
-        property.GetColumnType().ShouldBe("varchar(max)");
+        property.GetMaxLength().ShouldBe(500);
+        property.GetColumnType().ShouldBe("varchar(500)");
         property.IsUnicode().ShouldBe(false);
         property.IsNullable.ShouldBeFalse();
         context.Database.HasPendingModelChanges().ShouldBeFalse();

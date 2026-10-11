@@ -78,10 +78,10 @@ public sealed class IdempotencyNpgsqlSetupTests
     }
 
     [Fact]
-    public void AddIdempotencyNpgsqlStore_IdempotentKeyMapping_IsUnboundedNonUnicodeRequiredAndMigrated()
+    public void AddIdempotencyNpgsqlStore_IdempotentKeyMapping_IsCappedAt500NonUnicodeRequiredAndMigrated()
     {
-        // DRK-2214: the column must hold any key the filter accepts, so the mapping carries no max length
-        // and the shipped migrations already match the model.
+        // DRK-2221: the column is exactly as wide as the 500-character key cap, and the shipped
+        // migrations already match the model.
         var services = new ServiceCollection();
         services.AddIdempotencyNpgsqlStore("Host=localhost;Database=idempotency;");
 
@@ -90,8 +90,8 @@ public sealed class IdempotencyNpgsqlSetupTests
         var property = context.Model.FindEntityType(typeof(IdempotencyKeyEntity))!
             .FindProperty(nameof(IdempotencyKeyEntity.IdempotentKey))!;
 
-        property.GetMaxLength().ShouldBeNull();
-        property.GetColumnType().ShouldBe("text");
+        property.GetMaxLength().ShouldBe(500);
+        property.GetColumnType().ShouldBe("character varying(500)");
         property.IsUnicode().ShouldBe(false);
         property.IsNullable.ShouldBeFalse();
         context.Database.HasPendingModelChanges().ShouldBeFalse();

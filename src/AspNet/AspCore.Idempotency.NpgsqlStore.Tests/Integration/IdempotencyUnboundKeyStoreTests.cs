@@ -13,9 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AspCore.Idempotency.NpgsqlStore.Tests.Integration;
 
 /// <summary>
-///     DRK-2214: the unbounded <c>IdempotentKey</c> column stores a key of any configured
-///     <c>MaxIdempotencyKeyLength</c>, and the <c>UnboundIdempotentKey</c> migration widens and restores
-///     the shipped column without losing rows.
+///     DRK-2214, capped by DRK-2221: the <c>IdempotentKey</c> column stores the longest key the 500-character
+///     cap allows, and migrating down to the shipped Initial schema and back up to the 500-wide column keeps
+///     existing rows.
 /// </summary>
 [Collection("Api Collection")]
 public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
@@ -23,11 +23,11 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
     #region Methods
 
     [Fact]
-    public async Task IsKeyProcessedAsync_KeyOf1000Chars_StoresFullKeyAndReplaysResponse()
+    public async Task IsKeyProcessedAsync_KeyOf500Chars_StoresFullKeyAndReplaysResponse()
     {
-        // Arrange - longer than the default MaxIdempotencyKeyLength, as a consumer raising the option would send
+        // Arrange - the longest key the 500-character cap allows, as a consumer raising the option would send
         var store = fixture.Services.GetRequiredService<IIdempotencyKeyStore>();
-        var keyInfo = new IdempotentKeyInfo { Endpoint = "/API/ITEMS", Method = "POST", IdempotentKey = RandomKey(1000) };
+        var keyInfo = new IdempotentKeyInfo { Endpoint = "/API/ITEMS", Method = "POST", IdempotentKey = RandomKey(500) };
 
         // Act
         var reserved = await store.IsKeyProcessedAsync(keyInfo);
@@ -55,7 +55,7 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
     }
 
     [Fact]
-    public async Task UnboundIdempotentKeyMigration_DownThenUp_KeepsExistingKeyAndTogglesColumnType()
+    public async Task UnboundIdempotentKeyMigration_DownThenUp_KeepsExistingKeyAndTogglesColumnTypeTo500()
     {
         // Arrange - an empty database of its own on the fixture's server, migrated to the shipped Initial schema
         var services = new ServiceCollection();
@@ -77,9 +77,9 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
             }));
         await dbContext.SaveChangesAsync();
 
-        // Act & Assert - Up widens the column and keeps the row
+        // Act & Assert - Up to the latest schema leaves the column 500 wide and keeps the row
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("text::NO");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:500:NO");
         (await StoredKeysAsync(dbContext)).ShouldBe([existingKey]);
 
         // Down restores the shipped width and keeps the row
@@ -89,7 +89,7 @@ public sealed class IdempotencyUnboundKeyStoreTests(ApiFixture fixture)
 
         // Up again leaves nothing pending
         await migrator.MigrateAsync();
-        (await ColumnTypeAsync(dbContext)).ShouldBe("text::NO");
+        (await ColumnTypeAsync(dbContext)).ShouldBe("character varying:500:NO");
         (await dbContext.Database.GetPendingMigrationsAsync()).ShouldBeEmpty();
     }
 
