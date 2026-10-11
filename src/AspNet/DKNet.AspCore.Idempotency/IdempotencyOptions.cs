@@ -31,6 +31,12 @@ public sealed class IdempotencyOptions
 {
     #region Fields
 
+    /// <summary>
+    ///     The hard ceiling on idempotency key length: no key longer than this is accepted, whatever
+    ///     <see cref="MaxIdempotencyKeyLength" /> is set to. Matches the width of the relational stores' key column.
+    /// </summary>
+    internal const int MaxIdempotencyKeyLengthCap = 500;
+
     private const string DefaultIdempotencyKeyPattern = @"^[a-zA-Z0-9\-_]+$";
 
     /// <summary>
@@ -130,9 +136,16 @@ public sealed class IdempotencyOptions
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     /// <summary>
+    ///     Gets the key length actually enforced: <see cref="MaxIdempotencyKeyLength" /> or
+    ///     <see cref="MaxIdempotencyKeyLengthCap" />, whichever is smaller.
+    /// </summary>
+    internal int EffectiveMaxIdempotencyKeyLength => Math.Min(MaxIdempotencyKeyLength, MaxIdempotencyKeyLengthCap);
+
+    /// <summary>
     ///     Gets or sets the maximum allowed length for an idempotency key.
     ///     Keys longer than this will be rejected with a 400 Bad Request.
-    ///     Default is 255 characters.
+    ///     Default is 255 characters. The enforced limit never exceeds 500 characters: a larger value is
+    ///     accepted at startup, but keys longer than 500 characters are still rejected.
     /// </summary>
     public int MaxIdempotencyKeyLength { get; set; } = 255;
 

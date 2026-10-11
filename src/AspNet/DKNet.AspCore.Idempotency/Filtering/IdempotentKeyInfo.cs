@@ -135,9 +135,9 @@ public sealed record IdempotentKeyInfo
                 $"The '{options.IdempotencyHeaderKey}' header is required for idempotent requests.");
 
         // Validate key length
-        if (IdempotentKey.Length > options.MaxIdempotencyKeyLength)
+        if (IdempotentKey.Length > options.EffectiveMaxIdempotencyKeyLength)
             return Result.Fail(
-                $"Idempotency key must not exceed {options.MaxIdempotencyKeyLength} characters.");
+                $"Idempotency key must not exceed {options.EffectiveMaxIdempotencyKeyLength} characters.");
 
         // Validate key format
         try

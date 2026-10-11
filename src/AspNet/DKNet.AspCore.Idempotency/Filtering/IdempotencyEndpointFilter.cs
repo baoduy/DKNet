@@ -295,7 +295,7 @@ internal sealed class IdempotencyEndpointFilter(
                 rs.Errors[0].Message);
 
             return TypedResults.Problem(
-                $"The '{_options.IdempotencyHeaderKey}' header is invalid.",
+                $"The '{_options.IdempotencyHeaderKey}' header is invalid. {rs.Errors[0].Message}",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 

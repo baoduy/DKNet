@@ -58,8 +58,9 @@ namespace DKNet.AspCore.Idempotency.MsSqlStore.Migrations
 
                     b.Property<string>("IdempotentKey")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("Method")
                         .IsRequired()
