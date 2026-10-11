@@ -22,12 +22,6 @@ namespace AspCore.Idempotency.Tests.Filtering;
 /// </summary>
 public sealed class IdempotencyKeyCapTests(ApiFixtureCachedResult fixture) : IClassFixture<ApiFixtureCachedResult>
 {
-    #region Fields
-
-    private const string InvalidHeaderDetail = "The 'X-Idempotency-Key' header is invalid.";
-
-    #endregion
-
     #region Methods
 
     [Theory]
@@ -55,21 +49,27 @@ public sealed class IdempotencyKeyCapTests(ApiFixtureCachedResult fixture) : ICl
 
     [Theory]
     [Trait("Scenario", "A key over the effective limit is refused")]
-    [InlineData(null, 256)]
-    [InlineData(1000, 501)]
-    public async Task CreateOrder_KeyOverEffectiveLimit_Returns400AndCreatesNoOrder(int? limit, int length)
+    [InlineData(null, 256,
+        "The 'X-Idempotency-Key' header is invalid. Idempotency key must not exceed 255 characters.")]
+    [InlineData(1000, 501,
+        "The 'X-Idempotency-Key' header is invalid. Idempotency key must not exceed 500 characters.")]
+    public async Task CreateOrder_KeyOverEffectiveLimit_Returns400NamingEffectiveLimitAndCreatesNoOrder(
+        int? limit, int length, string expectedDetail)
     {
         // Arrange - a recording store registered last, so the filter resolves it instead of the in-memory one
         var store = new RecordingStore();
         await using var app = AppWithKeyLimit(limit, s => s.AddSingleton<IIdempotencyKeyStore>(store));
         using var client = app.CreateClient();
+        var key = RandomKey(length);
 
         // Act
-        var response = await CreateOrderAsync(client, RandomKey(length));
+        var response = await CreateOrderAsync(client, key);
 
         // Assert - refused before any reservation, so the handler never ran and nothing was stored
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail.ShouldBe(InvalidHeaderDetail);
+        var detail = (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail!;
+        detail.ShouldBe(expectedDetail);
+        detail.ShouldNotContain(key);
         store.Calls.ShouldBe(0);
     }
 
@@ -96,10 +96,32 @@ public sealed class IdempotencyKeyCapTests(ApiFixtureCachedResult fixture) : ICl
         await using var app = AppWithKeyLimit(1000);
         using var client = app.CreateClient();
 
-        var response = await CreateOrderAsync(client, RandomKey(501));
+        var key = RandomKey(501);
+
+        var response = await CreateOrderAsync(client, key);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail.ShouldBe(InvalidHeaderDetail);
+        var detail = (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail!;
+        detail.ShouldBe("The 'X-Idempotency-Key' header is invalid. Idempotency key must not exceed 500 characters.");
+        detail.ShouldNotContain(key);
+    }
+
+    // Input domain D3b: every IsValid failure appends its message to the 400 detail, never the submitted key.
+    [Fact]
+    public async Task CreateOrder_KeyWithInvalidFormat_Returns400NamingFormatRuleWithoutEchoingKey()
+    {
+        await using var app = AppWithKeyLimit(null);
+        using var client = app.CreateClient();
+        const string key = "order#42!";
+
+        var response = await CreateOrderAsync(client, key);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var detail = (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail!;
+        detail.ShouldBe(
+            "The 'X-Idempotency-Key' header is invalid. " +
+            "Idempotency key format is invalid. Allowed characters: alphanumeric, hyphens, underscores.");
+        detail.ShouldNotContain(key);
     }
 
     [Fact]
