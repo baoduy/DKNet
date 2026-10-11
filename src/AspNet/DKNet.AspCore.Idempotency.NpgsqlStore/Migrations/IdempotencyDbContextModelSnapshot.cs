@@ -58,8 +58,9 @@ namespace DKNet.AspCore.Idempotency.NpgsqlStore.Migrations
 
                     b.Property<string>("IdempotentKey")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .IsUnicode(false)
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Method")
                         .IsRequired()
