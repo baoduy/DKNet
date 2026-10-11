@@ -11,8 +11,9 @@ namespace DKNet.AspCore.Idempotency.NpgsqlStore.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Delete the keys the narrowed column cannot hold first, or the ALTER fails on them.
+            // The trailing semicolon keeps the statement valid inside the DO block of an idempotent script.
             // Deleted rows are not restored by Down.
-            migrationBuilder.Sql("DELETE FROM \"IdempotencyKeys\" WHERE char_length(\"IdempotentKey\") > 500");
+            migrationBuilder.Sql("DELETE FROM \"IdempotencyKeys\" WHERE char_length(\"IdempotentKey\") > 500;");
 
             migrationBuilder.AlterColumn<string>(
                 name: "IdempotentKey",
