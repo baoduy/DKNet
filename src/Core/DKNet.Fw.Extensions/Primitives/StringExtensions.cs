@@ -46,7 +46,11 @@ public static class StringExtensions
     /// <param name="value">The text to sanitise.</param>
     /// <returns>The text with every control character removed and both ends trimmed.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="value" /> is <see langword="null" />.</exception>
-    public static string SanitizeForLogging(this string value) => throw new NotImplementedException();
+    public static string SanitizeForLogging(this string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return string.Concat(value.Where(c => !char.IsControl(c))).Trim();
+    }
 
     #endregion
 

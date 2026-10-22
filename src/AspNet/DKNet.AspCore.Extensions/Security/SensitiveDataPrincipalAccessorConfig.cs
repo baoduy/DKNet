@@ -7,6 +7,7 @@
 
 using DKNet.EfCore.Extensions.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DKNet.AspCore.Extensions.Security;
 
@@ -23,6 +24,10 @@ public static class SensitiveDataPrincipalAccessorConfig
     /// </summary>
     /// <param name="services">The host's service collection.</param>
     /// <returns>The same <see cref="IServiceCollection" />, for chaining.</returns>
-    public static IServiceCollection AddSensitiveDataPrincipalAccessor(this IServiceCollection services) =>
-        throw new NotImplementedException();
+    public static IServiceCollection AddSensitiveDataPrincipalAccessor(this IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<ISensitiveDataPrincipalAccessor, HttpContextSensitiveDataPrincipalAccessor>();
+        return services;
+    }
 }

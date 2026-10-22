@@ -20,6 +20,33 @@ public static class JobSelector
     /// <param name="args">The process arguments.</param>
     /// <param name="knownJobNames">The job names the process can run.</param>
     /// <returns>The selection: no job, a recognized job, or an unknown job.</returns>
-    public static JobSelection Select(IReadOnlyList<string> args, IReadOnlyCollection<string> knownJobNames) =>
-        throw new NotImplementedException();
+    public static JobSelection Select(IReadOnlyList<string> args, IReadOnlyCollection<string> knownJobNames)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(knownJobNames);
+
+        string? requestedJobName = null;
+        for (var i = 0; i < args.Count; i++)
+        {
+            var arg = args[i];
+            if (arg.StartsWith('-'))
+            {
+                // "--name=value" already carries its value; only the separated "--name value" form takes the
+                // next argument, and that value is never itself a job name.
+                if (!arg.Contains('=', StringComparison.Ordinal)) i++;
+
+                continue;
+            }
+
+            requestedJobName = arg;
+            break;
+        }
+
+        var jobName = requestedJobName is null
+            ? null
+            : knownJobNames.FirstOrDefault(name =>
+                string.Equals(name, requestedJobName, StringComparison.OrdinalIgnoreCase));
+
+        return new JobSelection(requestedJobName, jobName, jobName is not null, [.. knownJobNames]);
+    }
 }
