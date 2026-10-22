@@ -59,6 +59,16 @@ public class JobSelectorInputDomainTests
     }
 
     [Fact]
+    public void Select_RequestedInMixedCase_ReturnsRegisteredName()
+    {
+        var result = JobSelector.Select(["Migration"], ["migration"]);
+
+        result.RequestedJobName.ShouldBe("Migration");
+        result.JobName.ShouldBe("migration");
+        result.IsRecognized.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Select_EmptyKnownList_ReportsUnknownJob()
     {
         var result = JobSelector.Select(["migration"], []);
