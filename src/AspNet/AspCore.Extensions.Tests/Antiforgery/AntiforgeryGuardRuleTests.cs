@@ -139,7 +139,7 @@ public class AntiforgeryGuardRuleTests
         if (body is not null)
             (await response.Content.ReadAsStringAsync()).ShouldBe(body);
         else
-            response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+            response.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe("application/problem+json");
     }
 
     // R4: a request no endpoint matches is still checked.
