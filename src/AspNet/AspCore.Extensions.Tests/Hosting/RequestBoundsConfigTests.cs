@@ -30,6 +30,7 @@ public class RequestBoundsConfigTests
     {
         await using var host = await StartBoundedHostAsync(("RequestBounds:MaxRequestBodySizeBytes", "1048576"));
         using var client = new HttpClient { BaseAddress = host.KestrelAddress };
+        client.DefaultRequestHeaders.ExpectContinue = true;
 
         using var response = await client.PostAsync(
             HostingTestHost.AccountsPath, new ByteArrayContent(new byte[2 * OneMiB]));
