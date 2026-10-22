@@ -32,6 +32,6 @@ internal static class RateLimitKeyProvider
             return "user:" + name;
 
         var address = context.Connection.RemoteIpAddress;
-        return address is null ? SharedKey : "ip:" + address;
+        return address is null ? SharedKey : "ip:" + address.ToString();
     }
 }
