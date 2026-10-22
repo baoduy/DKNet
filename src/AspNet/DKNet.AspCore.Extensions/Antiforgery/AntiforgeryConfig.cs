@@ -48,7 +48,10 @@ public static class AntiforgeryConfig
     /// <summary>
     ///     Adds the antiforgery guard to the pipeline and logs one "enabled" line through the host's logger, when
     ///     <see cref="AddAntiforgeryConfig" /> ran on this host; otherwise returns <paramref name="app" /> unchanged.
-    ///     Call it after <c>UseRouting</c>, so the guard can see whether the endpoint turns the check off.
+    ///     Call it after <c>UseRouting</c>, so the guard can see whether the endpoint turns the check off. It also
+    ///     adds the framework's own antiforgery step (<c>UseAntiforgery</c>) ahead of the guard, so a host must not
+    ///     call <c>UseAntiforgery</c> itself: a second copy after the guard would refuse the bearer requests the
+    ///     guard exempts on form-bound endpoints.
     /// </summary>
     /// <param name="app">The host's web application.</param>
     /// <returns>The same <see cref="WebApplication" />, for chaining.</returns>
