@@ -207,7 +207,11 @@ public class RateLimitConfigTests
     }
 
     private static Action<HttpContext> NoClientAddressFor(string hostName) =>
-        ctx => ctx.Request.Host = new HostString(hostName);
+        ctx =>
+        {
+            ctx.Connection.RemoteIpAddress = null;
+            ctx.Request.Host = new HostString(hostName);
+        };
 
     private static async Task<int> SendAsync(HostingTestHost host, Action<HttpContext> caller) =>
         (await host.SendAsync(HttpMethods.Get, HostingTestHost.AccountsPath, caller)).Response.StatusCode;
