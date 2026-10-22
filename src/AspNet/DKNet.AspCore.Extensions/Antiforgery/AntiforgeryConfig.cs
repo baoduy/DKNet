@@ -4,8 +4,11 @@
 // File: AntiforgeryConfig.cs
 // Description: Turns on the double-submit antiforgery guard for one host: an Add… registration plus a Use… step.
 
+using DKNet.AspCore.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DKNet.AspCore.Extensions.Antiforgery;
 
@@ -24,8 +27,23 @@ public static class AntiforgeryConfig
     /// <returns>The same <see cref="IServiceCollection" />, for chaining.</returns>
     public static IServiceCollection AddAntiforgeryConfig(
         this IServiceCollection services,
-        Action<AntiforgeryGuardOptions>? configure = null) =>
-        throw new NotImplementedException();
+        Action<AntiforgeryGuardOptions>? configure = null)
+    {
+        var options = new AntiforgeryGuardOptions();
+        configure?.Invoke(options);
+        services.AddSingleton(options);
+
+        services.AddAntiforgery(o =>
+        {
+            o.HeaderName = options.HeaderName;
+            o.Cookie.HttpOnly = true;
+            o.Cookie.SameSite = SameSiteMode.Strict;
+            o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            if (options.SecretCookieName is not null) o.Cookie.Name = options.SecretCookieName;
+        });
+
+        return services.MarkFeatureAdded(nameof(AntiforgeryConfig));
+    }
 
     /// <summary>
     ///     Adds the antiforgery guard to the pipeline and logs one "enabled" line through the host's logger, when
@@ -34,6 +52,15 @@ public static class AntiforgeryConfig
     /// </summary>
     /// <param name="app">The host's web application.</param>
     /// <returns>The same <see cref="WebApplication" />, for chaining.</returns>
-    public static WebApplication UseAntiforgeryConfig(this WebApplication app) =>
-        throw new NotImplementedException();
+    public static WebApplication UseAntiforgeryConfig(this WebApplication app)
+    {
+        if (!app.Services.IsFeatureAdded(nameof(AntiforgeryConfig))) return app;
+
+        // R7: the framework's own antiforgery step runs first, so a form-bound endpoint finds it ran (no 500);
+        // the guard after it then overrides the framework's verdict for every request it exempts or accepts.
+        app.UseAntiforgery();
+        app.UseMiddleware<AntiforgeryGuardMiddleware>();
+        app.Logger.LogInformation("{Feature} enabled", nameof(AntiforgeryConfig));
+        return app;
+    }
 }
