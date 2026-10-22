@@ -38,6 +38,20 @@ public static class StringExtensions
         return type == typeof(string) || type.IsValueType;
     }
 
+    /// <summary>
+    ///     Makes a text safe to write to a log: removes every control character (line breaks, tabs, NUL and the
+    ///     rest of <see cref="char.IsControl(char)" />), then trims white space at both ends, so an injected line
+    ///     break cannot forge a log entry.
+    /// </summary>
+    /// <param name="value">The text to sanitise.</param>
+    /// <returns>The text with every control character removed and both ends trimmed.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value" /> is <see langword="null" />.</exception>
+    public static string SanitizeForLogging(this string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return string.Concat(value.Where(c => !char.IsControl(c))).Trim();
+    }
+
     #endregion
 
     /// <param name="input">The string to search within.</param>

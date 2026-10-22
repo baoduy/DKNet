@@ -28,6 +28,15 @@ public class StringExtensionsTests
         action.ShouldThrow<ArgumentException>();
     }
 
+    // DRK-2362 §5 Scenario Outline: The log-sanitising helper strips control characters. Fails today:
+    // SanitizeForLogging is a stub @ the acceptance-tests commit and throws NotImplementedException.
+    [Theory]
+    [InlineData("treasury-ops\r\nADMIN LOGIN OK", "treasury-opsADMIN LOGIN OK")]
+    [InlineData("  payment-42\t", "payment-42")]
+    [InlineData("ACC-1001", "ACC-1001")]
+    public void SanitizeForLogging_TextWithControlCharacters_StripsThemAndTrims(string input, string output) =>
+        input.SanitizeForLogging().ShouldBe(output);
+
     [Fact]
     public void ExtractDigits_CalledRepeatedlyWithDecreasingLength_DoesNotLeakDataFromPooledBuffer()
     {
