@@ -42,10 +42,8 @@ public static class JobSelector
             break;
         }
 
-        var jobName = requestedJobName is null
-            ? null
-            : knownJobNames.FirstOrDefault(name =>
-                string.Equals(name, requestedJobName, StringComparison.OrdinalIgnoreCase));
+        var jobName = knownJobNames.FirstOrDefault(name =>
+            string.Equals(name, requestedJobName, StringComparison.OrdinalIgnoreCase));
 
         return new JobSelection(requestedJobName, jobName, jobName is not null, [.. knownJobNames]);
     }
