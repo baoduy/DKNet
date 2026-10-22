@@ -36,7 +36,6 @@ internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> option
     public FixedWindowRateLimiterOptions GetRateLimiterOptions(HttpContext httpContext) =>
         new()
         {
-            AutoReplenishment = true,
             PermitLimit = _options.DefaultRequestLimit,
             QueueLimit = 0,
             Window = TimeSpan.FromSeconds(_options.TimeWindowInSeconds)
