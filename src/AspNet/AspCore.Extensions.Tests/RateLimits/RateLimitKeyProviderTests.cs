@@ -37,6 +37,16 @@ public class RateLimitKeyProviderTests
     }
 
     [Fact]
+    public void GetPartitionKey_AuthenticatedIdentityWithNoNameClaim_UsesAddress()
+    {
+        var context = Request(null, "203.0.113.9");
+        context.User = new ClaimsPrincipal(new ClaimsIdentity([], "Bearer"));
+
+        context.User.Identity!.IsAuthenticated.ShouldBeTrue();
+        RateLimitKeyProvider.GetPartitionKey(context).ShouldBe("ip:203.0.113.9");
+    }
+
+    [Fact]
     public void GetPartitionKey_AnonymousRequest_IgnoresForwardedForAndHost()
     {
         var context = Request(null, null);

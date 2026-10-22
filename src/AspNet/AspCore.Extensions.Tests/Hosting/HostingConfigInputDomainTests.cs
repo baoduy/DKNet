@@ -140,14 +140,16 @@ public class HostingConfigInputDomainTests
         services.ShouldBeEmpty();
     }
 
-    // D7 / R4: blank origins turn CORS off — nothing registered, nothing logged, no CORS answer.
-    [Fact]
-    public async Task UseCorsConfig_OnlyBlankOrigins_CorsStaysOffAndLogsNothing()
+    // D7 / R4: an empty or all-blank origin list turns CORS off — nothing registered, nothing logged, no CORS answer.
+    [Theory]
+    [InlineData("""{ "Cors": { "AllowedOrigins": [] } }""")]
+    [InlineData("""{ "Cors": { "AllowedOrigins": ["", " "] } }""")]
+    public async Task UseCorsConfig_NoNonBlankOrigin_CorsStaysOffAndLogsNothing(string json)
     {
         await using var host = await HostingTestHost.StartAsync(
             b =>
             {
-                HostingTestHost.AddJsonSettings(b, """{ "Cors": { "AllowedOrigins": ["", " "] } }""");
+                HostingTestHost.AddJsonSettings(b, json);
                 b.Services.AddCorsConfig(b.Configuration);
             },
             app => app.UseCorsConfig());

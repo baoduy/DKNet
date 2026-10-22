@@ -56,7 +56,9 @@ public static class RateLimitConfig
     /// <summary>
     ///     Adds the rate limiter to the pipeline and logs one "enabled" line through the host's logger, when
     ///     <see cref="AddRateLimitConfig" /> ran on this host; otherwise returns <paramref name="app" /> unchanged.
-    ///     Call it after authentication, so a signed-in caller is counted by user name.
+    ///     Call it after authentication, so a signed-in caller is counted by user name, and behind a proxy after
+    ///     <see cref="Hosting.ForwardedHeadersConfig.UseForwardedHeadersConfig" />, so an anonymous caller is counted
+    ///     by its forwarded client address.
     /// </summary>
     /// <param name="app">The host's web application.</param>
     /// <returns>The same <see cref="WebApplication" />, for chaining.</returns>
