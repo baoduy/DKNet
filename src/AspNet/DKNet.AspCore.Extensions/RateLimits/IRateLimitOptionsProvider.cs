@@ -6,6 +6,7 @@
 
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace DKNet.AspCore.Extensions.RateLimits;
 
@@ -25,4 +26,22 @@ public interface IRateLimitOptionsProvider
     /// <param name="httpContext">The request being limited.</param>
     /// <returns>The concurrency limiter options for this caller.</returns>
     ConcurrencyLimiterOptions GetConcurrencyLimiterOptions(HttpContext httpContext);
+}
+
+/// <summary>The host's default limits: the same <see cref="RateLimitOptions" /> for every caller, no queue.</summary>
+internal sealed class RateLimitOptionsProvider(IOptions<RateLimitOptions> options) : IRateLimitOptionsProvider
+{
+    private readonly RateLimitOptions _options = options.Value;
+
+    public FixedWindowRateLimiterOptions GetRateLimiterOptions(HttpContext httpContext) =>
+        new()
+        {
+            AutoReplenishment = true,
+            PermitLimit = _options.DefaultRequestLimit,
+            QueueLimit = 0,
+            Window = TimeSpan.FromSeconds(_options.TimeWindowInSeconds)
+        };
+
+    public ConcurrencyLimiterOptions GetConcurrencyLimiterOptions(HttpContext httpContext) =>
+        new() { PermitLimit = _options.DefaultConcurrentLimit, QueueLimit = 0 };
 }

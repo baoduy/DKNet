@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DKNet.AspCore.Extensions.Hosting;
 
@@ -17,6 +18,10 @@ namespace DKNet.AspCore.Extensions.Hosting;
 /// </summary>
 public static class HttpsConfig
 {
+    // The HSTS preload list requires an announced max-age of at least 365 days; asking for preload below it is
+    // rejected by the preload tooling.
+    private const int PreloadMinimumDays = 365;
+
     /// <summary>
     ///     Registers HSTS from <paramref name="configuration" />, or from <paramref name="configureOptions" /> when
     ///     given, and records the feature on this host.
@@ -28,8 +33,25 @@ public static class HttpsConfig
     public static IServiceCollection AddHttpsConfig(
         this IServiceCollection services,
         IConfiguration configuration,
-        Action<HstsOptions>? configureOptions = null) =>
-        throw new NotImplementedException();
+        Action<HstsOptions>? configureOptions = null)
+    {
+        if (configureOptions is not null)
+        {
+            services.AddHsts(configureOptions);
+        }
+        else
+        {
+            var maxAgeDays = configuration.GetValue("Https:HstsMaxAgeDays", PreloadMinimumDays);
+            services.AddHsts(o =>
+            {
+                o.IncludeSubDomains = true;
+                o.MaxAge = TimeSpan.FromDays(maxAgeDays);
+                o.Preload = maxAgeDays >= PreloadMinimumDays;
+            });
+        }
+
+        return services.MarkFeatureAdded(nameof(HttpsConfig));
+    }
 
     /// <summary>
     ///     Adds HSTS and HTTPS redirection to the pipeline and logs one "enabled" line through the host's logger,
@@ -37,6 +59,14 @@ public static class HttpsConfig
     /// </summary>
     /// <param name="app">The host's web application.</param>
     /// <returns>The same <see cref="WebApplication" />, for chaining.</returns>
-    public static WebApplication UseHttpsConfig(this WebApplication app) =>
-        throw new NotImplementedException();
+    public static WebApplication UseHttpsConfig(this WebApplication app)
+    {
+        if (!app.Services.IsFeatureAdded(nameof(HttpsConfig)))
+            return app;
+
+        app.UseHsts();
+        app.UseHttpsRedirection();
+        app.Logger.LogInformation("{Feature} enabled", nameof(HttpsConfig));
+        return app;
+    }
 }

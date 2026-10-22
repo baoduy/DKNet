@@ -13,11 +13,11 @@ namespace DKNet.AspCore.Extensions.RateLimits;
 public sealed class RateLimitOptions
 {
     /// <summary>The number of requests one caller may send in one time window. Defaults to 2.</summary>
-    public int DefaultRequestLimit { get; set; }
+    public int DefaultRequestLimit { get; set; } = 2;
 
     /// <summary>The number of requests one caller may have in flight at once. Defaults to 2.</summary>
-    public int DefaultConcurrentLimit { get; set; }
+    public int DefaultConcurrentLimit { get; set; } = 2;
 
     /// <summary>The length of one fixed time window, in seconds. Defaults to 1.</summary>
-    public int TimeWindowInSeconds { get; set; }
+    public int TimeWindowInSeconds { get; set; } = 1;
 }
