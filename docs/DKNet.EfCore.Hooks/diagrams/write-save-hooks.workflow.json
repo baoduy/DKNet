@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run custom work before and after an async save",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Hooks/write-save-hooks.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "AddHook<DemoDb, ReportHook>",
+      "sublabel": "keyed scoped hook",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 98,
+          "end_line": 115
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "BeforeSaveAsync",
+      "sublabel": "shared captured entries",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 155,
+          "end_line": 171
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "EF async save",
+      "sublabel": "database write",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 228,
+          "end_line": 277
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "AfterSaveAsync",
+      "sublabel": "same captured entries",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 228,
+          "end_line": 277
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "Failure or cancellation cleans the save context without the normal after pass."
+      ]
+    }
+  ]
+}

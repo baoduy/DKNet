@@ -216,7 +216,7 @@ model rebuild and why the database never sees plaintext:
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – declares `[SensitiveData]`, which controls whether a
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) – declares `[SensitiveData]`, which controls whether a
   value is *shown* in an audit trail. Reach for it to hide a value from logs; reach for this package to protect it at
   rest.
 - [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) – records field-level changes. Reach for it when you need a
@@ -224,6 +224,6 @@ model rebuild and why the database never sees plaintext:
   marked sensitive.
 - [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) – row-level access control. Reach for it to
   decide *which rows* a caller may read; this package decides whether a stored column is readable at all.
-- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – the model-building/wiring layer for the rest of the stack.
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) – the model-building/wiring layer for the rest of the stack.
   Reach for it for automatic entity configuration; this package's `UseColumnEncryption` is an independent
   `OnModelCreating` call.

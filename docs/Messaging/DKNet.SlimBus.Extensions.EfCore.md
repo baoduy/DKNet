@@ -8,7 +8,7 @@ successful write request and domain events forwarded onto the bus.
 - **Handlers stop calling `SaveChangesAsync`.** A write request that returns a successful `IResult` gets its
   `DbContext` saved by an interceptor, using the same concurrency-aware save path as the rest of DKNet's EF Core stack.
 - **Domain events reach the bus without handler code.** Events raised by aggregates through
-  [DKNet.EfCore.Events](../EfCore/DKNet.EfCore.Events.md) are published to `IMessageBus` after the save that made them
+  [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) are published to `IMessageBus` after the save that made them
   true.
 - **One call for the common case.** `AddSlimBusForEfCore<TDbContext>(assembly)` is the core MediatR-style setup plus
   auto-save plus event publishing.
@@ -182,9 +182,9 @@ The auto-save interceptor (`EfAutoSavePostInterceptor<,>`) and its `DbContext` r
 
 - **[DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions.md)** — the EF-free core: `Fluents` contracts, lazy mapping,
   and the memory-bus setup this package builds on.
-- **[DKNet.EfCore.Events](../EfCore/DKNet.EfCore.Events.md)** — the source of the domain events this package forwards;
+- **[DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md)** — the source of the domain events this package forwards;
   `AddSlimBusEventPublisher<TDbContext>()` is the bridge between its hook and the bus.
-- **[DKNet.EfCore.Abstractions](../EfCore/DKNet.EfCore.Abstractions.md)** — supplies the `IEventItem` / `IEventPublisher`
+- **[DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md)** — supplies the `IEventItem` / `IEventPublisher`
   contracts `SlimBusEventPublisher` implements.
 - **[DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md)** — the recommended query/mutation surface
   inside handlers; auto-save doesn't care how entities were changed, only that the change tracker has changes.
@@ -215,7 +215,7 @@ The auto-save interceptor (`EfAutoSavePostInterceptor<,>`) and its `DbContext` r
 - [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions.md) – the EF-free contracts and MediatR-style setup.
 - [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators.md) – reach for it to generate CRUD requests, handlers, and
   endpoints instead of hand-writing the repetitive slices.
-- [DKNet.EfCore.Events](../EfCore/DKNet.EfCore.Events.md) – reach for it to raise domain events from aggregates in the
+- [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) – reach for it to raise domain events from aggregates in the
   first place.
 - [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) – reach for it to express handler queries as
   reusable specifications.

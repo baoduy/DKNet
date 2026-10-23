@@ -624,7 +624,7 @@ public class Product
 ```
 
 **After** — there is no separate `AggregateRoot` type; derive from `AuditedEntity` (or plain `Entity` if you don't
-need audit fields) — see [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md):
+need audit fields) — see [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md):
 ```csharp
 using DKNet.EfCore.Abstractions.Entities;
 using System.ComponentModel.DataAnnotations.Schema;

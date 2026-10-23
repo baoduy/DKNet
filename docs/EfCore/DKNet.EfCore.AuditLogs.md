@@ -19,7 +19,7 @@ deleted entity, and hands the batch to publishers you register.
 - **You own the sink** — the package produces `AuditLogEntry` records and calls your `IAuditLogPublisher`; where they
   land (table, queue, log sink) is your decision, keyed per `DbContext` type.
 - **Shares one pipeline with the other hook packages** — auditing, domain events, and data authorization all run in
-  the same before/after-save pass from [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md), not in three competing
+  the same before/after-save pass from [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md), not in three competing
   interceptors.
 
 Reach for this package when you need an automatic audit trail of entity changes and are willing to plug in your own
@@ -33,7 +33,7 @@ storage. If you only need EF Core's change-tracking debug view for troubleshooti
 dotnet add package DKNet.EfCore.AuditLogs
 ```
 
-The package depends on [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) (for `IAuditedProperties` and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes) and [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) (for the `SaveChanges` pipeline), plus `Microsoft.EntityFrameworkCore`.
+The package depends on [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) (for `IAuditedProperties` and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes) and [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) (for the `SaveChanges` pipeline), plus `Microsoft.EntityFrameworkCore`.
 
 Registering the hook alone is **not** enough — the `DbContext` must also be wired into the hook pipeline via `AddDbContextWithHook` (or a manual `options.UseHooks<TDbContext>(provider)` call), exactly as for any other `DKNet.EfCore.Hooks` consumer:
 
@@ -236,7 +236,7 @@ public sealed class Customer : AuditedEntity<Guid>
 }
 ```
 
-Redaction here is unchanged by role-gated API filtering. `[SensitiveData]` now accepts optional role names, but this package ignores them: a declared-sensitive value is redacted in every audit entry, for every reader, exactly as before. What the roles do — withhold the property from an API response for callers who don't hold one — is `DKNet.EfCore.Extensions`' opt-in and never touches audit capture; see [Withhold sensitive properties from unauthorised callers](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers). The reverse is also worth stating plainly: **the built-in name deny-list is an audit-log default only.** A property redacted because its name contains `token` or `apikey`, with no attribute on it, is still returned in full by the API — the response filter acts on an explicit `[SensitiveData]` declaration and nothing else. That gap is a deliberate, accepted decision rather than an oversight; close it for a given property by declaring it `[SensitiveData]`.
+Redaction here is unchanged by role-gated API filtering. `[SensitiveData]` now accepts optional role names, but this package ignores them: a declared-sensitive value is redacted in every audit entry, for every reader, exactly as before. What the roles do — withhold the property from an API response for callers who don't hold one — is `DKNet.EfCore.Extensions`' opt-in and never touches audit capture; see [Withhold sensitive properties from unauthorised callers](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers). The reverse is also worth stating plainly: **the built-in name deny-list is an audit-log default only.** A property redacted because its name contains `token` or `apikey`, with no attribute on it, is still returned in full by the API — the response filter acts on an explicit `[SensitiveData]` declaration and nothing else. That gap is a deliberate, accepted decision rather than an oversight; close it for a given property by declaring it `[SensitiveData]`.
 
 ```csharp
 public sealed class ApiClient : AuditedEntity<Guid>
@@ -298,8 +298,8 @@ gate driven by `AuditPropertyPolicy` and the redactor:
 
 ![Data-flow diagram of audit capture: snapshot entries pass an entity gate that requires IAuditedProperties and honours the configured behaviour, then a property gate that applies AuditPropertyPolicy and routes sensitive values through the redactor, producing an AuditLogEntry that is published after the write to every IAuditLogPublisher keyed to the DbContext.](../diagrams/efcore-auditlogs-capture.svg)
 
-- **[DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md)** supplies the contract: entities must implement `IAuditedProperties` (directly, or via the `AuditedEntity`/`AuditedEntity<TKey>` base classes) to be eligible for auditing at all, and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes that steer what gets captured live there, not in this package.
-- **[DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md)** provides the `SaveChanges` pipeline. `EfCoreAuditHook` is a normal `IHookAsync` hook, registered with the same `AddHook<TDbContext, THook>()` call any other hook uses, and only runs if the `DbContext` was registered via `AddDbContextWithHook<TDbContext>` (or `options.UseHooks<TDbContext>(provider)` manually) — auditing shares the exact same wiring requirement as domain events or data authorization hooks on the same `DbContext`.
+- **[DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md)** supplies the contract: entities must implement `IAuditedProperties` (directly, or via the `AuditedEntity`/`AuditedEntity<TKey>` base classes) to be eligible for auditing at all, and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes that steer what gets captured live there, not in this package.
+- **[DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md)** provides the `SaveChanges` pipeline. `EfCoreAuditHook` is a normal `IHookAsync` hook, registered with the same `AddHook<TDbContext, THook>()` call any other hook uses, and only runs if the `DbContext` was registered via `AddDbContextWithHook<TDbContext>` (or `options.UseHooks<TDbContext>(provider)` manually) — auditing shares the exact same wiring requirement as domain events or data authorization hooks on the same `DbContext`.
 - Because multiple hooks can be registered for one `DbContext`, the audit hook runs alongside e.g. a domain-events hook or a data-authorization hook in the same before/after-save pass; `HookRunnerInterceptor` runs all `BeforeSaveAsync` hooks in DI registration order, then (after the underlying `SaveChangesAsync` succeeds) all `AfterSaveAsync` hooks in DI registration order — there is no explicit priority system, so if audit ordering relative to another hook matters, control it via registration order.
 
 ## ⚠️ Gotchas & limits
@@ -319,12 +319,12 @@ gate driven by `AuditPropertyPolicy` and the redactor:
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline this package registers into. Reach for it
+- [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) – the `SaveChanges` pipeline this package registers into. Reach for it
   directly when you need a custom before/after-save hook of your own.
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – defines `IAuditedProperties`, `AuditedEntity<TKey>`,
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) – defines `IAuditedProperties`, `AuditedEntity<TKey>`,
   and the `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` attributes. Reach for it to make an entity auditable in
   the first place.
-- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – dispatches domain events through the same pipeline. Reach for it
+- [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) – dispatches domain events through the same pipeline. Reach for it
   when other parts of the system must *react* to a change rather than record it.
 - [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) – column-level encryption. Reach for it to protect a value
   at rest; this package only decides whether the value appears in an audit entry.

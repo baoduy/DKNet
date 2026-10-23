@@ -1,59 +1,48 @@
 # DKNet.EfCore.Relational.Helpers
 
-Small set of `DbContext` extension methods for relational-provider bookkeeping: table creation without a migration, an already-open connection, resolved schema/table names, and table-existence checks.
+Relational table metadata, existence, connection and one-shot schema helpers for .NET developers writing infrastructure code.
 
-## Install
+## ✨ Why use it?
+
+- Resolve mapped table and schema names without a database round trip.
+- Ask the database catalog whether a mapped table exists without probing entity rows.
+- Use the context connection for ADO.NET or provision an empty model schema through an explicit table gate.
+
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
 dotnet add package DKNet.EfCore.Relational.Helpers
+dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL --version 10.0.3
 ```
-
-## Features
-
-- `CreateTableAsync<TEntity>()` — ensures the database exists and creates the table for `TEntity` if it isn't already there (one-shot, not a migration)
-- `GetDbConnection()` — returns the `DbContext`'s underlying `DbConnection`, opening it if closed
-- `GetTableName<TEntity>()` — resolves the schema and table name EF Core mapped for `TEntity` (with the SQL Server `dbo` default applied)
-- `TableExistsAsync<TEntity>()` — checks whether the table for `TEntity` exists in the database
-
-## Quick start
 
 ```csharp
 using DKNet.EfCore.Relational.Helpers;
+using Microsoft.EntityFrameworkCore;
 
-if (!await dbContext.TableExistsAsync<Product>())
+var options = new DbContextOptionsBuilder<DemoDb>()
+    .UseNpgsql("Host=localhost;Database=unused;Username=unused;Password=unused").Options;
+using var db = new DemoDb(options);
+Console.WriteLine(db.GetTableName<Item>()); // (, Items)
+
+public sealed class DemoDb(DbContextOptions<DemoDb> options) : DbContext(options)
 {
-    await dbContext.CreateTableAsync<Product>();
+    public DbSet<Item> Items => Set<Item>();
 }
-
-var (schema, table) = dbContext.GetTableName<Product>();
+public sealed class Item { public int Id { get; set; } }
 ```
 
-## Customisation reference
-
-There is no options class, no `IServiceCollection` extension, and no MSBuild switch — the surface is the four
-methods' parameters and the provider-dependent behaviour they inherit.
-
-| Method | Knob | Type | Default | Effect |
-|---|---|---|---|---|
-| `CreateTableAsync<TEntity>` | `TEntity` | `class` | required | Picks the table whose existence is probed. Creation itself is not scoped to it — `CreateTablesAsync` creates every table missing from the model. |
-| `CreateTableAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Flows into the exists check, `EnsureCreatedAsync`, the table probe and `CreateTablesAsync`. |
-| `GetDbConnection` | `cancellationToken` | `CancellationToken` | `default` | Used only when the connection was closed and has to be opened. |
-| `GetTableName<TEntity>` | default schema | — | `"dbo"` on SQL Server, otherwise `null` | Substituted only when the provider name is exactly `Microsoft.EntityFrameworkCore.SqlServer` and the model supplies no schema. |
-| `GetTableName<TEntity>` | resolution order | — | `GetSchema()` → `GetDefaultSchema()` → default schema; `GetTableName()` → `GetDefaultTableName()` | Fixed. Returns `(null, null)` when `TEntity` is not in the model. |
-| `TableExistsAsync<TEntity>` | swallowed exception | — | `DbException` only | Any `DbException` reads as "table absent"; everything else propagates. |
-| `TableExistsAsync<TEntity>` | `cancellationToken` | `CancellationToken` | `default` | Flows into the `AnyAsync` probe. |
-
-All four require a relational provider, and none of them record a migration — mixing `CreateTableAsync` with EF
-Core Migrations on the same database leaves an inconsistent `__EFMigrationsHistory`.
+Run with `dotnet run`. This metadata-only example does not connect to the placeholder endpoint.
 
 ## Documentation
 
-Full method reference, gotchas, and provider notes: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Relational.Helpers.md
-
-## License
-
-MIT © drunkcoding
-
-## Repository
-
-https://github.com/baoduy/DKNet
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Relational.Helpers/index.md) | Start with architecture and the end-to-end flow. |
+| [Resolve an entity table and schema](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Relational.Helpers/resolve-table-names.md) | Read the physical table name and schema from EF Core model metadata without opening a connection. |
+| [Open the context connection for ADO.NET](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Relational.Helpers/open-context-connection.md) | Get the connection already associated with the DbContext, opening it when its state is Closed. |
+| [Check whether a mapped table exists](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Relational.Helpers/check-table-existence.md) | Query `INFORMATION_SCHEMA.TABLES` using the entity mapped table and, when known, schema. |
+| [Create a model schema behind one table gate](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Relational.Helpers/create-model-tables.md) | Use `CreateTableAsync<TEntity>` only for one-shot provisioning against an empty relational schema. |

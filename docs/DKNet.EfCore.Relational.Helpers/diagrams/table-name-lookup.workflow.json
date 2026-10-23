@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Resolve a table from model metadata",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Relational.Helpers/table-name-lookup.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    },
+    {
+      "id": "exit",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "GetTableName<Item>",
+      "sublabel": "request mapped table",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "FindEntityType",
+      "sublabel": "look up CLR type",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Resolve schema and table",
+      "sublabel": "provider-aware fallbacks",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Return tuple",
+      "sublabel": "no connection opened",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "id": "exit",
+      "lane": "exit",
+      "col": 1,
+      "type": "security",
+      "label": "Return (null, null)",
+      "sublabel": "entity absent from model",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternative",
+      "from": "s1",
+      "to": "exit",
+      "label": "not found",
+      "role": "branch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "An unmapped type returns null schema and table."
+      ]
+    }
+  ]
+}

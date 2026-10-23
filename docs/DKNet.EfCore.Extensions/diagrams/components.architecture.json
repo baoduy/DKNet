@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Model building and independent host helpers",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Extensions/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer application"
+        },
+        "backend": {
+          "label": "Package and framework types"
+        },
+        "database": {
+          "label": "Relational store"
+        },
+        "messagebus": {
+          "label": "Publisher adapter"
+        },
+        "security": {
+          "label": "Caller identity"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Consumer DbContext",
+      "sublabel": "configures options and calls helpers",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/EfCoreSetup.cs",
+          "line": 42,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "custom",
+      "label": "AutoConfigModelCustomizer",
+      "sublabel": "wraps provider model customizer",
+      "pos": [
+        430,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Internal/AutoConfigModelCustomizer.cs",
+          "line": 9,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "model",
+      "label": "EF Core model",
+      "sublabel": "configurations, filters, sequences",
+      "pos": [
+        810,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Internal/AutoConfigModelCustomizer.cs",
+          "line": 16,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "helpers",
+      "label": "Snapshot / entry / save helpers",
+      "sublabel": "independent of model scan",
+      "pos": [
+        50,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Snapshots/SnapshotContext.cs",
+          "line": 87,
+          "end_line": 101
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Extensions/EfSaveChangesExtension.cs",
+          "line": 38,
+          "end_line": 65
+        }
+      ]
+    },
+    {
+      "id": "serializer",
+      "label": "SensitiveDataJsonExtensions",
+      "sublabel": "opt-in JSON metadata modifier",
+      "pos": [
+        430,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 42,
+          "end_line": 50
+        }
+      ]
+    },
+    {
+      "id": "identity",
+      "label": "Principal accessor",
+      "sublabel": "host-supplied current identity",
+      "pos": [
+        810,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "security",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/ISensitiveDataPrincipalAccessor.cs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "custom",
+      "label": "options opt-in"
+    },
+    {
+      "from": "custom",
+      "to": "model",
+      "label": "configures"
+    },
+    {
+      "from": "host",
+      "to": "helpers",
+      "label": "calls"
+    },
+    {
+      "from": "host",
+      "to": "serializer",
+      "label": "configures options"
+    },
+    {
+      "from": "serializer",
+      "to": "identity",
+      "label": "reads per property"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime ownership",
+      "items": [
+        "Model building follows EF caching; explicit global builder types and filter keys are process-wide metadata.",
+        "Seeding callbacks are separate options opt-in. Serialization does not depend on a DbContext or ASP.NET."
+      ]
+    }
+  ]
+}

@@ -266,9 +266,9 @@ Each page below owns the exhaustive table for its own package. This page does no
 
 | Package | Its configuration surface |
 |---|---|
-| [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
-| [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
-| [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
+| [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
+| [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
+| [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
 | [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
 | [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
 | [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |

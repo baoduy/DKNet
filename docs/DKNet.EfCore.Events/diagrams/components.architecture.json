@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Entity event dispatch through save hooks",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Events/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer application"
+        },
+        "backend": {
+          "label": "Package and framework types"
+        },
+        "database": {
+          "label": "Relational store"
+        },
+        "messagebus": {
+          "label": "Publisher adapter"
+        },
+        "security": {
+          "label": "Caller identity"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "entity",
+      "label": "Entity / RaisesEvent rules",
+      "sublabel": "manual queues or declarations",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/Entity.cs",
+          "line": 64,
+          "end_line": 83
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs",
+          "line": 52,
+          "end_line": 99
+        }
+      ]
+    },
+    {
+      "id": "hook",
+      "label": "EventHook : HookAsync",
+      "sublabel": "before capture; after dispatch",
+      "pos": [
+        430,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 39,
+          "end_line": 65
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 124,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "publisher",
+      "label": "IEventPublisher",
+      "sublabel": "host transport adapter(s)",
+      "pos": [
+        810,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "messagebus",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/EventSetup.cs",
+          "line": 23,
+          "end_line": 30
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 142,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "pipeline",
+      "label": "Hooks interceptor",
+      "sublabel": "async save lifecycle",
+      "pos": [
+        50,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 228,
+          "end_line": 277
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "label": "EventContext",
+      "sublabel": "snapshot queues and sourceType",
+      "pos": [
+        430,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventContext.cs",
+          "line": 26,
+          "end_line": 64
+        }
+      ]
+    },
+    {
+      "id": "mapper",
+      "label": "MapsterMapper.IMapper",
+      "sublabel": "first registration if needed",
+      "pos": [
+        810,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 25,
+          "end_line": 25
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 133,
+          "end_line": 139
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "entity",
+      "to": "hook",
+      "label": "collected on save"
+    },
+    {
+      "from": "hook",
+      "to": "publisher",
+      "label": "batch per publisher"
+    },
+    {
+      "from": "pipeline",
+      "to": "hook",
+      "label": "invokes phases"
+    },
+    {
+      "from": "hook",
+      "to": "context",
+      "label": "collects queues"
+    },
+    {
+      "from": "context",
+      "to": "mapper",
+      "label": "maps queued types"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime ownership",
+      "items": [
+        "Publishers are scoped and shared across context registrations. Each publisher exception is caught separately.",
+        "There is no durable queue, dispatcher worker or retry store in this package."
+      ]
+    }
+  ]
+}
