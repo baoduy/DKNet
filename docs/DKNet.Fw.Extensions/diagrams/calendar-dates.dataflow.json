@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Move to the last day in the same month",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/calendar-dates/calendar-dates.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "DateTime"
+    },
+    {
+      "label": "Remaining days"
+    },
+    {
+      "label": "Month end"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "Original date",
+      "sublabel": "Year / month / day",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/DateTimeExtensions.cs",
+          "line": 34,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "delta",
+      "type": "backend",
+      "label": "DaysInMonth - Day",
+      "sublabel": "Calendar difference",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/DateTimeExtensions.cs",
+          "line": 34,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "date.AddDays(delta)",
+      "sublabel": "Time and Kind preserved",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/DateTimeExtensions.cs",
+          "line": 34,
+          "end_line": 35
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "delta",
+      "label": "calculate",
+      "variant": "emphasis"
+    },
+    {
+      "from": "delta",
+      "to": "result",
+      "label": "add",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "The nullable overload passes null through. InQuarter separately computes ((Month - 1) / 3) + 1."
+      ]
+    }
+  ]
+}

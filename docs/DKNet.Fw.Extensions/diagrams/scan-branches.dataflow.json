@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Branch an extractor without changing its source",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/scan-branches/scan-branches.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Shared query"
+    },
+    {
+      "label": "New branches"
+    },
+    {
+      "label": "Enumeration"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "base",
+      "type": "backend",
+      "label": "Classes()",
+      "sublabel": "Shared predicate list",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "concrete",
+      "type": "backend",
+      "label": "NotAbstract()",
+      "sublabel": "Copy plus new predicate",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "abstract",
+      "type": "security",
+      "label": "Abstract()",
+      "sublabel": "Independent copy",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "Filtered types",
+      "sublabel": "Cached types; rerun predicates",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "base",
+      "to": "concrete",
+      "label": "copy",
+      "variant": "emphasis"
+    },
+    {
+      "from": "base",
+      "to": "abstract",
+      "label": "copy",
+      "variant": "default"
+    },
+    {
+      "from": "concrete",
+      "to": "result",
+      "label": "enumerate",
+      "variant": "emphasis"
+    },
+    {
+      "from": "abstract",
+      "to": "result",
+      "label": "enumerate",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Where(null) returns the same extractor. Other branches do not mutate its predicate list."
+      ]
+    }
+  ]
+}

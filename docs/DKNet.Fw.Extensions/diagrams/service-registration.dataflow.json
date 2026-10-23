@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Choose a service-registration guard",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/service-registration/service-registration.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Descriptors"
+    },
+    {
+      "label": "Comparison"
+    },
+    {
+      "label": "Presence"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "IServiceCollection",
+      "sublabel": "Existing descriptors",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/ServiceCollectionExtensions.cs",
+          "line": 60,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "IsRegistered<T>()",
+      "sublabel": "ServiceType match",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/ServiceCollectionExtensions.cs",
+          "line": 68,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "pair",
+      "type": "security",
+      "label": "Implementation match",
+      "sublabel": "Service + implementation types",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/ServiceCollectionExtensions.cs",
+          "line": 79,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "Any match?",
+      "sublabel": "Boolean; no registration",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/ServiceCollectionExtensions.cs",
+          "line": 68,
+          "end_line": 80
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "service",
+      "label": "contract",
+      "variant": "emphasis"
+    },
+    {
+      "from": "input",
+      "to": "pair",
+      "label": "pair",
+      "variant": "default"
+    },
+    {
+      "from": "service",
+      "to": "result",
+      "label": "Any",
+      "variant": "emphasis"
+    },
+    {
+      "from": "pair",
+      "to": "result",
+      "label": "Any",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "IsRegisteredWithImplementation reads ImplementationType; it cannot discover a concrete factory or instance implementation."
+      ]
+    }
+  ]
+}

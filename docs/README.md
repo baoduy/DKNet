@@ -58,8 +58,8 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) |
 | Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) |
 | Fill bracketed tokens in a template string from an object or a dictionary | [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) |
-| Generate a password, token, or other secret | [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) |
-| Scan assemblies for types, or reach for a string/enum/`DateTime`/reflection helper | [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) |
+| Generate a password, token, or other secret | [DKNet.RandomCreator](./DKNet.RandomCreator/index.md) |
+| Scan assemblies for types, or reach for a string/enum/`DateTime`/reflection helper | [DKNet.Fw.Extensions](./DKNet.Fw.Extensions/index.md) |
 | Give a local Aspire AppHost its own Azure Service Bus emulator | [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) (source-only) |
 
 ## Component Documentation
@@ -67,8 +67,8 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 ### [Core Framework](./Core/README.md)
 Foundation utilities that sit at the bottom of the dependency graph and pull in nothing else from DKNet.
 
-- [DKNet.Fw.Extensions](./Core/DKNet.Fw.Extensions.md) — framework-agnostic reflection, type, string, enum and DI-inspection helpers, plus fluent assembly/type scanning (`TypeExtractors`)
-- [DKNet.RandomCreator](./Core/DKNet.RandomCreator.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
+- [DKNet.Fw.Extensions](./DKNet.Fw.Extensions/index.md) — framework-agnostic reflection, type, string, enum and DI-inspection helpers, plus fluent assembly/type scanning (`TypeExtractors`)
+- [DKNet.RandomCreator](./DKNet.RandomCreator/index.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
 
 ### [Entity Framework Core Extensions](./EfCore/README.md)
 Entity base classes, the specification pattern, and the `SaveChanges` interceptor pipeline everything else hangs off.

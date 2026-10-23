@@ -23,7 +23,12 @@
     "viewBox": [
       1080,
       620
-    ]
+    ],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "output": ".task-validation/diagrams/randomcreator-string-composition/randomcreator-string-composition.html"
   },
   "stages": [
     {
@@ -50,16 +55,30 @@
       "sublabel": "length defaults to 25",
       "stage": 0,
       "row": 1,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "invalid",
       "type": "security",
       "label": "ArgumentException",
-      "sublabel": "quotas do not leave room",
+      "sublabel": "length <= 0; sum >= length",
       "stage": 0,
       "row": 3,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "digits",
@@ -68,7 +87,14 @@
       "sublabel": "pool 1234567890",
       "stage": 1,
       "row": 0,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "symbols",
@@ -77,7 +103,14 @@
       "sublabel": "30-character pool",
       "stage": 1,
       "row": 2,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "letters",
@@ -86,7 +119,14 @@
       "sublabel": "a-z and A-Z only",
       "stage": 2,
       "row": 1,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "shuffle",
@@ -95,7 +135,14 @@
       "sublabel": "RandomNumberGenerator.Shuffle",
       "stage": 3,
       "row": 1,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     },
     {
       "id": "result",
@@ -104,7 +151,14 @@
       "sublabel": "NewChars or NewString",
       "stage": 4,
       "row": 1,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
     }
   ],
   "flows": [
@@ -159,9 +213,9 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "Quotas are exact, not minimums",
+      "title": "Nonnegative quotas are exact",
       "items": [
-        "MinNumbers and MinSpecials draw exactly that many characters",
+        "Nonnegative MinNumbers and MinSpecials draw exactly that many characters",
         "The letter pool never contributes digits or symbols, so the counts hold",
         "Every draw and the final shuffle come from RandomNumberGenerator"
       ]
@@ -172,7 +226,7 @@
       "items": [
         "MinNumbers + MinSpecials must stay strictly below length",
         "The character pools are fixed; there is no way to supply your own",
-        "There is no seed, so output is never reproducible"
+        "There is no seed or guarantee of unique results"
       ]
     }
   ]

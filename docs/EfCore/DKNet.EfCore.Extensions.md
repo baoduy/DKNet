@@ -586,5 +586,5 @@ Everything `UseAutoConfigModel` does happens once, inside EF Core's own model bu
 - [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) – carries `[SensitiveData]` from the entity onto the
   generated response model, which is what `UseRoleAwareSensitiveData` then reads. Reach for it so you never
   re-declare the attribute on a DTO by hand.
-- [DKNet.Fw.Extensions](../Core/DKNet.Fw.Extensions.md) – the reflection and type-scanning helpers
+- [DKNet.Fw.Extensions](../DKNet.Fw.Extensions/index.md) – the reflection and type-scanning helpers
   (`IsImplementOf`, `TypeExtractors`) this package's discovery is written against.

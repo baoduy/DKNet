@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Choose the returned representation",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/random-output/random-output.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Public method"
+    },
+    {
+      "label": "Generation"
+    },
+    {
+      "label": "Output"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "chars",
+      "type": "backend",
+      "label": "NewChars",
+      "sublabel": "Fresh StringCreator",
+      "stage": 0,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/RandomCreators.cs",
+          "line": 21,
+          "end_line": 27
+        }
+      ]
+    },
+    {
+      "id": "string",
+      "type": "security",
+      "label": "NewString",
+      "sublabel": "Fresh StringCreator",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/RandomCreators.cs",
+          "line": 36,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "buffer",
+      "type": "backend",
+      "label": "ToChars",
+      "sublabel": "Fill and shuffle buffer",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "array",
+      "type": "backend",
+      "label": "char[]",
+      "sublabel": "Return buffer directly",
+      "stage": 2,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/RandomCreators.cs",
+          "line": 21,
+          "end_line": 27
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "type": "security",
+      "label": "string",
+      "sublabel": "Copy with new string(chars)",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 69,
+          "end_line": 72
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "chars",
+      "to": "buffer",
+      "label": "generate",
+      "variant": "emphasis"
+    },
+    {
+      "from": "string",
+      "to": "buffer",
+      "label": "generate",
+      "variant": "default"
+    },
+    {
+      "from": "buffer",
+      "to": "array",
+      "label": "NewChars",
+      "variant": "emphasis"
+    },
+    {
+      "from": "buffer",
+      "to": "text",
+      "label": "NewString",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Both methods use the same length and quota validation. Clearing the returned array does not clear copies elsewhere."
+      ]
+    }
+  ]
+}

@@ -1,84 +1,51 @@
 # DKNet.Fw.Extensions
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Fw.Extensions)](https://www.nuget.org/packages/DKNet.Fw.Extensions/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+Reflection, type discovery and small value helpers for .NET developers who need reusable in-process operations.
 
-Dependency-light, framework-agnostic extension methods that the rest of the DKNet suite is built
-on: string/type/enum/date helpers, reflection-based property access, attribute checks, a fluent
-assembly type scanner, and small DI-registration guards. No configuration, no startup wiring —
-just install and use.
+## ✨ Why use it?
 
-## Install
+- Find concrete implementations across assemblies with a filter chain you can branch and reuse.
+- Read or update object properties by name without repeating lookup and conversion code.
+- Build enum labels and inspect registrations with helpers that expose their edge cases.
+
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n CoreDemo
+cd CoreDemo
 dotnet add package DKNet.Fw.Extensions
 ```
 
-## Features
-
-- **String** — `ExtractDigits()`, `IsNumber()`, `IsStringOrValueType()`
-- **Type** — `IsImplementOf`, `IsAssignableFrom<T>`/`IsAssignableTo<T>`, `IsNumericType`,
-  `IsEnumType`, `GetNonNullableType`, `TryConvertToEnum`
-- **Enum** — `GetAttribute<T>()`, `GetEnumInfo()` / `GetEnumInfos<T>()` for `[Display]`-attribute
-  metadata (name, description, group)
-- **DateTime** — `InQuarter()`, `LastDayOfMonth()`
-- **Property** — `GetProperty`, `GetPropertyValue` (dotted/nested paths), `SetPropertyValue`,
-  `TrySetPropertyValue`
-- **Attribute** — `HasAttribute<T>()`, `HasAttributeOnProperty<T>()`
-- **Collection** — `AddRange`
-- **Service collection** — `IsRegistered<T>()` / `IsRegisteredWithImplementation<T>()` guards,
-  `ServiceDescriptor.IsImplementationOf` / `IsKeyedImplementationOf` for keyed services
-- **TypeExtractors** — `assembly.Extract().Classes().NotAbstract().IsInstanceOf<T>()...` fluent
-  scanning over one or more assemblies
-
-## Quick start
-
 ```csharp
-using DKNet.Fw.Extensions.Primitives;
-using DKNet.Fw.Extensions.Reflection;
+using System;
+using System.Linq;
+using DKNet.Fw.Extensions.TypeExtractors;
 
-"Price: $123.45".ExtractDigits();          // "123.45"
-typeof(List<string>).IsImplementOf(typeof(IEnumerable<>)); // true
-DateTime.Today.InQuarter();                // 1-4
+var types = typeof(Worker).Assembly.Extract()
+    .Classes().NotAbstract().IsInstanceOf<IWorker>().ToList();
+Console.WriteLine(types.Contains(typeof(Worker))); // True
+
+public interface IWorker { }
+public sealed class Worker : IWorker { }
 ```
 
-## Customisation reference
+Run with `dotnet run`.
 
-There is no options object, no `IOptions<T>`, and no startup wiring — every member is a static or extension
-method with fixed behaviour. The whole configurable surface is two optional parameters plus the type-scanner
-chain:
+## Documentation
 
-| Knob | Type | Default | Effect |
-|---|---|---|---|
-| `GetProperty(propertyName, flags)` — `flags` | `BindingFlags` | `IgnoreCase \| Public \| NonPublic \| Instance` | Which properties the reflection lookup considers. `GetPropertyValue`, `SetPropertyValue`, `TrySetPropertyValue` and `HasAttributeOnProperty` all resolve through this default and do not expose the parameter. |
-| `HasAttribute<TAttribute>(inherit)` / `HasAttributeOnProperty<TAttribute>(propertyName, inherit)` — `inherit` | `bool` | `true` | Whether an attribute inherited from a base type or property counts as present. |
-| `ITypeExtractor` shape filters | chained calls | no filter | `Classes()`/`NotClass()`, `Enums()`/`NotEnum()`, `Interfaces()`/`NotInterface()`, `Abstract()`/`NotAbstract()`, `Generic()`/`NotGeneric()`, `Nested()`/`NotNested()`, `Publics()`/`NotPublic()`. Additive — each call narrows further. |
-| `ITypeExtractor` relationship filters | chained calls | no filter | `IsInstanceOf(Type?)` / `IsInstanceOf<T>()` / `IsInstanceOfAny(params Type[])` / `NotInstanceOf(...)`, `HasAttribute<TAttribute>()` / `HasAttribute(Type)`, and `Where(Expression<Func<Type, bool>>?)` as the escape hatch. |
-| `ITypeExtractor` evaluation | — | lazy | Nothing is scanned until you enumerate (`ToList()`, `foreach`, LINQ). Duplicate assemblies are de-duplicated; a null or empty assembly array throws `ArgumentException`. |
-
-## Migration — namespace changes in this release
-
-Root types were grouped into concern folders; the namespace of each moved type now ends
-with its folder name. This is an import-only source break: no type was renamed, removed,
-resignatured, or had its behaviour changed — update the `using` line and you're done.
-
-| Type | Old namespace | New namespace |
-|---|---|---|
-| `CollectionExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Collections` |
-| `StringExtensions`, `DateTimeExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Primitives` |
-| `AttributeExtensions`, `PropertyExtensions`, `TypeExtensions` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Reflection` |
-| `EnumExtensions`, `EnumInfo` | `DKNet.Fw.Extensions` | `DKNet.Fw.Extensions.Enums` |
-
-One file kept its namespace on purpose — it declares an **ambient namespace** (a
-namespace owned by the framework it extends, so its extension methods resolve without an
-extra import):
-
-- `ServiceCollectionExtensions` — stays at root, namespace `Microsoft.Extensions.DependencyInjection`.
-
-`TypeExtractors` (fluent assembly scanner) was already grouped before this release and is unchanged.
-
-## Docs
-
-Full feature walkthrough with real, compiling examples:
-https://github.com/baoduy/DKNet/blob/main/docs/Core/DKNet.Fw.Extensions.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/index.md) | Start with architecture and the end-to-end flow. |
+| [Find types in loaded assemblies](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/scan-assemblies.md) | Find implementations and branch a reusable query without changing its source. |
+| [Read and update properties by name](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/access-properties.md) | Read nested values and convert input before writing a property. |
+| [Inspect nullable and generic type shapes](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/inspect-types.md) | Classify runtime types, including nullable values and open generic relationships. |
+| [Convert numeric values into enums](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/convert-enums.md) | Turn boxed numbers into enums while handling conversion failures. |
+| [Read enum display metadata](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/read-enum-metadata.md) | Build display labels and descriptions from enum field metadata. |
+| [Check attributes on types and properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/check-attributes.md) | Check metadata presence with null-safe reflection inputs. |
+| [Extract and inspect numeric-looking text](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/inspect-numeric-text.md) | Retain numeric-looking characters and understand the limits of heuristic checks. |
+| [Remove control characters from log text](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/sanitize-log-text.md) | Remove embedded controls and trim text before logging. |
+| [Find calendar quarters and month ends](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/calculate-calendar-dates.md) | Find the quarter or month end while preserving the input time. |
+| [Append items to an ICollection](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/add-collection-ranges.md) | Append items when the destination exposes only a collection interface. |
+| [Inspect service registrations before adding duplicates](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Fw.Extensions/inspect-service-registrations.md) | Choose a contract guard or an exact implementation guard. |

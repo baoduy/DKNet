@@ -230,5 +230,5 @@ at the ends of it:
 - [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) – reach for it to render the filled template into a PDF.
 - [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) – reach for it to read templates from,
   or write rendered output to, blob storage.
-- [DKNet.Fw.Extensions](../Core/DKNet.Fw.Extensions.md) – reach for it for the general-purpose string, type, and
+- [DKNet.Fw.Extensions](../DKNet.Fw.Extensions/index.md) – reach for it for the general-purpose string, type, and
   reflection helpers used across DKNet.

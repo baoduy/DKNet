@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Build enum labels from DisplayAttribute",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/enum-metadata/enum-metadata.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Enum fields"
+    },
+    {
+      "label": "Display metadata"
+    },
+    {
+      "label": "EnumInfo"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "fields",
+      "type": "backend",
+      "label": "Public static fields",
+      "sublabel": "GetEnumInfos<T>",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Enums/EnumExtensions.cs",
+          "line": 24,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "att",
+      "type": "backend",
+      "label": "DisplayAttribute",
+      "sublabel": "Name / description / group",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Enums/EnumExtensions.cs",
+          "line": 30,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "EnumInfo",
+      "sublabel": "Name falls back to field name",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Enums/EnumExtensions.cs",
+          "line": 34,
+          "end_line": 40
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "fields",
+      "to": "att",
+      "label": "read",
+      "variant": "emphasis"
+    },
+    {
+      "from": "att",
+      "to": "result",
+      "label": "map",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "The instance GetEnumInfo path has no name fallback. Resource lookup methods are not called."
+      ]
+    }
+  ]
+}

@@ -48,7 +48,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 
 - **Use `DKNet.RandomCreator` for anything secret.** It wraps
   `System.Security.Cryptography.RandomNumberGenerator`; `System.Random` is not cryptographically secure and its
-  output is predictable. See [DKNet.RandomCreator](Core/DKNet.RandomCreator.md).
+  output is predictable. See [DKNet.RandomCreator](DKNet.RandomCreator/index.md).
 
 ### Encryption keys
 
