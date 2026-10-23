@@ -80,7 +80,7 @@ Versioning is enabled by default and checked before discovery. The Quick Start o
 
 - [Idempotency](../DKNet.AspCore.Idempotency/index.md) — reserve keys for protected request retries.
 - [Tasks](../DKNet.AspCore.Tasks/index.md) — run a background batch at host start.
-- [SlimBus Extensions](../Messaging/DKNet.SlimBus.Extensions.md) — configure command/query dispatch.
-- [SlimBus Generators](../Messaging/DKNet.SlimBus.Generators.md) — generate CRUD request and mapping code.
+- [SlimBus Extensions](../DKNet.SlimBus.Extensions/index.md) — configure command/query dispatch.
+- [SlimBus Generators](../DKNet.SlimBus.Generators/index.md) — generate CRUD request and mapping code.
 - [EF Core Specifications](../DKNet.EfCore.Specifications/index.md) — configure repository reads and saves.
 - [Fw Extensions](../DKNet.Fw.Extensions/index.md) — inspect types and service registrations.

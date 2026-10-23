@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ServiceBusResource redirects its connection string",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "output": ".task-validation/Aspire.Hosting.ServiceBus/redirect-connection-string.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Caller"
+        },
+        "backend": {
+          "label": "ServiceBusResource member"
+        },
+        "messagebus": {
+          "label": "Emulator value"
+        },
+        "security": {
+          "label": "Redirected value"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Default (no annotation)"
+    },
+    {
+      "id": "redirected",
+      "label": "ConnectionStringRedirectAnnotation applied",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Resolve connection info",
+      "sublabel": "caller: WithReference or code",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 30,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Check annotation",
+      "sublabel": "TryGetLastAnnotation<...>",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 31,
+          "end_line": 31
+        },
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 51,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "messagebus",
+      "label": "Emulator value",
+      "sublabel": "UseDevelopmentEmulator=true",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 23,
+          "end_line": 25
+        }
+      ]
+    },
+    {
+      "id": "redirected",
+      "lane": "redirected",
+      "col": 2,
+      "type": "security",
+      "label": "Redirected value",
+      "sublabel": "annotation.Resource's expression",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 32,
+          "end_line": 32
+        },
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 52,
+          "end_line": 52
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "label": "no annotation",
+      "variant": "default"
+    },
+    {
+      "id": "e3",
+      "from": "s1",
+      "to": "redirected",
+      "label": "annotation present",
+      "role": "branch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What stays unchanged",
+      "items": [
+        "AddServiceBus still provisions the emulator container, its SQL Server dependency, bind mount and WaitFor regardless of a redirect.",
+        "PrimaryEndpoint always points at the emulator; the redirect only changes ConnectionStringExpression and GetConnectionStringAsync.",
+        "The annotation is read fresh on every call, so it can be applied or changed at any point before the value is resolved."
+      ]
+    }
+  ]
+}

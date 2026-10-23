@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Consuming a published event",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/consume-events.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package contract or your consumer"
+        },
+        "messagebus": {
+          "label": "SlimMessageBus"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Event consumption path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "messagebus",
+      "label": "IMessageBus.Publish(event)",
+      "sublabel": "from a handler, or SlimBusEventPublisher",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Handlers/SlimBusEventPublisher.cs",
+          "line": 34,
+          "end_line": 42
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Fluents.EventsConsumers.IHandler<TEvent>",
+      "sublabel": "alias over IConsumer<TEvent>",
+      "width": 290,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 22,
+          "end_line": 28
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "OnHandle(message, token)",
+      "sublabel": "returns Task, no response sent back",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 24,
+          "end_line": 28
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis",
+      "label": "SlimMessageBus routes by message type"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Deferring a Mapster mapping with ILazyMap<T>",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/map-results-lazily.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "LazyMapper step"
+        },
+        "external": {
+          "label": "Caller"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Lazy mapping path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "Handler has a source value",
+      "sublabel": "e.g. a freshly saved entity",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMapExtensions.cs",
+          "line": 27,
+          "end_line": 28
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "mapper.ResultOf<T>(value)",
+      "sublabel": "or mapper.LazyMap<T>(value)",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMapExtensions.cs",
+          "line": 27,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "external",
+      "label": "Returned as IResult<T> / ILazyMap<T>",
+      "sublabel": "mapping deferred",
+      "width": 240,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMap.cs",
+          "line": 15,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Value / ValueOrDefault read",
+      "sublabel": "maps via IMapper, or reuses a same-type instance",
+      "width": 240,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMap.cs",
+          "line": 53,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "n4",
+      "lane": "main",
+      "col": 3,
+      "yOffset": 130,
+      "type": "external",
+      "label": "Source was null",
+      "sublabel": "Value throws; ValueOrDefault returns default",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMap.cs",
+          "line": 44,
+          "end_line": 47
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis",
+      "label": "first access"
+    },
+    {
+      "id": "e3",
+      "from": "n2",
+      "to": "n4",
+      "variant": "dashed"
+    }
+  ]
+}

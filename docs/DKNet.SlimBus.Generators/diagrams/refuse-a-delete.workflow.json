@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Delete{Entity}Request: emitted unless a member already took the name",
+    "output": ".task-validation/DKNet.SlimBus.Generators/refuse-a-delete.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "lanes": [
+    {
+      "id": "check",
+      "label": "Per entity"
+    },
+    {
+      "id": "route",
+      "label": "DELETE route"
+    }
+  ],
+  "mainPath": [
+    "entity",
+    "collision",
+    "request",
+    "bound"
+  ],
+  "nodes": [
+    {
+      "id": "entity",
+      "lane": "check",
+      "col": 0,
+      "type": "backend",
+      "label": "Resolved entity",
+      "sublabel": "every generated entity",
+      "width": 170
+    },
+    {
+      "id": "collision",
+      "lane": "check",
+      "col": 1,
+      "type": "backend",
+      "label": "Member named Delete{Entity}Request?",
+      "sublabel": "create/update/action member",
+      "width": 260,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 767,
+          "label": "HasDeleteRequestNameCollision"
+        }
+      ]
+    },
+    {
+      "id": "fallback",
+      "lane": "route",
+      "col": 2,
+      "type": "security",
+      "label": "DKCRUDGEN010 (Info)",
+      "sublabel": "MapDeleteById<TEntity,TKey>() \u2014 no request",
+      "width": 230
+    },
+    {
+      "id": "request",
+      "lane": "route",
+      "col": 3,
+      "type": "frontend",
+      "label": "Delete{Entity}Request",
+      "sublabel": "IWithKey<TKey> only, no handler",
+      "width": 210
+    },
+    {
+      "id": "bound",
+      "lane": "route",
+      "col": 4,
+      "type": "frontend",
+      "label": "MapDeleteById<T,TKey,TRequest>()",
+      "sublabel": "204 / 404 / 409",
+      "width": 240
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "entity",
+      "to": "collision",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "collision",
+      "to": "fallback",
+      "label": "yes",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "collision",
+      "to": "request",
+      "label": "no",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "request",
+      "to": "bound",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "What never moves",
+      "items": [
+        "Route address and HTTP verb are unchanged either way",
+        "The request body is still never read",
+        "The delete goes straight to IRepositorySpec, never through SlimBus"
+      ]
+    }
+  ]
+}

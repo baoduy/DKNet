@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `AddSlimBusForEfCore<TDbContext>(params Assembly[] handlerAssemblies)`. That call is the same setup plus
   `AddSlimBusEfCoreInterceptor<TDbContext>()` and `AddSlimBusEventPublisher<TDbContext>()`. Both are memory-only;
   a host on a real transport keeps calling `AddSlimMessageBus` itself. See
-  [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) and
-  [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md).
+  [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) and
+  [DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md).
 - `DKNet.AspCore.Extensions` can now fill a request member from a named HTTP request header.
   `[FromRequestHeader("Idempotency-Key")]` on a request property — one required constructor argument, the
   header name, exposed as `HeaderName` — is populated before validation and before the handler runs by the
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entity, the colliding member and the request name it took, so the fallback is no longer silent. Severity is `Info`:
   the build still succeeds and the entity's DELETE route keeps working unchanged — only the delete request you could
   hang a validation rule on is missing, which renaming the member restores. See
-  [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md).
+  [DKNet.SlimBus.Generators](DKNet.SlimBus.Generators/index.md).
 - `DKNet.EfCore.AuditLogs` can now stamp `CreatedBy`/`UpdatedBy` from the signed-in user. Implement the new
   `ICurrentUserProvider` (one member, `string? GetCurrentUser()`, returning `null`/empty when there is no user) and
   register it with `services.AddCurrentUserProvider<TDbContext, TProvider>()` — an application-wide, scoped,
@@ -199,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   acting-user property on the request itself, mark it with an `IContextualSource` attribute — for example
   `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions` — and register
   `services.AddContextualRequestPopulation()`, which stamps the property before validation and before the handler
-  runs. See [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
+  runs. See [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md).
 - **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
   `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
   implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership

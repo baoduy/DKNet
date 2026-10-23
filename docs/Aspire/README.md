@@ -7,7 +7,7 @@ messaging infrastructure as first-class resources.
 
 | Package | Description |
 |---|---|
-| [`Aspire.Hosting.ServiceBus`](./Aspire.Hosting.ServiceBus.md) | Registers the Azure Service Bus emulator container as an Aspire resource, wired to a SQL Server resource and an emulator config file. |
+| [`Aspire.Hosting.ServiceBus`](../Aspire.Hosting.ServiceBus/index.md) | Registers the Azure Service Bus emulator container as an Aspire resource, wired to a SQL Server resource and an emulator config file. |
 
 ## Install
 

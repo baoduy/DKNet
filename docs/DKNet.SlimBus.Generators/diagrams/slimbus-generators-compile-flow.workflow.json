@@ -3,6 +3,11 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "CrudGenerator: one pass over the compilation, three generated files",
+    "output": ".task-validation/DKNet.SlimBus.Generators/slimbus-generators-compile-flow.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
     "legend": {
       "entries": {
         "frontend": {
@@ -34,17 +39,13 @@
       "label": "Resolve each entity"
     },
     {
-      "id": "diag",
-      "label": "Reported instead",
+      "id": "side",
+      "label": "Diagnostics and opt-in output",
       "variant": "exception"
     },
     {
       "id": "emit",
       "label": "Emit"
-    },
-    {
-      "id": "opt",
-      "label": "Emitted only with DKNet.AspCore.Extensions"
     }
   ],
   "mainPath": [
@@ -62,7 +63,14 @@
       "type": "backend",
       "label": "Assemblies",
       "sublabel": "own plus references",
-      "width": 152
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 649,
+          "label": "EnumerateScannedAssemblies"
+        }
+      ]
     },
     {
       "id": "dtos",
@@ -71,7 +79,14 @@
       "type": "database",
       "label": "GenerateDto DTOs",
       "sublabel": "this project only",
-      "width": 148
+      "width": 148,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 218,
+          "label": "BuildDtoLookup"
+        }
+      ]
     },
     {
       "id": "overrides",
@@ -80,7 +95,14 @@
       "type": "database",
       "label": "IHandler base lists",
       "sublabel": "matched by name",
-      "width": 148
+      "width": 148,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 482,
+          "label": "FindHandWrittenHandlerOverrides"
+        }
+      ]
     },
     {
       "id": "members",
@@ -89,7 +111,14 @@
       "type": "backend",
       "label": "CRUD members",
       "sublabel": "3 attribute forms",
-      "width": 146
+      "width": 146,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 254,
+          "label": "TryBuildEntityModel member scan"
+        }
+      ]
     },
     {
       "id": "entity",
@@ -98,16 +127,30 @@
       "type": "backend",
       "label": "Entity model",
       "sublabel": "key, DTO, routes",
-      "width": 148
+      "width": 148,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 331,
+          "label": "CrudEntityModel construction"
+        }
+      ]
     },
     {
       "id": "errors",
-      "lane": "diag",
+      "lane": "side",
       "col": 4,
       "type": "security",
-      "label": "DKCRUDGEN001-008",
-      "sublabel": "entity is skipped",
-      "width": 168
+      "label": "DKCRUDGEN001, 002, 006",
+      "sublabel": "no DTO, no key: entity skipped",
+      "width": 188,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 46,
+          "label": "CrudDiagnostics (DKCRUDGEN001/002/006)"
+        }
+      ]
     },
     {
       "id": "requests",
@@ -116,7 +159,14 @@
       "type": "frontend",
       "label": "CrudRequests.g.cs",
       "sublabel": "public records",
-      "width": 166
+      "width": 166,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 724,
+          "label": "Emitter.BuildSource"
+        }
+      ]
     },
     {
       "id": "handlers",
@@ -125,16 +175,30 @@
       "type": "backend",
       "label": "CrudHandlers.g.cs",
       "sublabel": "skipped if overridden",
-      "width": 178
+      "width": 178,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 854,
+          "label": "Emitter.BuildHandlersSource"
+        }
+      ]
     },
     {
       "id": "endpoints",
-      "lane": "opt",
+      "lane": "side",
       "col": 5,
       "type": "cloud",
       "label": "CrudEndpoints.g.cs",
-      "sublabel": "Map{Entity}Crud",
-      "width": 176
+      "sublabel": "opt-in: Map{Entity}Crud",
+      "width": 176,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 978,
+          "label": "Emitter.BuildEndpointsSource"
+        }
+      ]
     }
   ],
   "edges": [
@@ -175,7 +239,7 @@
       "id": "e6",
       "from": "entity",
       "to": "errors",
-      "label": "unresolved",
+      "label": "key or DTO unresolved",
       "variant": "security",
       "role": "error"
     },
@@ -197,7 +261,8 @@
       "from": "requests",
       "to": "endpoints",
       "variant": "dashed",
-      "role": "branch"
+      "role": "branch",
+      "label": "only if DKNet.AspCore.Extensions referenced"
     }
   ],
   "cards": [

@@ -7,9 +7,9 @@ MediatR replacement, with an EF Core add-on for auto-save and domain events.
 
 | Package | Description |
 |---|---|
-| [`DKNet.SlimBus.Extensions`](./DKNet.SlimBus.Extensions.md) | EF-free core: fluent command/query/event interfaces, `FluentResults` handlers, lazy Mapster mapping, and `AddSlimBusForMediator` — a one-call in-memory bus that replaces MediatR. |
-| [`DKNet.SlimBus.Extensions.EfCore`](./DKNet.SlimBus.Extensions.EfCore.md) | EF Core add-on: an auto-save interceptor and a domain-event-to-bus publisher in front of `DKNet.EfCore` aggregates; `AddSlimBusForEfCore<TDbContext>` wires both on top of the core. |
-| [`DKNet.SlimBus.Generators`](./DKNet.SlimBus.Generators.md) | Roslyn incremental source generator that emits a CRUD vertical slice (request records, handlers, and endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. |
+| [`DKNet.SlimBus.Extensions`](../DKNet.SlimBus.Extensions/index.md) | EF-free core: fluent command/query/event interfaces, `FluentResults` handlers, lazy Mapster mapping, and `AddSlimBusForMediator` — a one-call in-memory bus that replaces MediatR. |
+| [`DKNet.SlimBus.Extensions.EfCore`](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md) | EF Core add-on: an auto-save interceptor and a domain-event-to-bus publisher in front of `DKNet.EfCore` aggregates; `AddSlimBusForEfCore<TDbContext>` wires both on top of the core. |
+| [`DKNet.SlimBus.Generators`](../DKNet.SlimBus.Generators/index.md) | Roslyn incremental source generator that emits a CRUD vertical slice (request records, handlers, and endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. |
 
 ## Install
 

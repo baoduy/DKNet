@@ -1,344 +1,140 @@
 # DKNet.SlimBus.Generators
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.SlimBus.Generators)](https://www.nuget.org/packages/DKNet.SlimBus.Generators/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.SlimBus.Generators)](https://www.nuget.org/packages/DKNet.SlimBus.Generators/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+A Roslyn incremental source generator that turns `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members into a full CRUD vertical slice — request records, SlimBus handlers, and (optionally) minimal-API endpoint registration.
 
-A Roslyn incremental source generator that emits a full CRUD vertical slice — request records, SlimBus
-handlers, and (optionally) minimal-API endpoint registration — from
-`[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members. No hand-written command/handler/endpoint
-boilerplate.
+## ✨ Why use it?
 
-## Install
+- **The entity method is the only feature code you write.** Mark a constructor or method, and the request record, the handler, and the route appear at compile time.
+- **Generated slices are the same shape as hand-written ones.** They implement the same `Fluents` contracts from `DKNet.SlimBus.Extensions`, so a generated and a hand-written feature sit in one pipeline with one set of interceptors.
+- **Nothing to keep in sync.** No scaffolding is written to disk, so a renamed parameter or a new `[Range]` shows up in the request record on the next build instead of drifting.
+- **Take over any operation at any time.** Declare your own handler for a generated request and the generator steps aside, reporting an informational diagnostic rather than a conflict.
+- **Errors are compile errors.** A missing DTO, a non-public member, two `[CrudCreate]`s, or two members colliding on one route fail the build with a specific diagnostic id.
 
-```xml
-<ItemGroup>
-  <PackageReference Include="DKNet.SlimBus.Generators" Version="{latest}" PrivateAssets="all" OutputItemType="Analyzer" />
-</ItemGroup>
+## 🚀 Quick Start
+
+Use a .NET 10 web project. Install the packages, then add `Product.cs`, `ProductDto.cs`, and replace `Program.cs` with the example.
+
+```bash
+dotnet new web -f net10.0 -n QsApi
+cd QsApi
+dotnet add package DKNet.SlimBus.Generators
+dotnet add package DKNet.EfCore.DtoGenerator
+dotnet add package DKNet.SlimBus.Extensions
+dotnet add package DKNet.EfCore.Specifications
+dotnet add package DKNet.AspCore.Extensions
+dotnet add package Mapster
+dotnet add package SlimMessageBus.Host.Memory
+dotnet add package SlimMessageBus.Host.Serialization.SystemTextJson
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 10.0.12
 ```
 
-The compiling project also needs, for the generated code to compile and run:
-
-- `DKNet.SlimBus.Extensions` — request/handler contracts (`IWitResponse<TDto>`, `IWithKey<TKey>`, `IHandler<,>`),
-  `NotFoundError`, and the LazyMapper (`LazyMapExtensions.ResultOf`) the generated handlers call.
-- `DKNet.EfCore.Specifications` — `IRepositorySpec` (persistence) and the by-id specification base type
-  generated update handlers derive from.
-- `DKNet.AspCore.Extensions` — only if you want the endpoint-registration file; see
-  [Endpoint emission is opt-in](#endpoint-emission-is-opt-in) below.
-- `Mapster` — the `IMapper` implementation (namespace `MapsterMapper`) generated handlers inject.
-
-Generated files call extension members that `DKNet.AspCore.Extensions` and `DKNet.EfCore.Specifications`
-declare with C# 14 `extension(...)` blocks. *Calling* them does not require C# 14 — a consumer at
-`LangVersion` 13 compiles the generated files fine; only declaring such a block does.
-
-## Quick start
-
 ```csharp
-// Domain project — the ONLY hand-written feature code
+// Product.cs — the only hand-written feature code
+using System.ComponentModel.DataAnnotations;
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+
+namespace Catalog;
+
 public class Product : Entity
 {
+    private Product() { } // EF
+
     [CrudCreate]
-    public Product(string name, decimal price) { ... AddEvent<ProductCreated>(); }
+    public Product([Required, MaxLength(100)] string name, decimal price)
+    {
+        Name = name;
+        Price = price;
+    }
+
+    public string Name { get; private set; } = null!;
+    public decimal Price { get; private set; }
 
     [CrudUpdate]
-    public void UpdatePrice([Range(0, 1_000_000)] decimal price) { ... AddEvent<PriceChanged>(); }
+    public void UpdatePrice([Range(0, 1_000_000)] decimal price) => Price = price;
 }
-
-// API project
-[GenerateDto(typeof(Product))]
-public partial record ProductDto;                             // existing generator
-
-app.MapGroup("/products").MapProductCrud();                   // generated extension
 ```
 
-This emits, into the compiling (API) project:
+```csharp
+// ProductDto.cs
+using Catalog;
+using DKNet.EfCore.DtoGenerator;
 
-- `ProductCrudRequests.g.cs` — `CreateProductRequest` (`IWitResponse<ProductDto>`),
-  `UpdatePriceProductRequest` (`IWitResponse<ProductDto>` + `IWithKey<TKey>`), and `DeleteProductRequest`
-  (`IWithKey<TKey>` only — see [Refusing a delete](#refusing-a-delete--deleteentityrequest)).
-- `ProductCrudHandlers.g.cs` — an `internal sealed` `IHandler<TRequest, ProductDto>` per create/update/action
-  request; the delete request gets none, because the delete route goes straight to the repository. The create
-  handler invokes the `[CrudCreate]` constructor and `IRepositorySpec.AddAsync`; the update handler fetches
-  the entity by id (404 via `NotFoundError` when missing) and invokes the `[CrudUpdate]` method. Both return
-  `mapper.ResultOf<ProductDto>(entity)` — persistence happens afterward via the SlimBus EF Core auto-save
-  interceptor, so handlers never call `SaveChanges`.
-- `ProductCrudEndpoints.g.cs` — `MapProductCrud(this RouteGroupBuilder, Action<CrudMapOptions>? configure = null)`,
-  composing the existing `FluentsEntityEndpointMapperExtensions`/`FluentsEndpointMapperExtensions` mappers.
+namespace Api;
 
-### Minimum consumer wiring
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
 
 ```csharp
-using DKNet.EfCore.Specifications;   // AddSpecRepo
-using Mapster;                       // TypeAdapterConfig
-using MapsterMapper;                 // IMapper, Mapper
+// Program.cs
+using System.Net.Http.Json;
+using Api;
+using Catalog;
+using DKNet.EfCore.Specifications;
+using Mapster;
+using MapsterMapper;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using QsApi.Crud;                                        // {AssemblyName}.Crud
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+using SlimMessageBus.Host.Serialization.SystemTextJson;
+
+var connection = new SqliteConnection("DataSource=:memory:");
+connection.Open();
+
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://127.0.0.1:0");
 
 builder.Services.AddSingleton<IMapper>(new Mapper(new TypeAdapterConfig()));
-builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connection));
 builder.Services.AddScoped<DbContext>(p => p.GetRequiredService<AppDbContext>());
-builder.Services.AddSpecRepo<AppDbContext>();                 // DKNet.EfCore.Specifications
+builder.Services.AddSpecRepo<AppDbContext>();          // DKNet.EfCore.Specifications
 
 builder.Services
-    .AddSlimBusEfCoreInterceptor<AppDbContext>()               // auto-save after a successful write
+    .AddSlimBusEfCoreInterceptor<AppDbContext>()        // auto-save after a successful write
     .AddSlimMessageBus(mbb => mbb
         .AddJsonSerializer()
-        .AddServicesFromAssembly(typeof(Program).Assembly)     // discovers generated + hand-written handlers
+        .AddServicesFromAssembly(typeof(Program).Assembly)   // discovers generated + hand-written handlers
         .AddChildBus("Memory", mb => mb.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
-```
 
-## Attributes
+var app = builder.Build();
 
-| Attribute | Valid on | Members | Effect |
-|---|---|---|---|
-| `[CrudCreate]` | a public constructor or method, at most one per entity | `Name` (`string?`, default `null`) | Emits `Create{Entity}Request` (constructor) or `{Method}{Entity}Request` (method) plus a handler that calls the entity's **constructor** with the marked member's parameter list — a marked factory method's body is never executed, so prefer marking the constructor. `Name` overrides the request type name. |
-| `[CrudUpdate]` | any public instance method | `Name` (`string?`, default `null`) | Emits `{Method}{Entity}Request` implementing `IWithKey<TKey>` plus a fetch-by-id handler. |
-| `[CrudAction]` | any public instance method | `Route` (positional `string?`), `Verb` (`CrudActionVerb`, default `Post`), `Name` (`string?`) | Same shape as `[CrudUpdate]`, but always at its own `{id}/{segment}` route. |
-
-Delete needs no attribute — `MapDeleteById` covers it generically, and every entity in the generated set also
-gets a `Delete{Entity}Request` to hang a delete rule on
-([Refusing a delete](#refusing-a-delete--deleteentityrequest)). All three attributes live in
-`DKNet.EfCore.Abstractions`, so the domain layer takes on no messaging dependency.
-
-## Routes
-
-`Map{Entity}Crud` registers, on the group it's called on:
-
-| Operation | Route | Status |
-|---|---|---|
-| GET by id | `{id}` | 200 / 404 |
-| GET list (paged) | `/` | 200 |
-| POST create | `/` | 201 + DTO body (`Location` header currently a placeholder, `/`) |
-| PUT — first `[CrudUpdate]` | `{id}` | 200 + DTO body, or 404 |
-| PUT — additional `[CrudUpdate]`s | `{id}/{kebab-case-method-name}` | 200 + DTO body, or 404 |
-| DELETE by id | `{id}` | 204 / 404, or 409 when the database rejects the delete |
-
-Additional `[CrudUpdate]` methods are routed in declaration order; the first one keeps the plain `{id}` PUT,
-every one after gets its method name kebab-cased onto the route (e.g. `UpdatePrice` → `{id}/update-price`).
-Kebab-casing inserts a `-` before every upper-case character after the first, so `ExportXML` becomes
-`export-x-m-l`. Registration order inside `Map{Entity}Crud` is fixed: `GetById`, `GetList`, `Delete`, `Create`,
-each `[CrudUpdate]` in declaration order, then each `[CrudAction]` in declaration order.
-
-### Generated names
-
-| Thing | Rule |
-|---|---|
-| Namespace | `{AssemblyName}.Crud`, or `Generated.Crud` when the compilation has no assembly name |
-| Requests file | `{Entity}CrudRequests.g.cs` |
-| Handlers file | `{Entity}CrudHandlers.g.cs`, omitted when every member has a hand-written handler |
-| Endpoints file | `{Entity}CrudEndpoints.g.cs`, emitted only when the project references `DKNet.AspCore.Extensions` |
-| Create request | `Create{Entity}Request` for a constructor, `{Method}{Entity}Request` for a method |
-| Update / action request | `{Method}{Entity}Request` |
-| Delete request | `Delete{Entity}Request`, emitted into the requests file for every entity — unless a create/update/action member already claims that name ([Refusing a delete](#refusing-a-delete--deleteentityrequest)) |
-| Handler | the request name with a trailing `Request` replaced by `Handler` |
-| By-id specification | `{Entity}ByIdCrudSpec`, `file`-scoped, one per handlers file |
-| Endpoint extension | `{Entity}CrudEndpointExtensions.Map{Entity}Crud` |
-
-`Name` on any of the three attributes overrides the request type name (and therefore the handler name).
-
-### Domain actions — `[CrudAction]`
-
-A method marked `[CrudAction]` is a named operation on the entity, published at its own `{id}/{segment}`
-route — it never claims the plain `{id}` route, whatever verb it uses:
-
-```csharp
-[CrudAction("approval")]
-public void Approve([Required] string approver) { ... AddEvent<OrderApproved>(); }
-
-[CrudAction(Verb = CrudActionVerb.Patch)]
-public void Archive() { ... }
-```
-
-| Constructor arg / property | Meaning | Default |
-|---|---|---|
-| `Route` (positional) | The route segment appended after `{id}/`. | Kebab-cased method name (e.g. `Archive` → `archive`). |
-| `Verb` | The registered HTTP verb — `Post`, `Put`, or `Patch`. `Delete` is not supported. | `Post` |
-| `Name` | Overrides the generated request type name. | `{Method}{Entity}Request` |
-
-| Operation | Route | Status |
-|---|---|---|
-| `[CrudAction]` (default `Post`) | `{id}/{segment}` | 200 + DTO body, or 404 |
-| `[CrudAction(Verb = Put)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
-| `[CrudAction(Verb = Patch)]` | `{id}/{segment}` | 200 + DTO body, or 404 |
-
-An action that takes no parameters (`Archive()` above) is registered with `MapParameterlessActionById`, so its
-route dispatches on a call with no request body and no `Content-Type` at all; a body sent anyway is accepted
-and ignored, and the target id always comes from the route. An action that takes parameters still maps through
-`MapActionById` and still carries its arguments in the body.
-
-`[CrudAction]` vs. `[CrudUpdate]` with `Verb = Put`: an update replaces state and, positionally, may claim the
-plain `{id}` route; an action is always a named operation at its own segment and is never positional — it
-never lands on `{id}` regardless of declaration order or verb. `Verb = Patch` only changes the advertised HTTP
-method — there is no partial-update or merge semantics behind it.
-
-### Endpoint emission is opt-in
-
-`ProductCrudEndpoints.g.cs` is only emitted when the compiling project references `DKNet.AspCore.Extensions`.
-A project that only wants the requests/handlers (no ASP.NET Core dependency) gets exactly that — no unresolved
-types from a forced endpoint file.
-
-### Excluding operations
-
-```csharp
-app.MapGroup("/products").MapProductCrud(o => o.Exclude(CrudOp.Delete));
-```
-
-`CrudMapOptions.Exclude` takes any number of `CrudOp` values (`GetById`, `GetList`, `Create`, `Update`,
-`Delete`, `Action`); excluded operations are skipped entirely, not just hidden.
-
-### Configuring routes
-
-`CrudMapOptions.Configure` attaches any `RouteHandlerBuilder` setting — authorization first of all — either to
-one named route or to every route of one operation kind:
-
-```csharp
-// one named route: only the ChangePrice PUT needs the scope
-app.MapGroup("/products")
-   .MapProductCrud(o => o.Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
-
-// one operation kind: every generated PUT needs the scope
-app.MapGroup("/products")
-   .MapProductCrud(o => o.Configure(CrudOp.Update, b => b.RequireAuthorization("product.write")));
-
-// both on the same route: ChangePrice ends up requiring product.write and product.price
-app.MapGroup("/products")
-   .MapProductCrud(o => o
-       .Configure(CrudOp.Update, b => b.RequireAuthorization("product.write"))
-       .Configure("ChangePrice", b => b.RequireAuthorization("product.price")));
-```
-
-A route's name is `GetById`, `GetList`, `Create` or `Delete` for the four fixed operations, and the C# method
-name verbatim for each `[CrudUpdate]`/`[CrudAction]` member — never the kebab-cased segment and never the
-request record's name. Both overloads are additive: for a given route, every setting registered for its
-operation kind runs first, then every setting registered for its name. A name the entity does not have throws
-`ArgumentException` at registration, so nothing is published; a name whose operation is excluded is validated
-and then silently dropped with the route. Two routes resolving to one name is `DKCRUDGEN009`. The full rule,
-with a worked example, is in the
-[naming and routing conventions](https://github.com/baoduy/DKNet/blob/main/docs/Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions).
-
-## Validation attributes are metadata, not enforcement
-
-`System.ComponentModel.DataAnnotations` attributes on a `[CrudCreate]`/`[CrudUpdate]` member's parameters are
-copied verbatim onto the generated request's properties (e.g. `[Range(0, 1_000_000)]` above lands on
-`UpdatePriceProductRequest.Price`). They are **not** automatically enforced at the HTTP boundary — minimal API
-does not run DataAnnotations validation on its own. If you need wire-level 400s for invalid input, add your own
-validation (e.g. a FluentValidation validator plus `SharpGrip.FluentValidation.AutoValidation`, or a minimal-API
-endpoint filter) against the generated request type.
-
-## Refusing a delete — `Delete{Entity}Request`
-
-Every entity in the generated set also gets
-
-```csharp
-/// <summary>Delete request generated for Product, carrying the target's key bound from the route.</summary>
-public sealed partial record DeleteProductRequest
-    : global::DKNet.SlimBus.Extensions.Fluents.Requests.IWithKey<global::System.Guid>
+await using (var scope = app.Services.CreateAsyncScope())
 {
-    /// <summary>The target Product identifier (bound from route).</summary>
-    public global::System.Guid Id { get; set; }
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
+
+app.MapGroup("/products").MapProductCrud();             // generated extension method
+
+await app.StartAsync();
+
+using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+var response = await client.PostAsJsonAsync("/products", new { name = "Coffee", price = 9.5m });
+var dto = await response.Content.ReadFromJsonAsync<ProductDto>();
+Console.WriteLine($"{(int)response.StatusCode} {response.StatusCode}: {dto}"); // 201 Created: ProductDto { Name = Coffee, Price = 9.5, Id = ... }
+
+await app.StopAsync();
+
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<Product> Products => Set<Product>();
 }
 ```
 
-in `{Entity}CrudRequests.g.cs`, and `Map{Entity}Crud` binds it on the DELETE route
-(`group.MapDeleteById<Product, Guid, DeleteProductRequest>()`). It exists purely so you have a type to attach a
-delete rule to:
-
-- **No annotation.** It is emitted for every entity, with no opt-in and nothing added to the domain class.
-- **Nothing changes on the wire.** The key is still bound from the route template; the route address and HTTP
-  verb are unchanged, and the request body is still never read.
-- **No handler is generated for it** — the delete goes straight to `IRepositorySpec` through
-  `MapDeleteById`, not through SlimBus.
-- **Register no rule and nothing changes**: 204 on success, 404 when no row matches, 409 when the database
-  rejects the delete, exactly as before.
-
-To refuse a delete, write a validator against the generated request and let the group's failure filter answer.
-With the `SharpGrip.FluentValidation.AutoValidation.Endpoints` pattern that is a 400 `ProblemDetails`:
-
-```csharp
-using FluentValidation;
-using MyApi.Crud;                     // the {AssemblyName}.Crud namespace the requests are emitted into
-
-public sealed class DeleteProductRequestValidator : AbstractValidator<DeleteProductRequest>
-{
-    public DeleteProductRequestValidator(AppDbContext db) =>
-        RuleFor(x => x.Id)
-            .MustAsync(async (id, ct) => !await db.OrderLines.AnyAsync(l => l.ProductId == id, ct))
-            .WithMessage("Product is still on an order and cannot be deleted.");
-}
-```
-
-```csharp
-using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
-
-builder.Services.AddValidatorsFromAssemblyContaining<DeleteProductRequestValidator>();
-
-var products = app.MapGroup("/products");
-products.MapProductCrud();
-products.AddFluentValidationAutoValidation();   // only groups that opt in consult the validator
-```
-
-A refused delete never reaches `SaveChanges`, so the row survives and no audit entry or domain event is raised
-for it. The rule is keyed on the request type, so a rule on `DeleteProductRequest` never fires for
-`DeleteOrderRequest`.
-
-**Name collision.** If a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member already resolves to the name
-`Delete{Entity}Request` (e.g. a `[CrudUpdate] public void Delete()`), the generator emits neither the delete
-record nor the 3-arg map call and falls back to `MapDeleteById<{Entity}, {Key}>()`. That entity's DELETE route
-keeps working unchanged, but there is no delete request to guard — rename the member if you need the rule.
-
-## Overrides — hand-written handlers win
-
-If the compiling project already declares a type implementing `IHandler<TRequest, TDto>` for a generated
-request, the generator skips that request's handler and reports `DKCRUDGEN005` (Info) at the hand-written
-type. The request record itself is still generated. Matching is by the **request type's name** — the
-hand-written type's declared response/DTO type argument isn't cross-checked, so a hand-written handler with the
-wrong second type argument still silently wins; that's on you to get right.
-
-To keep the generated record but supply your own logic, write:
-
-```csharp
-internal sealed class UpdatePriceProductHandler(IRepositorySpec repo, IMapper mapper)
-    : IHandler<UpdatePriceProductRequest, ProductDto>
-{
-    public async Task<IResult<ProductDto>> OnHandle(UpdatePriceProductRequest request, CancellationToken ct)
-    {
-        // custom logic instead of the generated one
-    }
-}
-```
-
-Anything beyond CRUD is a normal hand-written SlimBus feature — generated and hand-written handlers are the
-same shape, so mixing them is seamless.
-
-## Diagnostics
-
-| Id | Severity | Meaning |
-|---|---|---|
-| `DKCRUDGEN001` | Error | Entity has `[CrudCreate]`/`[CrudUpdate]` members but no `[GenerateDto(typeof(Entity))]` DTO was found in the compiling project. |
-| `DKCRUDGEN002` | Error | More than one `[GenerateDto(typeof(Entity))]` DTO was found for the entity — designate exactly one. |
-| `DKCRUDGEN003` | Error | More than one member on the entity is marked `[CrudCreate]`; only one is allowed. |
-| `DKCRUDGEN004` | Error | A member marked `[CrudCreate]`/`[CrudUpdate]` is not public. |
-| `DKCRUDGEN005` | Info | A hand-written `IHandler<TRequest, ...>` was found for a generated request; the generated handler was skipped. |
-| `DKCRUDGEN006` | Error | The entity does not implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>`. |
-| `DKCRUDGEN007` | Error | A member is marked both `[CrudUpdate]` and `[CrudAction]`; keep exactly one — the member is emitted as neither. |
-| `DKCRUDGEN008` | Error | Two members on the entity resolve to the same route segment; give one an explicit distinct segment. |
-| `DKCRUDGEN009` | Error | Two routes of the entity resolve to the same route name; rename one of the members. |
-| `DKCRUDGEN010` | Info | A `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member already claims the name `Delete{Entity}Request`, so the generated delete request was skipped and the DELETE route falls back to the request-less `MapDeleteById<TEntity, TKey>()` — rename the member, or accept that no delete rule runs for that entity. The build still succeeds. |
-
-## Cross-assembly discovery
-
-Entities may live in a referenced assembly (e.g. a `Domain` project) — the generator walks both the current
-compilation and its referenced assembly symbols for `[CrudCreate]`/`[CrudUpdate]` members, so the API project
-never needs to redeclare or re-annotate anything.
+Run with `dotnet run`.
 
 ## Documentation
 
-Full feature reference, the declaration-versus-emitted-code walkthrough, the compile-time flow diagram, and the
-naming and routing conventions in full:
-https://github.com/baoduy/DKNet/blob/main/docs/Messaging/DKNet.SlimBus.Generators.md
-
-## Out of scope (by design)
-
-- FluentValidation integration (see [Validation attributes are metadata](#validation-attributes-are-metadata-not-enforcement)).
-- Generated domain events, event handlers, or Mapster configs.
-- `dotnet new` scaffolding templates — nothing editable is emitted, so nothing drifts.
-- PATCH/partial-update semantics.
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/index.md) | Start with architecture and the end-to-end flow. |
+| [Generate CRUD requests from attributed members](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/generate-crud-requests.md) | Turn a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member and its resolved `[GenerateDto]` DTO into a request record. |
+| [Generate handlers, unless a hand-written one wins](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/generate-handlers.md) | Emit a dispatch handler per request, stepping aside for a hand-written `IHandler` with the same request name. |
+| [Map CRUD endpoints](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/map-crud-endpoints.md) | Compose `DKNet.AspCore.Extensions` mappers into one `Map{Entity}Crud` extension, opt-in per project. |
+| [Name requests and routes](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/name-requests-and-routes.md) | The fixed rules behind every generated type name, file name, route segment and route name. |
+| [Refuse a delete](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/refuse-a-delete.md) | Hang a validation rule on the DELETE route through the generated `Delete{Entity}Request`. |
+| [Expose domain actions](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/expose-domain-actions.md) | Publish a named operation at its own route with `[CrudAction]`, with or without a request body. |
+| [Read the generator's diagnostics](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.SlimBus.Generators/read-diagnostics.md) | What each `DKCRUDGEN0xx` id means and whether it fails the build. |

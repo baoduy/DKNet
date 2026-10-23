@@ -1,0 +1,195 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AddServiceBus wires the resource and resolves its connection string",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "output": ".task-validation/Aspire.Hosting.ServiceBus/servicebus-startup-flow.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "AppHost call"
+        },
+        "backend": {
+          "label": "Resource wiring"
+        },
+        "messagebus": {
+          "label": "Aspire eventing"
+        },
+        "security": {
+          "label": "Failure path"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    },
+    {
+      "id": "exit",
+      "label": "Null connection string",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "AddServiceBus(...)",
+      "sublabel": "builder, sqlServer, configFilePath",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusExtensions.cs",
+          "line": 29,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Container wiring",
+      "sublabel": "image, env, mount, endpoints",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusExtensions.cs",
+          "line": 52,
+          "end_line": 67
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "WaitFor(sqlServer)",
+      "sublabel": "emulator starts after SQL",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusExtensions.cs",
+          "line": 68,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "messagebus",
+      "label": "ConnectionStringAvailableEvent",
+      "sublabel": "GetConnectionStringAsync runs",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusExtensions.cs",
+          "line": 39,
+          "end_line": 50
+        },
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 50,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "lane": "main",
+      "col": 4,
+      "type": "backend",
+      "label": "WithReference consumer",
+      "sublabel": "resolves connection string",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusResource.cs",
+          "line": 30,
+          "end_line": 33
+        }
+      ]
+    },
+    {
+      "id": "exit",
+      "lane": "exit",
+      "col": 3,
+      "type": "security",
+      "label": "Connection error",
+      "sublabel": "DistributedApplicationException",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/Aspire/Aspire.Hosting.ServiceBus/ServiceBusExtensions.cs",
+          "line": 45,
+          "end_line": 49
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "s3",
+      "to": "s4",
+      "label": "non-null",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-null",
+      "from": "s3",
+      "to": "exit",
+      "label": "null",
+      "role": "branch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What the diagram can't show",
+      "items": [
+        "Aspire's own eventing decides when ConnectionStringAvailableEvent fires; this package only subscribes to it.",
+        "A ConnectionStringRedirectAnnotation applied to the resource changes which resource ConnectionStringExpression and GetConnectionStringAsync resolve from \u2014 see the redirect feature page."
+      ]
+    }
+  ]
+}

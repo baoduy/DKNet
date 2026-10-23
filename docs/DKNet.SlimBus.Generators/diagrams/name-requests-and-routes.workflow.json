@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Three names derived from one attributed member",
+    "output": ".task-validation/DKNet.SlimBus.Generators/name-requests-and-routes.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "lanes": [
+    { "id": "in", "label": "Declared" },
+    { "id": "derive", "label": "Derived, never configurable beyond Name/Route" }
+  ],
+  "mainPath": ["member", "reqname"],
+  "nodes": [
+    { "id": "member", "lane": "in", "col": 0, "type": "backend", "label": "[CrudUpdate]/[CrudAction] member", "sublabel": "declaration order matters", "width": 220 },
+    { "id": "reqname", "lane": "derive", "col": 1, "type": "frontend", "label": "Request type name", "sublabel": "{Method}{Entity}Request, or Name override", "width": 220, "sources": [{ "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs", "line": 424, "label": "BuildMemberModel" }] },
+    { "id": "segment", "lane": "derive", "col": 2, "type": "backend", "label": "Route segment", "sublabel": "{id} if first update, else {id}/{kebab-case}", "width": 230, "sources": [{ "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs", "line": 1069, "label": "Emitter.ToKebabCase" }] },
+    { "id": "routename", "lane": "derive", "col": 3, "type": "database", "label": "Route name", "sublabel": "C# method name, verbatim, never kebab-cased", "width": 220 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "member", "to": "reqname", "variant": "emphasis" },
+    { "id": "e2", "from": "member", "to": "segment", "variant": "default" },
+    { "id": "e3", "from": "member", "to": "routename", "variant": "default" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "The three names never collapse into one",
+      "items": [
+        "Renaming the request (Name override) never changes the route name",
+        "The segment can move (kebab-cased, later declarations) while the name stays the method name",
+        "Two routes sharing a name is DKCRUDGEN009; two sharing a segment is DKCRUDGEN008"
+      ]
+    }
+  ]
+}

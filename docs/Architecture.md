@@ -54,8 +54,8 @@ and no package exists only to aggregate others.
 | Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](DKNet.EfCore.AuditLogs/index.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](DKNet.EfCore.DataAuthorization/index.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
 | Column encryption | [`DKNet.EfCore.Encryption`](DKNet.EfCore.Encryption/index.md) | a `ValueConverter` on the model |
 | DTO shapes | [`DKNet.EfCore.DtoGenerator`](DKNet.EfCore.DtoGenerator/index.md) | compile time only |
-| Command/query dispatch (MediatR replacement, no EF Core) | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator(assemblies)` |
-| Dispatch plus automatic save and domain events onto the bus | [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore<TDbContext>(assemblies)`, or `AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually |
+| Command/query dispatch (MediatR replacement, no EF Core) | [`DKNet.SlimBus.Extensions`](./DKNet.SlimBus.Extensions/index.md) | `AddSlimBusForMediator(assemblies)` |
+| Dispatch plus automatic save and domain events onto the bus | [`DKNet.SlimBus.Extensions.EfCore`](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) | `AddSlimBusForEfCore<TDbContext>(assemblies)`, or `AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually |
 | HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](DKNet.AspCore.Extensions/index.md) | `UseEndpointConfigs()` and `.Response()` |
 | Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](DKNet.AspCore.Idempotency/index.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
 | Start-up work | [`DKNet.AspCore.Tasks`](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob<TJob>()` |
@@ -133,9 +133,9 @@ treat as one — model the entity graph so that only the root is fetched and sav
 Within a solution, models are organized into bounded contexts, each with its own `DbContext` and entity set.
 Persistence is reached only through [`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md)'s
 `IRepositorySpec`, so domain code never depends on EF Core directly, and application orchestration runs through
-[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) handlers that load entities, invoke their
+[`DKNet.SlimBus.Extensions`](./DKNet.SlimBus.Extensions/index.md) handlers that load entities, invoke their
 behavior, and let the auto-save interceptor from
-[`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) persist the result.
+[`DKNet.SlimBus.Extensions.EfCore`](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) persist the result.
 
 ---
 
@@ -147,7 +147,7 @@ application project:
 1. **Domain layer (core)** — entities, value objects, and domain logic with no infrastructure dependencies. Anchored
    by [`DKNet.EfCore.Abstractions`](DKNet.EfCore.Abstractions/index.md) (`Entity`, `AuditedEntity`, `IEventEntity`).
 2. **Application layer** — orchestrates the domain through command/query handlers. Realized by
-   [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) and the `DKNet.Svc.*` service adapters.
+   [`DKNet.SlimBus.Extensions`](./DKNet.SlimBus.Extensions/index.md) and the `DKNet.Svc.*` service adapters.
 3. **Infrastructure layer** — implements interfaces declared by inner layers:
    [`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md) for persistence, plus the SaveChanges
    interceptor pipeline ([`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md),
@@ -165,10 +165,10 @@ application code.
 
 ## CQRS via DKNet.SlimBus.Extensions
 
-[`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) is DKNet's CQRS pipeline, built on
+[`DKNet.SlimBus.Extensions`](./DKNet.SlimBus.Extensions/index.md) is DKNet's CQRS pipeline, built on
 [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) rather than MediatR — it is lighter (no reflection-heavy
 pipeline behaviors) and result-based (`FluentResults`) for expected business failures. The core package has no EF Core
-dependency; the [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) add-on auto-saves
+dependency; the [`DKNet.SlimBus.Extensions.EfCore`](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) add-on auto-saves
 the `DbContext` after a successful write, so handlers don't call `SaveChangesAsync` themselves.
 
 ```csharp
@@ -220,7 +220,7 @@ Three properties follow from that ordering, and they are the reason the packages
 
 For the SlimBus interceptor chain in isolation (including where your own `IRequestHandlerInterceptor`
 implementations sit relative to auto-save), see the sequence diagram on the
-[`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) page.
+[`DKNet.SlimBus.Extensions.EfCore`](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) page.
 
 ---
 

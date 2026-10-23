@@ -274,8 +274,8 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
 | [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
 | [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
-| [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator` |
-| [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
+| [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) | `AddSlimBusForMediator` |
+| [DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
 | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
 | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) | `IdempotencyOptions` in full |
 | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
@@ -283,7 +283,7 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
 | [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) | `AddPdfGenerator` and the page/margin options |
 | [DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation.md) | `AddTransformerService`, `TransformOptions` |
-| [Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus.md) | `AddServiceBus` and the emulator resource |
+| [Aspire.Hosting.ServiceBus](Aspire.Hosting.ServiceBus/index.md) | `AddServiceBus` and the emulator resource |
 
 ---
 

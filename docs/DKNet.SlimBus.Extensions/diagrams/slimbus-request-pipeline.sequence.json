@@ -3,7 +3,12 @@
   "diagram_type": "sequence",
   "meta": {
     "title": "One write request through the SlimBus pipeline, auto-save and event publishing",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/slimbus-request-pipeline.html",
     "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
     "column_fit": "spread",
     "viewBox": [
       1080,
@@ -37,36 +42,78 @@
       "id": "bus",
       "type": "messagebus",
       "label": "IMessageBus",
-      "sublabel": "SlimMessageBus"
+      "sublabel": "SlimMessageBus",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 16,
+          "end_line": 106
+        }
+      ]
     },
     {
       "id": "custom",
       "type": "backend",
-      "label": "Your interceptors"
+      "label": "Your interceptors",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/SlimBusEfCoreSetup.cs",
+          "line": 46,
+          "end_line": 59
+        }
+      ]
     },
     {
       "id": "autosave",
       "type": "backend",
       "label": "Auto-save",
-      "sublabel": "Order = int.MaxValue"
+      "sublabel": "Order = int.MaxValue",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/EfAutoSavePostInterceptor.cs",
+          "line": 12,
+          "end_line": 88
+        }
+      ]
     },
     {
       "id": "handler",
       "type": "backend",
       "label": "Request handler",
-      "sublabel": "Fluents.Requests.IHandler"
+      "sublabel": "Fluents.Requests.IHandler",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 69,
+          "end_line": 105
+        }
+      ]
     },
     {
       "id": "db",
       "type": "database",
       "label": "DbContext",
-      "sublabel": "registered for auto-save"
+      "sublabel": "registered for auto-save",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/AutoSaveDbContextRegistration.cs",
+          "line": 17,
+          "end_line": 25
+        }
+      ]
     },
     {
       "id": "publisher",
       "type": "cloud",
       "label": "Event publisher",
-      "sublabel": "SlimBusEventPublisher"
+      "sublabel": "SlimBusEventPublisher",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Handlers/SlimBusEventPublisher.cs",
+          "line": 23,
+          "end_line": 54
+        }
+      ]
     }
   ],
   "segments": [
@@ -82,7 +129,7 @@
     },
     {
       "from": 378,
-      "to": 606,
+      "to": 582,
       "label": "Auto-save, then publish"
     }
   ],
@@ -171,7 +218,7 @@
       "id": "respond",
       "from": "autosave",
       "to": "bus",
-      "y": 553,
+      "y": 536,
       "label": "response",
       "variant": "return"
     },
@@ -179,7 +226,7 @@
       "id": "to-caller",
       "from": "bus",
       "to": "caller",
-      "y": 585,
+      "y": 562,
       "label": "response",
       "variant": "return"
     }
@@ -188,19 +235,19 @@
     {
       "participant": "bus",
       "from": 166,
-      "to": 606,
+      "to": 582,
       "type": "messagebus"
     },
     {
       "participant": "custom",
       "from": 200,
-      "to": 558,
+      "to": 540,
       "type": "backend"
     },
     {
       "participant": "autosave",
       "from": 232,
-      "to": 556,
+      "to": 538,
       "type": "backend"
     },
     {
