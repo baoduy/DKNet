@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Convert a value before writing a property",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/property-write/property-write.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Input"
+    },
+    {
+      "label": "Lookup"
+    },
+    {
+      "label": "Conversion"
+    },
+    {
+      "label": "Write"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "Object and name",
+      "sublabel": "SetPropertyValue",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 146,
+          "end_line": 155
+        }
+      ]
+    },
+    {
+      "id": "lookup",
+      "type": "backend",
+      "label": "GetProperty",
+      "sublabel": "Cached metadata",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 58,
+          "end_line": 70
+        }
+      ]
+    },
+    {
+      "id": "missing",
+      "type": "security",
+      "label": "ArgumentException",
+      "sublabel": "Named property missing",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 151,
+          "end_line": 154
+        }
+      ]
+    },
+    {
+      "id": "convert",
+      "type": "backend",
+      "label": "Destination type",
+      "sublabel": "CurrentCulture / Enum.Parse",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 110,
+          "end_line": 135
+        }
+      ]
+    },
+    {
+      "id": "set",
+      "type": "backend",
+      "label": "PropertyInfo.SetValue",
+      "sublabel": "Converted value or null",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 110,
+          "end_line": 135
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "lookup",
+      "label": "resolve",
+      "variant": "emphasis"
+    },
+    {
+      "from": "lookup",
+      "to": "missing",
+      "label": "absent",
+      "variant": "security",
+      "labelAt": [
+        365,
+        328.0
+      ]
+    },
+    {
+      "from": "lookup",
+      "to": "convert",
+      "label": "found",
+      "variant": "emphasis"
+    },
+    {
+      "from": "convert",
+      "to": "set",
+      "label": "assign",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Null values go directly to SetValue. Conversion and setter failures propagate unless a Try overload catches that exception type."
+      ]
+    }
+  ]
+}

@@ -9,8 +9,8 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 🔧 Core Framework
 
-- [DKNet.Fw.Extensions](Core/DKNet.Fw.Extensions.md) — framework-agnostic reflection, type, string, enum, `DateTime` and DI-inspection helpers, plus fluent assembly/type scanning
-- [DKNet.RandomCreator](Core/DKNet.RandomCreator.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
+- [DKNet.Fw.Extensions](DKNet.Fw.Extensions/index.md) — framework-agnostic reflection, type, string, enum, `DateTime` and DI-inspection helpers, plus fluent assembly/type scanning
+- [DKNet.RandomCreator](DKNet.RandomCreator/index.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
 
 ## 🗄️ Entity Framework Core
 

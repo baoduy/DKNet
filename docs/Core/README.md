@@ -8,8 +8,8 @@ infrastructure adapter, or a plain console app.
 
 | Package | Description |
 |---|---|
-| [`DKNet.Fw.Extensions`](./DKNet.Fw.Extensions.md) | Extension methods and reflection helpers — string/type/enum/DateTime/property/attribute extensions, DI registration guards, and fluent assembly/type scanning (`TypeExtractors`). |
-| [`DKNet.RandomCreator`](./DKNet.RandomCreator.md) | Cryptographically secure random string/char generation with digit and symbol quotas, for passwords, tokens, and other secrets. |
+| [`DKNet.Fw.Extensions`](../DKNet.Fw.Extensions/index.md) | Extension methods and reflection helpers — string/type/enum/DateTime/property/attribute extensions, DI registration guards, and fluent assembly/type scanning (`TypeExtractors`). |
+| [`DKNet.RandomCreator`](../DKNet.RandomCreator/index.md) | Cryptographically secure random string/char generation with digit and symbol quotas, for passwords, tokens, and other secrets. |
 
 ## Install
 

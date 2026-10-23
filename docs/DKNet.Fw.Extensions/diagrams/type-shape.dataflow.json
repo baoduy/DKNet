@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Match generic interfaces and base types",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/type-shape/type-shape.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Inputs"
+    },
+    {
+      "label": "Initial checks"
+    },
+    {
+      "label": "Type relationships"
+    },
+    {
+      "label": "Result"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "Type and matching",
+      "sublabel": "IsImplementOf",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 69,
+          "end_line": 88
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "backend",
+      "label": "Null or identical?",
+      "sublabel": "Return false for either",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 69,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "no",
+      "type": "security",
+      "label": "False",
+      "sublabel": "No relationship tested",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 71,
+          "end_line": 73
+        }
+      ]
+    },
+    {
+      "id": "inspect",
+      "type": "backend",
+      "label": "Assignable / generic",
+      "sublabel": "Interfaces and base chain",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 75,
+          "end_line": 85
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "True or false",
+      "sublabel": "Relationship match",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 75,
+          "end_line": 88
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "check",
+      "label": "check",
+      "variant": "emphasis"
+    },
+    {
+      "from": "check",
+      "to": "no",
+      "label": "yes",
+      "variant": "security",
+      "labelAt": [
+        365,
+        328.0
+      ]
+    },
+    {
+      "from": "check",
+      "to": "inspect",
+      "label": "no",
+      "variant": "emphasis"
+    },
+    {
+      "from": "inspect",
+      "to": "result",
+      "label": "match?",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Identity is deliberately excluded; open generic definitions are compared against generic interfaces and base types."
+      ]
+    }
+  ]
+}

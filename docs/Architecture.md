@@ -60,7 +60,7 @@ and no package exists only to aggregate others.
 | Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
 | Start-up work | [`DKNet.AspCore.Tasks`](./AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob<TJob>()` |
 | Files, PDFs, template tokens, standalone cryptography | [`DKNet.Svc.*`](./Services/README.md) | its own `Add*` method; none of them touch EF Core |
-| Type scanning and framework-agnostic helpers | [`DKNet.Fw.Extensions`](./Core/DKNet.Fw.Extensions.md) | plain static methods, no registration |
+| Type scanning and framework-agnostic helpers | [`DKNet.Fw.Extensions`](./DKNet.Fw.Extensions/index.md) | plain static methods, no registration |
 
 There is no `DKNetOptions` and no single aggregator — see [Configuration & Setup](Configuration.md) for the four
 registration conventions these methods fall into.

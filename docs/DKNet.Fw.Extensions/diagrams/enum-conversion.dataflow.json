@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Convert a numeric input to an enum",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/enum-conversion/enum-conversion.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Destination"
+    },
+    {
+      "label": "Underlying value"
+    },
+    {
+      "label": "Enum result"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "type",
+      "type": "backend",
+      "label": "Enum Type",
+      "sublabel": "Nullable enum is unwrapped",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 148,
+          "end_line": 154
+        }
+      ]
+    },
+    {
+      "id": "invalid",
+      "type": "security",
+      "label": "ArgumentException",
+      "sublabel": "Destination is not an enum",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 150,
+          "end_line": 151
+        }
+      ]
+    },
+    {
+      "id": "convert",
+      "type": "backend",
+      "label": "Convert.ChangeType",
+      "sublabel": "InvariantCulture",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 156,
+          "end_line": 160
+        }
+      ]
+    },
+    {
+      "id": "fail",
+      "type": "security",
+      "label": "False; result null",
+      "sublabel": "Conversion exception",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 162,
+          "end_line": 165
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "Enum.ToObject",
+      "sublabel": "True; value may be unnamed",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/TypeExtensions.cs",
+          "line": 158,
+          "end_line": 160
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "type",
+      "to": "invalid",
+      "label": "reject",
+      "variant": "security",
+      "labelAt": [
+        150,
+        328.0
+      ]
+    },
+    {
+      "from": "type",
+      "to": "convert",
+      "label": "unwrap",
+      "variant": "emphasis"
+    },
+    {
+      "from": "convert",
+      "to": "fail",
+      "label": "failure",
+      "variant": "security",
+      "labelAt": [
+        365,
+        328.0
+      ]
+    },
+    {
+      "from": "convert",
+      "to": "result",
+      "label": "success",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Conversion accepts numeric input, not enum member names; success does not check Enum.IsDefined."
+      ]
+    }
+  ]
+}

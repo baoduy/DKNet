@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Append a range one item at a time",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/collection-ranges/collection-ranges.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Source"
+    },
+    {
+      "label": "Enumeration"
+    },
+    {
+      "label": "Destination"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "IEnumerable<T>",
+      "sublabel": "Source items",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Collections/CollectionExtensions.cs",
+          "line": 21,
+          "end_line": 25
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "type": "backend",
+      "label": "foreach item",
+      "sublabel": "Advance source enumerator",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Collections/CollectionExtensions.cs",
+          "line": 23,
+          "end_line": 25
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "ICollection<T>.Add",
+      "sublabel": "One call per item",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Collections/CollectionExtensions.cs",
+          "line": 23,
+          "end_line": 25
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "next",
+      "label": "enumerate",
+      "variant": "emphasis"
+    },
+    {
+      "from": "next",
+      "to": "result",
+      "label": "append",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Collection semantics determine duplicates and failures. An exception leaves earlier additions in place."
+      ]
+    }
+  ]
+}

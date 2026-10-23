@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Remove controls and trim log text",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Value processing"
+        },
+        "security": {
+          "label": "Rejected or absent input"
+        },
+        "default": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/log-text/log-text.html",
+    "viewBox": [
+      1080,
+      580
+    ]
+  },
+  "stages": [
+    {
+      "label": "Text"
+    },
+    {
+      "label": "Control removal"
+    },
+    {
+      "label": "Trimmed text"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "backend",
+      "label": "Input string",
+      "sublabel": "Null is rejected",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/StringExtensions.cs",
+          "line": 49,
+          "end_line": 52
+        }
+      ]
+    },
+    {
+      "id": "filter",
+      "type": "backend",
+      "label": "!char.IsControl",
+      "sublabel": "Concatenate retained chars",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/StringExtensions.cs",
+          "line": 51,
+          "end_line": 52
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "backend",
+      "label": "Trim()",
+      "sublabel": "Whitespace removed at ends",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Primitives/StringExtensions.cs",
+          "line": 51,
+          "end_line": 52
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "filter",
+      "label": "filter",
+      "variant": "emphasis"
+    },
+    {
+      "from": "filter",
+      "to": "result",
+      "label": "trim",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behaviour to keep in mind",
+      "items": [
+        "Line breaks are removed, not replaced; internal ordinary spaces stay. No secret redaction or length cap is applied."
+      ]
+    }
+  ]
+}

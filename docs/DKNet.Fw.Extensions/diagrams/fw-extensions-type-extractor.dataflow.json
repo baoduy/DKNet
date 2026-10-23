@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "From Extract to the matching type list",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Lazy extraction path"
+        },
+        "security": {
+          "label": "Rejected input"
+        },
+        "database": {
+          "label": "Materialised type list"
+        },
+        "default": {
+          "label": "Further narrowing"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      620
+    ],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "output": ".task-validation/diagrams/fw-extensions-type-extractor/fw-extensions-type-extractor.html"
+  },
+  "stages": [
+    {
+      "label": "Input"
+    },
+    {
+      "label": "Extract"
+    },
+    {
+      "label": "Shape filters"
+    },
+    {
+      "label": "Relationship"
+    },
+    {
+      "label": "Enumerate"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "assemblies",
+      "type": "external",
+      "label": "Assembly input",
+      "sublabel": "one, an array, or a collection",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeArrayExtractorExtensions.cs",
+          "line": 36,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "type": "security",
+      "label": "ArgumentException",
+      "sublabel": "null or empty assembly array",
+      "stage": 0,
+      "row": 3,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "extractor",
+      "type": "backend",
+      "label": "ITypeExtractor",
+      "sublabel": "lazy IEnumerable<Type>",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "duplicates removed",
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "shape",
+      "type": "backend",
+      "label": "Classes; NotAbstract",
+      "sublabel": "Add compiled predicates",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "relation",
+      "type": "backend",
+      "label": "IsInstanceOf<IWorker>",
+      "sublabel": "Open generic checks supported",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "types",
+      "type": "database",
+      "label": "List<Type>",
+      "sublabel": "Cached types; run predicates",
+      "stage": 4,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "type": "security",
+      "label": "Enumeration failure",
+      "sublabel": "Type loading or predicate throws",
+      "stage": 4,
+      "row": 3,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "assemblies",
+      "to": "extractor",
+      "label": "Extract()",
+      "variant": "emphasis"
+    },
+    {
+      "from": "assemblies",
+      "to": "empty",
+      "label": "reject",
+      "variant": "security",
+      "labelAt": [
+        150,
+        442
+      ]
+    },
+    {
+      "from": "extractor",
+      "to": "shape",
+      "label": "chain",
+      "variant": "emphasis"
+    },
+    {
+      "from": "shape",
+      "to": "relation",
+      "label": "chain",
+      "variant": "emphasis"
+    },
+    {
+      "from": "relation",
+      "to": "types",
+      "label": "ToList()",
+      "variant": "emphasis"
+    },
+    {
+      "from": "types",
+      "to": "failure",
+      "label": "throws",
+      "variant": "security",
+      "labelAt": [
+        1000,
+        442
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Evaluation and failures",
+      "items": [
+        "Filters compile once into independent predicate lists; assembly types are cached.",
+        "Null or empty arrays fail at construction. Type-loading and predicate errors propagate at enumeration."
+      ]
+    }
+  ]
+}
