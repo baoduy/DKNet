@@ -92,4 +92,4 @@ The demo uses an ephemeral key only for its in-memory database. Persisted databa
 - [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — use it to record changes; EncryptedAttribute values are automatically redacted there.
 - [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — use it to limit row visibility.
 - [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — use it for model conventions; column encryption is an independent model-building call.
-- [DKNet.Svc.Encryption](../Services/DKNet.Svc.Encryption.md) — use it for application cryptography outside EF column conversion.
+- [DKNet.Svc.Encryption](../DKNet.Svc.Encryption/index.md) — use it for application cryptography outside EF column conversion.

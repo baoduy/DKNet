@@ -1,0 +1,137 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AddTransformerService: registering ITransformerService once",
+    "output": ".task-validation/DKNet.Svc.Transformation/register-the-service.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "AddTransformerService"
+        },
+        "external": {
+          "label": "Host startup code"
+        },
+        "security": {
+          "label": "Skipped registration"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Service registration"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "AddTransformerService",
+      "sublabel": "called from Program.cs",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 19,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Already registered?",
+      "sublabel": "checks the service collection",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 22,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "external",
+      "label": "Options built, service added",
+      "sublabel": "IOptions<TransformOptions> + transient service added",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 25,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 2,
+      "yOffset": 130,
+      "type": "security",
+      "label": "Returns immediately",
+      "sublabel": "this call's configure delegate is ignored",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 22,
+          "end_line": 23
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis",
+      "label": "not yet"
+    },
+    {
+      "id": "e2",
+      "from": "n1",
+      "to": "n3",
+      "variant": "security",
+      "label": "already registered"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "First call wins",
+      "items": [
+        "Only the first AddTransformerService call's options take effect",
+        "A later call's configure delegate never runs",
+        "GlobalParameters set in that first delegate apply to every Transform/TransformAsync call"
+      ]
+    }
+  ]
+}

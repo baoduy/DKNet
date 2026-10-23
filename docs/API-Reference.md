@@ -33,19 +33,19 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 🗃️ Blob Storage Services
 
-- [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) — provider-agnostic `IBlobService` contract and shared model types
-- [DKNet.Svc.BlobStorage.AwsS3](Services/DKNet.Svc.BlobStorage.AwsS3.md) — AWS S3 adapter, also usable against MinIO and Cloudflare R2
-- [DKNet.Svc.BlobStorage.AzureStorage](Services/DKNet.Svc.BlobStorage.AzureStorage.md) — Azure Blob Storage adapter
-- [DKNet.Svc.BlobStorage.Local](Services/DKNet.Svc.BlobStorage.Local.md) — local-filesystem adapter with path-traversal protection
+- [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) — provider-agnostic `IBlobService` contract and shared model types
+- [DKNet.Svc.BlobStorage.AwsS3](DKNet.Svc.BlobStorage.AwsS3/index.md) — AWS S3 adapter, also usable against MinIO and Cloudflare R2
+- [DKNet.Svc.BlobStorage.AzureStorage](DKNet.Svc.BlobStorage.AzureStorage/index.md) — Azure Blob Storage adapter
+- [DKNet.Svc.BlobStorage.Local](DKNet.Svc.BlobStorage.Local/index.md) — local-filesystem adapter with path-traversal protection
 
 ## 🔐 Cryptography
 
-- [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) — AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, Base64/Base64URL helpers
+- [DKNet.Svc.Encryption](DKNet.Svc.Encryption/index.md) — AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, Base64/Base64URL helpers
 
 ## 📝 Documents & Text
 
-- [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) — HTML or Markdown to PDF via headless Chromium (PuppeteerSharp) and Markdig
-- [DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation.md) — fills bracketed tokens in a template string from plain objects or string dictionaries
+- [DKNet.Svc.PdfGenerators](DKNet.Svc.PdfGenerators/index.md) — HTML or Markdown to PDF via headless Chromium (PuppeteerSharp) and Markdig
+- [DKNet.Svc.Transformation](DKNet.Svc.Transformation/index.md) — fills bracketed tokens in a template string from plain objects or string dictionaries
 
 ## 🌐 ASP.NET Core Utilities
 

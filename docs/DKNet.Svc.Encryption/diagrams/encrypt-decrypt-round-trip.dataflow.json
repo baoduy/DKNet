@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Encrypting and decrypting a value with IAesGcmEncryption",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Matching associated data" },
+        "security": { "label": "Mismatched associated data" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [1080, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/encrypt-decrypt-round-trip.html"
+  },
+  "stages": [
+    { "label": "Register" },
+    { "label": "Resolve" },
+    { "label": "Encrypt" },
+    { "label": "Decrypt" },
+    { "label": "Result" }
+  ],
+  "nodes": [
+    {
+      "id": "register",
+      "type": "external",
+      "label": "AddAesGcmEncryption(key)",
+      "sublabel": "idempotent, throws on blank key",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/EncryptionSetup.cs", "line": 65, "end_line": 72 }
+      ]
+    },
+    {
+      "id": "resolve",
+      "type": "backend",
+      "label": "IAesGcmEncryption",
+      "sublabel": "singleton over that key",
+      "stage": 1,
+      "row": 1,
+      "width": 170,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/EncryptionSetup.cs", "line": 65, "end_line": 72 }
+      ]
+    },
+    {
+      "id": "encrypt",
+      "type": "backend",
+      "label": "EncryptString(plainText)",
+      "sublabel": "fresh nonce + tag per call",
+      "stage": 2,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 209, "end_line": 227 }
+      ]
+    },
+    {
+      "id": "decrypt_ok",
+      "type": "backend",
+      "label": "DecryptString(package)",
+      "sublabel": "same associatedData",
+      "stage": 3,
+      "row": 0,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 140, "end_line": 160 }
+      ]
+    },
+    {
+      "id": "decrypt_fail",
+      "type": "security",
+      "label": "CryptographicException",
+      "sublabel": "different associatedData",
+      "stage": 3,
+      "row": 2,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 140, "end_line": 160 }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "plaintext string",
+      "sublabel": "returned to caller",
+      "stage": 4,
+      "row": 0,
+      "width": 160,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 140, "end_line": 160 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "register", "to": "resolve", "label": "resolves", "variant": "default", "labelAt": [210, 315] },
+    { "from": "resolve", "to": "encrypt", "label": "calls", "variant": "default", "labelAt": [417, 315] },
+    { "from": "encrypt", "to": "decrypt_ok", "label": "matching AAD", "variant": "emphasis", "labelAt": [638, 201] },
+    { "from": "encrypt", "to": "decrypt_fail", "label": "mismatched AAD", "variant": "security", "labelAt": [638, 330] },
+    { "from": "decrypt_ok", "to": "result", "label": "UTF-8 decoded", "variant": "emphasis", "route": "straight", "labelAt": [900, 110] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "AddEncryptionServices registers no cipher",
+      "items": [
+        "Only IShaHashing and IHmacHashing come from AddEncryptionServices",
+        "Each cipher needs its own registration call with an explicit key",
+        "All registration methods are idempotent: a second call changes nothing"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Ciphertext is never deterministic",
+      "items": [
+        "A fresh random 12-byte nonce and 16-byte tag are generated per call",
+        "The package layout is base64(nonce):base64(tag):base64(cipher), base64-wrapped",
+        "associatedData is optional; a mismatch on decrypt throws, it is never silently ignored"
+      ]
+    }
+  ]
+}

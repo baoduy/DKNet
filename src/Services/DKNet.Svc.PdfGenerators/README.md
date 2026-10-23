@@ -5,99 +5,52 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
 
-PDF generation from HTML or Markdown, via headless Chromium (PuppeteerSharp) and Markdig. Fork of
-Markdown2Pdf 2.x — see `THIRD-PARTY-NOTICES.md` in the package for upstream attribution.
+Converts HTML or Markdown into a PDF file using headless Chromium (PuppeteerSharp) and Markdig, with page layout,
+header/footer, and margin control.
 
-## Features
+> This package is a fork of [Markdown2Pdf](https://github.com/Flayms/Markdown2Pdf) 2.x — see
+> [THIRD-PARTY-NOTICES.md](https://github.com/baoduy/DKNet/blob/main/src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md)
+> for the upstream attribution.
 
-- `IPdfGenerator` — convert an HTML string, an HTML file, a Markdown file, or several Markdown files into one PDF
-- Chromium print layout: paper format, orientation, scale, margins, and repeated HTML header/footer templates
-- Chromium is downloaded on demand when no `ChromePath` is configured, so a container needs no browser baked in
-- `--no-sandbox` is applied automatically when `CI` or `GITHUB_ACTIONS` is `"true"`
+## ✨ Why use it?
 
-## Installation
+- **One call from Markdown to a PDF on disk.** `ConvertMarkdownFileAsync("notes.md")` writes `notes.pdf` next to it — no template engine, no browser lifecycle, no temp-file bookkeeping in your code.
+- **Chromium fetches itself.** With no `ChromePath` configured, the first conversion downloads a matching build through PuppeteerSharp, so a container needs no browser baked in.
+- **Real print layout.** Paper format, orientation, scale, margins, and repeated HTML header/footer templates come from Chromium's own print pipeline rather than CSS guesswork.
+- **Caller content cannot reach your network by default.** Rendered HTML runs with scripting off and a loopback/private-network request guard on.
+
+## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.PdfGenerators
 ```
-
-## Quick Start
 
 ```csharp
 using DKNet.Svc.PdfGenerators;
 using DKNet.Svc.PdfGenerators.Options;
 using Microsoft.Extensions.DependencyInjection;
 
-builder.Services.AddPdfGenerator(new PdfGeneratorOptions
+var services = new ServiceCollection();
+services.AddPdfGenerator(new PdfGeneratorOptions
 {
     MarginOptions = new MarginOptions { Top = "2cm", Bottom = "2cm", Left = "1.5cm", Right = "1.5cm" }
 });
+using var provider = services.BuildServiceProvider();
 
-public sealed class ReportExporter(IPdfGenerator pdfGenerator)
-{
-    // writes ./reports/monthly.pdf and returns its full path
-    public Task<string> ExportAsync(string markdownPath) =>
-        pdfGenerator.ConvertMarkdownFileAsync(markdownPath, "reports/monthly.pdf");
-}
+var generator = provider.GetRequiredService<IPdfGenerator>();
+var path = await generator.ConvertMarkdownFileAsync("notes.md", "reports/monthly.pdf");
+Console.WriteLine(path);
 ```
 
-`AddPdfGenerator(PdfGeneratorOptions? options = null)` builds one `PdfGenerator` immediately and registers it
-as a singleton `IPdfGenerator`. The call is idempotent, so the **first** call's options are the ones the
-instance keeps for the process lifetime.
-
-## Configuration — `PdfGeneratorOptions`
-
-The **Applied** column says whether the current `PdfGenerator` pipeline reads the value. Several option types
-carried over from upstream are settable and serializable but never read — do not design a document around them.
-
-| Option | Type | Default | Effect | Applied |
-|---|---|---|---|---|
-| `Format` | `PaperFormat` (PuppeteerSharp) | `PaperFormat.A4` | Paper size passed to Chromium. | ✅ |
-| `IsLandscape` | `bool` | `false` | Landscape orientation. | ✅ |
-| `Scale` | `decimal` | `1` | Render scale. | ✅ |
-| `MarginOptions` | `MarginOptions?` | `null` | `Top`/`Bottom`/`Left`/`Right` as CSS strings (`"1cm"`); `null` leaves Chromium's defaults. | ✅ |
-| `HeaderHtml` | `string?` | `null` | Chromium header template; setting it (or `FooterHtml`) turns the header/footer on. | ✅ |
-| `FooterHtml` | `string?` | `null` | Chromium footer template. | ✅ |
-| `ChromePath` | `string?` | `null` | Path to an existing Chromium/Chrome; `null` downloads a build on demand. | ✅ |
-| `Theme` | `Theme` | `Theme.Github` | `Github` / `Latex` / `None` / `Custom(cssPath)`. | ❌ |
-| `CodeHighlightTheme` | `CodeHighlightTheme` | `CodeHighlightTheme.Github` | One of 75 highlight.js stylesheets exposed as static properties. | ❌ |
-| `ModuleOptions` | `ModuleOptions` | `ModuleOptions.Remote` | `Remote` / `None` / `FromLocalPath(path)` for MathJax, Mermaid and highlight.js assets. | ❌ |
-| `TableOfContents` | `TableOfContentsOptions?` | `null` | See the nested table below. | ❌ |
-| `DocumentTitle` | `string?` | `null` | Document title. | ❌ |
-| `MetadataTitle` | `string?` | `null` | PDF metadata title. | ❌ |
-| `CustomHeadContent` | `string?` | `null` | Extra markup for the generated `<head>`. | ❌ |
-| `KeepHtml` | `bool` | `false` | Keep the intermediate HTML for debugging. | ❌ |
-| `EnableAutoLanguageDetection` | `bool` | `false` | Auto-detect code-block languages. | ❌ |
-
-### Nested option types
-
-`MarginOptions` — `Top`, `Bottom`, `Left`, `Right`, all `string?`, all `null` by default.
-
-`TableOfContentsOptions`:
-
-| Option | Type | Default | Effect |
-|---|---|---|---|
-| `MinDepthLevel` | `int` | `1` | Shallowest heading level; outside `1..6` throws `ArgumentOutOfRangeException`. |
-| `MaxDepthLevel` | `int` | `6` | Deepest heading level; same guard. |
-| `ListStyle` | `ListStyle` | `OrderedDefault` | `None`, `OrderedDefault`, `Unordered`, `Decimals`. |
-| `HasColoredLinks` | `bool` | `false` | Leave TOC links in the theme's link colour. |
-| `PageNumberOptions` | `PageNumberOptions?` | `null` | Non-`null` asks for page numbers. |
-
-`PageNumberOptions` — `TabLeader` (`Leader`, default `Leader.Dots`; values `None`, `Dots`, `Underline`, `Dashes`).
-
-`ModuleOptions` has a `protected internal` constructor; get an instance from `ModuleOptions.None`,
-`ModuleOptions.Remote`, or `ModuleOptions.FromLocalPath(path)`. `Theme` has no public constructor; use
-`Theme.Github`, `Theme.Latex`, `Theme.None`, or `Theme.Custom(cssPath)` — `PredefinedTheme` is `internal`, so a
-predefined theme can be selected but not constructed or extended.
-
-`SerializableOptions` mirrors `PdfGeneratorOptions` with nullable, mostly string-typed properties and converts
-via `ToPdfGeneratorOptions()`; an unset property leaves the target at its default. Named values resolve by
-reflection against the target type's static properties: an unknown `Theme` string becomes `Theme.Custom(value)`,
-an unknown `ModuleOptions` string becomes `ModuleOptions.FromLocalPath(value)`, and an unknown `Format` or
-`CodeHighlightTheme` string is ignored. `InlineOptionsParser.ParseYamlFrontMatter(path)` reads the same shape
-out of a Markdown file's front matter using hyphenated keys.
+Run with `dotnet run`.
 
 ## Documentation
 
-Full feature reference, diagrams, and gotchas:
-https://github.com/baoduy/DKNet/blob/main/docs/Services/DKNet.Svc.PdfGenerators.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/index.md) | Start with architecture and the end-to-end flow. |
+| [Convert Markdown to a PDF](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/convert-markdown-to-pdf.md) | Render one or several Markdown files into a PDF. |
+| [Convert HTML to a PDF](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/convert-html-to-pdf.md) | Render a raw HTML string or file directly, with no Markdown step. |
+| [Page layout, header and footer](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/page-layout-header-footer.md) | Control paper size, orientation, scale, margins, and repeated header/footer templates. |
+| [Browser lifecycle and request safety](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/browser-lifecycle-and-request-safety.md) | How Chromium is downloaded, launched and reused, and how outgoing requests are guarded. |
+| [Inert options and serialization](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/inert-options-and-serialization.md) | The theme, table-of-contents, module and metadata options that have no effect on the rendered output. |

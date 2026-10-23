@@ -12,27 +12,27 @@ application layers.
 One abstraction, three providers — depend on `IBlobService` from Abstractions and register whichever provider
 package matches your storage backend.
 
-- [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) — the `IBlobService` contract, shared
+- [DKNet.Svc.BlobStorage.Abstractions](../DKNet.Svc.BlobStorage.Abstractions/index.md) — the `IBlobService` contract, shared
   models, and validation options every provider implements.
-- [DKNet.Svc.BlobStorage.AwsS3](./DKNet.Svc.BlobStorage.AwsS3.md) — AWS S3 and S3-compatible services (MinIO,
+- [DKNet.Svc.BlobStorage.AwsS3](../DKNet.Svc.BlobStorage.AwsS3/index.md) — AWS S3 and S3-compatible services (MinIO,
   Cloudflare R2).
-- [DKNet.Svc.BlobStorage.AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage.md) — Azure Blob Storage, including
+- [DKNet.Svc.BlobStorage.AzureStorage](../DKNet.Svc.BlobStorage.AzureStorage/index.md) — Azure Blob Storage, including
   managed-identity auth.
-- [DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local.md) — local filesystem, for dev/test/single-instance
+- [DKNet.Svc.BlobStorage.Local](../DKNet.Svc.BlobStorage.Local/index.md) — local filesystem, for dev/test/single-instance
   deployments.
 
 ## Cryptography
 
-- [DKNet.Svc.Encryption](./DKNet.Svc.Encryption.md) — AES-GCM/RSA encryption, HMAC/SHA hashing, Base64 helpers,
+- [DKNet.Svc.Encryption](../DKNet.Svc.Encryption/index.md) — AES-GCM/RSA encryption, HMAC/SHA hashing, Base64 helpers,
   called explicitly from your own code. (Not the same package as `DKNet.EfCore.Encryption`, which encrypts EF Core
   columns transparently — the page explains which one to reach for.)
 
 ## Documents and data
 
-- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators.md) — Markdown/HTML → PDF via headless Chromium, with paper
+- [DKNet.Svc.PdfGenerators](../DKNet.Svc.PdfGenerators/index.md) — Markdown/HTML → PDF via headless Chromium, with paper
   format, orientation, scale, margins, and header/footer templates. Theme, table-of-contents, and module options
   exist on the options type but are not wired into the current pipeline — the package page marks which apply.
-- [DKNet.Svc.Transformation](./DKNet.Svc.Transformation.md) — template-token substitution against a plain object or
+- [DKNet.Svc.Transformation](../DKNet.Svc.Transformation/index.md) — template-token substitution against a plain object or
   dictionary, independent of any templating engine.
 
 ## Picking a package

@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "IBlobService contract, shared base class, and provider packages",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.Abstractions/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Application / provider package"
+        },
+        "backend": {
+          "label": "Contract and shared base class"
+        },
+        "database": {
+          "label": "Shared request/result models"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "app",
+      "label": "Application code",
+      "sublabel": "depends on IBlobService only",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        260,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 12,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "iface",
+      "label": "IBlobService",
+      "sublabel": "7 operations incl. 2 default members",
+      "pos": [
+        650,
+        80
+      ],
+      "size": [
+        300,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 12,
+          "end_line": 129
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "BlobService (abstract base)",
+      "sublabel": "ValidateFile, GetBlobLocation",
+      "pos": [
+        1250,
+        80
+      ],
+      "size": [
+        300,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 334
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "label": "BlobServiceOptions",
+      "sublabel": "opt-in name/extension/size rules",
+      "pos": [
+        1250,
+        310
+      ],
+      "size": [
+        300,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/BlobServiceOptions.cs",
+          "line": 6,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "label": "BlobRequest / BlobDetails models",
+      "sublabel": "BinaryData payloads + BlobStreamData",
+      "pos": [
+        650,
+        310
+      ],
+      "size": [
+        300,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/BlobData.cs",
+          "line": 24,
+          "end_line": 138
+        }
+      ]
+    },
+    {
+      "id": "provider",
+      "label": "Provider adapter (S3 / Azure / Local)",
+      "sublabel": "one package implements the base",
+      "pos": [
+        50,
+        310
+      ],
+      "size": [
+        260,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "app",
+      "to": "iface",
+      "label": "calls"
+    },
+    {
+      "from": "iface",
+      "to": "base",
+      "label": "implemented by"
+    },
+    {
+      "from": "base",
+      "to": "options",
+      "label": "reads limits from"
+    },
+    {
+      "from": "base",
+      "to": "models",
+      "label": "accepts / returns"
+    },
+    {
+      "from": "provider",
+      "to": "base",
+      "label": "derives from"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Package boundary",
+      "items": [
+        "This package ships no IBlobService implementation \u2014 only the contract, the shared base class, and the models.",
+        "Content-type detection (BlobExtensions.GetContentTypeByExtension) and SizeLimitedStream are the only other public surface."
+      ]
+    }
+  ]
+}

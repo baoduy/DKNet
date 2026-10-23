@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.Svc.PdfGenerators inside the host process",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package types"
+        },
+        "security": {
+          "label": "SSRF / script guard"
+        },
+        "cloud": {
+          "label": "Chromium (separate process)"
+        },
+        "database": {
+          "label": "Written PDF"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/components.html"
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "Host application",
+      "sublabel": "calls AddPdfGenerator, resolves IPdfGenerator",
+      "pos": [40, 160],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGeneratorSetup.cs", "line": 19, "end_line": 27 }
+      ]
+    },
+    {
+      "id": "setup",
+      "type": "backend",
+      "label": "PdfGeneratorSetup",
+      "sublabel": "AddPdfGenerator() -> TryAddSingleton",
+      "pos": [340, 40],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGeneratorSetup.cs", "line": 19, "end_line": 27 }
+      ]
+    },
+    {
+      "id": "generator",
+      "type": "backend",
+      "label": "PdfGenerator",
+      "sublabel": "IPdfGenerator, one shared IBrowser",
+      "pos": [340, 200],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs", "line": 79, "end_line": 113 }
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "Markdig pipeline",
+      "sublabel": "advanced ext. + YAML + emoji, fixed",
+      "pos": [640, 40],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs", "line": 108, "end_line": 113 }
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "RequestGuard",
+      "sublabel": "blocks loopback / private / CGNAT hosts",
+      "pos": [640, 360],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/Services/RequestGuard.cs", "line": 30, "end_line": 48 }
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "cloud",
+      "label": "Headless Chromium",
+      "sublabel": "PuppeteerSharp IBrowser",
+      "pos": [940, 200],
+      "size": [230, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs", "line": 290, "end_line": 320 }
+      ]
+    },
+    {
+      "id": "pdf",
+      "type": "database",
+      "label": "PDF file",
+      "sublabel": "path or FileInfo returned",
+      "pos": [1240, 200],
+      "size": [200, 76],
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs", "line": 204, "end_line": 232 }
+      ]
+    }
+  ],
+  "connections": [
+    { "from": "caller", "to": "setup", "label": "AddPdfGenerator(options)" },
+    { "from": "caller", "to": "generator", "label": "ConvertMarkdownFileAsync / ConvertHtmlAsync" },
+    { "from": "setup", "to": "generator", "label": "new PdfGenerator(options)" },
+    { "from": "generator", "to": "pipeline", "label": "Markdown.ToHtml" },
+    { "from": "generator", "to": "guard", "label": "page.Request -> GuardRequestAsync" },
+    { "from": "generator", "to": "browser", "label": "SetContentAsync / PdfAsync" },
+    { "from": "browser", "to": "pdf", "label": "writes" }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Host process",
+      "wraps": ["caller", "setup", "generator", "pipeline", "guard"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Separate OS process, launched by PuppeteerSharp",
+      "wraps": ["browser"]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Lifetime",
+      "items": [
+        "AddPdfGenerator is idempotent: only the first call's options build the singleton PdfGenerator.",
+        "PdfGenerator launches one Chromium instance on first use and relaunches it only if it disconnects.",
+        "A Chromium download (BrowserFetcher) runs once, serialized across concurrent first calls."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Not pictured",
+      "items": [
+        "ThemeService, TableOfContentsCreator and ModuleService exist in the package but are never constructed by PdfGenerator.",
+        "There is no page or browser pool: every conversion opens and closes its own page."
+      ]
+    }
+  ]
+}
