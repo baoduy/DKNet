@@ -584,7 +584,7 @@ message. Supply `ErrorResponseOptions.UnhandledError` to answer with a body of y
 still wins over the status it sets, and `Customize` still runs afterwards.
 
 No ADR was written for this change — the decisions are recorded here and in
-[One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+[One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 
 ---
 

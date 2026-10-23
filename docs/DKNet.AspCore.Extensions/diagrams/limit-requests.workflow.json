@@ -1,0 +1,127 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Limit rate and concurrent requests",
+    "output": ".task-validation/DKNet.AspCore.Extensions/limit-requests.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "Partition identity",
+      "sublabel": "Name, remote IP, shared",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitKeyProvider.cs",
+          "line": 28,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Fixed window limiter",
+      "sublabel": "Default 2 requests per second",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/IRateLimitOptionsProvider.cs",
+          "line": 36,
+          "end_line": 42
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Concurrency limiter",
+      "sublabel": "Default 2 in flight; no queue",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/IRateLimitOptionsProvider.cs",
+          "line": 44,
+          "end_line": 45
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Global chained limiter",
+      "sublabel": "Reject exhausted partition: 429",
+      "width": 169.6,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitConfig.cs",
+          "line": 41,
+          "end_line": 50
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis"
+    }
+  ]
+}

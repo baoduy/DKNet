@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PostgreSQL idempotency provider inside a host",
+    "output": ".task-validation/DKNet.AspCore.Idempotency.NpgsqlStore/idempotency-npgsql-composition.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "ASP.NET Core host",
+      "sublabel": "AddIdempotencyWithNpgsqlStore",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.NpgsqlStore/IdempotencyNpgsqlSetup.cs",
+          "line": 76,
+          "end_line": 83
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "store",
+      "label": "IdempotencyPostgresStore",
+      "sublabel": "Singleton core store contract",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.NpgsqlStore/Store/IdempotencyPostgresStore.cs",
+          "line": 21,
+          "end_line": 25
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        460,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "factory",
+      "label": "IdempotencyDbContext",
+      "sublabel": "Created via singleton factory",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 124,
+          "end_line": 128
+        },
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 237,
+          "end_line": 248
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        920,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "db",
+      "label": "IdempotencyKeys",
+      "sublabel": "text response body",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.NpgsqlStore/Data/Configurations/IdempotencyKeyConfiguration.cs",
+          "line": 13,
+          "end_line": 23
+        }
+      ],
+      "type": "database",
+      "pos": [
+        920,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "migration",
+      "label": "Migration hosted service",
+      "sublabel": "Migrate pending schema at start",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.NpgsqlStore/IdempotencyNpgsqlSetup.cs",
+          "line": 52,
+          "end_line": 52
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        460,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "host",
+      "to": "store",
+      "label": "selects"
+    },
+    {
+      "id": "e1",
+      "from": "store",
+      "to": "factory",
+      "label": "new context"
+    },
+    {
+      "id": "e2",
+      "from": "factory",
+      "to": "db",
+      "label": "SQL"
+    },
+    {
+      "id": "e3",
+      "from": "host",
+      "to": "migration",
+      "label": "registers"
+    },
+    {
+      "id": "e4",
+      "from": "migration",
+      "to": "factory",
+      "label": "migrates"
+    }
+  ]
+}

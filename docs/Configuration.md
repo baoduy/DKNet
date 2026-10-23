@@ -276,9 +276,9 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
 | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator` |
 | [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
-| [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
-| [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) | `IdempotencyOptions` in full |
-| [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
+| [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
+| [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) | `IdempotencyOptions` in full |
+| [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
 | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) | `BlobServiceOptions` validation keys shared by all adapters |
 | [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
 | [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) | `AddPdfGenerator` and the page/margin options |

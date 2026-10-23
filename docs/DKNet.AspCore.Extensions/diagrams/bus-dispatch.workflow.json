@@ -1,0 +1,132 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Send a fluent command from a minimal API",
+    "output": ".task-validation/DKNet.AspCore.Extensions/bus-dispatch.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    },
+    {
+      "id": "failure",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "Bind TCommand",
+      "sublabel": "Body or AsParameters",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEndpointMapperExtensions.cs",
+          "line": 199,
+          "end_line": 205
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "IMessageBus.Send",
+      "sublabel": "Host registers handlers",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEndpointMapperExtensions.cs",
+          "line": 205,
+          "end_line": 208
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Response(isCreating)",
+      "sublabel": "201 for Create-named POST",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEndpointMapperExtensions.cs",
+          "line": 202,
+          "end_line": 210
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "failure",
+      "col": 1,
+      "type": "security",
+      "label": "Standard exception body",
+      "sublabel": "When common filter can handle it",
+      "width": 176.4,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEndpointMapperExtensions.cs",
+          "line": 50,
+          "end_line": 65
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "refusal",
+      "from": "n1",
+      "to": "stop",
+      "role": "error",
+      "variant": "security"
+    }
+  ]
+}

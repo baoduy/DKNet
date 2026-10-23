@@ -1,0 +1,132 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Resolve first-wins store registration with a replaceable default",
+    "output": ".task-validation/DKNet.AspCore.Idempotency/store-selection.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    },
+    {
+      "id": "failure",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "AddIdempotentKey<TStore>",
+      "sublabel": "Inspect current descriptor",
+      "width": 183.2,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 53,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Default or absent?",
+      "sublabel": "Remove replaceable default",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 57,
+          "end_line": 63
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Register singleton",
+      "sublabel": "Configure and validate options",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 65,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "failure",
+      "col": 1,
+      "type": "security",
+      "label": "Keep explicit store",
+      "sublabel": "Later delegate is ignored",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 57,
+          "end_line": 60
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "refusal",
+      "from": "n1",
+      "to": "stop",
+      "role": "error",
+      "variant": "security"
+    }
+  ]
+}

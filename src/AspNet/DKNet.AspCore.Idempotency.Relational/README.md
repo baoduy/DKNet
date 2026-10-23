@@ -1,107 +1,44 @@
 # DKNet.AspCore.Idempotency.Relational
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Idempotency.Relational.svg)](https://www.nuget.org/packages/DKNet.AspCore.Idempotency.Relational/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+Internal EF Core storage machinery shared by the SQL Server and PostgreSQL idempotency providers.
 
-Shared Entity Framework Core base for building relational **DKNet.AspCore.Idempotency** stores — the entity, the
-entity mapping, the shared `DbContext`, and the concurrency-safe insert-or-query pattern that
-`DKNet.AspCore.Idempotency.MsSqlStore` and `DKNet.AspCore.Idempotency.NpgsqlStore` both derive from.
+## ✨ Why use it?
 
-> This is an internal base package, not something app authors register directly. If you are adding idempotency to
-> an app, install `DKNet.AspCore.Idempotency` plus a concrete provider package (`.MsSqlStore` / `.NpgsqlStore`)
-> instead. Use this package only when implementing support for a **new** relational database.
+- Understand why SQL retries reserve through a unique index before handlers run.
+- Inspect the shared row shape and expiry behavior used by both providers.
+- Find which setup and migrations belong to the concrete provider.
 
-## Features
+## 🚀 Quick Start
 
-- Shared `IdempotencyKeyEntity` and `IEntityTypeConfiguration<IdempotencyKeyEntity>` mapping every relational
-  provider reuses as-is
-- Shared `IdempotencyDbContext` base with automatic discovery of the derived provider's own entity configuration
-- Race-safe insert-or-query reservation pattern (`IdempotencyRelationalStore<TContext>`) backed by a unique-index
-  guarantee, including atomic reclaim of expired reservations
-- Per-connection-string migration guard so a process serving multiple databases migrates each one exactly once
-- Only two seams left to each provider: the response-body column type/check-constraint SQL, and how to recognize
-  that provider's own unique-key-violation error
-
-## Installation
+This package is a transitive dependency of the SQL providers. Every type is internal; it exposes no application registration method. Install a provider to exercise it:
 
 ```bash
+dotnet new web -f net10.0 -n PackageDemo
+cd PackageDemo
 dotnet add package DKNet.AspCore.Idempotency.Relational
+dotnet add package DKNet.AspCore.Idempotency.NpgsqlStore
 ```
 
-## Quick Start — implementing a new provider store
-
-A new relational provider derives four types from this package:
+Set `ConnectionStrings__Idempotency` to a PostgreSQL connection string for a database the app can migrate. Then use this `Program.cs` and run `dotnet run`:
 
 ```csharp
-// 1. Closed DbContext
-internal sealed class IdempotencyDbContext(DbContextOptions<IdempotencyDbContext> options)
-    : DKNet.AspCore.Idempotency.Relational.Data.IdempotencyDbContext(options);
-
-// 2. Provider-specific mapping details
-internal sealed class IdempotencyKeyConfiguration
-    : DKNet.AspCore.Idempotency.Relational.Data.Configurations.IdempotencyKeyConfiguration
-{
-    protected override string BodyColumnType => "text";
-    protected override string StatusCodeCheckConstraintSql => "\"StatusCode\" BETWEEN 100 AND 599";
-}
-
-// 3. Provider-specific unique-violation detection
-internal sealed class IdempotencyPostgresStore(
-    IServiceProvider serviceProvider, IOptions<IdempotencyOptions> options, ILogger<IdempotencyPostgresStore> logger)
-    : IdempotencyRelationalStore<IdempotencyDbContext>(serviceProvider, options, logger)
-{
-    protected override bool IsProviderUniqueViolation(DbUpdateException ex) =>
-        ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
-}
-
-// 4. DI wiring (own project's setup extension)
-services.AddDbContext<IdempotencyDbContext>(o => o.UseNpgsql(connectionString))
-    .AddDbContextFactory<IdempotencyDbContext>();
-services.AddIdempotentKey<IdempotencyPostgresStore>();
+using DKNet.AspCore.Idempotency;
+using DKNet.AspCore.Idempotency.NpgsqlStore;
+var builder = WebApplication.CreateBuilder(args);
+var connection = builder.Configuration.GetConnectionString("Idempotency")
+    ?? throw new InvalidOperationException("Set ConnectionStrings__Idempotency.");
+builder.Services.AddIdempotencyWithNpgsqlStore(connection);
+var app = builder.Build();
+app.MapPost("/orders", () => Results.Ok()).RequiredIdempotentKey();
+await app.RunAsync();
 ```
 
-Because the base types here are `internal`, the new provider project must be added to this package's
-`InternalsVisibleTo` list.
+POST twice with `X-Idempotency-Key: order-1`: the first returns 200 and the retry 409. The provider applies its migrations on host start.
 
-## Customisation reference
+## Documentation
 
-**This package exposes no public API, so there is nothing to configure and nothing to register.** The four types it
-declares — `IdempotencyRelationalStore<TContext>`, `IdempotencyDbContext`, `IdempotencyKeyEntity` and
-`IdempotencyKeyConfiguration` — are all `internal`, and its `InternalsVisibleTo` list names only
-`DKNet.AspCore.Idempotency.MsSqlStore`, `DKNet.AspCore.Idempotency.NpgsqlStore` and their two test projects. Adding
-this package to an application changes nothing about that application.
-
-The runtime knobs that affect a relational store are the core package's `IdempotencyOptions` — see
-[DKNet.AspCore.Idempotency](https://github.com/baoduy/DKNet/blob/main/src/AspNet/DKNet.AspCore.Idempotency/README.md).
-Of those, this base reads only `InFlightReservationTimeout` (30 seconds by default), the lifetime of the `StatusCode
-= 102` reservation row on both the fresh-insert and the reclaim path.
-
-For in-repo provider authors, the internal contract is two `protected abstract` members and one override:
-
-| Seam | Declared on | Example values |
-|---|---|---|
-| `BodyColumnType` | `IdempotencyKeyConfiguration` | `nvarchar(max)` on SQL Server, `text` on PostgreSQL |
-| `StatusCodeCheckConstraintSql` | `IdempotencyKeyConfiguration` | `[StatusCode] BETWEEN 100 AND 599` vs `"StatusCode" BETWEEN 100 AND 599` |
-| `IsProviderUniqueViolation(DbUpdateException)` | `IdempotencyRelationalStore<TContext>` | `SqlException { Number: 2601 or 2627 }` vs `PostgresException { SqlState: 23505 }` — never a message substring, which the server localises |
-
-Everything else — the table name, column lengths, the `UX_CompositeKey` unique index, the `IX_IdempotencyKeys_ExpiresAt`
-index and the reserve/complete/reclaim flow — is fixed by the shared mapping and cannot be overridden.
-
-## Requirements
-
-- .NET 10.0+
-- `Microsoft.EntityFrameworkCore` / `Microsoft.EntityFrameworkCore.Relational`
-- DKNet.AspCore.Idempotency (automatically included)
-
-## Full documentation
-
-See [DKNet.AspCore.Idempotency.Relational](https://github.com/baoduy/DKNet/blob/main/docs/AspNetCore/DKNet.AspCore.Idempotency.Relational.md)
-for the full feature breakdown, mapping defaults, and gotchas.
-
-## License
-
-MIT — see [LICENSE](https://github.com/baoduy/DKNet/blob/main/LICENSE).
-
-## About
-
-Developed by [Steven Hoang](https://drunkcoding.net).
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Idempotency.Relational/index.md) | Start with architecture and the end-to-end flow. |
+| [Reserve and complete relational keys](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Idempotency.Relational/reserve-relational-keys.md) | Trace unique-index insertion, collision handling, and expired-row reclaim. |
+| [Understand schema and migrations](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Idempotency.Relational/understand-relational-schema.md) | Inspect shared columns, provider mappings, and migration ownership. |

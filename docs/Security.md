@@ -125,7 +125,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   (only when `IdempotencyOptions.ScopeHmacSecret` is configured — otherwise that fallback is skipped), then the
   client IP if `IncludeClientIpInScope` is set. Neither the secret nor the raw header is ever logged. A
   `KeyScopeResolver` replaces the whole chain. See
-  [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md).
+  [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md).
 - **Register the store, and register it once.** `.RequiredIdempotentKey()` always adds the filter, but the filter
   cannot be constructed unless `AddIdempotentKey`/`AddIdempotencyWith*Store` registered an
   `IIdempotencyKeyStore` — the route then fails on its first request. Between two named stores

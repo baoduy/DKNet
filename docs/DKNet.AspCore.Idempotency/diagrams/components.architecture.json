@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Idempotency services inside an ASP.NET Core host",
+    "output": ".task-validation/DKNet.AspCore.Idempotency/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "route",
+      "label": "Protected minimal API",
+      "sublabel": "RequiredIdempotentKey",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 166,
+          "end_line": 169
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        40
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "filter",
+      "label": "IdempotencyEndpointFilter",
+      "sublabel": "Validate, reserve, invoke, retain",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Filtering/IdempotencyEndpointFilter.cs",
+          "line": 236,
+          "end_line": 267
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        440,
+        40
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "handler",
+      "label": "Endpoint handler",
+      "sublabel": "Runs after successful reservation",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Filtering/IdempotencyEndpointFilter.cs",
+          "line": 260,
+          "end_line": 264
+        }
+      ],
+      "type": "external",
+      "pos": [
+        850,
+        40
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "store",
+      "label": "IIdempotencyKeyStore",
+      "sublabel": "Singleton storage contract",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencySetup.cs",
+          "line": 53,
+          "end_line": 68
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        440,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "memory",
+      "label": "IdempotencyInMemoryStore",
+      "sublabel": "Default process-local dictionary",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Store/IdempotencyInMemoryStore.cs",
+          "line": 67,
+          "end_line": 104
+        }
+      ],
+      "type": "database",
+      "pos": [
+        440,
+        480
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "options",
+      "label": "IdempotencyOptions",
+      "sublabel": "Host configuration",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/IdempotencyOptions.cs",
+          "line": 64,
+          "end_line": 204
+        }
+      ],
+      "type": "security",
+      "pos": [
+        30,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "providers",
+      "label": "SQL or Redis provider",
+      "sublabel": "Optional shared ledger",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Store/IdempotencyKeyStore.cs",
+          "line": 9,
+          "end_line": 33
+        }
+      ],
+      "type": "external",
+      "pos": [
+        850,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "route",
+      "to": "filter",
+      "label": "filter"
+    },
+    {
+      "id": "e1",
+      "from": "filter",
+      "to": "handler",
+      "label": "new key"
+    },
+    {
+      "id": "e2",
+      "from": "filter",
+      "to": "store",
+      "label": "reserve / complete"
+    },
+    {
+      "id": "e3",
+      "from": "options",
+      "to": "filter",
+      "label": "options"
+    },
+    {
+      "id": "e4",
+      "from": "store",
+      "to": "memory",
+      "label": "default"
+    },
+    {
+      "id": "e5",
+      "from": "store",
+      "to": "providers",
+      "label": "explicit"
+    }
+  ]
+}
