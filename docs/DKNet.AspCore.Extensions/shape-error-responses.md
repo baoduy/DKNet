@@ -48,4 +48,4 @@ Without registration, `Response` failures still have the standard command-error 
 - `Customize` is invoked for all failure kinds; its own conditions decide which members appear. Host callbacks can alter the standard shape.
 - A custom `UnhandledError` body is responsible for its own title, type and errors. The finalizer always adds trace ID; it does not rebuild omitted members.
 - Antiforgery refusals use a separate fixed 400 factory invocation without these options.
-- `MapGetList` refusals for invalid filters, search, sorting or date bounds return a bare `Results.Problem(error, 400)`. They also bypass `ErrorResponseOptions`.
+- `MapGetList` refusals for invalid filters, search, sorting or date bounds return a bare `Results.Problem(error, statusCode: 400)`. They also bypass `ErrorResponseOptions`.
