@@ -1,10 +1,5 @@
 # DKNet.Svc.PdfGenerators
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.PdfGenerators)](https://www.nuget.org/packages/DKNet.Svc.PdfGenerators/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.PdfGenerators)](https://www.nuget.org/packages/DKNet.Svc.PdfGenerators/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
-
 Converts HTML or Markdown into a PDF file using headless Chromium (PuppeteerSharp) and Markdig, with page layout,
 header/footer, and margin control.
 

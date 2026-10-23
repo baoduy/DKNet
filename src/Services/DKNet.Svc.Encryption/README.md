@@ -1,10 +1,5 @@
 # DKNet.Svc.Encryption
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
-
 Explicitly-invoked cryptography toolkit for .NET developers — AES-GCM and RSA encryption, RSA signing, HMAC and SHA
 hashing, and Base64/Base64URL helpers, all string-in/string-out.
 
