@@ -22,7 +22,7 @@ services.AddPdfGenerator(new PdfGeneratorOptions
     FooterHtml = "<div style='font-size:10px;width:100%;text-align:center'>" +
                  "<span class='pageNumber'></span> / <span class='totalPages'></span></div>"
 });
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 var path = await generator.ConvertMarkdownFileAsync("notes.md", "reports/monthly.pdf");
@@ -69,4 +69,4 @@ This options surface applies to both [Convert Markdown to a PDF](convert-markdow
 
 - **Two types are named `MarginOptions`.** `PdfGeneratorOptions.MarginOptions` is this package's `DKNet.Svc.PdfGenerators.Options.MarginOptions`; PuppeteerSharp declares its own in `PuppeteerSharp.Media`. Importing both namespaces makes the bare name ambiguous (`CS0104`) — alias the PuppeteerSharp types you need instead of importing the whole namespace.
 - **`PrintBackground` and the media type are fixed.** `PrintBackground` is always `true`, and the page always renders as `MediaType.Screen` — there is no option to switch either one off.
-- **Options are frozen at registration.** The singleton is constructed by `AddPdfGenerator`, so per-request layout changes mean constructing `new PdfGenerator(options)` yourself instead of resolving `IPdfGenerator`.
+- **Options are frozen at registration.** The singleton is built on first resolve from the options passed to `AddPdfGenerator`, so per-request layout changes mean constructing `new PdfGenerator(options)` yourself instead of resolving `IPdfGenerator`.

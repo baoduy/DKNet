@@ -13,7 +13,7 @@ Converts HTML or Markdown into a PDF file using headless Chromium (PuppeteerShar
 - **One call from Markdown to a PDF on disk.** `ConvertMarkdownFileAsync("notes.md")` writes `notes.pdf` next to it — no template engine, no browser lifecycle, no temp-file bookkeeping in your code.
 - **Chromium fetches itself.** With no `ChromePath` configured, the first conversion downloads a matching build through PuppeteerSharp, so a container needs no browser baked in.
 - **Real print layout.** Paper format, orientation, scale, margins, and repeated HTML header/footer templates come from Chromium's own print pipeline rather than CSS guesswork.
-- **Caller content cannot reach your network by default.** Rendered HTML runs with scripting off and a loopback/private-network request guard on, so untrusted Markdown or HTML cannot use the renderer for SSRF.
+- **Caller content is fenced from your network by default.** Rendered HTML runs with scripting off, and a request guard blocks loopback and private-network addresses. DNS rebinding is not closed, so keep defence in depth for untrusted content — see [browser lifecycle and request safety](browser-lifecycle-and-request-safety.md#-gotchas--limits).
 
 Reach for it to turn Markdown documentation, generated reports, or arbitrary HTML into a downloadable PDF.
 
@@ -25,6 +25,7 @@ Use a .NET 10 console project. Install the package, then replace `Program.cs` wi
 dotnet new console -f net10.0 -n PdfDemo
 cd PdfDemo
 dotnet add package DKNet.Svc.PdfGenerators
+echo "# Hello PDF" > notes.md
 ```
 
 ```csharp
@@ -37,16 +38,16 @@ services.AddPdfGenerator(new PdfGeneratorOptions
 {
     MarginOptions = new MarginOptions { Top = "2cm", Bottom = "2cm", Left = "1.5cm", Right = "1.5cm" }
 });
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 var path = await generator.ConvertMarkdownFileAsync("notes.md", "reports/monthly.pdf");
 Console.WriteLine(path);
 ```
 
-Run with `dotnet run`. `AddPdfGenerator(options)` builds one `PdfGenerator` immediately and registers it as a
-singleton `IPdfGenerator`; the call is idempotent, and the options passed to the **first** call are the ones the
-instance keeps for the process lifetime. The first conversion in a fresh environment downloads a Chromium build via
+Run with `dotnet run`. `AddPdfGenerator(options)` registers a factory for a
+singleton `IPdfGenerator`, so the `PdfGenerator` is built on first resolve; the call is idempotent, and the
+options passed to the **first** call are the ones the instance keeps for the process lifetime. The first conversion in a fresh environment downloads a Chromium build via
 PuppeteerSharp's `BrowserFetcher` unless `ChromePath` points at an existing install — expect a one-time delay.
 
 ## 🏗️ Architecture

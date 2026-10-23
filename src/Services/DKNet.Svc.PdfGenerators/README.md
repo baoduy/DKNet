@@ -12,12 +12,13 @@ header/footer, and margin control.
 - **One call from Markdown to a PDF on disk.** `ConvertMarkdownFileAsync("notes.md")` writes `notes.pdf` next to it — no template engine, no browser lifecycle, no temp-file bookkeeping in your code.
 - **Chromium fetches itself.** With no `ChromePath` configured, the first conversion downloads a matching build through PuppeteerSharp, so a container needs no browser baked in.
 - **Real print layout.** Paper format, orientation, scale, margins, and repeated HTML header/footer templates come from Chromium's own print pipeline rather than CSS guesswork.
-- **Caller content cannot reach your network by default.** Rendered HTML runs with scripting off and a loopback/private-network request guard on.
+- **Caller content is fenced from your network by default.** Rendered HTML runs with scripting off, and a request guard blocks loopback and private-network addresses. DNS rebinding is not closed — see [browser lifecycle and request safety](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.PdfGenerators/browser-lifecycle-and-request-safety.md).
 
 ## 🚀 Quick Start
 
 ```bash
 dotnet add package DKNet.Svc.PdfGenerators
+echo "# Hello PDF" > notes.md
 ```
 
 ```csharp
@@ -30,7 +31,7 @@ services.AddPdfGenerator(new PdfGeneratorOptions
 {
     MarginOptions = new MarginOptions { Top = "2cm", Bottom = "2cm", Left = "1.5cm", Right = "1.5cm" }
 });
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 var path = await generator.ConvertMarkdownFileAsync("notes.md", "reports/monthly.pdf");

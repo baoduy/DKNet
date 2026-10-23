@@ -3,19 +3,24 @@
 Part of [DKNet.Svc.Transformation](index.md). The default `ValueFormatter` turns a resolved value into its display string before it replaces the token in the template.
 
 ```csharp
+using DKNet.Svc.Transformation;
+using DKNet.Svc.Transformation.Convertors;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddTransformerService(options => options.Formatter = new IsoDateFormatter());
+
 public sealed class IsoDateFormatter : ValueFormatter
 {
     public override string DateFormat { get; set; } = "yyyy-MM-dd";
 }
-
-services.AddTransformerService(options => options.Formatter = new IsoDateFormatter());
 ```
 
 `Convert` receives the `IToken` as well as the value, so a custom formatter can branch on `token.Key` when one template needs a token-specific format.
 
 ![A resolved value reaches IValueFormatter.Convert, which switches on its runtime type and renders it with CultureInfo.InvariantCulture into the display text substituted into the template.](diagrams/format-resolved-value.svg)
 
-This does not show what happens before formatting — token extraction and resolution — or the not-found policy, which never reaches `Convert` at all: an unresolved token is handled separately (see [fill a template from data](fill-a-template-from-data.md)).
+This does not show what happens before formatting — token extraction and resolution — or the not-found policy (see [fill a template from data](fill-a-template-from-data.md)). Under `ThrowError` an unresolved token never reaches `Convert`; under `LeaveAsIs` and `Remove` the substitute text (the raw token or an empty string) still passes through `Convert`.
 
 ```csharp
 public virtual string DateFormat { get; set; } = "dd/MM/yyyy hh.mm.ss";

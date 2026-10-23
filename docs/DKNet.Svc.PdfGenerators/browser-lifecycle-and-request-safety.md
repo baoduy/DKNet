@@ -17,7 +17,7 @@ services.AddPdfGenerator(new PdfGeneratorOptions
     EnableJavaScript = false,
     AllowPrivateNetworkRequests = false
 });
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 var path = await generator.ConvertHtmlAsync("<img src='https://example.com/logo.png'>");
@@ -61,6 +61,6 @@ go through this same browser and guard on every call. Generating a PDF is slow a
 
 - **DNS-rebinding is not closed.** The address `RequestGuard` resolves is checked separately from the one Chromium actually connects to, so a host that answers a public address to the guard and a private one to the browser slips through. Closing that window needs routing the browser through a proxy that pins the resolved address.
 - **`AllowPrivateNetworkRequests` does not relax the scheme check.** A `file:`, `ftp:`, or other non-`http(s)`/`data:` URL is blocked whatever this option is set to.
-- **A browser per `PdfGenerator` instance, not per conversion.** There is no page or browser pool across instances; high-volume conversion from a single singleton still serializes through the `_browserLock` used to launch it, but concurrent pages on the same browser instance run independently.
+- **A browser per `PdfGenerator` instance, not per conversion.** There is no page or browser pool across instances; only launching or relaunching the browser takes `_browserLock`; once a browser is connected it is returned without the lock, and concurrent pages on it run independently.
 - **Chromium download is x64.** PuppeteerSharp fetches an x64 Chromium build; on a non-Apple ARM64 host the download succeeds but the launch fails. Apple Silicon runs it fine under Rosetta.
 - **Options are frozen at registration.** `AddPdfGenerator` is idempotent — the first call's `EnableJavaScript`/`AllowPrivateNetworkRequests` are the ones the singleton keeps.

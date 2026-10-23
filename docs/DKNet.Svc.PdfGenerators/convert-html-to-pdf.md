@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 services.AddPdfGenerator();
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 

@@ -1,11 +1,11 @@
 # DKNet.Svc.Transformation
 
-Fills bracketed tokens in a template string (`[Name]`, `{Email}`, `<Amount>`, `{{Ref}}`) from a plain object or string dictionary, with pluggable value formatting.
+Fills bracketed tokens in a template string (`[Name]` by default; `{Email}`, `<Amount>` and `{{Ref}}` are opt-in) from a plain object or string dictionary, with pluggable value formatting.
 
 ## ✨ Why use it?
 
 - Resolve every token in a template against one or more parameter sources in a single `Transform`/`TransformAsync` call — no `string.Replace` chains.
-- Use whatever data you already have: a DTO, an anonymous object, an `IDictionary<string, string>`, or a collection of those.
+- Use whatever data you already have: a DTO, an anonymous object, or a collection of objects. An `IDictionary<string, string>` resolves by key only when passed directly to `Transform`/`TransformAsync`.
 - Render numbers, dates, and booleans through a pluggable `IValueFormatter` instead of per-call formatting code.
 
 ## 🚀 Quick Start
@@ -16,6 +16,7 @@ Use a .NET 10 console project. Install the package, then replace `Program.cs` wi
 dotnet new console -f net10.0 -n TransformDemo
 cd TransformDemo
 dotnet add package DKNet.Svc.Transformation
+dotnet add package Microsoft.Extensions.DependencyInjection
 ```
 
 ```csharp

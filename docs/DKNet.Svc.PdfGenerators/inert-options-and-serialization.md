@@ -27,7 +27,7 @@ var options = JsonSerializer
 
 var services = new ServiceCollection();
 services.AddPdfGenerator(options);
-using var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 
 var generator = provider.GetRequiredService<IPdfGenerator>();
 var path = await generator.ConvertMarkdownFileAsync("notes.md", "reports/monthly.pdf");
@@ -38,7 +38,7 @@ In this example, `Format` and `IsLandscape` reach the render (see
 [Page layout, header and footer](page-layout-header-footer.md)); `Theme` and `ModuleOptions` are accepted, stored
 on the resulting `PdfGeneratorOptions`, and then have no effect.
 
-`SerializableOptions` mirrors `PdfGeneratorOptions` with flat, mostly string-typed properties (handy for JSON
+`SerializableOptions` mirrors most of `PdfGeneratorOptions` — not `EnableJavaScript` or `AllowPrivateNetworkRequests` — with flat, mostly string-typed properties (handy for JSON
 config or a CLI); `ToPdfGeneratorOptions()` only overwrites a target property when its source is non-`null`.
 Named values are resolved by reflection against the target type's static properties: an unknown `Theme` string
 becomes `Theme.Custom(value)`, an unknown `ModuleOptions` string becomes `ModuleOptions.FromLocalPath(value)`, and
@@ -76,7 +76,7 @@ invoke yourself before constructing options.
 
 ### `ModuleOptions` — a closed set, not a constructor
 
-`ModuleOptions`' constructor is `protected internal`, so a consumer cannot subclass it: get an instance from
+`ModuleOptions`' constructor is `protected internal`, so code outside the package can only reach it from a derived type; get an instance from
 `ModuleOptions.None`, `ModuleOptions.Remote` (default), or `ModuleOptions.FromLocalPath(path)` (returns
 `NodeModuleOptions(path)`). `Theme` is a `public abstract record` with no public constructor: use `Theme.Github`
 (default), `Theme.Latex`, `Theme.None`, or `Theme.Custom(cssPath)` — the internal `PredefinedTheme` means a

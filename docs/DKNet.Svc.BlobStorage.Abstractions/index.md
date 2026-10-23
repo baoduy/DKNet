@@ -23,6 +23,7 @@ dotnet new console -f net10.0 -n BlobDemo
 cd BlobDemo
 dotnet add package DKNet.Svc.BlobStorage.Abstractions
 dotnet add package DKNet.Svc.BlobStorage.Local
+dotnet add package Microsoft.Extensions.Logging
 ```
 
 ```csharp
@@ -41,7 +42,7 @@ var services = new ServiceCollection().AddLogging().AddLocalDirectoryBlobService
 using var provider = services.BuildServiceProvider();
 var blobService = provider.GetRequiredService<IBlobService>();
 
-var blob = new BlobDetails.BlobData("reports/hello.txt", BinaryData.FromString("Hello blob storage"));
+var blob = new BlobDetails.BlobData("reports/hello.txt", BinaryData.FromString("Hello blob storage")) { Overwrite = true };
 var location = await blobService.SaveAsync(blob);
 Console.WriteLine(location); // reports/hello.txt
 ```
@@ -61,9 +62,9 @@ request/result models, and `BlobServiceOptions`. The diagram cannot show that `B
 ![SaveAsync runs ValidateFile and GetBlobLocation in the shared BlobService base class, throws FileLoadException when a BlobServiceOptions rule is violated, and otherwise hands the normalized name to the provider override, which writes to its backing store and returns the location.](diagrams/svc-blobstorage-abstractions-save-path.svg)
 
 Every `SaveAsync` call runs the same two shared steps before a provider ever touches its backing store, and only the
-last step differs per backend. The diagram does not show the streaming path: `SaveAsync(BlobData)` is itself
-implemented by converting to a `Stream` and delegating to `SaveAsync(BlobStreamData)`, so the same validation and
-location logic applies to both.
+last step differs per backend. The diagram does not show the streaming path: `SaveAsync(BlobData)` is the abstract member each provider
+implements, and the default `SaveAsync(BlobStreamData)` buffers the stream into `BinaryData` and delegates to it, so
+the same validation and location logic applies to both.
 
 ## 🧩 Features
 

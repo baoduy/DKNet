@@ -8,7 +8,7 @@ var text = transformer.Transform("Order [OrderId] — [Total] on [Placed]. Paid:
 // Order 4,711 — 129.50 on 01/03/2026 12.00.00. Paid: Yes
 ```
 
-Resolution walks the `parameters` array in order, then falls back to `TransformOptions.GlobalParameters` (set at [registration](register-the-service.md)). For each entry: an `IDictionary<string, string>` is looked up by key, case-insensitively; an `IEnumerable<object>` is searched recursively, item by item; anything else is treated as an object — a public instance property matching the token name wins, and a non-public one is tried next. The first non-null value wins.
+Resolution walks the `parameters` array in order, then falls back to `TransformOptions.GlobalParameters` (set at [registration](register-the-service.md)). For each entry: an `IDictionary<string, string>` passed directly as a `Transform`/`TransformAsync` argument is looked up by key, case-insensitively; an `IEnumerable<object>` — including `GlobalParameters` itself — is searched recursively, item by item, and its items resolve by property only, so a dictionary inside a collection or in `GlobalParameters` is not looked up by key; anything else is treated as an object — a public instance property matching the token name wins, and a non-public one is tried next. The first non-null value wins.
 
 ![Each parameter is tried through TokenResolver.Resolve, which picks the lookup — dictionary key, collection search, or property reflection — from the object's runtime type; the first non-null value found wins.](diagrams/resolve-token-value.svg)
 

@@ -15,6 +15,7 @@ Local-filesystem implementation of `IBlobService` for .NET developers, storing b
 dotnet new console -f net10.0 -n LocalBlobDemo
 cd LocalBlobDemo
 dotnet add package DKNet.Svc.BlobStorage.Local
+dotnet add package Microsoft.Extensions.Logging
 ```
 
 ```csharp
@@ -34,7 +35,7 @@ using var provider = services.BuildServiceProvider();
 var blobService = provider.GetRequiredService<IBlobService>();
 
 var location = await blobService.SaveAsync(
-    new BlobDetails.BlobData("reports/monthly.pdf", BinaryData.FromString("...")));
+    new BlobDetails.BlobData("reports/monthly.pdf", BinaryData.FromString("...")) { Overwrite = true });
 Console.WriteLine(location);
 ```
 

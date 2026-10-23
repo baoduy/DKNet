@@ -18,23 +18,33 @@ hashing, and Base64/Base64URL helpers, all string-in/string-out.
 
 ## 🚀 Quick Start
 
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
+
 ```bash
+dotnet new console -f net10.0 -n EncDemo
+cd EncDemo
 dotnet add package DKNet.Svc.Encryption
+dotnet add package Microsoft.Extensions.DependencyInjection
 ```
 
 ```csharp
 using DKNet.Svc.Encryption;
 using DKNet.Svc.Encryption.Ciphers;
+using Microsoft.Extensions.DependencyInjection;
 
-builder.Services.AddEncryptionServices();                                       // HMAC + SHA hashing
-builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
+var services = new ServiceCollection();
+services.AddEncryptionServices();                                   // IShaHashing, IHmacHashing
+services.AddAesGcmEncryption(new AesGcmEncryption().Key);            // a throwaway demo key
+using var provider = services.BuildServiceProvider();
 
-public sealed class SecretStore(IAesGcmEncryption aesGcm)
-{
-    public string Protect(string plainText) => aesGcm.EncryptString(plainText);
-    public string Reveal(string cipherPackage) => aesGcm.DecryptString(cipherPackage);
-}
+var aesGcm = provider.GetRequiredService<IAesGcmEncryption>();
+var package = aesGcm.EncryptString("4111-1111-1111-1111");
+var plain = aesGcm.DecryptString(package);
+Console.WriteLine(plain); // 4111-1111-1111-1111
 ```
+
+Run with `dotnet run`. In a real application, source the key passed to `AddAesGcmEncryption` from configuration or a
+key vault — never a freshly generated one.
 
 ## Documentation
 
