@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Publish after a successful EF save",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/AuditLogs/publish-audit-logs.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Execution path"
+    },
+    {
+      "id": "alternative",
+      "label": "Alternative path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "AfterSaveAsync",
+      "sublabel": "retrieve pending context batch",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 24,
+          "end_line": 34
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Remove cached batch",
+      "sublabel": "no durable retry state",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 31,
+          "end_line": 33
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Resolve keyed publishers",
+      "sublabel": "runtime context type name",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 104,
+          "end_line": 106
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "PublishAsync",
+      "sublabel": "await each sink in sequence",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 105,
+          "end_line": 115
+        }
+      ]
+    },
+    {
+      "id": "alternative",
+      "lane": "alternative",
+      "col": 3,
+      "type": "security",
+      "label": "Log and continue",
+      "sublabel": "publisher error swallowed",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 111,
+          "end_line": 121
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternate",
+      "from": "s3",
+      "to": "alternative",
+      "label": "sink throws",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior boundary",
+      "items": [
+        "Publisher failure does not undo an EF write; delivery is not atomic with an external sink."
+      ]
+    }
+  ]
+}

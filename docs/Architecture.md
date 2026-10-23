@@ -46,14 +46,14 @@ and no package exists only to aggregate others.
 |---|---|---|
 | Entity identity, audit fields, domain-event queue | [`DKNet.EfCore.Abstractions`](DKNet.EfCore.Abstractions/index.md) | base classes you derive from |
 | Model build: configuration discovery, global filters, seeding, GUID v7 keys, sequences | [`DKNet.EfCore.Extensions`](DKNet.EfCore.Extensions/index.md) | `UseAutoConfigModel<TContext>()` on `DbContextOptionsBuilder` |
-| Querying and persistence | [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo<TDbContext>()` |
+| Querying and persistence | [`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md) | `AddSpecRepo<TDbContext>()` |
 | Running code around `SaveChanges` | [`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md) | `AddDbContextWithHook<TDbContext>()` |
 | Dispatching domain events | [`DKNet.EfCore.Events`](DKNet.EfCore.Events/index.md) | a hook, registered by `AddEventPublisher<TDbContext, TImpl>()` |
-| Field-level change history | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) | a hook, registered by `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
-| Row-level ownership | [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) | a global query filter plus a hook, registered by `AddDataOwnerProvider<TDbContext, TProvider>()` |
-| Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
-| Column encryption | [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) | a `ValueConverter` on the model |
-| DTO shapes | [`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) | compile time only |
+| Field-level change history | [`DKNet.EfCore.AuditLogs`](DKNet.EfCore.AuditLogs/index.md) | a hook, registered by `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
+| Row-level ownership | [`DKNet.EfCore.DataAuthorization`](DKNet.EfCore.DataAuthorization/index.md) | a global query filter plus a hook, registered by `AddDataOwnerProvider<TDbContext, TProvider>()` |
+| Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](DKNet.EfCore.AuditLogs/index.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](DKNet.EfCore.DataAuthorization/index.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
+| Column encryption | [`DKNet.EfCore.Encryption`](DKNet.EfCore.Encryption/index.md) | a `ValueConverter` on the model |
+| DTO shapes | [`DKNet.EfCore.DtoGenerator`](DKNet.EfCore.DtoGenerator/index.md) | compile time only |
 | Command/query dispatch (MediatR replacement, no EF Core) | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator(assemblies)` |
 | Dispatch plus automatic save and domain events onto the bus | [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore<TDbContext>(assemblies)`, or `AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually |
 | HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](DKNet.AspCore.Extensions/index.md) | `UseEndpointConfigs()` and `.Response()` |
@@ -131,7 +131,7 @@ treat as one — model the entity graph so that only the root is fetched and sav
 ### Bounded contexts
 
 Within a solution, models are organized into bounded contexts, each with its own `DbContext` and entity set.
-Persistence is reached only through [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md)'s
+Persistence is reached only through [`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md)'s
 `IRepositorySpec`, so domain code never depends on EF Core directly, and application orchestration runs through
 [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) handlers that load entities, invoke their
 behavior, and let the auto-save interceptor from
@@ -149,11 +149,11 @@ application project:
 2. **Application layer** — orchestrates the domain through command/query handlers. Realized by
    [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) and the `DKNet.Svc.*` service adapters.
 3. **Infrastructure layer** — implements interfaces declared by inner layers:
-   [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) for persistence, plus the SaveChanges
+   [`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md) for persistence, plus the SaveChanges
    interceptor pipeline ([`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md),
    [`DKNet.EfCore.Events`](DKNet.EfCore.Events/index.md),
-   [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md),
-   [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md)).
+   [`DKNet.EfCore.AuditLogs`](DKNet.EfCore.AuditLogs/index.md),
+   [`DKNet.EfCore.DataAuthorization`](DKNet.EfCore.DataAuthorization/index.md)).
 4. **Presentation layer** — [`DKNet.AspCore.*`](./AspNetCore/README.md) minimal-API endpoints that depend only on
    the application layer.
 
@@ -253,7 +253,7 @@ The parts worth knowing before you rely on it:
 
 ## Specification Pattern
 
-[`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) — not a hand-rolled `IRepository<T>` — is
+[`DKNet.EfCore.Specifications`](DKNet.EfCore.Specifications/index.md) — not a hand-rolled `IRepository<T>` — is
 the current, supported way to query and persist through a `DbContext`. `IRepositorySpec` is not generic over the
 entity: one injected instance serves every entity type in the `DbContext`, with the entity type inferred from the
 `Specification<TEntity>` passed to each call.
@@ -309,12 +309,12 @@ onto Specifications.
 Audit, encryption, and authorization attach as opt-in interceptors on the same `DbContext`, rather than leaking
 into domain or application code:
 
-- [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity changes, with
+- [`DKNet.EfCore.AuditLogs`](DKNet.EfCore.AuditLogs/index.md) — captures an audit trail of entity changes, with
   `[SensitiveData]`-aware redaction, and stamps `CreatedBy`/`UpdatedBy` from an optional `ICurrentUserProvider`
   before it captures them.
-- [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) — row-level, ownership-based
+- [`DKNet.EfCore.DataAuthorization`](DKNet.EfCore.DataAuthorization/index.md) — row-level, ownership-based
   filtering via EF Core global query filters.
-- [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF
+- [`DKNet.EfCore.Encryption`](DKNet.EfCore.Encryption/index.md) — transparent column-level encryption via an EF
   Core value converter (independent of the hook pipeline).
 
 The first two register against the same [`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md) pipeline

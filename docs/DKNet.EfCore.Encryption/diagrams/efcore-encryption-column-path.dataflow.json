@@ -20,10 +20,11 @@
       }
     },
     "quality_profile": "showcase",
-    "viewBox": [
-      880,
-      520
-    ]
+    "output": ".task-validation/Encryption/efcore-encryption-column-path.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    }
   },
   "stages": [
     {
@@ -47,7 +48,14 @@
       "sublabel": "string properties only",
       "stage": 0,
       "row": 0,
-      "width": 152
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
     },
     {
       "id": "keyprov",
@@ -57,7 +65,14 @@
       "stage": 2,
       "row": 2,
       "width": 152,
-      "tag": "16, 24 or 32 bytes"
+      "tag": "16, 24 or 32 bytes",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Encryption/EncryptionKeyProvider.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ]
     },
     {
       "id": "reject",
@@ -66,7 +81,14 @@
       "sublabel": "the property is a key or foreign key",
       "stage": 0,
       "row": 2,
-      "width": 152
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
     },
     {
       "id": "converter",
@@ -75,7 +97,14 @@
       "sublabel": "EF Core ValueConverter",
       "stage": 1,
       "row": 0,
-      "width": 160
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
     },
     {
       "id": "aes",
@@ -84,7 +113,14 @@
       "sublabel": "AesGcmColumnEncryptionProvider",
       "stage": 2,
       "row": 0,
-      "width": 168
+      "width": 168,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Encryption/AesGcmColumnEncryptionProvider.cs",
+          "line": 86,
+          "end_line": 110
+        }
+      ]
     },
     {
       "id": "column",
@@ -93,7 +129,14 @@
       "sublabel": "Base64 of IV + tag + ciphertext",
       "stage": 3,
       "row": 0,
-      "width": 160
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
     }
   ],
   "flows": [
@@ -151,7 +194,7 @@
       "dot": "rose",
       "title": "What it cannot do",
       "items": [
-        "No server-side equality, LIKE, sorting or indexing on an encrypted column",
+        "Ciphertext does not preserve plaintext query or ordering semantics",
         "Keys are resolved once per model, so rotation needs a rebuild and a data migration",
         "A wrong key surfaces as InvalidOperationException on read, not a silent miss"
       ]

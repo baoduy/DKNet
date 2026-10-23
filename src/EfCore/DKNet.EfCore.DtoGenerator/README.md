@@ -1,68 +1,47 @@
 # DKNet.EfCore.DtoGenerator
 
-A Roslyn incremental source generator that emits DTO properties from an entity type at compile time. Declare an empty `partial` record, apply `[GenerateDto(typeof(Entity))]`, and the generator mirrors the entity's public readable properties onto it — no hand-written mapping boilerplate, no runtime reflection, and no runtime dependency on this package.
+Generate DTO property declarations and validate event payloads at compile time for .NET developers.
 
-## Install
+## ✨ Why use it?
 
-```xml
-<ItemGroup>
-  <PackageReference Include="DKNet.EfCore.DtoGenerator" Version="{latest}" PrivateAssets="all" OutputItemType="Analyzer" />
-</ItemGroup>
+- Keep DTO property lists aligned with entities and inherited properties.
+- Apply local and project-wide property selection without repeating lists on every DTO.
+- Validate RaisesEvent declarations and generate convention-named payload records during compilation.
+
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the packages, then replace `Program.cs` with the example.
+
+```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
+dotnet add package DKNet.EfCore.DtoGenerator
 ```
 
-## Features
-
-- **`[GenerateDto(typeof(Entity))]`** — generates `init`-only properties for every public instance readable property of the entity, following the entity's inheritance chain.
-- **`Exclude` / `Include`** — per-DTO property filtering (mutually exclusive; `Include` takes only the listed properties).
-- **`IgnoreComplexType`** — flattens out navigation-style properties by default; per-DTO or project-wide (`DtoGeneratorIgnoreComplexType`) override.
-- **Global exclusions** (`DtoGeneratorExclusions` MSBuild property) — exclude the same properties (e.g. audit columns) across every DTO in the project.
-- **Attribute copy-through** — `System.ComponentModel.DataAnnotations` attributes on entity properties are copied to the generated DTO properties, as is `[SensitiveData(...)]` from `DKNet.EfCore.Abstractions` (with its role arguments, and emitted as the bare `[SensitiveData]` when no role is named). You declare a property sensitive once, on the entity; every generated response model carries it. Attributes from any other namespace are not copied.
-- **`[RaisesEvent]` build-time validation** — a second generator in this package validates `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declarations against their `[GenerateDto]` payloads, and generates the payload record for the attribute's convention forms, named by fixed convention (entity name + optional label + narrowing properties + operations + `Event`).
-- **Zero runtime coupling** — generated DTOs are plain `record`/`class` types with no base type or interface, and nothing on them but the copied attributes above. A DTO that carries `[SensitiveData]` needs `DKNet.EfCore.Abstractions` referenced; the generator itself still references no DKNet package, matching the attribute by namespace and name only.
-
-## Quick start
-
 ```csharp
-public class Product
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-}
-
 using DKNet.EfCore.DtoGenerator;
 
+var dto = new ProductDto { Id = 1, Name = "Coffee", Price = 12m };
+Console.WriteLine($"{dto.Name}: {dto.Price}"); // Coffee: 12
+
+public sealed class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public decimal Price { get; set; }
+}
 [GenerateDto(typeof(Product))]
 public partial record ProductDto;
 ```
 
-This emits `ProductDto.g.cs` with `Id`, `required string Name`, and `Price` as `init`-only properties.
+Run with `dotnet run`.
 
-## Customisation reference
+## 📚 Documentation
 
-Everything is compile-time: attribute arguments and MSBuild properties. There is nothing to register at runtime.
-
-`[GenerateDto]` — `AttributeTargets.Class | AttributeTargets.Struct`, `AllowMultiple = false`, not inherited:
-
-| Member | Type | Default | Effect |
-|---|---|---|---|
-| `entityType` (ctor arg) | `Type` | required | The entity to mirror, as `typeof(Entity)`. |
-| `Exclude` | `string[]` | `[]` | Property names to omit. Combined with the project-wide exclusions. Mutually exclusive with `Include`. |
-| `Include` | `string[]` | `[]` | When non-empty, **only** these properties are generated — local `Exclude`, the global list and `IgnoreComplexType` are all bypassed. |
-| `IgnoreComplexType` | `bool` | unset → project-wide value → `true` | When effectively `true`, navigation-style properties are dropped. |
-
-MSBuild properties, set in the consuming `.csproj`:
-
-| Property | Default | Effect |
-|---|---|---|
-| `DtoGeneratorExclusions` | unset | Comma/semicolon-separated property names excluded from every DTO in the project, and from `[RaisesEvent]` convention-form payloads. Already exposed to the compiler by this package. |
-| `DtoGeneratorIgnoreComplexType` | unset → built-in `true` | Project-wide default for `IgnoreComplexType` when a DTO does not set it. |
-| `EmitCompilerGeneratedFiles` / `CompilerGeneratedFilesOutputPath` | unset | Standard Roslyn switches for writing the generated `.g.cs` to disk for inspection. |
-
-Property selection, before any filter: every `public` instance property with a `public` getter and no index
-parameters, walked up the entity's base chain and de-duplicated by name.
-
-Build diagnostics: `DKDTOGEN001`–`DKDTOGEN005` from the DTO generator, and `DKRAISEVT001`–`DKRAISEVT011` from the
-`[RaisesEvent]` validator. The full table, with severity and meaning for each, is in the docs page below.
-
-Full documentation: https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.DtoGenerator.md
+| Read next | What it covers |
+|---|---|
+| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/index.md) | Architecture, save or query flow, and related packages. |
+| [Generate DTO properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/generate-dtos.md) | Declare a partial DTO shell and extend its generated shape. |
+| [Choose DTO properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/configure-exclusions.md) | Set Include, Exclude and navigation-property defaults. |
+| [Carry property attributes](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/carry-property-attributes.md) | Preserve validation and sensitive-data declarations. |
+| [Generate and validate event payloads](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/generate-event-payloads.md) | Use RaisesEvent conventions and read compiler diagnostics. |

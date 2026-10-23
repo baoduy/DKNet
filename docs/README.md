@@ -39,14 +39,14 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 |---|---|
 | Give entities identity, audit fields, and a domain-event queue | [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md) |
 | Have EF Core discover my `IEntityTypeConfiguration<T>` classes, apply global filters, seed data, use GUID v7 keys or SQL sequences | [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) |
-| Query and persist without hand-rolling a repository per entity | [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) |
-| Build a search/filter predicate whose criteria are only known at runtime | [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) — Dynamic Predicate Builder |
+| Query and persist without hand-rolling a repository per entity | [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) |
+| Build a search/filter predicate whose criteria are only known at runtime | [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/build-dynamic-predicates.md) — Dynamic Predicate Builder |
 | Run my own code before and after every `SaveChanges` | [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) |
 | Let a domain method raise an event that other code reacts to after the write commits | [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) |
-| Record who changed which field, with sensitive values redacted | [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) |
-| Stop one tenant or owner from reading another's rows | [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) |
-| Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) |
-| Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) |
+| Record who changed which field, with sensitive values redacted | [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md) |
+| Stop one tenant or owner from reading another's rows | [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md) |
+| Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) |
+| Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) |
 | Check for or create a table at runtime, whatever the relational provider | [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) |
 | Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
 | Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) |
@@ -75,13 +75,13 @@ Entity base classes, the specification pattern, and the `SaveChanges` intercepto
 
 - [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md) — the persistence-agnostic vocabulary every other `DKNet.EfCore.*` package builds on: entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
 - [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) — the wiring layer: convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, and the `SnapshotContext` the save hooks are built on
-- [DKNet.EfCore.Specifications](./EfCore/DKNet.EfCore.Specifications.md) — filter, includes, and order-by as one reusable object, executed through a single non-generic `IRepositorySpec`, plus a runtime dynamic predicate builder. The current, supported way to query and persist
+- [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) — filter, includes, and order-by as one reusable object, executed through a single non-generic `IRepositorySpec`, plus a runtime dynamic predicate builder. The current, supported way to query and persist
 - [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) — a pluggable before/after-`SaveChanges` interceptor pipeline: one shared interceptor per `DbContext` type plus a pair of interfaces you implement
 - [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) — dispatches domain events raised by entities during `SaveChanges`, so a domain method never references a publisher or a bus
-- [DKNet.EfCore.AuditLogs](./EfCore/DKNet.EfCore.AuditLogs.md) — captures a structured, field-level change record for every created, updated, or deleted entity and hands the batch to publishers you register
-- [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md) — row-level, ownership-based authorization: an automatic global query filter on reads plus `SaveChanges`-time owner stamping on writes
-- [DKNet.EfCore.Encryption](./EfCore/DKNet.EfCore.Encryption.md) — transparent, column-level encryption for `string` properties, applied at the database boundary via a standard `ValueConverter`
-- [DKNet.EfCore.DtoGenerator](./EfCore/DKNet.EfCore.DtoGenerator.md) — a Roslyn incremental source generator that emits DTO properties from an entity type at compile time
+- [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md) — captures a structured, field-level change record for every created, updated, or deleted entity and hands the batch to publishers you register
+- [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md) — row-level, ownership-based authorization: an automatic global query filter on reads plus `SaveChanges`-time owner stamping on writes
+- [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) — transparent, column-level encryption for `string` properties, applied at the database boundary via a standard `ValueConverter`
+- [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) — a Roslyn incremental source generator that emits DTO properties from an entity type at compile time
 - [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) — four `DbContext` extension methods for relational bookkeeping EF Core does not expose: table creation, connection access, table-name resolution, and table-existence checks
 
 ### [Messaging & CQRS](./Messaging/README.md)

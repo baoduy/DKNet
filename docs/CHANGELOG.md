@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as before, so existing applications need no change. Both providers are optional and each works without the
   other. The returned value reaches every registered `IAuditLogPublisher` **unmasked**, so an application under a
   personal-data rule should return a stable non-personal identifier (for example a subject id) rather than an email
-  address. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+  address. See [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md).
 - Generated CRUD endpoints can now be excluded per route, not only per operation kind.
   `CrudMapOptions.Exclude(params string[] routeNames)` withdraws the one route carrying each name and leaves
   the entity's other routes of the same kind published at their existing addresses — so a single
@@ -160,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   named `EncryptedAttribute` is redacted too. Separately, the error log written when an `IAuditLogPublisher`
   throws no longer serializes the failed batch's entries; it now names the publisher, the entity name(s), and the
   entry count instead. A consumer parsing entry values out of that publisher-failure log line must switch to the
-  publisher's own retry/outbox path. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+  publisher's own retry/outbox path. See [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md).
 - Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
   `DtoGeneratorExclusions` MSBuild list (the same list `[GenerateDto]` DTOs already respect), so composed
   event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.

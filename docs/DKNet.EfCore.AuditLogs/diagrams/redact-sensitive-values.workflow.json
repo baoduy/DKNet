@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Choose what a changed property records",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/AuditLogs/redact-sensitive-values.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Execution path"
+    },
+    {
+      "id": "alternative",
+      "label": "Alternative path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Mapped property",
+      "sublabel": "read CLR attribute metadata",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 138,
+          "end_line": 158
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Select by property policy",
+      "sublabel": "skip IgnoreAuditLog",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 58,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Evaluate sensitivity",
+      "sublabel": "declared marker wins over AuditLog",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 143,
+          "end_line": 148
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "AuditFieldChange",
+      "sublabel": "old and new values or sentinel",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 90,
+          "end_line": 104
+        }
+      ]
+    },
+    {
+      "id": "alternative",
+      "lane": "alternative",
+      "col": 2,
+      "type": "security",
+      "label": "***REDACTED***",
+      "sublabel": "mask captured field values",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/SensitiveDataPatterns.cs",
+          "line": 52,
+          "end_line": 54
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternate",
+      "from": "s2",
+      "to": "alternative",
+      "label": "sensitive",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior boundary",
+      "items": [
+        "Property-level AuditLog bypasses name guesses, never SensitiveData or EncryptedAttribute; metadata and Keys are separate."
+      ]
+    }
+  ]
+}

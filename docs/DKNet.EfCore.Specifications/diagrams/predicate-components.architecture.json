@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Validated predicate into an EF query",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Specifications/predicate-components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "caller",
+      "label": "Caller input validation",
+      "sublabel": "TryBuildPredicate",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 145,
+          "end_line": 151
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "predicate",
+      "label": "Typed expression",
+      "sublabel": "LinqKit composition",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 180,
+          "end_line": 184
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "query",
+      "label": "Expandable EF query",
+      "sublabel": "Repository Query or AsExpandable",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 198,
+          "end_line": 200
+        }
+      ],
+      "type": "database",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "caller",
+      "to": "predicate",
+      "label": "accept valid filters"
+    },
+    {
+      "id": "c1",
+      "from": "predicate",
+      "to": "query",
+      "label": "compose before materialize"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "Type validation is separate from authorization. The host must decide which properties the caller may filter."
+      ]
+    }
+  ]
+}

@@ -66,5 +66,5 @@ The Quick Start only exercises the in-memory queue. It does not publish or persi
 - [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — reach for it to configure domain contracts in the EF model.
 - [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) — reach for it to publish queued or declared domain events.
 - [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) — reach for it to write a custom save hook.
-- [DKNet.EfCore.AuditLogs](../EfCore/DKNet.EfCore.AuditLogs.md) — reach for it for field-level audit capture.
-- [DKNet.EfCore.DtoGenerator](../EfCore/DKNet.EfCore.DtoGenerator.md) — reach for it to generate and validate declared event payloads.
+- [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — reach for it for field-level audit capture.
+- [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) — reach for it to generate and validate declared event payloads.

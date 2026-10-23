@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Ownership components inside an EF host",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/DataAuthorization/efcore-dataauthorization-ownership.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "provider",
+      "label": "IDataOwnerProvider",
+      "sublabel": "scoped key source",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DataAuthorization/EfCoreDataAuthSetup.cs",
+          "line": 33,
+          "end_line": 47
+        }
+      ],
+      "type": "security",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "context",
+      "label": "IDataOwnerDbContext",
+      "sublabel": "keys + unrestricted flag",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DataAuthorization/IDataOwnerDbContext.cs",
+          "line": 28,
+          "end_line": 42
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "filter",
+      "label": "DataOwnerAuthQuery",
+      "sublabel": "IOwnedBy roots only",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DataAuthorization/Internals/DataOwnerAuthQuery.cs",
+          "line": 38,
+          "end_line": 110
+        }
+      ],
+      "type": "security",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "owner",
+      "label": "DataOwnerHook",
+      "sublabel": "before-save owner + fallback",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DataAuthorization/Internals/DataOwnerHook.cs",
+          "line": 53,
+          "end_line": 105
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "user",
+      "label": "ICurrentUserProvider",
+      "sublabel": "optional audit identity",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 66,
+          "end_line": 86
+        }
+      ],
+      "type": "security",
+      "pos": [
+        450,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "audit",
+      "label": "EfCoreAuditHook",
+      "sublabel": "user audit stamp + capture",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 66,
+          "end_line": 86
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "provider",
+      "to": "context",
+      "label": "host forwards keys"
+    },
+    {
+      "id": "c1",
+      "from": "context",
+      "to": "filter",
+      "label": "read keys + flag"
+    },
+    {
+      "id": "c2",
+      "from": "provider",
+      "to": "owner",
+      "label": "write key + access"
+    },
+    {
+      "id": "c3",
+      "from": "user",
+      "to": "owner",
+      "label": "empty: use owner"
+    },
+    {
+      "id": "c4",
+      "from": "user",
+      "to": "audit",
+      "label": "non-empty: stamp user"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "Auto configuration installs the read filter; hook-enabled async saves run the write hook. Empty keys deny reads; explicit unrestricted access affects only reads."
+      ]
+    }
+  ]
+}

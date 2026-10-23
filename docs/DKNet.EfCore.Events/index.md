@@ -83,5 +83,5 @@ AddEventPublisher registers the publisher and EventHook; AddDbContextWithHook in
 - [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) — reach for it to define event entities, payload contracts and declarations.
 - [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) — reach for it to configure or suppress the shared save pipeline.
 - [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — reach for it to configure entity models and snapshots.
-- [DKNet.EfCore.AuditLogs](../EfCore/DKNet.EfCore.AuditLogs.md) — reach for it for field-level audit capture.
-- [DKNet.EfCore.DtoGenerator](../EfCore/DKNet.EfCore.DtoGenerator.md) — reach for it to generate and validate declared event payloads.
+- [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — reach for it for field-level audit capture.
+- [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) — reach for it to generate and validate declared event payloads.

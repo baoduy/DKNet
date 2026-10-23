@@ -14,9 +14,14 @@
       }
     },
     "quality_profile": "showcase",
+    "output": ".task-validation/Specifications/efcore-specifications-query-composition.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
     "viewBox": [
       1080,
-      360
+      420
     ]
   },
   "stages": [
@@ -44,7 +49,14 @@
       "sublabel": "declared in its constructor",
       "stage": 0,
       "row": 0,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs",
+          "line": 22,
+          "end_line": 84
+        }
+      ]
     },
     {
       "id": "filter",
@@ -53,7 +65,14 @@
       "sublabel": "ignorable filters, then FilterQuery",
       "stage": 1,
       "row": 0,
-      "width": 156
+      "width": 156,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs",
+          "line": 22,
+          "end_line": 84
+        }
+      ]
     },
     {
       "id": "include",
@@ -62,7 +81,14 @@
       "sublabel": "IncludeQueries, then builders",
       "stage": 2,
       "row": 0,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs",
+          "line": 22,
+          "end_line": 84
+        }
+      ]
     },
     {
       "id": "order",
@@ -71,7 +97,14 @@
       "sublabel": "in your declared sequence",
       "stage": 3,
       "row": 0,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs",
+          "line": 22,
+          "end_line": 84
+        }
+      ]
     },
     {
       "id": "window",
@@ -80,7 +113,14 @@
       "sublabel": "the IQueryable EF Core runs",
       "stage": 4,
       "row": 0,
-      "width": 150
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Extensions/SpecificationExtensions.cs",
+          "line": 22,
+          "end_line": 84
+        }
+      ]
     }
   ],
   "flows": [
@@ -123,7 +163,7 @@
       "title": "Only through ApplySpecs",
       "items": [
         "Skip and Take apply when the spec runs via Query<TEntity> or Query<TEntity, TModel>",
-        "Reading FilterQuery / IncludeQueries yourself skips every step above",
+        "ApplySpecs is internal; use IRepositorySpec.Query or materialization helpers",
         "IgnoreQueryFilters bypasses ignorable filters only, never ownership isolation"
       ]
     },

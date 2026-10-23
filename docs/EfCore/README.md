@@ -17,7 +17,7 @@ Architecture. Each package below is independent and opt-in — pull in only what
 
 ## Querying & persistence
 
-- [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) — the specification pattern
+- [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) — the specification pattern
   and `IRepositorySpec`, including the Dynamic Predicate Builder. The current, supported way to
   query and persist through a `DbContext`.
 - [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) — `DKNet.EfCore.Repos`
@@ -31,16 +31,16 @@ Architecture. Each package below is independent and opt-in — pull in only what
   DataAuthorization all register against.
 - [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) — dispatches domain events raised by
   entities (`AddEvent`) as part of that pipeline.
-- [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity
+- [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — captures an audit trail of entity
   changes, with `[SensitiveData]`-aware redaction.
-- [DKNet.EfCore.DataAuthorization](./DKNet.EfCore.DataAuthorization.md) — row-level,
+- [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — row-level,
   ownership-based data authorization via global query filters.
 
 ## Data protection & generation
 
-- [DKNet.EfCore.Encryption](./DKNet.EfCore.Encryption.md) — transparent column-level
+- [DKNet.EfCore.Encryption](../DKNet.EfCore.Encryption/index.md) — transparent column-level
   encryption via an EF Core value converter.
-- [DKNet.EfCore.DtoGenerator](./DKNet.EfCore.DtoGenerator.md) — compile-time DTO generation
+- [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) — compile-time DTO generation
   from entities via a Roslyn source generator. See also the
   [Global Exclusions Guide](./GLOBAL_EXCLUSIONS_GUIDE.md).
 

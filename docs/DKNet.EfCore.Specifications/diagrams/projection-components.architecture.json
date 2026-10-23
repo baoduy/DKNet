@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Model query projection components",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Specifications/projection-components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "spec",
+      "label": "ModelSpecification",
+      "sublabel": "entity + model types",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Definitions/ModelSpecification.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "repo",
+      "label": "RepositorySpec",
+      "sublabel": "compose entity query",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 202,
+          "end_line": 211
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "mapper",
+      "label": "Mapster IMapper.Config",
+      "sublabel": "ProjectToType",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 209,
+          "end_line": 210
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "spec",
+      "to": "repo",
+      "label": "model query"
+    },
+    {
+      "id": "c1",
+      "from": "repo",
+      "to": "mapper",
+      "label": "projection configuration"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "The repository needs its DbContext and optional mapper from the same host DI scope. Projected reads are always non-tracking."
+      ]
+    }
+  ]
+}

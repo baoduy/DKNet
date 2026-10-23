@@ -49,7 +49,7 @@ public sealed class VisibleItems : GlobalQueryFilter
 | `IsIgnorable` | `bool` | `true` | Includes the key in static `IgnorableFilterKeys` for specification bypass. |
 | `AddGlobalModelBuilder<T>()` | type registration | none | Merge an extra type with scanned types, distinct by type. |
 
-Use [DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) for the existing ownership filter; it sets `IsIgnorable = false`.
+Use [DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) for the existing ownership filter; it sets `IsIgnorable = false`.
 
 ## ⚠️ Gotchas & limits
 

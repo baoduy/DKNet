@@ -167,7 +167,7 @@ change tracker.
 
 The contract returns `X.PagedList`'s `IPagedList<T>`. This package depends on the EF-free `X.PagedList` only; to page an
 EF Core `IQueryable` server-side, add `X.PagedList.EF` (it already comes with
-[DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md)) for `ToPagedListAsync`.
+[DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md)) for `ToPagedListAsync`.
 
 ```csharp
 using X.PagedList;

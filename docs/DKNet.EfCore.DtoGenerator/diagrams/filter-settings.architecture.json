@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Compile-time filter settings",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/DtoGenerator/filter-settings.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "project",
+      "label": "MSBuild defaults",
+      "sublabel": "exclusions + navigation default",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 137,
+          "end_line": 167
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "options",
+      "label": "AnalyzerConfigOptions",
+      "sublabel": "buildTransitive visibility",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DKNet.EfCore.DtoGenerator.props",
+          "line": 1,
+          "end_line": 8
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "filter",
+      "label": "FilterIncludedProperties",
+      "sublabel": "per-DTO Include has priority",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "project",
+      "to": "options",
+      "label": "compiler settings"
+    },
+    {
+      "id": "c1",
+      "from": "options",
+      "to": "filter",
+      "label": "global defaults"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "Per-DTO IgnoreComplexType wins over a parseable project boolean; otherwise navigation filtering defaults to true."
+      ]
+    }
+  ]
+}

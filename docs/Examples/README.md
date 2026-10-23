@@ -201,7 +201,7 @@ transport when a consumer must not miss an event.
 
 A `Specification<TEntity>` is configured entirely from its constructor via `protected` builder methods — there is
 no boolean `.And()`/`.Or()`/`.Not()` combinator; compose criteria by passing them into one specification's
-constructor instead. See [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) for the full API.
+constructor instead. See [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) for the full API.
 
 ```csharp
 using DKNet.EfCore.Specifications.Definitions;
@@ -252,7 +252,7 @@ public class ProductService(IRepositorySpec repo)
 ## Multi-tenant application
 
 Row-level, ownership-based isolation is a built-in feature —
-[DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — rather than something to hand-roll
+[DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — rather than something to hand-roll
 per repository. An entity opts in via `IOwnedBy`; a global query filter and a `SaveChanges` hook do the rest.
 
 ### Tenant-owned entity

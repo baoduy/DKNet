@@ -26,7 +26,7 @@ Deletes use the repository save pipeline, including any configured audit/domain-
 
 ## 🧱 Where it fits
 
-Register `AddSpecRepo<TDbContext>()` from [EF Core Specifications](../EfCore/DKNet.EfCore.Specifications.md). For list inputs see [query list endpoints](query-list-endpoints.md). The package component diagram shows the repository path alongside SlimMessageBus dispatch.
+Register `AddSpecRepo<TDbContext>()` from [EF Core Specifications](../DKNet.EfCore.Specifications/index.md). For list inputs see [query list endpoints](query-list-endpoints.md). The package component diagram shows the repository path alongside SlimMessageBus dispatch.
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
 

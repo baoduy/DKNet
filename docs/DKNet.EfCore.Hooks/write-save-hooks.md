@@ -65,7 +65,7 @@ Manual setup must both register hooks and call UseHooks inside a provider-aware 
 
 ## 🧱 Where it fits
 
-Custom hooks share the same interceptor and snapshot with EventHook, EfCoreAuditHook and DataOwnerHook. Keep domain operations on entities and use these infrastructure hooks for work tied to persistence.
+Custom hooks share the same interceptor and snapshot with EventHook, EfCoreAuditHook and DataOwnerHook. See [who fills CreatedBy/UpdatedBy](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) when combining the audit and ownership hooks. Keep domain operations on entities and use these infrastructure hooks for work tied to persistence.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 
