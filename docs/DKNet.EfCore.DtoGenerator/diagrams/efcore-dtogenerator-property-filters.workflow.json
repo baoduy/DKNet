@@ -242,7 +242,7 @@
       "items": [
         "DtoGenerator emits the DTO members for [GenerateDto]",
         "RaisesEventValidator validates [RaisesEvent] and emits convention-form payloads",
-        "Convention-form payloads always omit navigation properties"
+        "Convention-form payloads omit recognised navigation properties"
       ]
     },
     {

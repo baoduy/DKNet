@@ -101,7 +101,7 @@
       "col": 3,
       "type": "backend",
       "label": "Emit convention record",
-      "sublabel": "always omit navigation types",
+      "sublabel": "omit recognised navigations",
       "width": 220,
       "sources": [
         {

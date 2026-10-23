@@ -483,15 +483,15 @@ svg[data-preset="editorial"][data-animation="trace"] [data-animate="node"] { ani
           <text x="654" y="131" class="t-muted" font-size="8" text-anchor="middle">shared EventNameComposer</text>
         </g>
 
-        <g id="node-s3" data-node-id="s3" data-node-label="Emit convention record" tabindex="0" role="button" aria-label="Focus Emit convention record, always omit navigation types, Execution path" aria-pressed="false" data-node-kind="backend" data-node-sublabel="always omit navigation types" data-node-context="Execution path">
-          <title>Emit convention record · always omit navigation types · Execution path</title>
+        <g id="node-s3" data-node-id="s3" data-node-label="Emit convention record" tabindex="0" role="button" aria-label="Focus Emit convention record, omit recognised navigations, Execution path" aria-pressed="false" data-node-kind="backend" data-node-sublabel="omit recognised navigations" data-node-context="Execution path">
+          <title>Emit convention record · omit recognised navigations · Execution path</title>
           <rect x="792" y="93" width="220" height="52" rx="6" class="c-mask"/>
           <rect x="792" y="93" width="220" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(798 99) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="897.4" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Emit convention record</text>
-          <text x="902" y="131" class="t-muted" font-size="8" text-anchor="middle">always omit navigation types</text>
+          <text x="902" y="131" class="t-muted" font-size="8" text-anchor="middle">omit recognised navigations</text>
         </g>
 
         <g id="node-alternative" data-node-id="alternative" data-node-label="Compiler diagnostic" tabindex="0" role="button" aria-label="Focus Compiler diagnostic, error prevents valid generation, Alternative path" aria-pressed="false" data-node-kind="security" data-node-sublabel="error prevents valid generation" data-node-context="Alternative path">

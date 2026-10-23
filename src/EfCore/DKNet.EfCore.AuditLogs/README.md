@@ -70,11 +70,11 @@ public sealed class ConsolePublisher : IAuditLogPublisher
 
 Run with `dotnet run`.
 
-## 📚 Documentation
+## Documentation
 
-| Read next | What it covers |
+| Guide | Read when |
 |---|---|
-| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.AuditLogs/index.md) | Architecture, save or query flow, and related packages. |
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.AuditLogs/index.md) | Start with architecture and the end-to-end flow. |
 | [Capture entity changes](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.AuditLogs/capture-changes.md) | Understand entry metadata and field diffs. |
 | [Redact sensitive values](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.AuditLogs/redact-sensitive-values.md) | Choose entity and property capture rules. |
 | [Stamp the current user](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.AuditLogs/stamp-current-user.md) | Fill audit fields before capture. |

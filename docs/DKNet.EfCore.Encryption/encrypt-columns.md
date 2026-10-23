@@ -32,4 +32,5 @@ See the [column architecture](index.md#-architecture) for the model-to-database 
 - Randomized ciphertext does not preserve plaintext equality, ordering, ranges or LIKE semantics in SQL. Query on another column and compare decrypted values in memory when appropriate.
 - Size columns for UTF-8 bytes plus 28 bytes, Base64 encoded; plaintext character limits alone can truncate encrypted data.
 - Invalid Base64 throws `FormatException`; a decoded payload shorter than 28 bytes throws `ArgumentException`; an authentication failure throws `InvalidOperationException`.
+- AES-GCM runs without associated data, so a ciphertext is not bound to its row or column. A valid value copied to another row or column under the same key decrypts without error.
 - A later HasConversion/SetValueConverter on the same property can replace this converter.

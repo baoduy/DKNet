@@ -32,7 +32,7 @@ Pass these arguments to `AddEfCoreAuditHook<TDbContext>` or `AddEfCoreAuditLogs<
 
 ## ⚠️ Gotchas & limits
 
-- The sentinel is `"***REDACTED***"`. Name matching is case-insensitive for `password`, `secret`, `token`, `apikey`, `api_key`, `ssn`, `socialsecuritynumber`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`, `passphrase`, `accesskey`, `salt`; `SecureString` properties also match.
+- The sentinel is `"***REDACTED***"`. Name matching is a case-insensitive substring match on these fragments, so `ShippingAddress` is redacted because it contains `pin`: `password`, `secret`, `token`, `apikey`, `api_key`, `ssn`, `socialsecuritynumber`, `creditcard`, `cvv`, `pin`, `connectionstring`, `privatekey`, `passphrase`, `accesskey`, `salt`; `SecureString` properties also match.
 - Encryption detection matches attribute type **name**, so an unrelated `EncryptedAttribute` also triggers redaction.
 - Name-based audit redaction does not hide a property in API responses. Declare `[SensitiveData]` and configure the response filter when needed.
 - `Keys` and audit identity metadata are separate from field-value redaction; do not assume every value in an entry is masked.

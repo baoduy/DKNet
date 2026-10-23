@@ -17,7 +17,7 @@ public sealed class DemoUser : ICurrentUserProvider
 
 | Save state | Behavior with a non-empty user |
 |---|---|
-| Added | Fill blank `CreatedBy` and set `CreatedOn` to UTC now. |
+| Added | When `CreatedBy` is blank, fill it and set `CreatedOn` to UTC now. When `CreatedBy` is already set, leave both unchanged. |
 | Modified | Fill `UpdatedBy`/`UpdatedOn` unless either was explicitly changed in this tracked change set. |
 | Deleted | Leave audit identity fields unchanged. |
 

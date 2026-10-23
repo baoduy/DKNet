@@ -443,7 +443,7 @@ svg[data-preset="editorial"][data-animation="trace"] [data-animate="node"] { ani
 
 
         <!-- Edge paths -->
-        <path data-edge-from="s0" data-edge-to="alternative" data-edge-label="missing order" data-edge-key="0" data-edge-id="alternate" data-composition-routing="workflow-v2-auto" data-edge-role="branch" data-composition-points="158,145;158,166;284,166;284,243;268,243" d="M 158 145 L 158 166 L 284 166 L 284 243 L 268 243" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="s0" data-edge-to="alternative" data-edge-label="stream, no order" data-edge-key="0" data-edge-id="alternate" data-composition-routing="workflow-v2-auto" data-edge-role="branch" data-composition-points="158,145;158,166;284,166;284,243;268,243" d="M 158 145 L 158 166 L 284 166 L 284 243 L 268 243" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
         <path data-edge-from="s0" data-edge-to="s1" data-edge-key="1" data-edge-id="e1" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="268,119;296,119" d="M 268 119 L 296 119" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="s1" data-edge-to="s2" data-edge-key="2" data-edge-id="e2" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="516,119;544,119" d="M 516 119 L 544 119" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="s2" data-edge-to="s3" data-edge-key="3" data-edge-id="e3" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="764,119;792,119" d="M 764 119 L 792 119" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
@@ -494,8 +494,8 @@ svg[data-preset="editorial"][data-animation="trace"] [data-animate="node"] { ani
           <text x="902" y="131" class="t-muted" font-size="8" text-anchor="middle">list or buffered async sequence</text>
         </g>
 
-        <g id="node-alternative" data-node-id="alternative" data-node-label="NotSupportedException" tabindex="0" role="button" aria-label="Focus NotSupportedException, repo stream / keyset needs order, Alternative path" aria-pressed="false" data-node-kind="security" data-node-sublabel="repo stream / keyset needs order" data-node-context="Alternative path">
-          <title>NotSupportedException · repo stream / keyset needs order · Alternative path</title>
+        <g id="node-alternative" data-node-id="alternative" data-node-label="NotSupportedException" tabindex="0" role="button" aria-label="Focus NotSupportedException, repo stream needs order, Alternative path" aria-pressed="false" data-node-kind="security" data-node-sublabel="repo stream needs order" data-node-context="Alternative path">
+          <title>NotSupportedException · repo stream needs order · Alternative path</title>
           <rect x="48" y="217" width="220" height="52" rx="6" class="c-mask"/>
           <rect x="48" y="217" width="220" height="52" rx="6" class="c-security" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(54 223) scale(0.6875)">
@@ -503,13 +503,13 @@ svg[data-preset="editorial"][data-animation="trace"] [data-animate="node"] { ani
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
           <text data-node-label="" x="156.7" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">NotSupportedException</text>
-          <text x="158" y="255" class="t-muted" font-size="8" text-anchor="middle">repo stream / keyset needs order</text>
+          <text x="158" y="255" class="t-muted" font-size="8" text-anchor="middle">repo stream needs order</text>
         </g>
 
         <!-- Edge labels -->
-        <g data-edge-from="s0" data-edge-to="alternative" data-edge-label="missing order" data-edge-key="0" data-edge-id="alternate">
-          <rect x="184.8" y="146" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="221" y="156" class="t-edge-security" font-size="8" text-anchor="middle">missing order</text>
+        <g data-edge-from="s0" data-edge-to="alternative" data-edge-label="stream, no order" data-edge-key="0" data-edge-id="alternate">
+          <rect x="177.6" y="146" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="221" y="156" class="t-edge-security" font-size="8" text-anchor="middle">stream, no order</text>
         </g>
 
 

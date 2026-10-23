@@ -36,11 +36,11 @@ public partial record ProductDto;
 
 Run with `dotnet run`.
 
-## 📚 Documentation
+## Documentation
 
-| Read next | What it covers |
+| Guide | Read when |
 |---|---|
-| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/index.md) | Architecture, save or query flow, and related packages. |
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/index.md) | Start with architecture and the end-to-end flow. |
 | [Generate DTO properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/generate-dtos.md) | Declare a partial DTO shell and extend its generated shape. |
 | [Choose DTO properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/configure-exclusions.md) | Set Include, Exclude and navigation-property defaults. |
 | [Carry property attributes](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DtoGenerator/carry-property-attributes.md) | Preserve validation and sensitive-data declarations. |

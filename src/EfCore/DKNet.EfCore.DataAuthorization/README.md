@@ -63,10 +63,10 @@ public sealed class Invoice : IOwnedBy
 
 Run with `dotnet run`.
 
-## 📚 Documentation
+## Documentation
 
-| Read next | What it covers |
+| Guide | Read when |
 |---|---|
-| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DataAuthorization/index.md) | Architecture, save or query flow, and related packages. |
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DataAuthorization/index.md) | Start with architecture and the end-to-end flow. |
 | [Filter owned rows](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DataAuthorization/filter-owned-rows.md) | Wire the global filter and explicit unrestricted access. |
 | [Stamp and guard ownership](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.DataAuthorization/stamp-ownership.md) | Set owners and compose tenant and user audit identity. |

@@ -69,11 +69,11 @@ public sealed class MinimumPrice : Specification<Product>
 
 Run with `dotnet run`.
 
-## 📚 Documentation
+## Documentation
 
-| Read next | What it covers |
+| Guide | Read when |
 |---|---|
-| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Specifications/index.md) | Architecture, save or query flow, and related packages. |
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Specifications/index.md) | Start with architecture and the end-to-end flow. |
 | [Compose reusable queries](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Specifications/compose-specifications.md) | Configure filters, includes, ordering and tracking. |
 | [Query and save through a repository](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Specifications/query-and-save.md) | Register repositories, persist changes and own background scopes. |
 | [Build runtime predicates](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Specifications/build-dynamic-predicates.md) | Validate caller filters before composing LINQ expressions. |

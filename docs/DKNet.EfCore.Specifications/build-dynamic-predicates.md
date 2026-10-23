@@ -21,7 +21,7 @@ Console.WriteLine(matches.Single().Name); // Coffee
 | In / NotIn | Non-empty collection membership, excluding a scalar string. |
 | IsNull / IsNotNull | Null test; supplied value is ignored, and unsupported non-nullable targets fail validation. |
 
-Paths normalize camelCase, snake_case and kebab-case segments to PascalCase, including dotted paths. Scalar conversion supports numeric types, booleans, date/time types, Guid and enums. String collections for In/NotIn are converted element by element; already-typed collections must match the target, and invalid enum values are rejected. Typed filter values are parameterized for EF query-plan reuse.
+Paths normalize camelCase, snake_case and kebab-case segments to PascalCase, including dotted paths. Scalar conversion supports numeric types, booleans, date/time types, Guid and enums. String collections for In/NotIn are converted element by element; already-typed collections must match the target, and unknown enum names are rejected. Out-of-range numeric strings pass `Enum.TryParse` and are not rejected. Typed filter values are parameterized for EF query-plan reuse.
 
 ## 🧱 Where it fits
 

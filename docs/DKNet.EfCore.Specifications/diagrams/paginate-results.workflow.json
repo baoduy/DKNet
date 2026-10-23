@@ -117,7 +117,7 @@
       "col": 0,
       "type": "security",
       "label": "NotSupportedException",
-      "sublabel": "repo stream / keyset needs order",
+      "sublabel": "repo stream needs order",
       "width": 220,
       "sources": [
         {
@@ -151,7 +151,7 @@
       "id": "alternate",
       "from": "s0",
       "to": "alternative",
-      "label": "missing order",
+      "label": "stream, no order",
       "variant": "security",
       "role": "branch"
     }

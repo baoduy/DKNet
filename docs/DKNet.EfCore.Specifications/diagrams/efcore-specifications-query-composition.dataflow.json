@@ -172,8 +172,8 @@
       "title": "The two other read shapes",
       "items": [
         "ModelSpecification<TEntity, TModel> projects and is always no-tracking",
-        "ToKeysetPageAsync needs an ordering, or it throws NotSupportedException",
-        "ToPageEnumerable streams 100 rows per round trip, not configurable"
+        "ToPageEnumerable needs an ordering, or it throws NotSupportedException",
+        "ToPageEnumerable streams 100 rows per round trip; ToKeysetPageAsync does not enforce ordering"
       ]
     }
   ]

@@ -25,7 +25,7 @@ public sealed class Product
 | Labelled convention | `[RaisesEvent("Touched", EventOperations.Created)]` | Generated `ProductTouchedCreatedEvent`. |
 | Label-less convention | `[RaisesEvent(EventOperations.Created)]` | Generated `ProductCreatedEvent`. |
 
-Convention names combine entity name, optional label, sorted narrowing properties, operations in Created/Updated/Deleted order, then `Event`. `EventNameComposer` is compile-linked from Abstractions and shared with the runtime. Convention payloads accept `Include`/`Exclude` and project exclusions but always omit navigation properties. A compatible handwritten partial record without `[GenerateDto]` can extend the emitted record.
+Convention names combine entity name, optional label, sorted narrowing properties, operations in Created/Updated/Deleted order, then `Event`. `EventNameComposer` is compile-linked from Abstractions and shared with the runtime. Convention payloads accept `Include`/`Exclude` and project exclusions but omit navigation properties: navigation classes and collections shaped as an array, `List<T>`, `IList<T>`, `ICollection<T>` or `IEnumerable<T>`. Read-only and set collections (`IReadOnlyCollection<T>`, `IReadOnlyList<T>`, `HashSet<T>`) are not recognised and stay in the payload. A compatible handwritten partial record without `[GenerateDto]` can extend the emitted record.
 
 ## ⚙️ Configuration reference
 

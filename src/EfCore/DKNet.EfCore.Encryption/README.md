@@ -69,11 +69,11 @@ public sealed class Customer
 
 Run with `dotnet run`.
 
-## 📚 Documentation
+## Documentation
 
-| Read next | What it covers |
+| Guide | Read when |
 |---|---|
-| [Package guide](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/index.md) | Architecture, save or query flow, and related packages. |
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/index.md) | Start with architecture and the end-to-end flow. |
 | [Encrypt mapped columns](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/encrypt-columns.md) | Attach converters and understand ciphertext and query limits. |
 | [Supply encryption keys](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/supply-encryption-keys.md) | Register stable keys and plan model and data changes. |
 | [Use a custom encryption provider](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/use-custom-provider.md) | Apply an explicit converter for another algorithm. |

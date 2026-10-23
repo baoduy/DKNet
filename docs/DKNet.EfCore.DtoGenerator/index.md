@@ -46,7 +46,7 @@ The generator is a `netstandard2.0` analyzer running in the compiler process. Th
 
 ![GenerateDto resolves the entity and partial shell, selects readable properties and emits init-only members, while conflicting filters skip that target with a diagnostic.](diagrams/generation-flow.svg)
 
-The source generator emits data properties, not mapping methods. Non-nullable strings become `required`; non-nullable collections receive an empty collection initializer, and retained complex references receive a null-forgiving initializer. Mapping remains the caller's responsibility.
+The source generator emits data properties, not mapping methods. Non-nullable strings become `required`; non-nullable collections shaped as an array, `List<T>`, `IList<T>`, `ICollection<T>` or `IEnumerable<T>` receive an `= []` initializer (read-only and set collections do not), and retained complex references receive a null-forgiving initializer. Mapping remains the caller's responsibility.
 
 ## 🧩 Features
 

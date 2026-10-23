@@ -15,8 +15,8 @@ Console.WriteLine(next.Single().Name); // Tea
 |---|---|---|
 | `repo.ToPagedListAsync(spec, pageNumber, pageSize)` | Specification | X.PagedList page; page number is 1-based. |
 | `repo.ToPageEnumerable(spec)` | Specification, required | Async rows buffered in offset pages of 100. |
-| `query.AfterKeyset` / `BeforeKeyset` | Caller | WHERE only; one or two ascending comparable keys. |
-| `repo.ToKeysetPageAsync` | Specification, required | List after a one-key or two-key ascending cursor. |
+| `query.AfterKeyset` / `BeforeKeyset` | Caller | WHERE only; one or two ascending, comparable value-type keys. |
+| `repo.ToKeysetPageAsync` | Specification, not enforced | List after a one-key or two-key ascending cursor. |
 | `query.ToKeysetPageAsync(configureKeyset, ...)` | Configure delegate | `KeysetPage<TEntity>` with Items, HasPrevious, HasNext. |
 
 The queryable arbitrary-key overload uses MR.EntityFrameworkCore.KeysetPagination, supports mixed directions and forward/backward navigation, and accepts an optional reference object with matching key property names. It owns ordering as well as filtering. The two-key helper uses a lexicographic OR comparison with an additional leading bound on the first key; cursor values are captured as parameters.
@@ -37,7 +37,9 @@ The [query architecture](index.md#-architecture) shows the shared DbContext. Bot
 
 ## ⚠️ Gotchas & limits
 
-- Repository streaming and keyset helpers require at least one declared order clause, otherwise NotSupportedException is thrown. Choose a unique tie-breaker for stable pages.
+- `repo.ToPageEnumerable` requires at least one declared order clause, otherwise NotSupportedException is thrown. Choose a unique tie-breaker for stable pages.
+- `repo.ToKeysetPageAsync` relies on the specification's ordering and does not enforce it. Without an order clause it runs without ORDER BY, raises no error and returns rows in no fixed order.
+- Simple keyset keys must be comparable value types: the cursor filter uses `>`/`<`, so a `string` key throws.
 - Simple AfterKeyset/BeforeKeyset helpers do not sort. Match their ascending comparison with your ordering; use the configured arbitrary-key API for mixed directions.
 - Arbitrary-key paging makes a page query plus previous/next existence queries; only the page query observes the cancellation token.
 - Buffered enumeration is offset paging rather than a database cursor or a stable snapshot. Concurrent writes can shift page boundaries; tracking queries can retain entities across pages.
