@@ -1,0 +1,180 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Insert first, then classify and reclaim relational collisions",
+    "output": ".task-validation/DKNet.AspCore.Idempotency.Relational/idempotency-relational-reserve.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    },
+    {
+      "id": "failure",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "INSERT status 102",
+      "sublabel": "Unique UX_CompositeKey",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 145,
+          "end_line": 163
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Unique violation",
+      "sublabel": "Provider classifies exception",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 164,
+          "end_line": 170
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Expired row?",
+      "sublabel": "Conditional UPDATE on expiry",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 172,
+          "end_line": 196
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "One row reclaimed",
+      "sublabel": "Return false, null",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 198,
+          "end_line": 215
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "failure",
+      "col": 2,
+      "type": "security",
+      "label": "Return duplicate",
+      "sublabel": "Live row or lost reclaim",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 172,
+          "end_line": 215
+        }
+      ]
+    },
+    {
+      "id": "insert-won",
+      "lane": "failure",
+      "col": 0,
+      "type": "external",
+      "label": "New reservation won",
+      "sublabel": "INSERT succeeded: false, null",
+      "width": 195,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 159,
+          "end_line": 162
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis",
+      "label": "unique violation"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis",
+      "label": "read blocking row"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "refusal",
+      "from": "n2",
+      "to": "stop",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "insert-success",
+      "from": "n0",
+      "to": "insert-won",
+      "role": "branch",
+      "label": "insert succeeds"
+    }
+  ]
+}

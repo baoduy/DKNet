@@ -411,7 +411,7 @@ Keys are process-local, lost on restart, and not shared between instances, so it
 tests only; the app logs one startup warning to that effect while it is the store serving requests. When you
 deploy, add a store package and call its `AddIdempotencyWith*Store(...)` — that named store takes over whichever
 order the two registrations run in, so the `AddIdempotentKey()` call in shared composition code does not have to
-be removed first. See [Choosing a store](AspNetCore/DKNet.AspCore.Idempotency.md#-choosing-a-store).
+be removed first. See [Choosing a store](DKNet.AspCore.Idempotency/choose-store.md#choosing-a-store).
 
 ---
 

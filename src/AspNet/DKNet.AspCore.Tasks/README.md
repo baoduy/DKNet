@@ -1,83 +1,51 @@
 # DKNet.AspCore.Tasks
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.AspCore.Tasks.svg)](https://www.nuget.org/packages/DKNet.AspCore.Tasks/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+A hosted startup batch for .NET developers who implement once-per-start background work.
 
-A lightweight, easy-to-use library for managing background jobs that need to run when your ASP.NET Core application
-starts.
+## ✨ Why use it?
 
-## Features
+- Run small startup jobs without a hosted service for every job.
+- Deduplicate task registrations across composition roots.
+- Log individual task failures while the remaining jobs finish.
 
-- Simple API to register background jobs that run once per host start-up
-- One `BackgroundService` runs every registered task, so there is no `IHostedService` per job
-- Automatic detection and registration of background jobs via assembly scanning
-- Graceful error handling — an exception in one job is logged and swallowed, and the others still finish
-- Built on ASP.NET Core's `BackgroundService`, so the tasks do not block the host from serving requests
+## 🚀 Quick Start
 
-## Installation
+Use a .NET 10 console project.
 
 ```bash
+dotnet new console -f net10.0 -n PackageDemo
+cd PackageDemo
 dotnet add package DKNet.AspCore.Tasks
 ```
 
-## Quick Start
+Replace `Program.cs` with the example, then run `dotnet run`.
 
-Implement `IBackgroundTask` for each start-up job:
+Add `Microsoft.Extensions.Hosting` to the console project as well (`dotnet add package Microsoft.Extensions.Hosting`).
 
 ```csharp
-public sealed class DataInitializationTask(IMyService service, ILogger<DataInitializationTask> logger) : IBackgroundTask
+using DKNet.AspCore.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddBackgroundJob<PrintTask>();
+await builder.Build().RunAsync();
+
+public sealed class PrintTask : IBackgroundTask
 {
-    public async Task RunAsync(CancellationToken cancellationToken = default)
+    public Task RunAsync(CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Initializing data...");
-        await service.InitializeAsync(cancellationToken);
-        logger.LogInformation("Data initialization complete");
+        Console.WriteLine("Startup task ran.");
+        return Task.CompletedTask;
     }
 }
 ```
 
-Then register it in `Program.cs`:
+The host prints `Startup task ran.` once. Stop it with Ctrl+C; task completion does not stop the host.
 
-```csharp
-// Register a specific task
-builder.Services.AddBackgroundJob<DataInitializationTask>();
+## Documentation
 
-// ...or scan assemblies for every IBackgroundTask implementation
-builder.Services.AddBackgroundJobFrom([typeof(Program).Assembly]);
-```
-
-## Customisation reference
-
-**There is no options type.** The assembly exposes exactly two public types — `IBackgroundTask` and
-the `TaskSetups` registration class — and neither takes a settings object, so nothing is bound from
-`appsettings.json`. The customisation surface is the interface you implement plus the two
-type/parameter slots on the registration methods:
-
-| Knob | Kind | Default | Effect |
-|---|---|---|---|
-| `IBackgroundTask.RunAsync(CancellationToken)` | interface method you implement | none — required | The body of a start-up task. Throwing is caught, logged at `Error` as `{TaskFullTypeName} job failed`, and swallowed. |
-| `TJob` on `AddBackgroundJob<TJob>()` | type parameter, `where TJob : class, IBackgroundTask` | none — required | Registered as `AddScoped<IBackgroundTask, TJob>()`; a second call for the same implementation type is a no-op. |
-| `assemblies` on `AddBackgroundJobFrom(Assembly[])` | `Assembly[]` — not `params`, not `IEnumerable<Assembly>` | none — required | Every non-abstract class implementing `IBackgroundTask` in these assemblies is registered the same way. |
-| `cancellationToken` on `RunAsync` | `CancellationToken` | `default` in the signature; the host always passes its own | The token `BackgroundService.ExecuteAsync` receives on shutdown. There is no per-task timeout. |
-
-Execution is fixed, not configurable: the host opens **one shared async scope**, resolves every
-registered `IBackgroundTask` from it, and runs them all concurrently through a single
-`Task.WhenAll`. There is no ordering, no per-task scope, and no concurrency limit — two tasks
-sharing a scoped `DbContext` share the *same instance* while running in parallel, so a
-data-touching task should open its own scope via `IServiceScopeFactory`.
-
-Full feature walkthrough (scoping/execution model, error isolation, gotchas):
-[DKNet.AspCore.Tasks docs](https://github.com/baoduy/DKNet/blob/main/docs/AspNetCore/DKNet.AspCore.Tasks.md)
-
-## Compatibility
-
-- .NET 10.0 and above
-- Compatible with ASP.NET Core and any application using Microsoft's Generic Host
-
-## License
-
-MIT — see [LICENSE](https://github.com/baoduy/DKNet/blob/main/LICENSE).
-
-## About
-
-Developed by [Steven Hoang](https://drunkcoding.net).
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Tasks/index.md) | Start with architecture and the end-to-end flow. |
+| [Register startup tasks](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Tasks/register-startup-tasks.md) | Choose explicit or scanned registrations and understand duplicate guards. |
+| [Run a concurrent startup batch](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.AspCore.Tasks/run-startup-tasks.md) | Handle concurrent tasks, private dependencies, and individual failures. |

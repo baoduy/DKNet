@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Redis reservation and completion for one new key",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1085,
+      700
+    ],
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "Store call"
+        },
+        "emphasis": {
+          "label": "Atomic step"
+        },
+        "return": {
+          "label": "Reply to the caller"
+        }
+      }
+    },
+    "output": ".task-validation/DKNet.AspCore.Idempotency.RedisStore/idempotency-redis-setnx.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    }
+  },
+  "participants": [
+    {
+      "id": "filter",
+      "type": "external",
+      "label": "Endpoint filter",
+      "sublabel": "RequiredIdempotentKey()",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Filtering/IdempotencyEndpointFilter.cs",
+          "line": 243,
+          "end_line": 267
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "backend",
+      "label": "IdempotencyRedisStore",
+      "sublabel": "internal IIdempotencyKeyStore",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/Store/IdempotencyRedisStore.cs",
+          "line": 66,
+          "end_line": 139
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "StackExchange.Redis IDatabase",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/Store/IdempotencyRedisStore.cs",
+          "line": 66,
+          "end_line": 139
+        }
+      ]
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Endpoint handler",
+      "sublabel": "Runs while reservation is held",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency/Filtering/IdempotencyEndpointFilter.cs",
+          "line": 243,
+          "end_line": 267
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 154,
+      "to": 363,
+      "label": "Check and reserve"
+    },
+    {
+      "from": 378,
+      "to": 447,
+      "label": "Run once"
+    },
+    {
+      "from": 463,
+      "to": 565,
+      "label": "Cache the response"
+    }
+  ],
+  "messages": [
+    {
+      "id": "check",
+      "from": "filter",
+      "to": "store",
+      "y": 170,
+      "label": "IsKeyProcessedAsync(keyInfo)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "setnx",
+      "from": "store",
+      "to": "redis",
+      "y": 275,
+      "label": "SET key reservation NX GET, reservation TTL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "reserved",
+      "from": "redis",
+      "to": "store",
+      "y": 310,
+      "label": "nil previous value: reservation won",
+      "variant": "return"
+    },
+    {
+      "id": "proceed",
+      "from": "store",
+      "to": "filter",
+      "y": 345,
+      "label": "(false, null)",
+      "variant": "return"
+    },
+    {
+      "id": "invoke",
+      "from": "filter",
+      "to": "handler",
+      "y": 396,
+      "label": "next(context)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "result",
+      "from": "handler",
+      "to": "filter",
+      "y": 431,
+      "label": "result",
+      "variant": "return"
+    },
+    {
+      "id": "mark",
+      "from": "filter",
+      "to": "store",
+      "y": 481,
+      "label": "MarkKeyAsProcessedAsync(keyInfo, response)"
+    },
+    {
+      "id": "set",
+      "from": "store",
+      "to": "redis",
+      "y": 516,
+      "label": "SET key <response>, TTL Expiration",
+      "variant": "emphasis"
+    },
+    {
+      "id": "done",
+      "from": "store",
+      "to": "filter",
+      "y": 551,
+      "label": "cached",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "store",
+      "from": 166,
+      "to": 556,
+      "type": "backend"
+    },
+    {
+      "participant": "redis",
+      "from": 201,
+      "to": 521,
+      "type": "database"
+    },
+    {
+      "participant": "handler",
+      "from": 392,
+      "to": 436,
+      "type": "backend"
+    }
+  ]
+}

@@ -56,9 +56,9 @@ and no package exists only to aggregate others.
 | DTO shapes | [`DKNet.EfCore.DtoGenerator`](./EfCore/DKNet.EfCore.DtoGenerator.md) | compile time only |
 | Command/query dispatch (MediatR replacement, no EF Core) | [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator(assemblies)` |
 | Dispatch plus automatic save and domain events onto the bus | [`DKNet.SlimBus.Extensions.EfCore`](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore<TDbContext>(assemblies)`, or `AddSlimBusEfCoreInterceptor<TDbContext>()` / `AddSlimBusEventPublisher<TDbContext>()` individually |
-| HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](./AspNetCore/DKNet.AspCore.Extensions.md) | `UseEndpointConfigs()` and `.Response()` |
-| Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](./AspNetCore/DKNet.AspCore.Idempotency.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
-| Start-up work | [`DKNet.AspCore.Tasks`](./AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob<TJob>()` |
+| HTTP surface: endpoint groups, model binding, result mapping | [`DKNet.AspCore.Extensions`](DKNet.AspCore.Extensions/index.md) | `UseEndpointConfigs()` and `.Response()` |
+| Retry safety for a write endpoint | [`DKNet.AspCore.Idempotency`](DKNet.AspCore.Idempotency/index.md), plus one store package once deployed | `.RequiredIdempotentKey()` on the route |
+| Start-up work | [`DKNet.AspCore.Tasks`](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob<TJob>()` |
 | Files, PDFs, template tokens, standalone cryptography | [`DKNet.Svc.*`](./Services/README.md) | its own `Add*` method; none of them touch EF Core |
 | Type scanning and framework-agnostic helpers | [`DKNet.Fw.Extensions`](./DKNet.Fw.Extensions/index.md) | plain static methods, no registration |
 

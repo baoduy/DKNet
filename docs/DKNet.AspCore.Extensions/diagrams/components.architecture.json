@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ASP.NET Core extension families inside the consumer host",
+    "output": ".task-validation/DKNet.AspCore.Extensions/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "ASP.NET Core host",
+      "sublabel": "Explicit registration and middleware",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Hosting/HostFeatureMarker.cs",
+          "line": 23,
+          "end_line": 34
+        }
+      ],
+      "type": "external",
+      "pos": [
+        510,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "groups",
+      "label": "IEndpointConfig groups",
+      "sublabel": "Discovery, context and authorization",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/EndpointConfigExtensions.cs",
+          "line": 86,
+          "end_line": 121
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        30,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "mappers",
+      "label": "Fluent and entity mappers",
+      "sublabel": "Bus or repository dispatch",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEndpointMapperExtensions.cs",
+          "line": 199,
+          "end_line": 210
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        510,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "guards",
+      "label": "Host middleware composition",
+      "sublabel": "Explicit Use...Config calls",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Hosting/RequestBoundsConfig.cs",
+          "line": 48,
+          "end_line": 81
+        }
+      ],
+      "type": "security",
+      "pos": [
+        950,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "context",
+      "label": "Contextual population",
+      "sublabel": "Scoped resolvers and OpenAPI",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/ModelBinding/ContextualRequestPopulation.cs",
+          "line": 134,
+          "end_line": 150
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        30,
+        470
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "bus",
+      "label": "IMessageBus / IRepositorySpec",
+      "sublabel": "Host-owned handlers and database",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Endpoints/FluentEntityEndpointMapperExtensions.cs",
+          "line": 172,
+          "end_line": 185
+        }
+      ],
+      "type": "external",
+      "pos": [
+        510,
+        470
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "responses",
+      "label": "Result / ProblemDetails",
+      "sublabel": "Host-wide error callbacks",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/Responses/ResultResponseExtensions.cs",
+          "line": 34,
+          "end_line": 61
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        510,
+        690
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "rate",
+      "label": "Rate and antiforgery guards",
+      "sublabel": "Explicit pipeline installation",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitConfig.cs",
+          "line": 34,
+          "end_line": 71
+        }
+      ],
+      "type": "security",
+      "pos": [
+        950,
+        470
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "host",
+      "to": "groups",
+      "label": "discovers"
+    },
+    {
+      "id": "e1",
+      "from": "host",
+      "to": "mappers",
+      "label": "maps routes"
+    },
+    {
+      "id": "e2",
+      "from": "host",
+      "to": "guards",
+      "label": "installs"
+    },
+    {
+      "id": "e3",
+      "from": "groups",
+      "to": "context",
+      "label": "populates"
+    },
+    {
+      "id": "e4",
+      "from": "mappers",
+      "to": "bus",
+      "label": "dispatches"
+    },
+    {
+      "id": "e5",
+      "from": "bus",
+      "to": "responses",
+      "label": "converts outcome"
+    },
+    {
+      "id": "e6",
+      "from": "guards",
+      "to": "rate",
+      "label": "installs guards"
+    }
+  ]
+}

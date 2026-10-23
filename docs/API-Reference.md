@@ -49,13 +49,13 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 🌐 ASP.NET Core Utilities
 
-- [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) — host-populated request members, discovered and versioned endpoint groups, generic list/read/delete endpoints, `FluentResults`-to-`IResult` conversion
-- [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) — `IBackgroundTask` implementations run once at host start-up
-- [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) — endpoint filter that blocks a duplicate write and replays or rejects the retry
-- [DKNet.AspCore.Idempotency.MsSqlStore](AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) — SQL Server key store
-- [DKNet.AspCore.Idempotency.NpgsqlStore](AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) — PostgreSQL key store
-- [DKNet.AspCore.Idempotency.RedisStore](AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) — Redis key store, no schema or migrations
-- [DKNet.AspCore.Idempotency.Relational](AspNetCore/DKNet.AspCore.Idempotency.Relational.md) — shared EF Core building blocks the relational stores derive from; not referenced directly by application code
+- [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) — host-populated request members, discovered and versioned endpoint groups, generic list/read/delete endpoints, `FluentResults`-to-`IResult` conversion
+- [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) — `IBackgroundTask` implementations run once at host start-up
+- [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) — endpoint filter that blocks a duplicate write and replays or rejects the retry
+- [DKNet.AspCore.Idempotency.MsSqlStore](DKNet.AspCore.Idempotency.MsSqlStore/index.md) — SQL Server key store
+- [DKNet.AspCore.Idempotency.NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore/index.md) — PostgreSQL key store
+- [DKNet.AspCore.Idempotency.RedisStore](DKNet.AspCore.Idempotency.RedisStore/index.md) — Redis key store, no schema or migrations
+- [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational/index.md) — shared EF Core building blocks the relational stores derive from; not referenced directly by application code
 
 ## ☁️ Aspire Integrations
 

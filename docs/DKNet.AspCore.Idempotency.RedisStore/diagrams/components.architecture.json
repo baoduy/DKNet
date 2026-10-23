@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Redis idempotency dependencies inside a consumer host",
+    "output": ".task-validation/DKNet.AspCore.Idempotency.RedisStore/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "ASP.NET Core host",
+      "sublabel": "Combined provider registration",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/IdempotencyRedisSetup.cs",
+          "line": 81,
+          "end_line": 87
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "store",
+      "label": "IdempotencyRedisStore",
+      "sublabel": "Singleton core storage adapter",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/Store/IdempotencyRedisStore.cs",
+          "line": 21,
+          "end_line": 52
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        460,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "mux",
+      "label": "IConnectionMultiplexer",
+      "sublabel": "Existing or registered singleton",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/IdempotencyRedisSetup.cs",
+          "line": 38,
+          "end_line": 39
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        920,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "redis",
+      "label": "Redis IDatabase",
+      "sublabel": "Atomic reservation and TTL values",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/Store/IdempotencyRedisStore.cs",
+          "line": 80,
+          "end_line": 106
+        }
+      ],
+      "type": "database",
+      "pos": [
+        920,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "cache",
+      "label": "IDistributedCache",
+      "sublabel": "Separately guarded registration",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.RedisStore/IdempotencyRedisSetup.cs",
+          "line": 35,
+          "end_line": 36
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "host",
+      "to": "store",
+      "label": "selects"
+    },
+    {
+      "id": "e1",
+      "from": "store",
+      "to": "mux",
+      "label": "GetDatabase"
+    },
+    {
+      "id": "e2",
+      "from": "mux",
+      "to": "redis",
+      "label": "Redis commands"
+    },
+    {
+      "id": "e3",
+      "from": "host",
+      "to": "cache",
+      "label": "adds if absent"
+    }
+  ]
+}

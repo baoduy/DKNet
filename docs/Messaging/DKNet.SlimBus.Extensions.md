@@ -263,7 +263,7 @@ return Result.Fail<ProductDto>(new NotFoundError($"Product '{request.Id}' was no
 
 This package supplies no base record and no acting-user property. Declare the property on the request itself and mark
 it with an `IContextualSource` attribute — e.g. `[FromClaim(ClaimTypes.Name)]` from
-[DKNet.AspCore.Extensions](../AspNetCore/DKNet.AspCore.Extensions.md) — then register
+[DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md) — then register
 `AddContextualRequestPopulation()` so the value is stamped before validation and before the handler runs.
 
 ## ⚙️ Configuration reference
@@ -298,7 +298,7 @@ The `LazyMap`/`LazyResult` implementations are `internal`.
   successful write and domain events onto the bus. References this package.
 - **[DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators.md)** — emits requests and handlers built on exactly these
   `Fluents` interfaces, so generated and hand-written slices sit in one pipeline.
-- **[DKNet.AspCore.Extensions](../AspNetCore/DKNet.AspCore.Extensions.md)** — maps `Fluents` requests to minimal-API
+- **[DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md)** — maps `Fluents` requests to minimal-API
   endpoints and turns their results into HTTP responses.
 
 ## ⚠️ Gotchas & limits
@@ -320,5 +320,5 @@ The `LazyMap`/`LazyResult` implementations are `internal`.
   entities and you want the save and the domain-event publish done for you.
 - [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators.md) – reach for it to generate CRUD requests, handlers, and
   endpoints instead of hand-writing the repetitive slices.
-- [DKNet.AspCore.Extensions](../AspNetCore/DKNet.AspCore.Extensions.md) – reach for it to populate request properties
+- [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md) – reach for it to populate request properties
   from claims, headers, or route values before a handler runs.

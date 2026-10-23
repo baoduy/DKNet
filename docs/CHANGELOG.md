@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   binding convenience only, never proof of identity. The published OpenAPI operation declares the header as an
   `in: header` parameter — unlike `[FromClaim]`, which is hidden entirely, the caller has to know to send it —
   while the member itself stays absent from the published
-  request body. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
+  request body. See [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md).
 - The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
   member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
   generated delete request and fall back to the request-less `MapDeleteById<TEntity, TKey>()`; the diagnostic names the
@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Endpoints the fluent mappers registered are covered by the endpoint filter `ProducesCommons()` adds; an endpoint
   registered outside those mappers is covered in `Production` but still answers with the developer-exception page
   in `Development`. See
-  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+  [One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 - Non-generic `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` (`DKNet.AspCore.Idempotency`) enables
   idempotency with no store named and no infrastructure at all — no database, cache, Redis, or connection string.
   It registers a new in-process store that reserves each key atomically within the process, adds no options
@@ -221,7 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request where 100 was previously the worst case. Bind the `DKNet:ListQuery:MaxPageSize` configuration key, or call
   `services.AddListQueryOptions(o => o.MaxPageSize = 100)`, to keep the old ceiling. The clamp semantics are
   unchanged: an oversized `pageSize` is still served trimmed to the ceiling, never rejected with a `400`. See
-  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+  [Page-size defaults and ceiling](DKNet.AspCore.Extensions/query-list-endpoints.md#page-size-defaults-and-ceiling).
 - **Behaviour change on upgrade:** the page size a generic list endpoint (`MapGetList`,
   `DKNet.AspCore.Extensions`) serves when the caller asks for none is now `1000` instead of `20`, matching the
   ceiling. A consumer who upgrades and configures nothing therefore answers a bare list request with up to 1,000
@@ -230,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejected, and an absent or below-one `pageNumber` is still the first page. Set
   `DKNet:ListQuery:DefaultPageSize` to `20`, or call `services.AddListQueryOptions(o => o.DefaultPageSize = 20)`,
   to keep the old default. See
-  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+  [Page-size defaults and ceiling](DKNet.AspCore.Extensions/query-list-endpoints.md#page-size-defaults-and-ceiling).
 - **Behaviour change on upgrade:** a generic list endpoint (`MapGetList`, `DKNet.AspCore.Extensions`) over records
   that carry audit timestamps (`IAuditedProperties`) now answers a bare request with the last **3 months** of
   activity instead of all history, and accepts two new query parameters — `fromDate` and `toDate` — that bound a
@@ -242,7 +242,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ListQueryOptions.DefaultActivityWindowMonths`: bind `DKNet:ListQuery:DefaultActivityWindowMonths`, or call
   `services.AddListQueryOptions(o => o.DefaultActivityWindowMonths = 0)`, to switch the default window off and keep
   today's unbounded listing. See
-  [Default recent-activity window](AspNetCore/DKNet.AspCore.Extensions.md#default-recent-activity-window).
+  [Default recent-activity window](DKNet.AspCore.Extensions/query-list-endpoints.md#default-recent-activity-window).
 - **Breaking:** the standard error-response body (`DKNet.AspCore.Extensions`) no longer carries `Detail`, and its
   `errors` extension is now an `ErrorItem[]` (`{ message, code?, field? }`) instead of a flat message-string list —
   for every failure kind `Response()`/`Response<T>()` answer, whether or not `AddErrorResponses` is registered. `type` is now always the final response status'
@@ -250,7 +250,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   body carries a `traceId`. A consumer parsing `errors` as strings, or `Detail` for the failure message, must read
   `errors[].message` instead. See the
   [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone) and
-  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+  [One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 
 ### Removed
 - **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`
@@ -301,7 +301,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   attribute, not only the ones missing a value. Your resolver must perform the built-in lookup itself
   (`httpContext.User.FindFirst(claimType)?.Value ?? "system-account"`, or the header equivalent) before
   substituting, or it silently overrides every caller who *does* have the claim or header. See
-  [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
+  [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md).
 
 ### Fixed
 - `DKNet.EfCore.Extensions` no longer reuses a cached model built without a global model builder (DRK-1969).

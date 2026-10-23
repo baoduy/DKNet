@@ -51,9 +51,9 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
 | Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) |
 | Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) |
-| Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) |
-| Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) on its own for local development, plus one store package for deployed traffic |
-| Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) |
+| Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) |
+| Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
+| Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) |
 | Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) plus one adapter |
 | Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) |
 | Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) |
@@ -105,13 +105,13 @@ Application-level services with no dependency on the EF Core packages.
 ### [ASP.NET Core Utilities](./AspNetCore/README.md)
 Start-up orchestration, minimal-API glue, and idempotency for web and API workloads.
 
-- [DKNet.AspCore.Extensions](./AspNetCore/DKNet.AspCore.Extensions.md) — host-populated request members, discovered and versioned endpoint groups, verb-to-command mappers, generic list/read/delete endpoints, and `FluentResults`-to-`IResult` conversion
-- [DKNet.AspCore.Tasks](./AspNetCore/DKNet.AspCore.Tasks.md) — implement `IBackgroundTask`, register it, and one `BackgroundService` runs every registered task once when the host starts
-- [DKNet.AspCore.Idempotency](./AspNetCore/DKNet.AspCore.Idempotency.md) — an `IEndpointFilter` that recognises a client-supplied idempotency key, blocks the same operation from running twice, and replays or rejects the retry
-- [DKNet.AspCore.Idempotency.MsSqlStore](./AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) — SQL Server-backed key store
-- [DKNet.AspCore.Idempotency.NpgsqlStore](./AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) — PostgreSQL-backed key store
-- [DKNet.AspCore.Idempotency.RedisStore](./AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) — Redis-backed key store using `SET NX` reservation and native key expiry, with no schema or migrations
-- [DKNet.AspCore.Idempotency.Relational](./AspNetCore/DKNet.AspCore.Idempotency.Relational.md) — the shared EF Core building blocks the two relational stores derive from. Not referenced directly by application code
+- [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) — host-populated request members, discovered and versioned endpoint groups, verb-to-command mappers, generic list/read/delete endpoints, and `FluentResults`-to-`IResult` conversion
+- [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) — implement `IBackgroundTask`, register it, and one `BackgroundService` runs every registered task once when the host starts
+- [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) — an `IEndpointFilter` that recognises a client-supplied idempotency key, blocks the same operation from running twice, and replays or rejects the retry
+- [DKNet.AspCore.Idempotency.MsSqlStore](DKNet.AspCore.Idempotency.MsSqlStore/index.md) — SQL Server-backed key store
+- [DKNet.AspCore.Idempotency.NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore/index.md) — PostgreSQL-backed key store
+- [DKNet.AspCore.Idempotency.RedisStore](DKNet.AspCore.Idempotency.RedisStore/index.md) — Redis-backed key store using `SET NX` reservation and native key expiry, with no schema or migrations
+- [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational/index.md) — the shared EF Core building blocks the two relational stores derive from. Not referenced directly by application code
 
 ### [Aspire Integrations](./Aspire/README.md)
 Infrastructure orchestration helpers for .NET Aspire AppHost projects.

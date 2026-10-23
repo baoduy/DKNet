@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Shared relational machinery behind concrete providers",
+    "output": ".task-validation/DKNet.AspCore.Idempotency.Relational/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "provider",
+      "label": "SQL provider package",
+      "sublabel": "Selects store and EF provider",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.NpgsqlStore/IdempotencyNpgsqlSetup.cs",
+          "line": 76,
+          "end_line": 83
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "store",
+      "label": "IdempotencyRelationalStore",
+      "sublabel": "Scoped factory resolution",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 118,
+          "end_line": 128
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        470,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "factory",
+      "label": "Provider DbContext",
+      "sublabel": "Created via singleton factory",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 124,
+          "end_line": 128
+        },
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyRelationalStore.cs",
+          "line": 237,
+          "end_line": 248
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        900,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "sql",
+      "label": "IdempotencyKeys",
+      "sublabel": "Unique hash and expiry index",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Data/Configurations/IdempotencyKeyConfiguration.cs",
+          "line": 40,
+          "end_line": 100
+        }
+      ],
+      "type": "database",
+      "pos": [
+        900,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "startup",
+      "label": "Migration hosted service",
+      "sublabel": "Pending migrations at startup",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Idempotency.Relational/Store/IdempotencyMigrationHostedService.cs",
+          "line": 36,
+          "end_line": 42
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        470,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "provider",
+      "to": "store",
+      "label": "selects"
+    },
+    {
+      "id": "e1",
+      "from": "store",
+      "to": "factory",
+      "label": "create context"
+    },
+    {
+      "id": "e2",
+      "from": "factory",
+      "to": "sql",
+      "label": "SQL via context"
+    },
+    {
+      "id": "e3",
+      "from": "provider",
+      "to": "startup",
+      "label": "registers"
+    },
+    {
+      "id": "e4",
+      "from": "startup",
+      "to": "factory",
+      "label": "create context"
+    }
+  ]
+}
