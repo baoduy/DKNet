@@ -1,0 +1,153 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ConvertMarkdownFileAsync and ConvertMultipleMarkdownFilesAsync",
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/convert-markdown-to-pdf.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "In-process step"
+        },
+        "database": {
+          "label": "File I/O"
+        },
+        "security": {
+          "label": "Rendered by Chromium"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Markdown to PDF"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "database",
+      "label": "Read markdown file(s)",
+      "sublabel": "one path, or several",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 178,
+          "end_line": 178
+        },
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 191,
+          "end_line": 192
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Markdown.ToHtml",
+      "sublabel": "fixed Markdig pipeline",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 108,
+          "end_line": 113
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "security",
+      "label": "GeneratePdfFromHtmlAsync",
+      "sublabel": "renders via Chromium",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 204,
+          "end_line": 232
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "database",
+      "label": "PDF written",
+      "sublabel": "directory auto-created",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 176,
+          "end_line": 176
+        }
+      ]
+    },
+    {
+      "id": "n4",
+      "lane": "main",
+      "col": 1,
+      "yOffset": 150,
+      "type": "backend",
+      "label": "No outputFilePath",
+      "sublabel": "defaults to .pdf extension",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 173,
+          "end_line": 175
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "n0",
+      "to": "n4",
+      "variant": "dashed",
+      "label": "ConvertMarkdownFileAsync(path) only"
+    }
+  ]
+}

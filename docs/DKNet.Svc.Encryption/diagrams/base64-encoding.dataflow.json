@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "ToBase64UrlString encodes, IsBase64String only recognizes the standard alphabet",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Standard Base64 alphabet" },
+        "security": { "label": "Base64URL-only characters" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [965, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/base64-encoding.html"
+  },
+  "stages": [
+    { "label": "Input" },
+    { "label": "Encode" },
+    { "label": "Check" },
+    { "label": "Decode" }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "external",
+      "label": "plain UTF-8 string",
+      "sublabel": "e.g. \"???>>>subjects\"",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Base64Extensions.cs", "line": 96, "end_line": 97 }
+      ]
+    },
+    {
+      "id": "encode",
+      "type": "backend",
+      "label": "ToBase64UrlString()",
+      "sublabel": "RFC 4648, no '=' padding",
+      "stage": 1,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Base64Extensions.cs", "line": 96, "end_line": 97 }
+      ]
+    },
+    {
+      "id": "standard",
+      "type": "backend",
+      "label": "only + / = 0-9A-Za-z",
+      "sublabel": "IsBase64String: true",
+      "stage": 2,
+      "row": 0,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Base64Extensions.cs", "line": 68, "end_line": 69 }
+      ]
+    },
+    {
+      "id": "urlchars",
+      "type": "security",
+      "label": "contains '-' or '_'",
+      "sublabel": "IsBase64String: false",
+      "stage": 2,
+      "row": 2,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Base64Extensions.cs", "line": 68, "end_line": 69 }
+      ]
+    },
+    {
+      "id": "decode",
+      "type": "database",
+      "label": "FromBase64UrlString()",
+      "sublabel": "original string back",
+      "stage": 3,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Base64Extensions.cs", "line": 52, "end_line": 60 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "input", "to": "encode", "label": "encodes", "variant": "default", "labelAt": [210, 315] },
+    { "from": "encode", "to": "standard", "label": "no '-' or '_' used", "variant": "emphasis", "labelAt": [423, 201] },
+    { "from": "encode", "to": "urlchars", "label": "'-' or '_' present", "variant": "security", "labelAt": [423, 330] },
+    { "from": "encode", "to": "decode", "label": "round-trips", "variant": "default", "labelAt": [790, 310] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two alphabets, one helper set",
+      "items": [
+        "ToBase64String/FromBase64String use the standard '+','/','=' alphabet",
+        "ToBase64UrlString/FromBase64UrlString swap in '-','_' and drop padding",
+        "Both decode helpers return string.Empty for null, empty, or whitespace input"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "IsBase64String checks one alphabet only",
+      "items": [
+        "It validates the standard Base64 alphabet, not Base64URL",
+        "A token produced by ToBase64UrlString can return false here even though FromBase64UrlString decodes it fine",
+        "There is no IsBase64UrlString helper to check the URL-safe form directly"
+      ]
+    }
+  ]
+}

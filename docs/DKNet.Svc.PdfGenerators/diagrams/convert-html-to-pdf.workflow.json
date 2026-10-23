@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ConvertHtmlAsync and ConvertHtmlFileAsync",
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/convert-html-to-pdf.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "In-process step"
+        },
+        "database": {
+          "label": "File I/O"
+        },
+        "security": {
+          "label": "Error path"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "HTML to PDF"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "ConvertHtmlFileAsync(path)",
+      "sublabel": "reads the file, then calls ConvertHtmlAsync",
+      "width": 240,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 145,
+          "end_line": 150
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "ConvertHtmlAsync(htmlContent)",
+      "sublabel": "no Markdig step, straight to Chromium",
+      "width": 250,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 129,
+          "end_line": 133
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "database",
+      "label": "GeneratePdfFromHtmlAsync -> PDF",
+      "sublabel": "default path: {CurrentDirectory}/output_from_html.pdf",
+      "width": 260,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 0,
+      "yOffset": 150,
+      "type": "security",
+      "label": "File not found",
+      "sublabel": "throws FileNotFoundException before any conversion runs",
+      "width": 260,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 147,
+          "end_line": 147
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n0",
+      "to": "n3",
+      "variant": "dashed",
+      "role": "error",
+      "label": "htmlFilePath does not exist"
+    }
+  ]
+}

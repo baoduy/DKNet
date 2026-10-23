@@ -48,4 +48,4 @@ With the default length of 25 and zero quotas, output contains only letters. For
 ## 🔗 Related packages
 
 - [DKNet.Fw.Extensions](../DKNet.Fw.Extensions/index.md) — reach for it when you need reflection, type discovery or value helpers.
-- [DKNet.Svc.Encryption](../Services/DKNet.Svc.Encryption.md) — reach for it when you need encryption, hashes or HMAC rather than random text.
+- [DKNet.Svc.Encryption](../DKNet.Svc.Encryption/index.md) — reach for it when you need encryption, hashes or HMAC rather than random text.

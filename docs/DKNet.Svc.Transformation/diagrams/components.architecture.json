@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.Svc.Transformation inside the host app",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package types"
+        },
+        "security": {
+          "label": "Swappable extension point"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/DKNet.Svc.Transformation/components.html"
+  },
+  "components": [
+    {
+      "id": "host",
+      "type": "external",
+      "label": "Host application",
+      "sublabel": "calls Transform / TransformAsync",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 19,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "type": "backend",
+      "label": "AddTransformerService",
+      "sublabel": "registers ITransformerService",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformSetup.cs",
+          "line": 19,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "TransformerService",
+      "sublabel": "transient ITransformerService",
+      "pos": [
+        460,
+        100
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/ITransformerService.cs",
+          "line": 42,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "extractors",
+      "type": "backend",
+      "label": "TokenExtractor[]",
+      "sublabel": "one per ITokenDefinition",
+      "pos": [
+        800,
+        30
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/ITokenExtractor.cs",
+          "line": 27,
+          "end_line": 59
+        }
+      ]
+    },
+    {
+      "id": "resolver",
+      "type": "backend",
+      "label": "TokenResolver",
+      "sublabel": "reflection lookup",
+      "pos": [
+        800,
+        170
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/TokenResolver.cs",
+          "line": 37,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "formatter",
+      "type": "security",
+      "label": "IValueFormatter",
+      "sublabel": "default: ValueFormatter",
+      "pos": [
+        800,
+        310
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/Convertors/ValueFormatter.cs",
+          "line": 14,
+          "end_line": 59
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "type": "backend",
+      "label": "TransformOptions",
+      "sublabel": "definitions, formatter, globals",
+      "pos": [
+        460,
+        310
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.Transformation/TransformOptions.cs",
+          "line": 48,
+          "end_line": 106
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "setup",
+      "label": "configures once"
+    },
+    {
+      "from": "setup",
+      "to": "service",
+      "label": "registers transient"
+    },
+    {
+      "from": "host",
+      "to": "service",
+      "label": "Transform(template, data)"
+    },
+    {
+      "from": "service",
+      "to": "extractors",
+      "label": "extract tokens"
+    },
+    {
+      "from": "service",
+      "to": "resolver",
+      "label": "resolve each token"
+    },
+    {
+      "from": "service",
+      "to": "formatter",
+      "label": "format resolved value"
+    },
+    {
+      "from": "setup",
+      "to": "options",
+      "label": "builds"
+    },
+    {
+      "from": "service",
+      "to": "options",
+      "label": "reads"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Host process",
+      "wraps": [
+        "host",
+        "setup",
+        "service",
+        "extractors",
+        "resolver",
+        "formatter",
+        "options"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What you can replace",
+      "items": [
+        "TransformOptions.DefaultDefinitions: add bracket styles",
+        "TransformOptions.Formatter: supply your own IValueFormatter",
+        "ITransformerService itself, registered before AddTransformerService"
+      ]
+    }
+  ]
+}

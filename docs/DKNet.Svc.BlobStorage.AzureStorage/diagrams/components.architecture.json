@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AzureStorageBlobService inside the host application",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.AzureStorage/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package type"
+        },
+        "database": {
+          "label": "Cached SDK client"
+        },
+        "cloud": {
+          "label": "Azure Blob Storage container"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "app",
+      "label": "Application code",
+      "sublabel": "IBlobService consumer",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageSetup.cs",
+          "line": 16,
+          "end_line": 55
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "label": "AddAzureStorageAdapter",
+      "sublabel": "AzureStorageSetup \u2014 two overloads",
+      "pos": [
+        520,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageSetup.cs",
+          "line": 24,
+          "end_line": 55
+        }
+      ]
+    },
+    {
+      "id": "svc",
+      "label": "AzureStorageBlobService",
+      "sublabel": ": BlobService, lazy client build",
+      "pos": [
+        990,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 16,
+          "end_line": 33
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "label": "AzureStorageOptions",
+      "sublabel": "BlobService:AzureStorage section",
+      "pos": [
+        990,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageOptions.cs",
+          "line": 13,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "label": "BlobContainerClient",
+      "sublabel": "built once, cached for process lifetime",
+      "pos": [
+        1460,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 201,
+          "end_line": 212
+        }
+      ]
+    },
+    {
+      "id": "container",
+      "label": "Azure Blob container",
+      "sublabel": "created on first use if missing",
+      "pos": [
+        1460,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "cloud",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 212,
+          "end_line": 212
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Abstractions.BlobService",
+      "sublabel": "shared validation + path prefix",
+      "pos": [
+        520,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "app",
+      "to": "setup",
+      "label": "registers once"
+    },
+    {
+      "from": "setup",
+      "to": "svc",
+      "label": "IBlobService \u2192 singleton"
+    },
+    {
+      "from": "svc",
+      "to": "base",
+      "label": "derives from"
+    },
+    {
+      "from": "svc",
+      "to": "options",
+      "label": "reads"
+    },
+    {
+      "from": "svc",
+      "to": "client",
+      "label": "builds lazily"
+    },
+    {
+      "from": "client",
+      "to": "container",
+      "label": "upload / list / delete / SAS"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Lifetime",
+      "items": [
+        "Registered as a process-lifetime singleton \u2014 BlobContainerClient is thread-safe and built at most once per instance.",
+        "The Action<AzureStorageOptions> overload registers a plain singleton AzureStorageOptions instance, not IOptions<AzureStorageOptions> \u2014 the values never reach the service unless paired with services.Configure<AzureStorageOptions>(...)."
+      ]
+    }
+  ]
+}

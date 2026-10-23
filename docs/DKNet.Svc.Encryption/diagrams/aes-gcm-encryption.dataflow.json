@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Encrypt(plainText, base64Key) checks the supplied key before encrypting",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Key matches" },
+        "security": { "label": "Key does not match" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [965, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/aes-gcm-encryption.html"
+  },
+  "stages": [
+    { "label": "Call" },
+    { "label": "Key check" },
+    { "label": "Branch" },
+    { "label": "Result" }
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "type": "external",
+      "label": "Encrypt(text, key)",
+      "sublabel": "explicit-key overload",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 177, "end_line": 183 }
+      ]
+    },
+    {
+      "id": "keycheck",
+      "type": "backend",
+      "label": "KeyMatches(base64Key)",
+      "sublabel": "FixedTimeEquals on decoded bytes",
+      "stage": 1,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 190, "end_line": 203 }
+      ]
+    },
+    {
+      "id": "encrypt",
+      "type": "backend",
+      "label": "EncryptString(plainText)",
+      "sublabel": "bytes equal: fresh nonce + tag",
+      "stage": 2,
+      "row": 0,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 209, "end_line": 227 }
+      ]
+    },
+    {
+      "id": "throw",
+      "type": "security",
+      "label": "InvalidOperationException",
+      "sublabel": "bytes differ: no re-keying",
+      "stage": 2,
+      "row": 2,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 177, "end_line": 183 }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "base64 package",
+      "sublabel": "nonce:tag:cipher",
+      "stage": 3,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/AesGcmEncryption.cs", "line": 209, "end_line": 227 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "call", "to": "keycheck", "label": "checks first", "variant": "default", "labelAt": [210, 315] },
+    { "from": "keycheck", "to": "encrypt", "label": "equal", "variant": "emphasis", "labelAt": [423, 201] },
+    { "from": "keycheck", "to": "throw", "label": "not equal", "variant": "security", "labelAt": [423, 330] },
+    { "from": "encrypt", "to": "result", "label": "base64-wrapped", "variant": "emphasis", "route": "straight", "labelAt": [790, 110] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "The key check is constant-time",
+      "items": [
+        "Both keys are decoded to bytes before CryptographicOperations.FixedTimeEquals runs",
+        "A wrong key takes the same time to reject no matter how much of it happened to be right",
+        "A byte-identical key is accepted even if its base64 text differs"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "There is no silent re-key",
+      "items": [
+        "A key mismatch always throws InvalidOperationException",
+        "Create a new AesGcmEncryption instance for a different key, or call EncryptString/DecryptString directly",
+        "AES-CBC's IAesEncryption, AesEncryption, and AddAesEncryption were removed, with no compatibility shim"
+      ]
+    }
+  ]
+}

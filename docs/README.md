@@ -54,10 +54,10 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) |
 | Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
 | Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) |
-| Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) plus one adapter |
-| Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) |
-| Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) |
-| Fill bracketed tokens in a template string from an object or a dictionary | [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) |
+| Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions/index.md) plus one adapter |
+| Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./DKNet.Svc.Encryption/index.md) |
+| Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators/index.md) |
+| Fill bracketed tokens in a template string from an object or a dictionary | [DKNet.Svc.Transformation](./DKNet.Svc.Transformation/index.md) |
 | Generate a password, token, or other secret | [DKNet.RandomCreator](./DKNet.RandomCreator/index.md) |
 | Scan assemblies for types, or reach for a string/enum/`DateTime`/reflection helper | [DKNet.Fw.Extensions](./DKNet.Fw.Extensions/index.md) |
 | Give a local Aspire AppHost its own Azure Service Bus emulator | [Aspire.Hosting.ServiceBus](./Aspire.Hosting.ServiceBus/index.md) (source-only) |
@@ -94,13 +94,13 @@ SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source 
 ### [Service Layer](./Services/README.md)
 Application-level services with no dependency on the EF Core packages.
 
-- [DKNet.Svc.BlobStorage.Abstractions](./Services/DKNet.Svc.BlobStorage.Abstractions.md) — provider-agnostic `IBlobService` contract and shared model types
-- [DKNet.Svc.BlobStorage.AwsS3](./Services/DKNet.Svc.BlobStorage.AwsS3.md) — AWS S3 adapter that also works against S3-compatible services such as MinIO and Cloudflare R2
-- [DKNet.Svc.BlobStorage.AzureStorage](./Services/DKNet.Svc.BlobStorage.AzureStorage.md) — Azure Blob Storage adapter backed by `Azure.Storage.Blobs`
-- [DKNet.Svc.BlobStorage.Local](./Services/DKNet.Svc.BlobStorage.Local.md) — local-filesystem adapter that stores blobs under a configured root folder with path-traversal protection
-- [DKNet.Svc.Encryption](./Services/DKNet.Svc.Encryption.md) — explicitly-invoked cryptography: AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, and Base64/Base64URL helpers
-- [DKNet.Svc.PdfGenerators](./Services/DKNet.Svc.PdfGenerators.md) — converts HTML or Markdown into a PDF using headless Chromium (PuppeteerSharp) and Markdig, with page layout, header/footer, and margin control
-- [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) — fills bracketed tokens in a template string from plain objects or string dictionaries by reflection
+- [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions/index.md) — provider-agnostic `IBlobService` contract and shared model types
+- [DKNet.Svc.BlobStorage.AwsS3](./DKNet.Svc.BlobStorage.AwsS3/index.md) — AWS S3 adapter that also works against S3-compatible services such as MinIO and Cloudflare R2
+- [DKNet.Svc.BlobStorage.AzureStorage](./DKNet.Svc.BlobStorage.AzureStorage/index.md) — Azure Blob Storage adapter backed by `Azure.Storage.Blobs`
+- [DKNet.Svc.BlobStorage.Local](./DKNet.Svc.BlobStorage.Local/index.md) — local-filesystem adapter that stores blobs under a configured root folder with path-traversal protection
+- [DKNet.Svc.Encryption](./DKNet.Svc.Encryption/index.md) — explicitly-invoked cryptography: AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, and Base64/Base64URL helpers
+- [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators/index.md) — converts HTML or Markdown into a PDF using headless Chromium (PuppeteerSharp) and Markdig, with page layout, header/footer, and margin control
+- [DKNet.Svc.Transformation](./DKNet.Svc.Transformation/index.md) — fills bracketed tokens in a template string from plain objects or string dictionaries by reflection
 
 ### [ASP.NET Core Utilities](./AspNetCore/README.md)
 Start-up orchestration, minimal-API glue, and idempotency for web and API workloads.

@@ -158,7 +158,7 @@ end-to-end walkthroughs (an HTTP request and a domain event):
 | Side effects that run after a write commits | [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md), then [A domain event end to end](Architecture.md#a-domain-event-end-to-end) |
 | Row-level isolation between tenants or owners | [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md), then [Examples](Examples/README.md#multi-tenant-application) |
 | A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
-| Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) |
+| Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) |
 
 ## Getting help
 

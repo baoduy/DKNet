@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "What a public-only RsaEncryption instance can and cannot do",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Available on a public-only instance" },
+        "security": { "label": "Throws InvalidOperationException" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [965, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/rsa-encryption.html"
+  },
+  "stages": [
+    { "label": "Instance" },
+    { "label": "Key state" },
+    { "label": "Call" },
+    { "label": "Outcome" }
+  ],
+  "nodes": [
+    {
+      "id": "instance",
+      "type": "external",
+      "label": "FromPublicKey(key)",
+      "sublabel": "public-only instance",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 180, "end_line": 186 }
+      ]
+    },
+    {
+      "id": "keystate",
+      "type": "backend",
+      "label": "no private key",
+      "sublabel": "Decrypt/Sign check this first",
+      "stage": 1,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 139, "end_line": 142 },
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 194, "end_line": 197 }
+      ]
+    },
+    {
+      "id": "allowed",
+      "type": "backend",
+      "label": "Encrypt / Verify",
+      "sublabel": "OAEP-SHA256 / PKCS#1-SHA256",
+      "stage": 2,
+      "row": 0,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 165, "end_line": 171 },
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 210, "end_line": 215 }
+      ]
+    },
+    {
+      "id": "blocked",
+      "type": "security",
+      "label": "Decrypt / Sign",
+      "sublabel": "need the private key",
+      "stage": 2,
+      "row": 2,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 139, "end_line": 142 },
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 194, "end_line": 197 }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "cipher text / bool",
+      "sublabel": "Base64 or true/false",
+      "stage": 3,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Ciphers/RsaEncryption.cs", "line": 165, "end_line": 171 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "instance", "to": "keystate", "label": "hasPrivate = false", "variant": "default", "labelAt": [210, 315] },
+    { "from": "keystate", "to": "allowed", "label": "no check needed", "variant": "emphasis", "labelAt": [423, 201] },
+    { "from": "keystate", "to": "blocked", "label": "check fails", "variant": "security", "labelAt": [423, 330] },
+    { "from": "allowed", "to": "result", "label": "returns", "variant": "emphasis", "route": "straight", "labelAt": [790, 110] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Public-only is a real, narrower instance",
+      "items": [
+        "FromPublicKey imports only the PKCS#1 public key blob",
+        "PrivateKey is null on this instance; PublicKey is always available",
+        "Deploy it on the side that only sends or verifies"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "A full key pair does everything",
+      "items": [
+        "new RsaEncryption() or new RsaEncryption(privateKeyBase64) can Encrypt, Decrypt, Sign, and Verify",
+        "Decrypt uses OAEP-SHA256 padding; Sign uses SHA-256 with PKCS#1 v1.5",
+        "Keys export as raw PKCS#1 DER in Base64, not PEM"
+      ]
+    }
+  ]
+}

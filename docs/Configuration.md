@@ -279,10 +279,10 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
 | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) | `IdempotencyOptions` in full |
 | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
-| [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) | `BlobServiceOptions` validation keys shared by all adapters |
-| [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
-| [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) | `AddPdfGenerator` and the page/margin options |
-| [DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation.md) | `AddTransformerService`, `TransformOptions` |
+| [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) | `BlobServiceOptions` validation keys shared by all adapters |
+| [DKNet.Svc.Encryption](DKNet.Svc.Encryption/index.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
+| [DKNet.Svc.PdfGenerators](DKNet.Svc.PdfGenerators/index.md) | `AddPdfGenerator` and the page/margin options |
+| [DKNet.Svc.Transformation](DKNet.Svc.Transformation/index.md) | `AddTransformerService`, `TransformOptions` |
 | [Aspire.Hosting.ServiceBus](Aspire.Hosting.ServiceBus/index.md) | `AddServiceBus` and the emulator resource |
 
 ---

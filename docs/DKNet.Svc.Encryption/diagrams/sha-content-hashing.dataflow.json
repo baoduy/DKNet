@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "ComputeSha256/512 and VerifySha256/512 on IShaHashing",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Hashes match" },
+        "security": { "label": "Hashes differ or bad hex" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [965, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/sha-content-hashing.html"
+  },
+  "stages": [
+    { "label": "Call" },
+    { "label": "Hash" },
+    { "label": "Compare" },
+    { "label": "Result" }
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "type": "external",
+      "label": "VerifySha256(input, hex)",
+      "sublabel": "ignoreCase is accepted, unused",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs", "line": 112, "end_line": 131 }
+      ]
+    },
+    {
+      "id": "hash",
+      "type": "backend",
+      "label": "SHA256.HashData(input)",
+      "sublabel": "lower-case hex by default",
+      "stage": 1,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs", "line": 78, "end_line": 88 }
+      ]
+    },
+    {
+      "id": "match",
+      "type": "backend",
+      "label": "decoded bytes equal",
+      "sublabel": "FixedTimeEquals",
+      "stage": 2,
+      "row": 0,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs", "line": 112, "end_line": 131 }
+      ]
+    },
+    {
+      "id": "nomatch",
+      "type": "security",
+      "label": "bytes differ / bad hex",
+      "sublabel": "returns false, never throws",
+      "stage": 2,
+      "row": 2,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs", "line": 112, "end_line": 131 }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "bool",
+      "sublabel": "true / false",
+      "stage": 3,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/ShaHashing.cs", "line": 137, "end_line": 138 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "call", "to": "hash", "label": "recomputes", "variant": "default", "labelAt": [210, 315] },
+    { "from": "hash", "to": "match", "label": "equal", "variant": "emphasis", "labelAt": [423, 201] },
+    { "from": "hash", "to": "nomatch", "label": "not equal", "variant": "security", "labelAt": [423, 330] },
+    { "from": "match", "to": "result", "label": "true", "variant": "emphasis", "route": "straight", "labelAt": [790, 110] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Verification is hex-only and constant-time",
+      "items": [
+        "expectedHex must be hexadecimal; FixedTimeEquals runs on the decoded bytes",
+        "Invalid hex returns false instead of throwing a FormatException",
+        "Empty string input is allowed; null throws ArgumentNullException"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "ignoreCase does nothing",
+      "items": [
+        "Comparison runs on decoded bytes, so case never changes the result",
+        "upperCase only changes ComputeSha256/512's own hex casing",
+        "IHmacHashing's Verify* overloads do not even expose the parameter"
+      ]
+    }
+  ]
+}

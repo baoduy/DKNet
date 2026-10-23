@@ -1,0 +1,110 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Matching a token's bracket style during extraction",
+    "output": ".task-validation/DKNet.Svc.Transformation/choose-token-syntax.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "TokenExtractor / TokenDefinition"
+        },
+        "external": {
+          "label": "Caller input and output"
+        },
+        "security": {
+          "label": "Rejected candidate"
+        }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "main", "label": "Per registered definition" }
+  ],
+  "mainPath": ["n0", "n1", "n2", "n3"],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "DefaultDefinitions",
+      "sublabel": "SquareBrackets plus any you add",
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Transformation/TransformOptions.cs", "line": 73, "end_line": 73 }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "TokenExtractor.ExtractCore",
+      "sublabel": "scans for BeginTag / EndTag pairs",
+      "width": 210,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/ITokenExtractor.cs", "line": 44, "end_line": 59 }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "TokenDefinition.IsToken",
+      "sublabel": "inner text non-empty, no tag characters",
+      "width": 220,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/ITokenDefinition.cs", "line": 37, "end_line": 85 }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "external",
+      "label": "Token matched",
+      "sublabel": "handed to TokenResolver",
+      "width": 180,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/ITokenExtractor.cs", "line": 55, "end_line": 57 }
+      ]
+    },
+    {
+      "id": "n4",
+      "lane": "main",
+      "col": 2,
+      "yOffset": 130,
+      "type": "security",
+      "label": "Candidate rejected",
+      "sublabel": "empty inner text, or nested begin tag",
+      "width": 220,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Transformation/TokenExtractors/ITokenDefinition.cs", "line": 62, "end_line": 85 }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "e0", "from": "n0", "to": "n1", "variant": "emphasis" },
+    { "id": "e1", "from": "n1", "to": "n2", "variant": "emphasis" },
+    { "id": "e2", "from": "n2", "to": "n3", "variant": "emphasis", "label": "valid token" },
+    { "id": "e3", "from": "n2", "to": "n4", "variant": "security", "label": "not a token" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Built-in styles and custom pairs",
+      "items": [
+        "SquareBrackets [Token], CurlyBrackets {Token}, AngledBrackets <Token>, DoubleCurlyBrackets {{Token}}",
+        "new TokenDefinition(begin, end) defines a custom pair; begin/end cannot be null or whitespace",
+        "Several definitions can be active together; overlapping pairs can double-match the same text"
+      ]
+    }
+  ]
+}

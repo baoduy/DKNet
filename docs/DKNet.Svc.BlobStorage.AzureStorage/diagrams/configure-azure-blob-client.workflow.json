@@ -1,0 +1,259 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AzureStorageBlobService.SaveAsync and SAS signing",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.AzureStorage/configure-azure-blob-client.html",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Caller"
+        },
+        "backend": {
+          "label": "AzureStorageBlobService step"
+        },
+        "security": {
+          "label": "Rejected"
+        },
+        "cloud": {
+          "label": "Azure Blob Storage call"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "app",
+      "label": "Application code"
+    },
+    {
+      "id": "svc",
+      "label": "AzureStorageBlobService"
+    },
+    {
+      "id": "reject",
+      "label": "Rejected",
+      "variant": "exception"
+    },
+    {
+      "id": "azure",
+      "label": "Azure Blob container"
+    }
+  ],
+  "mainPath": [
+    "save",
+    "validate",
+    "upload",
+    "stored"
+  ],
+  "nodes": [
+    {
+      "id": "save",
+      "lane": "app",
+      "col": 0,
+      "type": "frontend",
+      "label": "SaveAsync(blob)",
+      "sublabel": "BlobData or BlobStreamData",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 236,
+          "end_line": 243
+        }
+      ]
+    },
+    {
+      "id": "validate",
+      "lane": "svc",
+      "col": 1,
+      "type": "backend",
+      "label": "ValidateFile(stream)",
+      "sublabel": "shared BlobServiceOptions rules",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 253,
+          "end_line": 253
+        }
+      ]
+    },
+    {
+      "id": "upload",
+      "lane": "svc",
+      "col": 2,
+      "type": "backend",
+      "label": "UploadAsync",
+      "sublabel": "overwrite passed straight through",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 255,
+          "end_line": 257
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "lane": "reject",
+      "col": 2,
+      "type": "security",
+      "label": "RequestFailedException 409",
+      "sublabel": "BlobAlreadyExists, overwrite=false",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 256,
+          "end_line": 256
+        }
+      ]
+    },
+    {
+      "id": "stored",
+      "lane": "azure",
+      "col": 3,
+      "type": "cloud",
+      "label": "Blob written",
+      "sublabel": "container created on first use",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 201,
+          "end_line": 212
+        }
+      ]
+    },
+    {
+      "id": "sasreq",
+      "lane": "app",
+      "col": 4,
+      "type": "frontend",
+      "label": "GetPublicAccessUrl(blob, ttl)",
+      "sublabel": "separate call, read-only SAS",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 225,
+          "end_line": 232
+        }
+      ]
+    },
+    {
+      "id": "sascheck",
+      "lane": "svc",
+      "col": 5,
+      "type": "backend",
+      "label": "CanGenerateSasUri?",
+      "sublabel": "false for a token-credential client",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 233,
+          "end_line": 235
+        }
+      ]
+    },
+    {
+      "id": "sasfail",
+      "lane": "reject",
+      "col": 5,
+      "type": "security",
+      "label": "NotSupportedException",
+      "sublabel": "managed-identity client can't sign",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 234,
+          "end_line": 235
+        }
+      ]
+    },
+    {
+      "id": "sasuri",
+      "lane": "azure",
+      "col": 4,
+      "type": "cloud",
+      "label": "SAS URI",
+      "sublabel": "1-day default, Read permission",
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AzureStorage/AzureStorageBlobService.cs",
+          "line": 237,
+          "end_line": 250
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "save",
+      "to": "validate",
+      "label": "one call"
+    },
+    {
+      "id": "e2",
+      "from": "validate",
+      "to": "upload",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "upload",
+      "to": "conflict",
+      "label": "exists, overwrite=false",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e4",
+      "from": "upload",
+      "to": "stored",
+      "label": "writes"
+    },
+    {
+      "id": "e5",
+      "from": "sasreq",
+      "to": "sascheck",
+      "label": "checks client"
+    },
+    {
+      "id": "e6",
+      "from": "sascheck",
+      "to": "sasfail",
+      "label": "token credential",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e7",
+      "from": "sascheck",
+      "to": "sasuri",
+      "label": "account-key client",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "GetAsync returns null, it does not throw",
+      "items": [
+        "DownloadContentAsync's RequestFailedException (404) is caught and GetAsync returns null for a missing blob \u2014 the same shape as S3, not the SDK-exception shape an earlier revision of this page described."
+      ]
+    }
+  ]
+}

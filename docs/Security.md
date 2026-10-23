@@ -63,7 +63,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
 - **`IAesEncryption` (AES-CBC) has been removed, not just deprecated.** It used a fixed IV embedded in the key, so
   identical plaintexts always produced identical ciphertext — a real information leak, not a theoretical one. Use
   `IAesGcmEncryption`, which authenticates the ciphertext and uses a fresh random nonce per call. See
-  [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md).
+  [DKNet.Svc.Encryption](DKNet.Svc.Encryption/index.md).
 
 ### Row-level isolation
 
@@ -114,7 +114,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   `IncludedExtensions`, and `MaxFileSizeInMb` and throws `FileLoadException` on a violation; Azure, S3, and local
   all call it at the top of their `SaveAsync`, so an extension allow-list applies uniformly. It is `protected
   virtual`, so a custom adapter of your own must call it — the base class does not force it. See
-  [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md).
+  [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md).
 
 ### Idempotency keys
 

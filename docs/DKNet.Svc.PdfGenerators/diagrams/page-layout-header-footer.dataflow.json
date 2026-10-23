@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "PdfGeneratorOptions layout fields become Chromium's PdfOptions",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Always applied"
+        },
+        "default": {
+          "label": "Toggles header/footer"
+        },
+        "dashed": {
+          "label": "Fixed, not an option"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/page-layout-header-footer.html"
+  },
+  "stages": [
+    {
+      "label": "PdfGeneratorOptions"
+    },
+    {
+      "label": "Mapping"
+    },
+    {
+      "label": "Chromium PdfOptions"
+    },
+    {
+      "label": "Output"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "options",
+      "type": "external",
+      "label": "Layout options",
+      "sublabel": "Format, Scale, Margins, Headers",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 214,
+          "end_line": 229
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "type": "backend",
+      "label": "Build PdfOptions",
+      "sublabel": "GeneratePdfFromHtmlAsync",
+      "stage": 1,
+      "row": 1,
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 204,
+          "end_line": 232
+        }
+      ]
+    },
+    {
+      "id": "pdfoptions",
+      "type": "backend",
+      "label": "Chromium options",
+      "sublabel": "size, margins, toggle",
+      "stage": 2,
+      "row": 0,
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 212,
+          "end_line": 230
+        }
+      ]
+    },
+    {
+      "id": "fixedbg",
+      "type": "security",
+      "label": "Background on",
+      "sublabel": "always true, fixed",
+      "stage": 2,
+      "row": 2,
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 216,
+          "end_line": 216
+        }
+      ]
+    },
+    {
+      "id": "pdf",
+      "type": "database",
+      "label": "PDF file",
+      "sublabel": "print pipeline",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 231,
+          "end_line": 232
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "options",
+      "to": "map",
+      "label": "size, margins, templates",
+      "variant": "emphasis",
+      "labelAt": [
+        208,
+        233
+      ]
+    },
+    {
+      "id": "f2",
+      "from": "map",
+      "to": "pdfoptions",
+      "label": "copied across",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f3",
+      "from": "map",
+      "to": "fixedbg",
+      "label": "always set",
+      "variant": "dashed"
+    },
+    {
+      "id": "f4",
+      "from": "pdfoptions",
+      "to": "pdf",
+      "label": "PdfAsync",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f5",
+      "from": "fixedbg",
+      "to": "pdf",
+      "label": "always on",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Two MarginOptions types",
+      "items": [
+        "DKNet.Svc.PdfGenerators.Options.MarginOptions (this page) holds CSS strings.",
+        "PuppeteerSharp.Media.MarginOptions is what Chromium actually receives.",
+        "Importing both namespaces makes the bare name ambiguous (CS0104)."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Fixed regardless of options",
+      "items": [
+        "PrintBackground is always true.",
+        "The page renders with MediaType.Screen, so @media print CSS never applies."
+      ]
+    }
+  ]
+}

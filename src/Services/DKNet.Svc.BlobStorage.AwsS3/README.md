@@ -1,77 +1,51 @@
 # DKNet.Svc.BlobStorage.AwsS3
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.BlobStorage.AwsS3)](https://www.nuget.org/packages/DKNet.Svc.BlobStorage.AwsS3/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.BlobStorage.AwsS3)](https://www.nuget.org/packages/DKNet.Svc.BlobStorage.AwsS3/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+AWS S3 implementation of `IBlobService` for .NET developers, also compatible with S3-compatible services such as MinIO and Cloudflare R2.
 
-AWS S3 (and S3-compatible services such as MinIO or Cloudflare R2) implementation of `IBlobService` from
-[DKNet.Svc.BlobStorage.Abstractions](https://www.nuget.org/packages/DKNet.Svc.BlobStorage.Abstractions/).
+## ✨ Why use it?
 
-## Features
+- Register AWS S3 with one call — binds credentials, endpoint, and bucket, and wires `IBlobService` for you.
+- Point the same code at MinIO, R2, or AWS itself with `ForcePathStyle` and an explicit endpoint.
+- Skip the bucket-provisioning step — the configured bucket is created on first use if missing.
+- Hand out time-limited share links without SDK code via pre-signed URLs.
 
-- `S3BlobService` — full `IBlobService` implementation over the AWS SDK
-- Creates the configured bucket on first use if it does not exist
-- Pre-signed public URLs (`GetPublicAccessUrl`), default 1-hour expiry
-- `ForcePathStyle`/`DisablePayloadSigning` options for MinIO and other S3-compatible endpoints
-
-## Installation
+## 🚀 Quick Start
 
 ```bash
+dotnet new console -f net10.0 -n S3Demo
+cd S3Demo
 dotnet add package DKNet.Svc.BlobStorage.AwsS3
-```
-
-## Quick Start
-
-```jsonc
-// appsettings.json
-{
-  "BlobService": {
-    "S3": {
-      "ConnectionString": "https://s3.ap-southeast-1.amazonaws.com",
-      "BucketName": "app-documents"
-    }
-  }
-}
+dotnet add package Microsoft.Extensions.Logging
 ```
 
 ```csharp
 using DKNet.Svc.BlobStorage.Abstractions;
 using DKNet.Svc.BlobStorage.AwsS3;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-builder.Services.AddS3BlobService(builder.Configuration); // binds "BlobService:S3"
+var config = new ConfigurationBuilder()
+    .AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["BlobService:S3:ConnectionString"] = "https://s3.ap-southeast-1.amazonaws.com",
+        ["BlobService:S3:BucketName"] = "app-documents"
+    })
+    .Build();
 
-public sealed class ReportStorage(IBlobService blobService)
-{
-    public Task<string> SaveAsync(Stream pdf, CancellationToken ct) =>
-        blobService.SaveAsync(new BlobDetails.BlobData("reports/monthly.pdf", BinaryData.FromStream(pdf)), ct);
-}
+var services = new ServiceCollection().AddLogging().AddS3BlobService(config);
+using var provider = services.BuildServiceProvider();
+var blobService = provider.GetRequiredService<IBlobService>();
+
+var location = await blobService.SaveAsync(
+    new BlobDetails.BlobData("reports/monthly.pdf", BinaryData.FromString("...")) { Overwrite = true });
+Console.WriteLine(location);
 ```
 
-`AddS3BlobService(IServiceCollection, IConfiguration)` is the only registration entry point. It binds
-`S3Options` from the section named by `S3Options.Name` and registers `IBlobService → S3BlobService` as
-`Scoped`; the call is idempotent.
-
-## Configuration — `S3Options`
-
-`S3Options` extends `BlobServiceOptions`, so `IncludedExtensions`, `MaxFileNameLength`, and `MaxFileSizeInMb`
-apply here unchanged (see the Abstractions package).
-
-| Option | Type | Default | Effect |
-|---|---|---|---|
-| `ConnectionString` | `string` | *(required)* | S3 service endpoint URL, used as the SDK's `ServiceURL`. A value that does not start with `https` switches the client to plain HTTP. |
-| `BucketName` | `string` | *(required)* | Target bucket. Created on first use when missing. |
-| `AccessKey` | `string?` | `null` | With `Secret`, selects `BasicAWSCredentials`; leave both unset to use the ambient AWS credential chain. |
-| `Secret` | `string?` | `null` | Paired with `AccessKey`. |
-| `RegionEndpointName` | `string?` | `"us-east-1"` | Declared but never applied to the client — encode the region in `ConnectionString`. |
-| `ForcePathStyle` | `bool` | `false` | `true` uses `endpoint/bucket/key` addressing; required by MinIO and most S3-compatible services. |
-| `DisablePayloadSigning` | `bool` | `false` | Passed to `PutObject`; needed by some S3-compatible endpoints. |
-| `S3Options.Name` (static) | `string` | `"BlobService:S3"` | The configuration section `AddS3BlobService` binds from. |
-
-Per-call settings live on the request: `BlobDetails.BlobData.Overwrite` (default `false`) and
-`GetPublicAccessUrl(..., expiresFromNow)` (default `TimeSpan.FromHours(1)`).
+Run with `dotnet run`.
 
 ## Documentation
 
-Full feature reference, diagrams, and gotchas:
-https://github.com/baoduy/DKNet/blob/main/docs/Services/DKNet.Svc.BlobStorage.AwsS3.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.BlobStorage.AwsS3/index.md) | Start with architecture and the end-to-end flow. |
+| [Configure and operate S3 storage](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.BlobStorage.AwsS3/configure-and-operate-s3-storage.md) | Set credentials and endpoint options, and work with save conflicts, folder delete, listing, and pre-signed URLs. |

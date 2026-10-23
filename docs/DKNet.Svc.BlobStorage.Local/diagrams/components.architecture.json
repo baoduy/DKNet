@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LocalBlobService inside the host application",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.Local/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package type"
+        },
+        "database": {
+          "label": "Local file system"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "app",
+      "label": "Application code",
+      "sublabel": "IBlobService consumer",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Local/LocalDirectorySetup.cs",
+          "line": 28,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "label": "AddLocalDirectoryBlobService",
+      "sublabel": "binds LocalDirectoryOptions",
+      "pos": [
+        520,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Local/LocalDirectorySetup.cs",
+          "line": 28,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "svc",
+      "label": "LocalBlobService : BlobService",
+      "sublabel": "scoped, no client to cache",
+      "pos": [
+        990,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Local/LocalBlobService.cs",
+          "line": 26,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "label": "LocalDirectoryOptions",
+      "sublabel": "BlobStorage:LocalFolder section",
+      "pos": [
+        990,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Local/LocalDirectoryOptions.cs",
+          "line": 15,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "fs",
+      "label": "RootFolder on disk",
+      "sublabel": "every path resolved and bounds-checked",
+      "pos": [
+        1460,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Local/LocalBlobService.cs",
+          "line": 177,
+          "end_line": 193
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Abstractions.BlobService",
+      "sublabel": "shared validation + path prefix",
+      "pos": [
+        520,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "app",
+      "to": "setup",
+      "label": "registers once"
+    },
+    {
+      "from": "setup",
+      "to": "svc",
+      "label": "IBlobService \u2192 scoped"
+    },
+    {
+      "from": "svc",
+      "to": "base",
+      "label": "derives from"
+    },
+    {
+      "from": "svc",
+      "to": "options",
+      "label": "reads RootFolder"
+    },
+    {
+      "from": "svc",
+      "to": "fs",
+      "label": "read / write / list / delete"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "No cloud dependency",
+      "items": [
+        "No SDK client to build or cache \u2014 every operation resolves a path under RootFolder and touches the file system directly.",
+        "RootFolder defaults to {CurrentDirectory}/LocalStore when unset, which differs between dotnet run, a published binary, and a container."
+      ]
+    }
+  ]
+}
